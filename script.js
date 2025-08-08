@@ -776,11 +776,31 @@ class BreakingNewsGame {
                 this.playSound('button', 'factual');
                 this.checkAnswer(true);
             };
-            factBtn.addEventListener('click', factHandler);
+            
+            let isScrolling = false;
+            let scrollTimeout = null;
+            
+            factBtn.addEventListener('click', (e) => {
+                if (!isScrolling) {
+                    factHandler();
+                }
+            });
+            
             factBtn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
-                factHandler();
+                if (!isScrolling) {
+                    factHandler();
+                }
             });
+            
+            // Detect scrolling
+            document.addEventListener('touchmove', () => {
+                isScrolling = true;
+                if (scrollTimeout) clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    isScrolling = false;
+                }, 150); // Wait 150ms after scrolling stops
+            }, { passive: true });
         }
         
         if (fakeBtn) {
@@ -789,11 +809,31 @@ class BreakingNewsGame {
                 this.playSound('button', 'misleading');
                 this.checkAnswer(false);
             };
-            fakeBtn.addEventListener('click', fakeHandler);
+            
+            let isScrolling = false;
+            let scrollTimeout = null;
+            
+            fakeBtn.addEventListener('click', (e) => {
+                if (!isScrolling) {
+                    fakeHandler();
+                }
+            });
+            
             fakeBtn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
-                fakeHandler();
+                if (!isScrolling) {
+                    fakeHandler();
+                }
             });
+            
+            // Detect scrolling
+            document.addEventListener('touchmove', () => {
+                isScrolling = true;
+                if (scrollTimeout) clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    isScrolling = false;
+                }, 150); // Wait 150ms after scrolling stops
+            }, { passive: true });
         }
         
         if (nextBtn) {
