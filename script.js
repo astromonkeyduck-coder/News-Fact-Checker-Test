@@ -644,7 +644,9 @@ class BreakingNewsGame {
         
         // Create individual falling characters like hail
         const characters = '01█▓▒░▄▌▐▀▬▫▪▮▯▰▱▲△▴▵▶▷▸▹►▻▼▽▾▿◀◁◂◃◄◅◆◇◈◉◊○◐◑◒◓◔◕◖◗◘◙◚◛◜◝◞◟◠◡◢◣◤◥◦◧◨◩◪◫◬◭◮◯◰◱◲◳◴◵◶◷◸◹◺◻◼◽◾◿';
-        const numCharacters = 300; // Thunderstorm level - many more characters
+        // Reduce characters on mobile for better performance
+        const isMobile = window.innerWidth <= 768;
+        const numCharacters = isMobile ? 100 : 300; // Fewer characters on mobile
         
         for (let i = 0; i < numCharacters; i++) {
             const character = document.createElement('div');
@@ -688,83 +690,146 @@ class BreakingNewsGame {
         console.log('Restart button found:', !!restartBtn);
         
         if (startBtn) {
-            startBtn.addEventListener('click', () => {
+            const startHandler = () => {
                 console.log('Start button clicked');
                 this.playSound('button', 'navigation');
                 this.startGame();
+            };
+            startBtn.addEventListener('click', startHandler);
+            startBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                startHandler();
             });
         }
         
         if (factBtn) {
-            factBtn.addEventListener('click', () => {
+            const factHandler = () => {
                 console.log('Fact button clicked');
                 this.playSound('button', 'factual');
                 this.checkAnswer(true);
+            };
+            factBtn.addEventListener('click', factHandler);
+            factBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                factHandler();
             });
         }
         
         if (fakeBtn) {
-            fakeBtn.addEventListener('click', () => {
+            const fakeHandler = () => {
                 console.log('Fake button clicked');
                 this.playSound('button', 'misleading');
                 this.checkAnswer(false);
+            };
+            fakeBtn.addEventListener('click', fakeHandler);
+            fakeBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                fakeHandler();
             });
         }
         
         if (nextBtn) {
-            nextBtn.addEventListener('click', () => {
+            const nextHandler = () => {
                 console.log('Next button clicked');
                 this.playSound('button', 'navigation');
                 this.nextQuestion();
+            };
+            nextBtn.addEventListener('click', nextHandler);
+            nextBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                nextHandler();
             });
         }
         
         if (nextHeadlineBtn) {
-            nextHeadlineBtn.addEventListener('click', () => {
+            const nextHeadlineHandler = () => {
                 console.log('Next headline button clicked');
                 this.playSound('button', 'navigation');
                 this.nextQuestion();
+            };
+            nextHeadlineBtn.addEventListener('click', nextHeadlineHandler);
+            nextHeadlineBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                nextHeadlineHandler();
             });
         }
         
         if (restartBtn) {
-            restartBtn.addEventListener('click', () => {
+            const restartHandler = () => {
                 console.log('Restart button clicked');
                 this.playSound('button', 'navigation');
                 this.restartGame();
+            };
+            restartBtn.addEventListener('click', restartHandler);
+            restartBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                restartHandler();
             });
         }
         
         // Difficulty selection
         document.querySelectorAll('.btn-difficulty').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            const difficultyHandler = (e) => {
                 this.playSound('button', 'toggle');
                 document.querySelectorAll('.btn-difficulty').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
                 this.difficulty = e.target.dataset.difficulty;
                 this.setTimeLimit();
+            };
+            btn.addEventListener('click', difficultyHandler);
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                difficultyHandler(e);
             });
         });
         
         // Difficulty toggle buttons
-        document.getElementById('difficultyToggle').addEventListener('click', () => {
+        const difficultyToggleHandler = () => {
             this.playSound('button', 'toggle');
             this.showDifficultyModal();
-        });
-        document.getElementById('feedbackDifficultyToggle').addEventListener('click', () => {
-            this.playSound('button', 'toggle');
-            this.showDifficultyModal();
-        });
+        };
+        
+        const difficultyToggle = document.getElementById('difficultyToggle');
+        if (difficultyToggle) {
+            difficultyToggle.addEventListener('click', difficultyToggleHandler);
+            difficultyToggle.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                difficultyToggleHandler();
+            });
+        }
+        
+        const feedbackDifficultyToggle = document.getElementById('feedbackDifficultyToggle');
+        if (feedbackDifficultyToggle) {
+            feedbackDifficultyToggle.addEventListener('click', difficultyToggleHandler);
+            feedbackDifficultyToggle.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                difficultyToggleHandler();
+            });
+        }
         
         // Tips sidebar functionality
-        document.getElementById('tipsToggleBtn').addEventListener('click', () => {
+        const tipsToggleHandler = () => {
             this.playSound('button', 'toggle');
             this.toggleTipsSidebar();
-        });
-        document.getElementById('sidebarToggle').addEventListener('click', () => {
-            this.playSound('button', 'toggle');
-            this.toggleTipsSidebar();
-        });
+        };
+        
+        const tipsToggleBtn = document.getElementById('tipsToggleBtn');
+        if (tipsToggleBtn) {
+            tipsToggleBtn.addEventListener('click', tipsToggleHandler);
+            tipsToggleBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                tipsToggleHandler();
+            });
+        }
+        
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', tipsToggleHandler);
+            sidebarToggle.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                tipsToggleHandler();
+            });
+        }
         
         // How to Play sidebar functionality
         document.getElementById('howToPlayToggleBtn').addEventListener('click', () => {
@@ -1456,9 +1521,9 @@ class BreakingNewsGame {
     }
     
     initBackgroundMusic() {
-        // Create video element for background music
-        this.bgVideo = document.createElement('video');
-        this.bgVideo.style.cssText = `
+        // Create audio element for background music
+        this.bgAudio = document.createElement('audio');
+        this.bgAudio.style.cssText = `
             position: fixed;
             top: -9999px;
             left: -9999px;
@@ -1468,49 +1533,49 @@ class BreakingNewsGame {
             pointer-events: none;
             z-index: -1;
         `;
-        this.bgVideo.muted = false;
-        this.bgVideo.volume = 0.3;
-        this.bgVideo.loop = true;
-        this.bgVideo.autoplay = true;
-        this.bgVideo.preload = 'auto';
-        this.bgVideo.src = './copy_A8F29838-31C4-4D71-B2BE-5A0CACDB005B.MOV';
+        this.bgAudio.muted = false;
+        this.bgAudio.volume = 0.3;
+        this.bgAudio.loop = true;
+        this.bgAudio.autoplay = true;
+        this.bgAudio.preload = 'metadata';
+        this.bgAudio.src = './copy_A8F29838-31C4-4D71-B2BE-5A0CACDB005B.m4a';
         
-        // Add video to document
-        document.body.appendChild(this.bgVideo);
+        // Add audio to document
+        document.body.appendChild(this.bgAudio);
         
         this.isMusicPlaying = false;
         this.musicEnabled = true;
         
-        // Set up video event listeners
-        this.bgVideo.addEventListener('loadedmetadata', () => {
-            console.log('Video loaded successfully');
+        // Set up audio event listeners
+        this.bgAudio.addEventListener('loadedmetadata', () => {
+            console.log('Audio loaded successfully');
         });
         
-        this.bgVideo.addEventListener('error', (e) => {
-            console.log('Video error:', e);
+        this.bgAudio.addEventListener('error', (e) => {
+            console.log('Audio error:', e);
         });
         
         // Add timeupdate listener to handle seamless looping
-        this.bgVideo.addEventListener('timeupdate', () => {
-            if (this.bgVideo.currentTime >= this.bgVideo.duration - 3.5) {
+        this.bgAudio.addEventListener('timeupdate', () => {
+            if (this.bgAudio.currentTime >= this.bgAudio.duration - 3.5) {
                 // Loop 3.5 seconds before the end
-                this.bgVideo.currentTime = 0;
+                this.bgAudio.currentTime = 0;
             }
         });
     }
     
     startBackgroundMusic() {
-        if (!this.musicEnabled || !this.bgVideo) return;
+        if (!this.musicEnabled || !this.bgAudio) return;
         
         // Prevent duplicate notifications
         if (this.isMusicPlaying) return;
         
-        this.bgVideo.play().then(() => {
+        this.bgAudio.play().then(() => {
             this.isMusicPlaying = true;
             this.updateMusicButton();
             this.showMusicNotification();
         }).catch(error => {
-            console.log('Video autoplay blocked:', error);
+            console.log('Audio autoplay blocked:', error);
             // Only show notification if we haven't already shown one recently
             if (!this.notificationShown) {
                 this.notificationShown = true;
@@ -1524,8 +1589,8 @@ class BreakingNewsGame {
     }
     
     stopBackgroundMusic() {
-        if (this.bgVideo) {
-            this.bgVideo.pause();
+        if (this.bgAudio) {
+            this.bgAudio.pause();
             this.isMusicPlaying = false;
             this.updateMusicButton();
         }

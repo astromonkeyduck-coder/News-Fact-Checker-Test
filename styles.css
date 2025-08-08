@@ -2674,6 +2674,19 @@ header h1::after {
         margin: 10px;
     }
     
+    /* Hide audio element on mobile */
+    audio {
+        position: fixed !important;
+        top: -9999px !important;
+        left: -9999px !important;
+        width: 1px !important;
+        height: 1px !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        z-index: -9999 !important;
+        display: none !important;
+    }
+    
     header h1 {
         font-size: 2rem;
         margin-bottom: 15px;
