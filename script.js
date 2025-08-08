@@ -572,7 +572,7 @@ class BreakingNewsGame {
     
     createParticles() {
         // Disable particles on mobile for performance
-        const isMobile = window.innerWidth <= 768;
+        const isMobile = window.innerWidth <= 1400;
         if (isMobile) {
             return;
         }
@@ -595,7 +595,7 @@ class BreakingNewsGame {
     
     setupGlitchEffects() {
         // Disable glitch effects on mobile for performance
-        const isMobile = window.innerWidth <= 768;
+        const isMobile = window.innerWidth <= 1400;
         if (isMobile) {
             return;
         }
@@ -652,7 +652,7 @@ class BreakingNewsGame {
         if (!matrixContainer) return;
         
         // Disable matrix rain on mobile for performance
-        const isMobile = window.innerWidth <= 768;
+        const isMobile = window.innerWidth <= 1400;
         if (isMobile) {
             matrixContainer.style.display = 'none';
             return;
@@ -1399,7 +1399,7 @@ class BreakingNewsGame {
 
     initAudio() {
         // Disable audio context on mobile for performance
-        const isMobile = window.innerWidth <= 768;
+        const isMobile = window.innerWidth <= 1400;
         if (!isMobile) {
             // Create audio context for better sound generation
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -1421,7 +1421,7 @@ class BreakingNewsGame {
         if (!this.soundEnabled || !this.audioContext) return;
         
         // Disable complex audio on mobile for performance
-        const isMobile = window.innerWidth <= 768;
+        const isMobile = window.innerWidth <= 1400;
         if (isMobile) return;
         
         const oscillator = this.audioContext.createOscillator();
@@ -1455,7 +1455,7 @@ class BreakingNewsGame {
         if (!this.soundEnabled || !this.audioContext) return;
         
         // Disable complex audio on mobile for performance
-        const isMobile = window.innerWidth <= 768;
+        const isMobile = window.innerWidth <= 1400;
         if (isMobile) return;
         
         const oscillator = this.audioContext.createOscillator();

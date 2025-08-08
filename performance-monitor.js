@@ -4,7 +4,7 @@ class PerformanceMonitor {
         this.fps = 0;
         this.frameCount = 0;
         this.lastTime = performance.now();
-        this.isMobile = window.innerWidth <= 768;
+        this.isMobile = window.innerWidth <= 1400;
         
         if (this.isMobile) {
             this.startMonitoring();
@@ -80,6 +80,6 @@ class PerformanceMonitor {
 }
 
 // Initialize performance monitor
-if (window.innerWidth <= 768) {
+if (window.innerWidth <= 1400) {
     window.performanceMonitor = new PerformanceMonitor();
 }

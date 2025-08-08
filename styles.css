@@ -3791,7 +3791,7 @@ header h1::after {
 }
 
 /* Mobile Performance Optimizations */
-@media (max-width: 768px) {
+@media (max-width: 1400px) {
     /* Disable heavy animations on mobile */
     body {
         animation: none !important;
@@ -3965,7 +3965,7 @@ header h1::after {
 }
 
 /* Ultra-mobile optimizations */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
     /* Further reduce effects */
     .container {
         backdrop-filter: blur(3px);
@@ -4031,7 +4031,7 @@ header h1::after {
 }
 
 /* Disable expensive CSS properties on mobile */
-@media (max-width: 768px) {
+@media (max-width: 1400px) {
     .container,
     .game-area,
     .game-stats,
