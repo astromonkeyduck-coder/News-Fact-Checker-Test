@@ -3819,9 +3819,9 @@ header h1::after {
         transform: none;
     }
     
-    /* Disable matrix rain on mobile */
+    /* Enable lightweight matrix rain on mobile */
     .matrix-rain {
-        display: none !important;
+        opacity: 0.3; /* Make it more subtle on mobile */
     }
     
     /* Simplify game area */
@@ -3853,9 +3853,9 @@ header h1::after {
         display: none !important;
     }
     
-    /* Disable particle effects */
+    /* Enable lightweight particle effects on mobile */
     .particles {
-        display: none !important;
+        opacity: 0.2; /* Make it more subtle on mobile */
     }
     
     /* Simplify button effects */
@@ -3879,6 +3879,11 @@ header h1::after {
         min-height: 48px;
         -webkit-tap-highlight-color: transparent;
         touch-action: manipulation;
+    }
+    
+    /* Hide sound effects button on mobile since audio is disabled */
+    .sound-toggle-btn {
+        display: none !important;
     }
     
     /* Reduce blur effects */
@@ -4042,16 +4047,24 @@ header h1::after {
         backdrop-filter: blur(3px);
     }
     
-    /* Disable complex gradients */
-    .btn-fact,
-    .btn-fake {
-        background: #4A90E2;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    /* Keep original button colors for game functionality */
+    .btn-fact {
+        background: var(--fact-button-bg);
+        box-shadow: 0 6px 20px var(--fact-button-shadow);
     }
     
-    .btn-fact:hover,
+    .btn-fake {
+        background: var(--fake-button-bg);
+        box-shadow: 0 6px 20px var(--fake-button-shadow);
+    }
+    
+    .btn-fact:hover {
+        background: var(--fact-button-hover);
+        box-shadow: 0 12px 30px var(--fact-button-shadow-hover);
+    }
+    
     .btn-fake:hover {
-        background: #2A60B0;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        background: var(--fake-button-hover);
+        box-shadow: 0 12px 30px var(--fake-button-shadow-hover);
     }
 }

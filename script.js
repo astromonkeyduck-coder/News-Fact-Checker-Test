@@ -571,9 +571,24 @@ class BreakingNewsGame {
     }
     
     createParticles() {
-        // Disable particles on mobile for performance
+        // Create lightweight particles for mobile, full version for desktop
         const isMobile = window.innerWidth <= 1400;
         if (isMobile) {
+            // Lightweight version for mobile - just a few particles
+            const particlesContainer = document.createElement('div');
+            particlesContainer.className = 'particles';
+            document.body.appendChild(particlesContainer);
+            
+            // Create 8 floating particles for mobile
+            for (let i = 0; i < 8; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 8 + 's';
+                particle.style.animationDuration = (Math.random() * 4 + 6) + 's';
+                particle.style.opacity = Math.random() * 0.4 + 0.1;
+                particlesContainer.appendChild(particle);
+            }
             return;
         }
         
@@ -594,9 +609,19 @@ class BreakingNewsGame {
     }
     
     setupGlitchEffects() {
-        // Disable glitch effects on mobile for performance
+        // Create lightweight glitch effects for mobile, full version for desktop
         const isMobile = window.innerWidth <= 1400;
         if (isMobile) {
+            // Lightweight version for mobile - just title glitch
+            const title = document.querySelector('.header h1');
+            if (title) {
+                title.setAttribute('data-text', title.textContent);
+            }
+            
+            // Very occasional screen glitch for mobile
+            setInterval(() => {
+                this.createScreenGlitch();
+            }, 15000); // Much less frequent on mobile
             return;
         }
         
@@ -651,10 +676,36 @@ class BreakingNewsGame {
         const matrixContainer = document.querySelector('.matrix-rain');
         if (!matrixContainer) return;
         
-        // Disable matrix rain on mobile for performance
+        // Create lightweight matrix rain for mobile, full version for desktop
         const isMobile = window.innerWidth <= 1400;
         if (isMobile) {
-            matrixContainer.style.display = 'none';
+            // Lightweight version for mobile - just a few characters
+            matrixContainer.innerHTML = '';
+            const characters = '01█▓▒░';
+            const numCharacters = 15; // Very few for mobile
+            
+            for (let i = 0; i < numCharacters; i++) {
+                const character = document.createElement('div');
+                const randomChar = characters[Math.floor(Math.random() * characters.length)];
+                
+                character.textContent = randomChar;
+                character.style.cssText = `
+                    position: absolute;
+                    top: -20px;
+                    left: ${Math.random() * 100}%;
+                    font-family: 'Courier New', monospace;
+                    font-size: ${16 + Math.random() * 8}px;
+                    color: #4A90E2;
+                    text-shadow: 0 0 8px #4A90E2;
+                    animation: hailFall ${3 + Math.random() * 2}s linear infinite;
+                    animation-delay: ${Math.random() * 3}s;
+                    opacity: ${0.4 + Math.random() * 0.3};
+                    z-index: 1;
+                    font-weight: bold;
+                `;
+                
+                matrixContainer.appendChild(character);
+            }
             return;
         }
         
@@ -1565,7 +1616,7 @@ class BreakingNewsGame {
         this.bgAudio.muted = false;
         this.bgAudio.volume = 0.3;
         this.bgAudio.loop = true;
-        this.bgAudio.autoplay = true;
+        this.bgAudio.autoplay = false; // Don't autoplay to prevent multiple instances
         this.bgAudio.preload = 'metadata';
         this.bgAudio.src = './copy_A8F29838-31C4-4D71-B2BE-5A0CACDB005B.m4a';
         
@@ -1574,6 +1625,23 @@ class BreakingNewsGame {
         
         this.isMusicPlaying = false;
         this.musicEnabled = true;
+        
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // Page is hidden, pause music
+                if (this.bgAudio && !this.bgAudio.paused) {
+                    this.bgAudio.pause();
+                }
+            } else {
+                // Page is visible again, resume music if it was playing
+                if (this.isMusicPlaying && this.musicEnabled && this.bgAudio.paused) {
+                    this.bgAudio.play().catch(error => {
+                        console.log('Audio resume failed:', error);
+                    });
+                }
+            }
+        });
         
         // Set up audio event listeners
         this.bgAudio.addEventListener('loadedmetadata', () => {
@@ -1596,8 +1664,15 @@ class BreakingNewsGame {
     startBackgroundMusic() {
         if (!this.musicEnabled || !this.bgAudio) return;
         
-        // Prevent duplicate notifications
+        // Prevent duplicate instances
         if (this.isMusicPlaying) return;
+        
+        // Check if audio is already playing
+        if (!this.bgAudio.paused) {
+            this.isMusicPlaying = true;
+            this.updateMusicButton();
+            return;
+        }
         
         this.bgAudio.play().then(() => {
             this.isMusicPlaying = true;
@@ -1620,6 +1695,7 @@ class BreakingNewsGame {
     stopBackgroundMusic() {
         if (this.bgAudio) {
             this.bgAudio.pause();
+            this.bgAudio.currentTime = 0; // Reset to beginning
             this.isMusicPlaying = false;
             this.updateMusicButton();
         }
@@ -1656,6 +1732,10 @@ class BreakingNewsGame {
     }
     
     showMusicNotification(blocked = false) {
+        // Disable notifications on mobile for performance
+        const isMobile = window.innerWidth <= 1400;
+        if (isMobile) return;
+        
         // Remove any existing music notifications
         const existingNotifications = document.querySelectorAll('.music-notification');
         existingNotifications.forEach(notification => {
@@ -1720,6 +1800,10 @@ class BreakingNewsGame {
     }
     
     showDarkModeNotification() {
+        // Disable notifications on mobile for performance
+        const isMobile = window.innerWidth <= 1400;
+        if (isMobile) return;
+        
         const notification = document.createElement('div');
         notification.className = 'dark-mode-notification';
         notification.style.animation = 'musicSlideIn 0.5s ease-out';
