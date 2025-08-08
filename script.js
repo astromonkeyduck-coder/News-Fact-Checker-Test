@@ -571,12 +571,18 @@ class BreakingNewsGame {
     }
     
     createParticles() {
+        // Disable particles on mobile for performance
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            return;
+        }
+        
         const particlesContainer = document.createElement('div');
         particlesContainer.className = 'particles';
         document.body.appendChild(particlesContainer);
         
-        // Create 50 floating particles
-        for (let i = 0; i < 50; i++) {
+        // Create 25 floating particles (reduced for performance)
+        for (let i = 0; i < 25; i++) {
             const particle = document.createElement('div');
             particle.className = 'particle';
             particle.style.left = Math.random() * 100 + '%';
@@ -588,13 +594,19 @@ class BreakingNewsGame {
     }
     
     setupGlitchEffects() {
+        // Disable glitch effects on mobile for performance
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            return;
+        }
+        
         // Add glitch effect to the main title
         const title = document.querySelector('.header h1');
         if (title) {
             title.setAttribute('data-text', title.textContent);
         }
         
-        // Add random glitch effects to buttons
+        // Add random glitch effects to buttons (reduced frequency)
         setInterval(() => {
             const buttons = document.querySelectorAll('.btn');
             const randomButton = buttons[Math.floor(Math.random() * buttons.length)];
@@ -604,12 +616,12 @@ class BreakingNewsGame {
                     randomButton.style.animation = '';
                 }, 200);
             }
-        }, 3000);
+        }, 5000); // Increased interval from 3000 to 5000
         
-        // Add screen glitch effect occasionally
+        // Add screen glitch effect occasionally (reduced frequency)
         setInterval(() => {
             this.createScreenGlitch();
-        }, 8000);
+        }, 12000); // Increased interval from 8000 to 12000
     }
     
     createScreenGlitch() {
@@ -639,14 +651,19 @@ class BreakingNewsGame {
         const matrixContainer = document.querySelector('.matrix-rain');
         if (!matrixContainer) return;
         
+        // Disable matrix rain on mobile for performance
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            matrixContainer.style.display = 'none';
+            return;
+        }
+        
         // Clear existing content
         matrixContainer.innerHTML = '';
         
         // Create individual falling characters like hail
         const characters = '01█▓▒░▄▌▐▀▬▫▪▮▯▰▱▲△▴▵▶▷▸▹►▻▼▽▾▿◀◁◂◃◄◅◆◇◈◉◊○◐◑◒◓◔◕◖◗◘◙◚◛◜◝◞◟◠◡◢◣◤◥◦◧◨◩◪◫◬◭◮◯◰◱◲◳◴◵◶◷◸◹◺◻◼◽◾◿';
-        // Reduce characters on mobile for better performance
-        const isMobile = window.innerWidth <= 768;
-        const numCharacters = isMobile ? 100 : 300; // Fewer characters on mobile
+        const numCharacters = 150; // Reduced for better performance
         
         for (let i = 0; i < numCharacters; i++) {
             const character = document.createElement('div');
@@ -668,7 +685,7 @@ class BreakingNewsGame {
                 font-weight: bold;
             `;
             
-                        matrixContainer.appendChild(character);
+            matrixContainer.appendChild(character);
         }
     }
     
@@ -1381,8 +1398,12 @@ class BreakingNewsGame {
     }
 
     initAudio() {
-        // Create audio context for better sound generation
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // Disable audio context on mobile for performance
+        const isMobile = window.innerWidth <= 768;
+        if (!isMobile) {
+            // Create audio context for better sound generation
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
         
         // Initialize sounds object
         this.sounds = {};
@@ -1398,6 +1419,10 @@ class BreakingNewsGame {
     // Generate ASMR-style keyboard click sound
     generateKeyboardClick(frequency = 2000, duration = 60, volume = 0.2) {
         if (!this.soundEnabled || !this.audioContext) return;
+        
+        // Disable complex audio on mobile for performance
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) return;
         
         const oscillator = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
@@ -1428,6 +1453,10 @@ class BreakingNewsGame {
     // Generate soft pop sound for hover
     generateSoftPop(frequency = 1500, duration = 40, volume = 0.1) {
         if (!this.soundEnabled || !this.audioContext) return;
+        
+        // Disable complex audio on mobile for performance
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) return;
         
         const oscillator = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();

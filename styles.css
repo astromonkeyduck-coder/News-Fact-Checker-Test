@@ -3789,3 +3789,269 @@ header h1::after {
         will-change: transform, box-shadow;
     }
 }
+
+/* Mobile Performance Optimizations */
+@media (max-width: 768px) {
+    /* Disable heavy animations on mobile */
+    body {
+        animation: none !important;
+    }
+    
+    body::before,
+    body::after {
+        display: none !important;
+    }
+    
+    /* Disable complex background effects */
+    .container::before,
+    .container::after {
+        display: none !important;
+    }
+    
+    /* Simplify container effects */
+    .container {
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        animation: none;
+    }
+    
+    .container:hover {
+        transform: none;
+    }
+    
+    /* Disable matrix rain on mobile */
+    .matrix-rain {
+        display: none !important;
+    }
+    
+    /* Simplify game area */
+    .game-area {
+        backdrop-filter: blur(10px);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        animation: none;
+    }
+    
+    .game-area:hover {
+        transform: none;
+    }
+    
+    /* Disable complex animations */
+    .glitch-text,
+    .pixel-effect,
+    .crt-effect,
+    .pixel-noise {
+        animation: none !important;
+    }
+    
+    /* Simplify logo effects */
+    .logo {
+        animation: none !important;
+    }
+    
+    .logo::before,
+    .logo::after {
+        display: none !important;
+    }
+    
+    /* Disable particle effects */
+    .particles {
+        display: none !important;
+    }
+    
+    /* Simplify button effects */
+    .btn {
+        transition: all 0.2s ease;
+    }
+    
+    .btn:hover {
+        transform: translateY(-1px);
+    }
+    
+    /* Disable complex hover effects */
+    .game-stats:hover,
+    .news-card:hover,
+    .headline:hover {
+        transform: none;
+    }
+    
+    /* Optimize for touch devices */
+    .btn {
+        min-height: 48px;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+    }
+    
+    /* Reduce blur effects */
+    .container,
+    .game-area,
+    .game-stats,
+    .news-card {
+        backdrop-filter: blur(5px);
+    }
+    
+    /* Disable cloud animations */
+    .clouds {
+        display: none !important;
+    }
+    
+    /* Simplify sidebar effects */
+    .tips-sidebar,
+    .how-to-play-sidebar {
+        backdrop-filter: blur(5px);
+    }
+    
+    /* Disable complex text effects */
+    .pixel-text {
+        text-shadow: none;
+        letter-spacing: normal;
+    }
+    
+    /* Simplify breaking badge */
+    .breaking-badge {
+        animation: none;
+    }
+    
+    .breaking-badge::before {
+        display: none;
+    }
+    
+    /* Disable scanlines effect */
+    .crt-effect::before {
+        display: none;
+    }
+    
+    /* Simplify timer effects */
+    .timer-fill {
+        animation: none;
+    }
+    
+    /* Disable complex shadows */
+    .pixel-shadow {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Simplify retro button effects */
+    .retro-button {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .retro-button:hover {
+        transform: translateY(1px);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Disable complex animations for correct/incorrect */
+    .correct,
+    .incorrect {
+        animation: none !important;
+        font-size: 3rem;
+        text-shadow: none;
+        box-shadow: none;
+    }
+    
+    /* Simplify footer effects */
+    .footer::before {
+        display: none;
+    }
+    
+    /* Disable complex logo animations */
+    .nw-logo-banner {
+        animation: none;
+    }
+    
+    .nw-logo-banner::before {
+        display: none;
+    }
+}
+
+/* Ultra-mobile optimizations */
+@media (max-width: 480px) {
+    /* Further reduce effects */
+    .container {
+        backdrop-filter: blur(3px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    }
+    
+    .game-area {
+        backdrop-filter: blur(3px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .game-stats {
+        backdrop-filter: blur(3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Disable all remaining animations */
+    * {
+        animation: none !important;
+        transition: none !important;
+    }
+    
+    /* Only keep essential transitions */
+    .btn {
+        transition: transform 0.1s ease;
+    }
+    
+    .btn:active {
+        transform: scale(0.98);
+    }
+    
+    /* Simplify all hover effects */
+    .btn:hover,
+    .tips-toggle-btn:hover,
+    .how-to-play-toggle-btn:hover,
+    .sound-toggle-btn:hover,
+    .music-toggle-btn:hover,
+    .theme-toggle-btn:hover,
+    .pause-toggle-btn:hover {
+        transform: none;
+    }
+}
+
+/* Performance optimizations for all devices */
+* {
+    /* Optimize for performance */
+    will-change: auto;
+}
+
+/* Reduce repaints and reflows */
+.container,
+.game-area,
+.game-stats,
+.news-card {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* Optimize button rendering */
+.btn {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* Disable expensive CSS properties on mobile */
+@media (max-width: 768px) {
+    .container,
+    .game-area,
+    .game-stats,
+    .news-card,
+    .btn,
+    .headline {
+        filter: none;
+        backdrop-filter: blur(3px);
+    }
+    
+    /* Disable complex gradients */
+    .btn-fact,
+    .btn-fake {
+        background: #4A90E2;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    .btn-fact:hover,
+    .btn-fake:hover {
+        background: #2A60B0;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+}
