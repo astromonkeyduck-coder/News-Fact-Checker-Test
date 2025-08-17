@@ -2,309 +2,696 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Noteworthy News - Breaking News Fact Checker</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noteworthy News - Media Literacy Games</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%);
+            color: white;
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(74, 144, 226, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(46, 204, 113, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(155, 89, 182, 0.1) 0%, transparent 50%);
+            animation: backgroundShift 20s ease-in-out infinite;
+            z-index: -2;
+        }
+        
+        @keyframes backgroundShift {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(1deg); }
+        }
+        
+        /* Floating particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(74, 144, 226, 0.6);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInUp 1s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .logo-n, .logo-w {
+            font-size: 4rem;
+            font-weight: 900;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .logo-n {
+            color: #4A90E2;
+            text-shadow: 0 0 20px rgba(74, 144, 226, 0.8);
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+        
+        .logo-w {
+            color: white;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+            animation: glowPulse 2s ease-in-out infinite 0.5s;
+        }
+        
+        @keyframes glowPulse {
+            0%, 100% { text-shadow: 0 0 20px currentColor; }
+            50% { text-shadow: 0 0 30px currentColor, 0 0 40px currentColor; }
+        }
+        
+        .logo:hover .logo-n {
+            transform: scale(1.1) rotate(-2deg);
+        }
+        
+        .logo:hover .logo-w {
+            transform: scale(1.1) rotate(2deg);
+        }
+        
+        .company-name {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: textGlow 3s ease-in-out infinite;
+        }
+        
+        @keyframes textGlow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.2); }
+        }
+        
+        .tagline {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            margin-bottom: 40px;
+            animation: fadeInUp 1s ease-out 0.3s both;
+        }
+        
+        .hero-section {
+            text-align: center;
+            margin-bottom: 80px;
+            animation: fadeInUp 1s ease-out 0.6s both;
+        }
+        
+        .hero-title {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 50%, #2ecc71 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+            animation: titleGlow 4s ease-in-out infinite;
+        }
+        
+        @keyframes titleGlow {
+            0%, 100% { filter: brightness(1) contrast(1); }
+            50% { filter: brightness(1.1) contrast(1.1); }
+        }
+        
+        .hero-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #4A90E2, transparent);
+            animation: lineGlow 2s ease-in-out infinite;
+        }
+        
+        @keyframes lineGlow {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
+        .hero-subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 40px;
+            opacity: 0.9;
+            animation: fadeInUp 1s ease-out 0.9s both;
+        }
+        
+        .game-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            padding: 50px;
+            margin-bottom: 60px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 1s ease-out 1.2s both;
+            transition: all 0.3s ease;
+        }
+        
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .game-card:hover::before {
+            left: 100%;
+        }
+        
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 25px 80px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        
+        .game-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #ffffff;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            animation: titleBounce 2s ease-in-out infinite;
+        }
+        
+        @keyframes titleBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .game-description {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            line-height: 1.8;
+        }
+        
+        .game-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .feature {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 25px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .feature:hover::before {
+            opacity: 1;
+        }
+        
+        .feature:hover {
+            transform: translateY(-3px) scale(1.02);
+            border-color: rgba(74, 144, 226, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            display: block;
+            animation: iconFloat 3s ease-in-out infinite;
+        }
+        
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-5px) rotate(5deg); }
+        }
+        
+        .feature-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #4A90E2;
+        }
+        
+        .feature-text {
+            font-size: 1rem;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+        
+        .play-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            padding: 20px 50px;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 8px 25px rgba(46, 204, 113, 0.4),
+                0 0 0 0 rgba(46, 204, 113, 0.7);
+            position: relative;
+            overflow: hidden;
+            animation: buttonPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes buttonPulse {
+            0% { box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4), 0 0 0 0 rgba(46, 204, 113, 0.7); }
+            70% { box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4), 0 0 0 10px rgba(46, 204, 113, 0); }
+            100% { box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4), 0 0 0 0 rgba(46, 204, 113, 0); }
+        }
+        
+        .play-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .play-button:hover::before {
+            left: 100%;
+        }
+        
+        .play-button:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(46, 204, 113, 0.6);
+        }
+        
+        .about-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 25px;
+            padding: 50px;
+            margin-bottom: 60px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 1s ease-out 1.5s both;
+        }
+        
+        .about-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(74, 144, 226, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .about-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #4A90E2;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .about-text {
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+            opacity: 0.9;
+            line-height: 1.8;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 50px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            animation: fadeInUp 1s ease-out 1.8s both;
+        }
+        
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(74, 144, 226, 0.5), transparent);
+        }
+        
+        .social-links {
+            margin-top: 30px;
+        }
+        
+        .social-link {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 12px 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 30px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .social-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.3s ease;
+        }
+        
+        .social-link:hover::before {
+            left: 100%;
+        }
+        
+        .social-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            border-color: rgba(74, 144, 226, 0.3);
+        }
+        
+        /* Matrix rain effect */
+        .matrix-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.1;
+        }
+        
+        .matrix-character {
+            position: absolute;
+            color: #4A90E2;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            animation: matrixFall 3s linear infinite;
+        }
+        
+        @keyframes matrixFall {
+            from { transform: translateY(-100vh); opacity: 1; }
+            to { transform: translateY(100vh); opacity: 0; }
+        }
+        
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .game-title {
+                font-size: 2rem;
+            }
+            
+            .game-features {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 20px 15px;
+            }
+            
+            .logo-n, .logo-w {
+                font-size: 3rem;
+            }
+            
+            .company-name {
+                font-size: 2rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="matrix-rain"></div>
-    <div class="tips-sidebar" id="tipsSidebar">
-        <div class="sidebar-header">
-            <h3>💡 Digital Literacy Tips</h3>
-            <button class="sidebar-toggle" id="sidebarToggle">×</button>
-        </div>
-        <div class="sidebar-content">
-            <div class="tip-section">
-                <h4>Why Digital Literacy Matters</h4>
-                <p>In today's digital age, misinformation spreads faster than ever. Learning to distinguish fact from fiction is crucial for making informed decisions and protecting yourself from manipulation.</p>
-            </div>
-            
-            <div class="tip-section">
-                <h4>🔍 Fact-Checking Strategies</h4>
-                <ul>
-                    <li><strong>Check Multiple Sources:</strong> Don't rely on just one source</li>
-                    <li><strong>Verify the Source:</strong> Look for official websites and reputable organizations</li>
-                    <li><strong>Look for Evidence:</strong> Factual news provides citations and evidence</li>
-                    <li><strong>Question Sensational Claims:</strong> If it sounds too good to be true, it probably is</li>
-                    <li><strong>Check the Date:</strong> Old news can be misleading when shared as current</li>
-                </ul>
-            </div>
-            
-            <div class="tip-section">
-                <h4>🚨 Red Flags for Misinformation</h4>
-                <ul>
-                    <li>Claims of "miracle cures" or "secret knowledge"</li>
-                    <li>Sources with suspicious names or no credibility</li>
-                    <li>Emotional language designed to provoke outrage</li>
-                    <li>Conspiracy theories without evidence</li>
-                    <li>Get-rich-quick schemes or too-good-to-be-true offers</li>
-                </ul>
-            </div>
-            
-            <div class="tip-section">
-                <h4>✅ Reliable Sources</h4>
-                <ul>
-                    <li>Government websites (.gov domains)</li>
-                    <li>Peer-reviewed scientific journals</li>
-                    <li>Established news organizations</li>
-                    <li>Official company press releases</li>
-                    <li>Academic institutions and research centers</li>
-                </ul>
-            </div>
-            
-            <div class="tip-section">
-                <h4>🎯 Practice Makes Perfect</h4>
-                <p>Use this game to practice your fact-checking skills. The more you practice, the better you'll become at spotting misinformation in real life!</p>
-            </div>
-        </div>
-    </div>
+    <!-- Matrix rain effect -->
+    <div class="matrix-rain" id="matrixRain"></div>
     
-    <!-- How to Play Sidebar -->
-    <div class="how-to-play-sidebar" id="howToPlaySidebar">
-        <div class="sidebar-header">
-            <h3>🎮 How to Play</h3>
-            <button class="sidebar-toggle" id="howToPlayToggle">×</button>
-        </div>
-        <div class="sidebar-content">
-            <div class="tip-section">
-                <h4>Game Rules</h4>
-                <ul>
-                    <li>Read each news headline carefully</li>
-                    <li>Click "FACTUAL" if you think it's true</li>
-                    <li>Click "MISLEADING" if you think it's fake or misleading</li>
-                    <li>Answer within the time limit for bonus points</li>
-                    <li>Learn from the feedback and tips</li>
-                    <li>Build your fact-checking skills!</li>
-                </ul>
-            </div>
-            <div class="tip-section">
-                <h4>Scoring System</h4>
-                <ul>
-                    <li>Correct answers earn points based on difficulty</li>
-                    <li>Faster answers earn bonus points</li>
-                    <li>Streaks multiply your score</li>
-                    <li>Accuracy affects your overall rating</li>
-                </ul>
-            </div>
-            <div class="tip-section">
-                <h4>Difficulty Levels</h4>
-                <ul>
-                    <li><strong>Easy:</strong> 30 seconds per question</li>
-                    <li><strong>Medium:</strong> 20 seconds per question</li>
-                    <li><strong>Hard:</strong> 15 seconds per question</li>
-                </ul>
-            </div>
-        </div>
-    </div>
+    <!-- Floating particles -->
+    <div class="particles" id="particles"></div>
     
-    <div class="container pixel-noise">
-        <!-- NW Logo Banner -->
-                  <div class="nw-logo-banner pixel-effect">
-                          <div class="nw-image-container">
-                <img src="nw-logo.GIF" alt="Noteworthy News Logo" class="nw-gif pixel-effect" loading="lazy">
-            </div>
-          </div>
-
-        <header>
-            <div class="header-top">
-                <button class="tips-toggle-btn" id="tipsToggleBtn">
-                    <span class="btn-icon">💡</span>
-                    <span class="btn-text">Tips</span>
-                </button>
-                <button class="how-to-play-toggle-btn" id="howToPlayToggleBtn">
-                    <span class="btn-icon">🎮</span>
-                    <span class="btn-text">Help</span>
-                </button>
-                <button class="pause-toggle-btn" id="pauseToggleBtn" style="display: flex;">
-                    <span class="btn-icon">⏸️</span>
-                    <span class="btn-text">Pause</span>
-                </button>
-                <button class="sound-toggle-btn" id="soundToggleBtn">
-                    <span class="btn-icon">🔊</span>
-                    <span class="btn-text">Sound</span>
-                </button>
-                <button class="music-toggle-btn" id="musicToggleBtn">
-                    <span class="btn-icon">🎵</span>
-                    <span class="btn-text">Music</span>
-                </button>
-                <button class="theme-toggle-btn" id="themeToggleBtn">
-                    <span class="btn-icon">🌙</span>
-                    <span class="btn-text">Dark</span>
-                </button>
-            </div>
-                    <div class="logo-container">
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
             <div class="logo">
-                <a href="https://x.com/newsnoteworthy" target="_blank" class="logo-link">
-                    <span class="logo-n">N</span><span class="logo-w">W</span>
-                </a>
+                <span class="logo-n">N</span><span class="logo-w">W</span>
             </div>
             <div class="company-name">Noteworthy News</div>
+            <div class="tagline">Empowering informed decisions through media literacy education</div>
         </div>
-            <h1 class="glitch-text" data-text="🔍 Breaking News Fact Checker">🔍 Breaking News Fact Checker</h1>
-            <p class="subtitle pixel-text">Test your media literacy skills! Can you spot fake news?</p>
-        </header>
-
-        <div class="game-stats pixel-shadow">
-            <div class="stat">
-                <span class="stat-label">Score:</span>
-                <span id="score">0</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">Level:</span>
-                <span id="level">1</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">Streak:</span>
-                <span id="streak">0</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">Accuracy:</span>
-                <span id="accuracy">0%</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">Difficulty:</span>
-                <span id="currentDifficulty">Easy</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">High Score:</span>
-                <span id="highScore">0</span>
-            </div>
+        
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <h1 class="hero-title">Test Your Media Literacy Skills</h1>
+            <p class="hero-subtitle">Learn to distinguish between factual news and misleading headlines in our interactive fact-checking game</p>
         </div>
-
-        <div class="game-area crt-effect">
-            <div class="news-card pixel-border" id="newsCard">
-                <div class="news-header">
-                    <span class="breaking-badge">BREAKING NEWS</span>
-                    <span class="timestamp" id="timestamp">Just now</span>
+        
+        <!-- Game Card -->
+        <div class="game-card">
+            <h2 class="game-title">🔍 Breaking News Fact Checker</h2>
+            <p class="game-description">
+                Challenge yourself with real-world headlines and learn essential fact-checking strategies. 
+                Can you spot the difference between credible news and misleading information?
+            </p>
+            
+            <div class="game-features">
+                <div class="feature">
+                    <div class="feature-icon">🎯</div>
+                    <div class="feature-title">Real Headlines</div>
+                    <div class="feature-text">Practice with actual news headlines and sources</div>
                 </div>
-                <h2 class="headline pixel-text" id="headline">Loading headline...</h2>
-                <p class="source" id="source">Source: Loading...</p>
-            </div>
-
-            <div class="buttons">
-                <button class="btn btn-fact retro-button" id="factBtn">
-                    <span class="btn-icon">✅</span>
-                    FACTUAL
-                </button>
-                <button class="btn btn-fake retro-button" id="fakeBtn">
-                    <span class="btn-icon">❌</span>
-                    MISLEADING
-                </button>
-            </div>
-            
-            <div class="next-headline-container">
-                <button class="btn btn-next-headline" id="nextHeadlineBtn" style="display: none;">
-                    <span class="btn-icon">📰</span>
-                    Next Headline
-                </button>
-            </div>
-            
-            <div class="difficulty-toggle">
-                <button class="btn btn-difficulty-toggle" id="difficultyToggle">
-                    <span class="toggle-icon">⚙️</span>
-                    Change Difficulty
-                </button>
-            </div>
-            
-            <div class="timer-container">
-                <div class="timer-bar">
-                    <div class="timer-fill" id="timerFill"></div>
+                <div class="feature">
+                    <div class="feature-icon">📚</div>
+                    <div class="feature-title">Learn Strategies</div>
+                    <div class="feature-text">Master fact-checking techniques and tips</div>
                 </div>
-                <span class="timer-text" id="timerText">30s</span>
-            </div>
-        </div>
-
-        <div class="feedback" id="feedback">
-            <div class="feedback-content">
-                <h3 id="feedbackTitle">Correct!</h3>
-                <p id="feedbackText">Great job! You identified this correctly.</p>
-                <div class="fact-check-tips" id="factCheckTips">
-                    <h4>💡 Fact-Checking Tips:</h4>
-                    <ul>
-                        <li>Check multiple reliable sources</li>
-                        <li>Look for evidence and citations</li>
-                        <li>Be wary of sensational language</li>
-                        <li>Verify the source's credibility</li>
-                    </ul>
+                <div class="feature">
+                    <div class="feature-icon">🏆</div>
+                    <div class="feature-title">Track Progress</div>
+                    <div class="feature-text">Monitor your score, accuracy, and streaks</div>
                 </div>
-            </div>
-            <div class="feedback-buttons">
-                <button class="btn btn-difficulty-toggle" id="feedbackDifficultyToggle">
-                    <span class="toggle-icon">⚙️</span>
-                    Change Difficulty
-                </button>
-                <button class="btn btn-next" id="nextBtn">Next Headline</button>
-            </div>
-        </div>
-
-        <div class="start-screen" id="startScreen">
-            <h2>Welcome to Noteworthy News Fact Checker!</h2>
-            <p>Test your ability to distinguish between factual news and misleading headlines. Learn valuable media literacy skills while having fun!</p>
-            
-            <div class="difficulty-selector">
-                <h3>Choose Difficulty:</h3>
-                <div class="difficulty-buttons">
-                    <button class="btn btn-difficulty active" data-difficulty="easy">Easy (30s)</button>
-                    <button class="btn btn-difficulty" data-difficulty="medium">Medium (20s)</button>
-                    <button class="btn btn-difficulty" data-difficulty="hard">Hard (15s)</button>
+                <div class="feature">
+                    <div class="feature-icon">📱</div>
+                    <div class="feature-title">Mobile Optimized</div>
+                    <div class="feature-text">Smooth experience on all devices</div>
                 </div>
             </div>
             
-            <button class="btn btn-start" id="startBtn">Start Game</button>
-        </div>
-
-        <div class="game-over" id="gameOver">
-            <h2>Game Complete!</h2>
-            <div class="final-stats">
-                <p>Final Score: <span id="finalScore">0</span></p>
-                <p>Level Reached: <span id="finalLevel">1</span></p>
-                <p>Best Streak: <span id="finalStreak">0</span></p>
-                <p>High Score: <span id="finalHighScore">0</span></p>
+            <div style="text-align: center;">
+                <a href="game.html" class="play-button">🎮 Start Playing Now</a>
             </div>
-            <button class="btn btn-restart" id="restartBtn">Play Again</button>
         </div>
-
-        <div class="pause-overlay" id="pauseOverlay">
-            <div class="pause-content">
-                <h2>⏸️ Game Paused</h2>
-                <p>Take a break! Your progress is saved.</p>
-                <div class="pause-stats">
-                    <p>Current Score: <span id="pauseScore">0</span></p>
-                    <p>Time Remaining: <span id="pauseTime">30s</span></p>
-                </div>
-                <button class="btn btn-resume" id="resumeBtn">
-                    <span class="btn-icon">▶️</span>
-                    Resume Game
-                </button>
+        
+        <!-- About Section -->
+        <div class="about-section">
+            <h2 class="about-title">Why Media Literacy Matters</h2>
+            <p class="about-text">
+                In today's digital age, misinformation spreads faster than ever. Our fact-checking game helps you develop 
+                critical thinking skills to navigate the complex media landscape.
+            </p>
+            <p class="about-text">
+                By practicing with real headlines and learning fact-checking strategies, you'll be better equipped to 
+                make informed decisions and avoid falling for misleading information.
+            </p>
+            <p class="about-text">
+                Whether you're a student, educator, or concerned citizen, this game provides valuable tools for 
+                building media literacy skills that last a lifetime.
+            </p>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>&copy; 2024 Noteworthy News. Empowering media literacy education.</p>
+            <div class="social-links">
+                <a href="https://x.com/newsnoteworthy" target="_blank" class="social-link">
+                    📱 Follow us on X
+                </a>
+                <a href="game.html" class="social-link">
+                    🎮 Play the Game
+                </a>
             </div>
         </div>
     </div>
 
-    <footer class="footer">
-        <div class="footer-content">
-                    <div class="footer-logo">
-            <a href="https://x.com/newsnoteworthy" target="_blank" class="footer-company">Noteworthy News</a>
-        </div>
-            <p class="footer-tagline">Empowering informed decisions through media literacy education</p>
+    <script>
+        // Create floating particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
             
-            <div class="social-links">
-                <h4>Follow Us</h4>
-                <div class="social-icons">
-                    <a href="https://x.com/newsnoteworthy" target="_blank" class="social-link">
-                        <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                        </svg>
-                        <span>@newsnoteworthy</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Background Animations -->
-    
-    <script src="performance-monitor.js"></script>
-    <script src="script.js"></script>
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
+                particle.style.opacity = Math.random() * 0.5 + 0.1;
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Create matrix rain effect
+        function createMatrixRain() {
+            const matrixContainer = document.getElementById('matrixRain');
+            const characters = '01█▓▒░';
+            const columns = Math.floor(window.innerWidth / 20);
+            
+            for (let i = 0; i < columns; i++) {
+                const character = document.createElement('div');
+                character.className = 'matrix-character';
+                character.textContent = characters[Math.floor(Math.random() * characters.length)];
+                character.style.left = (i * 20) + 'px';
+                character.style.animationDelay = Math.random() * 3 + 's';
+                character.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                matrixContainer.appendChild(character);
+            }
+        }
+        
+        // Initialize effects
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            createMatrixRain();
+            
+            // Add scroll-triggered animations
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, observerOptions);
+            
+            // Observe all features for animation
+            document.querySelectorAll('.feature').forEach(feature => {
+                feature.style.opacity = '0';
+                feature.style.transform = 'translateY(20px)';
+                feature.style.transition = 'all 0.6s ease';
+                observer.observe(feature);
+            });
+        });
+        
+        // Add mouse movement effect
+        document.addEventListener('mousemove', (e) => {
+            const particles = document.querySelectorAll('.particle');
+            const mouseX = e.clientX / window.innerWidth;
+            const mouseY = e.clientY / window.innerHeight;
+            
+            particles.forEach((particle, index) => {
+                const speed = (index % 3 + 1) * 0.5;
+                const x = (mouseX - 0.5) * speed;
+                const y = (mouseY - 0.5) * speed;
+                particle.style.transform = `translate(${x}px, ${y}px)`;
+            });
+        });
+    </script>
 </body>
 </html>
