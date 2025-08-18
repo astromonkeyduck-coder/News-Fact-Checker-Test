@@ -4,6 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Noteworthy News - Media Literacy Games</title>
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://your-domain.com/">
+    <meta property="og:title" content="Noteworthy News">
+    <meta property="og:description" content="Test your media literacy skills with interactive games and fact-checking challenges. Stay informed with trusted journalism.">
+    <meta property="og:image" content="noteworthy-news-preview.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://your-domain.com/">
+    <meta property="twitter:title" content="Noteworthy News">
+    <meta property="twitter:description" content="Test your media literacy skills with interactive games and fact-checking challenges. Stay informed with trusted journalism.">
+    <meta property="twitter:image" content="noteworthy-news-preview.jpg">
+    
+    <!-- Additional meta tags for better sharing -->
+    <meta name="description" content="Test your media literacy skills with interactive games and fact-checking challenges. Stay informed with trusted journalism.">
+    <meta name="keywords" content="media literacy, fact checking, journalism, news games, education">
+    <meta name="author" content="Noteworthy News">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
         /* Professional Header Styles */
@@ -16,7 +37,426 @@
             backdrop-filter: blur(15px);
             border-bottom: 1px solid rgba(74, 144, 226, 0.3);
             z-index: 1000;
-            padding: 0.2rem 0;
+            padding: 0;
+            height: 64px;
+        }
+        
+        /* Ensure anchored sections aren't hidden under fixed header */
+        #news-section, #fact-checker-section, #about-section {
+            scroll-margin-top: 90px;
+        }
+        @media (max-width: 768px) {
+            #news-section, #fact-checker-section, #about-section {
+                scroll-margin-top: 70px;
+            }
+        }
+        @media (max-width: 480px) {
+            #news-section, #fact-checker-section, #about-section {
+                scroll-margin-top: 80px;
+            }
+        }
+        @media (max-width: 360px) {
+            #news-section, #fact-checker-section, #about-section {
+                scroll-margin-top: 90px;
+            }
+        }
+        
+        /* Mobile header adjustments */
+        @media (max-width: 768px) {
+            .main-header {
+                height: 60px;
+            }
+            
+            .header-container {
+                height: 60px;
+                padding: 0 1rem;
+                flex-wrap: wrap;
+            }
+            
+            .header-left {
+                gap: 0.75rem;
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .logo {
+                font-size: 0.8rem;
+                flex-shrink: 0;
+            }
+            
+            .brand-info {
+                min-width: 0;
+                flex: 1;
+            }
+            
+            .brand-info h1 {
+                font-size: 0.6rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 150px;
+            }
+            
+            .brand-info p {
+                font-size: 0.4rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 120px;
+            }
+            
+            .main-nav {
+                order: 2;
+                width: auto;
+                margin-top: 0;
+                flex-shrink: 0;
+            }
+            
+            .main-nav ul {
+                gap: 0.4rem;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .main-nav a {
+                font-size: 0.7rem;
+                padding: 4px 8px;
+                white-space: nowrap;
+            }
+            
+            .auth-btn {
+                padding: 8px 14px;
+                font-size: 0.75rem;
+                min-height: 32px;
+            }
+            
+            .header-right {
+                gap: 0.5rem;
+                flex-shrink: 0;
+            }
+        }
+
+        /* Specific fix for 670px width issue */
+        @media (max-width: 700px) {
+            .brand-info h1 {
+                max-width: 120px;
+                font-size: 0.55rem;
+            }
+            
+            .brand-info p {
+                max-width: 100px;
+                font-size: 0.35rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .main-header {
+                height: 70px;
+            }
+            
+            .header-container {
+                height: 70px;
+                padding: 0 0.75rem;
+            }
+            
+            .header-left {
+                gap: 0.5rem;
+            }
+            
+            .logo {
+                font-size: 0.9rem;
+            }
+            
+            .brand-info h1 {
+                font-size: 0.55rem;
+            }
+            
+            .brand-info p {
+                font-size: 0.35rem;
+            }
+            
+            .main-nav {
+                order: 2;
+                width: auto;
+                margin-top: 0;
+            }
+            
+            .main-nav ul {
+                gap: 0.3rem;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .main-nav a {
+                font-size: 0.65rem;
+                padding: 3px 6px;
+                white-space: nowrap;
+            }
+            
+            .auth-btn {
+                padding: 6px 12px;
+                font-size: 0.7rem;
+                min-height: 30px;
+            }
+            
+            .header-right {
+                gap: 0.4rem;
+            }
+        }
+        
+        @media (max-width: 360px) {
+            .main-header {
+                height: 80px;
+            }
+            
+            .header-container {
+                height: 80px;
+            }
+            
+            .logo {
+                font-size: 1.1rem;
+            }
+            
+            .brand-info h1 {
+                font-size: 0.6rem;
+            }
+            
+            .brand-info p {
+                display: none;
+            }
+            
+            .main-nav {
+                order: 2;
+                width: auto;
+                margin-top: 0;
+            }
+            
+            .main-nav ul {
+                gap: 0.25rem;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .main-nav a {
+                font-size: 0.6rem;
+                padding: 2px 5px;
+                white-space: nowrap;
+            }
+            
+            .auth-btn {
+                padding: 5px 10px;
+                font-size: 0.65rem;
+                min-height: 28px;
+            }
+        }
+        
+        /* Touch-friendly improvements */
+        @media (hover: none) and (pointer: coarse) {
+            .main-nav a {
+                padding: 8px 12px;
+                margin: 1px;
+            }
+            
+            .auth-btn {
+                padding: 8px 16px;
+                min-height: 32px;
+            }
+            
+            .main-nav a:active,
+            .auth-btn:active {
+                transform: scale(0.95);
+                background: rgba(74, 144, 226, 0.2);
+            }
+        }
+
+        /* Enhanced Mobile Hero Section */
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 80px 20px 60px;
+                text-align: center;
+            }
+            
+            .hero-title {
+                font-size: 2.5rem;
+                margin-bottom: 20px;
+                line-height: 1.2;
+            }
+            
+            .hero-subtitle {
+                font-size: 1.1rem;
+                margin-bottom: 30px;
+                max-width: 100%;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+                gap: 15px;
+                align-items: center;
+            }
+            
+            .cta-btn {
+                width: 100%;
+                max-width: 280px;
+                padding: 14px 24px;
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-section {
+                padding: 70px 15px 50px;
+            }
+            
+            .hero-title {
+                font-size: 2rem;
+                margin-bottom: 18px;
+                line-height: 1.3;
+            }
+            
+            .hero-subtitle {
+                font-size: 1rem;
+                margin-bottom: 25px;
+            }
+            
+            .cta-btn {
+                max-width: 250px;
+                padding: 12px 20px;
+                font-size: 0.95rem;
+            }
+        }
+
+        /* Ensure hero title is visible on very small screens */
+        @media (max-width: 360px) {
+            .hero-section {
+                padding: 60px 10px 40px;
+            }
+            
+            .hero-title {
+                font-size: 1.8rem;
+                margin-bottom: 15px;
+                line-height: 1.3;
+            }
+            
+            .hero-subtitle {
+                font-size: 0.95rem;
+                margin-bottom: 20px;
+            }
+        }
+
+        /* Extra small mobile devices */
+        @media (max-width: 320px) {
+            .hero-section {
+                padding: 50px 8px 30px;
+            }
+            
+            .hero-title {
+                font-size: 1.4rem;
+                margin-bottom: 12px;
+                line-height: 1.3;
+            }
+            
+            .hero-subtitle {
+                font-size: 0.9rem;
+                margin-bottom: 18px;
+            }
+        }
+
+        /* Ultra small devices - ensure text never cuts off */
+        @media (max-width: 280px) {
+            .hero-section {
+                padding: 40px 5px 25px;
+            }
+            
+            .hero-title {
+                font-size: 1.2rem;
+                margin-bottom: 10px;
+                line-height: 1.2;
+            }
+            
+            .hero-subtitle {
+                font-size: 0.85rem;
+                margin-bottom: 15px;
+            }
+        }
+
+        /* Mobile News Section Improvements */
+        @media (max-width: 768px) {
+            .news-section {
+                padding: 40px 20px;
+            }
+            
+            .news-title {
+                font-size: 2.2rem;
+                margin-left: 20px;
+                margin-bottom: 15px;
+            }
+            
+            .news-subtitle {
+                font-size: 1.1rem;
+                margin-left: 20px;
+                margin-bottom: 30px;
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .news-section {
+                padding: 30px 15px;
+            }
+            
+            .news-title {
+                font-size: 2rem;
+                margin-left: 15px;
+            }
+            
+            .news-subtitle {
+                font-size: 1rem;
+                margin-left: 15px;
+                margin-bottom: 25px;
+            }
+            
+            .article-card {
+                min-height: 420px;
+            }
+            
+            .article-image {
+                height: 200px;
+            }
+            
+            .article-content {
+                padding: 20px;
+            }
+            
+            .article-headline {
+                font-size: 1.2rem;
+                margin-bottom: 10px;
+            }
+            
+            .article-excerpt {
+                font-size: 0.9rem;
+                margin-bottom: 15px;
+            }
+            
+            .article-meta {
+                flex-direction: column;
+                gap: 8px;
+                align-items: flex-start;
+            }
+        }
+
+        /* Enhanced image fitting for better display */
+        .article-image img {
+            object-fit: cover;
+            object-position: center top;
+            min-height: 100%;
+            width: 100%;
+        }
+
+        /* Ensure images look good on all devices */
+        @media (max-width: 768px) {
+            .article-image img {
+                object-position: center;
+            }
         }
         
         .header-container {
@@ -26,6 +466,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 2rem;
+            height: 64px;
         }
         
         .header-left {
@@ -34,27 +475,28 @@
             gap: 1rem;
         }
         
-        .logo {
+        .header-logo {
             display: flex;
-            font-size: 1.5rem;
+            font-size: 1rem;
             font-weight: 900;
             letter-spacing: -2px;
         }
         
-        .logo-n {
+        .header-logo-n {
             color: #4A90E2;
             text-shadow: 0 0 20px rgba(74, 144, 226, 0.8);
         }
         
-        .logo-w {
-            color: #2ECC71;
-            text-shadow: 0 0 20px rgba(46, 204, 113, 0.8);
+        .header-logo-w {
+            color: white;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
         }
         
         .brand-info h1 {
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 700;
             margin: 0;
+            line-height: 1;
             background: linear-gradient(45deg, #4A90E2, #2ECC71);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -62,15 +504,16 @@
         }
         
         .brand-info p {
-            font-size: 0.65rem;
+            font-size: 0.7rem;
             color: rgba(255, 255, 255, 0.7);
             margin: 0;
+            line-height: 1;
         }
         
         .main-nav ul {
             display: flex;
             list-style: none;
-            gap: 2rem;
+            gap: 1.5rem;
             margin: 0;
         }
         
@@ -78,65 +521,98 @@
             color: white;
             text-decoration: none;
             font-weight: 500;
-            transition: color 0.3s ease;
+            transition: all 0.3s ease;
             position: relative;
+            padding: 8px 12px;
+            border-radius: 6px;
+            display: block;
         }
         
         .main-nav a:hover {
+            background: rgba(74, 144, 226, 0.1);
             color: #4A90E2;
         }
         
+        .main-nav a.active {
+            background: rgba(74, 144, 226, 0.2);
+            color: #4A90E2;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+        }
+        
         .main-nav a::after {
-            content: "";
+            content: '';
             position: absolute;
-            bottom: -5px;
-            left: 0;
+            bottom: 0;
+            left: 50%;
             width: 0;
             height: 2px;
             background: linear-gradient(45deg, #4A90E2, #2ECC71);
-            transition: width 0.3s ease;
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
         }
         
-        .main-nav a:hover::after {
-            width: 100%;
+        .main-nav a:hover::after,
+        .main-nav a.active::after {
+            width: 80%;
         }
+        
+        /* removed duplicate underline rules to keep alignment consistent */
+        
+
         
         .header-right {
             display: flex;
             gap: 1rem;
+            align-items: center;
+            padding-top: 0;
         }
         
         .auth-btn {
-            padding: 0.35rem 0.8rem;
+            padding: 8px 16px;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             text-decoration: none;
             display: inline-block;
+            font-size: 0.8rem;
+            min-height: 32px;
         }
         
         .signin-btn {
             background: transparent;
             color: white;
-            color: white;
             border: 2px solid rgba(74, 144, 226, 0.5);
+            background-color: transparent !important;
         }
         
         .signin-btn:hover {
             background: rgba(74, 144, 226, 0.1);
             border-color: #4A90E2;
+            transform: translateY(-1px);
+        }
+        
+        .signin-btn:active, .signin-btn:focus {
+            background: rgba(74, 144, 226, 0.1) !important;
+            outline: none;
         }
         
         .signup-btn {
-            background: linear-gradient(45deg, #4A90E2, #2ECC71);
+            background: linear-gradient(45deg, #4A90E2, #2ECC71) !important;
             color: white;
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+            background-color: linear-gradient(45deg, #4A90E2, #2ECC71) !important;
         }
         
         .signup-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(74, 144, 226, 0.3);
+            box-shadow: 0 8px 20px rgba(74, 144, 226, 0.4);
+        }
+        
+        .signup-btn:active, .signup-btn:focus {
+            background: linear-gradient(45deg, #4A90E2, #2ECC71) !important;
+            outline: none;
         }
         
         /* Auth Modal Styles */
@@ -182,6 +658,10 @@
             color: rgba(255, 255, 255, 0.7);
             cursor: pointer;
             font-weight: 600;
+            background: transparent !important;
+            border: none;
+            padding: 10px 20px;
+            margin-right: 10px;
         }
         
         .auth-tab.active {
@@ -210,13 +690,14 @@
         
         .auth-form button {
             padding: 1rem;
-            background: linear-gradient(45deg, #4A90E2, #2ECC71);
+            background: linear-gradient(45deg, #4A90E2, #2ECC71) !important;
             border: none;
             border-radius: 8px;
             color: white;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            background-color: linear-gradient(45deg, #4A90E2, #2ECC71) !important;
         }
         
         .auth-form button:hover {
@@ -226,13 +707,92 @@
         
         /* Adjust body padding for fixed header */
         body {
-            padding-top: 45px;
+            padding-top: 70px;
+        }
+        
+        /* Mobile body padding adjustments */
+        @media (max-width: 768px) {
+            body {
+                padding-top: 66px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding-top: 76px;
+            }
+        }
+        
+        @media (max-width: 360px) {
+            body {
+                padding-top: 86px;
+            }
         }
         
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+        
+        /* Smooth scrolling for the entire page */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Ensure background covers entire document and prevents white overscroll */
+        html {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            min-height: 100vh;
+            overflow-x: hidden;
+            /* Prevent white background on overscroll */
+            overscroll-behavior: none !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Prevent white background on iOS Safari pull-to-refresh */
+        html::before {
+            content: '';
+            position: fixed;
+            top: -200vh;
+            left: 0;
+            right: 0;
+            bottom: -200vh;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            z-index: -3;
+            pointer-events: none;
+            width: 100vw;
+            height: 400vh;
+        }
+        
+        /* Additional overscroll prevention for all browsers */
+        html {
+            overscroll-behavior-x: none !important;
+            overscroll-behavior-y: none !important;
+        }
+        
+        /* Force background coverage for all scrollable areas */
+        html, body, #root, .app {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            background-color: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+        }
+        
+        /* Additional viewport coverage */
+        html, body {
+            min-height: 100vh;
+            min-height: 100dvh; /* Dynamic viewport height for mobile */
+            background-attachment: fixed !important;
+            background-size: cover !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+        }
+        
+        /* Ensure background covers all viewport sizes */
+        @media screen and (max-width: 768px) {
+            html, body {
+                background-attachment: scroll !important;
+                background-size: 100% 100% !important;
+            }
         }
         
         body {
@@ -256,9 +816,24 @@
             background: 
                 radial-gradient(circle at 20% 80%, rgba(74, 144, 226, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 80% 20%, rgba(46, 204, 113, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(155, 89, 182, 0.1) 0%, transparent 50%);
+                radial-gradient(circle at 40% 80%, rgba(155, 89, 182, 0.1) 0%, transparent 50%);
             animation: backgroundShift 20s ease-in-out infinite;
             z-index: -2;
+        }
+        
+        /* Extended background to prevent white areas on overscroll */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -200vh;
+            left: 0;
+            right: 0;
+            bottom: -200vh;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            z-index: -3;
+            pointer-events: none;
+            width: 100vw;
+            height: 400vh;
         }
         
         @keyframes backgroundShift {
@@ -382,7 +957,7 @@
         
         .hero-section {
             text-align: center;
-            margin-bottom: 80px;
+            margin-bottom: 50px;
             animation: fadeInUp 1s ease-out 0.6s both;
         }
         
@@ -390,12 +965,160 @@
             font-size: 4rem;
             font-weight: 900;
             margin-bottom: 20px;
+            position: relative;
+            animation: titleGlow 4s ease-in-out infinite;
+            /* SIMPLE: Let container expand to fit content */
+            min-height: 4.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Let the welcome text determine the width */
+            width: auto;
+            min-width: auto;
+        }
+
+        .welcome-text-container {
+            /* SIMPLE: Let container expand to fit welcome text */
+            min-height: 1.2em;
+            line-height: 1.2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: auto;
+            min-width: auto;
+            /* Ensure text is never clipped */
+            overflow: visible;
+        }
+        
+        .welcome-text {
             background: linear-gradient(135deg, #ffffff 0%, #4A90E2 50%, #2ecc71 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            position: relative;
-            animation: titleGlow 4s ease-in-out infinite;
+            display: inline-block;
+            transition: all 0.3s ease;
+            opacity: 1;
+            transform: translateY(0);
+            background-size: 200% 200%;
+            background-position: 0% 50%;
+            text-align: center;
+            /* Prevent layout shifts */
+            min-height: 2.5em;
+            line-height: 1.2;
+            overflow: visible;
+            /* Ensure text doesn't wrap or change dimensions */
+            white-space: nowrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+            box-sizing: border-box;
+            /* SIMPLE SOLUTION: Let text determine its own width */
+            width: auto;
+            min-width: 400px;
+            padding: 0 15px;
+            /* Prevent any clipping */
+            transform-origin: center;
+            will-change: transform;
+        }
+
+        /* SIMPLE SOLUTION: Welcome text scales automatically to fit any screen */
+        @media (max-width: 768px) {
+            .welcome-text {
+                font-size: 0.15em;
+            }
+        }
+
+        @media (max-width: 680px) {
+            .welcome-text {
+                font-size: 0.1em;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .welcome-text {
+                font-size: 0.08em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .welcome-text {
+                font-size: 0.06em;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .welcome-text {
+                font-size: 0.05em;
+            }
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        @keyframes gentleGlow {
+            0% { 
+                filter: brightness(1) saturate(1);
+                background-position: 0% 50%;
+            }
+            25% { 
+                filter: brightness(1.05) saturate(1.1);
+                background-position: 25% 50%;
+            }
+            50% { 
+                filter: brightness(1.1) saturate(1.15);
+                background-position: 50% 50%;
+            }
+            75% { 
+                filter: brightness(1.05) saturate(1.1);
+                background-position: 75% 50%;
+            }
+            100% { 
+                filter: brightness(1) saturate(1);
+                background-position: 100% 50%;
+            }
+        }
+
+        @keyframes heartBeat {
+            0% { transform: scale(1); }
+            14% { transform: scale(1.1); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.1); }
+            70% { transform: scale(1); }
+        }
+
+        @keyframes sparkle {
+            0% { transform: scale(0) rotate(0deg); opacity: 0; }
+            50% { transform: scale(1) rotate(180deg); opacity: 1; }
+            100% { transform: scale(0) rotate(360deg); opacity: 0; }
+        }
+
+        @keyframes warmGlow {
+            0% { filter: brightness(1) hue-rotate(0deg); }
+            50% { filter: brightness(1.2) hue-rotate(10deg); }
+            100% { filter: brightness(1) hue-rotate(0deg); }
+        }
+
+        @keyframes gentlePulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes squeezeFlip {
+            0% { 
+                transform: rotateX(0deg) scale(1);
+                opacity: 1;
+            }
+            50% { 
+                transform: rotateX(90deg) scale(0.8);
+                opacity: 0;
+            }
+            100% { 
+                transform: rotateX(0deg) scale(1);
+                opacity: 1;
+            }
         }
         
         @keyframes titleGlow {
@@ -427,20 +1150,47 @@
             animation: fadeInUp 1s ease-out 0.9s both;
         }
         
-        .game-card {
+        .game-card-corner {
+            position: fixed;
+            top: 120px;
+            right: 20px;
             background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(15px);
-            border-radius: 25px;
-            padding: 50px;
-            margin-bottom: 60px;
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 20px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 
-                0 20px 60px rgba(0, 0, 0, 0.3),
+                0 10px 30px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            max-width: 280px;
+            z-index: 100;
+        }
+
+        .game-card-corner:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 15px 40px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .game-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 10px 30px rgba(0, 0, 0, 0.2),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
             position: relative;
             overflow: hidden;
             animation: fadeInUp 1s ease-out 1.2s both;
             transition: all 0.3s ease;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
         }
         
         .game-card::before {
@@ -466,12 +1216,17 @@
         }
         
         .game-title {
-            font-size: 3rem;
+            font-size: 2rem;
             font-weight: 700;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             color: #ffffff;
             text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
             animation: titleBounce 2s ease-in-out infinite;
+        }
+
+        .game-card-corner .game-title {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
         }
         
         @keyframes titleBounce {
@@ -480,10 +1235,16 @@
         }
         
         .game-description {
-            font-size: 1.2rem;
-            margin-bottom: 30px;
+            font-size: 1rem;
+            margin-bottom: 20px;
             opacity: 0.9;
-            line-height: 1.8;
+            line-height: 1.6;
+        }
+
+        .game-card-corner .game-description {
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            line-height: 1.4;
         }
         
         .game-features {
@@ -722,9 +1483,465 @@
             to { transform: translateY(100vh); opacity: 0; }
         }
         
+        /* News Section Styles */
+        .news-section {
+            margin: 50px 0;
+            padding: 30px 0;
+        }
+
+        .news-title {
+            font-size: 2.5rem;
+            text-align: left;
+            margin-bottom: 20px;
+            margin-left: 40px;
+            background: linear-gradient(135deg, #4A90E2, #2ECC71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+        }
+
+        .news-subtitle {
+            text-align: left;
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: 40px;
+            margin-right: auto;
+        }
+
+
+
+        /* News carousel */
+        .news-carousel {
+            position: relative;
+            overflow: hidden;
+            padding: 0 20px 10px; /* minimal padding since no arrows */
+            max-width: 100%;
+            margin: 0 auto 40px auto;
+            min-height: 400px;
+        }
+
+        .articles-track {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 20px;
+            transition: transform 0.45s ease;
+            will-change: transform;
+            min-width: max-content;
+            user-select: none; /* Prevent text selection during swipe */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            touch-action: pan-y; /* Allow vertical scrolling, handle horizontal */
+            cursor: grab; /* Show grab cursor to indicate draggable */
+        }
+
+        .articles-track:active {
+            cursor: grabbing; /* Show grabbing cursor when actively dragging */
+        }
+
+        /* Responsive card sizing - show as many as possible */
+        .articles-track .article-card {
+            flex: 0 0 360px; /* Slightly smaller to prevent cutting */
+            min-width: 340px; /* Smaller minimum width */
+            max-width: 380px; /* Smaller maximum width */
+        }
+
+        /* Large screens: show more cards */
+        @media (min-width: 1400px) {
+            .articles-track .article-card {
+                flex: 0 0 340px;
+            }
+        }
+
+        /* Medium screens: show fewer cards */
+        @media (max-width: 1200px) {
+            .articles-track .article-card {
+                flex: 0 0 320px;
+            }
+        }
+
+        /* Tablet: adjust card size */
+        @media (max-width: 992px) {
+            .articles-track .article-card {
+                flex: 0 0 300px;
+            }
+        }
+
+        /* Mobile: full width */
+        @media (max-width: 600px) {
+            .articles-track .article-card {
+                flex: 0 0 calc(100vw - 40px); /* Full width minus minimal padding */
+                min-width: 280px;
+            }
+            
+            .news-carousel {
+                padding: 0 20px 10px; /* Minimal padding since no arrows */
+            }
+        }
+
+        /* Carousel buttons removed - now using drag/swipe only */
+
+        .article-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            min-height: 480px; /* Bigger minimum height */
+        }
+
+        .article-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(74, 144, 226, 0.3);
+        }
+
+        .article-image {
+            position: relative;
+            height: 240px; /* Bigger image height */
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px 8px 0 0;
+        }
+
+        .article-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            transition: transform 0.3s ease;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .article-card:hover .article-image img {
+            transform: scale(1.05);
+        }
+
+        .article-category {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            z-index: 2;
+        }
+
+        .article-category.breaking {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .article-category.analysis {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        .article-category.fact-check {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+        }
+
+        .article-category.education {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+        }
+
+        .article-category.technology {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .article-category.opinion {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+            color: white;
+        }
+
+        .article-content {
+            padding: 28px; /* Bigger padding for more spacious feel */
+        }
+
+        .article-headline {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            line-height: 1.4;
+            color: white;
+        }
+
+        .article-excerpt {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+
+        .article-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .article-link {
+            display: inline-block;
+            color: #4A90E2;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .article-link:hover {
+            color: #2ECC71;
+        }
+
+        .coming-soon-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 16px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .news-cta {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            margin-top: 60px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .news-cta h3 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: white;
+            background: linear-gradient(135deg, #4A90E2, #2ECC71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .news-cta p {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 30px;
+            font-size: 1.2rem;
+            line-height: 1.6;
+        }
+
+        .newsletter-signup {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .newsletter-input {
+            flex: 1;
+            padding: 14px 20px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .newsletter-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .newsletter-input:focus {
+            outline: none;
+            border-color: #4A90E2;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .newsletter-btn {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #4A90E2, #2ECC71);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .newsletter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(74, 144, 226, 0.3);
+        }
+
+        /* Interactive Fact-Checker Section */
+        .fact-checker-section {
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.1), rgba(46, 204, 113, 0.1));
+            border: 1px solid rgba(74, 144, 226, 0.2);
+            border-radius: 25px;
+            padding: 40px;
+            margin: 50px 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .fact-checker-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .fact-checker-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #4A90E2, #2ECC71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .fact-checker-description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .fact-checker-features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .feature-item {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fact-checker-action {
+            text-align: center;
+        }
+
+        .play-button-large {
+            display: inline-block;
+            background: linear-gradient(135deg, #4A90E2, #2ECC71);
+            color: white;
+            text-decoration: none;
+            padding: 18px 32px;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.3);
+        }
+
+        .play-button-large:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(74, 144, 226, 0.4);
+        }
+
+        .fact-checker-note {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Slideshow Navigation */
+        .slideshow-dots {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin: 0 6px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dot:hover {
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .dot.active {
+            background: #4A90E2;
+            transform: scale(1.2);
+        }
+
+        .slideshow-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(74, 144, 226, 0.8);
+            color: white;
+            border: none;
+            padding: 15px 12px;
+            cursor: pointer;
+            font-size: 18px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .slideshow-btn:hover {
+            background: rgba(74, 144, 226, 1);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .slideshow-btn.prev {
+            left: 20px;
+        }
+
+        .slideshow-btn.next {
+            right: 20px;
+        }
+
         @media (max-width: 768px) {
             .hero-title {
                 font-size: 2.5rem;
+            }
+            
+            .welcome-text-container {
+                /* Ensure stable dimensions on mobile */
+                min-height: 1.2em;
+                line-height: 1.2;
+            }
+            
+            .welcome-text {
+                /* Prevent text wrapping and maintain dimensions */
+                white-space: nowrap;
+                font-size: inherit;
             }
             
             .game-title {
@@ -746,6 +1963,55 @@
             .company-name {
                 font-size: 2rem;
             }
+
+            .articles-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .news-title {
+                font-size: 2rem;
+            }
+
+            .news-subtitle {
+                font-size: 1rem;
+            }
+
+            .newsletter-signup {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .newsletter-input,
+            .newsletter-btn {
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .game-card-corner {
+                display: none;
+            }
+
+            .fact-checker-content {
+                grid-template-columns: 1fr;
+                gap: 30px;
+                text-align: center;
+            }
+
+            .fact-checker-features {
+                grid-template-columns: 1fr;
+                justify-items: center;
+            }
+
+            .fact-checker-title {
+                font-size: 1.8rem;
+            }
+
+            .fact-checker-description {
+                font-size: 1rem;
+            }
+
+
         }
     </style>
 </head>
@@ -754,25 +2020,25 @@
     <header class="main-header">
         <div class="header-container">
             <div class="header-left">
-                <div class="logo">
-                    <span class="logo-n">N</span><span class="logo-w">W</span>
+                <div class="header-logo">
+                    <span class="header-logo-n">N</span><span class="header-logo-w">W</span>
                 </div>
                 <div class="brand-info">
                     <h1 class="brand-name">Noteworthy News</h1>
-                    <p class="brand-tagline">Trusted Journalism Trusted Journalism Trusted Journalism <body> Media Literacy Media Literacy Media Literacy</p>
+                    <p class="brand-tagline">Trusted Journalism & Media Literacy</p>
                 </div>
             </div>
             
             <nav class="main-nav">
                 <ul class="nav-list">
-                    <li><a href="#news" class="nav-link active">News</a></li>
-                    <li><a href="#game" class="nav-link">Game</a></li>
-                    <li><a href="#about" class="nav-link">About</a></li>
+                    <li><a href="#news-section" class="nav-link active">News</a></li>
+                    <li><a href="#fact-checker-section" class="nav-link">Game</a></li>
+                    <li><a href="#about-section" class="nav-link">About</a></li>
                 </ul>
-            </div>
+            </nav>
             
             <div class="header-right">
-                <button class="auth-btn signin-btn" id="signinBtn">Sign In</button>
+                <button class="auth-btn signin-btn" id="signinBtn">Login</button>
                 <button class="btn auth-btn signup-btn" id="signupBtn">Sign Up</button>
             </div>
         </div>
@@ -783,14 +2049,14 @@
         <div class="auth-content">
             <span class="close-btn" id="closeAuth">&times;</span>
             <div class="auth-tabs">
-                <button class="auth-tab active" data-tab="signin">Sign In</button>
+                <button class="auth-tab active" data-tab="signin">Login</button>
                 <button class="auth-tab" data-tab="signup">Sign Up</button>
             </div>
             
             <form class="auth-form signin-form" id="signinForm">
                 <input type="email" placeholder="Email" required>
-                <input type="password" placeholder="Password" required>
-                <button type="submit">Sign In</button>
+                <input type="email" placeholder="Password" required>
+                <button type="submit">Login</button>
             </form>
             
             <form class="auth-form signup-form" id="signupForm" style="display: none;">
@@ -810,87 +2076,191 @@
     <div class="particles" id="particles"></div>
     
     <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <div class="logo">
-                <span class="logo-n">N</span><span class="logo-w">W</span>
-            </div>
-            <div class="company-name">Noteworthy News</div>
-            <div class="tagline">Empowering informed decisions through media literacy education</div>
-        </div>
-        
+
         <!-- Hero Section -->
         <div class="hero-section">
-            <h1 class="hero-title">Test Your Media Literacy Skills</h1>
-            <p class="hero-subtitle">Learn to distinguish between factual news and misleading headlines in our interactive fact-checking game</p>
-        </div>
-        
-        <!-- Game Card -->
-        <div class="game-card">
-            <h2 class="game-title">🔍 Breaking News Fact Checker</h2>
-            <p class="game-description">
-                Challenge yourself with real-world headlines and learn essential fact-checking strategies. 
-                Can you spot the difference between credible news and misleading information?
-            </p>
-            
-            <div class="game-features">
-                <div class="feature">
-                    <div class="feature-icon">🎯</div>
-                    <div class="feature-title">Real Headlines</div>
-                    <div class="feature-text">Practice with actual news headlines and sources</div>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">📚</div>
-                    <div class="feature-title">Learn Strategies</div>
-                    <div class="feature-text">Master fact-checking techniques and tips</div>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">🏆</div>
-                    <div class="feature-title">Track Progress</div>
-                    <div class="feature-text">Monitor your score, accuracy, and streaks</div>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">📱</div>
-                    <div class="feature-title">Mobile Optimized</div>
-                    <div class="feature-text">Smooth experience on all devices</div>
+            <div class="hero-logo" aria-hidden="true" style="display:flex;justify-content:center;margin-bottom:20px;">
+                <div class="logo">
+                    <span class="logo-n">N</span><span class="logo-w">W</span>
                 </div>
             </div>
-            
-            <div style="text-align: center;">
-                <a href="game.html" class="play-button">🎮 Start Playing Now</a>
-            </div>
+            <h1 class="hero-title">
+                <div class="welcome-text-container">
+                    <span class="welcome-text" id="welcomeText">Welcome!</span>
+                </div>
+            </h1>
+            <p class="hero-subtitle">Your trusted source for fact-checked journalism and media literacy education</p>
         </div>
         
+
+
+        <!-- News Articles Section -->
+        <div class="news-section" id="news-section">
+            <h2 class="news-title">Breaking News & Analysis</h2>
+            <p class="news-subtitle">Stay informed with our latest fact-checked stories and in-depth analysis</p>
+            
+            <div class="news-carousel">
+                <div class="articles-track" id="articlesTrack">
+                    <article class="article-card">
+                        <div class="article-image">
+                            <div class="article-category breaking">BREAKING</div>
+                            <img src="GylNceyWcAA1PDI.jpeg" alt="Australian Extradition Case - Chinese National Attacks Infant" loading="lazy">
+                        </div>
+                        <div class="article-content">
+                            <h3 class="article-headline">Australian Extradition Case: Chinese National Attacks Infant with Hot Coffee</h3>
+                            <p class="article-excerpt">A Chinese national whose Australian visa was rejected last year attacked an infant with hot coffee at an Australian park, burning up to 60% of the infant's body. The man fled to China, where authorities are refusing extradition.</p>
+                            <div class="article-meta">
+                                <span class="article-date">August 17, 2025</span>
+                                <span class="article-read-time">2 min read</span>
+                            </div>
+                            <a href="https://x.com/newsnoteworthy/status/1957180667889963407" target="_blank" class="article-link">Read Full Story →</a>
+                        </div>
+                    </article>
+
+                    <article class="article-card">
+                        <div class="article-image">
+                            <div class="article-category breaking">BREAKING</div>
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI1MCIgdmlld0JveD0iMCAwIDQwMCAyNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQxIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2U3NGMzYztzdG9wLW9wYWNpdHk6MSIgLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojYzAzOTJiO3N0b3Atb3BhY2l0eToxIiAvPgo8L2xpbmVhckdyYWRpZW50Pgo8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQyIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I2YzOWMxMjtzdG9wLW9wYWNpdHk6MSIgLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZTY3ZTIyO3N0b3Atb3BhY2l0eToxIiAvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iMjUwIiBmaWxsPSJ1cmwoI2dyYWQxKSIvPgo8Y2lyY2xlIGN4PSIyMDAiIGN5PSIxMDAiIHI9IjQwIiBmaWxsPSJ1cmwoI2dyYWQyKSIvPgo8cGF0aCBkPSJNMTgwIDkwTDIwMCAxMTBMMjIwIDkwIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjQiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8dGV4dCB4PSIyMDAiIHk9IjE4MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC13ZWlnaHQ9IjYwMCI+Q29taW5nIFNvb248L3RleHQ+Cjx0ZXh0IHg9IjIwMCIgeT0iMjAwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC43KSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U3RheSB0dW5lZCBmb3IgbW9yZTwvdGV4dD4KPC9zdmc+" alt="Coming Soon" loading="lazy">
+                        </div>
+                        <div class="article-content">
+                            <h3 class="article-headline">Coming Soon</h3>
+                            <p class="article-excerpt">More breaking news stories are in development. Stay tuned for the latest updates on media literacy and fact-checking.</p>
+                            <div class="article-meta">
+                                <span class="article-date">Coming Soon</span>
+                                <span class="article-read-time">TBD</span>
+                            </div>
+                            <div class="coming-soon-badge">🚧 Coming Soon</div>
+                        </div>
+                    </article>
+
+                    <article class="article-card">
+                        <div class="article-image">
+                            <div class="article-category fact-check">FACT CHECK</div>
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI1MCIgdmlld0JveD0iMCAwIDQwMCAyNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQxIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzJlY2M3MTtzdG9wLW9wYWNpdHk6MSIgLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMjdhZTYwO3N0b3Atb3BhY2l0eToxIiAvPgo8L2xpbmVhckdyYWRpZW50Pgo8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQyIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzQ5YzU0YjtzdG9wLW9wYWNpdHk6MSIgLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMjc5ZTYwO3N0b3Atb3BhY2l0eToxIiAvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iMjUwIiBmaWxsPSJ1cmwoI2dyYWQxKSIvPgo8Y2lyY2xlIGN4PSIyMDAiIGN5PSIxMDAiIHI9IjQwIiBmaWxsPSJ1cmwoI2dyYWQyKSIvPgo8cGF0aCBkPSJNMTgwIDkwTDIwMCAxMTBMMjIwIDkwIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjQiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8dGV4dCB4PSIyMDAiIHk9IjE4MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC13ZWlnaHQ9IjYwMCI+Q29taW5nIFNvb248L3RleHQ+Cjx0ZXh0IHg9IjIwMCIgeT0iMjAwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC43KSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U3RheSB0dW5lZCBmb3IgbW9yZTwvdGV4dD4KPC9zdmc+" alt="Coming Soon" loading="lazy">
+                        </div>
+                        <div class="article-content">
+                            <h3 class="article-headline">Coming Soon</h3>
+                            <p class="article-excerpt">Our fact-checking team is developing comprehensive guides to help you identify and debunk misinformation. More content coming soon.</p>
+                            <div class="article-meta">
+                                <span class="article-date">Coming Soon</span>
+                                <span class="article-read-time">TBD</span>
+                            </div>
+                            <div class="coming-soon-badge">🚧 Coming Soon</div>
+                        </div>
+                    </article>
+
+                    <article class="article-card">
+                        <div class="article-image">
+                            <div class="article-category education">EDUCATION</div>
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI1MCIgdmlld0JveD0iMCAwIDQwMCAyNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQxIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzliNTliNjtzdG9wLW9wYWNpdHk6MSIgLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojOGU0NGFkO3N0b3Atb3BhY2l0eToxIiAvPgo8L2xpbmVhckdyYWRpZW50Pgo8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQyIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzQ5YzU0YjtzdG9wLW9wYWNpdHk6MSIgLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMjc5ZTYwO3N0b3Atb3BhY2l0eToxIiAvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iMjUwIiBmaWxsPSJ1cmwoI2dyYWQxKSIvPgo8Y2lyY2xlIGN4PSIyMDAiIGN5PSIxMDAiIHI9IjQwIiBmaWxsPSJ1cmwoI2dyYWQyKSIvPgo8cGF0aCBkPSJNMTgwIDkwTDIwMCAxMTBMMjIwIDkwIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjQiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8dGV4dCB4PSIyMDAiIHk9IjE4MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC13ZWlnaHQ9IjYwMCI+Q29taW5nIFNvb248L3RleHQ+Cjx0ZXh0IHg9IjIwMCIgeT0iMjAwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC43KSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U3RheSB0dW5lZCBmb3IgbW9yZTwvdGV4dD4KPC9zdmc+" alt="Coming Soon" loading="lazy">
+                        </div>
+                        <div class="article-content">
+                            <h3 class="article-headline">Coming Soon</h3>
+                            <p class="article-excerpt">Educational resources for media literacy are in development. We're creating comprehensive guides for students, educators, and lifelong learners.</p>
+                            <div class="article-meta">
+                                <span class="article-date">Coming Soon</span>
+                                <span class="article-read-time">TBD</span>
+                            </div>
+                            <div class="coming-soon-badge">🚧 Coming Soon</div>
+                        </div>
+                    </article>
+
+                    <article class="article-card">
+                        <div class="article-image">
+                            <div class="article-category technology">TECHNOLOGY</div>
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI1MCIgdmlld0JveD0iMCAwIDQwMCAyNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxkZWZzPgo8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQxIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzM0OThkYjtzdG9wLW9wYWNpdHk6MSIgLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMjk4MGJiO3N0b3Atb3BhY2l0eToxIiAvPgo8L2xpbmVhckdyYWRpZW50Pgo8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQyIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzQ5YzU0YjtzdG9wLW9wYWNpdHk6MSIgLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMjc5ZTYwO3N0b3Atb3BhY2l0eToxIiAvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iMjUwIiBmaWxsPSJ1cmwoI2dyYWQxKSIvPgo8Y2lyY2xlIGN4PSIyMDAiIGN5PSIxMDAiIHI9IjQwIiBmaWxsPSJ1cmwoI2dyYWQyKSIvPgo8cGF0aCBkPSJNMTgwIDkwTDIwMCAxMTBMMjIwIDkwIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjQiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8dGV4dCB4PSIyMDAiIHk9IjE4MCIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC13ZWlnaHQ9IjYwMCI+Q29taW5nIFNvb248L3RleHQ+Cjx0ZXh0IHg9IjIwMCIgeT0iMjAwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC43KSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U3RheSB0dW5lZCBmb3IgbW9yZTwvdGV4dD4KPC9zdmc+" alt="Coming Soon" loading="lazy">
+                        </div>
+                        <div class="article-content">
+                            <h3 class="article-headline">Coming Soon</h3>
+                            <p class="article-excerpt">Technology-focused articles about fact-checking tools and digital media literacy resources are in development. Stay tuned for more.</p>
+                            <div class="article-meta">
+                                <span class="article-date">Coming Soon</span>
+                                <span class="article-read-time">TBD</span>
+                            </div>
+                            <div class="coming-soon-badge">🚧 Coming Soon</div>
+                        </div>
+                    </article>
+
+                    <article class="article-card">
+                        <div class="article-image">
+                            <div class="article-category opinion">OPINION</div>
+                            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI1MCIgdmlld0JveD0iMCAwIDQwMCAyNTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iMjUwIiBmaWxsPSIjM0Q0QjU5Ii8+Cjx0ZXh0IHg9IjIwMCIgeT0iMTI1IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjUwIiBmaWxsPSIjM0Q0QjU5Ii8+Cjx0ZXh0IHg9IjIwMCIgeT0iMTI1IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+Q29taW5nIFNvb248L3RleHQ+Cjwvc3ZnPgo=" alt="Coming Soon" loading="lazy">
+                        </div>
+                        <div class="article-content">
+                            <h3 class="article-headline">Coming Soon</h3>
+                            <p class="article-excerpt">Opinion pieces and analysis about media literacy, critical thinking, and their importance in today's digital world are coming soon.</p>
+                            <div class="article-meta">
+                                <span class="article-date">Coming Soon</span>
+                                <span class="article-read-time">TBD</span>
+                            </div>
+                            <div class="coming-soon-badge">🚧 Coming Soon</div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+
+            <div class="news-cta">
+                <h3>Stay Informed with Noteworthy News</h3>
+                <p>Get the latest fact-checked stories and media literacy insights delivered to your inbox</p>
+                <div class="newsletter-signup">
+                    <input type="email" placeholder="Enter your email address" class="newsletter-input">
+                    <button class="newsletter-btn">Subscribe</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Fact-Checker Section -->
+        <div class="fact-checker-section" id="fact-checker-section">
+            <div class="fact-checker-content">
+                <div class="fact-checker-text">
+                    <h2 class="fact-checker-title">🔍 Interactive Fact-Checker</h2>
+                    <p class="fact-checker-description">
+                        Test your media literacy skills with our interactive fact-checking game. 
+                        Practice identifying real news from misleading information in a fun, educational environment.
+                    </p>
+                    <div class="fact-checker-features">
+                        <div class="feature-item">✅ Real-world headlines</div>
+                        <div class="feature-item">✅ Instant feedback</div>
+                        <div class="feature-item">✅ Progress tracking</div>
+                        <div class="feature-item">✅ Mobile optimized</div>
+                    </div>
+                </div>
+                <div class="fact-checker-action">
+                    <a href="game.html" class="play-button-large">🎮 Start Playing Now</a>
+                    <p class="fact-checker-note">Free to play • No registration required</p>
+                </div>
+            </div>
+        </div>
+
         <!-- About Section -->
-        <div class="about-section">
-            <h2 class="about-title">Why Media Literacy Matters</h2>
+        <div class="about-section" id="about-section">
+            <h2 class="about-title">About Noteworthy News</h2>
             <p class="about-text">
-                In today's digital age, misinformation spreads faster than ever. Our fact-checking game helps you develop 
-                critical thinking skills to navigate the complex media landscape.
+                Noteworthy News is committed to delivering accurate, fact-checked journalism in an era of information overload. 
+                We believe that reliable news is the foundation of an informed democracy.
             </p>
             <p class="about-text">
-                By practicing with real headlines and learning fact-checking strategies, you'll be better equipped to 
-                make informed decisions and avoid falling for misleading information.
+                Our team combines traditional journalistic standards with modern fact-checking tools to provide you with 
+                stories you can trust. We're dedicated to separating fact from fiction and helping you develop critical thinking skills.
             </p>
             <p class="about-text">
-                Whether you're a student, educator, or concerned citizen, this game provides valuable tools for 
-                building media literacy skills that last a lifetime.
+                From breaking news to in-depth analysis, we're here to keep you informed with the truth, not just the headlines.
             </p>
         </div>
-        
+
         <!-- Footer -->
         <div class="footer">
-            <p>&copy; 2024 Noteworthy News. Empowering media literacy education.</p>
+            <p>Empowering media literacy education.</p>
             <div class="social-links">
-                <a href="https://x.com/newsnoteworthy" target="_blank" class="social-link">
+                    <a href="https://x.com/newsnoteworthy" target="_blank" class="social-link">
                     📱 Follow us on X
                 </a>
                 <a href="game.html" class="social-link">
                     🎮 Play the Game
-                </a>
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
 
     <script>
         // Create floating particles
@@ -931,6 +2301,9 @@
             createParticles();
             createMatrixRain();
             
+            // Initialize navigation functionality
+            initNavigation();
+            
             // Add scroll-triggered animations
             const observerOptions = {
                 threshold: 0.1,
@@ -955,6 +2328,377 @@
             });
         });
         
+        // Navigation functionality
+        function initNavigation() {
+            // Smooth scrolling for navigation links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    // Remove active class from all links
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    
+                    // Add active class to clicked link
+                    link.classList.add('active');
+                    
+                    // Get target section
+                    const targetId = link.getAttribute('href');
+                    const targetSection = document.querySelector(targetId);
+                    
+                    if (targetSection) {
+                        // Smooth scroll to target with header offset
+                        const header = document.querySelector('.main-header');
+                        const headerHeight = header ? header.offsetHeight : 0;
+                        const rect = targetSection.getBoundingClientRect();
+                        const offsetTop = window.pageYOffset + rect.top - (headerHeight + 10);
+                        window.scrollTo({ top: offsetTop, behavior: 'smooth' });
+                    }
+                });
+            });
+            
+            // Update active navigation based on scroll position
+            window.addEventListener('scroll', () => {
+                const sections = document.querySelectorAll('#news-section, #fact-checker-section, #about-section');
+                const navLinks = document.querySelectorAll('.nav-link');
+                
+                let current = '';
+                const header = document.querySelector('.main-header');
+                const headerHeight = header ? header.offsetHeight : 0;
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop - (headerHeight + 20);
+                    if (window.pageYOffset >= sectionTop) {
+                        current = section.getAttribute('id');
+                    }
+                });
+                
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === `#${current}`) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        }
+
+        // News carousel logic
+        (function initNewsCarousel(){
+            const track = document.getElementById('articlesTrack');
+            if (!track) return;
+
+            let index = 0;
+
+            function calculateVisibleCards() {
+                const container = track.parentElement;
+                if (!container) return 1;
+                
+                const containerWidth = container.getBoundingClientRect().width;
+                const containerStyle = window.getComputedStyle(container);
+                const leftPadding = parseFloat(containerStyle.paddingLeft);
+                const rightPadding = parseFloat(containerStyle.paddingRight);
+                const contentWidth = containerWidth - leftPadding - rightPadding;
+                
+                // Get card width and gap
+                const firstCard = track.querySelector('.article-card');
+                if (!firstCard) return 1;
+                
+                const cardWidth = firstCard.offsetWidth;
+                const gap = 20; // CSS gap value
+                
+                // Calculate how many cards can fit
+                const cardsPerView = Math.floor((contentWidth + gap) / (cardWidth + gap));
+                
+                console.log('Content width:', contentWidth, 'px, Card width:', cardWidth, 'px, Cards per view:', cardsPerView);
+                return Math.max(1, cardsPerView);
+            }
+
+            function maxIndex(){
+                const cards = track.querySelectorAll('.article-card').length;
+                const per = calculateVisibleCards();
+                // Calculate how many slides we need
+                const totalSlides = Math.ceil(cards / per);
+                return Math.max(0, totalSlides - 1);
+            }
+
+            function update(){
+                const per = calculateVisibleCards();
+                const cards = track.querySelectorAll('.article-card');
+                if (cards.length === 0) return;
+                
+                // Calculate the viewport width for sliding
+                const container = track.parentElement;
+                if (!container) return;
+                
+                const containerWidth = container.getBoundingClientRect().width;
+                const containerStyle = window.getComputedStyle(container);
+                const leftPadding = parseFloat(containerStyle.paddingLeft);
+                const rightPadding = parseFloat(containerStyle.paddingRight);
+                const contentWidth = containerWidth - leftPadding - rightPadding;
+                
+                // Get card width and gap to calculate proper slide distance
+                const firstCard = cards[0];
+                const cardWidth = firstCard.offsetWidth;
+                const gap = 20; // CSS gap value
+                
+                // Calculate how many cards fit in the viewport
+                const cardsPerView = Math.floor((contentWidth + gap) / (cardWidth + gap));
+                
+                // Slide by the width of visible cards + gap
+                const slideDistance = index * (cardsPerView * cardWidth + (cardsPerView - 1) * gap);
+                
+                // Apply the transform
+                track.style.transform = `translateX(${-slideDistance}px)`;
+                
+                console.log(`Carousel: ${per} cards per view, viewport: ${contentWidth}px, cards per view: ${cardsPerView}, slide: ${slideDistance}px, index: ${index}`);
+            }
+
+            function slide(dir){
+                index = Math.min(Math.max(0, index + dir), maxIndex());
+                update();
+            }
+
+            // No more button listeners - using drag/swipe only
+            
+            // Touch/swipe functionality for mobile
+            let touchStartX = 0;
+            let touchEndX = 0;
+            let isDragging = false;
+            let startTranslateX = 0;
+            let currentTranslateX = 0;
+
+            // Touch start
+            track.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+                startTranslateX = currentTranslateX;
+                isDragging = true;
+                track.style.transition = 'none'; // Disable transition during drag
+            }, { passive: true });
+
+            // Touch move
+            track.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                
+                const touchX = e.touches[0].clientX;
+                const diff = touchX - touchStartX;
+                currentTranslateX = startTranslateX + diff;
+                
+                // Apply the drag transform
+                track.style.transform = `translateX(${currentTranslateX}px)`;
+            }, { passive: true });
+
+            // Touch end
+            track.addEventListener('touchend', (e) => {
+                if (!isDragging) return;
+                
+                isDragging = false;
+                track.style.transition = 'transform 0.45s ease'; // Re-enable transition
+                
+                touchEndX = e.changedTouches[0].clientX;
+                const swipeDistance = touchEndX - touchStartX;
+                const minSwipeDistance = 50; // Minimum distance to trigger swipe
+                
+                if (Math.abs(swipeDistance) > minSwipeDistance) {
+                    if (swipeDistance > 0 && index > 0) {
+                        // Swipe right - go to previous
+                        slide(-1);
+                    } else if (swipeDistance < 0 && index < maxIndex()) {
+                        // Swipe left - go to next
+                        slide(1);
+                    } else {
+                        // Invalid swipe - snap back
+                        update();
+                    }
+                } else {
+                    // Not enough distance - snap back
+                    update();
+                }
+            }, { passive: true });
+
+            // Mouse drag functionality for desktop
+            let mouseStartX = 0;
+            let mouseStartTranslateX = 0;
+            let isMouseDragging = false;
+
+            track.addEventListener('mousedown', (e) => {
+                // Only start drag on left mouse button
+                if (e.button !== 0) return;
+                
+                mouseStartX = e.clientX;
+                mouseStartTranslateX = currentTranslateX;
+                isMouseDragging = true;
+                track.style.transition = 'none';
+                track.style.cursor = 'grabbing';
+                
+                // Prevent text selection during drag
+                e.preventDefault();
+            });
+
+            track.addEventListener('mousemove', (e) => {
+                if (!isMouseDragging) return;
+                
+                const mouseX = e.clientX;
+                const diff = mouseX - mouseStartX;
+                currentTranslateX = mouseStartTranslateX + diff;
+                
+                track.style.transform = `translateX(${currentTranslateX}px)`;
+            });
+
+            track.addEventListener('mouseup', (e) => {
+                if (!isMouseDragging) return;
+                
+                isMouseDragging = false;
+                track.style.transition = 'transform 0.45s ease';
+                track.style.cursor = 'grab';
+                
+                const mouseEndX = e.clientX;
+                const dragDistance = mouseEndX - mouseStartX;
+                const minDragDistance = 60; // Lower threshold for better responsiveness
+                
+                if (Math.abs(dragDistance) > minDragDistance) {
+                    if (dragDistance > 0 && index > 0) {
+                        slide(-1);
+                    } else if (dragDistance < 0 && index < maxIndex()) {
+                        slide(1);
+                    } else {
+                        update();
+                    }
+                } else {
+                    update();
+                }
+            });
+
+            track.addEventListener('mouseleave', () => {
+                if (isMouseDragging) {
+                    isMouseDragging = false;
+                    track.style.transition = 'transform 0.45s ease';
+                    track.style.cursor = 'grab';
+                    update();
+                }
+            });
+
+            // Prevent context menu on right-click
+            track.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+            });
+
+            // Two-finger swipe support for laptop trackpads
+            let wheelTimeout;
+            let wheelDeltaX = 0;
+            let isWheeling = false;
+
+            track.addEventListener('wheel', (e) => {
+                // Only handle horizontal scroll (two-finger swipe on trackpad)
+                if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 5) {
+                    e.preventDefault();
+                    
+                    // Accumulate horizontal scroll
+                    wheelDeltaX += e.deltaX;
+                    
+                    if (!isWheeling) {
+                        isWheeling = true;
+                    }
+                    
+                    // Clear previous timeout
+                    clearTimeout(wheelTimeout);
+                    
+                    // Set timeout to process the swipe after scrolling stops
+                    wheelTimeout = setTimeout(() => {
+                        isWheeling = false;
+                        
+                        // Determine swipe direction and distance
+                        const swipeThreshold = 50; // Lower threshold for better responsiveness
+                        
+                        if (Math.abs(wheelDeltaX) > swipeThreshold) {
+                            if (wheelDeltaX > 0 && index > 0) {
+                                // Swipe right - go to previous
+                                slide(-1);
+                            } else if (wheelDeltaX < 0 && index < maxIndex()) {
+                                // Swipe left - go to next
+                                slide(1);
+                            }
+                        }
+                        
+                        // Reset delta
+                        wheelDeltaX = 0;
+                    }, 100); // Shorter delay for better responsiveness
+                }
+            }, { passive: false });
+
+            // Set initial cursor style
+            track.style.cursor = 'grab';
+            
+            // Handle resize
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    index = Math.min(index, maxIndex());
+                    update();
+                }, 100);
+            });
+            
+            // Initial update
+            requestAnimationFrame(update);
+        })();
+
+        // Navigation highlighting functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('section, [id$="-section"]');
+            
+            // Remove active class from all nav links
+            function clearActiveNav() {
+                navLinks.forEach(link => link.classList.remove('active'));
+            }
+            
+            // Add active class to nav link
+            function setActiveNav(targetId) {
+                clearActiveNav();
+                const activeLink = document.querySelector(`[href="#${targetId}"]`);
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                }
+            }
+            
+            // Handle nav link clicks
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    setActiveNav(targetId);
+                    
+                    // Smooth scroll to section
+                    const targetSection = document.getElementById(targetId);
+                    if (targetSection) {
+                        targetSection.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+            
+            // Update active nav based on scroll position
+            function updateActiveNavOnScroll() {
+                const scrollPos = window.scrollY + 100; // Offset for header
+                
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.offsetHeight;
+                    const sectionId = section.id;
+                    
+                    if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
+                        setActiveNav(sectionId);
+                    }
+                });
+            }
+            
+            // Add scroll event listener
+            window.addEventListener('scroll', updateActiveNavOnScroll);
+            
+            // Initial active state
+            updateActiveNavOnScroll();
+        });
+        
         // Add mouse movement effect
         document.addEventListener('mousemove', (e) => {
             const particles = document.querySelectorAll('.particle');
@@ -968,6 +2712,222 @@
                 particle.style.transform = `translate(${x}px, ${y}px)`;
             });
         });
+
+        // Progressive speed animated welcome text cycling
+        document.addEventListener('DOMContentLoaded', function() {
+            const welcomeText = document.getElementById('welcomeText');
+            if (!welcomeText) return;
+
+            const welcomePhrases = [
+                "Welcome Home!",
+                "Welcome to awesomeness!",
+                "Welcome to the future!",
+                "Welcome to greatness!",
+                "Welcome to excellence!",
+                "Welcome to innovation!",
+                "Welcome to discovery!",
+                "Welcome to truth!",
+                "Welcome to knowledge!",
+                "Welcome to wisdom!"
+            ];
+
+            let currentIndex = 0;
+            let isAnimating = false;
+            let currentSpeed = 800; // Start slow (800ms)
+            const speedAcceleration = 0.75; // Speed up by 25% each time
+
+            function cycleText() {
+                if (isAnimating) return;
+                isAnimating = true;
+
+                // Squeeze flip animation
+                welcomeText.style.animation = 'squeezeFlip 0.6s ease-in-out';
+
+                setTimeout(() => {
+                    // Change text
+                    welcomeText.textContent = welcomePhrases[currentIndex];
+                    
+                    // Gentle glow effect
+                    welcomeText.style.animation = 'gentleGlow 1.2s ease-in-out';
+                    
+
+
+                    // Move to next phrase
+                    currentIndex = (currentIndex + 1) % welcomePhrases.length;
+
+                    // If we've shown all phrases, stop cycling
+                    if (currentIndex === 0) {
+                        setTimeout(() => {
+                                                    // Final squeeze flip out
+                        welcomeText.style.animation = 'squeezeFlip 0.8s ease-in-out';
+                            
+                            setTimeout(() => {
+                                // Show final text
+                                welcomeText.textContent = "Welcome to Noteworthy News";
+                                
+                                // Gentle glow effect for final text
+                                welcomeText.style.animation = 'gentleGlow 1.5s ease-in-out';
+                                
+
+                                isAnimating = false;
+                                
+                                // Add alive and loving animations after final text
+                                setTimeout(() => {
+                                    // Heart beat animation
+                                    welcomeText.style.animation = 'heartBeat 1.5s ease-in-out';
+                                    
+                                    // Add warm glow effect
+                                    welcomeText.style.filter = 'brightness(1.2)';
+                                    
+                                    // Create sparkles around the text
+                                    createSparkles();
+                                    
+                                    // Add gentle pulse effect
+                                    setTimeout(() => {
+                                        welcomeText.style.animation = 'gentlePulse 2s ease-in-out infinite';
+                                    }, 1500);
+                                    
+
+                                    
+                                    // Stop all animations and return to normal after 8 seconds
+                                    setTimeout(() => {
+                                        welcomeText.style.animation = 'none';
+                                        welcomeText.style.filter = 'none';
+                                        welcomeText.textContent = "Welcome to Noteworthy News";
+                                    }, 8000);
+                                    
+                                }, 500);
+                            }, 150);
+                        }, 800); // Wait before final transition
+                        return;
+                    }
+
+                    // Accelerate the speed for next cycle
+                    currentSpeed = Math.max(currentSpeed * speedAcceleration, 150); // Don't go faster than 150ms
+                    
+                    isAnimating = false;
+                    
+                    // Schedule next cycle with current speed
+                    setTimeout(cycleText, currentSpeed);
+                }, 150);
+            }
+
+            // Start cycling after a delay
+            setTimeout(() => {
+                // Initial delay before starting
+                setTimeout(cycleText, 1000);
+            }, 1000);
+        });
+
+        // Function to create sparkles around the welcome text
+        function createSparkles() {
+            const welcomeText = document.getElementById('welcomeText');
+            if (!welcomeText) return;
+            
+            const rect = welcomeText.getBoundingClientRect();
+            const sparkleContainer = document.createElement('div');
+            sparkleContainer.style.position = 'absolute';
+            sparkleContainer.style.pointerEvents = 'none';
+            sparkleContainer.style.zIndex = '1000';
+            document.body.appendChild(sparkleContainer);
+            
+            // Create multiple sparkles
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => {
+                    const sparkle = document.createElement('div');
+                    sparkle.innerHTML = '✨';
+                    sparkle.style.position = 'absolute';
+                    sparkle.style.left = (rect.left + Math.random() * rect.width) + 'px';
+                    sparkle.style.top = (rect.top + Math.random() * rect.height) + 'px';
+                    sparkle.style.fontSize = '20px';
+                    sparkle.style.animation = 'sparkle 1.5s ease-in-out';
+                    sparkle.style.pointerEvents = 'none';
+                    
+                    sparkleContainer.appendChild(sparkle);
+                    
+                    // Remove sparkle after animation
+                    setTimeout(() => {
+                        if (sparkle.parentNode) {
+                            sparkle.parentNode.removeChild(sparkle);
+                        }
+                    }, 1500);
+                }, i * 200);
+            }
+            
+            // Remove container after all sparkles are done
+            setTimeout(() => {
+                if (sparkleContainer.parentNode) {
+                    sparkleContainer.parentNode.removeChild(sparkleContainer);
+                }
+            }, 3000);
+        }
+
+        // Function to create illustrated wink/smile effect
+        function createWinkEffect() {
+            console.log('Wink function called!');
+            const welcomeText = document.getElementById('welcomeText');
+            if (!welcomeText) {
+                console.log('Welcome text element not found!');
+                return;
+            }
+            
+            const rect = welcomeText.getBoundingClientRect();
+            console.log('Welcome text position:', rect);
+            const winkContainer = document.createElement('div');
+            winkContainer.style.position = 'absolute';
+            winkContainer.style.pointerEvents = 'none';
+            winkContainer.style.zIndex = '1001';
+            document.body.appendChild(winkContainer);
+            
+            // Create left eye (always open)
+            const leftEye = document.createElement('div');
+            leftEye.style.position = 'fixed';
+            leftEye.style.left = (rect.right + 20) + 'px';
+            leftEye.style.top = (rect.top - 10) + 'px';
+            leftEye.style.width = '12px';
+            leftEye.style.height = '12px';
+            leftEye.style.borderRadius = '50%';
+            leftEye.style.background = '#4A90E2';
+            leftEye.style.boxShadow = '0 0 0 3px rgba(74, 144, 226, 0.5)';
+            leftEye.style.zIndex = '9999';
+            
+            // Create right eye (winks)
+            const rightEye = document.createElement('div');
+            rightEye.style.position = 'fixed';
+            rightEye.style.left = (rect.right + 40) + 'px';
+            rightEye.style.top = (rect.top - 10) + 'px';
+            rightEye.style.width = '12px';
+            rightEye.style.height = '12px';
+            rightEye.style.borderRadius = '50%';
+            rightEye.style.background = '#4A90E2';
+            rightEye.style.boxShadow = '0 0 0 3px rgba(74, 144, 226, 0.5)';
+            rightEye.style.animation = 'wink 1.5s ease-in-out infinite';
+            rightEye.style.zIndex = '9999';
+            
+            // Create smile
+            const smile = document.createElement('div');
+            smile.style.position = 'fixed';
+            smile.style.left = (rect.right + 20) + 'px';
+            smile.style.top = (rect.top + 8) + 'px';
+            smile.style.width = '35px';
+            smile.style.height = '18px';
+            smile.style.border = '3px solid #4A90E2';
+            smile.style.borderTop = 'none';
+            smile.style.borderRadius = '0 0 35px 35px';
+            smile.style.animation = 'smile 2s ease-in-out infinite';
+            smile.style.zIndex = '9999';
+            
+            winkContainer.appendChild(leftEye);
+            winkContainer.appendChild(rightEye);
+            winkContainer.appendChild(smile);
+            
+            // Remove wink effect after 6 seconds
+            setTimeout(() => {
+                if (winkContainer.parentNode) {
+                    winkContainer.parentNode.removeChild(winkContainer);
+                }
+            }, 6000);
+        }
         /* Auth Modal Functionality */
         const authModal = document.getElementById("authModal");
         const signinBtn = document.getElementById("signinBtn");
@@ -1023,7 +2983,7 @@
         /* Handle form submissions */
         signinForm.addEventListener("submit", (e) => {
             e.preventDefault();
-            alert("Sign in functionality would be implemented here!");
+            alert("Login functionality would be implemented here!");
             authModal.style.display = "none";
         });
         
@@ -1032,6 +2992,9 @@
             alert("Sign up functionality would be implemented here!");
             authModal.style.display = "none";
         });
+        
+
     </script>
+    
 </body>
 </html>
