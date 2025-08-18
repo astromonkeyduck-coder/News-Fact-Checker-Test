@@ -1,3 +1,314 @@
+// Noteworthy News - Professional News Website with Integrated Game
+// This script handles both the professional header functionality and the game
+
+// Authentication System
+class AuthSystem {
+    constructor() {
+        this.isAuthenticated = false;
+        this.currentUser = null;
+        this.init();
+    }
+
+    init() {
+        this.bindAuthEvents();
+        this.checkAuthStatus();
+    }
+
+    bindAuthEvents() {
+        const signinBtn = document.getElementById("signinBtn");
+        const signupBtn = document.getElementById("signupBtn");
+        const closeAuth = document.getElementById("closeAuth");
+        const authModal = document.getElementById("authModal");
+        const authTabs = document.querySelectorAll(".auth-tab");
+        const signinForm = document.getElementById("signinForm");
+        const signupForm = document.getElementById("signupForm");
+
+        if (signinBtn) {
+            signinBtn.addEventListener("click", () => {
+                this.showAuthModal("signin");
+            });
+        }
+
+        if (signupBtn) {
+            signupBtn.addEventListener("click", () => {
+                this.showAuthModal("signup");
+            });
+        }
+
+        if (closeAuth) {
+            closeAuth.addEventListener("click", () => {
+                this.hideAuthModal();
+            });
+        }
+
+        if (authModal) {
+            authModal.addEventListener("click", (e) => {
+                if (e.target === authModal) {
+                    this.hideAuthModal();
+                }
+            });
+        }
+
+        // Tab switching
+        if (authTabs.length > 0) {
+            authTabs.forEach(tab => {
+                tab.addEventListener("click", () => {
+                    this.switchAuthTab(tab.dataset.tab);
+                });
+            });
+        }
+
+        // Form submissions
+        if (signinForm) {
+            signinForm.addEventListener("submit", (e) => {
+                e.preventDefault();
+                this.handleSignin(e.target);
+            });
+        }
+
+        if (signupForm) {
+            signupForm.addEventListener("submit", (e) => {
+                e.preventDefault();
+                this.handleSignup(e.target);
+            });
+        }
+    }
+
+    showAuthModal(tab = "signin") {
+        const authModal = document.getElementById("authModal");
+        if (authModal) {
+            authModal.style.display = "flex";
+            this.switchAuthTab(tab);
+        }
+    }
+
+    hideAuthModal() {
+        const authModal = document.getElementById("authModal");
+        if (authModal) {
+            authModal.style.display = "none";
+        }
+    }
+
+    switchAuthTab(tab) {
+        const authTabs = document.querySelectorAll(".auth-tab");
+        const signinForm = document.getElementById("signinForm");
+        const signupForm = document.getElementById("signupForm");
+
+        authTabs.forEach(t => t.classList.remove("active"));
+        const activeTab = document.querySelector(`[data-tab="${tab}"]`);
+        if (activeTab) activeTab.classList.add("active");
+
+        if (tab === "signin") {
+            if (signinForm) signinForm.style.display = "flex";
+            if (signupForm) signupForm.style.display = "none";
+        } else {
+            if (signinForm) signinForm.style.display = "none";
+            if (signupForm) signupForm.style.display = "flex";
+        }
+    }
+
+    handleSignin(form) {
+        const email = form.querySelector("input[type=email]").value;
+        const password = form.querySelector("input[type=password]").value;
+
+        // Simple validation
+        if (!email || !password) {
+            alert("Please fill in all fields");
+            return;
+        }
+
+        // Simulate authentication
+        this.isAuthenticated = true;
+        this.currentUser = { email };
+        this.updateAuthUI();
+        this.hideAuthModal();
+        
+        // Show success message
+        this.showNotification("Successfully signed in!", "success");
+    }
+
+    handleSignup(form) {
+        const fullName = form.querySelector("input[type=text]").value;
+        const email = form.querySelector("input[type=email]").value;
+        const password = form.querySelector("input[type=password]").value;
+        const confirmPassword = form.querySelector("input[type=password]:last-of-type").value;
+
+        // Simple validation
+        if (!fullName || !email || !password || !confirmPassword) {
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            alert("Passwords do not match");
+            return;
+        }
+
+        // Simulate registration
+        this.isAuthenticated = true;
+        this.currentUser = { fullName, email };
+        this.updateAuthUI();
+        this.hideAuthModal();
+        
+        // Show success message
+        this.showNotification("Successfully signed up!", "success");
+    }
+
+    updateAuthUI() {
+        const signinBtn = document.getElementById("signinBtn");
+        const signupBtn = document.getElementById("signupBtn");
+
+        if (this.isAuthenticated) {
+            if (signinBtn) signinBtn.textContent = `Hi, ${this.currentUser.fullName || this.currentUser.email}`;
+            if (signupBtn) signupBtn.textContent = "Sign Out";
+            
+            // Update button event listeners
+            if (signupBtn) {
+                signupBtn.onclick = () => this.signOut();
+            }
+        } else {
+            if (signinBtn) signinBtn.textContent = "Sign In";
+            if (signupBtn) signupBtn.textContent = "Sign Up";
+            
+            // Restore original event listeners
+            if (signupBtn) {
+                signupBtn.onclick = () => this.showAuthModal("signup");
+            }
+        }
+    }
+
+    signOut() {
+        this.isAuthenticated = false;
+        this.currentUser = null;
+        this.updateAuthUI();
+        this.showNotification("Successfully signed out!", "info");
+    }
+
+    checkAuthStatus() {
+        // Check if user was previously authenticated
+        const savedUser = localStorage.getItem("noteworthy_user");
+        if (savedUser) {
+            try {
+                this.currentUser = JSON.parse(savedUser);
+                this.isAuthenticated = true;
+                this.updateAuthUI();
+            } catch (e) {
+                localStorage.removeItem("noteworthy_user");
+            }
+        }
+    }
+
+    showNotification(message, type = "info") {
+        const notification = document.createElement("div");
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 3000);
+    }
+}
+
+// News Navigation System
+class NewsNavigation {
+    constructor() {
+        this.currentSection = "news";
+        this.init();
+    }
+
+    init() {
+        this.bindNavigationEvents();
+        this.updateActiveSection();
+    }
+
+    bindNavigationEvents() {
+        const navLinks = document.querySelectorAll(".nav-link");
+        
+        navLinks.forEach(link => {
+            link.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const targetSection = link.getAttribute("href").substring(1);
+                this.navigateToSection(targetSection);
+            });
+        });
+
+        // Handle game start button
+        const startGameBtn = document.querySelector(".play-button");
+        if (startGameBtn) {
+            startGameBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.startGame();
+            });
+        }
+    }
+
+    navigateToSection(section) {
+        this.currentSection = section;
+        this.updateActiveSection();
+        
+        // Update navigation links
+        document.querySelectorAll(".nav-link").forEach(link => {
+            link.classList.remove("active");
+            if (link.getAttribute("href") === `#${section}`) {
+                link.classList.add("active");
+            }
+        });
+
+        // Handle section-specific content
+        switch(section) {
+            case "news":
+                this.showNewsContent();
+                break;
+            case "game":
+                this.showGameContent();
+                break;
+            case "about":
+                this.showAboutContent();
+                break;
+        }
+    }
+
+    updateActiveSection() {
+        const navLinks = document.querySelectorAll(".nav-link");
+        navLinks.forEach(link => {
+            link.classList.remove("active");
+            if (link.getAttribute("href") === `#${this.currentSection}`) {
+                link.classList.add("active");
+            }
+        });
+    }
+
+    showNewsContent() {
+        // Show news-related content
+        console.log("Showing news content");
+    }
+
+    showGameContent() {
+        // Show game-related content
+        console.log("Showing game content");
+    }
+
+    showAboutContent() {
+        // Show about content
+        console.log("Showing about content");
+    }
+
+    startGame() {
+        console.log("Starting game...");
+        // This will be handled by the game system
+        if (window.game) {
+            window.game.startGame();
+        }
+    }
+}
+
 class BreakingNewsGame {
     constructor() {
         console.log('Game constructor called');
@@ -2210,4 +2521,58 @@ document.addEventListener('DOMContentLoaded', () => {
         helicopter.addEventListener('click', flyAwayHelicopter);
         helicopter.style.cursor = 'pointer';
     }
+});
+
+// Initialize everything when the page loads
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("Noteworthy News website initialized successfully!");
+    
+    // Initialize authentication system
+    window.authSystem = new AuthSystem();
+    
+    // Initialize navigation system
+    window.newsNavigation = new NewsNavigation();
+    
+    // Initialize game system
+    window.game = new BreakingNewsGame();
+    
+    // Add notification styles
+    const style = document.createElement("style");
+    style.textContent = `
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 10000;
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        .notification-success {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+        }
+        
+        .notification-info {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+        }
+        
+        .notification-error {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    `;
+    document.head.appendChild(style);
 });

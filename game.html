@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Noteworthy News - Breaking News Fact Checker</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="matrix-rain"></div>
+    <div class="tips-sidebar" id="tipsSidebar">
+        <div class="sidebar-header">
+            <h3>💡 Digital Literacy Tips</h3>
+            <button class="sidebar-toggle" id="sidebarToggle">×</button>
+        </div>
+        <div class="sidebar-content">
+            <div class="tip-section">
+                <h4>Why Digital Literacy Matters</h4>
+                <p>In today's digital age, misinformation spreads faster than ever. Learning to distinguish fact from fiction is crucial for making informed decisions and protecting yourself from manipulation.</p>
+            </div>
+            
+            <div class="tip-section">
+                <h4>🔍 Fact-Checking Strategies</h4>
+                <ul>
+                    <li><strong>Check Multiple Sources:</strong> Don't rely on just one source</li>
+                    <li><strong>Verify the Source:</strong> Look for official websites and reputable organizations</li>
+                    <li><strong>Look for Evidence:</strong> Factual news provides citations and evidence</li>
+                    <li><strong>Question Sensational Claims:</strong> If it sounds too good to be true, it probably is</li>
+                    <li><strong>Check the Date:</strong> Old news can be misleading when shared as current</li>
+                </ul>
+            </div>
+            
+            <div class="tip-section">
+                <h4>🚨 Red Flags for Misinformation</h4>
+                <ul>
+                    <li>Claims of "miracle cures" or "secret knowledge"</li>
+                    <li>Sources with suspicious names or no credibility</li>
+                    <li>Emotional language designed to provoke outrage</li>
+                    <li>Conspiracy theories without evidence</li>
+                    <li>Get-rich-quick schemes or too-good-to-be-true offers</li>
+                </ul>
+            </div>
+            
+            <div class="tip-section">
+                <h4>✅ Reliable Sources</h4>
+                <ul>
+                    <li>Government websites (.gov domains)</li>
+                    <li>Peer-reviewed scientific journals</li>
+                    <li>Established news organizations</li>
+                    <li>Official company press releases</li>
+                    <li>Academic institutions and research centers</li>
+                </ul>
+            </div>
+            
+            <div class="tip-section">
+                <h4>🎯 Practice Makes Perfect</h4>
+                <p>Use this game to practice your fact-checking skills. The more you practice, the better you'll become at spotting misinformation in real life!</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- How to Play Sidebar -->
+    <div class="how-to-play-sidebar" id="howToPlaySidebar">
+        <div class="sidebar-header">
+            <h3>🎮 How to Play</h3>
+            <button class="sidebar-toggle" id="howToPlayToggle">×</button>
+        </div>
+        <div class="sidebar-content">
+            <div class="tip-section">
+                <h4>Game Rules</h4>
+                <ul>
+                    <li>Read each news headline carefully</li>
+                    <li>Click "FACTUAL" if you think it's true</li>
+                    <li>Click "MISLEADING" if you think it's fake or misleading</li>
+                    <li>Answer within the time limit for bonus points</li>
+                    <li>Learn from the feedback and tips</li>
+                    <li>Build your fact-checking skills!</li>
+                </ul>
+            </div>
+            <div class="tip-section">
+                <h4>Scoring System</h4>
+                <ul>
+                    <li>Correct answers earn points based on difficulty</li>
+                    <li>Faster answers earn bonus points</li>
+                    <li>Streaks multiply your score</li>
+                    <li>Accuracy affects your overall rating</li>
+                </ul>
+            </div>
+            <div class="tip-section">
+                <h4>Difficulty Levels</h4>
+                <ul>
+                    <li><strong>Easy:</strong> 30 seconds per question</li>
+                    <li><strong>Medium:</strong> 20 seconds per question</li>
+                    <li><strong>Hard:</strong> 15 seconds per question</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container pixel-noise">
+        <!-- NW Logo Banner -->
+                  <div class="nw-logo-banner pixel-effect">
+                          <div class="nw-image-container">
+                <img src="nw-logo.GIF" alt="Noteworthy News Logo" class="nw-gif pixel-effect" loading="lazy">
+            </div>
+          </div>
+
+        <header>
+            <div class="header-top">
+                <button class="tips-toggle-btn" id="tipsToggleBtn">
+                    <span class="btn-icon">💡</span>
+                    <span class="btn-text">Tips</span>
+                </button>
+                <button class="how-to-play-toggle-btn" id="howToPlayToggleBtn">
+                    <span class="btn-icon">🎮</span>
+                    <span class="btn-text">Help</span>
+                </button>
+                <button class="pause-toggle-btn" id="pauseToggleBtn" style="display: flex;">
+                    <span class="btn-icon">⏸️</span>
+                    <span class="btn-text">Pause</span>
+                </button>
+                <button class="sound-toggle-btn" id="soundToggleBtn">
+                    <span class="btn-icon">🔊</span>
+                    <span class="btn-text">Sound</span>
+                </button>
+                <button class="music-toggle-btn" id="musicToggleBtn">
+                    <span class="btn-icon">🎵</span>
+                    <span class="btn-text">Music</span>
+                </button>
+                <button class="theme-toggle-btn" id="themeToggleBtn">
+                    <span class="btn-icon">🌙</span>
+                    <span class="btn-text">Dark</span>
+                </button>
+            </div>
+                    <div class="logo-container">
+            <div class="logo">
+                <a href="index.html" class="logo-link">
+                    <span class="logo-n">N</span><span class="logo-w">W</span>
+                </a>
+            </div>
+            <div class="company-name">Noteworthy News</div>
+        </div>
+            <h1 class="glitch-text" data-text="🔍 Breaking News Fact Checker">🔍 Breaking News Fact Checker</h1>
+            <p class="subtitle pixel-text">Test your media literacy skills! Can you spot fake news?</p>
+        </header>
+
+        <div class="game-stats pixel-shadow">
+            <div class="stat">
+                <span class="stat-label">Score:</span>
+                <span id="score">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Level:</span>
+                <span id="level">1</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Streak:</span>
+                <span id="streak">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Accuracy:</span>
+                <span id="accuracy">0%</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Difficulty:</span>
+                <span id="currentDifficulty">Easy</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">High Score:</span>
+                <span id="highScore">0</span>
+            </div>
+        </div>
+
+        <div class="game-area crt-effect">
+            <div class="news-card pixel-border" id="newsCard">
+                <div class="news-header">
+                    <span class="breaking-badge">BREAKING NEWS</span>
+                    <span class="timestamp" id="timestamp">Just now</span>
+                </div>
+                <h2 class="headline pixel-text" id="headline">Loading headline...</h2>
+                <p class="source" id="source">Source: Loading...</p>
+            </div>
+
+            <div class="buttons">
+                <button class="btn btn-fact retro-button" id="factBtn">
+                    <span class="btn-icon">✅</span>
+                    FACTUAL
+                </button>
+                <button class="btn btn-fake retro-button" id="fakeBtn">
+                    <span class="btn-icon">❌</span>
+                    MISLEADING
+                </button>
+            </div>
+            
+            <div class="next-headline-container">
+                <button class="btn btn-next-headline" id="nextHeadlineBtn" style="display: none;">
+                    <span class="btn-icon">📰</span>
+                    Next Headline
+                </button>
+            </div>
+            
+            <div class="difficulty-toggle">
+                <button class="btn btn-difficulty-toggle" id="difficultyToggle">
+                    <span class="toggle-icon">⚙️</span>
+                    Change Difficulty
+                </button>
+            </div>
+            
+            <div class="timer-container">
+                <div class="timer-bar">
+                    <div class="timer-fill" id="timerFill"></div>
+                </div>
+                <span class="timer-text" id="timerText">30s</span>
+            </div>
+        </div>
+
+        <div class="feedback" id="feedback">
+            <div class="feedback-content">
+                <h3 id="feedbackTitle">Correct!</h3>
+                <p id="feedbackText">Great job! You identified this correctly.</p>
+                <div class="fact-check-tips" id="factCheckTips">
+                    <h4>💡 Fact-Checking Tips:</h4>
+                    <ul>
+                        <li>Check multiple reliable sources</li>
+                        <li>Look for evidence and citations</li>
+                        <li>Be wary of sensational language</li>
+                        <li>Verify the source's credibility</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="feedback-buttons">
+                <button class="btn btn-difficulty-toggle" id="feedbackDifficultyToggle">
+                    <span class="toggle-icon">⚙️</span>
+                    Change Difficulty
+                </button>
+                <button class="btn btn-next" id="nextBtn">Next Headline</button>
+            </div>
+        </div>
+
+        <div class="start-screen" id="startScreen">
+            <h2>Welcome to Noteworthy News Fact Checker!</h2>
+            <p>Test your ability to distinguish between factual news and misleading headlines. Learn valuable media literacy skills while having fun!</p>
+            
+            <div class="difficulty-selector">
+                <h3>Choose Difficulty:</h3>
+                <div class="difficulty-buttons">
+                    <button class="btn btn-difficulty active" data-difficulty="easy">Easy (30s)</button>
+                    <button class="btn btn-difficulty" data-difficulty="medium">Medium (20s)</button>
+                    <button class="btn btn-difficulty" data-difficulty="hard">Hard (15s)</button>
+                </div>
+            </div>
+            
+            <button class="btn btn-start" id="startBtn">Start Game</button>
+        </div>
+
+        <div class="game-over" id="gameOver">
+            <h2>Game Complete!</h2>
+            <div class="final-stats">
+                <p>Final Score: <span id="finalScore">0</span></p>
+                <p>Level Reached: <span id="finalLevel">1</span></p>
+                <p>Best Streak: <span id="finalStreak">0</span></p>
+                <p>High Score: <span id="finalHighScore">0</span></p>
+            </div>
+            <button class="btn btn-restart" id="restartBtn">Play Again</button>
+        </div>
+
+        <div class="pause-overlay" id="pauseOverlay">
+            <div class="pause-content">
+                <h2>⏸️ Game Paused</h2>
+                <p>Take a break! Your progress is saved.</p>
+                <div class="pause-stats">
+                    <p>Current Score: <span id="pauseScore">0</span></p>
+                    <p>Time Remaining: <span id="pauseTime">30s</span></p>
+                </div>
+                <button class="btn btn-resume" id="resumeBtn">
+                    <span class="btn-icon">▶️</span>
+                    Resume Game
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+                    <div class="footer-logo">
+            <a href="https://x.com/newsnoteworthy" target="_blank" class="footer-company">Noteworthy News</a>
+        </div>
+            <p class="footer-tagline">Empowering informed decisions through media literacy education</p>
+            
+            <div class="social-links">
+                <h4>Follow Us</h4>
+                <div class="social-icons">
+                    <a href="https://x.com/newsnoteworthy" target="_blank" class="social-link">
+                        <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                        </svg>
+                        <span>@newsnoteworthy</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Background Animations -->
+    
+    <script src="performance-monitor.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
