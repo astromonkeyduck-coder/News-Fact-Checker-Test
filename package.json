@@ -1,0 +1,16 @@
+{
+  "name": "noteworthy-news-game",
+  "version": "1.0.0",
+  "description": "Breaking News Fact Checker Game",
+  "main": "index.html",
+  "scripts": {
+    "fetch-tweets": "node fetch-tweets.js",
+    "start": "open index.html"
+  },
+  "dependencies": {
+    "puppeteer": "^21.0.0"
+  },
+  "keywords": ["news", "fact-checking", "game", "media-literacy"],
+  "author": "Noteworthy News",
+  "license": "MIT"
+}

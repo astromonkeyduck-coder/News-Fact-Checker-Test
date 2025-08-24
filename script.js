@@ -1,6 +1,196 @@
 // Noteworthy News - Professional News Website with Integrated Game
 // This script handles both the professional header functionality and the game
 
+// Constants for configuration
+const CONFIG = {
+    // Animation timing
+    ANIMATION_DELAYS: {
+        INITIAL_DELAY: 1000,
+        TEXT_CYCLE_DELAY: 150,
+        FINAL_TRANSITION_DELAY: 800,
+        SPARKLE_DELAY: 200,
+        SPARKLE_DURATION: 1500,
+        SPARKLE_CONTAINER_DURATION: 3000,
+        WINK_EFFECT_DURATION: 6000,
+        ANIMATION_RESET_DELATION: 8000
+    },
+    
+    // Performance thresholds
+    PERFORMANCE: {
+        MIN_SWIPE_DISTANCE: 50,
+        MIN_DRAG_DISTANCE: 60,
+        WHEEL_THRESHOLD: 5,
+        SWIPE_THRESHOLD: 50,
+        WHEEL_TIMEOUT: 100
+    },
+    
+    // Animation speeds
+    ANIMATION_SPEEDS: {
+        START_SPEED: 800,
+        MIN_SPEED: 150,
+        ACCELERATION_FACTOR: 0.75
+    },
+    
+    // Particle and effect counts
+    EFFECTS: {
+        PARTICLE_COUNT: 50,
+        SPARKLE_COUNT: 8,
+        MATRIX_COLUMN_WIDTH: 20
+    }
+};
+
+// Swoosh Sound Effects for Welcome Animation
+function playSwoosh(swooshId) {
+    try {
+        // Create Web Audio API context
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Create noise buffer for realistic wind swoosh
+        const bufferSize = audioContext.sampleRate * 0.8; // 800ms buffer
+        const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+        const output = buffer.getChannelData(0);
+        
+        // Generate filtered noise for wind effect
+        for (let i = 0; i < bufferSize; i++) {
+            // Create wind-like noise with varying intensity
+            const time = i / bufferSize;
+            const windIntensity = Math.sin(time * Math.PI * 2) * 0.2 + 0.8;
+            // Make it more squishy and soft
+            const squishyNoise = (Math.random() * 2 - 1) * 0.4;
+            const smoothNoise = (Math.random() * 2 - 1) * 0.3;
+            output[i] = (squishyNoise + smoothNoise) * windIntensity * 0.5;
+        }
+        
+        // Create audio source and processing nodes
+        const source = audioContext.createBufferSource();
+        const gainNode = audioContext.createGain();
+        const lowpassFilter = audioContext.createBiquadFilter();
+        const highpassFilter = audioContext.createBiquadFilter();
+        const notchFilter = audioContext.createBiquadFilter();
+        
+        // Configure swoosh sound based on ID
+        let duration, volume;
+        switch(swooshId) {
+            case 'swoosh1':
+                duration = 0.6; // Quick swoosh for text changes
+                volume = 0.4;
+                break;
+            case 'swoosh2':
+                duration = 0.8; // Medium swoosh for final transition
+                volume = 0.5;
+                break;
+            default:
+                duration = 0.7;
+                volume = 0.45;
+        }
+        
+        // High-pass filter to remove low rumble (wind doesn't have bass)
+        highpassFilter.type = 'highpass';
+        highpassFilter.frequency.setValueAtTime(150, audioContext.currentTime);
+        highpassFilter.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + duration);
+        highpassFilter.Q.setValueAtTime(0.3, audioContext.currentTime);
+        
+        // Low-pass filter to smooth the wind and remove harsh highs
+        lowpassFilter.type = 'lowpass';
+        lowpassFilter.frequency.setValueAtTime(2500, audioContext.currentTime);
+        lowpassFilter.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + duration);
+        lowpassFilter.Q.setValueAtTime(0.2, audioContext.currentTime);
+        
+        // Notch filter to remove specific harsh frequencies
+        notchFilter.type = 'notch';
+        notchFilter.frequency.setValueAtTime(1200, audioContext.currentTime);
+        notchFilter.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + duration);
+        notchFilter.Q.setValueAtTime(0.5, audioContext.currentTime);
+        
+        // Set gain (volume) with squishy, smooth wind fade
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + 0.2);
+        gainNode.gain.linearRampToValueAtTime(volume * 0.95, audioContext.currentTime + duration * 0.5);
+        gainNode.gain.linearRampToValueAtTime(volume * 0.8, audioContext.currentTime + duration * 0.8);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+        
+        // Connect the audio chain: source -> highpass -> lowpass -> notch -> gain -> output
+        source.buffer = buffer;
+        source.connect(highpassFilter);
+        highpassFilter.connect(lowpassFilter);
+        lowpassFilter.connect(notchFilter);
+        notchFilter.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Start the wind swoosh
+        source.start(audioContext.currentTime);
+        source.stop(audioContext.currentTime + duration);
+        
+        // Clean up
+        setTimeout(() => {
+            source.disconnect();
+            highpassFilter.disconnect();
+            lowpassFilter.disconnect();
+            notchFilter.disconnect();
+            gainNode.disconnect();
+        }, duration * 1000 + 100);
+        
+    } catch (error) {
+        console.log('Swoosh sound error:', error);
+    }
+}
+
+// Puzzle Piece Connection Sound Effect
+function playPuzzlePiece() {
+    try {
+        console.log('Creating puzzle piece sound...');
+        
+        // Create Web Audio API context
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Resume audio context if it's suspended (needed for autoplay policies)
+        if (audioContext.state === 'suspended') {
+            audioContext.resume().then(() => {
+                console.log('Audio context resumed');
+            });
+        }
+        
+        // Simplified puzzle piece sound - just one oscillator for now
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        // Configure puzzle piece sound
+        const duration = 0.5; // Longer for better audibility
+        const volume = 1.0; // Maximum volume
+        
+        // Main tone - satisfying puzzle piece frequency
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
+        oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + duration);
+        
+        // Volume envelope - quick attack, satisfying decay
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + 0.02);
+        gainNode.gain.linearRampToValueAtTime(volume * 0.8, audioContext.currentTime + 0.2);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+        
+        // Connect the audio chain
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Start the oscillator
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + duration);
+        
+        console.log('Puzzle piece sound started successfully!');
+        
+        // Clean up
+        setTimeout(() => {
+            oscillator.disconnect();
+            gainNode.disconnect();
+        }, duration * 1000 + 100);
+        
+    } catch (error) {
+        console.log('Puzzle piece sound error:', error);
+    }
+}
+
 // Authentication System
 class AuthSystem {
     constructor() {
@@ -111,9 +301,14 @@ class AuthSystem {
         const email = form.querySelector("input[type=email]").value;
         const password = form.querySelector("input[type=password]").value;
 
-        // Simple validation
-        if (!email || !password) {
-            alert("Please fill in all fields");
+        // Enhanced validation using new validator
+        if (!Validator.isValidEmail(email)) {
+            this.showNotification("Please enter a valid email address", "error");
+            return;
+        }
+
+        if (!Validator.isValidPassword(password)) {
+            this.showNotification("Password must be at least 8 characters with uppercase, lowercase, and number", "error");
             return;
         }
 
@@ -133,13 +328,24 @@ class AuthSystem {
         const password = form.querySelector("input[type=password]").value;
         const confirmPassword = form.querySelector("input[type=password]:last-of-type").value;
 
-        // Simple validation
-        if (!fullName || !email || !password || !confirmPassword) {
+        // Enhanced validation using new validator
+        if (!Validator.isValidName(fullName)) {
+            this.showNotification("Please enter a valid name (2-50 characters)", "error");
+            return;
+        }
+
+        if (!Validator.isValidEmail(email)) {
+            this.showNotification("Please enter a valid email address", "error");
+            return;
+        }
+
+        if (!Validator.isValidPassword(password)) {
+            this.showNotification("Password must be at least 8 characters with uppercase, lowercase, and number", "error");
             return;
         }
 
         if (password !== confirmPassword) {
-            alert("Passwords do not match");
+            this.showNotification("Passwords do not match", "error");
             return;
         }
 
@@ -861,6 +1067,7 @@ class BreakingNewsGame {
         this.setupGlitchEffects();
         this.initMatrixRain();
         this.initTheme();
+        this.initLogoAnimation(); // Initialize logo animation with puzzle piece sound
         this.showStartScreen();
         
         // Add user interaction listener to start music
@@ -891,7 +1098,7 @@ class BreakingNewsGame {
             document.body.appendChild(particlesContainer);
             
             // Create 8 floating particles for mobile
-            for (let i = 0; i < 8; i++) {
+            for (let i = 0; i < CONFIG.EFFECTS.SPARKLE_COUNT; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'particle';
                 particle.style.left = Math.random() * 100 + '%';
@@ -1060,6 +1267,7 @@ class BreakingNewsGame {
         const nextBtn = document.getElementById('nextBtn');
         const nextHeadlineBtn = document.getElementById('nextHeadlineBtn');
         const restartBtn = document.getElementById('restartBtn');
+        const requiredEls = [startBtn, factBtn, fakeBtn, nextBtn, nextHeadlineBtn, restartBtn];
         
         console.log('Start button found:', !!startBtn);
         console.log('Fact button found:', !!factBtn);
@@ -1068,6 +1276,12 @@ class BreakingNewsGame {
         console.log('Next headline button found:', !!nextHeadlineBtn);
         console.log('Restart button found:', !!restartBtn);
         
+        // If none of the core controls exist, we are not on the game UI; bail safely
+        if (requiredEls.every(el => !el)) {
+            console.warn('Game UI controls not found; skipping event bindings');
+            return;
+        }
+
         if (startBtn) {
             const startHandler = () => {
                 console.log('Start button clicked');
@@ -1974,8 +2188,17 @@ class BreakingNewsGame {
         // Add audio to document
         document.body.appendChild(this.bgAudio);
         
-        this.isMusicPlaying = false;
-        this.musicEnabled = true;
+        // Restore music state from localStorage
+        this.isMusicPlaying = localStorage.getItem('musicPlaying') === 'true';
+        this.musicEnabled = localStorage.getItem('musicEnabled') !== 'false'; // Default to true
+        
+        // If music was playing, start it automatically
+        if (this.isMusicPlaying && this.musicEnabled) {
+            this.bgAudio.play().catch(error => {
+                console.log('Auto-resume music failed:', error);
+                this.isMusicPlaying = false;
+            });
+        }
         
         // Handle page visibility changes
         document.addEventListener('visibilitychange', () => {
@@ -2005,10 +2228,21 @@ class BreakingNewsGame {
         
         // Add timeupdate listener to handle seamless looping
         this.bgAudio.addEventListener('timeupdate', () => {
-            if (this.bgAudio.currentTime >= this.bgAudio.duration - 3.5) {
-                // Loop 3.5 seconds before the end
+            if (this.bgAudio.currentTime >= this.bgAudio.duration - 0.1) {
+                // Loop when there's 0.1 seconds left for seamless transition
                 this.bgAudio.currentTime = 0;
             }
+        });
+        
+        // Save music state when it changes
+        this.bgAudio.addEventListener('play', () => {
+            this.isMusicPlaying = true;
+            localStorage.setItem('musicPlaying', 'true');
+        });
+        
+        this.bgAudio.addEventListener('pause', () => {
+            this.isMusicPlaying = false;
+            localStorage.setItem('musicPlaying', 'false');
         });
     }
     
@@ -2021,12 +2255,14 @@ class BreakingNewsGame {
         // Check if audio is already playing
         if (!this.bgAudio.paused) {
             this.isMusicPlaying = true;
+            localStorage.setItem('musicPlaying', 'true');
             this.updateMusicButton();
             return;
         }
         
         this.bgAudio.play().then(() => {
             this.isMusicPlaying = true;
+            localStorage.setItem('musicPlaying', 'true');
             this.updateMusicButton();
             this.showMusicNotification();
         }).catch(error => {
@@ -2048,6 +2284,7 @@ class BreakingNewsGame {
             this.bgAudio.pause();
             this.bgAudio.currentTime = 0; // Reset to beginning
             this.isMusicPlaying = false;
+            localStorage.setItem('musicPlaying', 'false');
             this.updateMusicButton();
         }
     }
@@ -2316,6 +2553,7 @@ class BreakingNewsGame {
     
     toggleMusic() {
         this.musicEnabled = !this.musicEnabled;
+        localStorage.setItem('musicEnabled', this.musicEnabled.toString());
         
         if (this.musicEnabled) {
             this.startBackgroundMusic();
@@ -2333,6 +2571,80 @@ class BreakingNewsGame {
         } else {
             this.enableLightMode();
         }
+    }
+    
+    // Initialize logo animation with puzzle piece sound
+    initLogoAnimation() {
+        console.log('initLogoAnimation called!');
+        
+        // N and W logos meet in the middle at 2 seconds (0.5s delay + 1.5s animation)
+        // Add a small delay to ensure audio context is ready
+        setTimeout(() => {
+            console.log('Playing puzzle piece sound!');
+            playPuzzlePiece();
+        }, 2500); // Increased to 2.5s to ensure logos have fully met
+        
+        // Add test button for debugging (remove this later)
+        const testButton = document.createElement('button');
+        testButton.textContent = '🔊 Test Puzzle Sound';
+        testButton.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            padding: 10px;
+            background: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        `;
+        testButton.onclick = () => {
+            console.log('Manual puzzle sound test!');
+            playPuzzlePiece();
+        };
+        document.body.appendChild(testButton);
+        
+        // Also add a simple beep test button
+        const beepButton = document.createElement('button');
+        beepButton.textContent = '🔔 Simple Beep Test';
+        beepButton.style.cssText = `
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 10000;
+            padding: 10px;
+            background: #E74C3C;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        `;
+        beepButton.onclick = () => {
+            console.log('Simple beep test!');
+            // Create a simple beep using the existing audio context
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+                
+                console.log('Simple beep played!');
+            } catch (error) {
+                console.log('Simple beep error:', error);
+            }
+        };
+        document.body.appendChild(beepButton);
     }
     
     toggleTheme() {
@@ -2450,17 +2762,11 @@ class BreakingNewsGame {
     }
 }
 
-// Initialize the game when the page loads
+// Initialize the game when the page loads (only on game page)
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing game...');
-    
-    // Test if headline element exists
-    const headlineTest = document.getElementById('headline');
-    console.log('Headline element found on DOM load:', !!headlineTest);
-    if (headlineTest) {
-        console.log('Headline element text:', headlineTest.textContent);
-    }
-    
+    const headlineEl = document.getElementById('headline');
+    console.log('DOM loaded, initializing game only if on game page. Game headline present:', !!headlineEl);
+    if (!headlineEl) return;
     window.game = new BreakingNewsGame();
     console.log('Game initialized:', window.game);
 });
@@ -2533,8 +2839,11 @@ document.addEventListener("DOMContentLoaded", function() {
     // Initialize navigation system
     window.newsNavigation = new NewsNavigation();
     
-    // Initialize game system
-    window.game = new BreakingNewsGame();
+    // Initialize game system only on game page
+    const gameHeadline = document.getElementById('headline');
+    if (gameHeadline && !window.game) {
+        window.game = new BreakingNewsGame();
+    }
     
     // Add notification styles
     const style = document.createElement("style");
@@ -2576,3 +2885,1099 @@ document.addEventListener("DOMContentLoaded", function() {
     `;
     document.head.appendChild(style);
 });
+
+// Welcome text cycling functionality
+function initWelcomeTextCycling() {
+    const welcomeText = document.getElementById('welcomeText');
+    if (!welcomeText) return;
+
+    const welcomePhrases = [
+        "Welcome Home!",
+        "Welcome to awesomeness!",
+        "Welcome to the future!",
+        "Welcome to greatness!",
+        "Welcome to excellence!",
+        "Welcome to innovation!",
+        "Welcome to discovery!",
+        "Welcome to truth!",
+        "Welcome to knowledge!",
+        "Welcome to wisdom!"
+    ];
+
+    let currentIndex = 0;
+    let isAnimating = false;
+    let currentSpeed = CONFIG.ANIMATION_SPEEDS.START_SPEED; // Start slow
+    const speedAcceleration = CONFIG.ANIMATION_SPEEDS.ACCELERATION_FACTOR; // Speed up by 25% each time
+
+    function cycleText() {
+        if (isAnimating) return;
+        isAnimating = true;
+
+        // Play swoosh sound for text change
+        playSwoosh('swoosh1');
+        
+        // Squeeze flip animation
+        welcomeText.style.animation = 'squeezeFlip 0.6s ease-in-out';
+
+        setTimeout(() => {
+            // Change text
+            welcomeText.textContent = welcomePhrases[currentIndex];
+            
+            // Gentle glow effect
+            welcomeText.style.animation = 'gentleGlow 1.2s ease-in-out';
+
+            // Move to next phrase
+            currentIndex = (currentIndex + 1) % welcomePhrases.length;
+
+            // If we've shown all phrases, stop cycling
+            if (currentIndex === 0) {
+                setTimeout(() => {
+                    // Final squeeze flip out
+                    welcomeText.style.animation = 'squeezeFlip 0.8s ease-in-out';
+                        
+                    setTimeout(() => {
+                        // Play swoosh sound for final text
+                        playSwoosh('swoosh2');
+                        
+                        // Show final text
+                        welcomeText.textContent = "Welcome to Noteworthy News";
+                        
+                        // CRITICAL: Ensure text stays within bounds after animation
+                        welcomeText.style.maxWidth = '100%';
+                        welcomeText.style.width = 'auto';
+                        
+                        // Gentle glow effect for final text
+                        welcomeText.style.animation = 'gentleGlow 1.5s ease-in-out';
+
+                        isAnimating = false;
+                        
+                        // Add alive and loving animations after final text
+                        setTimeout(() => {
+                            // Heart beat animation
+                            welcomeText.style.animation = 'heartBeat 1.5s ease-in-out';
+                            
+                            // Add warm glow effect
+                            welcomeText.style.filter = 'brightness(1.2)';
+                            
+                            // Create sparkles around the text
+                            createSparkles();
+                            
+                            // Add gentle pulse effect
+                            setTimeout(() => {
+                                welcomeText.style.animation = 'gentlePulse 2s ease-in-out infinite';
+                            }, 1500);
+                            
+                            // Stop all animations and return to normal after 8 seconds
+                            setTimeout(() => {
+                                welcomeText.style.animation = 'none';
+                                welcomeText.style.filter = 'none';
+                                welcomeText.textContent = "Welcome to Noteworthy News";
+                                
+                                // CRITICAL: Ensure text stays within bounds after final animation
+                                welcomeText.style.maxWidth = '100%';
+                                welcomeText.style.width = 'auto';
+                            }, 8000);
+                            
+                        }, 500);
+                    }, 150);
+                }, 800); // Wait before final transition
+                return;
+            }
+
+            // Accelerate the speed for next cycle
+            currentSpeed = Math.max(currentSpeed * speedAcceleration, CONFIG.ANIMATION_SPEEDS.MIN_SPEED); // Don't go faster than minimum speed
+            
+            isAnimating = false;
+            
+            // Schedule next cycle with current speed
+            setTimeout(cycleText, currentSpeed);
+        }, 150);
+    }
+
+    // Start cycling after a delay
+    setTimeout(() => {
+        // Initial delay before starting
+        setTimeout(cycleText, CONFIG.ANIMATION_DELAYS.INITIAL_DELAY);
+    }, CONFIG.ANIMATION_DELAYS.INITIAL_DELAY);
+}
+
+// Function to create sparkles around the welcome text
+function createSparkles() {
+    const welcomeText = document.getElementById('welcomeText');
+    if (!welcomeText) return;
+    
+    const rect = welcomeText.getBoundingClientRect();
+    const sparkleContainer = document.createElement('div');
+    sparkleContainer.style.position = 'absolute';
+    sparkleContainer.style.pointerEvents = 'none';
+    sparkleContainer.style.zIndex = '1000';
+    document.body.appendChild(sparkleContainer);
+    
+    // Create multiple sparkles
+    for (let i = 0; i < 8; i++) {
+        setTimeout(() => {
+            const sparkle = document.createElement('div');
+            sparkle.innerHTML = '✨';
+            sparkle.style.position = 'absolute';
+            sparkle.style.left = (rect.left + Math.random() * rect.width) + 'px';
+            sparkle.style.top = (rect.top + Math.random() * rect.height) + 'px';
+            sparkle.style.fontSize = '20px';
+            sparkle.style.animation = 'sparkle 1.5s ease-in-out';
+            sparkle.style.pointerEvents = 'none';
+            
+            sparkleContainer.appendChild(sparkle);
+            
+            // Remove sparkle after animation
+            setTimeout(() => {
+                if (sparkle.parentNode) {
+                    sparkle.parentNode.removeChild(sparkle);
+                }
+            }, 1500);
+        }, i * 200);
+    }
+    
+    // Remove container after all sparkles are done
+    setTimeout(() => {
+        if (sparkleContainer.parentNode) {
+            sparkleContainer.parentNode.removeChild(sparkleContainer);
+        }
+    }, 3000);
+}
+
+// Navigation functionality
+function initNavigation() {
+    // Smooth scrolling for navigation links
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Remove active class from all links
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            
+            // Add active class to clicked link
+            link.classList.add('active');
+            
+            // Get target section
+            const targetId = link.getAttribute('href');
+            const targetSection = document.querySelector(targetId);
+            
+            if (targetSection) {
+                // Smooth scroll to target with header offset
+                const header = document.querySelector('.main-header');
+                const headerHeight = header ? header.offsetHeight : 0;
+                const rect = targetSection.getBoundingClientRect();
+                const offsetTop = window.pageYOffset + rect.top - (headerHeight + 10);
+                window.scrollTo({ top: offsetTop, behavior: 'smooth' });
+            }
+        });
+    });
+    
+    // Update active navigation based on scroll position
+    window.addEventListener('scroll', () => {
+        const sections = document.querySelectorAll('#news-section, #fact-checker-section, #credibility-section, #about-section');
+        const navLinks = document.querySelectorAll('.nav-link');
+        
+        let current = '';
+        const header = document.querySelector('.main-header');
+        const headerHeight = header ? header.offsetHeight : 0;
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop - (headerHeight + 20);
+            if (window.pageYOffset >= sectionTop) {
+                current = section.getAttribute('id');
+            }
+        });
+        
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${current}`) {
+                link.classList.add('active');
+            }
+        });
+    });
+}
+
+// Mobile menu functionality
+function initMobileMenu() {
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const mobileNav = document.getElementById('mobileNav');
+    
+    if (!mobileMenuToggle || !mobileNav) return;
+    
+    // Toggle mobile menu
+    mobileMenuToggle.addEventListener('click', () => {
+        mobileNav.classList.toggle('active');
+        mobileMenuToggle.classList.toggle('active');
+    });
+    
+    // Close mobile menu when clicking on a link
+    const mobileNavLinks = mobileNav.querySelectorAll('.nav-link');
+    mobileNavLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            mobileNav.classList.remove('active');
+            mobileMenuToggle.classList.remove('active');
+        });
+    });
+    
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!mobileMenuToggle.contains(e.target) && !mobileNav.contains(e.target)) {
+            mobileNav.classList.remove('active');
+            mobileMenuToggle.classList.remove('active');
+        }
+    });
+    
+    // Close mobile menu with Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && mobileNav.classList.contains('active')) {
+            mobileNav.classList.remove('active');
+            mobileMenuToggle.classList.remove('active');
+        }
+    });
+}
+
+// News carousel functionality - DISABLED to fix scrolling issues
+function initNewsCarousel() {
+    // DISABLED: This function was causing scrolling problems
+    console.log('News carousel initialization disabled - using native scrolling');
+    return;
+    
+    /* DISABLED CODE:
+    const track = document.getElementById('articlesTrack');
+    if (!track) return;
+
+    let index = 0;
+    let touchStartX = 0;
+    let touchEndX = 0;
+    let isDragging = false;
+    let startTranslateX = 0;
+    let currentTranslateX = 0;
+    let mouseStartX = 0;
+    let mouseStartTranslateX = 0;
+    let isMouseDragging = false;
+
+    // Add keyboard navigation
+    function addKeyboardNavigation() {
+        document.addEventListener('keydown', (e) => {
+            // Only handle keys when carousel is focused or visible
+            const carousel = track.parentElement;
+            if (!carousel || !carousel.offsetParent) return;
+            
+            switch (e.key) {
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    if (index > 0) slide(-1);
+                    break;
+                case 'ArrowRight':
+                    e.preventDefault();
+                    if (index < maxIndex()) slide(1);
+                    break;
+                case 'Home':
+                    e.preventDefault();
+                    index = 0;
+                    update();
+                    break;
+                case 'End':
+                    e.preventDefault();
+                    index = maxIndex();
+                    update();
+                    break;
+            }
+        });
+    }
+
+    // Add navigation buttons
+    function addNavigationButtons() {
+        const carousel = track.parentElement;
+        if (!carousel) return;
+
+        // Remove existing buttons
+        const existingButtons = carousel.querySelectorAll('.carousel-nav-btn');
+        existingButtons.forEach(btn => btn.remove());
+
+        // Create previous button
+        const prevBtn = document.createElement('button');
+        prevBtn.className = 'carousel-nav-btn carousel-prev';
+        prevBtn.innerHTML = '‹';
+        prevBtn.style.cssText = `
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(74, 144, 226, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        prevBtn.onclick = () => slide(-1);
+
+        // Create next button
+        const nextBtn = document.createElement('button');
+        nextBtn.className = 'carousel-nav-btn carousel-next';
+        nextBtn.innerHTML = '›';
+        nextBtn.style.cssText = `
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(74, 144, 226, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        nextBtn.onclick = () => slide(1);
+
+        // Add hover effects
+        [prevBtn, nextBtn].forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                btn.style.background = 'rgba(74, 144, 226, 1)';
+                btn.style.transform = 'translateY(-50%) scale(1.1)';
+            });
+            btn.addEventListener('mouseleave', () => {
+                btn.style.background = 'rgba(74, 144, 226, 0.8)';
+                btn.style.transform = 'translateY(-50%) scale(1)';
+            });
+        });
+
+        // Add buttons to carousel
+        carousel.appendChild(prevBtn);
+        carousel.appendChild(nextBtn);
+
+        // Navigation functions removed - only scrolling allowed
+        // updateNavigationButtons();
+    }
+
+    // Navigation functions removed - only scrolling allowed
+    // function updateNavigationButtons() {
+    //     const prevBtn = document.querySelector('.carousel-prev');
+    //     const nextBtn = document.querySelector('.carousel-next');
+    //     
+    //     if (prevBtn) {
+    //         prevBtn.style.opacity = index > 0 ? '1' : '0.3';
+    //         prevBtn.style.pointerEvents = index > 0 ? 'auto' : 'none';
+    //     }
+    //     
+    //     if (nextBtn) {
+    //         nextBtn.style.opacity = index < maxIndex() ? '1' : '0.3';
+    //         nextBtn.style.pointerEvents = index < maxIndex() ? 'auto' : 'none';
+    //     }
+    // }
+
+    function calculateVisibleCards() {
+        const container = track.parentElement;
+        if (!container) return 1;
+        
+        const containerWidth = container.getBoundingClientRect().width;
+        const containerStyle = window.getComputedStyle(container);
+        const leftPadding = parseFloat(containerStyle.paddingLeft);
+        const rightPadding = parseFloat(containerStyle.paddingRight);
+        const contentWidth = containerWidth - leftPadding - rightPadding;
+        
+        // Get card width and gap
+        const firstCard = track.querySelector('.article-card');
+        if (!firstCard) return 1;
+        
+        const cardWidth = firstCard.offsetWidth;
+        const gap = 20; // CSS gap value
+        
+        // Calculate how many cards can fit
+        const cardsPerView = Math.floor((contentWidth + gap) / (cardWidth + gap));
+        
+        return Math.max(1, cardsPerView);
+    }
+
+    function maxIndex() {
+        const cards = track.querySelectorAll('.article-card').length;
+        const per = calculateVisibleCards();
+        // Calculate how many slides we need
+        const totalSlides = Math.ceil(cards / per);
+        return Math.max(0, totalSlides - 1);
+    }
+
+    function update() {
+        const per = calculateVisibleCards();
+        const cards = track.querySelectorAll('.article-card');
+        if (cards.length === 0) return;
+        
+        // Calculate the viewport width for sliding
+        const container = track.parentElement;
+        if (!container) return;
+        
+        const containerWidth = container.getBoundingClientRect().width;
+        const containerStyle = window.getComputedStyle(container);
+        const leftPadding = parseFloat(containerStyle.paddingLeft);
+        const rightPadding = parseFloat(containerStyle.paddingRight);
+        const contentWidth = containerWidth - leftPadding - rightPadding;
+        
+        // Get card width and gap to calculate proper slide distance
+        const firstCard = cards[0];
+        const cardWidth = firstCard.offsetWidth;
+        const gap = 20; // CSS gap value
+        
+        // Calculate how many cards fit in the viewport
+        const cardsPerView = Math.floor((contentWidth + gap) / (cardWidth + gap));
+        
+        // Slide by the width of visible cards + gap
+        const slideDistance = index * (cardsPerView * cardWidth + (cardsPerView - 1) * gap);
+        
+        // Apply the transform
+        track.style.transform = `translateX(${-slideDistance}px)`;
+        
+        // Navigation functions removed - only scrolling allowed
+        // updateNavigationButtons();
+        // updateVisualIndicators();
+    }
+
+    function slide(dir) {
+        index = Math.min(Math.max(0, index + dir), maxIndex());
+        update();
+    }
+
+    /* DISABLED TOUCH FUNCTIONALITY - Using native scrolling instead
+    // Touch/swipe functionality for mobile
+    track.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        startTranslateX = currentTranslateX;
+        isDragging = true;
+        track.style.transition = 'none'; // Disable transition during drag
+        
+        // Prevent default to avoid page scrolling
+        e.preventDefault();
+    }, { passive: false });
+
+    track.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        
+        const touchX = e.touches[0].clientX;
+        const diff = touchX - touchStartX;
+        currentTranslateX = startTranslateX + diff;
+        
+        // Apply the drag transform
+        track.style.transform = `translateX(${currentTranslateX}px)`;
+    }, { passive: true });
+
+    track.addEventListener('touchend', (e) => {
+        if (!isDragging) return;
+        
+        isDragging = false;
+        track.style.transition = 'transform 0.45s ease'; // Re-enable transition
+        
+        touchEndX = e.changedTouches[0].clientX;
+        const swipeDistance = touchEndX - touchStartX;
+        const minSwipeDistance = 80; // Higher threshold to avoid accidental swipes
+        
+        if (Math.abs(swipeDistance) > minSwipeDistance) {
+            if (swipeDistance > 0 && index > 0) {
+                // Swipe right - go to previous
+                slide(-1);
+            } else if (swipeDistance < 0 && index < maxIndex()) {
+                // Swipe left - go to next
+                slide(1);
+            } else {
+                // Invalid swipe - snap back
+                update();
+            }
+        } else {
+            // Not enough distance - snap back
+            update();
+        }
+    }, { passive: true });
+    */
+
+    /* DISABLED MOUSE DRAG FUNCTIONALITY - Using native scrolling instead
+    // Mouse drag functionality for desktop
+    track.addEventListener('mousedown', (e) => {
+        // Only start drag on left mouse button
+        if (e.button !== 0) return;
+        
+        mouseStartX = e.clientX;
+        mouseStartTranslateX = currentTranslateX;
+        isMouseDragging = true;
+        track.style.transition = 'none';
+        track.style.cursor = 'grabbing';
+        
+        // Prevent text selection during drag
+        e.preventDefault();
+    });
+
+    track.addEventListener('mousemove', (e) => {
+        if (!isMouseDragging) return;
+        
+        const mouseX = e.clientX;
+        const diff = mouseX - mouseStartX;
+        currentTranslateX = mouseStartTranslateX + diff;
+        
+        track.style.transform = `translateX(${currentTranslateX}px)`;
+    });
+
+    track.addEventListener('mouseup', (e) => {
+        if (!isMouseDragging) return;
+        
+        isMouseDragging = false;
+        track.style.transition = 'transform 0.45s ease';
+        track.style.cursor = 'grab';
+        
+        const mouseEndX = e.clientX;
+        const dragDistance = mouseEndX - mouseStartX;
+        const minDragDistance = 100; // Higher threshold to avoid accidental drags
+        
+        if (Math.abs(dragDistance) > minDragDistance) {
+            if (dragDistance > 0 && index > 0) {
+                slide(-1);
+            } else if (dragDistance < 0 && index < maxIndex()) {
+                slide(1);
+            } else {
+                update();
+            }
+        } else {
+            update();
+        }
+    });
+    */
+
+    track.addEventListener('mouseleave', () => {
+        if (isMouseDragging) {
+            isMouseDragging = false;
+            track.style.transition = 'transform 0.45s ease';
+            track.style.cursor = 'grab';
+            update();
+        }
+    });
+
+    // Prevent context menu on right-click
+    track.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+    });
+
+    /* DISABLED WHEEL FUNCTIONALITY - Using native scrolling instead
+    // Two-finger swipe support for laptop trackpads
+    let wheelTimeout;
+    let wheelDeltaX = 0;
+    let isWheeling = false;
+
+    track.addEventListener('wheel', (e) => {
+        // Only handle horizontal scroll (two-finger swipe on trackpad)
+        // Make the threshold much higher to avoid interfering with normal scrolling
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 20) {
+            e.preventDefault();
+            
+            // Accumulate horizontal scroll
+            wheelDeltaX += e.deltaX;
+            
+            if (!isWheeling) {
+                isWheeling = true;
+            }
+            
+            // Clear previous timeout
+            clearTimeout(wheelTimeout);
+            
+            // Set timeout to process the swipe after scrolling stops
+            wheelTimeout = setTimeout(() => {
+                isWheeling = false;
+                
+                // Determine swipe direction and distance
+                const swipeThreshold = 100; // Higher threshold to avoid accidental swipes
+                
+                if (Math.abs(wheelDeltaX) > swipeThreshold) {
+                    if (wheelDeltaX > 0 && index > 0) {
+                        // Swipe right - go to previous
+                        slide(-1);
+                    } else if (wheelDeltaX < 0 && index < maxIndex()) {
+                        // Swipe left - go to next
+                        slide(1);
+                    }
+                }
+                
+                // Reset delta
+                wheelDeltaX = 0;
+            }, 150); // Longer delay for better responsiveness
+        }
+    }, { passive: false });
+    */
+
+    // Set initial cursor style
+    track.style.cursor = 'grab';
+    
+    // Handle resize
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            index = Math.min(index, maxIndex());
+            update();
+        }, 100);
+    });
+    
+    // Initial update
+    requestAnimationFrame(update);
+
+    // Disable carousel navigation - users can only scroll
+    // addNavigationButtons();
+    // addKeyboardNavigation();
+    // addVisualIndicators();
+}
+
+// Initialize background music autoplay
+function initBackgroundMusic() {
+    const backgroundMusic = document.getElementById('backgroundMusic');
+    const musicControlBtn = document.getElementById('musicControlBtn');
+    
+    if (!backgroundMusic) {
+        console.error('Background music element not found!');
+        return;
+    }
+    
+    console.log('Initializing background music...');
+    console.log('Audio element found:', backgroundMusic);
+    console.log('Audio source:', backgroundMusic.src || backgroundMusic.querySelector('source')?.src);
+    
+    // Set volume to a reasonable level (0.0 to 1.0)
+    backgroundMusic.volume = 0.5; // Increased volume for testing
+    
+    // Simple immediate playback attempt
+    console.log('🎵 Attempting immediate music playback...');
+    
+    // Set volume and try to play
+    backgroundMusic.volume = 0.5;
+    backgroundMusic.muted = false;
+    
+    // Update button state based on music playing status
+    function updateMusicButtonState() {
+        if (musicControlBtn) {
+            if (!backgroundMusic.paused) {
+                musicControlBtn.classList.add('playing');
+                musicControlBtn.querySelector('.btn-icon').textContent = '🔇';
+                musicControlBtn.title = 'Mute Background Music';
+            } else {
+                musicControlBtn.classList.remove('playing');
+                musicControlBtn.querySelector('.btn-icon').textContent = '🎵';
+                musicControlBtn.title = 'Play Background Music';
+            }
+        }
+    }
+    
+    // Add event listeners for music state changes
+    backgroundMusic.addEventListener('play', updateMusicButtonState);
+    backgroundMusic.addEventListener('pause', updateMusicButtonState);
+    backgroundMusic.addEventListener('ended', updateMusicButtonState);
+    
+    // Music control button functionality
+    if (musicControlBtn) {
+        musicControlBtn.addEventListener('click', () => {
+            if (backgroundMusic.paused) {
+                backgroundMusic.play().then(() => {
+                    console.log('Background music started');
+                }).catch(err => {
+                    console.log('Failed to start music:', err);
+                });
+            } else {
+                backgroundMusic.pause();
+                console.log('Background music paused');
+            }
+        });
+    }
+    
+    // Add error handling for audio loading
+    backgroundMusic.addEventListener('error', (e) => {
+        console.error('Audio loading error:', e);
+        console.error('Audio error code:', backgroundMusic.error?.code);
+        console.error('Audio error message:', backgroundMusic.error?.message);
+    });
+    
+    backgroundMusic.addEventListener('canplaythrough', () => {
+        console.log('Audio can play through - ready to start');
+    });
+    
+    backgroundMusic.addEventListener('loadstart', () => {
+        console.log('Audio loading started');
+    });
+    
+    backgroundMusic.addEventListener('loadeddata', () => {
+        console.log('Audio data loaded');
+    });
+    
+    // Simple autoplay attempt
+    console.log('🎵 Attempting to play audio...');
+    const playPromise = backgroundMusic.play();
+    
+    if (playPromise !== undefined) {
+        playPromise.then(() => {
+            console.log('🎵 Background music started successfully!');
+        }).catch(error => {
+            console.log('⚠️ Autoplay prevented by browser:', error);
+            console.log('Will start music on user interaction...');
+            
+            // Add a click event listener to start music on first user interaction
+            const startMusicOnClick = (event) => {
+                console.log('🎵 User interaction detected, starting music...');
+                backgroundMusic.play().then(() => {
+                    console.log('🎵 Background music started on user interaction!');
+                    // Remove the event listener after first use
+                    document.removeEventListener('click', startMusicOnClick);
+                    document.removeEventListener('touchstart', startMusicOnClick);
+                }).catch(err => {
+                    console.error('❌ Failed to start music on interaction:', err);
+                });
+            };
+            
+            // Listen for first click or touch to start music
+            document.addEventListener('click', startMusicOnClick, { once: true });
+            document.addEventListener('touchstart', startMusicOnClick, { once: true });
+        });
+    } else {
+        console.error('❌ Play promise is undefined - browser may not support audio');
+    }
+    
+    // Initial button state
+    updateMusicButtonState();
+    
+    // Initialize music beat synchronization
+    initMusicBeatSync();
+}
+
+// Initialize music beat synchronization
+function initMusicBeatSync() {
+    const musicWave = document.getElementById('musicWave');
+    if (!musicWave) return;
+    
+    console.log('🎵 Initializing music beat synchronization...');
+    
+    // Beat timing - adjust this to match your music's actual beat
+    const BEAT_INTERVAL = 3150; // 3.15 seconds in milliseconds
+    let beatTimer;
+    
+    // Function to trigger beat effect
+    function triggerBeat() {
+        if (musicWave) {
+            // Remove any existing animation
+            musicWave.classList.remove('active');
+            
+            // Force reflow to restart animation
+            void musicWave.offsetWidth;
+            
+            // Add active class to trigger animation
+            musicWave.classList.add('active');
+            
+            console.log('🎵 Beat triggered!');
+        }
+    }
+    
+    // Start beat synchronization when music starts
+    function startBeatSync() {
+        console.log('🎵 Starting beat synchronization...');
+        
+        // Clear any existing timer
+        if (beatTimer) {
+            clearInterval(beatTimer);
+        }
+        
+        // Set up beat timer
+        beatTimer = setInterval(triggerBeat, BEAT_INTERVAL);
+        
+        // Trigger first beat immediately
+        triggerBeat();
+    }
+    
+    // Stop beat synchronization when music stops
+    function stopBeatSync() {
+        console.log('🎵 Stopping beat synchronization...');
+        if (beatTimer) {
+            clearInterval(beatTimer);
+            beatTimer = null;
+        }
+    }
+    
+    // Listen for music play/pause events
+    const backgroundMusic = document.getElementById('backgroundMusic');
+    if (backgroundMusic) {
+        backgroundMusic.addEventListener('play', startBeatSync);
+        backgroundMusic.addEventListener('pause', stopBeatSync);
+        backgroundMusic.addEventListener('ended', stopBeatSync);
+        
+        // If music is already playing, start beat sync
+        if (!backgroundMusic.paused) {
+            startBeatSync();
+        }
+    }
+}
+
+// Initialize effects when page loads
+function initEffects() {
+    // Create floating particles
+    function createParticles() {
+        const particlesContainer = document.getElementById('particles');
+        if (!particlesContainer) return;
+        
+        const particleCount = CONFIG.EFFECTS.PARTICLE_COUNT;
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 6 + 's';
+            particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
+            particle.style.opacity = Math.random() * 0.5 + 0.1;
+            particlesContainer.appendChild(particle);
+        }
+    }
+    
+    // Create matrix rain effect
+    function createMatrixRain() {
+        const matrixContainer = document.getElementById('matrixRain');
+        if (!matrixContainer) return;
+        
+        const characters = '01█▓▒░';
+        const columns = Math.floor(window.innerWidth / CONFIG.EFFECTS.MATRIX_COLUMN_WIDTH);
+        
+        for (let i = 0; i < columns; i++) {
+            const character = document.createElement('div');
+            character.className = 'matrix-character';
+            character.textContent = characters[Math.floor(Math.random() * characters.length)];
+            character.style.left = (i * 20) + 'px';
+            character.style.animationDelay = Math.random() * 3 + 's';
+            character.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            matrixContainer.appendChild(character);
+        }
+    }
+    
+    createParticles();
+    createMatrixRain();
+}
+
+// Smooth scrolling for news carousel
+function initSmoothScrolling() {
+    // DISABLED: This function was causing teleporting/jumping issues
+    // Let the browser handle native scrolling behavior instead
+    console.log('Native scrolling enabled - custom scroll handlers disabled');
+    return;
+    
+    /* DISABLED CODE THAT WAS CAUSING ISSUES:
+    const newsCarousel = document.querySelector('.news-carousel');
+    if (!newsCarousel) return;
+    
+    let isScrolling = false;
+    let scrollTimeout;
+    
+    // Prevent scroll jumping and ensure smooth behavior
+    newsCarousel.addEventListener('scroll', () => {
+        if (!isScrolling) {
+            isScrolling = true;
+        }
+        
+        // Clear previous timeout
+        clearTimeout(scrollTimeout);
+        
+        // Set timeout to mark scrolling as finished
+        scrollTimeout = setTimeout(() => {
+            isScrolling = false;
+        }, 150);
+    }, { passive: true });
+    
+    // Improve touch scrolling on mobile
+    let touchStartX = 0;
+    let touchStartScrollLeft = 0;
+    
+    newsCarousel.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartScrollLeft = newsCarousel.scrollLeft;
+    }, { passive: true });
+    
+    newsCarousel.addEventListener('touchmove', (e) => {
+        if (!isScrolling) return;
+        
+        const touchX = e.touches[0].clientX;
+        const diff = touchStartX - touchX;
+        const scrollLeft = touchStartScrollLeft + diff;
+        
+        // Smooth scroll to position
+        newsCarousel.scrollTo({
+            left: scrollLeft,
+            behavior: 'auto' // Use auto for touch scrolling to prevent lag
+        });
+    }, { passive: true });
+    
+    // Ensure scroll position is maintained
+    newsCarousel.addEventListener('scrollend', () => {
+        isScrolling = false;
+    }, { passive: true });
+    */
+}
+
+// Add mouse movement effect
+function initMouseEffects() {
+    document.addEventListener('mousemove', (e) => {
+        const particles = document.querySelectorAll('.particle');
+        const mouseX = e.clientX / window.innerWidth;
+        const mouseY = e.clientY / window.innerHeight;
+        
+        particles.forEach((particle, index) => {
+            const speed = (index % 3 + 1) * 0.5;
+            const x = (mouseX - 0.5) * speed;
+            const y = (mouseY - 0.5) * speed;
+            particle.style.transform = `translate(${x}px, ${y}px)`;
+        });
+    });
+}
+
+// Initialize everything when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize background music autoplay
+    initBackgroundMusic();
+    
+    // Initialize effects
+    initEffects();
+    initMouseEffects();
+    
+    // Initialize navigation functionality
+    initNavigation();
+    
+    // Initialize welcome text cycling
+    initWelcomeTextCycling();
+    
+    // Initialize news carousel
+    initNewsCarousel();
+    
+    // Try to start music immediately on page load
+    setTimeout(() => {
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        if (backgroundMusic && backgroundMusic.paused) {
+            console.log('🎵 Page loaded, attempting to start music...');
+            backgroundMusic.muted = false;
+            backgroundMusic.play().then(() => {
+                console.log('🎵 Music started on page load!');
+            }).catch(err => {
+                console.log('⚠️ Page load music start failed:', err);
+            });
+        }
+    }, 50);
+    
+    // Add scroll-triggered animations
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+    
+    // Observe all features for animation
+    document.querySelectorAll('.feature').forEach(feature => {
+        feature.style.opacity = '0';
+        feature.style.transform = 'translateY(20px)';
+        feature.style.transition = 'all 0.6s ease';
+        observer.observe(feature);
+    });
+});
+
+// Utility functions for error handling and logging
+const Logger = {
+    log: (message, data = null) => {
+        if (console && console.log) {
+            if (data) {
+                console.log(`[Noteworthy News] ${message}`, data);
+            } else {
+                console.log(`[Noteworthy News] ${message}`);
+            }
+        }
+    },
+    
+    warn: (message, data = null) => {
+        if (console && console.warn) {
+            if (data) {
+                console.warn(`[Noteworthy News] WARNING: ${message}`, data);
+            } else {
+                console.warn(`[Noteworthy News] WARNING: ${message}`);
+            }
+        }
+    },
+    
+    error: (message, error = null) => {
+        if (console && console.error) {
+            if (error) {
+                console.error(`[Noteworthy News] ERROR: ${message}`, error);
+            } else {
+                console.error(`[Noteworthy News] ERROR: ${message}`);
+            }
+        }
+    }
+};
+
+// Error boundary function
+function handleError(error, context = 'Unknown') {
+    Logger.error(`Error in ${context}`, error);
+    
+    // Try to recover gracefully
+    try {
+        // Hide any loading states
+        const loadingElements = document.querySelectorAll('.loading, [data-loading="true"]');
+        loadingElements.forEach(el => {
+            el.style.display = 'none';
+        });
+        
+        // Show user-friendly error message
+        showErrorMessage('Something went wrong. Please refresh the page and try again.');
+    } catch (recoveryError) {
+        Logger.error('Error during recovery attempt', recoveryError);
+    }
+}
+
+// Show user-friendly error message
+function showErrorMessage(message) {
+    try {
+        // Remove existing error messages
+        const existingErrors = document.querySelectorAll('.error-message');
+        existingErrors.forEach(el => el.remove());
+        
+        // Create error message element
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #e74c3c;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 10000;
+            max-width: 300px;
+            font-family: 'Inter', sans-serif;
+        `;
+        
+        errorDiv.textContent = message;
+        document.body.appendChild(errorDiv);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (errorDiv.parentNode) {
+                errorDiv.parentNode.removeChild(errorDiv);
+            }
+        }, 5000);
+    } catch (error) {
+        Logger.error('Error showing error message', error);
+    }
+}

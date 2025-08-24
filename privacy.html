@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Noteworthy News</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="IMG_5794.PNG">
+    <meta name="theme-color" content="#0f234a">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* Ensure background covers entire document and prevents white overscroll */
+        html {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overscroll-behavior: none !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Prevent white background on iOS Safari pull-to-refresh */
+        html::before {
+            content: '';
+            position: fixed;
+            top: -200vh;
+            left: 0;
+            right: 0;
+            bottom: -200vh;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            z-index: -3;
+            pointer-events: none;
+            width: 100vw;
+            height: 400vh;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%);
+            color: white;
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 80%, rgba(74, 144, 226, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(46, 204, 113, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 80%, rgba(155, 89, 182, 0.1) 0%, transparent 50%);
+            animation: backgroundShift 20s ease-in-out infinite;
+            z-index: -2;
+        }
+        
+        @keyframes backgroundShift {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(1deg); }
+        }
+        
+        /* Floating particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.1;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(74, 144, 226, 0.6);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+        }
+        
+        /* Matrix rain effect */
+        .matrix-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.1;
+        }
+        
+        .matrix-character {
+            position: absolute;
+            color: #4A90E2;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            animation: matrixFall 3s linear infinite;
+        }
+        
+        @keyframes matrixFall {
+            from { transform: translateY(-100vh); opacity: 1; }
+            to { transform: translateY(100vh); opacity: 0; }
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInUp 1s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .logo-n, .logo-w {
+            font-size: 4rem;
+            font-weight: 900;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .logo-n {
+            color: #4A90E2;
+            text-shadow: 0 0 20px rgba(74, 144, 226, 0.8);
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+        
+        .logo-w {
+            color: white;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+            animation: glowPulse 2s ease-in-out infinite 0.5s;
+        }
+        
+        @keyframes glowPulse {
+            0%, 100% { text-shadow: 0 0 20px currentColor; }
+            50% { text-shadow: 0 0 30px currentColor, 0 0 40px currentColor; }
+        }
+        
+        .logo:hover .logo-n {
+            transform: scale(1.1) rotate(-2deg);
+        }
+        
+        .logo:hover .logo-w {
+            transform: scale(1.1) rotate(2deg);
+        }
+        
+        .company-name {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: textGlow 3s ease-in-out infinite;
+        }
+        
+        @keyframes textGlow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.2); }
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 1s ease-out 0.3s both;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 30px;
+            color: #4A90E2;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 12px 24px;
+            background: rgba(74, 144, 226, 0.1);
+            border: 2px solid rgba(74, 144, 226, 0.3);
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            animation: fadeInUp 1s ease-out 0.6s both;
+        }
+        
+        .back-link:hover {
+            background: rgba(74, 144, 226, 0.2);
+            border-color: #4A90E2;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(74, 144, 226, 0.3);
+        }
+        
+        .content {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            border: 2px solid rgba(74, 144, 226, 0.6);
+            box-shadow: 
+                0 8px 30px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(74, 144, 226, 0.4),
+                0 0 0 1px rgba(74, 144, 226, 0.3),
+                0 3px 6px rgba(139, 69, 19, 0.15),
+                0 1px 2px rgba(160, 82, 45, 0.1);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 1s ease-out 0.9s both;
+        }
+        
+        .content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg,
+                transparent 0%,
+                rgba(74, 144, 226, 0.05) 25%,
+                transparent 50%,
+                rgba(74, 144, 226, 0.05) 75%,
+                transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .content:hover::before {
+            opacity: 1;
+        }
+        
+        h2 {
+            color: #4A90E2;
+            margin: 30px 0 15px;
+            font-size: 1.5rem;
+            text-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
+        }
+        
+        h3 {
+            color: #ffffff;
+            margin: 20px 0 10px;
+            font-size: 1.2rem;
+        }
+        
+        p, ul {
+            margin-bottom: 15px;
+            color: #cccccc;
+        }
+        
+        ul {
+            margin-left: 20px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        .last-updated {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(74, 144, 226, 0.3);
+            color: #888888;
+            font-size: 0.9rem;
+        }
+        
+        /* Western Effects */
+        .western-stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -3;
+            opacity: 0.3;
+        }
+        
+        .western-star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #4A90E2;
+            border-radius: 50%;
+            animation: twinkle 4s ease-in-out infinite;
+        }
+        
+        .western-star:nth-child(1) { top: 10%; left: 15%; animation-delay: 0s; }
+        .western-star:nth-child(2) { top: 20%; left: 85%; animation-delay: 1s; }
+        .western-star:nth-child(3) { top: 35%; left: 25%; animation-delay: 2s; }
+        .western-star:nth-child(4) { top: 45%; left: 75%; animation-delay: 3s; }
+        .western-star:nth-child(5) { top: 60%; left: 10%; animation-delay: 0.5s; }
+        .western-star:nth-child(6) { top: 70%; left: 90%; animation-delay: 1.5s; }
+        .western-star:nth-child(7) { top: 80%; left: 30%; animation-delay: 2.5s; }
+        .western-star:nth-child(8) { top: 90%; left: 70%; animation-delay: 3.5s; }
+        
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.5); }
+        }
+        
+        /* Enhanced Gritty Desert Horizon Effect */
+        .desert-horizon {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 300px;
+            background: 
+                linear-gradient(to top, 
+                    rgba(15, 15, 35, 0.95) 0%, 
+                    rgba(15, 15, 35, 0.8) 20%, 
+                    rgba(139, 69, 19, 0.15) 40%,
+                    rgba(160, 82, 45, 0.1) 60%,
+                    rgba(205, 133, 63, 0.08) 80%,
+                    transparent 100%),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent 0px,
+                    transparent 30px,
+                    rgba(139, 69, 19, 0.12) 30px,
+                    rgba(139, 69, 19, 0.12) 40px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent 0px,
+                    transparent 60px,
+                    rgba(160, 82, 45, 0.08) 60px,
+                    rgba(160, 82, 45, 0.08) 70px
+                );
+            z-index: -2;
+            pointer-events: none;
+            opacity: 0.75;
+        }
+        
+        /* Enhanced Gritty Desert Texture Overlay */
+        .leather-texture {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='sand'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='6' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23sand)' opacity='0.08'/%3E%3C/svg%3E"),
+                url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grit'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='3.0' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23grit)' opacity='0.06'/%3E%3C/svg%3E"),
+                url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='rough'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23rough)' opacity='0.04'/%3E%3C/svg%3E");
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.2;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px 15px;
+            }
+            
+            .content {
+                padding: 25px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .logo-n, .logo-w {
+                font-size: 3rem;
+            }
+            
+            .company-name {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Effects -->
+    <div class="particles" id="particles"></div>
+    <div class="matrix-rain" id="matrixRain"></div>
+    
+    <!-- Western Effects -->
+    <div class="western-stars">
+        <div class="western-star"></div>
+        <div class="western-star"></div>
+        <div class="western-star"></div>
+        <div class="western-star"></div>
+        <div class="western-star"></div>
+        <div class="western-star"></div>
+        <div class="western-star"></div>
+        <div class="western-star"></div>
+    </div>
+    <div class="desert-horizon"></div>
+    <div class="leather-texture"></div>
+    
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <span class="logo-n">N</span><span class="logo-w">W</span>
+            </div>
+            <div class="company-name">Noteworthy News</div>
+            <h1>Privacy Policy</h1>
+            <a href="index.html" class="back-link">← Back to Home</a>
+        </div>
+        
+        <div class="content">
+            <p>At Noteworthy News, we respect your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, and safeguard your information when you visit our website.</p>
+            
+            <h2>Information We Collect</h2>
+            <p>We collect minimal information to provide you with the best possible experience:</p>
+            <ul>
+                <li><strong>Usage Data:</strong> Information about how you use our website, including pages visited and time spent on each page</li>
+                <li><strong>Device Information:</strong> Basic information about your device, browser type, and operating system</li>
+                <li><strong>Game Progress:</strong> If you use our media literacy game, we may store your game progress locally on your device</li>
+            </ul>
+            
+            <h2>How We Use Your Information</h2>
+            <p>We use the information we collect to:</p>
+            <ul>
+                <li>Improve our website and user experience</li>
+                <li>Analyze website performance and usage patterns</li>
+                <li>Provide personalized content and recommendations</li>
+                <li>Ensure website security and prevent fraud</li>
+            </ul>
+            
+            <h2>Data Storage and Security</h2>
+            <p>Your data is stored securely and we implement appropriate security measures to protect your information. We do not sell, trade, or otherwise transfer your personal information to third parties.</p>
+            
+            <h2>Cookies and Tracking</h2>
+            <p>We use essential cookies to improve your browsing experience. These cookies help us remember your preferences and provide basic functionality. You can disable cookies in your browser settings, though this may affect some website features.</p>
+            
+            <h2>Third-Party Services</h2>
+            <p>We may use third-party services for analytics and performance monitoring. These services have their own privacy policies and we encourage you to review them.</p>
+            
+            <h2>Children's Privacy</h2>
+            <p>Our website is designed to be family-friendly and educational. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and believe your child has provided us with personal information, please contact us.</p>
+            
+            <h2>Your Rights</h2>
+            <p>You have the right to:</p>
+            <ul>
+                <li>Access your personal information</li>
+                <li>Request correction of inaccurate information</li>
+                <li>Request deletion of your information</li>
+                <li>Opt-out of certain data collection</li>
+            </ul>
+            
+            <h2>Changes to This Policy</h2>
+            <p>We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.</p>
+            
+            <div class="last-updated">
+                <p>Last Updated: August 18, 2025 at 19:15</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Create particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // Create matrix rain
+        function createMatrixRain() {
+            const matrixContainer = document.getElementById('matrixRain');
+            const columns = Math.floor(window.innerWidth / 20);
+            
+            for (let i = 0; i < columns; i++) {
+                const character = document.createElement('div');
+                character.className = 'matrix-character';
+                character.textContent = String.fromCharCode(0x30A0 + Math.random() * 96);
+                character.style.left = i * 20 + 'px';
+                character.style.animationDelay = Math.random() * 3 + 's';
+                matrixContainer.appendChild(character);
+            }
+        }
+        
+        // Initialize effects when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            createMatrixRain();
+        });
+        
+        // Check if audio should continue playing
+        window.addEventListener('load', function() {
+            // Check if there's a background music element on the landing page
+            const landingAudio = window.opener ? window.opener.document.getElementById('backgroundMusic') : null;
+            
+            if (landingAudio && !landingAudio.paused) {
+                // Store the current audio state in sessionStorage
+                sessionStorage.setItem('musicPlaying', 'true');
+                sessionStorage.setItem('musicTime', landingAudio.currentTime);
+            }
+        });
+        
+        // When navigating back to landing page, restore audio state
+        document.querySelector('.back-link').addEventListener('click', function(e) {
+            // Store current page state
+            sessionStorage.setItem('currentPage', 'privacy');
+            
+            // Don't prevent default - let the navigation happen
+            // The landing page will check sessionStorage and restore audio
+        });
+    </script>
+</body>
+</html>
