@@ -715,15 +715,15 @@ class NoteworthyChat extends HTMLElement {
           <p class="tip">Ask about headlines, context, or fact-checks. I'm here to help you stay informed!</p>
         </div>
         
+        <div class="input">
+          <input type="text" placeholder="Ask about a story or topic…" aria-label="Your question" id="chatInput" />
+          <button type="button">Send</button>
+        </div>
+        
         <div class="image-generation-section" id="imageGenerationSection">
           <div class="info">Enter a description of the image you'd like to generate:</div>
           <input type="text" id="imagePromptInput" placeholder="e.g., a futuristic cityscape at sunset" />
           <button type="button" id="generateImageBtn">🎨 Generate Image</button>
-        </div>
-        
-        <div class="input">
-          <input type="text" placeholder="Ask about a story or topic…" aria-label="Your question" id="chatInput" />
-          <button type="button">Send</button>
         </div>
         
         <div class="image-generation-toggle" id="imageGenerationToggle">
