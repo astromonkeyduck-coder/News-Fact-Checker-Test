@@ -1152,7 +1152,7 @@ class NoteworthyChat extends HTMLElement {
             throw new Error(errorText);
           }
 
-          data = await res.json();
+          const data = await res.json();
           console.log('API Success:', { reply: data.reply?.substring(0, 50) + '...' });
           thinking.remove();
 
