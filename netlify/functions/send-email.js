@@ -82,7 +82,7 @@ exports.handler = async (event, context) => {
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
     console.log('Using from email:', fromEmail);
 
-    // Send notification email to richard@noteworthynews.co (domain is verified)
+    // Send notification email to admin (domain is verified)
     const notificationTo = 'richard@noteworthynews.co';
     
     const notificationResult = await resend.emails.send({

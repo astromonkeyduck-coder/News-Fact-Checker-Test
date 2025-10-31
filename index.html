@@ -11,7 +11,7 @@
     <link rel="shortcut icon" type="image/png" href="IMG_5794.PNG">
     <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
     <link rel="mask-icon" href="IMG_5794.PNG" color="#0f234a">
-    <meta name="theme-color" content="#010818">
+    <meta name="theme-color" content="#07152a">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-capable" content="yes">
     
@@ -19,7 +19,7 @@
     <link rel="manifest" href="site.webmanifest">
     
     <!-- Canonical URL -->
-    <link rel="canonical" href="https://richarda.github.io/breaking-news-game/">
+    <link rel="canonical" href="https://noteworthynews.co/">
     
     <!-- Performance Optimizations -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -38,7 +38,7 @@
     
     <!-- Enhanced Open Graph for Social Media -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://richarda.github.io/breaking-news-game/">
+    <meta property="og:url" content="https://noteworthynews.co/">
     <meta property="og:site_name" content="Noteworthy News">
     <meta property="og:title" content="Noteworthy News - Fact-Checked Journalism & Media Literacy Games">
     <meta property="og:description" content="Your trusted source for fact-checked journalism, media literacy education, and interactive fact-checking games. Learn critical thinking skills and stay informed with verified news.">
@@ -62,8 +62,8 @@
       "@context": "https://schema.org",
       "@type": "NewsMediaOrganization",
       "name": "Noteworthy News",
-      "url": "https://richarda.github.io/breaking-news-game/",
-      "logo": "https://richarda.github.io/breaking-news-game/IMG_5794.PNG",
+      "url": "https://noteworthynews.co/",
+      "logo": "https://noteworthynews.co/IMG_5794.PNG",
       "description": "Test your media literacy skills with interactive games and fact-checking challenges. Stay informed with trusted journalism.",
       "foundingDate": "2024",
       "areaServed": "Worldwide",
@@ -107,7 +107,7 @@
             function playTrackOnly(track) {
                 pauseAllTracks();
                 if (track && track.paused) {
-                    track.play().catch(e => console.log('Audio play error:', e));
+                    track.play().catch(() => {});
                 }
             }
             
@@ -121,7 +121,6 @@
                 const forcePlay = () => {
                     playTrackOnly(audio);
                     audio.play().then(() => {
-                        console.log('🎵 IMMEDIATE AUTOPLAY SUCCESS!');
                         updateMusicButtonState(true);
                     }).catch(() => {
                         // If failed, try again in 10ms
@@ -670,10 +669,12 @@
                 padding: 0 20px;
                 padding-top: 80px;
                 text-align: center;
-                height: 100vh;
+                min-height: 100vh;
                 margin-top: 0; /* Add space at top for mobile */
-                /* Prevent scrolling within hero section */
-                overflow: hidden;
+                /* Hero section should not scroll */
+                overflow: hidden !important;
+                overflow-x: hidden !important;
+                overflow-y: hidden !important;
             }
             
             .hero-title {
@@ -730,10 +731,12 @@
             .hero-section {
                 padding: 0 15px;
                 padding-top: 80px;
-                height: 100vh;
+                min-height: 100vh;
                 margin-top: 0; /* Add space at top for mobile */
-                /* Prevent scrolling within hero section */
-                overflow: hidden;
+                /* Hero section should not scroll */
+                overflow: hidden !important;
+                overflow-x: hidden !important;
+                overflow-y: hidden !important;
             }
             
             .hero-title {
@@ -758,10 +761,10 @@
         @media (max-width: 360px) {
             .hero-section {
                 padding: 60px 10px 40px;
-                height: 100vh;
-                overflow: hidden;
-                touch-action: none;
-                overscroll-behavior: contain;
+                min-height: 100vh;
+                overflow: hidden !important;
+                overflow-x: hidden !important;
+                overflow-y: hidden !important;
             }
             
             .hero-title {
@@ -780,10 +783,10 @@
         @media (max-width: 320px) {
             .hero-section {
                 padding: 50px 8px 30px;
-                height: 100vh;
-                overflow: hidden;
-                touch-action: none;
-                overscroll-behavior: contain;
+                min-height: 100vh;
+                overflow: hidden !important;
+                overflow-x: hidden !important;
+                overflow-y: hidden !important;
             }
             
             .hero-title {
@@ -1212,12 +1215,12 @@
         }
         
         /* Ensure background covers entire document and prevents white overscroll */
-        html, body {
+        html {
             margin: 0;
             padding: 0;
             min-height: 100vh;
-            background-color: #010818; /* Deep navy base */
-            background-image: linear-gradient(180deg, #010818 0%, #07142e 100%); /* Subtle gradient for depth */
+            background-color: #07152a; /* Dark but not too dark navy base */
+            background-image: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%); /* Subtle gradient for depth */
             color-scheme: dark;
             overflow-x: hidden !important;
             overflow-y: auto !important;
@@ -1233,22 +1236,47 @@
             background-size: cover;
         }
         
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-color: #07152a;
+            background-image: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+            color-scheme: dark;
+            overflow-x: hidden !important;
+            overflow-y: hidden !important; /* html handles scrolling */
+        }
+        
         /* Prevent white gaps on mobile Safari */
         @supports (-webkit-touch-callout: none) {
             html, body {
                 height: -webkit-fill-available;
-                background-color: #010818;
+                background-color: #07152a;
             }
         }
         
         /* Force background coverage for all scrollable areas */
-        html, body, #root, .app {
-            background: linear-gradient(180deg, #010818 0%, #07142e 100%) !important;
-            background-color: #010818 !important;
+        html {
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
+            background-color: #07152a !important;
+        }
+        
+        body, #root, .app {
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
+            background-color: #07152a !important;
         }
         
         /* Additional viewport coverage */
-        html, body {
+        html {
+            min-height: 100vh;
+            min-height: 100dvh; /* Dynamic viewport height for mobile */
+            background-attachment: fixed !important;
+            background-size: cover !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+        }
+        
+        body {
             min-height: 100vh;
             min-height: 100dvh; /* Dynamic viewport height for mobile */
             background-attachment: fixed !important;
@@ -1264,10 +1292,16 @@
         
         /* Ensure background covers all viewport sizes */
         @media screen and (max-width: 768px) {
-            html, body {
+            html {
                 background-attachment: scroll !important;
                 background-size: 100% 100% !important;
-                background-color: #010818 !important; /* Fallback solid color */
+                background-color: #07152a !important; /* Fallback solid color */
+            }
+            
+            body {
+                background-attachment: scroll !important;
+                background-size: 100% 100% !important;
+                background-color: #07152a !important; /* Fallback solid color */
             }
             
             /* Prevent iOS Safari pull-to-refresh white flash */
@@ -1281,13 +1315,13 @@
         
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(180deg, #010818 0%, #07142e 100%);
-            background-color: #010818;
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+            background-color: #07152a;
             color: white;
             line-height: 1.6;
             min-height: 100vh;
             overflow-x: hidden !important; /* Prevent horizontal scrolling */
-            overflow-y: auto !important; /* Allow vertical scrolling */
+            overflow-y: hidden !important; /* html handles scrolling - prevent duplicate scrollbar */
             position: relative;
             /* CRITICAL: Prevent any horizontal overflow */
             max-width: 100vw;
@@ -1336,8 +1370,8 @@
             left: 0;
             right: 0;
             bottom: -500vh;
-            background: linear-gradient(180deg, #010818 0%, #07142e 100%) !important;
-            background-color: #010818 !important;
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
+            background-color: #07152a !important;
             z-index: -4;
             pointer-events: none;
             width: 100vw;
@@ -1351,8 +1385,8 @@
             left: 0;
             right: 0;
             bottom: -500vh;
-            background: linear-gradient(180deg, #010818 0%, #07142e 100%) !important;
-            background-color: #010818 !important;
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
+            background-color: #07152a !important;
             z-index: -3;
             pointer-events: none;
             width: 100vw;
@@ -1553,10 +1587,10 @@
             padding-top: 100px;
             margin-bottom: 0;
             animation: fadeInUp 1s ease-out 0.6s both;
-            /* CRITICAL: Prevent any horizontal overflow in hero section */
+            /* CRITICAL: Prevent any overflow - hero section should not scroll */
             width: 100%;
-            height: 100vh;
-            overflow: hidden !important; /* Prevent scrollbar on hero section */
+            min-height: 100vh;
+            overflow: hidden !important;
             overflow-x: hidden !important;
             overflow-y: hidden !important;
             box-sizing: border-box;
@@ -1569,7 +1603,7 @@
             align-items: center;
             padding: 100px 20px 0 20px;
             position: relative;
-            /* Prevent scrolling within hero section but allow page scroll */
+            /* Page scrolls, not hero section */
         }
         
         .welcome-background-image {
@@ -5276,11 +5310,14 @@
                 box-sizing: border-box !important;
             }
             
-            /* Keep hero section overflow hidden to prevent internal scrolling */
+            /* Allow scrolling past hero section */
             .hero-section {
                 max-width: 100% !important;
                 width: 100% !important;
-                overflow: hidden !important; /* Prevent scrolling within hero */
+                overflow-x: hidden !important;
+                overflow-y: visible !important;
+                touch-action: pan-y pan-x !important;
+                overscroll-behavior-y: auto !important;
                 box-sizing: border-box !important;
             }
         }
@@ -5313,7 +5350,9 @@
         .hero-section {
             max-width: 100% !important;
             width: 100% !important;
-            overflow: hidden !important; /* Prevent scrollbar on hero section */
+            overflow: hidden !important;
+            overflow-x: hidden !important;
+            overflow-y: hidden !important;
             box-sizing: border-box !important;
         }
         
@@ -5328,10 +5367,14 @@
         @media (max-width: 768px) {
             html {
                 overflow-y: auto !important; /* Allow vertical scrolling */
+                overflow-x: hidden !important;
             }
             
             body {
                 overflow-y: hidden !important; /* Prevent duplicate scrollbar - html handles scrolling */
+                overflow-x: hidden !important;
+                height: auto !important;
+                position: relative !important;
             }
             
             .container {
@@ -5344,7 +5387,9 @@
             .hero-section {
                 max-width: 100% !important;
                 width: 100% !important;
-                overflow: hidden !important; /* Prevent scrollbar on hero section */
+                overflow: hidden !important;
+                overflow-x: hidden !important;
+                overflow-y: hidden !important;
                 box-sizing: border-box !important;
             }
             
@@ -5355,6 +5400,19 @@
                 box-sizing: border-box !important;
             }
         }
+        
+        /* FINAL SCROLLBAR FIX - Must be last to override everything */
+        html {
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+        }
+        
+        body {
+            overflow-y: hidden !important;
+            overflow-x: hidden !important;
+            position: relative !important;
+        }
+        
         /* Mobile article layout - Use same vertical design as desktop */
         @media (max-width: 768px) {
             .article-card {
@@ -5916,11 +5974,13 @@
                 rgba(5, 15, 30, 0.7) 40%, 
                 rgba(0, 10, 20, 0.95) 100%);
             z-index: -3;
-            overflow: hidden;
+            overflow: hidden !important;
             pointer-events: none;
-            /* Ensure full coverage and prevent purple overflow */
+            /* Ensure full coverage and prevent overflow */
             min-width: 140vw;
             max-width: 140vw;
+            /* Prevent causing scroll issues */
+            clip-path: inset(0);
         }
         
         /* Prevent Scrolling During Welcome Animation */
@@ -5945,7 +6005,11 @@
         }
         
         /* Prevent any scroll interference */
-        html, body {
+        html {
+            scroll-behavior: auto !important;
+        }
+        
+        body {
             scroll-behavior: auto !important;
         }
         
@@ -5965,7 +6029,8 @@
             min-height: 100vh;
             min-width: 100vw;
             max-width: 100vw;
-            overflow-x: hidden;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
         }
         
         body {
@@ -5973,7 +6038,8 @@
             min-height: 100vh;
             min-width: 100vw;
             max-width: 100vw;
-            overflow-x: hidden;
+            overflow-x: hidden !important;
+            overflow-y: hidden !important;
         }
         
         /* Ultra-smooth transitions for better user experience */
@@ -7781,7 +7847,6 @@
                             if (audio && pageState.musicTime < (audio.duration || 0)) {
                                 audio.currentTime = pageState.musicTime || 0;
                                 audio.play().catch(function(error) {
-                                    console.log('Music autoplay blocked:', error);
                                 });
                                 // Ensure loop track is paused
                                 if (loopAudio && !loopAudio.paused) loopAudio.pause();
@@ -7789,7 +7854,6 @@
                                 // Otherwise, start the loop track
                                 loopAudio.currentTime = pageState.musicTime || 0;
                                 loopAudio.play().catch(function(error) {
-                                    console.log('Loop music autoplay blocked:', error);
                                 });
                                 // Ensure main track is paused
                                 if (audio && !audio.paused) audio.pause();
@@ -7840,10 +7904,8 @@
                     const playPromise = audio.play();
                     if (playPromise !== undefined) {
                         playPromise.then(() => {
-                            console.log('🎵 Audio restored from privacy policy page');
                             updateMusicButtonState(true);
                         }).catch(error => {
-                            console.log('Audio autoplay blocked after returning from privacy policy:', error);
                         });
                     }
                 } else if (loopAudio) {
@@ -7852,10 +7914,8 @@
                     const playPromise = loopAudio.play();
                     if (playPromise !== undefined) {
                         playPromise.then(() => {
-                            console.log('🎵 Loop audio restored from privacy policy page');
                             updateMusicButtonState(true);
                         }).catch(error => {
-                            console.log('Loop audio autoplay blocked after returning from privacy policy:', error);
                         });
                     }
                 }
