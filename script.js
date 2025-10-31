@@ -3578,34 +3578,57 @@ function initBackgroundMusic() {
         backgroundMusicLoop.addEventListener('pause', updateMusicButtonState);
     }
     
-    // Music control button functionality - pause/play both tracks
+    // Function to ensure only one track plays at a time
+    function pauseAllTracks() {
+        if (backgroundMusic && !backgroundMusic.paused) {
+            backgroundMusic.pause();
+        }
+        if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+            backgroundMusicLoop.pause();
+        }
+    }
+    
+    function playTrackOnly(track) {
+        pauseAllTracks();
+        if (track && track.paused) {
+            track.play().catch(err => console.log('Failed to start music:', err));
+        }
+    }
+    
+    // Music control button functionality - pause/play both tracks (mutually exclusive)
     if (musicControlBtn) {
         musicControlBtn.addEventListener('click', () => {
             const isPlaying = (!backgroundMusic.paused) || (backgroundMusicLoop && !backgroundMusicLoop.paused);
             if (isPlaying) {
                 // Pause both tracks
-                if (!backgroundMusic.paused) {
-                    backgroundMusic.pause();
-                }
-                if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
-                    backgroundMusicLoop.pause();
-                }
+                pauseAllTracks();
                 console.log('Background music paused');
             } else {
                 // Play - start with main track if it hasn't finished, otherwise loop track
                 if (backgroundMusic.currentTime < (backgroundMusic.duration || Infinity)) {
-                    backgroundMusic.play().then(() => {
-                        console.log('Background music started');
-                    }).catch(err => {
-                        console.log('Failed to start music:', err);
-                    });
+                    playTrackOnly(backgroundMusic);
+                    console.log('Background music started');
                 } else if (backgroundMusicLoop) {
-                    backgroundMusicLoop.play().then(() => {
-                        console.log('Background loop music started');
-                    }).catch(err => {
-                        console.log('Failed to start loop music:', err);
-                    });
+                    playTrackOnly(backgroundMusicLoop);
+                    console.log('Background loop music started');
                 }
+            }
+        });
+    }
+    
+    // Ensure mutual exclusivity when tracks play
+    if (backgroundMusic) {
+        backgroundMusic.addEventListener('play', () => {
+            if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+                backgroundMusicLoop.pause();
+            }
+        });
+    }
+    
+    if (backgroundMusicLoop) {
+        backgroundMusicLoop.addEventListener('play', () => {
+            if (backgroundMusic && !backgroundMusic.paused) {
+                backgroundMusic.pause();
             }
         });
     }
