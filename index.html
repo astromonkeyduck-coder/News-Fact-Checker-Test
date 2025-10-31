@@ -186,21 +186,21 @@
         }
         
         /* Ensure anchored sections aren't hidden under fixed header */
-        #news-section, #fact-checker-section, #credibility-section, #about-section {
+        #news-section, #fact-checker-section, #credibility-section, #about-section, #ai-assistant-section {
             scroll-margin-top: 90px;
         }
         @media (max-width: 768px) {
-            #news-section, #fact-checker-section, #credibility-section, #about-section {
+            #news-section, #fact-checker-section, #credibility-section, #about-section, #ai-assistant-section {
                 scroll-margin-top: 70px;
             }
         }
         @media (max-width: 480px) {
-            #news-section, #fact-checker-section, #credibility-section, #about-section {
+            #news-section, #fact-checker-section, #credibility-section, #about-section, #ai-assistant-section {
                 scroll-margin-top: 80px;
             }
         }
         @media (max-width: 360px) {
-            #news-section, #fact-checker-section, #credibility-section, #about-section {
+            #news-section, #fact-checker-section, #credibility-section, #about-section, #ai-assistant-section {
                 scroll-margin-top: 90px;
             }
         }
@@ -384,6 +384,11 @@
             
             .header-right {
                 gap: 0.4rem;
+            }
+            
+            .last-update {
+                font-size: 0.65rem;
+                padding: 3px 8px;
             }
         }
         
@@ -932,6 +937,17 @@
             gap: 1rem;
             align-items: center;
             padding-top: 0;
+        }
+        
+        .last-update {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+            white-space: nowrap;
+            padding: 4px 12px;
+            border-radius: 4px;
+            background: rgba(74, 144, 226, 0.1);
+            border: 1px solid rgba(74, 144, 226, 0.2);
         }
         
         .auth-btn {
@@ -1562,22 +1578,7 @@
         
         /* Professional rectangular glow effect that appears after N and W meet */
         .hero-logo::after {
-            content: '';
-            position: absolute;
-            top: 15%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 0;
-            height: 0;
-            background: 
-                linear-gradient(90deg, transparent 0%, rgba(74, 144, 226, 0.15) 10%, rgba(74, 144, 226, 0.4) 25%, rgba(74, 144, 226, 0.7) 50%, rgba(74, 144, 226, 0.4) 75%, rgba(74, 144, 226, 0.15) 90%, transparent 100%),
-                linear-gradient(0deg, transparent 0%, rgba(74, 144, 226, 0.15) 10%, rgba(74, 144, 226, 0.4) 25%, rgba(74, 144, 226, 0.7) 50%, rgba(74, 144, 226, 0.4) 75%, rgba(74, 144, 226, 0.15) 90%, transparent 100%);
-            border-radius: 8px;
-            z-index: -1;
-            pointer-events: none;
-            opacity: 0;
-            filter: blur(1px);
-            animation: glowAppear 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 2s forwards, professionalGlow 3s cubic-bezier(0.4, 0, 0.2, 1) infinite 4.5s;
+            display: none;
         }
         
         /* Mobile optimization for glow effect */
@@ -7143,10 +7144,12 @@
                     <li><a href="#fact-checker-section" class="nav-link">Game</a></li>
                     <li><a href="#credibility-section" class="nav-link">Credibility</a></li>
                     <li><a href="#about-section" class="nav-link">About</a></li>
+                    <li><a href="#ai-assistant-section" class="nav-link">AI Chat</a></li>
                 </ul>
             </nav>
             
             <div class="header-right">
+                <div class="last-update">Last Update: 10/30/25</div>
                 <button class="music-control-btn" id="musicControlBtn" title="Toggle Background Music">
                     <span class="btn-icon">🎵</span>
                 </button>
@@ -7168,6 +7171,7 @@
                 <li><a href="#fact-checker-section" class="nav-link">Game</a></li>
                 <li><a href="#credibility-section" class="nav-link">Credibility</a></li>
                 <li><a href="#about-section" class="nav-link">About</a></li>
+                <li><a href="#ai-assistant-section" class="nav-link">AI Chat</a></li>
                 </ul>
         </nav>
             </div>
@@ -7421,41 +7425,41 @@
             <p class="credibility-subtitle">Trusted by millions across the globe</p>
             
             <div class="stats-hero-container">
-                <div class="hero-stat-main" data-emoji="📊" data-number="27.1M">
+                <div class="hero-stat-main" data-emoji="📊" data-number="28.7M">
                     <div class="hero-stat-icon">📊</div>
-                    <div class="hero-stat-number">27.1M</div>
+                    <div class="hero-stat-number">28.7M</div>
                     <div class="hero-stat-label">Total Impressions</div>
                     <div class="hero-stat-description">Reaching millions with fact-checked news every day</div>
                 </div>
                 
                 <div class="stats-surrounding">
-                    <div class="stat-card surrounding" data-emoji="💬" data-number="809.4K">
+                    <div class="stat-card surrounding" data-emoji="💬" data-number="850.1K">
                         <div class="stat-icon">💬</div>
-                        <div class="stat-number">809.4K</div>
+                        <div class="stat-number">850.1K</div>
                         <div class="stat-label">Engagements</div>
                     </div>
                     
-                    <div class="stat-card surrounding" data-emoji="❤️" data-number="85.5K">
+                    <div class="stat-card surrounding" data-emoji="❤️" data-number="91.4K">
                         <div class="stat-icon">❤️</div>
-                        <div class="stat-number">85.5K</div>
+                        <div class="stat-number">91.4K</div>
                         <div class="stat-label">Likes</div>
                     </div>
 
-                    <div class="stat-card surrounding" data-emoji="📤" data-number="31K">
+                    <div class="stat-card surrounding" data-emoji="📤" data-number="33.4K">
                         <div class="stat-icon">📤</div>
-                        <div class="stat-number">31K</div>
+                        <div class="stat-number">33.4K</div>
                         <div class="stat-label">Shares</div>
                     </div>
                     
-                    <div class="stat-card surrounding" data-emoji="🔄" data-number="20K">
+                    <div class="stat-card surrounding" data-emoji="🔄" data-number="21.7K">
                         <div class="stat-icon">🔄</div>
-                        <div class="stat-number">20K</div>
+                        <div class="stat-number">21.7K</div>
                         <div class="stat-label">Reposts</div>
                     </div>
                     
-                                        <div class="stat-card surrounding" data-emoji="👥" data-number="4K">
+                                        <div class="stat-card surrounding" data-emoji="👥" data-number="4.1K">
                         <div class="stat-icon">👥</div>
-                        <div class="stat-number">4K</div>
+                        <div class="stat-number">4.1K</div>
                         <div class="stat-label">Followers</div>
                     </div>
                     
@@ -7490,6 +7494,10 @@
                 From breaking news to in-depth analysis, we're here to keep you informed with the truth, not just the headlines.
             </p>
     </div>
+    
+        <!-- Premium Noteworthy Chat (will be mounted to body via JS) -->
+        <div id="noteworthyChatContainer"></div>
+    
         <!-- Footer -->
         <footer class="site-footer">
             <div class="footer-container">
@@ -7848,6 +7856,29 @@
                 container.appendChild(sparkle);
             }
         }
+    </script>
+    
+    <!-- Noteworthy Chat Widget - Shadow DOM Web Component -->
+    <script src="src/widgets/noteworthy-chat.js"></script>
+    <script>
+        // Initialize the Shadow DOM chat widget
+        (function() {
+            // Wait for DOM to be ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initChat);
+            } else {
+                initChat();
+            }
+            
+            function initChat() {
+                // Create and mount the Shadow DOM web component to body
+                const el = document.createElement('noteworthy-chat-widget');
+                el.setAttribute('data-endpoint', '/api/noteworthy');
+                // Set data-open="false" to start closed (set to "true" for dev/testing)
+                el.setAttribute('data-open', 'false');
+                document.body.appendChild(el);
+            }
+        })();
     </script>
 </body>
 </html>

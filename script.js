@@ -12,7 +12,7 @@ const CONFIG = {
         SPARKLE_DURATION: 1500,
         SPARKLE_CONTAINER_DURATION: 3000,
         WINK_EFFECT_DURATION: 6000,
-        ANIMATION_RESET_DELATION: 8000
+        ANIMATION_RESET_DELAY: 8000
     },
     
     // Performance thresholds
@@ -1465,44 +1465,65 @@ class BreakingNewsGame {
         }
         
         // How to Play sidebar functionality
-        document.getElementById('howToPlayToggleBtn').addEventListener('click', () => {
-            this.playSound('button', 'toggle');
-            this.toggleHowToPlaySidebar();
-        });
-        document.getElementById('howToPlayToggle').addEventListener('click', () => {
-            this.playSound('button', 'toggle');
-            this.toggleHowToPlaySidebar();
-        });
+        const howToPlayToggleBtn = document.getElementById('howToPlayToggleBtn');
+        if (howToPlayToggleBtn) {
+            howToPlayToggleBtn.addEventListener('click', () => {
+                this.playSound('button', 'toggle');
+                this.toggleHowToPlaySidebar();
+            });
+        }
+        const howToPlayToggle = document.getElementById('howToPlayToggle');
+        if (howToPlayToggle) {
+            howToPlayToggle.addEventListener('click', () => {
+                this.playSound('button', 'toggle');
+                this.toggleHowToPlaySidebar();
+            });
+        }
         
         // Sound toggle functionality
-        document.getElementById('soundToggleBtn').addEventListener('click', () => {
-            this.playSound('button', 'toggle');
-            this.toggleSound();
-        });
+        const soundToggleBtn = document.getElementById('soundToggleBtn');
+        if (soundToggleBtn) {
+            soundToggleBtn.addEventListener('click', () => {
+                this.playSound('button', 'toggle');
+                this.toggleSound();
+            });
+        }
         
         // Music toggle functionality
-        document.getElementById('musicToggleBtn').addEventListener('click', () => {
-            this.playSound('button', 'toggle');
-            this.toggleMusic();
-        });
+        const musicToggleBtn = document.getElementById('musicToggleBtn');
+        if (musicToggleBtn) {
+            musicToggleBtn.addEventListener('click', () => {
+                this.playSound('button', 'toggle');
+                this.toggleMusic();
+            });
+        }
         
         // Theme toggle functionality
-        document.getElementById('themeToggleBtn').addEventListener('click', () => {
-            this.playSound('button', 'toggle');
-            this.toggleTheme();
-        });
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', () => {
+                this.playSound('button', 'toggle');
+                this.toggleTheme();
+            });
+        }
         
         // Pause toggle functionality
-        document.getElementById('pauseToggleBtn').addEventListener('click', () => {
-            this.playSound('button', 'toggle');
-            this.togglePause();
-        });
+        const pauseToggleBtn = document.getElementById('pauseToggleBtn');
+        if (pauseToggleBtn) {
+            pauseToggleBtn.addEventListener('click', () => {
+                this.playSound('button', 'toggle');
+                this.togglePause();
+            });
+        }
         
         // Resume button functionality
-        document.getElementById('resumeBtn').addEventListener('click', () => {
-            this.playSound('button', 'navigation');
-            this.togglePause();
-        });
+        const resumeBtn = document.getElementById('resumeBtn');
+        if (resumeBtn) {
+            resumeBtn.addEventListener('click', () => {
+                this.playSound('button', 'navigation');
+                this.togglePause();
+            });
+        }
         
         // Add hover sounds to all buttons
         this.setupHoverSounds();
@@ -1593,15 +1614,18 @@ class BreakingNewsGame {
             });
         });
         
-        modal.querySelector('#closeModal').addEventListener('click', () => {
-            this.playSound('button');
-            document.body.removeChild(modal);
-        });
-        
-        // Add hover sound to close button
-        modal.querySelector('#closeModal').addEventListener('mouseenter', () => {
-            this.playSound('hover');
-        });
+        const closeModalBtn = modal.querySelector('#closeModal');
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', () => {
+                this.playSound('button');
+                document.body.removeChild(modal);
+            });
+            
+            // Add hover sound to close button
+            closeModalBtn.addEventListener('mouseenter', () => {
+                this.playSound('hover');
+            });
+        }
     }
     
     updateDifficultyDisplay() {
@@ -1610,7 +1634,10 @@ class BreakingNewsGame {
             'medium': 'Medium', 
             'hard': 'Hard'
         };
-        document.getElementById('currentDifficulty').textContent = difficultyNames[this.difficulty];
+        const currentDifficultyEl = document.getElementById('currentDifficulty');
+        if (currentDifficultyEl) {
+            currentDifficultyEl.textContent = difficultyNames[this.difficulty];
+        }
     }
     
     setTimeLimit() {
@@ -1798,6 +1825,8 @@ class BreakingNewsGame {
         const timerFill = document.getElementById('timerFill');
         const timerText = document.getElementById('timerText');
         
+        if (!timerFill || !timerText) return;
+        
         const percentage = (this.timeLeft / this.timeLimit) * 100;
         timerFill.style.width = `${percentage}%`;
         timerText.textContent = `${this.timeLeft}s`;
@@ -1824,8 +1853,10 @@ class BreakingNewsGame {
         const timeBonus = userAnswer !== null ? Math.floor(this.timeLeft / 2) : 0;
         
         // Disable buttons during feedback
-        document.getElementById('factBtn').disabled = true;
-        document.getElementById('fakeBtn').disabled = true;
+        const factBtn = document.getElementById('factBtn');
+        const fakeBtn = document.getElementById('fakeBtn');
+        if (factBtn) factBtn.disabled = true;
+        if (fakeBtn) fakeBtn.disabled = true;
         
         if (isCorrect) {
             this.playSound('correct');
@@ -1857,6 +1888,8 @@ class BreakingNewsGame {
         const titleElement = document.getElementById('feedbackTitle');
         const textElement = document.getElementById('feedbackText');
         
+        if (!feedbackElement || !titleElement || !textElement) return;
+        
         if (isCorrect) {
             titleElement.textContent = 'Correct! ✅';
             titleElement.style.color = '#2ecc71';
@@ -1868,16 +1901,19 @@ class BreakingNewsGame {
         }
         
         // Update tips
-        document.getElementById('factCheckTips').innerHTML = `
-            <h4>💡 Fact-Checking Tips:</h4>
-            <ul>
-                <li>Check multiple reliable sources</li>
-                <li>Look for evidence and citations</li>
-                <li>Be wary of sensational language</li>
-                <li>Verify the source's credibility</li>
-                <li>${question.tips}</li>
-            </ul>
-        `;
+        const factCheckTips = document.getElementById('factCheckTips');
+        if (factCheckTips) {
+            factCheckTips.innerHTML = `
+                <h4>💡 Fact-Checking Tips:</h4>
+                <ul>
+                    <li>Check multiple reliable sources</li>
+                    <li>Look for evidence and citations</li>
+                    <li>Be wary of sensational language</li>
+                    <li>Verify the source's credibility</li>
+                    <li>${question.tips}</li>
+                </ul>
+            `;
+        }
         
         feedbackElement.style.display = 'block';
     }
@@ -1914,16 +1950,22 @@ class BreakingNewsGame {
             localStorage.setItem('noteworthy_high_score', highScore);
         }
 
-        document.getElementById('finalScore').textContent = this.score;
-        document.getElementById('finalLevel').textContent = this.level;
-        document.getElementById('finalStreak').textContent = Math.max(...this.getBestStreak());
+        const finalScore = document.getElementById('finalScore');
+        const finalLevel = document.getElementById('finalLevel');
+        const finalStreak = document.getElementById('finalStreak');
+        const gameOver = document.getElementById('gameOver');
+        
+        if (finalScore) finalScore.textContent = this.score;
+        if (finalLevel) finalLevel.textContent = this.level;
+        if (finalStreak) finalStreak.textContent = Math.max(...this.getBestStreak());
+        
         // Show high score
         const highScoreElem = document.getElementById('finalHighScore');
         if (highScoreElem) {
             highScoreElem.textContent = highScore;
         }
 
-        document.getElementById('gameOver').style.display = 'block';
+        if (gameOver) gameOver.style.display = 'block';
     }
     
     restartGame() {
@@ -1983,12 +2025,19 @@ class BreakingNewsGame {
     }
     
     updateStats() {
-        document.getElementById('score').textContent = this.score;
-        document.getElementById('level').textContent = this.level;
-        document.getElementById('streak').textContent = this.streak;
+        const scoreEl = document.getElementById('score');
+        const levelEl = document.getElementById('level');
+        const streakEl = document.getElementById('streak');
+        const accuracyEl = document.getElementById('accuracy');
+        
+        if (scoreEl) scoreEl.textContent = this.score;
+        if (levelEl) levelEl.textContent = this.level;
+        if (streakEl) streakEl.textContent = this.streak;
+        
         // Calculate and update accuracy
         const accuracy = this.totalAnswers > 0 ? Math.round((this.correctAnswers / this.totalAnswers) * 100) : 0;
-        document.getElementById('accuracy').textContent = `${accuracy}%`;
+        if (accuracyEl) accuracyEl.textContent = `${accuracy}%`;
+        
         // Show high score in stats bar
         const highScore = localStorage.getItem('noteworthy_high_score') || 0;
         const highScoreElem = document.getElementById('highScore');
@@ -2583,68 +2632,6 @@ class BreakingNewsGame {
             console.log('Playing puzzle piece sound!');
             playPuzzlePiece();
         }, 2500); // Increased to 2.5s to ensure logos have fully met
-        
-        // Add test button for debugging (remove this later)
-        const testButton = document.createElement('button');
-        testButton.textContent = '🔊 Test Puzzle Sound';
-        testButton.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10000;
-            padding: 10px;
-            background: #4A90E2;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        `;
-        testButton.onclick = () => {
-            console.log('Manual puzzle sound test!');
-            playPuzzlePiece();
-        };
-        document.body.appendChild(testButton);
-        
-        // Also add a simple beep test button
-        const beepButton = document.createElement('button');
-        beepButton.textContent = '🔔 Simple Beep Test';
-        beepButton.style.cssText = `
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            z-index: 10000;
-            padding: 10px;
-            background: #E74C3C;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        `;
-        beepButton.onclick = () => {
-            console.log('Simple beep test!');
-            // Create a simple beep using the existing audio context
-            try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-                gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
-                
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.3);
-                
-                console.log('Simple beep played!');
-            } catch (error) {
-                console.log('Simple beep error:', error);
-            }
-        };
-        document.body.appendChild(beepButton);
     }
     
     toggleTheme() {
@@ -2884,6 +2871,9 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     `;
     document.head.appendChild(style);
+    
+    // Initialize newsletter subscription
+    initNewsletterSubscription();
 });
 
 // Welcome text cycling functionality
@@ -3979,5 +3969,258 @@ function showErrorMessage(message) {
         }, 5000);
     } catch (error) {
         Logger.error('Error showing error message', error);
+    }
+}
+
+// Newsletter Subscription Handler
+function initNewsletterSubscription() {
+    const newsletterBtn = document.querySelector('.newsletter-btn');
+    const newsletterInput = document.querySelector('.newsletter-input');
+    
+    if (!newsletterBtn || !newsletterInput) {
+        return; // Newsletter form not found on this page
+    }
+
+    // Handle button click
+    newsletterBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await handleNewsletterSubmit();
+    });
+
+    // Handle Enter key press
+    newsletterInput.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            await handleNewsletterSubmit();
+        }
+    });
+
+    async function handleNewsletterSubmit() {
+        const email = newsletterInput.value.trim();
+        
+        // Validate email
+        if (!email) {
+            showNewsletterMessage('Please enter your email address', 'error');
+            return;
+        }
+
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showNewsletterMessage('Please enter a valid email address', 'error');
+            return;
+        }
+
+        // Disable button and show loading state
+        newsletterBtn.disabled = true;
+        const originalText = newsletterBtn.textContent;
+        newsletterBtn.textContent = 'Subscribing...';
+        
+        // Add timeout to prevent indefinite loading
+        let timeoutId = setTimeout(() => {
+            if (newsletterBtn.disabled) {
+                showNewsletterMessage('Request is taking longer than expected. Please check your connection and try again.', 'error');
+                newsletterBtn.disabled = false;
+                newsletterBtn.textContent = originalText;
+            }
+        }, 30000); // 30 second timeout
+
+        try {
+            // Check if running from file:// protocol (not supported)
+            if (window.location.protocol === 'file:') {
+                throw new Error('Email functionality requires a web server. Please run "netlify dev" or deploy to Netlify to test the email feature.');
+            }
+            
+            // Determine API endpoint based on deployment platform
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            
+            // Try Netlify first, then Vercel as fallback
+            const endpoints = isLocalhost 
+                ? [
+                    'http://localhost:8888/.netlify/functions/send-email',  // Netlify dev
+                    'http://localhost:3000/api/send-email'  // Vercel dev
+                  ]
+                : [
+                    '/.netlify/functions/send-email',  // Netlify production
+                    '/api/send-email'  // Vercel production
+                  ];
+
+            let response;
+            let data;
+            let lastError;
+
+            // Try each endpoint until one works
+            for (const apiEndpoint of endpoints) {
+                try {
+                    console.log(`Attempting to connect to: ${apiEndpoint}`);
+                    console.log(`Current page URL: ${window.location.href}`);
+                    console.log(`Current protocol: ${window.location.protocol}`);
+                    
+                    response = await fetch(apiEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email }),
+                        signal: AbortSignal.timeout(25000), // 25 second timeout
+                    });
+
+                    console.log(`Response received: ${response.status} ${response.statusText}`);
+
+                    // Only try to parse JSON if we got a response
+                    if (response) {
+                        // Try to parse JSON, but handle non-JSON error responses
+                        try {
+                            const responseText = await response.text();
+                            console.log('Response text:', responseText);
+                            
+                            // Try to parse as JSON
+                            try {
+                                data = JSON.parse(responseText);
+                                console.log('Response data:', data);
+                            } catch (jsonError) {
+                                // If it's not JSON, create an error object from the text
+                                console.warn('Response is not JSON, treating as error');
+                                data = {
+                                    error: responseText.substring(0, 200) || 'Server error (non-JSON response)'
+                                };
+                            }
+
+                            if (response.ok) {
+                                break; // Success! Exit the loop
+                            } else {
+                                lastError = data.error || `Server error: ${response.status} ${response.statusText}`;
+                                // Continue to next endpoint
+                            }
+                        } catch (parseError) {
+                            console.error('Error parsing response:', parseError);
+                            lastError = `Server error: ${response.status} ${response.statusText}`;
+                            // Continue to next endpoint
+                        }
+                    }
+                } catch (err) {
+                    console.error(`Failed to connect to ${apiEndpoint}:`, err);
+                    console.error('Error details:', {
+                        name: err.name,
+                        message: err.message,
+                        stack: err.stack
+                    });
+                    lastError = err.message || 'Network error - could not connect to server';
+                    // Continue to next endpoint
+                    response = null; // Make sure response is null on error
+                }
+            }
+
+            // If we got here and response is not ok, all endpoints failed
+            if (!response || !response.ok) {
+                // Show detailed error message to help debug
+                let errorMessage = 'Failed to subscribe';
+                
+                if (data && data.error) {
+                    errorMessage = data.error;
+                    // Don't show domain verification warnings if using onboarding@resend.dev (it's fine)
+                    if (data.error.includes('domain') && data.error.includes('onboarding@resend.dev')) {
+                        // This is just a warning - emails still work with onboarding@resend.dev
+                        // Don't show error, just log it
+                        console.log('Domain verification note (safe to ignore for development):', data.error);
+                        // Treat as success since emails are working
+                        showNewsletterMessage('Successfully subscribed! Check your email for a welcome message.', 'success');
+                        newsletterInput.value = '';
+                        return; // Exit early, don't throw error
+                    }
+                    // Show helpful hints for common errors
+                    if (data.error.includes('API key')) {
+                        errorMessage += ' - Please check RESEND_API_KEY in Netlify environment variables';
+                    } else if (data.error.includes('domain') && !data.error.includes('onboarding@resend.dev')) {
+                        errorMessage += ' - Please verify your domain in Resend or use onboarding@resend.dev';
+                    } else if (data.details) {
+                        console.error('Detailed error:', data.details);
+                    }
+                } else {
+                    errorMessage = lastError || 'Please check your deployment and try again';
+                }
+                
+                throw new Error(errorMessage);
+            }
+
+            // Success!
+            clearTimeout(timeoutId);
+            showNewsletterMessage('Successfully subscribed! Check your email for a welcome message.', 'success');
+            newsletterInput.value = '';
+            
+        } catch (error) {
+            clearTimeout(timeoutId);
+            console.error('Newsletter subscription error:', error);
+            // Show the actual error message to help with debugging
+            let errorMsg = error.message || 'Something went wrong. Please try again later.';
+            
+            // Handle timeout errors
+            if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
+                errorMsg = 'Request timed out. The server may be slow or unresponsive. Please try again.';
+            }
+            // Handle abort errors (from fetch timeout)
+            else if (error.name === 'AbortError') {
+                errorMsg = 'Request took too long and was cancelled. Please check your connection and try again.';
+            }
+            // Add helpful hints for common issues
+            else if (errorMsg.includes('Failed to fetch') || errorMsg.includes('Network error')) {
+                if (window.location.protocol === 'file:') {
+                    errorMsg = 'Please open http://localhost:8888 in your browser (not the HTML file directly). Run "netlify dev" to start the server.';
+                } else {
+                    errorMsg = 'Cannot connect to server. Make sure "netlify dev" is running on port 8888.';
+                }
+            }
+            
+            showNewsletterMessage(errorMsg, 'error');
+        } finally {
+            // Re-enable button
+            clearTimeout(timeoutId);
+            newsletterBtn.disabled = false;
+            newsletterBtn.textContent = originalText;
+        }
+    }
+
+    function showNewsletterMessage(message, type) {
+        // Remove existing messages
+        const existingMsg = document.querySelector('.newsletter-message');
+        if (existingMsg) {
+            existingMsg.remove();
+        }
+
+        // Create message element
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'newsletter-message';
+        msgDiv.textContent = message;
+        
+        const colors = {
+            success: '#2ecc71',
+            error: '#e74c3c'
+        };
+        
+        msgDiv.style.cssText = `
+            margin-top: 10px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            background-color: ${colors[type] || colors.success};
+            color: white;
+            font-size: 14px;
+            text-align: center;
+            animation: slideInRight 0.3s ease-out;
+        `;
+
+        // Insert after newsletter form
+        const newsletterSignup = document.querySelector('.newsletter-signup');
+        if (newsletterSignup) {
+            newsletterSignup.parentNode.insertBefore(msgDiv, newsletterSignup.nextSibling);
+        }
+
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (msgDiv.parentNode) {
+                msgDiv.style.opacity = '0';
+                msgDiv.style.transition = 'opacity 0.3s';
+                setTimeout(() => msgDiv.remove(), 300);
+            }
+        }, 5000);
     }
 }

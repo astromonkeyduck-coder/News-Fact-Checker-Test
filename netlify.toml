@@ -1,0 +1,21 @@
+[build]
+  functions = "netlify/functions"
+  publish = "."
+
+# Netlify automatically serves 404.html for 404 errors
+# Make sure 404.html is in the root directory (publish directory)
+
+[[redirects]]
+  from = "/api/noteworthy"
+  to = "/.netlify/functions/noteworthy-chat"
+  status = 200
+  force = false
+
+[functions]
+  noteworthy-chat = { included_files = ["netlify/functions/noteworthy-chat.js"] }
+
+[dev]
+  # Load .env file for local development
+  command = "netlify dev"
+  port = 8888
+

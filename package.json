@@ -5,12 +5,24 @@
   "main": "index.html",
   "scripts": {
     "fetch-tweets": "node fetch-tweets.js",
-    "start": "open index.html"
+    "start": "open index.html",
+    "dev": "npx netlify dev",
+    "serve": "npx netlify dev"
   },
   "dependencies": {
-    "puppeteer": "^21.0.0"
+    "puppeteer": "^21.0.0",
+    "resend": "^3.0.0"
   },
-  "keywords": ["news", "fact-checking", "game", "media-literacy"],
+  "keywords": [
+    "news",
+    "fact-checking",
+    "game",
+    "media-literacy"
+  ],
   "author": "Noteworthy News",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "dotenv": "^17.2.3",
+    "netlify-cli": "^23.9.5"
+  }
 }
