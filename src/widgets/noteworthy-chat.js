@@ -292,6 +292,119 @@ class NoteworthyChat extends HTMLElement {
           margin-bottom: 0;
         }
         
+        .reply img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 12px;
+          margin: 12px 0;
+          box-shadow: 0 4px 12px rgba(0,0,0,.3);
+          display: block;
+        }
+        
+        .image-generation-toggle {
+          padding: 10px 14px;
+          border-top: 1px solid rgba(74, 144, 226, 0.1);
+          background: rgba(30, 41, 59, 0.6);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s;
+          font-size: 13px;
+          color: rgba(255, 255, 255, 0.7);
+          gap: 8px;
+        }
+        
+        .image-generation-toggle:hover {
+          background: rgba(74, 144, 226, 0.15);
+          color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .image-generation-toggle.active {
+          background: rgba(74, 144, 226, 0.2);
+          color: rgba(255, 255, 255, 0.95);
+          font-weight: 600;
+        }
+        
+        .image-generation-toggle .icon {
+          font-size: 16px;
+        }
+        
+        .image-generation-section {
+          display: none;
+          padding: 12px 16px;
+          background: rgba(74, 144, 226, 0.08);
+          border-top: 1px solid rgba(74, 144, 226, 0.2);
+          border-bottom: 1px solid rgba(74, 144, 226, 0.2);
+        }
+        
+        .image-generation-section.open {
+          display: block;
+        }
+        
+        .image-generation-section .info {
+          font-size: 12px;
+          color: rgba(255, 255, 255, 0.6);
+          margin-bottom: 10px;
+        }
+        
+        .image-generation-section input {
+          width: 100%;
+          padding: 10px 14px;
+          border: 1.5px solid rgba(74, 144, 226, 0.3);
+          border-radius: 8px;
+          margin-bottom: 10px;
+          font-size: 14px;
+          background: rgba(30, 41, 59, 0.7);
+          color: rgba(255, 255, 255, 0.9);
+          outline: none;
+        }
+        
+        .image-generation-section input:focus {
+          border-color: rgba(74, 144, 226, 0.6);
+          background: rgba(30, 41, 59, 0.9);
+        }
+        
+        .image-generation-section button {
+          width: 100%;
+          padding: 10px 16px;
+          border: 2px solid rgba(74, 144, 226, 0.4);
+          border-radius: 8px;
+          background: linear-gradient(135deg, rgba(74, 144, 226, 0.9) 0%, rgba(58, 112, 192, 0.9) 100%);
+          color: #fff;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          font-size: 14px;
+        }
+        
+        .image-generation-section button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+        }
+        
+        .image-generation-section button:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+        
+        .image-loading {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 20px;
+          gap: 12px;
+          color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .image-loading .spinner {
+          width: 24px;
+          height: 24px;
+          border: 3px solid rgba(74, 144, 226, 0.2);
+          border-top-color: rgba(74, 144, 226, 0.8);
+        }
+        
         .input { 
           padding: 16px 20px; 
           border-top: 1px solid rgba(74, 144, 226, 0.1); 
@@ -484,13 +597,6 @@ class NoteworthyChat extends HTMLElement {
           border: 1px solid rgba(255, 107, 107, 0.2);
         }
         
-        .usage {
-          font-size: 11px;
-          color: rgba(255, 255, 255, 0.5);
-          margin-top: 10px;
-          padding-top: 10px;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
         
         @keyframes spin { 
           to { transform: rotate(360deg); } 
@@ -498,15 +604,16 @@ class NoteworthyChat extends HTMLElement {
         
         @media (max-width: 768px) {
           .wrap {
-            width: calc(100vw - 16px) !important;
-            height: calc(100vh - 80px) !important;
-            max-width: calc(100vw - 16px) !important;
-            max-height: calc(100vh - 80px) !important;
-            left: 8px !important;
-            top: 80px !important;
-            border-radius: 16px 16px 0 0 !important;
-            min-width: calc(100vw - 16px) !important;
-            min-height: 300px !important;
+            width: 90vw !important;
+            max-width: 400px !important;
+            height: 60vh !important;
+            max-height: 500px !important;
+            min-height: 400px !important;
+            left: 50% !important;
+            top: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            border-radius: 16px !important;
+            min-width: 320px !important;
           }
           
           .launcher {
@@ -543,6 +650,40 @@ class NoteworthyChat extends HTMLElement {
           }
         }
         
+        @media (max-width: 480px) {
+          .wrap {
+            width: 85vw !important;
+            max-width: 360px !important;
+            height: 55vh !important;
+            max-height: 450px !important;
+            min-height: 350px !important;
+            transform: translate(-50%, -50%) !important;
+          }
+          
+          .head {
+            padding: 12px 14px;
+          }
+          
+          .body {
+            padding: 14px;
+            font-size: 13px;
+          }
+          
+          .input {
+            padding: 12px 14px;
+          }
+          
+          .input input {
+            padding: 10px 14px;
+            font-size: 13px;
+          }
+          
+          .input button {
+            padding: 10px 16px;
+            font-size: 13px;
+          }
+        }
+        
         @media (min-width: 769px) and (max-width: 1024px) {
           .wrap {
             max-width: 90vw;
@@ -564,7 +705,7 @@ class NoteworthyChat extends HTMLElement {
             </div>
             <div class="title-group">
               <div class="title">Noteworthy AI</div>
-              <div class="sub">Fast • Factual • Verification-minded</div>
+              <div class="sub">Fast • Factual • Truth-Seeking</div>
             </div>
           </div>
           <button class="close" aria-label="Close chat">×</button>
@@ -574,9 +715,20 @@ class NoteworthyChat extends HTMLElement {
           <p class="tip">Ask about headlines, context, or fact-checks. I'm here to help you stay informed!</p>
         </div>
         
+        <div class="image-generation-section" id="imageGenerationSection">
+          <div class="info">Enter a description of the image you'd like to generate:</div>
+          <input type="text" id="imagePromptInput" placeholder="e.g., a futuristic cityscape at sunset" />
+          <button type="button" id="generateImageBtn">🎨 Generate Image</button>
+        </div>
+        
         <div class="input">
-          <input type="text" placeholder="Ask about a story or topic…" aria-label="Your question" />
+          <input type="text" placeholder="Ask about a story or topic…" aria-label="Your question" id="chatInput" />
           <button type="button">Send</button>
+        </div>
+        
+        <div class="image-generation-toggle" id="imageGenerationToggle">
+          <span class="icon">🎨</span>
+          <span>Generate Image</span>
         </div>
         
         <div class="resize-handle" aria-label="Resize chat" title="Drag to resize"></div>
@@ -592,6 +744,25 @@ class NoteworthyChat extends HTMLElement {
     const head = this.root.querySelector('.head');
     const resizeHandle = this.root.querySelector('.resize-handle');
     const tip = this.root.querySelector('.tip');
+    const imageGenerationToggle = this.root.querySelector('#imageGenerationToggle');
+    const imageGenerationSection = this.root.querySelector('#imageGenerationSection');
+    const imagePromptInput = this.root.querySelector('#imagePromptInput');
+    const generateImageBtn = this.root.querySelector('#generateImageBtn');
+    
+    // Toggle image generation section
+    if (imageGenerationToggle && imageGenerationSection) {
+      imageGenerationToggle.addEventListener('click', () => {
+        const isOpen = imageGenerationSection.classList.contains('open');
+        if (isOpen) {
+          imageGenerationSection.classList.remove('open');
+          imageGenerationToggle.classList.remove('active');
+        } else {
+          imageGenerationSection.classList.add('open');
+          imageGenerationToggle.classList.add('active');
+          imagePromptInput.focus();
+        }
+      });
+    }
 
     const setPos = (x, y) => {
       this.pos = { x, y };
@@ -764,6 +935,148 @@ class NoteworthyChat extends HTMLElement {
       }
     });
 
+    // Generate image function
+    async function generateImage() {
+      const prompt = imagePromptInput.value.trim();
+      if (!prompt) return;
+      imagePromptInput.value = '';
+      generateImageBtn.disabled = true;
+
+      // Remove tip
+      if (tip && tip.parentNode) {
+        tip.style.display = 'none';
+      }
+
+      // Show user message with avatar
+      const userGroup = document.createElement('div');
+      userGroup.className = 'message-group user-msg-group';
+      userGroup.innerHTML = `
+        <div class="message-avatar">You</div>
+        <div class="message-content">
+          <div class="user-msg">🎨 Generate image: ${prompt.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+        </div>
+      `;
+      body.appendChild(userGroup);
+      body.scrollTop = body.scrollHeight;
+
+      // Show thinking indicator
+      const thinking = document.createElement('div');
+      thinking.className = 'message-group ai-msg-group';
+      thinking.innerHTML = `
+        <div class="message-avatar">
+          <img src="IMG_5794.PNG" alt="Noteworthy News" />
+        </div>
+        <div class="message-content">
+          <div class="thinking">
+            <span class="spinner"></span>Generating image…
+          </div>
+        </div>
+      `;
+      body.appendChild(thinking);
+      body.scrollTop = body.scrollHeight;
+
+      try {
+        // Generate image using DALL-E
+        let imageEndpoint = '/.netlify/functions/generate-image';
+        // Handle local development
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        if (isLocalhost) {
+          imageEndpoint = 'http://localhost:8888/.netlify/functions/generate-image';
+        }
+        
+        const imageRes = await fetch(imageEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            prompt: prompt,
+            size: "1024x1024",
+            quality: "standard",
+            style: "vivid"
+          }),
+        });
+
+        if (!imageRes.ok) {
+          const errorData = await imageRes.json().catch(() => ({}));
+          throw new Error(errorData.error || errorData.message || `Server error (${imageRes.status})`);
+        }
+
+        const data = await imageRes.json();
+        thinking.remove();
+
+        // Show image with NW logo
+        const aiGroup = document.createElement('div');
+        aiGroup.className = 'message-group ai-msg-group';
+        const replyContent = document.createElement('div');
+        replyContent.className = 'reply';
+        
+        const imageEl = document.createElement('img');
+        imageEl.src = data.imageUrl;
+        imageEl.alt = data.revisedPrompt || prompt;
+        imageEl.loading = 'lazy';
+        imageEl.onerror = function() {
+          this.style.display = 'none';
+          const errorMsg = document.createElement('p');
+          errorMsg.textContent = 'Failed to load image. Please try again.';
+          replyContent.appendChild(errorMsg);
+        };
+        
+        const promptText = document.createElement('p');
+        promptText.innerHTML = `<strong>Prompt:</strong> ${(data.revisedPrompt || data.prompt || prompt).replace(/</g, '&lt;').replace(/>/g, '&gt;')}`;
+        
+        replyContent.appendChild(imageEl);
+        replyContent.appendChild(promptText);
+
+        aiGroup.innerHTML = `
+          <div class="message-avatar">
+            <img src="IMG_5794.PNG" alt="Noteworthy News" />
+          </div>
+          <div class="message-content"></div>
+        `;
+        aiGroup.querySelector('.message-content').appendChild(replyContent);
+        body.appendChild(aiGroup);
+
+        body.scrollTop = body.scrollHeight;
+        
+        // Close the image generation section after successful generation
+        if (imageGenerationSection) {
+          imageGenerationSection.classList.remove('open');
+          imageGenerationToggle.classList.remove('active');
+        }
+      } catch (e) {
+        thinking.remove();
+        const aiGroup = document.createElement('div');
+        aiGroup.className = 'message-group ai-msg-group';
+        const err = document.createElement('div');
+        err.className = 'error';
+        err.textContent = e?.message || 'Network error. Please try again.';
+        
+        aiGroup.innerHTML = `
+          <div class="message-avatar">
+            <img src="IMG_5794.PNG" alt="Noteworthy News" />
+          </div>
+          <div class="message-content"></div>
+        `;
+        aiGroup.querySelector('.message-content').appendChild(err);
+        body.appendChild(aiGroup);
+        body.scrollTop = body.scrollHeight;
+      } finally {
+        generateImageBtn.disabled = false;
+      }
+    }
+
+    // Generate image button handler
+    if (generateImageBtn) {
+      generateImageBtn.addEventListener('click', generateImage);
+    }
+    
+    if (imagePromptInput) {
+      imagePromptInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !generateImageBtn.disabled) {
+          generateImage();
+        }
+      });
+    }
+
     async function ask() {
       const message = input.value.trim();
       if (!message) return;
@@ -804,6 +1117,7 @@ class NoteworthyChat extends HTMLElement {
       body.scrollTop = body.scrollHeight;
 
       try {
+        // Regular chat response
         // Handle localhost vs production endpoint
         const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         
@@ -817,57 +1131,49 @@ class NoteworthyChat extends HTMLElement {
         console.log('Calling API:', { endpoint: apiEndpoint, method: 'POST', message: message.substring(0, 50) + '...' });
 
         const res = await fetch(apiEndpoint, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({ message }),
-        });
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({ message }),
+          });
 
-        if (!res.ok) {
-          let errorText;
-          try {
-            const errorData = await res.json();
-            errorText = errorData.error || errorData.message || `Server error (${res.status})`;
-            console.error('API Error:', { status: res.status, error: errorData });
-          } catch {
-            errorText = await res.text().catch(() => `Server error (${res.status})`);
-            console.error('API Error (non-JSON):', { status: res.status, text: errorText });
+          if (!res.ok) {
+            let errorText;
+            try {
+              const errorData = await res.json();
+              errorText = errorData.error || errorData.message || `Server error (${res.status})`;
+              console.error('API Error:', { status: res.status, error: errorData });
+            } catch {
+              errorText = await res.text().catch(() => `Server error (${res.status})`);
+              console.error('API Error (non-JSON):', { status: res.status, text: errorText });
+            }
+            throw new Error(errorText);
           }
-          throw new Error(errorText);
-        }
 
-        const data = await res.json();
-        console.log('API Success:', { reply: data.reply?.substring(0, 50) + '...', usage: data.usage });
-        thinking.remove();
+          data = await res.json();
+          console.log('API Success:', { reply: data.reply?.substring(0, 50) + '...' });
+          thinking.remove();
 
-        // Show reply with NW logo
-        const aiGroup = document.createElement('div');
-        aiGroup.className = 'message-group ai-msg-group';
-        const text = data.reply || 'No response.';
-        const replyContent = document.createElement('div');
-        replyContent.className = 'reply';
-        replyContent.innerHTML = text.split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('');
-        
-        // Show usage if available
-        if (data.usage && data.usage.total_tokens) {
-          const usage = document.createElement('div');
-          usage.className = 'usage';
-          usage.textContent = `Tokens used: ${data.usage.total_tokens}`;
-          replyContent.appendChild(usage);
-        }
+          // Show reply with NW logo
+          const aiGroup = document.createElement('div');
+          aiGroup.className = 'message-group ai-msg-group';
+          const text = data.reply || 'No response.';
+          const replyContent = document.createElement('div');
+          replyContent.className = 'reply';
+          replyContent.innerHTML = text.split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('');
 
-        aiGroup.innerHTML = `
-          <div class="message-avatar">
-            <img src="IMG_5794.PNG" alt="Noteworthy News" />
-          </div>
-          <div class="message-content"></div>
-        `;
-        aiGroup.querySelector('.message-content').appendChild(replyContent);
-        body.appendChild(aiGroup);
+          aiGroup.innerHTML = `
+            <div class="message-avatar">
+              <img src="IMG_5794.PNG" alt="Noteworthy News" />
+            </div>
+            <div class="message-content"></div>
+          `;
+          aiGroup.querySelector('.message-content').appendChild(replyContent);
+          body.appendChild(aiGroup);
 
-        body.scrollTop = body.scrollHeight;
+          body.scrollTop = body.scrollHeight;
       } catch (e) {
         thinking.remove();
         const aiGroup = document.createElement('div');

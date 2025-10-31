@@ -3527,6 +3527,7 @@ function initNewsCarousel() {
 // Initialize background music autoplay
 function initBackgroundMusic() {
     const backgroundMusic = document.getElementById('backgroundMusic');
+    const backgroundMusicLoop = document.getElementById('backgroundMusicLoop');
     const musicControlBtn = document.getElementById('musicControlBtn');
     
     if (!backgroundMusic) {
@@ -3539,7 +3540,10 @@ function initBackgroundMusic() {
     console.log('Audio source:', backgroundMusic.src || backgroundMusic.querySelector('source')?.src);
     
     // Set volume to a reasonable level (0.0 to 1.0)
-    backgroundMusic.volume = 0.5; // Increased volume for testing
+    backgroundMusic.volume = 0.5;
+    if (backgroundMusicLoop) {
+        backgroundMusicLoop.volume = 0.5;
+    }
     
     // Simple immediate playback attempt
     console.log('🎵 Attempting immediate music playback...');
@@ -3548,10 +3552,11 @@ function initBackgroundMusic() {
     backgroundMusic.volume = 0.5;
     backgroundMusic.muted = false;
     
-    // Update button state based on music playing status
+    // Update button state based on music playing status (either track)
     function updateMusicButtonState() {
         if (musicControlBtn) {
-            if (!backgroundMusic.paused) {
+            const isPlaying = (!backgroundMusic.paused) || (backgroundMusicLoop && !backgroundMusicLoop.paused);
+            if (isPlaying) {
                 musicControlBtn.classList.add('playing');
                 musicControlBtn.querySelector('.btn-icon').textContent = '🔇';
                 musicControlBtn.title = 'Mute Background Music';
@@ -3568,18 +3573,39 @@ function initBackgroundMusic() {
     backgroundMusic.addEventListener('pause', updateMusicButtonState);
     backgroundMusic.addEventListener('ended', updateMusicButtonState);
     
-    // Music control button functionality
+    if (backgroundMusicLoop) {
+        backgroundMusicLoop.addEventListener('play', updateMusicButtonState);
+        backgroundMusicLoop.addEventListener('pause', updateMusicButtonState);
+    }
+    
+    // Music control button functionality - pause/play both tracks
     if (musicControlBtn) {
         musicControlBtn.addEventListener('click', () => {
-            if (backgroundMusic.paused) {
-                backgroundMusic.play().then(() => {
-                    console.log('Background music started');
-                }).catch(err => {
-                    console.log('Failed to start music:', err);
-                });
-            } else {
-                backgroundMusic.pause();
+            const isPlaying = (!backgroundMusic.paused) || (backgroundMusicLoop && !backgroundMusicLoop.paused);
+            if (isPlaying) {
+                // Pause both tracks
+                if (!backgroundMusic.paused) {
+                    backgroundMusic.pause();
+                }
+                if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+                    backgroundMusicLoop.pause();
+                }
                 console.log('Background music paused');
+            } else {
+                // Play - start with main track if it hasn't finished, otherwise loop track
+                if (backgroundMusic.currentTime < (backgroundMusic.duration || Infinity)) {
+                    backgroundMusic.play().then(() => {
+                        console.log('Background music started');
+                    }).catch(err => {
+                        console.log('Failed to start music:', err);
+                    });
+                } else if (backgroundMusicLoop) {
+                    backgroundMusicLoop.play().then(() => {
+                        console.log('Background loop music started');
+                    }).catch(err => {
+                        console.log('Failed to start loop music:', err);
+                    });
+                }
             }
         });
     }

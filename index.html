@@ -11,7 +11,9 @@
     <link rel="shortcut icon" type="image/png" href="IMG_5794.PNG">
     <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
     <link rel="mask-icon" href="IMG_5794.PNG" color="#0f234a">
-    <meta name="theme-color" content="#0f234a">
+    <meta name="theme-color" content="#0f0f23">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="site.webmanifest">
@@ -118,21 +120,27 @@
                     updateMusicButtonState(false);
                 });
                 
+                // When first track (TheMoneyMaker) ends, start the looping track
                 audio.addEventListener('ended', function() {
-                    updateMusicButtonState(false);
-                });
-                
-                // Seamless looping - restart audio 0.1 seconds before end
-                audio.addEventListener('timeupdate', function() {
-                    if (audio.duration && !isNaN(audio.duration)) {
-                        const timeLeft = audio.duration - audio.currentTime;
-                        if (timeLeft <= 0.1 && timeLeft > 0) {
-                            // Restart audio for seamless loop
-                            audio.currentTime = 0;
-                            audio.play().catch(e => console.log('Seamless loop play error:', e));
-                        }
+                    const loopAudio = document.getElementById('backgroundMusicLoop');
+                    if (loopAudio) {
+                        loopAudio.volume = audio.volume;
+                        loopAudio.play().catch(e => console.log('Loop audio play error:', e));
+                        updateMusicButtonState(true);
                     }
                 });
+                
+                // Handle loop track events
+                const loopAudio = document.getElementById('backgroundMusicLoop');
+                if (loopAudio) {
+                    loopAudio.volume = 0.5;
+                    loopAudio.addEventListener('play', function() {
+                        updateMusicButtonState(true);
+                    });
+                    loopAudio.addEventListener('pause', function() {
+                        updateMusicButtonState(false);
+                    });
+                }
             }
         });
         
@@ -155,6 +163,12 @@
         }
     </script>
     <audio id="backgroundMusic" autoplay preload="auto">
+                        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Second track (loops after first) -->
+    <audio id="backgroundMusicLoop" preload="auto" loop>
                         <source src="Audiolandingpage.m4a" type="audio/mp4">
         Your browser does not support the audio element.
     </audio>
@@ -221,6 +235,18 @@
                 gap: 0.75rem;
                 flex: 1;
                 min-width: 0;
+                max-width: calc(100% - 300px);
+            }
+            
+            .header-right {
+                margin-left: 0.5rem;
+                flex-shrink: 0;
+            }
+            
+            .music-control-btn {
+                padding: 5px 9px !important;
+                min-height: 30px !important;
+                min-width: 30px !important;
             }
             
             .logo {
@@ -231,6 +257,8 @@
             .brand-info {
                 min-width: 0;
                 flex: 1;
+                max-width: calc(100% - 200px);
+                overflow: hidden;
             }
             
             .brand-info h1 {
@@ -384,11 +412,22 @@
             
             .header-right {
                 gap: 0.4rem;
+                margin-left: 0.5rem !important;
             }
             
             .last-update {
                 font-size: 0.65rem;
                 padding: 3px 8px;
+            }
+            
+            .music-control-btn {
+                padding: 5px 8px !important;
+                min-height: 28px !important;
+                min-width: 28px !important;
+            }
+            
+            .brand-info {
+                max-width: calc(100% - 180px) !important;
             }
         }
         
@@ -577,6 +616,8 @@
                 text-align: center;
                 height: 100vh;
                 margin-top: -70px; /* Pull content up more for mobile */
+                /* Prevent scrolling within hero section */
+                overflow: hidden;
             }
             
             .hero-title {
@@ -635,6 +676,8 @@
                 padding-top: 0;
                 height: 100vh;
                 margin-top: -60px; /* Pull content up more for mobile */
+                /* Prevent scrolling within hero section */
+                overflow: hidden;
             }
             
             .hero-title {
@@ -659,6 +702,10 @@
         @media (max-width: 360px) {
             .hero-section {
                 padding: 60px 10px 40px;
+                height: 100vh;
+                overflow: hidden;
+                touch-action: none;
+                overscroll-behavior: contain;
             }
             
             .hero-title {
@@ -677,6 +724,10 @@
         @media (max-width: 320px) {
             .hero-section {
                 padding: 50px 8px 30px;
+                height: 100vh;
+                overflow: hidden;
+                touch-action: none;
+                overscroll-behavior: contain;
             }
             
             .hero-title {
@@ -694,6 +745,10 @@
         @media (max-width: 280px) {
             .hero-section {
                 padding: 40px 5px 25px;
+                height: 100vh;
+                overflow: hidden;
+                touch-action: none;
+                overscroll-behavior: contain;
             }
             
             .hero-title {
@@ -814,6 +869,7 @@
             justify-content: space-between;
             padding: 0 2rem;
             height: 64px;
+            gap: 1rem;
         }
         
         .header-left {
@@ -882,7 +938,8 @@
             font-size: 0.7rem;
             color: rgba(255, 255, 255, 0.7);
             margin: 0;
-            line-height: 1;
+            line-height: 1.2;
+            margin-top: 2px;
         }
         
         .main-nav ul {
@@ -937,6 +994,8 @@
             gap: 1rem;
             align-items: center;
             padding-top: 0;
+            flex-shrink: 0;
+            margin-left: 1rem;
         }
         
         .last-update {
@@ -1004,14 +1063,18 @@
             color: white;
             border: 2px solid rgba(74, 144, 226, 0.5);
             border-radius: 6px;
-            padding: 8px 12px;
+            padding: 6px 10px;
             font-size: 0.9rem;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-right: 10px;
+            margin-right: 0;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 5px;
+            min-height: 32px;
+            min-width: 32px;
+            overflow: visible;
         }
         
         .music-control-btn:hover {
@@ -1027,6 +1090,19 @@
         
         .music-control-btn .btn-icon {
             font-size: 1rem;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Ensure button is not cut off */
+        .main-header {
+            overflow: visible !important;
+        }
+        
+        .header-container {
+            overflow: visible !important;
         }
         
         /* Adjust body padding for fixed header */
@@ -1085,8 +1161,9 @@
             min-height: 100vh;
             overflow-x: hidden; /* Prevent horizontal scrolling */
             overflow-y: auto; /* Allow vertical scrolling */
-            /* Prevent white background on overscroll */
-            overscroll-behavior: none !important;
+            /* Prevent white background on overscroll and bounce on mobile */
+            overscroll-behavior-x: none !important;
+            overscroll-behavior-y: none !important; /* Prevent bounce/white flash on mobile */
             -webkit-overflow-scrolling: touch;
             /* Additional mobile overflow prevention */
             max-width: 100vw;
@@ -1096,7 +1173,7 @@
         /* Additional overscroll prevention for all browsers */
         html {
             overscroll-behavior-x: none !important;
-            overscroll-behavior-y: none !important;
+            overscroll-behavior-y: auto !important; /* Allow vertical scrolling on mobile */
         }
         
         /* Force background coverage for all scrollable areas */
@@ -1120,6 +1197,15 @@
             html, body {
                 background-attachment: scroll !important;
                 background-size: 100% 100% !important;
+                background-color: #0f0f23 !important; /* Fallback solid color */
+            }
+            
+            /* Prevent iOS Safari pull-to-refresh white flash */
+            html::before,
+            body::after {
+                top: -1000vh !important;
+                bottom: -1000vh !important;
+                height: 2000vh !important;
             }
         }
         
@@ -1130,7 +1216,7 @@
             line-height: 1.6;
             min-height: 100vh;
             overflow-x: hidden; /* Prevent horizontal scrolling */
-            overflow-y: auto; /* Allow vertical scrolling */
+            overflow-y: hidden; /* Prevent duplicate scrollbar - html handles scrolling */
             position: relative;
             /* CRITICAL: Prevent any horizontal overflow */
             max-width: 100vw;
@@ -1172,18 +1258,32 @@
         /* Music-reactive page effects removed */
         
         /* Extended background to prevent white areas on overscroll */
+        html::before {
+            content: '';
+            position: fixed;
+            top: -500vh;
+            left: 0;
+            right: 0;
+            bottom: -500vh;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            z-index: -4;
+            pointer-events: none;
+            width: 100vw;
+            height: 1000vh;
+        }
+        
         body::after {
             content: '';
             position: fixed;
-            top: -200vh;
+            top: -500vh;
             left: 0;
             right: 0;
-            bottom: -200vh;
+            bottom: -500vh;
             background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
             z-index: -3;
             pointer-events: none;
             width: 100vw;
-            height: 400vh;
+            height: 1000vh;
         }
         
         @keyframes backgroundShift {
@@ -1224,7 +1324,9 @@
             z-index: 1;
             /* CRITICAL: Prevent any horizontal overflow */
             width: 100vw;
-            overflow: hidden;
+            overflow: hidden !important; /* Prevent scrollbar on container */
+            overflow-x: hidden !important;
+            overflow-y: hidden !important;
             box-sizing: border-box;
         }
         
@@ -1380,7 +1482,9 @@
             /* CRITICAL: Prevent any horizontal overflow in hero section */
             width: 100%;
             height: 100vh;
-            overflow: visible;
+            overflow: hidden !important; /* Prevent scrollbar on hero section */
+            overflow-x: hidden !important;
+            overflow-y: hidden !important;
             box-sizing: border-box;
             /* Ensure hero section never extends beyond viewport */
             left: 0;
@@ -1392,6 +1496,7 @@
             padding: 0 20px;
             padding-top: 0;
             position: relative;
+            /* Prevent scrolling within hero section but allow page scroll */
         }
         
         .welcome-background-image {
@@ -4703,28 +4808,45 @@
         
         /* Critical responsive breakpoints to prevent text overlap */
         @media (max-width: 800px) {
+            .brand-info {
+                max-width: calc(100% - 220px) !important;
+                min-width: 0;
+            }
+            
             .brand-info h1 {
                 font-size: 0.9rem !important;
                 min-width: 0;
-                max-width: 180px;
+                max-width: 100%;
             }
             
             .brand-info p {
                 font-size: 0.7rem !important;
                 min-width: 0;
-                max-width: 180px;
+                max-width: 100%;
+            }
+            
+            .header-right {
+                margin-left: 0.75rem !important;
             }
         }
         
         @media (max-width: 750px) {
+            .brand-info {
+                max-width: calc(100% - 200px) !important;
+            }
+            
             .brand-info h1 {
                 font-size: 0.85rem !important;
-                max-width: 160px;
+                max-width: 100%;
             }
             
             .brand-info p {
                 font-size: 0.65rem !important;
-                max-width: 160px;
+                max-width: 100%;
+            }
+            
+            .header-right {
+                margin-left: 0.5rem !important;
             }
             
             .main-nav a {
@@ -4734,14 +4856,22 @@
         }
         
         @media (max-width: 700px) {
+            .brand-info {
+                max-width: calc(100% - 190px) !important;
+            }
+            
             .brand-info h1 {
                 font-size: 0.8rem !important;
-                max-width: 140px;
+                max-width: 100%;
             }
             
             .brand-info p {
                 font-size: 0.6rem !important;
-                max-width: 140px;
+                max-width: 100%;
+            }
+            
+            .header-right {
+                margin-left: 0.5rem !important;
             }
             
             .main-nav a {
@@ -4795,7 +4925,7 @@
         /* FINAL OVERRIDE: Force correct scrolling behavior */
         .news-carousel {
             overflow-x: auto !important;
-            overflow-y: auto !important; /* Allow vertical scrolling */
+            overflow-y: visible !important; /* Don't create vertical scrollbar - let body handle it */
             scroll-behavior: auto !important;
             -webkit-overflow-scrolling: touch !important;
             overscroll-behavior-x: none !important;
@@ -5014,7 +5144,7 @@
         }
         /* FINAL MOBILE OVERFLOW PREVENTION - Critical for all mobile devices */
         @media (max-width: 768px) {
-            html, body {
+            html {
                 /* CRITICAL MOBILE: Force viewport compliance */
                 width: 100% !important;
                 overflow-x: hidden !important;
@@ -5023,6 +5153,13 @@
                 -webkit-text-size-adjust: 100% !important;
                 -ms-text-size-adjust: 100% !important;
                 text-size-adjust: 100% !important;
+            }
+            
+            body {
+                /* CRITICAL MOBILE: Force viewport compliance */
+                width: 100% !important;
+                overflow-x: hidden !important;
+                overflow-y: hidden !important; /* Prevent duplicate scrollbar - html handles scrolling */
             }
             
             .container {
@@ -5035,10 +5172,18 @@
             }
             
             /* Force all text elements to stay within mobile bounds */
-            .welcome-text, .hero-title, .welcome-text-container, .hero-section {
+            .welcome-text, .hero-title, .welcome-text-container {
                 max-width: 100% !important;
                 width: 100% !important;
                 overflow: visible !important; /* Allow text to be visible */
+                box-sizing: border-box !important;
+            }
+            
+            /* Keep hero section overflow hidden to prevent internal scrolling */
+            .hero-section {
+                max-width: 100% !important;
+                width: 100% !important;
+                overflow: hidden !important; /* Prevent scrolling within hero */
                 box-sizing: border-box !important;
             }
         }
@@ -5047,14 +5192,35 @@
             box-sizing: border-box;
         }
         
-        html, body {
+        html {
             width: 100% !important;
             overflow-x: hidden !important;
             overflow-y: auto !important; /* Allow vertical scrolling */
             box-sizing: border-box !important;
         }
         
-        .container, .hero-section, .hero-title, .welcome-text-container, .welcome-text {
+        body {
+            width: 100% !important;
+            overflow-x: hidden !important;
+            overflow-y: hidden !important; /* Prevent duplicate scrollbar - html handles scrolling */
+            box-sizing: border-box !important;
+        }
+        
+        .container {
+            max-width: 100% !important;
+            width: 100% !important;
+            overflow: hidden !important; /* Prevent scrollbar on container */
+            box-sizing: border-box !important;
+        }
+        
+        .hero-section {
+            max-width: 100% !important;
+            width: 100% !important;
+            overflow: hidden !important; /* Prevent scrollbar on hero section */
+            box-sizing: border-box !important;
+        }
+        
+        .hero-title, .welcome-text-container, .welcome-text {
             max-width: 100% !important;
             width: 100% !important;
             overflow: visible !important; /* Allow content to be visible */
@@ -5063,7 +5229,29 @@
         
         /* Force mobile compliance */
         @media (max-width: 768px) {
-            html, body, .container, .hero-section, .hero-title, .welcome-text-container, .welcome-text {
+            html {
+                overflow-y: auto !important; /* Allow vertical scrolling */
+            }
+            
+            body {
+                overflow-y: hidden !important; /* Prevent duplicate scrollbar - html handles scrolling */
+            }
+            
+            .container {
+                max-width: 100% !important;
+                width: 100% !important;
+                overflow: hidden !important; /* Prevent scrollbar on container */
+                box-sizing: border-box !important;
+            }
+            
+            .hero-section {
+                max-width: 100% !important;
+                width: 100% !important;
+                overflow: hidden !important; /* Prevent scrollbar on hero section */
+                box-sizing: border-box !important;
+            }
+            
+            .hero-title, .welcome-text-container, .welcome-text {
                 max-width: 100% !important;
                 width: 100% !important;
                 overflow: visible !important; /* Allow content to be visible */
@@ -6332,65 +6520,6 @@
         
 
         
-        .scroll-arrows {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        
-        .scroll-arrows.visible {
-            opacity: 1;
-        }
-        
-        .scroll-arrow {
-            position: absolute;
-            width: 60px;
-            height: 80px;
-            background: linear-gradient(135deg, 
-                rgba(74, 144, 226, 0.9) 0%, 
-                rgba(74, 144, 226, 0.7) 50%, 
-                rgba(74, 144, 226, 0.5) 100%);
-            border: 3px solid rgba(74, 144, 226, 0.8);
-            border-radius: 8px;
-            box-shadow: 
-                0 0 20px rgba(74, 144, 226, 0.6),
-                0 0 40px rgba(74, 144, 226, 0.4),
-                inset 0 0 20px rgba(74, 144, 226, 0.3);
-            animation: arrowGlow 3s ease-in-out infinite;
-        }
-        
-        .scroll-arrow::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-left: 12px solid transparent;
-            border-right: 12px solid transparent;
-            border-top: 20px solid rgba(255, 255, 255, 0.9);
-            transform: translate(-50%, -50%);
-            filter: drop-shadow(0 0 8px rgba(74, 144, 226, 0.8));
-        }
-        
-        .scroll-arrow.left {
-            left: 40px;
-            top: 70%;
-            transform: translateY(-50%);
-        }
-        
-        .scroll-arrow.right {
-            right: 40px;
-            top: 70%;
-            transform: translateY(-50%);
-        }
-        
         /* Skip Welcome Button */
         .skip-welcome-button {
             position: fixed;
@@ -6429,40 +6558,7 @@
             transform: translateY(1px);
         }
         
-        @keyframes arrowGlow {
-            0%, 100% { 
-                box-shadow: 
-                    0 0 20px rgba(74, 144, 226, 0.6),
-                    0 0 40px rgba(74, 144, 226, 0.4),
-                    inset 0 0 20px rgba(74, 144, 226, 0.3);
-                border-color: rgba(74, 144, 226, 0.8);
-            }
-            50% { 
-                box-shadow: 
-                    0 0 30px rgba(74, 144, 226, 0.8),
-                    0 0 60px rgba(74, 144, 226, 0.6),
-                    inset 0 0 30px rgba(74, 144, 226, 0.5);
-                border-color: rgba(74, 144, 226, 1);
-            }
-        }
         
-        /* Mobile optimization for arrows */
-        @media (max-width: 768px) {
-            .scroll-arrow {
-                width: 50px;
-                height: 70px;
-            }
-            
-            .scroll-arrow.left {
-                left: 20px;
-                top: 70%;
-            }
-            
-            .scroll-arrow.right {
-                right: 20px;
-                top: 70%;
-            }
-            
             .welcome-left-image {
                 width: 400px;
                 height: 400px;
@@ -6498,21 +6594,6 @@
         }
         
         @media (max-width: 480px) {
-            .scroll-arrow {
-                width: 40px;
-                height: 60px;
-            }
-            
-            .scroll-arrow.left {
-                left: 15px;
-                top: 70%;
-            }
-            
-            .scroll-arrow.right {
-                right: 15px;
-                top: 70%;
-            }
-            
             /* Skip Welcome Button */
             .skip-welcome-button {
                 position: absolute;
@@ -7274,16 +7355,6 @@
         
 
         
-                  <!-- Neon Blue Western Scroll Arrows -->
-          <div class="scroll-arrows" id="scrollArrows">
-              <div class="scroll-arrow left"></div>
-              <div class="scroll-arrow right"></div>
-          </div>
-          
-          <!-- Skip Welcome Button -->
-          <div class="skip-welcome-button" id="skipWelcomeButton">
-              <button class="skip-btn" id="skipBtn">Skip Welcome</button>
-          </div>
         </div>
     
 
@@ -7295,21 +7366,6 @@
             
             <div class="news-carousel" role="region" aria-label="News articles carousel">
                 <div class="articles-track" id="articlesTrack" role="list" aria-live="polite">
-                    <article class="article-card" role="listitem">
-                        <div class="article-image">
-                            <div class="article-category breaking">BREAKING</div>
-                            <img src="GylNceyWcAA1PDI.jpeg" alt="Australian Extradition Case - Chinese National Attacks Infant" loading="lazy">
-        </div>
-                        <div class="article-content">
-                            <h3 class="article-headline">Australian Extradition Case: Chinese National Attacks Infant with Hot Coffee</h3>
-                            <p class="article-excerpt" style="font-size: 0.7rem; line-height: 1.2; margin-top: 8px;">A Chinese national who had his Australian visa application rejected last year attacked an infant with a container of hot coffee at an Australian park, burning up to 60% of the infant's body.</p>
-                            <div class="article-meta">
-                                <span class="article-date">August 17, 2025</span>
-                                <span class="article-read-time">2 min read</span>
-    </div>
-                            <a href="https://x.com/newsnoteworthy/status/1957180667889963407" target="_blank" class="article-link">Read Full Story →</a>
-            </div>
-                    </article>
                     <article class="article-card" role="listitem" data-coming-soon="true">
                         <div class="article-image">
                             <div class="article-category breaking">BREAKING</div>
@@ -7425,41 +7481,41 @@
             <p class="credibility-subtitle">Trusted by millions across the globe</p>
             
             <div class="stats-hero-container">
-                <div class="hero-stat-main" data-emoji="📊" data-number="28.7M">
+                <div class="hero-stat-main" data-emoji="📊" data-number="28.7M+">
                     <div class="hero-stat-icon">📊</div>
-                    <div class="hero-stat-number">28.7M</div>
+                    <div class="hero-stat-number">28.7M+</div>
                     <div class="hero-stat-label">Total Impressions</div>
                     <div class="hero-stat-description">Reaching millions with fact-checked news every day</div>
                 </div>
                 
                 <div class="stats-surrounding">
-                    <div class="stat-card surrounding" data-emoji="💬" data-number="850.1K">
+                    <div class="stat-card surrounding" data-emoji="💬" data-number="850.1K+">
                         <div class="stat-icon">💬</div>
-                        <div class="stat-number">850.1K</div>
+                        <div class="stat-number">850.1K+</div>
                         <div class="stat-label">Engagements</div>
                     </div>
                     
-                    <div class="stat-card surrounding" data-emoji="❤️" data-number="91.4K">
+                    <div class="stat-card surrounding" data-emoji="❤️" data-number="91.4K+">
                         <div class="stat-icon">❤️</div>
-                        <div class="stat-number">91.4K</div>
+                        <div class="stat-number">91.4K+</div>
                         <div class="stat-label">Likes</div>
                     </div>
 
-                    <div class="stat-card surrounding" data-emoji="📤" data-number="33.4K">
+                    <div class="stat-card surrounding" data-emoji="📤" data-number="33.4K+">
                         <div class="stat-icon">📤</div>
-                        <div class="stat-number">33.4K</div>
+                        <div class="stat-number">33.4K+</div>
                         <div class="stat-label">Shares</div>
                     </div>
                     
-                    <div class="stat-card surrounding" data-emoji="🔄" data-number="21.7K">
+                    <div class="stat-card surrounding" data-emoji="🔄" data-number="21.7K+">
                         <div class="stat-icon">🔄</div>
-                        <div class="stat-number">21.7K</div>
+                        <div class="stat-number">21.7K+</div>
                         <div class="stat-label">Reposts</div>
                     </div>
                     
-                                        <div class="stat-card surrounding" data-emoji="👥" data-number="4.1K">
+                                        <div class="stat-card surrounding" data-emoji="👥" data-number="4.1K+">
                         <div class="stat-icon">👥</div>
-                        <div class="stat-number">4.1K</div>
+                        <div class="stat-number">4.1K+</div>
                         <div class="stat-label">Followers</div>
                     </div>
                     
@@ -7541,37 +7597,6 @@
     
     <script src="script.js"></script>
     <script>
-        // Skip welcome screen function
-        function skipWelcomeScreen() {
-            console.log('Skip button clicked!');
-            
-            // Remove scroll lock
-            document.body.classList.remove('welcome-locked');
-            console.log('Scroll lock removed');
-            
-            // Enable scrolling
-            document.body.style.overflow = 'auto';
-            console.log('Scrolling enabled');
-            
-            // Hide the skip button
-            const skipButton = document.getElementById('skipWelcomeButton');
-            if (skipButton) {
-                skipButton.style.display = 'none';
-                console.log('Skip button hidden');
-            }
-            
-            // Show scroll arrows if they exist
-            const scrollArrows = document.getElementById('scrollArrows');
-            if (scrollArrows) {
-                scrollArrows.classList.add('visible');
-                console.log('Scroll arrows shown');
-            }
-            
-            // Don't auto-scroll - let user scroll naturally
-            // The welcome animation can continue while user explores
-            console.log('Function completed');
-        }
-        
         // Initialize functions when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof initCredibilityStats === 'function') initCredibilityStats();
@@ -7589,16 +7614,6 @@
             
             // Initialize divider particles
             initDividerParticles();
-            
-            // Add event listener to skip button
-            const skipBtn = document.getElementById('skipBtn');
-            console.log('Skip button found:', skipBtn);
-            if (skipBtn) {
-                skipBtn.addEventListener('click', skipWelcomeScreen);
-                console.log('Event listener attached to skip button');
-            } else {
-                console.log('Skip button not found!');
-            }
         });
         
         // Save page state before page unload
@@ -7620,8 +7635,8 @@
             const pageState = {
                 scrollX: window.scrollX || window.pageXOffset,
                 scrollY: window.scrollY || window.pageYOffset,
-                musicPlaying: document.getElementById('backgroundMusic')?.paused === false,
-                musicTime: document.getElementById('backgroundMusic')?.currentTime || 0,
+                musicPlaying: document.getElementById('backgroundMusic')?.paused === false || document.getElementById('backgroundMusicLoop')?.paused === false,
+                musicTime: document.getElementById('backgroundMusic')?.currentTime || document.getElementById('backgroundMusicLoop')?.currentTime || 0,
                 timestamp: Date.now()
             };
             localStorage.setItem('noteworthyNewsPageState', JSON.stringify(pageState));
@@ -7637,14 +7652,23 @@
                     
                     // Only restore if saved within last 30 minutes (1800000 ms)
                     if (now - pageState.timestamp < 1800000) {
-                        // Restore music state
+                        // Restore music state - try both tracks
                         const audio = document.getElementById('backgroundMusic');
-                        if (audio && pageState.musicPlaying) {
-                            audio.currentTime = pageState.musicTime || 0;
-                            // Try to resume music (may be blocked by browser)
-                            audio.play().catch(function(error) {
-                                console.log('Music autoplay blocked:', error);
-                            });
+                        const loopAudio = document.getElementById('backgroundMusicLoop');
+                        if (pageState.musicPlaying) {
+                            // If we saved a time, try to restore on main track
+                            if (audio && pageState.musicTime < (audio.duration || 0)) {
+                                audio.currentTime = pageState.musicTime || 0;
+                                audio.play().catch(function(error) {
+                                    console.log('Music autoplay blocked:', error);
+                                });
+                            } else if (loopAudio) {
+                                // Otherwise, start the loop track
+                                loopAudio.currentTime = pageState.musicTime || 0;
+                                loopAudio.play().catch(function(error) {
+                                    console.log('Loop music autoplay blocked:', error);
+                                });
+                            }
                         }
                         
                         // Restore scroll position with small delay to ensure page is fully rendered
@@ -7682,11 +7706,12 @@
             
             if (returningFromPrivacy && musicWasPlaying) {
                 const audio = document.getElementById('backgroundMusic');
-                if (audio) {
-                    // Restore audio to the time it was at when leaving
+                const loopAudio = document.getElementById('backgroundMusicLoop');
+                
+                // Determine which track to restore based on saved time
+                if (audio && musicTime < (audio.duration || Infinity)) {
+                    // Restore main track
                     audio.currentTime = musicTime;
-                    
-                    // Try to resume playing
                     const playPromise = audio.play();
                     if (playPromise !== undefined) {
                         playPromise.then(() => {
@@ -7694,6 +7719,18 @@
                             updateMusicButtonState(true);
                         }).catch(error => {
                             console.log('Audio autoplay blocked after returning from privacy policy:', error);
+                        });
+                    }
+                } else if (loopAudio) {
+                    // Restore loop track
+                    loopAudio.currentTime = musicTime % (loopAudio.duration || 1);
+                    const playPromise = loopAudio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            console.log('🎵 Loop audio restored from privacy policy page');
+                            updateMusicButtonState(true);
+                        }).catch(error => {
+                            console.log('Loop audio autoplay blocked after returning from privacy policy:', error);
                         });
                     }
                 }
@@ -7711,9 +7748,6 @@
             const particles = document.getElementById('fallingParticles');
             
 
-            
-            // Lock scrolling immediately when page loads
-            document.body.classList.add('welcome-locked');
             
             // Create falling particles
             createParticles(particles);
@@ -7744,18 +7778,6 @@
                     
                     // Left welcome image stays visible
                     
-                    // Show scroll arrows after tunnel effect
-                    setTimeout(() => {
-                        const scrollArrows = document.getElementById('scrollArrows');
-                        if (scrollArrows) {
-                            scrollArrows.classList.add('visible');
-                        }
-                    }, 3500); // Show arrows 500ms after tunnel fades
-                    
-                    // Unlock scrolling after tunnel effect
-                    setTimeout(() => {
-                        document.body.classList.remove('welcome-locked');
-                    }, 4000); // Wait for tunnel effect to complete
                 }, 4000); // Tunnel shows for 4 seconds before transition
             }, 12000); // Wait for welcome animation to completely stop pulsing
         }
