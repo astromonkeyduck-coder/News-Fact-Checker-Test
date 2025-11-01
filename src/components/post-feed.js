@@ -89,13 +89,15 @@ async function renderPostFeed(containerId, endpoint = '/.netlify/functions/posts
     console.error('Error loading posts:', err);
     // Restore original content (placeholder cards) instead of showing error
     container.innerHTML = originalContent;
-    // Optionally add a small error indicator without replacing cards
-    const errorNote = document.createElement('div');
-    errorNote.className = 'post-feed-error-note';
-    errorNote.style.cssText = 'padding: 0.5rem; text-align: center; color: rgba(255,200,100,0.8); font-size: 0.85rem;';
-    errorNote.textContent = 'Unable to load new posts. Showing placeholder content.';
-    // Insert at the end of container without replacing
-    container.appendChild(errorNote);
+    
+    // Only show error message if it's NOT a 404 (404 means functions not deployed yet - expected)
+    const is404 = err.message && err.message.includes('404');
+    if (!is404) {
+      // Only log in console, don't show on page to avoid cluttering UI
+      console.warn('Unable to load new posts. Showing placeholder content. Error:', err.message);
+    } else {
+      console.info('Posts endpoint not available yet. Deploy netlify.toml to enable X posts.');
+    }
   }
 }
 

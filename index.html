@@ -8629,10 +8629,23 @@
                 const fetchEndpoint = '/.netlify/functions/fetch-profile-tweets?username=' + encodeURIComponent(username) + '&limit=' + limit;
                 
                 fetch(fetchEndpoint)
-                    .then(res => res.json())
+                    .then(res => {
+                        if (!res.ok) {
+                            console.warn('Profile fetch returned:', res.status, res.statusText);
+                            if (res.status === 404) {
+                                console.warn('Functions not deployed yet. Deploy netlify.toml to fix this.');
+                            }
+                            return [];
+                        }
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            console.log('Fetched', data.length, 'tweets');
+                        }
+                    })
                     .catch(err => {
-                        console.log('Profile fetch failed (will use stored posts):', err);
-                        return [];
+                        console.warn('Profile fetch failed (will use stored posts):', err);
                     })
                     .finally(() => {
                         // Step 2: Always display posts from storage (works even if profile fetch fails)
