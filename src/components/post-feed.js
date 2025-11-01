@@ -9,6 +9,8 @@ async function renderPostFeed(containerId, endpoint = '/.netlify/functions/posts
     return;
   }
 
+  // Store original content in case of error
+  const originalContent = container.innerHTML;
   container.innerHTML = '<div class="post-feed-loading" style="padding: 2rem; text-align: center; color: rgba(255,255,255,0.8);">Loading posts...</div>';
 
   try {
@@ -19,6 +21,11 @@ async function renderPostFeed(containerId, endpoint = '/.netlify/functions/posts
     }
     const res = await fetch(url.pathname + url.search);
     if (!res.ok) {
+      // Check if response is HTML (404 page)
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('text/html')) {
+        throw new Error(`Function not found (404). The Netlify function may not be deployed yet.`);
+      }
       throw new Error(`HTTP ${res.status}: ${res.statusText}`);
     }
     
@@ -80,7 +87,15 @@ async function renderPostFeed(containerId, endpoint = '/.netlify/functions/posts
     }
   } catch (err) {
     console.error('Error loading posts:', err);
-    container.innerHTML = `<div class="post-feed-error" style="padding: 2rem; text-align: center; color: rgba(255,100,100,0.9);">Error loading posts: ${err.message || 'Unknown error'}</div>`;
+    // Restore original content (placeholder cards) instead of showing error
+    container.innerHTML = originalContent;
+    // Optionally add a small error indicator without replacing cards
+    const errorNote = document.createElement('div');
+    errorNote.className = 'post-feed-error-note';
+    errorNote.style.cssText = 'padding: 0.5rem; text-align: center; color: rgba(255,200,100,0.8); font-size: 0.85rem;';
+    errorNote.textContent = 'Unable to load new posts. Showing placeholder content.';
+    // Insert at the end of container without replacing
+    container.appendChild(errorNote);
   }
 }
 
