@@ -5,12 +5,35 @@
   "main": "index.html",
   "scripts": {
     "fetch-tweets": "node fetch-tweets.js",
-    "start": "open index.html"
+    "start": "open index.html",
+    "dev": "npx netlify dev",
+    "serve": "npx netlify dev",
+    "test:webhook": "ts-node scripts/simulate-webhook.ts"
   },
   "dependencies": {
-    "puppeteer": "^21.0.0"
+    "puppeteer": "^21.0.0",
+    "resend": "^3.0.0",
+    "@netlify/functions": "^2.6.0",
+    "@netlify/blobs": "^10.3.1"
   },
-  "keywords": ["news", "fact-checking", "game", "media-literacy"],
+  "keywords": [
+    "news",
+    "fact-checking",
+    "game",
+    "media-literacy"
+  ],
   "author": "Noteworthy News",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "dotenv": "^17.2.3",
+    "netlify-cli": "^23.9.5",
+    "typescript": "^5.3.3",
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.45",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "ts-node": "^10.9.2",
+    "node-fetch": "^2.7.0",
+    "@types/node-fetch": "^2.6.9"
+  }
 }
