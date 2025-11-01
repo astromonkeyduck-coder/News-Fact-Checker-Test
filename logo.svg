@@ -1,0 +1,8 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="#4a90e2"/>
+  
+  <!-- Letter N -->
+  <path d="M 70 50 L 70 150 L 80 150 L 80 75 L 130 150 L 140 150 L 140 50 L 130 50 L 130 125 L 80 50 Z" fill="white"/>
+</svg>
+
