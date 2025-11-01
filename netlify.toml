@@ -1,4 +1,5 @@
 [build]
+  command = ""
   functions = "netlify/functions"
   publish = "."
 
@@ -12,7 +13,10 @@
   force = false
 
 [functions]
-  noteworthy-chat = { included_files = ["netlify/functions/noteworthy-chat.js"] }
+  # Use esbuild to automatically compile TypeScript functions
+  node_bundler = "esbuild"
+  # Include source files for TypeScript compilation
+  included_files = ["netlify/functions/**/*.ts", "src/**/*.ts"]
 
 [dev]
   # Load .env file for local development
