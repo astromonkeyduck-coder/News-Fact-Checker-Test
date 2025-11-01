@@ -159,16 +159,18 @@ class NoteworthyChat extends HTMLElement {
           font-size: 24px;
           line-height: 1;
           cursor: pointer;
-          padding: 8px;
-          margin: -8px;
+          padding: 0;
+          margin: 0;
           border-radius: 8px;
           transition: all 0.2s;
           flex-shrink: 0;
           width: 36px;
           height: 36px;
-          display: grid;
-          place-items: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           border: 1px solid rgba(255, 255, 255, 0.05);
+          text-align: center;
         }
         .close:hover { 
           background: rgba(255, 255, 255, 0.1); 
@@ -1131,49 +1133,49 @@ class NoteworthyChat extends HTMLElement {
         console.log('Calling API:', { endpoint: apiEndpoint, method: 'POST', message: message.substring(0, 50) + '...' });
 
         const res = await fetch(apiEndpoint, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            body: JSON.stringify({ message }),
-          });
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ message }),
+        });
 
-          if (!res.ok) {
-            let errorText;
-            try {
-              const errorData = await res.json();
-              errorText = errorData.error || errorData.message || `Server error (${res.status})`;
-              console.error('API Error:', { status: res.status, error: errorData });
-            } catch {
-              errorText = await res.text().catch(() => `Server error (${res.status})`);
-              console.error('API Error (non-JSON):', { status: res.status, text: errorText });
-            }
-            throw new Error(errorText);
+        if (!res.ok) {
+          let errorText;
+          try {
+            const errorData = await res.json();
+            errorText = errorData.error || errorData.message || `Server error (${res.status})`;
+            console.error('API Error:', { status: res.status, error: errorData });
+          } catch {
+            errorText = await res.text().catch(() => `Server error (${res.status})`);
+            console.error('API Error (non-JSON):', { status: res.status, text: errorText });
           }
+          throw new Error(errorText);
+        }
 
-          const data = await res.json();
-          console.log('API Success:', { reply: data.reply?.substring(0, 50) + '...' });
-          thinking.remove();
+        const data = await res.json();
+        console.log('API Success:', { reply: data.reply?.substring(0, 50) + '...' });
+        thinking.remove();
 
-          // Show reply with NW logo
-          const aiGroup = document.createElement('div');
-          aiGroup.className = 'message-group ai-msg-group';
-          const text = data.reply || 'No response.';
-          const replyContent = document.createElement('div');
-          replyContent.className = 'reply';
-          replyContent.innerHTML = text.split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('');
+        // Show reply with NW logo
+        const aiGroup = document.createElement('div');
+        aiGroup.className = 'message-group ai-msg-group';
+        const text = data.reply || 'No response.';
+        const replyContent = document.createElement('div');
+        replyContent.className = 'reply';
+        replyContent.innerHTML = text.split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('');
 
-          aiGroup.innerHTML = `
-            <div class="message-avatar">
-              <img src="IMG_5794.PNG" alt="Noteworthy News" />
-            </div>
-            <div class="message-content"></div>
-          `;
-          aiGroup.querySelector('.message-content').appendChild(replyContent);
-          body.appendChild(aiGroup);
+        aiGroup.innerHTML = `
+          <div class="message-avatar">
+            <img src="IMG_5794.PNG" alt="Noteworthy News" />
+          </div>
+          <div class="message-content"></div>
+        `;
+        aiGroup.querySelector('.message-content').appendChild(replyContent);
+        body.appendChild(aiGroup);
 
-          body.scrollTop = body.scrollHeight;
+        body.scrollTop = body.scrollHeight;
       } catch (e) {
         thinking.remove();
         const aiGroup = document.createElement('div');

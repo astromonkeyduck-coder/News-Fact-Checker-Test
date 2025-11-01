@@ -5376,10 +5376,16 @@ header h1::after {
     font-size: 20px !important;
     line-height: 1 !important;
     cursor: pointer !important;
-    padding: 4px 8px !important;
+    padding: 0 !important;
     border-radius: 4px !important;
     transition: background 0.2s ease !important;
     flex-shrink: 0 !important;
+    width: 32px !important;
+    height: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
 }
 
 .nw-chat-close:hover {

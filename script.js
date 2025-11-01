@@ -3581,11 +3581,11 @@ function initBackgroundMusic() {
     // Function to ensure only one track plays at a time
     function pauseAllTracks() {
         if (backgroundMusic && !backgroundMusic.paused) {
-            backgroundMusic.pause();
-        }
-        if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
-            backgroundMusicLoop.pause();
-        }
+                    backgroundMusic.pause();
+                }
+                if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+                    backgroundMusicLoop.pause();
+                }
     }
     
     function playTrackOnly(track) {
@@ -3607,10 +3607,10 @@ function initBackgroundMusic() {
                 // Play - start with main track if it hasn't finished, otherwise loop track
                 if (backgroundMusic.currentTime < (backgroundMusic.duration || Infinity)) {
                     playTrackOnly(backgroundMusic);
-                    console.log('Background music started');
+                        console.log('Background music started');
                 } else if (backgroundMusicLoop) {
                     playTrackOnly(backgroundMusicLoop);
-                    console.log('Background loop music started');
+                        console.log('Background loop music started');
                 }
             }
         });
@@ -3622,8 +3622,8 @@ function initBackgroundMusic() {
             if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
                 backgroundMusicLoop.pause();
             }
-        });
-    }
+                    });
+                }
     
     if (backgroundMusicLoop) {
         backgroundMusicLoop.addEventListener('play', () => {
@@ -4273,3 +4273,165 @@ function initNewsletterSubscription() {
         }, 5000);
     }
 }
+
+// Interactive Stars - Make stars move when mouse hovers near them
+(function initInteractiveStars() {
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initInteractiveStars);
+        return;
+    }
+
+    // Configuration
+    const INTERACTION_DISTANCE = 100; // pixels - how close mouse needs to be to trigger movement
+    const REPULSION_FORCE = 40; // pixels - how far stars move away
+    const LARGE_STAR_DISTANCE = 120; // pixels - larger distance for bigger stars
+    const LARGE_STAR_REPULSION = 60; // pixels - larger movement for bigger stars
+
+    // Store original positions
+    const starOriginalPositions = new Map();
+    
+    // Get all stars (both small and large)
+    function getAllStars() {
+        const smallStars = document.querySelectorAll('.western-stars .western-star');
+        const largeStars = document.querySelectorAll('.western-decorations .western-star');
+        return { smallStars, largeStars };
+    }
+
+    // Get star's current position
+    function getStarPosition(star) {
+        const rect = star.getBoundingClientRect();
+        return {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+            width: rect.width,
+            height: rect.height
+        };
+    }
+
+    // Store original positions
+    function storeOriginalPositions() {
+        const { smallStars, largeStars } = getAllStars();
+        
+        // Store small stars positions
+        smallStars.forEach((star, index) => {
+            const computedStyle = window.getComputedStyle(star);
+            starOriginalPositions.set(star, {
+                left: computedStyle.left,
+                top: computedStyle.top,
+                originalLeft: parseFloat(computedStyle.left) || 0,
+                originalTop: parseFloat(computedStyle.top) || 0
+            });
+        });
+
+        // Store large stars positions
+        largeStars.forEach((star, index) => {
+            const computedStyle = window.getComputedStyle(star);
+            const left = computedStyle.left !== 'auto' ? computedStyle.left : 
+                        computedStyle.right !== 'auto' ? `calc(100% - ${computedStyle.right})` : '0';
+            const top = computedStyle.top;
+            starOriginalPositions.set(star, {
+                left: left,
+                top: top,
+                originalLeft: left.includes('%') ? 
+                    (parseFloat(left) / 100) * window.innerWidth : 
+                    parseFloat(left) || 0,
+                originalTop: top.includes('%') ? 
+                    (parseFloat(top) / 100) * window.innerHeight : 
+                    parseFloat(top) || 0
+            });
+        });
+    }
+
+    // Reset all stars to original positions
+    function resetAllStars() {
+        starOriginalPositions.forEach((position, star) => {
+            star.style.transform = 'translate(0, 0)';
+            star.style.opacity = '';
+        });
+    }
+
+    // Calculate distance between two points
+    function getDistance(x1, y1, x2, y2) {
+        return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    }
+
+    // Handle mouse movement
+    function handleMouseMove(e) {
+        const mouseX = e.clientX;
+        const mouseY = e.clientY;
+        
+        const { smallStars, largeStars } = getAllStars();
+
+        // Process small stars
+        smallStars.forEach(star => {
+            const starPos = getStarPosition(star);
+            const distance = getDistance(mouseX, mouseY, starPos.x, starPos.y);
+            
+            if (distance < INTERACTION_DISTANCE) {
+                const angle = Math.atan2(starPos.y - mouseY, starPos.x - mouseX);
+                const force = (1 - distance / INTERACTION_DISTANCE) * REPULSION_FORCE;
+                const deltaX = Math.cos(angle) * force;
+                const deltaY = Math.sin(angle) * force;
+                
+                star.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                star.style.opacity = '0.8';
+            } else {
+                star.style.transform = 'translate(0, 0)';
+                star.style.opacity = '';
+            }
+        });
+
+        // Process large stars
+        largeStars.forEach(star => {
+            const starPos = getStarPosition(star);
+            const distance = getDistance(mouseX, mouseY, starPos.x, starPos.y);
+            
+            if (distance < LARGE_STAR_DISTANCE) {
+                const angle = Math.atan2(starPos.y - mouseY, starPos.x - mouseX);
+                const force = (1 - distance / LARGE_STAR_DISTANCE) * LARGE_STAR_REPULSION;
+                const deltaX = Math.cos(angle) * force;
+                const deltaY = Math.sin(angle) * force;
+                
+                star.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(1.2)`;
+                star.style.opacity = '1';
+            } else {
+                star.style.transform = 'translate(0, 0) scale(1)';
+                star.style.opacity = '';
+            }
+        });
+    }
+
+    // Initialize when page loads
+    function init() {
+        // Store original positions after a short delay to ensure styles are computed
+        setTimeout(() => {
+            storeOriginalPositions();
+            
+            // Add mouse move listener
+            document.addEventListener('mousemove', handleMouseMove);
+            
+            // Reset stars when mouse leaves the window
+            document.addEventListener('mouseleave', resetAllStars);
+            
+            // Reset stars when mouse leaves hero section
+            const heroSection = document.querySelector('.hero-section');
+            if (heroSection) {
+                heroSection.addEventListener('mouseleave', resetAllStars);
+            }
+        }, 100);
+    }
+
+    // Initialize
+    init();
+
+    // Re-initialize on window resize to recalculate positions
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            storeOriginalPositions();
+            resetAllStars();
+        }, 250);
+    });
+})();

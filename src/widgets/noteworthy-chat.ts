@@ -126,15 +126,17 @@ export class NoteworthyChat extends HTMLElement {
           font-size: 22px;
           line-height: 1;
           cursor: pointer;
-          padding: 6px 10px;
-          margin: -6px -10px;
+          padding: 0;
+          margin: 0;
           border-radius: 8px;
           transition: all 0.2s;
           flex-shrink: 0;
           width: 32px;
           height: 32px;
-          display: grid;
-          place-items: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
         }
         .close:hover { 
           background: rgba(255,255,255,.2); 
