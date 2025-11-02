@@ -340,11 +340,11 @@ export const handler: Handler = async (event) => {
           body: JSON.stringify({ error: error?.message || "Failed to fetch tweet" }),
         };
       }
-    }
+  }
 
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: "Method not allowed" }),
-    };
+  return {
+    statusCode: 405,
+    headers,
+    body: JSON.stringify({ error: "Method not allowed" }),
+  };
 };
