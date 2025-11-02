@@ -592,124 +592,129 @@ function renderFeedControls(totalPosts) {
   const searchId = 'feed-search-' + Date.now();
   const sortId = 'feed-sort-' + Date.now();
   
-  return `
-    <div 
-      class="feed-controls"
-      style="
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background: rgba(15, 15, 35, 0.95);
-        backdrop-filter: blur(10px);
-        padding: 1rem;
-        margin-bottom: 2rem;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        align-items: center;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-      "
-    >
-      <div style="flex: 1; min-width: 250px;">
-        <input
-          id="${searchId}"
-          type="text"
-          placeholder="🔍 Search posts, tags, @handles..."
-          value="${escapeHtml(currentSearch)}"
-          class="feed-search-input"
-          style="
-            width: 100%;
-            padding: 0.75rem 1rem;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 8px;
-            color: #fff;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-          "
-        />
-      </div>
-      
-      <div style="display: flex; gap: 0.5rem; align-items: center;">
-        <label 
-          for="${sortId}"
-          style="color: rgba(255,255,255,0.9); font-size: 0.9rem; white-space: nowrap;"
-        >Sort by:</label>
-        <select
-          id="${sortId}"
-          class="feed-sort-select"
-          style="
-            padding: 0.75rem 1rem;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 8px;
-            color: #fff;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-          "
-        >
-          <option value="recent" ${currentSort === 'recent' ? 'selected' : ''}>Most Recent</option>
-          <option value="views" ${currentSort === 'views' ? 'selected' : ''}>Most Views</option>
-          <option value="likes" ${currentSort === 'likes' ? 'selected' : ''}>Most Likes</option>
-          <option value="comments" ${currentSort === 'comments' ? 'selected' : ''}>Most Comments</option>
-          <option value="reposts" ${currentSort === 'reposts' ? 'selected' : ''}>Most Reposts</option>
-        </select>
-      </div>
-      
-      <div 
-        class="feed-post-count"
-        style="
-          color: rgba(255,255,255,0.7);
-          font-size: 0.9rem;
-          margin-left: auto;
-          white-space: nowrap;
-        "
-      >
-        ${totalPosts} ${totalPosts === 1 ? 'post' : 'posts'}
-      </div>
-    </div>
-    
-    <script>
-      (function() {
-        const searchInput = document.getElementById('${searchId}');
-        const sortSelect = document.getElementById('${sortId}');
-        
-        let searchTimeout;
-        
-        if (searchInput) {
-          searchInput.addEventListener('input', function(e) {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(function() {
-              currentSearch = e.target.value;
-              localStorage.setItem('feed-search', currentSearch);
-              updateURLParams();
-              renderFeed();
-            }, 300);
-          });
-          
-          // Keyboard shortcut: / to focus search
-          document.addEventListener('keydown', function(e) {
-            if (e.key === '/' && !e.ctrlKey && !e.metaKey && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
-              e.preventDefault();
-              searchInput.focus();
-            }
-          });
-        }
-        
-        if (sortSelect) {
-          sortSelect.addEventListener('change', function(e) {
-            currentSort = e.target.value;
-            localStorage.setItem('feed-sort', currentSort);
-            updateURLParams();
-            renderFeed();
-          });
-        }
-      })();
-    </script>
+  const controlsDiv = document.createElement('div');
+  controlsDiv.className = 'feed-controls';
+  controlsDiv.style.cssText = `
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(15, 15, 35, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 1rem;
+    margin-bottom: 2rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
   `;
+  
+  // Search input
+  const searchContainer = document.createElement('div');
+  searchContainer.style.cssText = 'flex: 1; min-width: 250px;';
+  const searchInput = document.createElement('input');
+  searchInput.id = searchId;
+  searchInput.type = 'text';
+  searchInput.placeholder = '🔍 Search posts, tags, @handles...';
+  searchInput.value = currentSearch;
+  searchInput.className = 'feed-search-input';
+  searchInput.style.cssText = `
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  `;
+  searchContainer.appendChild(searchInput);
+  
+  // Sort select
+  const sortContainer = document.createElement('div');
+  sortContainer.style.cssText = 'display: flex; gap: 0.5rem; align-items: center;';
+  const sortLabel = document.createElement('label');
+  sortLabel.htmlFor = sortId;
+  sortLabel.textContent = 'Sort by:';
+  sortLabel.style.cssText = 'color: rgba(255,255,255,0.9); font-size: 0.9rem; white-space: nowrap;';
+  const sortSelect = document.createElement('select');
+  sortSelect.id = sortId;
+  sortSelect.className = 'feed-sort-select';
+  sortSelect.style.cssText = `
+    padding: 0.75rem 1rem;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  `;
+  const options = [
+    { value: 'recent', text: 'Most Recent' },
+    { value: 'views', text: 'Most Views' },
+    { value: 'likes', text: 'Most Likes' },
+    { value: 'comments', text: 'Most Comments' },
+    { value: 'reposts', text: 'Most Reposts' }
+  ];
+  options.forEach(opt => {
+    const option = document.createElement('option');
+    option.value = opt.value;
+    option.textContent = opt.text;
+    if (opt.value === currentSort) option.selected = true;
+    sortSelect.appendChild(option);
+  });
+  sortContainer.appendChild(sortLabel);
+  sortContainer.appendChild(sortSelect);
+  
+  // Post count
+  const countDiv = document.createElement('div');
+  countDiv.className = 'feed-post-count';
+  countDiv.textContent = `${totalPosts} ${totalPosts === 1 ? 'post' : 'posts'}`;
+  countDiv.style.cssText = `
+    color: rgba(255,255,255,0.7);
+    font-size: 0.9rem;
+    margin-left: auto;
+    white-space: nowrap;
+  `;
+  
+  controlsDiv.appendChild(searchContainer);
+  controlsDiv.appendChild(sortContainer);
+  controlsDiv.appendChild(countDiv);
+  
+  // Event listeners
+  let searchTimeout;
+  searchInput.addEventListener('input', function(e) {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(function() {
+      currentSearch = e.target.value;
+      localStorage.setItem('feed-search', currentSearch);
+      updateURLParams();
+      renderFeed();
+    }, 300);
+  });
+  
+  // Keyboard shortcut: / to focus search
+  document.addEventListener('keydown', function(e) {
+    if (e.key === '/' && !e.ctrlKey && !e.metaKey && 
+        document.activeElement && 
+        document.activeElement.tagName !== 'INPUT' && 
+        document.activeElement.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      searchInput.focus();
+    }
+  });
+  
+  sortSelect.addEventListener('change', function(e) {
+    currentSort = e.target.value;
+    localStorage.setItem('feed-sort', currentSort);
+    updateURLParams();
+    renderFeed();
+  });
+  
+  return controlsDiv;
 }
 
 /**
@@ -777,25 +782,23 @@ async function renderFeed() {
   const parent = container.parentElement;
   const originalContent = container.innerHTML;
   
-  const controlsHtml = renderFeedControls(currentPosts.length);
+  const controlsElement = renderFeedControls(currentPosts.length);
   const postsHtml = sorted.map(post => renderPostCard(post)).join('');
   
   // Update controls
-  let controlsElement = parent?.querySelector('.feed-controls');
-  if (!controlsElement && parent) {
-    controlsElement = document.createElement('div');
+  let existingControls = parent?.querySelector('.feed-controls');
+  if (existingControls) {
+    existingControls.replaceWith(controlsElement);
+  } else if (parent) {
     parent.insertBefore(controlsElement, container);
-  }
-  if (controlsElement) {
-    controlsElement.outerHTML = controlsHtml;
   }
   
   // Update posts
   container.innerHTML = postsHtml;
   
   // Track analytics
-  if (typeof window !== 'undefined' && (window as any).track) {
-    (window as any).track('feed_rendered', { 
+  if (typeof window !== 'undefined' && window.track) {
+    window.track('feed_rendered', { 
       sort: currentSort, 
       search: currentSearch,
       count: sorted.length 
@@ -986,19 +989,19 @@ window.feedOpenCommentDrawer = async function(postId) {
   await loadComments(postId);
   
   // Close on ESC
-  const handleEscape = (e) => {
+  const handleEscape = function(e) {
     if (e.key === 'Escape') {
       window.feedCloseCommentDrawer();
     }
   };
   document.addEventListener('keydown', handleEscape);
-  (window as any).feedCommentDrawerCleanup = () => {
+  window.feedCommentDrawerCleanup = function() {
     document.removeEventListener('keydown', handleEscape);
   };
   
   // Track
-  if (typeof window !== 'undefined' && (window as any).track) {
-    (window as any).track('open_comments', { postId });
+  if (typeof window !== 'undefined' && window.track) {
+    window.track('open_comments', { postId: postId });
   }
 };
 
@@ -1009,8 +1012,8 @@ window.feedCloseCommentDrawer = function() {
   const overlay = document.querySelector('.feed-comment-drawer-overlay');
   if (overlay) overlay.remove();
   
-  if ((window as any).feedCommentDrawerCleanup) {
-    (window as any).feedCommentDrawerCleanup();
+  if (window.feedCommentDrawerCleanup) {
+    window.feedCommentDrawerCleanup();
   }
   
   commentDrawerOpen = false;
@@ -1147,8 +1150,8 @@ window.feedSubmitComment = async function(postId, form) {
     }
     
     // Track
-    if (typeof window !== 'undefined' && (window as any).track) {
-      (window as any).track('submit_comment', { postId });
+    if (typeof window !== 'undefined' && window.track) {
+      window.track('submit_comment', { postId: postId });
     }
   } catch (error) {
     console.error('[PostFeed v2] Error posting comment:', error);
@@ -1216,8 +1219,8 @@ async function renderPostFeedV2(
     await renderFeed();
     
     // Track
-    if (typeof window !== 'undefined' && (window as any).track) {
-      (window as any).track('feed_loaded', { count: currentPosts.length });
+    if (typeof window !== 'undefined' && window.track) {
+      window.track('feed_loaded', { count: currentPosts.length });
     }
   } catch (error) {
     console.error('[PostFeed v2] Error loading posts:', error);
