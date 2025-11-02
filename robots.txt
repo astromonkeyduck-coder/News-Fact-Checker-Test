@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://noteworthynews.co/sitemap.xml
+
+# Disallow admin pages
+Disallow: /admin/
+
+# Allow all other pages
+Allow: /game.html
+Allow: /geography-game.html
+Allow: /fact-checking-tips.html
+Allow: /media-literacy-guide.html
+Allow: /educational-resources.html
+Allow: /editorial-policy.html
+
