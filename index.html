@@ -11145,26 +11145,8 @@
     </script>
     
     <!-- X Widgets Script - Load after page content -->
-    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-    <script>
-        // Ensure timeline widget loads properly
-        window.addEventListener('load', function() {
-            // Wait a bit for Twitter's script to load
-            setTimeout(function() {
-                if (window.twttr && window.twttr.widgets) {
-                    window.twttr.widgets.load();
-                    console.log('Twitter widgets initialized');
-                } else {
-                    // Retry if not loaded yet
-                    setTimeout(function() {
-                        if (window.twttr && window.twttr.widgets) {
-                            window.twttr.widgets.load();
-                            console.log('Twitter widgets initialized (retry)');
-                        }
-                    }, 1000);
-                }
-            }, 500);
-        });
-    </script>
+    <!-- Twitter Widgets Script Removed - Using custom post feed instead -->
+    <!-- This was causing 429 rate limit errors from Twitter -->
+    <!-- <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script> -->
 </body>
 </html>
