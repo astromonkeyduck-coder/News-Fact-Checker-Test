@@ -80,7 +80,15 @@ exports.handler = async (event, context) => {
 
     // Use verified domain email
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
-    const notificationTo = 'richard@noteworthynews.co';
+    // Allow admin email to be configured via environment variable
+    const notificationTo = process.env.ADMIN_NOTIFICATION_EMAIL || 'richard@noteworthynews.co';
+    
+    // Log email configuration for debugging
+    console.log('Email configuration:', {
+      from: fromEmail,
+      to: notificationTo,
+      hasResendKey: !!process.env.RESEND_API_KEY
+    });
 
     // Prepare tip information
     const tipName = isAnonymous ? 'Anonymous' : (name || 'Not provided');
@@ -100,13 +108,22 @@ exports.handler = async (event, context) => {
     const safeName = String(name || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     const safeEmail = String(email || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
-    // Send notification email to admin
+    // Send notification email to admin - CRITICAL: This must succeed
     console.log('Sending notification email to admin:', notificationTo);
-    const notificationResult = await resend.emails.send({
+    console.log('Notification email details:', {
       from: fromEmail,
       to: notificationTo,
       subject: `💡 New Tip Submission${isAnonymous ? ' (Anonymous)' : ''}`,
-      clickTracking: false,
+      tipLength: tip.length
+    });
+    
+    let notificationResult;
+    try {
+      notificationResult = await resend.emails.send({
+        from: fromEmail,
+        to: notificationTo,
+        subject: `💡 New Tip Submission${isAnonymous ? ' (Anonymous)' : ''}`,
+        clickTracking: false,
       html: `<!DOCTYPE html>
 <html>
 <head>
@@ -164,7 +181,23 @@ ${tip}
 
 ---
 This is an automated notification from your website.`,
-    });
+      });
+      
+      console.log('Resend API call completed. Result structure:', {
+        hasError: !!notificationResult.error,
+        hasData: !!notificationResult.data,
+        errorType: notificationResult.error?.type,
+        errorMessage: notificationResult.error?.message
+      });
+    } catch (notificationError) {
+      console.error('EXCEPTION while sending notification email:', notificationError);
+      notificationResult = {
+        error: {
+          message: notificationError.message || 'Unknown error',
+          stack: notificationError.stack
+        }
+      };
+    }
     
     // Log notification email result
     if (notificationResult.error) {
@@ -244,13 +277,23 @@ The Noteworthy News Team`,
 
     // Check if notification email was sent successfully
     if (notificationResult.error) {
-      console.error('CRITICAL: Failed to send notification email to admin:', notificationResult.error);
-      console.error('Notification error details:', JSON.stringify(notificationResult.error, null, 2));
+      console.error('========================================');
+      console.error('CRITICAL ERROR: Failed to send notification email to admin!');
+      console.error('========================================');
+      console.error('Admin Email Address:', notificationTo);
+      console.error('From Email Address:', fromEmail);
+      console.error('Error Object:', JSON.stringify(notificationResult.error, null, 2));
+      console.error('Full Result:', JSON.stringify(notificationResult, null, 2));
+      console.error('========================================');
       // Still try to send confirmation email, but log the critical error
       // Don't fail the entire request, but we need to know about this
     } else {
-      console.log('✓ Admin notification email sent successfully. Email ID:', notificationResult.data?.id);
-      console.log('✓ Admin notification sent to:', notificationTo);
+      console.log('========================================');
+      console.log('✓ SUCCESS: Admin notification email sent successfully!');
+      console.log('✓ Email ID:', notificationResult.data?.id);
+      console.log('✓ Sent to:', notificationTo);
+      console.log('✓ From:', fromEmail);
+      console.log('========================================');
     }
 
     // Determine success message based on whether confirmation email was sent

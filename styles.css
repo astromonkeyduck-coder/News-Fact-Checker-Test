@@ -1241,7 +1241,19 @@ header {
 }
 
 .header-logo a {
-    text-decoration: none;
+    text-decoration: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+}
+
+.header-logo a:hover,
+.header-logo a:focus,
+.header-logo a:active,
+.header-logo a:visited {
+    text-decoration: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 .header-logo-n {
