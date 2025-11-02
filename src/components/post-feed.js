@@ -89,7 +89,7 @@ function cachePosts(posts) {
   }
 }
 
-async function renderPostFeed(containerId, endpoint = '/.netlify/functions/posts-read', limit = 30, forceRefresh = false) {
+async function renderPostFeed(containerId, endpoint = '/.netlify/functions/posts-read', limit = 200, forceRefresh = false) {
   console.log('[PostFeed] renderPostFeed called for', containerId, 'forceRefresh:', forceRefresh);
   
   const container = document.getElementById(containerId);
@@ -466,7 +466,7 @@ async function renderPostFeed(containerId, endpoint = '/.netlify/functions/posts
 /**
  * Global state for sorting and filtering
  */
-let currentSort = 'recent'; // 'recent', 'views', 'likes', 'reposts'
+let currentSort = 'recent'; // 'recent', 'views', 'likes', 'reposts', 'comments'
 let currentSearch = '';
 
 /**
@@ -484,6 +484,10 @@ function sortPosts(posts, sortBy) {
       break;
     case 'reposts':
       sorted.sort((a, b) => (b.reposts || 0) - (a.reposts || 0));
+      break;
+    case 'comments':
+      // Sort by replies (comments) - most replies first
+      sorted.sort((a, b) => (b.replies || 0) - (a.replies || 0));
       break;
     case 'recent':
     default:
@@ -612,6 +616,7 @@ function renderPosts(posts, container, originalContent = null) {
           <option value="recent" ${currentSort === 'recent' ? 'selected' : ''}>Most Recent</option>
           <option value="views" ${currentSort === 'views' ? 'selected' : ''}>Most Views</option>
           <option value="likes" ${currentSort === 'likes' ? 'selected' : ''}>Most Likes</option>
+          <option value="comments" ${currentSort === 'comments' ? 'selected' : ''}>Most Comments</option>
           <option value="reposts" ${currentSort === 'reposts' ? 'selected' : ''}>Most Reposts</option>
         </select>
       </div>

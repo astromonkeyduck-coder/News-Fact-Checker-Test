@@ -31,3 +31,6 @@ build/
 logs/
 *.log
 
+# Batch processing progress
+.batch-progress.json
+

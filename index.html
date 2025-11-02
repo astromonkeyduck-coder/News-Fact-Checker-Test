@@ -11075,7 +11075,7 @@
                     .finally(() => {
                         // Step 2: Always display posts from storage (works even if profile fetch fails)
                         console.log('[X Posts] Loading posts from storage...');
-                        renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', limit);
+                        renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 200);
                     });
             }, 1000); // Wait 1 second after DOM load
         });
@@ -11097,12 +11097,12 @@
                 })
                 .then(() => {
                     // Force refresh to show new posts immediately (bypass cache)
-                    renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', limit, true);
+                    renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 200, true);
                 })
                 .catch(err => {
                     console.error('[X Posts] Auto-refresh failed:', err);
                     // Still try to refresh display even if fetch fails (maybe there are new posts in storage)
-                    renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', limit, true);
+                    renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 200, true);
                 });
         }, 5 * 60 * 1000); // 5 minutes
         
