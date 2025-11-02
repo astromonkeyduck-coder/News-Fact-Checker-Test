@@ -13,7 +13,7 @@
     <link rel="mask-icon" href="IMG_5794.PNG" color="#0f234a">
     <meta name="theme-color" content="#07152a">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="site.webmanifest">
@@ -11056,10 +11056,12 @@
                                     '</div>';
                             }
                         } else if (data && data.message) {
-                            console.warn('[X Posts] ⚠️ Message:', data.message);
-                            if (data.message.includes('No tweet URLs found')) {
-                                console.warn('[X Posts] X has changed their HTML structure. Manual entry required.');
+                            // Suppress "No tweet URLs found" warning - this is expected since X blocks HTML scraping
+                            // Posts should be added manually via fetch-tweets-simple endpoint
+                            if (!data.message.includes('No tweet URLs found')) {
+                                console.warn('[X Posts] ⚠️ Message:', data.message);
                             }
+                            // Silent fail for HTML structure changes - manual entry is the expected workflow
                         } else {
                             console.warn('[X Posts] ⚠️ No tweets returned. Possible reasons:');
                             console.warn('[X Posts] 1. X is blocking automated requests (most likely)');
