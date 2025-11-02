@@ -586,23 +586,24 @@ class GeographyGame {
                 const containerAspect = containerWidth / containerHeight;
                 
                 let displayedWidth, displayedHeight;
-                // Calculate displayed size - scale to fit width first (world maps are typically wide)
-                // This ensures we can scroll horizontally
+                // Calculate displayed size to enable BOTH horizontal and vertical scrolling
+                // For world maps, we want the map to be larger than the container in both dimensions
+                // Scale to fit width first
                 displayedWidth = containerWidth;
                 displayedHeight = containerWidth / svgAspect;
                 
-                // Only fit to height if SVG would be taller than container
-                // This allows horizontal scrolling for wide maps
-                if (displayedHeight > containerHeight) {
-                    displayedHeight = containerHeight;
-                    displayedWidth = containerHeight * svgAspect;
-                    // For wide maps, ensure we can scroll horizontally by ensuring width >= containerWidth
-                    if (displayedWidth < containerWidth) {
-                        // Scale up to container width
-                        const scale = containerWidth / displayedWidth;
-                        displayedWidth = containerWidth;
-                        displayedHeight = displayedHeight * scale;
-                    }
+                // If that makes height too small (fits in container), scale to fit height instead
+                // This ensures vertical scrolling is always possible
+                if (displayedHeight <= containerHeight) {
+                    // Height fits - scale to height to enable vertical scrolling
+                    displayedHeight = containerHeight * 1.1; // Make it 10% taller to ensure scrolling
+                    displayedWidth = displayedHeight * svgAspect;
+                }
+                
+                // Ensure width is also larger than container for horizontal scrolling
+                if (displayedWidth <= containerWidth) {
+                    displayedWidth = containerWidth * 1.1; // Make it 10% wider
+                    displayedHeight = displayedWidth / svgAspect;
                 }
                 
                 // Calculate minimum zoom level - if SVG fits at zoom 1.0, don't allow zooming out
@@ -610,14 +611,14 @@ class GeographyGame {
                 const fitsWidth = displayedWidth <= containerWidth;
                 const fitsHeight = displayedHeight <= containerHeight;
                 
-                // For world maps, we want to enable horizontal scrolling
-                // So we set minimum zoom to allow the map to be wider than container
+                // For world maps, ensure both horizontal AND vertical scrolling is always possible
+                // Since displayedWidth and displayedHeight are already set to be larger than container,
+                // we can set a reasonable minimum zoom that keeps the map scrollable
                 if (svgAspect > 1.5) {
-                    // Wide map - allow it to be wider than container for horizontal scrolling
-                    // Set minimum zoom to fit height, which makes width larger
-                    this.minZoomLevel = containerHeight / displayedHeight;
-                    // Ensure minimum zoom isn't below 0.8 to prevent too much zoom out
-                    this.minZoomLevel = Math.max(0.8, this.minZoomLevel);
+                    // Wide map - ensure minimum zoom allows scrolling in both directions
+                    // The displayedWidth/Height are already > container, so zoom 1.0 should work
+                    // But we allow slight zoom out for better viewing
+                    this.minZoomLevel = 0.85; // Allows slight zoom out while keeping scrollability
                 } else if (fitsWidth && fitsHeight) {
                     // SVG fits completely at zoom 1.0 - don't allow zooming out below 1.0
                     this.minZoomLevel = 1.0;
@@ -704,13 +705,21 @@ class GeographyGame {
                 this.panY = Math.max(minPanY, Math.min(maxPanY, this.panY)); // Horizontal constraint
                 this.panX = Math.max(minPanX, Math.min(maxPanX, this.panX)); // Vertical constraint
                 
-                // Debug: Log if constraints are preventing scrolling
+                // Debug: Log scrolling constraints
                 if (scaledWidth > containerWidth && (this.panY === maxPanY || this.panY === minPanY)) {
                     console.log('Horizontal scrolling constraint:', { 
                         minPanY, maxPanY, currentPanY: this.panY, 
                         scaledWidth, containerWidth,
                         canScrollLeft: this.panY > minPanY,
                         canScrollRight: this.panY < maxPanY
+                    });
+                }
+                if (scaledHeight > containerHeight && (this.panX === maxPanX || this.panX === minPanX)) {
+                    console.log('Vertical scrolling constraint:', { 
+                        minPanX, maxPanX, currentPanX: this.panX, 
+                        scaledHeight, containerHeight,
+                        canScrollUp: this.panX > minPanX,
+                        canScrollDown: this.panX < maxPanX
                     });
                 }
                 
