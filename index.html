@@ -11039,20 +11039,33 @@
                     .then(data => {
                         console.log('[X Posts] Fetch result:', data);
                         if (data && Array.isArray(data) && data.length > 0) {
-                            console.log('[X Posts] Successfully fetched and stored', data.length, 'tweets');
+                            console.log('[X Posts] ✓ Successfully fetched and stored', data.length, 'tweets');
                         } else if (data && data.error) {
-                            console.error('[X Posts] Fetch error:', data.error);
+                            console.error('[X Posts] ✗ Fetch error:', data.error);
                             if (data.hint) {
                                 console.warn('[X Posts] Hint:', data.hint);
                             }
+                            // Show user-friendly message
+                            const container = document.getElementById('articlesTrack');
+                            if (container) {
+                                const existingContent = container.innerHTML;
+                                container.innerHTML = existingContent + 
+                                    '<div style="padding: 1rem; margin: 1rem 0; background: rgba(255, 165, 0, 0.1); border: 1px solid rgba(255, 165, 0, 0.3); border-radius: 8px; color: rgba(255,255,255,0.9);">' +
+                                    '<p style="margin: 0 0 0.5rem 0; font-weight: 600;">⚠️ Unable to fetch posts automatically</p>' +
+                                    '<p style="margin: 0; font-size: 0.9em; opacity: 0.8;">Posts will appear once they are added manually.</p>' +
+                                    '</div>';
+                            }
                         } else if (data && data.message) {
-                            console.warn('[X Posts] Message:', data.message);
+                            console.warn('[X Posts] ⚠️ Message:', data.message);
+                            if (data.message.includes('No tweet URLs found')) {
+                                console.warn('[X Posts] X has changed their HTML structure. Manual entry required.');
+                            }
                         } else {
-                            console.warn('[X Posts] No tweets returned. This might mean:');
-                            console.warn('[X Posts] 1. X is blocking automated requests');
+                            console.warn('[X Posts] ⚠️ No tweets returned. Possible reasons:');
+                            console.warn('[X Posts] 1. X is blocking automated requests (most likely)');
                             console.warn('[X Posts] 2. HTML structure changed');
                             console.warn('[X Posts] 3. Profile page not accessible');
-                            console.warn('[X Posts] Solution: Use manual tweet entry via POST to fetch-profile-tweets');
+                            console.warn('[X Posts] 💡 Solution: Manually add posts via POST to fetch-profile-tweets');
                         }
                     })
                     .catch(err => {

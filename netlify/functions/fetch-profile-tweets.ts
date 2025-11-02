@@ -200,22 +200,32 @@ export const handler: Handler = async (event) => {
         } catch {}
 
         // Add new tweets to storage
+        let storedCount = 0;
         for (const card of validCards) {
           if (!indexData.ids.includes(card.id)) {
-            await store.set(`post-${card.id}.json`, JSON.stringify(card), {
-              contentType: "application/json",
-            });
-            indexData.ids.unshift(card.id);
-            indexData.urls.unshift(card.link);
+            try {
+              await store.setJSON(`post-${card.id}.json`, card);
+              indexData.ids.unshift(card.id);
+              indexData.urls.unshift(card.link);
+              storedCount++;
+              console.log(`[fetch-profile-tweets] Stored post ${card.id}: ${card.title?.substring(0, 50)}`);
+            } catch (storeErr: any) {
+              console.error(`[fetch-profile-tweets] Failed to store post ${card.id}:`, storeErr);
+            }
+          } else {
+            console.log(`[fetch-profile-tweets] Post ${card.id} already exists, skipping`);
           }
         }
 
         // Update index (cap at 200)
         indexData.ids = indexData.ids.slice(0, 200);
         indexData.urls = indexData.urls.slice(0, 200);
-        await store.set("index.json", JSON.stringify(indexData), {
-          contentType: "application/json",
-        });
+        try {
+          await store.setJSON("index.json", indexData);
+          console.log(`[fetch-profile-tweets] Updated index with ${indexData.ids.length} posts (${storedCount} new)`);
+        } catch (indexErr: any) {
+          console.error('[fetch-profile-tweets] Failed to update index:', indexErr);
+        }
 
         return {
           statusCode: 200,
@@ -264,10 +274,14 @@ export const handler: Handler = async (event) => {
           }
         } catch {}
 
-        // Store
-        await store.set(`post-${tweetId}.json`, JSON.stringify(card), {
-          contentType: "application/json",
-        });
+        // Store using setJSON
+        try {
+          await store.setJSON(`post-${tweetId}.json`, card);
+          console.log(`[fetch-profile-tweets] Stored post ${tweetId}: ${card.title?.substring(0, 50)}`);
+        } catch (storeErr: any) {
+          console.error(`[fetch-profile-tweets] Failed to store post:`, storeErr);
+          throw storeErr;
+        }
 
         // Update index
         let indexData: IndexData = { ids: [], urls: [] };
@@ -284,9 +298,12 @@ export const handler: Handler = async (event) => {
         indexData.ids = indexData.ids.slice(0, 200);
         indexData.urls = indexData.urls.slice(0, 200);
 
-        await store.set("index.json", JSON.stringify(indexData), {
-          contentType: "application/json",
-        });
+        try {
+          await store.setJSON("index.json", indexData);
+          console.log(`[fetch-profile-tweets] Updated index, total posts: ${indexData.ids.length}`);
+        } catch (indexErr: any) {
+          console.error('[fetch-profile-tweets] Failed to update index:', indexErr);
+        }
 
         return {
           statusCode: 200,
