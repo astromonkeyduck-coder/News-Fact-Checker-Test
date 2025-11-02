@@ -537,9 +537,12 @@ class GeographyGame {
     }
     
     resetZoomPan() {
-        this.zoomLevel = 1;
+        this.zoomLevel = this.minZoomLevel || 1;
         this.panX = 0;
         this.panY = 0;
+        // Force recalculation of natural dimensions to recenter
+        this.svgNaturalWidth = 0;
+        this.svgNaturalHeight = 0;
         this.updateTransform();
     }
     
@@ -609,10 +612,34 @@ class GeographyGame {
                     scaledHeight = displayedHeight * this.zoomLevel;
                 }
                 
+                // Center the SVG initially if it hasn't been manually panned yet
+                const isInitialLoad = this.panX === 0 && this.panY === 0 && 
+                                     (this.zoomLevel === this.minZoomLevel || this.zoomLevel === 1);
+                
+                if (isInitialLoad) {
+                    // If scaled map is smaller than container, center it
+                    if (scaledWidth < containerWidth) {
+                        this.panX = (containerWidth - scaledWidth) / 2;
+                    }
+                    if (scaledHeight < containerHeight) {
+                        this.panY = (containerHeight - scaledHeight) / 2;
+                    }
+                    // If scaled map is larger than container, start from top-left (panX/panY = 0)
+                    // which will show the left side. Instead, center it by panning left.
+                    if (scaledWidth > containerWidth) {
+                        // Start centered, showing middle of map
+                        this.panX = -(scaledWidth - containerWidth) / 2;
+                    }
+                    if (scaledHeight > containerHeight) {
+                        // Start centered vertically
+                        this.panY = -(scaledHeight - containerHeight) / 2;
+                    }
+                }
+                
                 // Constrain panning to keep SVG within container bounds
-                const maxPanX = 0;
+                const maxPanX = Math.max(0, containerWidth - scaledWidth);
                 const minPanX = Math.min(0, containerWidth - scaledWidth);
-                const maxPanY = 0;
+                const maxPanY = Math.max(0, containerHeight - scaledHeight);
                 const minPanY = Math.min(0, containerHeight - scaledHeight);
                 
                 // Clamp pan values
@@ -1076,8 +1103,13 @@ function loadSVGMap() {
                     // Reset natural dimensions so they're recalculated
                     window.geoGame.svgNaturalWidth = 0;
                     window.geoGame.svgNaturalHeight = 0;
-                    // Force update to recalculate constraints
-                    setTimeout(() => window.geoGame.updateTransform(), 100);
+                    // Reset pan to allow auto-centering
+                    window.geoGame.panX = 0;
+                    window.geoGame.panY = 0;
+                    // Force update to recalculate constraints and center
+                    setTimeout(() => {
+                        window.geoGame.updateTransform();
+                    }, 100);
                 }
                 
                 // Process all paths and add country codes
