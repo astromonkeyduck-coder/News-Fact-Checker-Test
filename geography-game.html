@@ -70,17 +70,90 @@
             z-index: 1;
         }
         
-        .container,
-        .main-header {
+        .container {
             position: relative;
             z-index: 1;
         }
         
+        .main-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 15, 35, 0.9);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(74, 144, 226, 0.3);
+            z-index: 1000;
+            padding: 0;
+            height: 64px;
+        }
+        
         .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            width: 100%;
+            justify-content: space-between;
+            padding: 0 2rem;
+            height: 64px;
+            gap: 1rem;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .header-logo {
+            display: flex;
+            font-size: 1rem;
+            font-weight: 900;
+            letter-spacing: -2px;
+        }
+        
+        .header-logo a {
+            text-decoration: none !important;
+            border-bottom: none !important;
+            box-shadow: none !important;
+        }
+        
+        .header-logo a:hover,
+        .header-logo a:focus,
+        .header-logo a:active,
+        .header-logo a:visited {
+            text-decoration: none !important;
+            border-bottom: none !important;
+            box-shadow: none !important;
+            outline: none !important;
+        }
+        
+        .header-logo-n {
+            color: white;
+        }
+        
+        .header-logo-w {
+            color: #000000;
+            text-shadow: 0 0 3px rgba(255, 255, 255, 0.5), 0 0 6px rgba(255, 255, 255, 0.3);
+            -webkit-text-stroke: 0.5px rgba(255, 255, 255, 0.3);
+        }
+        
+        .brand-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .brand-info h1 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin: 0;
+            color: white;
+        }
+        
+        .brand-info p {
+            font-size: 0.75rem;
+            margin: 0;
+            color: rgba(255, 255, 255, 0.7);
         }
         
         .header-right {
