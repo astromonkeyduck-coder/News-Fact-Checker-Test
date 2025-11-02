@@ -316,7 +316,20 @@ async function renderPostFeed(containerId, endpoint = '/.netlify/functions/posts
     
     let posts;
     try {
-      posts = await res.json();
+      const responseText = await res.text();
+      console.log('[PostFeed] Raw response (first 500 chars):', responseText.substring(0, 500));
+      posts = JSON.parse(responseText);
+      console.log('[PostFeed] Parsed posts:', {
+        isArray: Array.isArray(posts),
+        count: Array.isArray(posts) ? posts.length : 0,
+        sample: Array.isArray(posts) && posts.length > 0 ? {
+          id: posts[0].id,
+          title: posts[0].title,
+          story: posts[0].story?.substring(0, 50),
+          link: posts[0].link,
+          image: posts[0].image
+        } : null
+      });
     } catch (jsonError) {
       console.error('[PostFeed] Failed to parse JSON response:', jsonError);
       const text = await res.text().catch(() => '');
@@ -499,26 +512,44 @@ function renderPosts(posts, container, originalContent = null) {
   }
 
   console.log('[PostFeed] Rendering', posts.length, 'posts');
+  console.log('[PostFeed] Sample post data:', posts.length > 0 ? {
+    id: posts[0].id,
+    title: posts[0].title,
+    story: posts[0].story?.substring(0, 100),
+    link: posts[0].link,
+    image: posts[0].image,
+    datePosted: posts[0].datePosted
+  } : 'No posts');
   
   try {
-    const postsHtml = posts.map(post => {
+    const postsHtml = posts.map((post, index) => {
       // Validate post structure
       if (!post || typeof post !== 'object') {
-        console.warn('[PostFeed] Invalid post:', post);
+        console.warn(`[PostFeed] Invalid post at index ${index}:`, post);
         return '';
       }
       
-      const title = post.title || post.story?.substring(0, 80) || 'Untitled Post';
-      const story = post.story || '';
-      const link = post.link || '#';
-      const imageHtml = post.image 
+      // Extract fields with multiple fallbacks
+      const title = post.title || post.text || post.story?.substring(0, 80) || `Post ${index + 1}`;
+      const story = post.story || post.text || post.html?.replace(/<[^>]*>/g, '').substring(0, 200) || '';
+      const link = post.link || post.url || `https://x.com/newsnoteworthy/status/${post.id || ''}`;
+      const imageUrl = post.image || post.thumbnail || null;
+      
+      console.log(`[PostFeed] Rendering post ${index + 1}:`, {
+        title: title.substring(0, 50),
+        hasStory: !!story,
+        link,
+        hasImage: !!imageUrl
+      });
+      
+      const imageHtml = imageUrl 
         ? `<div class="article-image">
-            <img src="${post.image}" alt="${title.replace(/"/g, '&quot;')}" loading="lazy" />
+            <img src="${imageUrl}" alt="${title.replace(/"/g, '&quot;')}" loading="lazy" onerror="this.style.display='none';" />
           </div>`
         : '';
 
       return `
-        <article class="article-card" role="listitem" data-post-type="${post.postType || 'text'}">
+        <article class="article-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || index}">
           ${imageHtml}
           <div class="article-content">
             <h3 class="article-headline">
@@ -526,13 +557,15 @@ function renderPosts(posts, container, originalContent = null) {
             </h3>
             ${story ? `<p class="article-excerpt">${formatStory(story)}</p>` : ''}
             <div class="article-meta">
-              <span class="article-date">${formatDate(post.datePosted || new Date().toISOString())}</span>
-              <span class="article-read-time">${post.readTime || 1} min read</span>
+              <span class="article-date">${formatDate(post.datePosted || post.created_at || new Date().toISOString())}</span>
+              <span class="article-read-time">${post.readTime || Math.ceil((story || title).split(/\s+/).length / 200) || 1} min read</span>
             </div>
           </div>
         </article>
       `;
     }).filter(html => html.length > 0).join(''); // Filter out empty posts
+    
+    console.log('[PostFeed] Generated HTML for', posts.length, 'posts, HTML length:', postsHtml.length);
     
     if (!postsHtml || postsHtml.trim().length === 0) {
       console.error('[PostFeed] No valid posts HTML generated');
@@ -545,9 +578,29 @@ function renderPosts(posts, container, originalContent = null) {
       return;
     }
     
-    // Set the posts HTML
+    // Set the posts HTML - this REPLACES all content in the container
+    console.log('[PostFeed] Setting container HTML, HTML length:', postsHtml.length);
+    console.log('[PostFeed] Container before:', container.children.length, 'children');
+    console.log('[PostFeed] Container ID:', container.id);
+    
+    // Clear and replace ALL content in the container
     container.innerHTML = postsHtml;
-    console.log('[PostFeed] Successfully set container HTML, length:', container.innerHTML.length);
+    
+    // Verify the replacement worked
+    const articleCards = container.querySelectorAll('article.article-card');
+    console.log('[PostFeed] Successfully replaced container content');
+    console.log('[PostFeed] Container now has', articleCards.length, 'article cards');
+    
+    if (articleCards.length === 0) {
+      console.error('[PostFeed] WARNING: No article cards found after setting innerHTML!');
+      console.error('[PostFeed] Container HTML:', container.innerHTML.substring(0, 500));
+    } else {
+      console.log('[PostFeed] First card:', {
+        title: articleCards[0].querySelector('.article-headline')?.textContent?.substring(0, 50),
+        hasImage: !!articleCards[0].querySelector('.article-image img'),
+        link: articleCards[0].querySelector('a')?.href
+      });
+    }
     
   } catch (renderError) {
     console.error('[PostFeed] Error rendering posts:', renderError);
