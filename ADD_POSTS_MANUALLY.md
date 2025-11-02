@@ -2,30 +2,34 @@
 
 Since X/Twitter often blocks automated scraping, you can manually add posts using the function API.
 
-## Method 1: Using Browser Console
+## Method 1: Using Browser Console (Easiest)
 
 1. Open your website in a browser
 2. Press **F12** to open Developer Tools
 3. Go to the **Console** tab
-4. Run this command for each tweet you want to add:
+4. Copy and paste ONE of these options (replace `YOUR_TWEET_ID` with actual tweet ID):
 
 ```javascript
-fetch('/.netlify/functions/fetch-profile-tweets', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    tweetUrl: 'https://x.com/newsnoteworthy/status/YOUR_TWEET_ID'
+// Single line version (easier to copy):
+fetch('/.netlify/functions/fetch-profile-tweets', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({tweetUrl: 'https://x.com/newsnoteworthy/status/YOUR_TWEET_ID'})}).then(r=>r.json()).then(d=>{console.log('Post added:',d);location.reload();}).catch(e=>console.error('Error:',e));
+
+// Or multi-line version (easier to read):
+(function() {
+  const tweetUrl = 'https://x.com/newsnoteworthy/status/YOUR_TWEET_ID';
+  fetch('/.netlify/functions/fetch-profile-tweets', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({tweetUrl: tweetUrl})
   })
-})
-.then(res => res.json())
-.then(data => {
-  console.log('Post added:', data);
-  // Refresh the page to see the new post
-  location.reload();
-})
-.catch(err => console.error('Error:', err));
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    console.log('Post added:', data);
+    location.reload();
+  })
+  .catch(function(err) {
+    console.error('Error:', err);
+  });
+})();
 ```
 
 Replace `YOUR_TWEET_ID` with the actual tweet ID from the URL.
