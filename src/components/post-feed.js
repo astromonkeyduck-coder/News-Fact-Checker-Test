@@ -6,7 +6,7 @@
 
 // Cache key for storing posts locally
 const CACHE_KEY = 'noteworthy-posts-cache';
-const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+const CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes (reduced for faster updates)
 
 // Loading lock to prevent multiple simultaneous calls
 let isLoading = false;
@@ -78,22 +78,30 @@ function getCachedPosts() {
  */
 function cachePosts(posts) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({
+    const cacheData = {
       posts,
       timestamp: Date.now(),
-    }));
+    };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+    console.log('[PostFeed] Cache updated:', posts.length, 'posts, timestamp:', new Date(cacheData.timestamp).toLocaleTimeString());
   } catch (error) {
-    console.warn('Failed to cache posts:', error);
+    console.warn('[PostFeed] Failed to cache posts:', error);
   }
 }
 
-async function renderPostFeed(containerId, endpoint = '/.netlify/functions/posts-read', limit = 30) {
-  console.log('[PostFeed] renderPostFeed called for', containerId);
+async function renderPostFeed(containerId, endpoint = '/.netlify/functions/posts-read', limit = 30, forceRefresh = false) {
+  console.log('[PostFeed] renderPostFeed called for', containerId, 'forceRefresh:', forceRefresh);
   
   const container = document.getElementById(containerId);
   if (!container) {
     console.error(`[PostFeed] Container ${containerId} not found`);
     return;
+  }
+
+  // If forcing refresh, clear cache
+  if (forceRefresh) {
+    console.log('[PostFeed] Force refresh - clearing cache');
+    localStorage.removeItem(CACHE_KEY);
   }
 
   // Prevent multiple simultaneous loads for the same container
@@ -129,14 +137,20 @@ async function renderPostFeed(containerId, endpoint = '/.netlify/functions/posts
     originalContent = '<article class="article-card"><div class="article-content"><h3>Loading posts...</h3></div></article>';
   }
 
-  // Try to load cached posts first for instant display
-  const cachedPosts = getCachedPosts();
-  if (cachedPosts && cachedPosts.length > 0) {
-    console.log('[PostFeed] Found', cachedPosts.length, 'cached posts, displaying immediately');
-    renderPosts(cachedPosts, container, originalContent);
+  // Try to load cached posts first for instant display (unless forcing refresh)
+  let cachedPosts = null;
+  if (!forceRefresh) {
+    cachedPosts = getCachedPosts();
+    if (cachedPosts && cachedPosts.length > 0) {
+      console.log('[PostFeed] Found', cachedPosts.length, 'cached posts, displaying immediately');
+      renderPosts(cachedPosts, container, originalContent);
+    } else {
+      // Show loading state only if no cache
+      container.innerHTML = '<div class="post-feed-loading" style="padding: 2rem; text-align: center; color: rgba(255,255,255,0.8);">Loading posts...</div>';
+    }
   } else {
-    // Show loading state only if no cache
-    container.innerHTML = '<div class="post-feed-loading" style="padding: 2rem; text-align: center; color: rgba(255,255,255,0.8);">Loading posts...</div>';
+    // Force refresh - show loading state
+    container.innerHTML = '<div class="post-feed-loading" style="padding: 2rem; text-align: center; color: rgba(255,255,255,0.8);">Refreshing posts...</div>';
   }
 
   try {
@@ -376,8 +390,9 @@ async function renderPostFeed(containerId, endpoint = '/.netlify/functions/posts
       return;
     }
     
-    // Cache the successful response
+    // Cache the successful response (always update cache with latest)
     cachePosts(posts);
+    console.log('[PostFeed] Cached', posts.length, 'posts at', new Date().toLocaleTimeString());
     
     // Render the posts (with originalContent for fallback)
     console.log('[PostFeed] Successfully fetched', posts.length, 'posts, rendering now...');

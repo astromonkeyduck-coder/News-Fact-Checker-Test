@@ -11069,13 +11069,28 @@
         
         // Auto-refresh posts every 5 minutes
         setInterval(function() {
+            console.log('[X Posts] Auto-refresh triggered');
             const username = 'newsnoteworthy';
             const limit = 10;
             fetch('/.netlify/functions/fetch-profile-tweets?username=' + encodeURIComponent(username) + '&limit=' + limit)
-                .then(() => {
-                    renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', limit);
+                .then(res => {
+                    if (res.ok) {
+                        console.log('[X Posts] Fetched fresh tweets, refreshing display');
+                        return res.json();
+                    } else {
+                        console.warn('[X Posts] Fetch failed, still refreshing display');
+                        return [];
+                    }
                 })
-                .catch(err => console.log('Auto-refresh failed:', err));
+                .then(() => {
+                    // Force refresh to show new posts immediately (bypass cache)
+                    renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', limit, true);
+                })
+                .catch(err => {
+                    console.error('[X Posts] Auto-refresh failed:', err);
+                    // Still try to refresh display even if fetch fails (maybe there are new posts in storage)
+                    renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', limit, true);
+                });
         }, 5 * 60 * 1000); // 5 minutes
         
         // Fix white blocks from empty Google AdSense ads
