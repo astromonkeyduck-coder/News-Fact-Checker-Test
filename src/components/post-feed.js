@@ -559,15 +559,76 @@ function formatRelativeTime(dateString) {
 function renderPosts(posts, container, originalContent = null) {
   const formatStory = (text) => {
     if (!text) return '';
-    // Escape HTML
-    const escaped = text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-    // Convert \n to <br>
-    return escaped.replace(/\n/g, '<br>');
+    
+    // Split text into parts to handle URLs and plain text separately
+    const parts = [];
+    let lastIndex = 0;
+    
+    // Match both image URLs and regular URLs
+    const urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
+    let match;
+    
+    while ((match = urlRegex.exec(text)) !== null) {
+      // Add text before URL
+      if (match.index > lastIndex) {
+        const beforeText = text.substring(lastIndex, match.index);
+        if (beforeText) {
+          parts.push({ type: 'text', content: beforeText });
+        }
+      }
+      
+      const url = match[0];
+      const isImage = /\.(jpg|jpeg|png|gif|webp|svg|JPG|JPEG|PNG|GIF|WEBP|SVG)(\?[^\s]*)?$/i.test(url);
+      
+      if (isImage) {
+        // Create img tag for images
+        parts.push({ 
+          type: 'image', 
+          content: `<img src="${url}" alt="Post image" loading="lazy" style="max-width: 100%; height: auto; border-radius: 12px; margin: 0.5rem 0; display: block;" onerror="this.style.display='none';" />` 
+        });
+      } else {
+        // Create clickable link for other URLs
+        const displayUrl = url.length > 50 ? url.substring(0, 47) + '...' : url;
+        parts.push({ 
+          type: 'link', 
+          content: `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: rgb(29, 155, 240); text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${displayUrl}</a>` 
+        });
+      }
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text after last URL
+    if (lastIndex < text.length) {
+      const afterText = text.substring(lastIndex);
+      if (afterText) {
+        parts.push({ type: 'text', content: afterText });
+      }
+    }
+    
+    // If no URLs found, just process the whole text
+    if (parts.length === 0) {
+      parts.push({ type: 'text', content: text });
+    }
+    
+    // Process each part: escape HTML for text, keep HTML for images/links
+    const processed = parts.map(part => {
+      if (part.type === 'text') {
+        // Escape HTML and convert newlines to <br>
+        return part.content
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;')
+          .replace(/\n/g, '<br>');
+      } else {
+        // Images and links are already HTML, just convert newlines before/after
+        return part.content;
+      }
+    }).join('');
+    
+    return processed;
   };
 
   // Validate posts before rendering
@@ -637,25 +698,26 @@ function renderPosts(posts, container, originalContent = null) {
   console.log('[PostFeed] Rendering', filteredPosts.length, 'filtered posts from', posts.length, 'total');
   
   try {
-    // Render media gallery (images/videos)
+    // Render media gallery (images/videos) - modern style
     const renderMedia = (post) => {
       let mediaHtml = '';
       const images = post.images || (post.image ? [post.image] : []);
       const videos = post.videos || [];
       
       if (images.length > 0 || videos.length > 0) {
-        mediaHtml = '<div class="post-media" style="margin: 1rem 0;">';
+        mediaHtml = '<div class="modern-post-media" style="margin: 1.25rem 0; border-radius: 12px; overflow: hidden;">';
         
         // Render images
         if (images.length > 0) {
           if (images.length === 1) {
-            mediaHtml += `<div class="post-image-single" style="border-radius: 8px; overflow: hidden;">
-              <img src="${images[0]}" alt="Post image" loading="lazy" style="width: 100%; height: auto; display: block;" onerror="this.style.display='none';" />
+            mediaHtml += `<div class="post-image-single" style="border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.2);">
+              <img src="${images[0]}" alt="Post image" loading="lazy" style="width: 100%; height: auto; display: block; max-height: 600px; object-fit: cover;" onerror="this.style.display='none';" />
             </div>`;
           } else {
-            mediaHtml += `<div class="post-image-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem;">
+            const gridCols = Math.min(images.length, 3);
+            mediaHtml += `<div class="post-image-grid" style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); gap: 0.5rem; border-radius: 12px; overflow: hidden;">
               ${images.slice(0, 4).map(img => `
-                <div style="aspect-ratio: 1; overflow: hidden; border-radius: 8px;">
+                <div style="aspect-ratio: 1; overflow: hidden; background: rgba(0,0,0,0.2);">
                   <img src="${img}" alt="Post image" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none';" />
                 </div>
               `).join('')}
@@ -670,14 +732,14 @@ function renderPosts(posts, container, originalContent = null) {
               // YouTube embed
               const videoId = video.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
               if (videoId) {
-                mediaHtml += `<div class="post-video" style="margin-top: 0.5rem; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px;">
+                mediaHtml += `<div class="post-video" style="margin-top: 0.5rem; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; background: rgba(0,0,0,0.2);">
                   <iframe src="https://www.youtube.com/embed/${videoId}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen></iframe>
                 </div>`;
               }
             } else {
               // Regular video tag
-              mediaHtml += `<div class="post-video" style="margin-top: 0.5rem;">
-                <video src="${video}" controls style="width: 100%; border-radius: 8px;" onerror="this.style.display='none';"></video>
+              mediaHtml += `<div class="post-video" style="margin-top: 0.5rem; border-radius: 12px; overflow: hidden;">
+                <video src="${video}" controls style="width: 100%; border-radius: 12px;" onerror="this.style.display='none';"></video>
               </div>`;
             }
           });
@@ -689,31 +751,66 @@ function renderPosts(posts, container, originalContent = null) {
       return mediaHtml;
     };
     
-    // Render engagement stats (modern style)
-    const renderStats = (post) => {
-      const stats = [];
-      // Always show stats if they exist (even if 0)
-      const views = post.views !== undefined && post.views !== null ? post.views : null;
-      const likes = post.likes !== undefined && post.likes !== null ? post.likes : null;
-      const reposts = post.reposts !== undefined && post.reposts !== null ? post.reposts : null;
+    // Render engagement bar (Twitter/X style with icons and counts)
+    const renderEngagementBar = (post, link) => {
       const replies = post.replies !== undefined && post.replies !== null ? post.replies : null;
+      const reposts = post.reposts !== undefined && post.reposts !== null ? post.reposts : null;
+      const likes = post.likes !== undefined && post.likes !== null ? post.likes : null;
+      const views = post.views !== undefined && post.views !== null ? post.views : null;
       
-      if (views !== null) stats.push({ icon: '👁️', label: '', value: formatNumber(views), color: 'rgba(255,255,255,0.7)' });
-      if (likes !== null) stats.push({ icon: '❤️', label: '', value: formatNumber(likes), color: '#ff6b9d' });
-      if (reposts !== null) stats.push({ icon: '🔄', label: '', value: formatNumber(reposts), color: '#4A90E2' });
-      if (replies !== null) stats.push({ icon: '💬', label: '', value: formatNumber(replies), color: 'rgba(255,255,255,0.7)' });
+      // Twitter-style engagement buttons
+      const buttons = [];
       
-      // Debug logging
-      if (stats.length === 0) {
-        console.log('[PostFeed] No stats for post', post.id, { views, likes, reposts, replies, post: post });
-        return '';
-      }
+      // Reply button
+      buttons.push({
+        icon: '💬',
+        count: replies,
+        label: 'Reply',
+        color: 'rgb(113, 118, 123)',
+        hoverColor: 'rgb(29, 155, 240)',
+        href: link
+      });
       
-      return stats.map(stat => `
-        <div class="modern-stat-item" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: rgba(255,255,255,0.05); border-radius: 8px; transition: all 0.2s ease; cursor: default;" onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.transform='translateY(0)'">
-          <span style="font-size: 1.1rem; filter: ${stat.color !== 'rgba(255,255,255,0.7)' ? 'none' : 'brightness(0.9)'}">${stat.icon}</span>
-          <span style="font-weight: 600; font-size: 0.95rem; color: ${stat.color};">${stat.value}</span>
-        </div>
+      // Repost button
+      buttons.push({
+        icon: '🔄',
+        count: reposts,
+        label: 'Repost',
+        color: 'rgb(113, 118, 123)',
+        hoverColor: 'rgb(0, 186, 124)',
+        href: link
+      });
+      
+      // Like button
+      buttons.push({
+        icon: '❤️',
+        count: likes,
+        label: 'Like',
+        color: 'rgb(113, 118, 123)',
+        hoverColor: 'rgb(249, 24, 128)',
+        href: link
+      });
+      
+      // Views button
+      buttons.push({
+        icon: '👁️',
+        count: views,
+        label: 'Views',
+        color: 'rgb(113, 118, 123)',
+        hoverColor: 'rgb(29, 155, 240)',
+        href: link
+      });
+      
+      return buttons.map(btn => `
+        <a href="${btn.href}" target="_blank" rel="noopener noreferrer" 
+           class="x-engagement-btn" 
+           style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; color: ${btn.color}; text-decoration: none; border-radius: 50%; transition: all 0.2s ease; min-width: 36px; justify-content: flex-start;" 
+           onmouseover="this.style.color='${btn.hoverColor}'; this.style.backgroundColor='rgba(29, 155, 240, 0.1)'" 
+           onmouseout="this.style.color='${btn.color}'; this.style.backgroundColor='transparent'"
+           title="${btn.label}">
+          <span style="font-size: 1.25rem; line-height: 1;">${btn.icon}</span>
+          ${btn.count !== null && btn.count !== undefined ? `<span style="font-size: 0.813rem; line-height: 1; font-weight: 400;">${formatNumber(btn.count)}</span>` : ''}
+        </a>
       `).join('');
     };
     
@@ -748,34 +845,46 @@ function renderPosts(posts, container, originalContent = null) {
       }
       
       return `
-        <article class="modern-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || index}" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; transition: all 0.3s ease; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);">
-          <div class="modern-post-header" style="margin-bottom: 1.25rem;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-              <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #4A90E2 0%, #2A60B0 100%); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; color: white; flex-shrink: 0;">
+        <article class="x-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || index}" style="background: transparent; padding: 1rem 1rem; margin-bottom: 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+          <div style="display: flex; gap: 0.75rem;">
+            <!-- Avatar -->
+            <div style="flex-shrink: 0;">
+              <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="display: block; text-decoration: none;">
+                <img src="/IMG_5794.PNG" alt="Noteworthy News" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #1DA1F2 0%, #1a91da 100%); display: none; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; color: white; flex-shrink: 0;">
                   NW
                 </div>
-                <div>
-                  <div style="font-weight: 700; font-size: 0.95rem; color: #fff; margin-bottom: 2px;">Noteworthy News</div>
-                  <div style="font-size: 0.85rem; color: rgba(255,255,255,0.6);">${formatRelativeTime(datePosted)}</div>
-                </div>
-              </div>
-              <a href="${link}" target="_blank" rel="noopener noreferrer" style="color: rgba(255,255,255,0.6); text-decoration: none; font-size: 1.2rem; transition: color 0.2s;" onmouseover="this.style.color='#4A90E2'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">↗</a>
+              </a>
             </div>
             
-            <h2 class="modern-post-title" style="font-size: 1.5rem; font-weight: 700; line-height: 1.4; color: #fff; margin: 0; word-wrap: break-word;">
-              <a href="${link}" target="_blank" rel="noopener noreferrer" style="color: #fff; text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='#4A90E2'" onmouseout="this.style.color='#fff'">${formatStory(titleText)}</a>
-            </h2>
-          </div>
-          
-          ${renderMedia(post)}
-          
-          <div class="modern-post-stats" style="display: flex; align-items: center; gap: 1.5rem; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid rgba(255,255,255,0.1); flex-wrap: wrap;">
-            ${renderStats(post)}
-          </div>
-          
-          <div class="comment-section-separated" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(74, 144, 226, 0.2);">
-            <div class="comment-section" data-article-id="post-${post.id}"></div>
+            <!-- Post Content -->
+            <div style="flex: 1; min-width: 0;">
+              <!-- Header: Username, handle, timestamp -->
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
+                <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="font-weight: 700; font-size: 0.938rem; color: rgb(231, 233, 234); text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Noteworthy News</a>
+                <span style="color: rgb(113, 118, 123); font-size: 0.938rem; line-height: 1.25rem;">@newsnoteworthy</span>
+                <span style="color: rgb(113, 118, 123); font-size: 0.938rem; line-height: 1.25rem;">·</span>
+                <a href="${link}" target="_blank" rel="noopener noreferrer" style="color: rgb(113, 118, 123); font-size: 0.938rem; text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${formatRelativeTime(datePosted)}</a>
+              </div>
+              
+              <!-- Post Text -->
+              <div style="color: rgb(231, 233, 234); font-size: 0.938rem; line-height: 1.375rem; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 0.75rem;">
+                ${formatStory(titleText)}
+              </div>
+              
+              <!-- Media -->
+              ${renderMedia(post)}
+              
+              <!-- Engagement Bar (Twitter-style) -->
+              <div style="display: flex; align-items: center; justify-content: space-between; max-width: 425px; margin-top: 0.75rem; padding-top: 0.5rem;">
+                ${renderEngagementBar(post, link)}
+              </div>
+              
+              <!-- Comment Section -->
+              <div class="comment-section-separated" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                <div class="comment-section" data-article-id="post-${post.id}"></div>
+              </div>
+            </div>
           </div>
         </article>
       `;
