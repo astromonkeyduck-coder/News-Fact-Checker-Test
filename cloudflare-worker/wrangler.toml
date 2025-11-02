@@ -1,0 +1,26 @@
+name = "x-feed-worker"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+workers_dev = true
+
+# Scheduled trigger to auto-sync @newsnoteworthy every hour
+[triggers]
+crons = ["0 * * * *"]  # Every hour at minute 0
+
+# Custom domain routes (optional - comment out to use workers.dev)
+# [env.production]
+# routes = [
+#   { pattern = "feed.yourdomain.com", zone_name = "yourdomain.com" },
+#   { pattern = "x-feed.yourdomain.com", zone_name = "yourdomain.com" }
+# ]
+
+[[kv_namespaces]]
+binding = "FEED"
+id = "a2d9c54c4a824a8da77a82b1c594e370"
+preview_id = "c2682105a48e4c1e90cf179947533c35"
+
+[vars]
+ALLOWED_ORIGIN = "https://noteworthynews.co"  # Your site URL from CNAME
+RATE_LIMIT_PER_MINUTE = "10"
+ADMIN_TOKEN = "db4ad58968bf9de720d2f6582dd3c7158a349ed15500014f242d88fdcfae990c"  # Generated secure token
+

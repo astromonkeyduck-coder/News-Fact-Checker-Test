@@ -46,6 +46,13 @@
             animation: logoBounce 2s ease-in-out infinite;
         }
         
+        .logo a {
+            display: block;
+            width: 100%;
+            height: 100%;
+            text-decoration: none;
+        }
+        
         .logo img {
             width: 100%;
             height: 100%;
@@ -158,7 +165,9 @@
 <body>
             <div class="error-container">
             <div class="logo">
-                <img src="IMG_5992.PNG" alt="Noteworthy News Logo" loading="lazy">
+                <a href="index.html" aria-label="Go to Noteworthy News homepage">
+                    <img src="IMG_5992.PNG" alt="Noteworthy News Logo" loading="lazy">
+                </a>
             </div>
             <div class="sorry-text">Sorry!</div>
             <h1>404</h1>
@@ -169,5 +178,75 @@
                             <a href="game.html" class="btn btn-secondary">Play the Game</a>
         </div>
     </div>
+    
+    <script>
+        // Sad sound effect for 404 page
+        function playSadSound() {
+            try {
+                // Create Web Audio API context
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Resume audio context if it's suspended (needed for autoplay policies)
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume().then(() => {
+                        playSadTone(audioContext);
+                    });
+                } else {
+                    playSadTone(audioContext);
+                }
+            } catch (error) {
+                console.log('Sad sound error:', error);
+            }
+        }
+        
+        function playSadTone(audioContext) {
+            // Create oscillator for the sad tone
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            // Configure sad sound - descending minor third
+            const duration = 1.2; // Longer, more melancholic
+            const volume = 0.6; // Moderate volume
+            
+            // Start with a lower frequency (minor key feel)
+            oscillator.type = 'sine';
+            
+            // Create a sad descending melody (minor third down)
+            const startFreq = 330; // E4 (sad starting note)
+            const endFreq = 262; // C4 (descending, melancholic)
+            
+            // Smooth frequency descent
+            oscillator.frequency.setValueAtTime(startFreq, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(endFreq, audioContext.currentTime + duration);
+            
+            // Slow, sad volume envelope - gradual fade out
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + 0.1); // Slow attack
+            gainNode.gain.linearRampToValueAtTime(volume * 0.7, audioContext.currentTime + duration * 0.5); // Slight decay
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration); // Long fade out
+            
+            // Connect the audio chain
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Start the oscillator
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+        
+        // Play sad sound when page loads
+        window.addEventListener('load', function() {
+            // Small delay to ensure page is visible
+            setTimeout(() => {
+                playSadSound();
+            }, 300);
+        });
+        
+        // Also play on user interaction if autoplay was blocked
+        document.addEventListener('click', function playOnClick() {
+            playSadSound();
+            document.removeEventListener('click', playOnClick);
+        }, { once: true });
+    </script>
 </body>
 </html>

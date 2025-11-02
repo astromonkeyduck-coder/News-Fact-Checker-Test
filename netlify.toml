@@ -17,6 +17,8 @@
   node_bundler = "esbuild"
   # Include source files for TypeScript compilation
   included_files = ["netlify/functions/**/*.ts", "src/**/*.ts"]
+  # Also include JavaScript functions
+  directory = "netlify/functions"
 
 [dev]
   # Load .env file for local development

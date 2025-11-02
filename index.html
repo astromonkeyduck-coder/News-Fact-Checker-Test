@@ -86,17 +86,25 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
     
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5427142458403577"
+            crossorigin="anonymous"></script>
+    
     <!-- Background Music -->
     <script>
         // Enhanced music control with state persistence and mutual exclusivity
         window.addEventListener('load', function() {
             const audio = document.getElementById('backgroundMusic');
+            const secondAudio = document.getElementById('backgroundMusicSecond');
             const loopAudio = document.getElementById('backgroundMusicLoop');
             
             // Function to ensure only one track plays at a time
             function pauseAllTracks() {
                 if (audio && !audio.paused) {
                     audio.pause();
+                }
+                if (secondAudio && !secondAudio.paused) {
+                    secondAudio.pause();
                 }
                 if (loopAudio && !loopAudio.paused) {
                     loopAudio.pause();
@@ -111,47 +119,199 @@
                 }
             }
             
+            // Function to save current music state
+            function saveMusicState() {
+                let currentTrack = 'none';
+                let currentTime = 0;
+                
+                if (audio && !audio.paused) {
+                    currentTrack = 'track1';
+                    currentTime = audio.currentTime;
+                } else if (secondAudio && !secondAudio.paused) {
+                    currentTrack = 'track2';
+                    currentTime = secondAudio.currentTime;
+                } else if (loopAudio && !loopAudio.paused) {
+                    currentTrack = 'loop';
+                    currentTime = loopAudio.currentTime;
+                } else {
+                    // Get time from paused track
+                    if (audio && audio.currentTime > 0 && audio.currentTime < (audio.duration || Infinity)) {
+                        currentTrack = 'track1';
+                        currentTime = audio.currentTime;
+                    } else if (secondAudio && secondAudio.currentTime > 0 && secondAudio.currentTime < (secondAudio.duration || Infinity)) {
+                        currentTrack = 'track2';
+                        currentTime = secondAudio.currentTime;
+                    } else if (loopAudio && loopAudio.currentTime > 0) {
+                        currentTrack = 'loop';
+                        currentTime = loopAudio.currentTime;
+                    }
+                }
+                
+                if (currentTrack !== 'none') {
+                    localStorage.setItem('globalMusicState', JSON.stringify({
+                        track: currentTrack,
+                        time: currentTime,
+                        timestamp: Date.now()
+                    }));
+                }
+            }
+            
+            // Save music state periodically
+            setInterval(saveMusicState, 1000);
+            window.addEventListener('beforeunload', saveMusicState);
+            window.addEventListener('pagehide', saveMusicState);
+            
+            // Get saved music state
+            const savedMusicState = JSON.parse(localStorage.getItem('globalMusicState') || '{}');
+            const savedTrack = savedMusicState.track || 'track1';
+            const savedTime = savedMusicState.time || 0;
+            const savedTimestamp = savedMusicState.timestamp || 0;
+            
+            // Function to restore music state
+            function restoreMusicState() {
+                const timeSinceSave = Date.now() - savedTimestamp;
+                if (timeSinceSave > 300000) return; // 5 minutes
+                
+                let track = null;
+                if (savedTrack === 'track1') {
+                    track = audio;
+                } else if (savedTrack === 'track2') {
+                    track = secondAudio;
+                } else if (savedTrack === 'loop') {
+                    track = loopAudio;
+                }
+                
+                if (track && track.readyState >= 2) {
+                    track.currentTime = Math.max(0, Math.min(savedTime, track.duration || Infinity));
+                    playTrackOnly(track);
+                }
+            }
+            
             if (audio) {
                 // Set properties for maximum autoplay success
                 audio.volume = 0.5;
                 audio.muted = false;
                 audio.autoplay = true;
                 
+                // Check if music should be playing from global state
+                const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+                const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
+                
                 // Force play with multiple attempts
                 const forcePlay = () => {
-                    playTrackOnly(audio);
-                    audio.play().then(() => {
-                        updateMusicButtonState(true);
-                    }).catch(() => {
-                        // If failed, try again in 10ms
-                        setTimeout(forcePlay, 10);
-                        });
-                    };
+                    if (musicEnabled) {
+                        // Try to restore saved state first
+                        if (musicWasPlaying && savedTrack !== 'none' && savedTrack !== 'track1') {
+                            restoreMusicState();
+                        } else if (musicWasPlaying && savedTrack === 'track1' && savedTime > 0) {
+                            // Restore to saved position on track 1
+                            if (audio.readyState >= 2) {
+                                audio.currentTime = Math.max(0, Math.min(savedTime, audio.duration || Infinity));
+                                playTrackOnly(audio);
+                                localStorage.setItem('globalMusicPlaying', 'true');
+                                localStorage.setItem('globalMusicEnabled', 'true');
+                                updateMusicButtonState(true);
+                            }
+                        } else if (musicWasPlaying || localStorage.getItem('globalMusicPlaying') === null) {
+                            // Start from beginning or saved position
+                            playTrackOnly(audio);
+                            if (savedTime > 0 && savedTrack === 'track1') {
+                                audio.currentTime = Math.max(0, Math.min(savedTime, audio.duration || Infinity));
+                            }
+                            audio.play().then(() => {
+                                localStorage.setItem('globalMusicPlaying', 'true');
+                                localStorage.setItem('globalMusicEnabled', 'true');
+                                updateMusicButtonState(true);
+                            }).catch(() => {
+                                // If failed, try again in 10ms
+                                setTimeout(forcePlay, 10);
+                            });
+                        }
+                    }
+                };
                 
                 // Start immediately
                 forcePlay();
                 
                 // Add event listeners for music state changes
                 audio.addEventListener('play', function() {
-                    // Ensure loop track is paused when main track plays
+                    // Ensure other tracks are paused when main track plays
+                    if (secondAudio && !secondAudio.paused) {
+                        secondAudio.pause();
+                    }
                     if (loopAudio && !loopAudio.paused) {
                         loopAudio.pause();
                     }
+                    localStorage.setItem('globalMusicPlaying', 'true');
+                    localStorage.setItem('globalMusicEnabled', 'true');
+                    saveMusicState();
                     updateMusicButtonState(true);
                 });
                 
+                audio.addEventListener('timeupdate', function() {
+                    saveMusicState();
+                });
+                
                 audio.addEventListener('pause', function() {
-                    // Check if loop track is playing
-                    const isPlaying = loopAudio && !loopAudio.paused;
+                    // Check if any other track is playing
+                    const isPlaying = (secondAudio && !secondAudio.paused) || (loopAudio && !loopAudio.paused);
+                    if (!isPlaying) {
+                        localStorage.setItem('globalMusicPlaying', 'false');
+                    }
+                    saveMusicState();
                     updateMusicButtonState(isPlaying);
                 });
                 
-                // When first track (TheMoneyMaker) ends, start the looping track
+                // When first track (TheMoneyMaker) ends, start the second track (YEAHHHHHH)
                 audio.addEventListener('ended', function() {
-                    if (loopAudio) {
+                    saveMusicState();
+                    if (secondAudio) {
                         // Pause main track (should already be paused, but ensure it)
                         audio.pause();
-                        loopAudio.volume = audio.volume;
+                        secondAudio.volume = audio.volume;
+                        secondAudio.currentTime = 0;
+                        playTrackOnly(secondAudio);
+                        updateMusicButtonState(true);
+                    }
+                });
+            }
+            
+            // Handle second track events
+            if (secondAudio) {
+                secondAudio.volume = 0.5;
+                secondAudio.addEventListener('play', function() {
+                    // Ensure other tracks are paused when second track plays
+                    if (audio && !audio.paused) {
+                        audio.pause();
+                    }
+                    if (loopAudio && !loopAudio.paused) {
+                        loopAudio.pause();
+                    }
+                    localStorage.setItem('globalMusicPlaying', 'true');
+                    localStorage.setItem('globalMusicEnabled', 'true');
+                    saveMusicState();
+                    updateMusicButtonState(true);
+                });
+                
+                secondAudio.addEventListener('pause', function() {
+                    // Check if any other track is playing
+                    const isPlaying = (audio && !audio.paused) || (loopAudio && !loopAudio.paused);
+                    saveMusicState();
+                    updateMusicButtonState(isPlaying);
+                });
+                
+                secondAudio.addEventListener('timeupdate', function() {
+                    saveMusicState();
+                });
+                
+                // When second track (YEAHHHHHH) ends, start the looping track
+                secondAudio.addEventListener('ended', function() {
+                    saveMusicState();
+                    if (loopAudio) {
+                        // Pause second track (should already be paused, but ensure it)
+                        secondAudio.pause();
+                        loopAudio.volume = secondAudio.volume;
+                        loopAudio.currentTime = 0;
                         playTrackOnly(loopAudio);
                         updateMusicButtonState(true);
                     }
@@ -162,17 +322,28 @@
             if (loopAudio) {
                 loopAudio.volume = 0.5;
                 loopAudio.addEventListener('play', function() {
-                    // Ensure main track is paused when loop track plays
+                    // Ensure other tracks are paused when loop track plays
                     if (audio && !audio.paused) {
                         audio.pause();
                     }
+                    if (secondAudio && !secondAudio.paused) {
+                        secondAudio.pause();
+                    }
+                    localStorage.setItem('globalMusicPlaying', 'true');
+                    localStorage.setItem('globalMusicEnabled', 'true');
+                    saveMusicState();
                     updateMusicButtonState(true);
                 });
                 
                 loopAudio.addEventListener('pause', function() {
-                    // Check if main track is playing
-                    const isPlaying = audio && !audio.paused;
+                    // Check if any other track is playing
+                    const isPlaying = (audio && !audio.paused) || (secondAudio && !secondAudio.paused);
+                    saveMusicState();
                     updateMusicButtonState(isPlaying);
+                });
+                
+                loopAudio.addEventListener('timeupdate', function() {
+                    saveMusicState();
                 });
             }
             
@@ -188,10 +359,12 @@
                     e.stopPropagation();
                     
                     const audio = document.getElementById('backgroundMusic');
+                    const secondAudio = document.getElementById('backgroundMusicSecond');
                     const loopAudio = document.getElementById('backgroundMusicLoop');
                     const mainPlaying = audio && !audio.paused;
+                    const secondPlaying = secondAudio && !secondAudio.paused;
                     const loopPlaying = loopAudio && !loopAudio.paused;
-                    const isPlaying = mainPlaying || loopPlaying;
+                    const isPlaying = mainPlaying || secondPlaying || loopPlaying;
                     
                     console.log('Music button clicked. Currently playing:', isPlaying);
                     
@@ -201,20 +374,43 @@
                             audio.pause();
                             console.log('Paused main audio track');
                         }
+                        if (secondAudio && !secondAudio.paused) {
+                            secondAudio.pause();
+                            console.log('Paused second audio track');
+                        }
                         if (loopAudio && !loopAudio.paused) {
                             loopAudio.pause();
                             console.log('Paused loop audio track');
                         }
+                        localStorage.setItem('globalMusicEnabled', 'false');
+                        localStorage.setItem('globalMusicPlaying', 'false');
+                        saveMusicState();
                         updateMusicButtonState(false);
                     } else {
-                        // Play main track if it hasn't finished, otherwise loop track
-                        if (audio && audio.currentTime < (audio.duration || Infinity)) {
+                        // Restore from saved state or determine which track to play
+                        if (savedTrack !== 'none' && savedTrack !== 'track1') {
+                            restoreMusicState();
+                        } else if (audio && audio.currentTime < (audio.duration || Infinity)) {
+                            if (savedTime > 0 && savedTrack === 'track1') {
+                                audio.currentTime = Math.max(0, Math.min(savedTime, audio.duration || Infinity));
+                            }
                             audio.play().catch(err => console.error('Failed to play main track:', err));
                             console.log('Playing main audio track');
+                        } else if (secondAudio && secondAudio.currentTime < (secondAudio.duration || Infinity)) {
+                            if (savedTime > 0 && savedTrack === 'track2') {
+                                secondAudio.currentTime = Math.max(0, Math.min(savedTime, secondAudio.duration || Infinity));
+                            }
+                            secondAudio.play().catch(err => console.error('Failed to play second track:', err));
+                            console.log('Playing second audio track');
                         } else if (loopAudio) {
+                            if (savedTime > 0 && savedTrack === 'loop') {
+                                loopAudio.currentTime = Math.max(0, savedTime % (loopAudio.duration || 1));
+                            }
                             loopAudio.play().catch(err => console.error('Failed to play loop track:', err));
                             console.log('Playing loop audio track');
                         }
+                        localStorage.setItem('globalMusicEnabled', 'true');
+                        localStorage.setItem('globalMusicPlaying', 'true');
                         updateMusicButtonState(true);
                     }
                 });
@@ -237,13 +433,19 @@
             }
         }
     </script>
-    <audio id="backgroundMusic" autoplay preload="auto">
+    <audio id="backgroundMusic" preload="metadata">
                         <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
     
-    <!-- Second track (loops after first) -->
-    <audio id="backgroundMusicLoop" preload="auto" loop>
+    <!-- Second track (plays after first) -->
+    <audio id="backgroundMusicSecond" preload="metadata">
+                        <source src="YEAHHHHHH.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Third track (loops after second) -->
+    <audio id="backgroundMusicLoop" preload="metadata" loop>
                         <source src="Audiolandingpage.m4a" type="audio/mp4">
         Your browser does not support the audio element.
     </audio>
@@ -1181,6 +1383,348 @@
             outline: none;
         }
         
+        /* Tip Submission Styles - Fixed Floating Button (mirrors AI chat exactly) */
+        .tip-submit-btn {
+            position: fixed !important;
+            left: 24px !important;
+            bottom: 24px !important;
+            z-index: 2147482998 !important;
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%) !important;
+            color: #fff !important;
+            border: 1.5px solid rgba(74, 144, 226, 0.3) !important;
+            border-radius: 14px !important;
+            padding: 16px 24px !important;
+            font-weight: 700 !important;
+            font-size: 15px !important;
+            box-shadow: 
+                0 12px 32px rgba(0, 0, 0, 0.4),
+                0 4px 16px rgba(0, 0, 0, 0.3),
+                0 0 0 0 rgba(74, 144, 226, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+            cursor: pointer !important;
+            font-family: inherit !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 12px !important;
+            white-space: nowrap !important;
+            line-height: 1.2 !important;
+            min-height: auto !important;
+            height: auto !important;
+            min-width: auto !important;
+            width: auto !important;
+            box-sizing: border-box !important;
+            animation: tip-pulse-glow 3s ease-in-out infinite !important;
+        }
+        
+        @keyframes tip-pulse-glow {
+            0%, 100% { 
+                box-shadow: 
+                    0 12px 32px rgba(0, 0, 0, 0.4),
+                    0 4px 16px rgba(0, 0, 0, 0.3),
+                    0 0 0 0 rgba(74, 144, 226, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                border-color: rgba(74, 144, 226, 0.3);
+            }
+            50% { 
+                box-shadow: 
+                    0 12px 32px rgba(0, 0, 0, 0.5),
+                    0 4px 16px rgba(0, 0, 0, 0.4),
+                    0 0 0 8px rgba(74, 144, 226, 0.2),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+                border-color: rgba(74, 144, 226, 0.5);
+            }
+        }
+        
+        .tip-submit-btn:hover {
+            transform: translateY(-4px) scale(1.03) !important;
+            box-shadow: 
+                0 16px 40px rgba(0, 0, 0, 0.5),
+                0 6px 20px rgba(0, 0, 0, 0.4),
+                0 0 0 4px rgba(74, 144, 226, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+            background: linear-gradient(135deg, rgba(37, 51, 70, 0.98) 0%, rgba(20, 30, 48, 1) 100%) !important;
+            border-color: rgba(74, 144, 226, 0.5) !important;
+            animation: none !important;
+        }
+        
+        .tip-submit-btn:active {
+            transform: translateY(-2px) scale(1.01) !important;
+        }
+        
+        .tip-submit-btn:focus {
+            outline: 3px solid rgba(74, 144, 226, 0.4) !important;
+            outline-offset: 4px !important;
+        }
+        
+        .tip-submit-btn span {
+            display: inline-flex !important;
+            align-items: center !important;
+            line-height: 1 !important;
+            font-size: inherit !important;
+        }
+        
+        .tip-submit-btn span:first-child {
+            font-size: 15px !important;
+            line-height: 1 !important;
+        }
+        
+        .tip-submit-btn span:last-child {
+            font-size: 15px !important;
+            line-height: 1 !important;
+            font-weight: 700 !important;
+        }
+        
+        /* Tip Modal Styles */
+        .tip-modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .tip-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .tip-modal-content {
+            background: linear-gradient(135deg, #1a1a3a 0%, #2d3a5a 100%);
+            border: 2px solid rgba(74, 144, 226, 0.5);
+            border-radius: 12px;
+            padding: 0;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(74, 144, 226, 0.2);
+            animation: slideDown 0.3s ease;
+            position: relative;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .tip-modal-header {
+            padding: 25px 30px;
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.2) 0%, rgba(46, 204, 113, 0.2) 100%);
+            border-bottom: 2px solid rgba(74, 144, 226, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .tip-modal-header h2 {
+            color: #4A90E2;
+            margin: 0;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tip-modal-close {
+            background: transparent;
+            border: 2px solid rgba(74, 144, 226, 0.5);
+            color: white;
+            font-size: 1.5rem;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .tip-modal-close:hover {
+            background: rgba(74, 144, 226, 0.2);
+            border-color: #4A90E2;
+            transform: rotate(90deg);
+        }
+        
+        .tip-modal-body {
+            padding: 30px;
+        }
+        
+        .tip-form-group {
+            margin-bottom: 20px;
+        }
+        
+        .tip-form-group label {
+            display: block;
+            color: #4A90E2;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        
+        .tip-form-group input,
+        .tip-form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid rgba(74, 144, 226, 0.3);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .tip-form-group input:focus,
+        .tip-form-group textarea:focus {
+            outline: none;
+            border-color: #4A90E2;
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+        
+        .tip-form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .tip-form-group input::placeholder,
+        .tip-form-group textarea::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .tip-anonymous-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(74, 144, 226, 0.1);
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            border-radius: 8px;
+        }
+        
+        .tip-anonymous-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #4A90E2;
+        }
+        
+        .tip-anonymous-group label {
+            color: white;
+            cursor: pointer;
+            margin: 0;
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .tip-form-group.hidden {
+            display: none;
+        }
+        
+        .tip-submit-button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(45deg, #4A90E2, #2ECC71);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .tip-submit-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(74, 144, 226, 0.4);
+        }
+        
+        .tip-submit-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .tip-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .tip-message.success {
+            background: rgba(46, 204, 113, 0.2);
+            border: 2px solid #2ECC71;
+            color: #2ECC71;
+            display: block;
+        }
+        
+        .tip-message.error {
+            background: rgba(231, 76, 60, 0.2);
+            border: 2px solid #E74C3C;
+            color: #E74C3C;
+            display: block;
+        }
+        
+        /* Mobile adjustments for tip modal */
+        @media (max-width: 768px) {
+            .tip-modal-content {
+                width: 95%;
+                max-height: 95vh;
+            }
+            
+            .tip-modal-header {
+                padding: 20px;
+            }
+            
+            .tip-modal-body {
+                padding: 20px;
+            }
+            
+            .tip-submit-btn {
+                left: 12px !important;
+                bottom: 12px !important;
+                padding: 14px 20px !important;
+                font-size: 14px !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .tip-submit-btn {
+                left: 12px !important;
+                bottom: 12px !important;
+                padding: 14px 20px !important;
+                font-size: 14px !important;
+            }
+            
+            .tip-submit-btn span:last-child {
+                display: none;
+            }
+        }
+        
         /* Music Control Button Styles */
         .music-control-btn {
             background: rgba(255, 255, 255, 0.1);
@@ -1854,18 +2398,16 @@
             pointer-events: none;
             background: transparent;
             padding-top: 66px; /* Position just below header */
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", emoji;
+            font-variant-emoji: emoji;
         }
         
         .flags-wrapper {
             display: flex;
             width: fit-content;
             animation: scrollFlags 120s linear infinite;
-            transition: animation-duration 0.3s ease;
-        }
-        
-        /* Speed up flags on hover for desktop/laptop */
-        .flags-wrapper.fast-speed {
-            animation: scrollFlags 30s linear infinite !important;
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", emoji;
+            font-variant-emoji: emoji;
         }
         
         .flags-container {
@@ -1873,6 +2415,8 @@
             width: fit-content;
             white-space: nowrap;
             flex-shrink: 0;
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", emoji;
+            font-variant-emoji: emoji;
         }
         
         @keyframes scrollFlags {
@@ -1893,6 +2437,16 @@
             pointer-events: none;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
             flex-shrink: 0;
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", emoji;
+            font-style: normal;
+            font-weight: normal;
+            line-height: 1;
+            -webkit-font-feature-settings: "liga";
+            font-feature-settings: "liga";
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            font-variant-emoji: emoji;
+            unicode-bidi: normal;
         }
         
         /* Mobile adjustments */
@@ -1905,6 +2459,7 @@
                 font-size: 1.5rem; /* Reduced from 2rem */
                 padding: 0 15px;
                 opacity: 0.5;
+                font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", emoji !important;
             }
         }
         
@@ -1916,6 +2471,7 @@
             .flag {
                 font-size: 1.3rem; /* Reduced from 1.8rem */
                 padding: 0 12px;
+                font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", emoji !important;
             }
         }
         
@@ -2391,6 +2947,27 @@
             top: 0px;
             filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.3));
         }
+        
+        .welcome-location {
+            margin-top: 15px;
+            font-size: clamp(1rem, 2.5vw, 1.5rem);
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.9) 0%, rgba(46, 204, 113, 0.85) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 0.05em;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+            text-shadow: none;
+            padding: 0 20px;
+        }
+        
+        .welcome-location.visible {
+            opacity: 1;
+        }
+        
         /* CONSOLIDATED MOBILE RESPONSIVE DESIGN - NO MORE CONFLICTS */
         @media (max-width: 768px) {
             .welcome-text {
@@ -4226,6 +4803,180 @@
             font-weight: 500;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
+        /* Floating Stars Container - Positioned behind newsletter section */
+        .newsletter-stars {
+            position: absolute;
+            top: -100px;
+            left: -200px;
+            right: -200px;
+            bottom: -100px;
+            width: calc(100% + 400px);
+            height: calc(100% + 200px);
+            overflow: visible;
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        /* Light beam star - core with radial gradient */
+        .floating-star {
+            position: absolute;
+            background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.8) 30%, rgba(255, 255, 255, 0.4) 60%, transparent 100%);
+            opacity: 0;
+            pointer-events: none; /* Keep none, we handle interaction via parent */
+            border-radius: 50%;
+            transition: filter 0.2s ease-out, opacity 0.2s ease-out;
+            will-change: filter, opacity, transform;
+            /* Interactive offset is applied within the animation keyframes */
+        }
+        
+        /* Light rays extending from the star - smaller beams */
+        .floating-star::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 1px;
+            height: 20px;
+            background: linear-gradient(to bottom, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.7) 30%, 
+                rgba(255, 255, 255, 0.9) 50%, 
+                rgba(255, 255, 255, 0.7) 70%, 
+                transparent 100%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        
+        .floating-star::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(90deg);
+            width: 1px;
+            height: 20px;
+            background: linear-gradient(to bottom, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.7) 30%, 
+                rgba(255, 255, 255, 0.9) 50%, 
+                rgba(255, 255, 255, 0.7) 70%, 
+                transparent 100%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        
+        /* Small stars - much smaller */
+        .floating-star.star-small {
+            width: 2px;
+            height: 2px;
+            animation: floatStarTwinkle 8s infinite ease-in-out;
+        }
+        
+        .floating-star.star-small::before,
+        .floating-star.star-small::after {
+            height: 12px;
+            width: 0.8px;
+        }
+        
+        /* Medium stars */
+        .floating-star.star-medium {
+            width: 3px;
+            height: 3px;
+            animation: floatStarTwinkle 12s infinite ease-in-out;
+        }
+        
+        .floating-star.star-medium::before,
+        .floating-star.star-medium::after {
+            height: 18px;
+            width: 1px;
+        }
+        
+        /* Large stars */
+        .floating-star.star-large {
+            width: 4px;
+            height: 4px;
+            animation: floatStarTwinkle 15s infinite ease-in-out;
+        }
+        
+        .floating-star.star-large::before,
+        .floating-star.star-large::after {
+            height: 24px;
+            width: 1.2px;
+        }
+        
+        @keyframes floatStarTwinkle {
+            0% {
+                opacity: 0;
+                transform: translateY(calc(100% + 50px)) translateX(0) translate(var(--interactive-x, 0px), var(--interactive-y, 0px)) rotate(0deg) scale(0.4);
+                filter: brightness(0.8);
+            }
+            8% {
+                opacity: 0.6;
+                transform: translateY(calc(92% + 20px)) translateX(5px) translate(var(--interactive-x, 0px), var(--interactive-y, 0px)) rotate(28deg) scale(0.6);
+                filter: brightness(1);
+            }
+            20% {
+                opacity: 0.95;
+                transform: translateY(calc(80% + 10px)) translateX(12px) translate(var(--interactive-x, 0px), var(--interactive-y, 0px)) rotate(72deg) scale(0.85);
+                filter: brightness(1.2);
+            }
+            35% {
+                opacity: 1;
+                transform: translateY(calc(65% + 5px)) translateX(22px) translate(var(--interactive-x, 0px), var(--interactive-y, 0px)) rotate(126deg) scale(1.05);
+                filter: brightness(1.4);
+            }
+            50% {
+                opacity: 1;
+                transform: translateY(50%) translateX(30px) translate(var(--interactive-x, 0px), var(--interactive-y, 0px)) rotate(180deg) scale(1);
+                filter: brightness(1.5);
+            }
+            65% {
+                opacity: 1;
+                transform: translateY(calc(35% - 5px)) translateX(38px) translate(var(--interactive-x, 0px), var(--interactive-y, 0px)) rotate(234deg) scale(1.05);
+                filter: brightness(1.4);
+            }
+            80% {
+                opacity: 0.95;
+                transform: translateY(calc(20% - 10px)) translateX(48px) translate(var(--interactive-x, 0px), var(--interactive-y, 0px)) rotate(288deg) scale(0.85);
+                filter: brightness(1.2);
+            }
+            92% {
+                opacity: 0.6;
+                transform: translateY(calc(8% - 20px)) translateX(55px) translate(var(--interactive-x, 0px), var(--interactive-y, 0px)) rotate(332deg) scale(0.6);
+                filter: brightness(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-50px) translateX(60px) translate(var(--interactive-x, 0px), var(--interactive-y, 0px)) rotate(360deg) scale(0.4);
+                filter: brightness(0.8);
+            }
+        }
+        
+        /* Subtle glow for different star sizes - smaller beams */
+        .floating-star.star-small {
+            box-shadow: 
+                0 0 2px rgba(255, 255, 255, 0.9),
+                0 0 4px rgba(255, 255, 255, 0.6),
+                0 0 6px rgba(255, 255, 255, 0.3);
+        }
+        
+        .floating-star.star-medium {
+            box-shadow: 
+                0 0 3px rgba(255, 255, 255, 0.9),
+                0 0 6px rgba(255, 255, 255, 0.7),
+                0 0 9px rgba(255, 255, 255, 0.4),
+                0 0 12px rgba(255, 255, 255, 0.2);
+        }
+        
+        .floating-star.star-large {
+            box-shadow: 
+                0 0 4px rgba(255, 255, 255, 0.9),
+                0 0 8px rgba(255, 255, 255, 0.7),
+                0 0 12px rgba(255, 255, 255, 0.5),
+                0 0 16px rgba(255, 255, 255, 0.3);
+        }
+        
         .newsletter-signup {
             display: flex;
             gap: 16px;
@@ -8236,6 +8987,28 @@
         
         /* ===== END WESTERN STYLING ===== */
         /* Remove the section above if you don't like the western theme */
+        
+        /* Google AdSense - Sidebar sticky positioning */
+        .adsense-sidebar-sticky {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            width: 300px;
+            z-index: 100;
+        }
+        
+        /* Show sidebar ad only on desktop */
+        @media (min-width: 1024px) {
+            .adsense-sidebar-sticky {
+                display: block !important;
+            }
+        }
+        
+        @media (max-width: 1023px) {
+            .adsense-sidebar-sticky {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -8247,7 +9020,9 @@
         <div class="header-container">
             <div class="header-left">
                 <div class="header-logo">
-                    <span class="header-logo-n">N</span><span class="header-logo-w">W</span>
+                    <a href="index.html" class="logo-link" aria-label="Go to Noteworthy News homepage">
+                        <span class="header-logo-n">N</span><span class="header-logo-w">W</span>
+                    </a>
         </div>
                 <div class="brand-info">
                     <h1><span class="brand-name">Noteworthy News</span></h1>
@@ -8267,7 +9042,7 @@
             </nav>
             
             <div class="header-right">
-                <div class="last-update">Last Update: 10/30/25</div>
+                <div class="last-update">Last Update: 11/01/25</div>
                 <button class="music-control-btn" id="musicControlBtn" title="Toggle Background Music">
                     <span class="btn-icon">🎵</span>
                 </button>
@@ -8281,6 +9056,62 @@
             </button>
             </div>
     </header>
+    
+    <!-- Top Banner Ad -->
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-5427142458403577"
+         data-ad-slot="1234567890"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>
+         (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+    
+    <!-- Fixed Floating Tip Submission Button (mirrors AI chat position) -->
+    <button class="tip-submit-btn" id="tipSubmitBtn" title="Submit a Tip">
+        <span>💡</span>
+        <span>Submit Tip</span>
+    </button>
+    
+    <!-- Tip Submission Modal -->
+    <div class="tip-modal" id="tipModal">
+        <div class="tip-modal-content">
+            <div class="tip-modal-header">
+                <h2>💡 Submit a Tip</h2>
+                <button class="tip-modal-close" id="tipModalClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="tip-modal-body">
+                <div class="tip-message" id="tipMessage"></div>
+                <form id="tipForm">
+                    <div class="tip-anonymous-group">
+                        <input type="checkbox" id="tipAnonymous" name="anonymous">
+                        <label for="tipAnonymous">Submit anonymously (your name and email will not be shared)</label>
+                    </div>
+                    
+                    <div class="tip-form-group" id="tipNameGroup">
+                        <label for="tipName">Your Name</label>
+                        <input type="text" id="tipName" name="name" placeholder="Enter your name">
+                    </div>
+                    
+                    <div class="tip-form-group" id="tipEmailGroup">
+                        <label for="tipEmail">Your Email</label>
+                        <input type="email" id="tipEmail" name="email" placeholder="Enter your email">
+                    </div>
+                    
+                    <div class="tip-form-group">
+                        <label for="tipContent">Tip Content *</label>
+                        <textarea id="tipContent" name="tip" placeholder="Please provide as much detail as possible about your tip. This helps our team investigate effectively." required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="tip-submit-button" id="tipSubmitButton">
+                        Submit Tip
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
     <!-- Mobile Navigation Overlay -->
     <div class="mobile-nav" id="mobileNav">
         <nav class="mobile-nav-content">
@@ -8290,6 +9121,7 @@
                 <li><a href="#credibility-section" class="nav-link">Credibility</a></li>
                 <li><a href="#about-section" class="nav-link">About</a></li>
                 <li><a href="#ai-assistant-section" class="nav-link">AI Chat</a></li>
+                <li><a href="#" class="nav-link" id="mobileTipSubmitBtn">Submit Tip</a></li>
                 </ul>
         </nav>
             </div>
@@ -8347,8 +9179,10 @@
                 <img src="Rough terrain.png" alt="Rough Terrain" class="rough-terrain-img">
             </div>
             <div class="hero-logo" aria-hidden="true">
-                <img src="7680cb96-729f-4344-b08a-4f9a2aa314f8.png" alt="Noteworthy News Logo" class="hero-logo-image">
-                <div class="hero-logo-clickable" onclick="window.location.reload()" aria-label="Reload page"></div>
+                <a href="index.html" aria-label="Go to Noteworthy News homepage">
+                    <img src="7680cb96-729f-4344-b08a-4f9a2aa314f8.png" alt="Noteworthy News Logo" class="hero-logo-image">
+                </a>
+                <div class="hero-logo-clickable" onclick="window.location.href='index.html'" aria-label="Go to homepage"></div>
             </div>
             
             <!-- Left Side Welcome Image -->
@@ -8364,6 +9198,7 @@
                 <div class="welcome-text-container">
                     <span class="welcome-text" id="welcomeText">Welcome!</span>
                 </div>
+                <div class="welcome-location" id="welcomeLocation"></div>
             </h1>
                         <div class="hero-subtitle-container">
               <p class="hero-subtitle">
@@ -8433,12 +9268,15 @@
 
 
         <!-- Newsletter Signup Section - Prominent Placement -->
-        <div class="news-cta">
-            <h3>📬 Stay Informed with Noteworthy News</h3>
-            <p>Get the latest fact-checked stories and media literacy insights delivered directly to your inbox</p>
-            <div class="newsletter-signup">
-                <input type="email" placeholder="Enter your email address" class="newsletter-input">
-                <button class="newsletter-btn">Subscribe Now</button>
+        <div style="position: relative; z-index: 1;">
+            <div class="newsletter-stars" id="newsletterStars"></div>
+            <div class="news-cta">
+                <h3>📬 Stay Informed with Noteworthy News</h3>
+                <p>Get the latest fact-checked stories and media literacy insights delivered directly to your inbox</p>
+                <div class="newsletter-signup">
+                    <input type="email" placeholder="Enter your email address" class="newsletter-input">
+                    <button class="newsletter-btn">Subscribe Now</button>
+                </div>
             </div>
         </div>
 
@@ -8447,8 +9285,19 @@
             <h2 class="news-title">Breaking News & Analysis</h2>
             <p class="news-subtitle">Stay informed with our latest fact-checked stories and in-depth analysis</p>
             
-            <!-- X Timeline Widget -->
-            <div id="twitter-widget-container" style="max-width: 600px; margin: 2rem auto; padding: 0 1rem; min-height: 600px;">
+            <!-- In-Content Ad - Before Articles -->
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-5427142458403577"
+                 data-ad-slot="1234567891"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                 (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+            
+            <!-- X Timeline Widget (Hidden - posts loaded via API instead) -->
+            <div id="twitter-widget-container" style="display: none; max-width: 600px; margin: 2rem auto; padding: 0 1rem; min-height: 600px;">
                 <a class="twitter-timeline" data-height="600" data-theme="dark" href="https://twitter.com/newsnoteworthy?ref_src=twsrc%5Etfw">Tweets by newsnoteworthy</a>
             </div>
             
@@ -8530,8 +9379,33 @@
             </div>
                     </article>
             </div>
+            
+            <!-- In-Content Ad - After Articles -->
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-5427142458403577"
+                 data-ad-slot="1234567892"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                 (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
             </div>
         </div>
+        
+        <!-- Sidebar Sticky Ad -->
+        <div class="adsense-sidebar-sticky">
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-5427142458403577"
+                 data-ad-slot="1234567893"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                 (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+        
         <!-- Interactive Fact-Checker Section -->
         <div class="fact-checker-section" id="fact-checker-section">
             <div class="fact-checker-content">
@@ -8653,9 +9527,9 @@
                     <div class="footer-section">
                         <h4>Resources</h4>
                         <ul>
-                            <li><a href="#" onclick="alert('Coming Soon: Media Literacy Guide')">Media Literacy Guide</a></li>
-                            <li><a href="#" onclick="alert('Coming Soon: Fact-Checking Tips')">Fact-Checking Tips</a></li>
-                            <li><a href="#" onclick="alert('Coming Soon: Educational Resources')">Educational Resources</a></li>
+                            <li><a href="media-literacy-guide.html">Media Literacy Guide</a></li>
+                            <li><a href="fact-checking-tips.html">Fact-Checking Tips</a></li>
+                            <li><a href="educational-resources.html">Educational Resources</a></li>
                         </ul>
                     </div>
                     <div class="footer-section">
@@ -8720,12 +9594,20 @@
             uniqueFlags.forEach(flagEmoji => {
                 const flag1 = document.createElement('div');
                 flag1.className = 'flag';
-                flag1.textContent = flagEmoji;
+                // Use innerHTML and ensure proper emoji rendering
+                flag1.innerHTML = flagEmoji;
+                flag1.setAttribute('aria-label', 'Country flag');
+                flag1.setAttribute('role', 'img');
+                // Force emoji font rendering
+                flag1.style.fontFamily = '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", emoji';
                 container1.appendChild(flag1);
                 
                 const flag2 = document.createElement('div');
                 flag2.className = 'flag';
-                flag2.textContent = flagEmoji;
+                flag2.innerHTML = flagEmoji;
+                flag2.setAttribute('aria-label', 'Country flag');
+                flag2.setAttribute('role', 'img');
+                flag2.style.fontFamily = '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", emoji';
                 container2.appendChild(flag2);
             });
             
@@ -8733,30 +9615,108 @@
             wrapper.appendChild(container2);
             flagsContainer.appendChild(wrapper);
             
-            // Add hover effect for desktop/laptop
+            // Add smooth hover effect for desktop/laptop
             // Check if device supports hover (desktop/laptop)
             if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
                 let isHovering = false;
+                
+                // Smoothly transition animation speed without visual jumps
+                function transitionSpeed(targetDuration) {
+                    if (!wrapper || !container1) return;
+                    
+                    // Ensure containers have been measured
+                    if (container1.offsetWidth === 0 || wrapper.scrollWidth === 0) {
+                        // Containers not ready yet, try again on next frame
+                        requestAnimationFrame(() => transitionSpeed(targetDuration));
+                        return;
+                    }
+                    
+                    // Get the current computed transform to preserve exact position
+                    const computedStyle = window.getComputedStyle(wrapper);
+                    const currentTransform = computedStyle.transform;
+                    
+                    // Extract translateX from matrix transform
+                    let currentTranslateX = 0;
+                    if (currentTransform !== 'none' && currentTransform !== '') {
+                        const matrixMatch = currentTransform.match(/matrix\(([^)]+)\)/);
+                        if (matrixMatch) {
+                            const values = matrixMatch[1].split(',').map(v => parseFloat(v.trim()));
+                            if (values.length >= 6) {
+                                currentTranslateX = values[4]; // translateX is the 5th value (index 4)
+                            }
+                        }
+                    }
+                    
+                    // Calculate animation progress (0 to 1)
+                    // The wrapper contains 2 containers side-by-side
+                    // Animation moves from translateX(0) to translateX(-50% of wrapper width)
+                    // So wrapper width = 2 * container width, and animation moves -container width
+                    const wrapperWidth = wrapper.scrollWidth;
+                    const maxTranslateDistance = wrapperWidth / 2; // Animation moves -50% of wrapper width
+                    const progress = (Math.abs(currentTranslateX) % maxTranslateDistance) / maxTranslateDistance;
+                    
+                    // Pause the current animation
+                    wrapper.style.animationPlayState = 'paused';
+                    
+                    // Apply the current transform as inline style to lock position
+                    if (currentTransform !== 'none' && currentTransform !== '') {
+                        wrapper.style.transform = currentTransform;
+                    }
+                    
+                    // Remove the animation temporarily
+                    const originalAnimation = wrapper.style.animation;
+                    wrapper.style.animation = 'none';
+                    
+                    // Force browser to process the changes
+                    void wrapper.offsetHeight;
+                    
+                    // Calculate the animation delay to start from current position
+                    // The delay should be negative to start from the current progress point
+                    // Clamp progress between 0 and 1 to avoid calculation errors
+                    const clampedProgress = Math.max(0, Math.min(1, progress));
+                    const animationDelay = -(clampedProgress * targetDuration);
+                    
+                    // Apply new animation with calculated delay to maintain position
+                    wrapper.style.animation = `scrollFlags ${targetDuration}s linear infinite`;
+                    wrapper.style.animationDelay = `${animationDelay}s`;
+                    
+                    // Resume animation
+                    wrapper.style.animationPlayState = 'running';
+                    
+                    // Remove inline transform after animation restarts, but KEEP the delay
+                    // The delay is essential for maintaining position across speed changes
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            // Only remove transform, keep animationDelay for position accuracy
+                            wrapper.style.transform = '';
+                            // DO NOT remove animationDelay - it must persist for position accuracy
+                        });
+                    });
+                }
                 
                 // Function to check if mouse is over flags area
                 function checkHover(e) {
                     if (!flagsContainer || !wrapper) return;
                     
                     const containerRect = flagsContainer.getBoundingClientRect();
-                    
-                    // Check if mouse is within the flags area
+                    const mouseX = e.clientX;
                     const mouseY = e.clientY;
                     
-                    // Flags are visible in the upper portion of the page
-                    // Check if mouse is directly over the flags (much smaller detection area - ~80px)
-                    const inFlagsArea = mouseY >= containerRect.top && mouseY <= containerRect.top + 80;
+                    // Check if mouse is within the full flags container bounds
+                    // This includes the entire visible flags area (both X and Y dimensions)
+                    const inFlagsArea = (
+                        mouseX >= containerRect.left &&
+                        mouseX <= containerRect.right &&
+                        mouseY >= containerRect.top && 
+                        mouseY <= containerRect.bottom
+                    );
                     
                     if (inFlagsArea && !isHovering) {
                         isHovering = true;
-                        wrapper.classList.add('fast-speed');
+                        transitionSpeed(30); // Fast speed: 30s
                     } else if (!inFlagsArea && isHovering) {
                         isHovering = false;
-                        wrapper.classList.remove('fast-speed');
+                        transitionSpeed(120); // Normal speed: 120s
                     }
                 }
                 
@@ -8767,10 +9727,203 @@
                 document.addEventListener('mouseleave', function() {
                     if (isHovering && wrapper) {
                         isHovering = false;
-                        wrapper.classList.remove('fast-speed');
+                        transitionSpeed(120);
                     }
                 });
             }
+        }
+        
+        // Initialize Tip Submission Feature
+        function initTipSubmission() {
+            const tipModal = document.getElementById('tipModal');
+            const tipSubmitBtn = document.getElementById('tipSubmitBtn');
+            const mobileTipSubmitBtn = document.getElementById('mobileTipSubmitBtn');
+            const tipModalClose = document.getElementById('tipModalClose');
+            const tipForm = document.getElementById('tipForm');
+            const tipAnonymous = document.getElementById('tipAnonymous');
+            const tipNameGroup = document.getElementById('tipNameGroup');
+            const tipEmailGroup = document.getElementById('tipEmailGroup');
+            const tipMessage = document.getElementById('tipMessage');
+            const tipSubmitButton = document.getElementById('tipSubmitButton');
+            
+            // Open modal
+            function openTipModal() {
+                tipModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+            
+            // Close modal
+            function closeTipModal() {
+                tipModal.classList.remove('active');
+                document.body.style.overflow = '';
+                tipForm.reset();
+                tipMessage.className = 'tip-message';
+                tipMessage.textContent = '';
+                tipAnonymous.checked = false;
+                tipNameGroup.classList.remove('hidden');
+                tipEmailGroup.classList.remove('hidden');
+            }
+            
+            // Handle anonymous checkbox
+            tipAnonymous.addEventListener('change', function() {
+                if (this.checked) {
+                    tipNameGroup.classList.add('hidden');
+                    tipEmailGroup.classList.add('hidden');
+                    document.getElementById('tipName').value = '';
+                    document.getElementById('tipEmail').value = '';
+                } else {
+                    tipNameGroup.classList.remove('hidden');
+                    tipEmailGroup.classList.remove('hidden');
+                }
+            });
+            
+            // Toggle modal handlers (open if closed, close if open)
+            if (tipSubmitBtn) {
+                tipSubmitBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (tipModal.classList.contains('active')) {
+                        closeTipModal();
+                    } else {
+                        openTipModal();
+                    }
+                });
+            }
+            
+            if (mobileTipSubmitBtn) {
+                mobileTipSubmitBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (tipModal.classList.contains('active')) {
+                        closeTipModal();
+                    } else {
+                        openTipModal();
+                    }
+                    // Close mobile menu if open
+                    const mobileNav = document.getElementById('mobileNav');
+                    if (mobileNav) {
+                        mobileNav.classList.remove('active');
+                    }
+                });
+            }
+            
+            // Close modal handlers
+            if (tipModalClose) {
+                tipModalClose.addEventListener('click', closeTipModal);
+            }
+            
+            // Close modal on background click
+            tipModal.addEventListener('click', function(e) {
+                if (e.target === tipModal) {
+                    closeTipModal();
+                }
+            });
+            
+            // Close modal on ESC key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && tipModal.classList.contains('active')) {
+                    closeTipModal();
+                }
+            });
+            
+            // Handle form submission
+            tipForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('tipName').value.trim();
+                const email = document.getElementById('tipEmail').value.trim();
+                const tip = document.getElementById('tipContent').value.trim();
+                const isAnonymous = tipAnonymous.checked;
+                
+                // Validate tip content
+                if (tip.length < 10) {
+                    tipMessage.className = 'tip-message error';
+                    tipMessage.textContent = 'Tip content must be at least 10 characters long.';
+                    return;
+                }
+                
+                // Check if running from file:// protocol (not supported)
+                if (window.location.protocol === 'file:') {
+                    tipMessage.className = 'tip-message error';
+                    tipMessage.textContent = 'Tip submission requires a web server. Please run "netlify dev" or deploy to Netlify to test this feature.';
+                    return;
+                }
+                
+                // Disable submit button
+                tipSubmitButton.disabled = true;
+                tipSubmitButton.textContent = 'Submitting...';
+                
+                // Hide previous messages
+                tipMessage.className = 'tip-message';
+                tipMessage.textContent = '';
+                
+                try {
+                    // Determine API endpoint
+                    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                    const endpoint = isLocalhost 
+                        ? 'http://localhost:8888/.netlify/functions/submit-tip'
+                        : '/.netlify/functions/submit-tip';
+                    
+                    console.log('Submitting tip to:', endpoint);
+                    
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            name,
+                            email,
+                            tip,
+                            isAnonymous
+                        }),
+                    });
+                    
+                    // Check if response is ok before parsing
+                    let data;
+                    try {
+                        const text = await response.text();
+                        data = text ? JSON.parse(text) : {};
+                    } catch (parseError) {
+                        console.error('Failed to parse response:', parseError);
+                        tipMessage.className = 'tip-message error';
+                        tipMessage.textContent = 'Server returned an invalid response. Please try again later.';
+                        return;
+                    }
+                    
+                    if (response.ok && data.success) {
+                        tipMessage.className = 'tip-message success';
+                        tipMessage.textContent = data.message || 'Tip submitted successfully! Thank you for your contribution.';
+                        tipForm.reset();
+                        tipAnonymous.checked = false;
+                        tipNameGroup.classList.remove('hidden');
+                        tipEmailGroup.classList.remove('hidden');
+                        
+                        // Auto-close modal after 3 seconds
+                        setTimeout(() => {
+                            closeTipModal();
+                        }, 3000);
+                    } else {
+                        tipMessage.className = 'tip-message error';
+                        const errorMsg = data.error || data.message || `Server error (${response.status}). Please try again.`;
+                        tipMessage.textContent = errorMsg;
+                        console.error('Tip submission failed:', data);
+                    }
+                } catch (error) {
+                    console.error('Tip submission error:', error);
+                    tipMessage.className = 'tip-message error';
+                    
+                    // Provide more specific error messages
+                    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                        tipMessage.textContent = 'Unable to connect to server. Please check your internet connection and ensure you\'re running "netlify dev" if testing locally.';
+                    } else if (error.message) {
+                        tipMessage.textContent = `Error: ${error.message}`;
+                    } else {
+                        tipMessage.textContent = 'An error occurred. Please check your connection and try again.';
+                    }
+                } finally {
+                    tipSubmitButton.disabled = false;
+                    tipSubmitButton.textContent = 'Submit Tip';
+                }
+            });
         }
         
         // Initialize functions when DOM is loaded
@@ -8778,6 +9931,9 @@
             if (typeof initCredibilityStats === 'function') initCredibilityStats();
             if (typeof initMobileMenu === 'function') initMobileMenu();
             if (typeof initNavigation === 'function') initNavigation();
+            
+            // Initialize tip submission
+            initTipSubmission();
             
             // Restore scroll position and music state on page refresh
             restorePageState();
@@ -9061,6 +10217,205 @@
         }
     </script>
     
+    <!-- Floating Stars for Newsletter Section -->
+    <script>
+        function initNewsletterStars() {
+            const starsContainer = document.getElementById('newsletterStars');
+            if (!starsContainer) return;
+            
+            // Number of stars to create - many small beams of light
+            const starCount = 120;
+            const starSizes = ['star-small', 'star-medium', 'star-large'];
+            
+            // Weighted distribution - more small stars
+            const getRandomSize = () => {
+                const rand = Math.random();
+                if (rand < 0.6) return 'star-small';  // 60% small
+                if (rand < 0.85) return 'star-medium'; // 25% medium
+                return 'star-large'; // 15% large
+            };
+            
+            // Create stars
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'floating-star';
+                
+                // Random size with weighted distribution
+                const size = getRandomSize();
+                star.classList.add(size);
+                
+                // Random starting position
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                
+                // Random animation delay and duration variation
+                const delay = Math.random() * 3;
+                const duration = 8 + Math.random() * 7; // 8-15 seconds
+                star.style.animationDelay = delay + 's';
+                star.style.animationDuration = duration + 's';
+                
+                starsContainer.appendChild(star);
+            }
+        }
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initNewsletterStars);
+        } else {
+            initNewsletterStars();
+        }
+        
+        // Make beams of light interactive like stars
+        function initInteractiveBeams() {
+            // Wait for beams to be created
+            const checkForBeams = () => {
+                const beams = document.querySelectorAll('.floating-star');
+                if (beams.length === 0) {
+                    // Retry if beams aren't ready yet
+                    setTimeout(checkForBeams, 200);
+                    return;
+                }
+                
+                console.log(`Found ${beams.length} beams to make interactive`);
+                
+                // Configuration
+                const INTERACTION_DISTANCE = 80; // pixels - how close mouse needs to be
+                const REPULSION_FORCE = 25; // pixels - how far beams move away
+                const LARGE_BEAM_DISTANCE = 100; // pixels - larger distance for bigger beams
+                const LARGE_BEAM_REPULSION = 35; // pixels - larger movement for bigger beams
+                
+                // Store original states
+                const beamStates = new Map();
+                beams.forEach(beam => {
+                    beamStates.set(beam, {
+                        isLarge: beam.classList.contains('star-large'),
+                        isMedium: beam.classList.contains('star-medium')
+                    });
+                });
+                
+                // Get beam's current position
+                function getBeamPosition(beam) {
+                    const rect = beam.getBoundingClientRect();
+                    return {
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2,
+                        width: rect.width,
+                        height: rect.height
+                    };
+                }
+                
+                // Calculate distance between two points
+                function getDistance(x1, y1, x2, y2) {
+                    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                }
+                
+                // Reset all beams
+                function resetAllBeams() {
+                    beams.forEach(beam => {
+                        beam.style.setProperty('--interactive-x', '0px');
+                        beam.style.setProperty('--interactive-y', '0px');
+                        beam.style.filter = '';
+                        // Don't reset opacity, let animation handle it
+                    });
+                }
+                
+                // Handle mouse movement
+                function handleMouseMove(e) {
+                    const mouseX = e.clientX;
+                    const mouseY = e.clientY;
+                    
+                    beams.forEach(beam => {
+                        const beamPos = getBeamPosition(beam);
+                        const distance = getDistance(mouseX, mouseY, beamPos.x, beamPos.y);
+                        const state = beamStates.get(beam);
+                        
+                        if (!state) return;
+                        
+                        // Determine interaction distance and force based on size
+                        const interactionDist = state.isLarge ? LARGE_BEAM_DISTANCE : 
+                                              state.isMedium ? 90 : INTERACTION_DISTANCE;
+                        const repulsion = state.isLarge ? LARGE_BEAM_REPULSION :
+                                        state.isMedium ? 30 : REPULSION_FORCE;
+                        
+                        if (distance < interactionDist) {
+                            const angle = Math.atan2(beamPos.y - mouseY, beamPos.x - mouseX);
+                            const force = (1 - distance / interactionDist) * repulsion;
+                            const deltaX = Math.cos(angle) * force;
+                            const deltaY = Math.sin(angle) * force;
+                            
+                            // Use CSS custom properties that work with the animation
+                            beam.style.setProperty('--interactive-x', `${deltaX}px`);
+                            beam.style.setProperty('--interactive-y', `${deltaY}px`);
+                            beam.style.filter = 'brightness(1.5) drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))';
+                            
+                            // Enhance opacity based on current animation opacity
+                            const currentOpacity = parseFloat(window.getComputedStyle(beam).opacity) || 0;
+                            if (currentOpacity > 0) {
+                                if (state.isLarge) {
+                                    beam.style.opacity = Math.min(1, currentOpacity * 1.4);
+                                } else if (state.isMedium) {
+                                    beam.style.opacity = Math.min(1, currentOpacity * 1.3);
+                                } else {
+                                    beam.style.opacity = Math.min(1, currentOpacity * 1.25);
+                                }
+                            }
+                        } else {
+                            // Reset interactive offset but keep animation
+                            beam.style.setProperty('--interactive-x', '0px');
+                            beam.style.setProperty('--interactive-y', '0px');
+                            beam.style.filter = '';
+                            beam.style.opacity = '';
+                        }
+                    });
+                }
+                
+                // Initialize interactions - attach to document for broader coverage
+                function init() {
+                    // Attach to document so it works throughout the page
+                    document.addEventListener('mousemove', handleMouseMove);
+                    
+                    // Also attach to newsletter section for mouseleave
+                    const newsletterSection = document.querySelector('.news-cta') || 
+                                             document.getElementById('newsletterStars')?.parentElement ||
+                                             document.querySelector('.newsletter-stars')?.parentElement;
+                    
+                    if (newsletterSection) {
+                        newsletterSection.addEventListener('mouseleave', resetAllBeams);
+                    }
+                    
+                    // Reset when mouse leaves window
+                    document.addEventListener('mouseleave', resetAllBeams);
+                    
+                    console.log('Interactive beams initialized');
+                }
+                
+                init();
+                
+                // Re-initialize on window resize
+                let resizeTimeout;
+                window.addEventListener('resize', () => {
+                    clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(() => {
+                        resetAllBeams();
+                    }, 250);
+                });
+            };
+            
+            // Start checking
+            checkForBeams();
+        }
+        
+        // Initialize interactive beams - run after stars are definitely created
+        // Wait longer to ensure initNewsletterStars has run
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(initInteractiveBeams, 1500);
+            });
+        } else {
+            setTimeout(initInteractiveBeams, 1500);
+        }
+    </script>
+    
     <!-- Noteworthy Chat Widget - Shadow DOM Web Component -->
     <script src="src/widgets/noteworthy-chat.js"></script>
     <script>
@@ -9085,7 +10440,7 @@
     </script>
     
     <!-- X Posts Feed - Load tweets and display as cards -->
-    <script src="/src/components/post-feed.js?v=2.0"></script>
+    <script src="/src/components/post-feed.js?v=3.1"></script>
     <script>
         // Load X posts when page is ready
         document.addEventListener('DOMContentLoaded', function() {

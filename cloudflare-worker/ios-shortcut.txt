@@ -1,0 +1,37 @@
+iOS SHORTCUT SETUP
+==================
+
+1. Open Shortcuts app on your iPhone/iPad
+2. Create a new shortcut
+3. Add these actions in order:
+
+ACTION 1: "Get Contents of URL"
+   - URL: https://x-feed.yourdomain.com/add
+   - Method: POST
+   - Request Body: JSON
+   - JSON Key: "url"
+   - JSON Value: [Use "Shortcut Input" variable - this will be the URL from Safari]
+
+ACTION 2: "Get Variable" (if needed)
+   - Get the "Contents of URL" variable
+
+ACTION 3: "Show Notification"
+   - Title: Feed Update
+   - Body: Check if tweet was added successfully
+
+4. Set shortcut name: "Add to Feed"
+5. Go to Settings > Shortcuts > Allow Untrusted Shortcuts (if needed)
+6. In Safari, when viewing a tweet, tap Share > Shortcuts > "Add to Feed"
+
+ALTERNATIVE: Quick Actions from Safari Share Sheet
+- Tap Share button
+- Scroll to Shortcuts
+- Tap "Add to Feed"
+- Shortcut will use the current page URL automatically
+
+TROUBLESHOOTING:
+- Make sure the Worker URL is correct
+- Check that CORS allows your domain
+- Verify ADMIN_TOKEN if using protected endpoints
+
+

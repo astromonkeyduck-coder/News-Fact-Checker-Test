@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fact-Checking Tips - Noteworthy News</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="IMG_5794.PNG">
+    <meta name="theme-color" content="#0f234a">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overscroll-behavior: none !important;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%);
+            color: white;
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 80%, rgba(74, 144, 226, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(46, 204, 113, 0.1) 0%, transparent 50%);
+            z-index: -1;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding: 40px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(74, 144, 226, 0.2);
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+        
+        .logo a {
+            display: block;
+            width: 100%;
+            height: 100%;
+            text-decoration: none;
+        }
+        
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #4A90E2, #2ECC71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .last-updated {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        .content {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid rgba(74, 144, 226, 0.2);
+        }
+        
+        .content h2 {
+            font-size: 1.8rem;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #4A90E2;
+            border-bottom: 2px solid rgba(74, 144, 226, 0.3);
+            padding-bottom: 10px;
+        }
+        
+        .content h2:first-child {
+            margin-top: 0;
+        }
+        
+        .content h3 {
+            font-size: 1.3rem;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            color: #2ECC71;
+        }
+        
+        .content p {
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.8;
+        }
+        
+        .content ul {
+            margin-left: 30px;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .content ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .content li {
+            margin-bottom: 10px;
+            line-height: 1.8;
+        }
+        
+        .content strong {
+            color: #4A90E2;
+        }
+        
+        .tip-box {
+            background: rgba(46, 204, 113, 0.1);
+            border-left: 4px solid #2ECC71;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 10px;
+        }
+        
+        .tip-box h3 {
+            margin-top: 0;
+            color: #2ECC71;
+        }
+        
+        .warning-box {
+            background: rgba(231, 76, 60, 0.1);
+            border-left: 4px solid #E74C3C;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 10px;
+        }
+        
+        .warning-box h3 {
+            margin-top: 0;
+            color: #E74C3C;
+        }
+        
+        .info-box {
+            background: rgba(74, 144, 226, 0.1);
+            border-left: 4px solid #4A90E2;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 10px;
+        }
+        
+        .info-box p {
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .checklist {
+            background: rgba(155, 89, 182, 0.1);
+            border-left: 4px solid #9B59B6;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 10px;
+        }
+        
+        .checklist h3 {
+            color: #9B59B6;
+            margin-top: 0;
+        }
+        
+        .step-by-step {
+            counter-reset: step-counter;
+            margin: 30px 0;
+        }
+        
+        .step {
+            counter-increment: step-counter;
+            background: rgba(74, 144, 226, 0.1);
+            border-left: 4px solid #4A90E2;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            position: relative;
+        }
+        
+        .step::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: -15px;
+            top: 20px;
+            background: #4A90E2;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        
+        .step h3 {
+            margin-top: 0;
+            padding-left: 25px;
+        }
+        
+        .step p, .step ul {
+            padding-left: 25px;
+        }
+        
+        .footer-link {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px;
+        }
+        
+        .footer-link a {
+            color: #4A90E2;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .footer-link a:hover {
+            color: #2ECC71;
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 25px;
+            }
+            
+            .content h2 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <a href="index.html" aria-label="Go to Noteworthy News homepage">
+                    <img src="IMG_5794.PNG" alt="Noteworthy News Logo">
+                </a>
+            </div>
+            <h1>Fact-Checking Tips</h1>
+            <p class="last-updated">Essential strategies for verifying information</p>
+        </div>
+        
+        <div class="content">
+            <div class="info-box">
+                <p><strong>Why Fact-Check?</strong> In an age of information overload, fact-checking helps you make informed decisions, avoid misinformation, and maintain trust in reliable sources. These tips will help you verify information quickly and effectively.</p>
+            </div>
+            
+            <h2>The Fact-Checking Process</h2>
+            
+            <div class="step-by-step">
+                <div class="step">
+                    <h3>Pause Before Sharing</h3>
+                    <p>Before you share or act on information, take a moment to pause. Ask yourself:</p>
+                    <ul>
+                        <li>Do I know this is true?</li>
+                        <li>Do I know who the original source is?</li>
+                        <li>Have I verified this information?</li>
+                    </ul>
+                </div>
+                
+                <div class="step">
+                    <h3>Check the Source</h3>
+                    <p>Investigate who created and published the information:</p>
+                    <ul>
+                        <li>Is the source credible and reliable?</li>
+                        <li>What is the source's track record?</li>
+                        <li>Are there any conflicts of interest?</li>
+                        <li>Does the source have expertise in this area?</li>
+                    </ul>
+                </div>
+                
+                <div class="step">
+                    <h3>Read Beyond the Headline</h3>
+                    <p>Headlines can be misleading or taken out of context:</p>
+                    <ul>
+                        <li>Read the full article, not just the headline</li>
+                        <li>Look for context and background information</li>
+                        <li>Check if the headline matches the article content</li>
+                    </ul>
+                </div>
+                
+                <div class="step">
+                    <h3>Verify with Multiple Sources</h3>
+                    <p>Don't rely on a single source:</p>
+                    <ul>
+                        <li>Check if other credible sources report the same information</li>
+                        <li>Look for primary sources when possible</li>
+                        <li>Compare reporting across different perspectives</li>
+                        <li>Be skeptical if only one source has the story</li>
+                    </ul>
+                </div>
+                
+                <div class="step">
+                    <h3>Check the Date</h3>
+                    <p>Information can become outdated or be shared out of context:</p>
+                    <ul>
+                        <li>When was this information published?</li>
+                        <li>Is it still current and relevant?</li>
+                        <li>Could old information be presented as new?</li>
+                    </ul>
+                </div>
+                
+                <div class="step">
+                    <h3>Examine Evidence</h3>
+                    <p>Look for supporting evidence:</p>
+                    <ul>
+                        <li>Are claims backed by evidence?</li>
+                        <li>Are sources cited?</li>
+                        <li>Can you verify the evidence yourself?</li>
+                        <li>Is the evidence relevant and sufficient?</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <h2>Red Flags: Warning Signs of Misinformation</h2>
+            
+            <div class="warning-box">
+                <h3>Watch Out For:</h3>
+                <ul>
+                    <li><strong>Emotional Manipulation:</strong> Content designed to trigger strong emotional reactions</li>
+                    <li><strong>Urgency:</strong> Claims that require immediate action without time for verification</li>
+                    <li><strong>Conspiracy Patterns:</strong> Blaming secret groups or claiming cover-ups</li>
+                    <li><strong>Vague Sources:</strong> "Experts say" or "studies show" without specific citations</li>
+                    <li><strong>Too Good to Be True:</strong> Claims that seem extraordinary without strong evidence</li>
+                    <li><strong>Perfect Alignment:</strong> Information that perfectly confirms your existing beliefs</li>
+                    <li><strong>Grammar and Spelling Errors:</strong> While not definitive, many fake sources have poor writing quality</li>
+                    <li><strong>Lack of Author Information:</strong> No byline or author credentials</li>
+                </ul>
+            </div>
+            
+            <h2>Fact-Checking Tools and Techniques</h2>
+            
+            <h3>For News Articles</h3>
+            <ul>
+                <li><strong>Fact-Checking Websites:</strong> Snopes, FactCheck.org, PolitiFact, AP News Fact Check</li>
+                <li><strong>Source Verification:</strong> Check if the publication is known and reputable</li>
+                <li><strong>Author Research:</strong> Look up the author's credentials and previous work</li>
+                <li><strong>Archive Search:</strong> Use Wayback Machine to see if content has been edited</li>
+            </ul>
+            
+            <h3>For Images and Videos</h3>
+            <ul>
+                <li><strong>Reverse Image Search:</strong> Use Google Images or TinEye to find original sources</li>
+                <li><strong>Video Verification:</strong> Check when and where the video was originally posted</li>
+                <li><strong>Metadata Analysis:</strong> Use tools to check image metadata (when possible)</li>
+                <li><strong>Context Check:</strong> Verify if images/videos are being used in original context</li>
+            </ul>
+            
+            <h3>For Social Media Claims</h3>
+            <ul>
+                <li><strong>Profile Verification:</strong> Check if accounts are verified and legitimate</li>
+                <li><strong>Original Source:</strong> Trace claims back to original sources</li>
+                <li><strong>Cross-Platform Check:</strong> See if information appears on other platforms</li>
+                <li><strong>Expert Verification:</strong> Check if experts in the field confirm the claims</li>
+            </ul>
+            
+            <h2>Quick Fact-Check Checklist</h2>
+            
+            <div class="checklist">
+                <h3>Before Sharing Information:</h3>
+                <ol>
+                    <li>✓ Have I read the full article, not just the headline?</li>
+                    <li>✓ Do I know who created this information?</li>
+                    <li>✓ Is the source credible and reliable?</li>
+                    <li>✓ Have I checked this information with other sources?</li>
+                    <li>✓ Is this information current and up-to-date?</li>
+                    <li>✓ Is there evidence supporting these claims?</li>
+                    <li>✓ Does this make logical sense?</li>
+                    <li>✓ Am I being influenced by my emotions or biases?</li>
+                </ol>
+            </div>
+            
+            <h2>Advanced Fact-Checking Techniques</h2>
+            
+            <div class="tip-box">
+                <h3>Lateral Reading</h3>
+                <p>Instead of just reading the article in depth, open multiple tabs to investigate the source, check what others say about it, and verify claims across different sources. This "lateral" approach is more effective than "vertical" reading (just reading one source deeply).</p>
+            </div>
+            
+            <div class="tip-box">
+                <h3>Check Primary Sources</h3>
+                <p>When possible, go to the original source. If an article cites a study, try to find and read the study yourself. If it quotes someone, see if you can find the original statement in context.</p>
+            </div>
+            
+            <div class="tip-box">
+                <h3>Understand the Difference</h3>
+                <ul>
+                    <li><strong>Misinformation:</strong> False information shared unintentionally</li>
+                    <li><strong>Disinformation:</strong> False information shared intentionally to deceive</li>
+                    <li><strong>Malinformation:</strong> True information shared to harm someone</li>
+                </ul>
+            </div>
+            
+            <h2>Common Fact-Checking Scenarios</h2>
+            
+            <h3>Viral Social Media Posts</h3>
+            <ul>
+                <li>Check if the account is verified and authentic</li>
+                <li>Look for the original post and context</li>
+                <li>Verify if images/videos are real and not manipulated</li>
+                <li>Check if experts or official sources confirm the claim</li>
+            </ul>
+            
+            <h3>Breaking News</h3>
+            <ul>
+                <li>Wait for verification from multiple credible sources</li>
+                <li>Be cautious of early reports, which may have inaccuracies</li>
+                <li>Look for official sources (police, government, verified accounts)</li>
+                <li>Avoid sharing unverified breaking news</li>
+            </ul>
+            
+            <h3>Health and Science Claims</h3>
+            <ul>
+                <li>Check if research is peer-reviewed</li>
+                <li>Look for consensus in the scientific community</li>
+                <li>Verify if health claims are supported by medical authorities</li>
+                <li>Be skeptical of "miracle cures" or claims that sound too good to be true</li>
+            </ul>
+            
+            <h2>Building Your Fact-Checking Skills</h2>
+            
+            <p>Fact-checking is a skill that improves with practice:</p>
+            
+            <ul>
+                <li><strong>Practice Regularly:</strong> Fact-check information you encounter daily</li>
+                <li><strong>Learn from Mistakes:</strong> When you share something false, understand why</li>
+                <li><strong>Use Tools:</strong> Familiarize yourself with fact-checking websites and tools</li>
+                <li><strong>Stay Curious:</strong> Question information, especially when it confirms your beliefs</li>
+                <li><strong>Be Humble:</strong> Recognize that verifying information takes time and effort</li>
+            </ul>
+            
+            <div class="info-box">
+                <p><strong>Remember:</strong> It's better to verify before sharing than to spread misinformation. Taking a few minutes to fact-check can prevent the spread of false information and protect others from being misled.</p>
+            </div>
+            
+            <div class="footer-link">
+                <a href="index.html">← Back to Home</a> | <a href="media-literacy-guide.html">Media Literacy Guide</a> | <a href="educational-resources.html">Educational Resources</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Background Music - Shared across all pages -->
+    <audio id="backgroundMusic" preload="metadata">
+        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Second track (plays after first) -->
+    <audio id="backgroundMusicSecond" preload="metadata">
+        <source src="YEAHHHHHH.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Third track (loops after second) -->
+    <audio id="backgroundMusicLoop" preload="metadata" loop>
+        <source src="Audiolandingpage.m4a" type="audio/mp4">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <script src="music-system.js"></script>
+</body>
+</html>
+

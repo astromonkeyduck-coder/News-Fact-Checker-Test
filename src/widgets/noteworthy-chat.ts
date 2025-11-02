@@ -253,91 +253,37 @@ export class NoteworthyChat extends HTMLElement {
           display: block;
         }
         
-        .image-generation-toggle {
-          padding: 10px 14px;
-          border-top: 1px solid rgba(0,0,0,.06);
-          background: rgba(255,255,255,.5);
+        .mode-toggle {
+          background: rgba(255, 255, 255, 0.8);
+          border: 1.5px solid rgba(0, 0, 0, 0.1);
+          color: #1a1a1a;
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          cursor: pointer;
+          font-size: 18px;
           transition: all 0.2s;
-          font-size: 13px;
-          color: #666;
-          gap: 8px;
+          padding: 0;
+          line-height: 1;
+          flex-shrink: 0;
         }
         
-        .image-generation-toggle:hover {
-          background: rgba(212,160,23,.08);
-          color: #1a1a1a;
+        .mode-toggle:hover {
+          background: rgba(255, 255, 255, 1);
+          transform: scale(1.1);
+          border-color: #D4A017;
         }
         
-        .image-generation-toggle.active {
-          background: rgba(212,160,23,.15);
-          color: #1a1a1a;
-          font-weight: 600;
+        .mode-toggle.active {
+          background: rgba(212, 160, 23, 0.2);
+          border-color: #D4A017;
         }
         
-        .image-generation-toggle .icon {
-          font-size: 16px;
-        }
-        
-        .image-generation-section {
-          display: none;
-          padding: 12px 16px;
-          background: rgba(212,160,23,.08);
-          border-top: 1px solid rgba(212,160,23,.2);
-          border-bottom: 1px solid rgba(212,160,23,.2);
-        }
-        
-        .image-generation-section.open {
+        .mode-toggle #modeIcon {
           display: block;
-        }
-        
-        .image-generation-section .info {
-          font-size: 12px;
-          color: #666;
-          margin-bottom: 10px;
-        }
-        
-        .image-generation-section button {
-          width: 100%;
-          padding: 10px 16px;
-          border: 2px solid rgba(212,160,23,.4);
-          border-radius: 8px;
-          background: linear-gradient(135deg, #D4A017 0%, #F4C430 100%);
-          color: #0f0f0f;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-          font-size: 14px;
-        }
-        
-        .image-generation-section button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(212,160,23,.4);
-        }
-        
-        .image-generation-section button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-          transform: none;
-        }
-        
-        .image-loading {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 40px 20px;
-          gap: 12px;
-          color: #666;
-        }
-        
-        .image-loading .spinner {
-          width: 24px;
-          height: 24px;
-          border: 3px solid rgba(212,160,23,.2);
-          border-top-color: #D4A017;
         }
         
         .input { 
@@ -556,19 +502,11 @@ export class NoteworthyChat extends HTMLElement {
         </div>
         
         <div class="input">
+          <button type="button" class="mode-toggle" id="modeToggle" aria-label="Toggle between chat and image generation" title="Click to switch between chat and image generation">
+            <span id="modeIcon">💬</span>
+          </button>
           <input type="text" placeholder="Ask about a story or topic…" aria-label="Your question" id="chatInput" />
-          <button type="button">Send</button>
-        </div>
-        
-        <div class="image-generation-section" id="imageGenerationSection">
-          <div class="info">Enter a description of the image you'd like to generate:</div>
-          <input type="text" id="imagePromptInput" placeholder="e.g., a futuristic cityscape at sunset" style="width: 100%; padding: 10px 14px; border: 1.5px solid rgba(212,160,23,.3); border-radius: 8px; margin-bottom: 10px; font-size: 14px; background: rgba(255,255,255,.9); outline: none;" />
-          <button type="button" id="generateImageBtn">🎨 Generate Image</button>
-        </div>
-        
-        <div class="image-generation-toggle" id="imageGenerationToggle">
-          <span class="icon">🎨</span>
-          <span>Generate Image</span>
+          <button type="button" id="sendButton">Send</button>
         </div>
         
         <div class="resize-handle" aria-label="Resize chat" title="Drag to resize"></div>
@@ -579,28 +517,35 @@ export class NoteworthyChat extends HTMLElement {
     const launcher = this.root.querySelector('.launcher') as HTMLButtonElement;
     const closeBtn = this.root.querySelector('.close') as HTMLButtonElement;
     const input = this.root.querySelector('.input input') as HTMLInputElement;
-    const send = this.root.querySelector('.input button') as HTMLButtonElement;
+    const send = this.root.querySelector('#sendButton') as HTMLButtonElement;
     const body = this.root.querySelector('.body') as HTMLElement;
     const head = this.root.querySelector('.head') as HTMLElement;
     const resizeHandle = this.root.querySelector('.resize-handle') as HTMLElement;
     const tip = this.root.querySelector('.tip') as HTMLElement;
-    const imageGenerationToggle = this.root.querySelector('#imageGenerationToggle') as HTMLElement;
-    const imageGenerationSection = this.root.querySelector('#imageGenerationSection') as HTMLElement;
-    const imagePromptInput = this.root.querySelector('#imagePromptInput') as HTMLInputElement;
-    const generateImageBtn = this.root.querySelector('#generateImageBtn') as HTMLButtonElement;
+    const modeToggle = this.root.querySelector('#modeToggle') as HTMLButtonElement;
+    const modeIcon = this.root.querySelector('#modeIcon') as HTMLElement;
     
-    // Toggle image generation section
-    if (imageGenerationToggle && imageGenerationSection) {
-      imageGenerationToggle.addEventListener('click', () => {
-        const isOpen = imageGenerationSection.classList.contains('open');
-        if (isOpen) {
-          imageGenerationSection.classList.remove('open');
-          imageGenerationToggle.classList.remove('active');
+    // Track current mode: 'chat' or 'image'
+    let currentMode: 'chat' | 'image' = 'chat';
+    
+    // Toggle between chat and image generation modes
+    if (modeToggle && modeIcon) {
+      modeToggle.addEventListener('click', () => {
+        currentMode = currentMode === 'chat' ? 'image' : 'chat';
+        
+        if (currentMode === 'image') {
+          modeIcon.textContent = '🎨';
+          modeToggle.classList.add('active');
+          input.placeholder = 'Describe the image you want to generate…';
+          modeToggle.setAttribute('title', 'Click to switch to chat mode');
         } else {
-          imageGenerationSection.classList.add('open');
-          imageGenerationToggle.classList.add('active');
-          imagePromptInput.focus();
+          modeIcon.textContent = '💬';
+          modeToggle.classList.remove('active');
+          input.placeholder = 'Ask about a story or topic…';
+          modeToggle.setAttribute('title', 'Click to switch to image generation mode');
         }
+        
+        input.focus();
       });
     }
 
@@ -776,11 +721,11 @@ export class NoteworthyChat extends HTMLElement {
     });
 
     // Generate image function
-    async function generateImage() {
-      const prompt = imagePromptInput.value.trim();
-      if (!prompt) return;
-      imagePromptInput.value = '';
-      generateImageBtn.disabled = true;
+    async function generateImage(prompt: string) {
+      if (!prompt || !prompt.trim()) {
+        send.disabled = false;
+        return;
+      }
 
       // Remove tip
       if (tip && tip.parentNode) {
@@ -871,12 +816,6 @@ export class NoteworthyChat extends HTMLElement {
         body.appendChild(aiGroup);
 
         body.scrollTop = body.scrollHeight;
-        
-        // Close the image generation section after successful generation
-        if (imageGenerationSection) {
-          imageGenerationSection.classList.remove('open');
-          imageGenerationToggle.classList.remove('active');
-        }
       } catch (e: any) {
         thinking.remove();
         const aiGroup = document.createElement('div');
@@ -893,21 +832,8 @@ export class NoteworthyChat extends HTMLElement {
         body.appendChild(aiGroup);
         body.scrollTop = body.scrollHeight;
       } finally {
-        generateImageBtn.disabled = false;
+        send.disabled = false;
       }
-    }
-
-    // Generate image button handler
-    if (generateImageBtn) {
-      generateImageBtn.addEventListener('click', generateImage);
-    }
-    
-    if (imagePromptInput) {
-      imagePromptInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !generateImageBtn.disabled) {
-          generateImage();
-        }
-      });
     }
 
     async function ask() {
@@ -919,6 +845,12 @@ export class NoteworthyChat extends HTMLElement {
       // Remove tip
       if (tip && tip.parentNode) {
         tip.style.display = 'none';
+      }
+
+      // Check if we're in image generation mode
+      if (currentMode === 'image') {
+        await generateImage(message);
+        return;
       }
 
       // Show user message with avatar

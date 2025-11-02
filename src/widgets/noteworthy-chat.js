@@ -28,9 +28,9 @@ class NoteworthyChat extends HTMLElement {
           left: 24px; 
           top: 24px; 
           width: 420px; 
-          min-width: 320px;
+          min-width: 360px;
           height: 520px; 
-          min-height: 400px;
+          min-height: 450px;
           max-width: 95vw; 
           max-height: 90vh;
           border-radius: 16px; 
@@ -347,108 +347,36 @@ class NoteworthyChat extends HTMLElement {
           display: block;
         }
         
-        .image-generation-toggle {
-          padding: 10px 14px;
-          border-top: 1px solid rgba(74, 144, 226, 0.1);
-          background: rgba(30, 41, 59, 0.6);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s;
-          font-size: 13px;
-          color: rgba(255, 255, 255, 0.7);
-          gap: 8px;
-        }
-        
-        .image-generation-toggle:hover {
-          background: rgba(74, 144, 226, 0.15);
-          color: rgba(255, 255, 255, 0.9);
-        }
-        
-        .image-generation-toggle.active {
-          background: rgba(74, 144, 226, 0.2);
-          color: rgba(255, 255, 255, 0.95);
-          font-weight: 600;
-        }
-        
-        .image-generation-toggle .icon {
-          font-size: 16px;
-        }
-        
-        .image-generation-section {
-          display: none;
-          padding: 12px 16px;
-          background: rgba(74, 144, 226, 0.08);
-          border-top: 1px solid rgba(74, 144, 226, 0.2);
-          border-bottom: 1px solid rgba(74, 144, 226, 0.2);
-        }
-        
-        .image-generation-section.open {
-          display: block;
-        }
-        
-        .image-generation-section .info {
-          font-size: 12px;
-          color: rgba(255, 255, 255, 0.6);
-          margin-bottom: 10px;
-        }
-        
-        .image-generation-section input {
-          width: 100%;
-          padding: 10px 14px;
-          border: 1.5px solid rgba(74, 144, 226, 0.3);
-          border-radius: 8px;
-          margin-bottom: 10px;
-          font-size: 14px;
-          background: rgba(30, 41, 59, 0.7);
-          color: rgba(255, 255, 255, 0.9);
-          outline: none;
-        }
-        
-        .image-generation-section input:focus {
-          border-color: rgba(74, 144, 226, 0.6);
-          background: rgba(30, 41, 59, 0.9);
-        }
-        
-        .image-generation-section button {
-          width: 100%;
-          padding: 10px 16px;
-          border: 2px solid rgba(74, 144, 226, 0.4);
-          border-radius: 8px;
-          background: linear-gradient(135deg, rgba(74, 144, 226, 0.9) 0%, rgba(58, 112, 192, 0.9) 100%);
+        .mode-toggle {
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
           color: #fff;
-          font-weight: 600;
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
           cursor: pointer;
-          transition: all 0.2s;
-          font-size: 14px;
-        }
-        
-        .image-generation-section button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
-        }
-        
-        .image-generation-section button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-          transform: none;
-        }
-        
-        .image-loading {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 40px 20px;
-          gap: 12px;
-          color: rgba(255, 255, 255, 0.6);
+          font-size: 18px;
+          transition: all 0.2s;
+          padding: 0;
+          line-height: 1;
+          flex-shrink: 0;
         }
         
-        .image-loading .spinner {
-          width: 24px;
-          height: 24px;
-          border: 3px solid rgba(74, 144, 226, 0.2);
-          border-top-color: rgba(74, 144, 226, 0.8);
+        .mode-toggle:hover {
+          background: rgba(255, 255, 255, 0.2);
+          transform: scale(1.1);
+        }
+        
+        .mode-toggle.active {
+          background: rgba(74, 144, 226, 0.3);
+          border-color: #4A90E2;
+        }
+        
+        .mode-toggle #modeIcon {
+          display: block;
         }
         
         .input { 
@@ -615,19 +543,42 @@ class NoteworthyChat extends HTMLElement {
           display: flex;
           align-items: center;
           gap: 12px;
-          padding: 12px 0;
-          color: rgba(255, 255, 255, 0.6);
+          padding: 14px 16px;
+          background: rgba(74, 144, 226, 0.1);
+          border: 1px solid rgba(74, 144, 226, 0.3);
+          border-radius: 12px;
+          color: rgba(255, 255, 255, 0.9);
           font-size: 14px;
+          font-weight: 500;
+          box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2);
+        }
+        
+        .thinking.generating-image {
+          background: rgba(74, 144, 226, 0.15);
+          border-color: rgba(74, 144, 226, 0.4);
+          color: rgba(255, 255, 255, 0.95);
+          box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+        }
+        
+        .thinking.generating-image .spinner {
+          border-color: rgba(74, 144, 226, 0.2);
+          border-bottom-color: rgba(74, 144, 226, 0.9);
         }
         
         .spinner {
           display: inline-block;
-          width: 18px;
-          height: 18px;
+          width: 20px;
+          height: 20px;
           border-radius: 50%;
           border: 3px solid rgba(74, 144, 226, 0.2);
-          border-bottom-color: rgba(74, 144, 226, 0.8);
+          border-bottom-color: rgba(74, 144, 226, 0.9);
           animation: spin .8s linear infinite;
+          flex-shrink: 0;
+        }
+        
+        .thinking-icon {
+          font-size: 18px;
+          flex-shrink: 0;
         }
         
         .error {
@@ -668,18 +619,31 @@ class NoteworthyChat extends HTMLElement {
           to { transform: rotate(360deg); } 
         }
         
+        @keyframes image-pulse-glow {
+          0%, 100% { 
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+          }
+          50% { 
+            box-shadow: 0 2px 12px rgba(74, 144, 226, 0.5), 0 0 8px rgba(74, 144, 226, 0.4);
+          }
+        }
+        
+        .thinking.generating-image {
+          animation: image-pulse-glow 2s ease-in-out infinite;
+        }
+        
         @media (max-width: 768px) {
           .wrap {
             width: 90vw !important;
             max-width: 400px !important;
             height: 60vh !important;
             max-height: 500px !important;
-            min-height: 400px !important;
+            min-height: 450px !important;
             left: 50% !important;
             top: 50% !important;
             transform: translate(-50%, -50%) !important;
             border-radius: 16px !important;
-            min-width: 320px !important;
+            min-width: 360px !important;
           }
           
           .launcher {
@@ -722,7 +686,7 @@ class NoteworthyChat extends HTMLElement {
             max-width: 360px !important;
             height: 55vh !important;
             max-height: 450px !important;
-            min-height: 350px !important;
+            min-height: 420px !important;
             transform: translate(-50%, -50%) !important;
           }
           
@@ -756,6 +720,250 @@ class NoteworthyChat extends HTMLElement {
             max-height: 85vh;
           }
         }
+        
+        /* Tutorial Modal Styles */
+        .tutorial-overlay {
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.75);
+          backdrop-filter: blur(4px);
+          z-index: 10000;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          animation: fadeIn 0.3s ease;
+        }
+        
+        .tutorial-overlay.show {
+          display: flex;
+        }
+        
+        .tutorial-modal {
+          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+          border: 2px solid rgba(74, 144, 226, 0.4);
+          border-radius: 20px;
+          max-width: 600px;
+          width: 100%;
+          max-height: 85vh;
+          overflow-y: auto;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
+                      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+          animation: slideUp 0.3s ease;
+        }
+        
+        .tutorial-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 24px 28px;
+          border-bottom: 1px solid rgba(74, 144, 226, 0.2);
+        }
+        
+        .tutorial-header h2 {
+          margin: 0;
+          color: #fff;
+          font-size: 24px;
+          font-weight: 700;
+        }
+        
+        .tutorial-close {
+          background: transparent;
+          border: none;
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 32px;
+          line-height: 1;
+          cursor: pointer;
+          padding: 0;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          transition: all 0.2s ease;
+        }
+        
+        .tutorial-close:hover {
+          background: rgba(255, 107, 107, 0.2);
+          color: #ff6b6b;
+          transform: rotate(90deg);
+        }
+        
+        .tutorial-content {
+          padding: 24px 28px;
+        }
+        
+        .tutorial-step {
+          margin-bottom: 28px;
+          padding: 20px;
+          background: rgba(74, 144, 226, 0.08);
+          border: 1px solid rgba(74, 144, 226, 0.2);
+          border-radius: 12px;
+          transition: all 0.3s ease;
+        }
+        
+        .tutorial-step:hover {
+          background: rgba(74, 144, 226, 0.12);
+          border-color: rgba(74, 144, 226, 0.4);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+        }
+        
+        .tutorial-step:last-of-type {
+          margin-bottom: 0;
+        }
+        
+        .tutorial-icon {
+          font-size: 36px;
+          margin-bottom: 12px;
+          display: inline-block;
+        }
+        
+        .tutorial-step h3 {
+          margin: 0 0 10px 0;
+          color: #fff;
+          font-size: 18px;
+          font-weight: 600;
+        }
+        
+        .tutorial-step p {
+          margin: 0 0 12px 0;
+          color: rgba(255, 255, 255, 0.85);
+          font-size: 14px;
+          line-height: 1.6;
+        }
+        
+        .tutorial-example {
+          background: rgba(46, 204, 113, 0.1);
+          border-left: 3px solid rgba(46, 204, 113, 0.5);
+          padding: 10px 14px;
+          border-radius: 6px;
+          margin-top: 10px;
+          font-size: 13px;
+          color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .tutorial-example strong {
+          color: rgba(46, 204, 113, 0.9);
+        }
+        
+        .tutorial-tip {
+          background: rgba(74, 144, 226, 0.15);
+          border: 1px solid rgba(74, 144, 226, 0.3);
+          border-radius: 12px;
+          padding: 16px 20px;
+          margin-top: 20px;
+          font-size: 14px;
+          color: rgba(255, 255, 255, 0.9);
+          line-height: 1.6;
+        }
+        
+        .tutorial-tip strong {
+          color: rgba(74, 144, 226, 0.9);
+        }
+        
+        .tutorial-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px 28px;
+          border-top: 1px solid rgba(74, 144, 226, 0.2);
+          gap: 16px;
+        }
+        
+        .tutorial-checkbox {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 13px;
+          cursor: pointer;
+        }
+        
+        .tutorial-checkbox input[type="checkbox"] {
+          width: 18px;
+          height: 18px;
+          cursor: pointer;
+          accent-color: rgba(74, 144, 226, 0.8);
+        }
+        
+        .tutorial-btn-primary {
+          background: linear-gradient(135deg, rgba(74, 144, 226, 0.9), rgba(46, 204, 113, 0.9));
+          border: none;
+          color: #fff;
+          padding: 12px 28px;
+          border-radius: 10px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+        }
+        
+        .tutorial-btn-primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(74, 144, 226, 0.4);
+        }
+        
+        .tutorial-btn-primary:active {
+          transform: translateY(0);
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .tutorial-modal {
+            max-width: 100%;
+            border-radius: 16px;
+            max-height: 90vh;
+          }
+          
+          .tutorial-header {
+            padding: 20px;
+          }
+          
+          .tutorial-header h2 {
+            font-size: 20px;
+          }
+          
+          .tutorial-content {
+            padding: 20px;
+          }
+          
+          .tutorial-step {
+            padding: 16px;
+            margin-bottom: 20px;
+          }
+          
+          .tutorial-footer {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 16px 20px;
+          }
+          
+          .tutorial-btn-primary {
+            width: 100%;
+            margin-top: 8px;
+          }
+        }
       </style>
       
       <button class="launcher" aria-label="Open Noteworthy AI">
@@ -786,22 +994,66 @@ class NoteworthyChat extends HTMLElement {
         </div>
         
         <div class="input">
+          <button type="button" class="mode-toggle" id="modeToggle" aria-label="Toggle between chat and image generation" title="Click to switch between chat and image generation">
+            <span id="modeIcon">💬</span>
+          </button>
           <input type="text" placeholder="Ask about a story or topic…" aria-label="Your question" id="chatInput" />
-          <button type="button">Send</button>
-        </div>
-        
-        <div class="image-generation-section" id="imageGenerationSection">
-          <div class="info">Enter a description of the image you'd like to generate:</div>
-          <input type="text" id="imagePromptInput" placeholder="e.g., a futuristic cityscape at sunset" />
-          <button type="button" id="generateImageBtn">🎨 Generate Image</button>
-        </div>
-        
-        <div class="image-generation-toggle" id="imageGenerationToggle">
-          <span class="icon">🎨</span>
-          <span>Generate Image</span>
+          <button type="button" id="sendButton">Send</button>
         </div>
         
         <div class="resize-handle" aria-label="Resize chat" title="Drag to resize"></div>
+      </div>
+      
+      <!-- Tutorial Modal -->
+      <div class="tutorial-overlay" id="tutorialOverlay" role="dialog" aria-label="Tutorial" aria-modal="true">
+        <div class="tutorial-modal">
+          <div class="tutorial-header">
+            <h2>🎓 Welcome to Noteworthy AI!</h2>
+            <button class="tutorial-close" aria-label="Close tutorial">×</button>
+          </div>
+          <div class="tutorial-content">
+            <div class="tutorial-step">
+              <div class="tutorial-icon">💬</div>
+              <h3>Chat Mode</h3>
+              <p>Ask questions about news, headlines, or get fact-checks. Click the chat icon (💬) to stay in chat mode.</p>
+              <div class="tutorial-example">
+                <strong>Try:</strong> "What's the latest on the breaking news about..."
+              </div>
+            </div>
+            
+            <div class="tutorial-step">
+              <div class="tutorial-icon">🎨</div>
+              <h3>Image Generation</h3>
+              <p>Click the image icon (🎨) to switch to image mode. Describe what you want to see, and AI will create it!</p>
+              <div class="tutorial-example">
+                <strong>Try:</strong> "A futuristic cityscape at sunset"
+              </div>
+            </div>
+            
+            <div class="tutorial-step">
+              <div class="tutorial-icon">🔊</div>
+              <h3>Audio Feature</h3>
+              <p>Toggle audio (🔊) to hear AI responses read aloud. Click to turn audio on or off.</p>
+            </div>
+            
+            <div class="tutorial-step">
+              <div class="tutorial-icon">🎤</div>
+              <h3>Voice Input</h3>
+              <p>Click the microphone (🎤) to speak your questions instead of typing. Great for hands-free use!</p>
+            </div>
+            
+            <div class="tutorial-tip">
+              <strong>💡 Pro Tip:</strong> You can resize the chat window by dragging the bottom-right corner!
+            </div>
+          </div>
+          <div class="tutorial-footer">
+            <label class="tutorial-checkbox">
+              <input type="checkbox" id="dontShowAgain" />
+              <span>Don't show this again</span>
+            </label>
+            <button class="tutorial-btn-primary" id="tutorialGotIt">Got it!</button>
+          </div>
+        </div>
       </div>
     `;
 
@@ -809,15 +1061,16 @@ class NoteworthyChat extends HTMLElement {
     const launcher = this.root.querySelector('.launcher');
     const closeBtn = this.root.querySelector('.close');
     const input = this.root.querySelector('.input input');
-    const send = this.root.querySelector('.input button');
+    const send = this.root.querySelector('#sendButton');
     const body = this.root.querySelector('.body');
     const head = this.root.querySelector('.head');
     const resizeHandle = this.root.querySelector('.resize-handle');
     const tip = this.root.querySelector('.tip');
-    const imageGenerationToggle = this.root.querySelector('#imageGenerationToggle');
-    const imageGenerationSection = this.root.querySelector('#imageGenerationSection');
-    const imagePromptInput = this.root.querySelector('#imagePromptInput');
-    const generateImageBtn = this.root.querySelector('#generateImageBtn');
+    const modeToggle = this.root.querySelector('#modeToggle');
+    const modeIcon = this.root.querySelector('#modeIcon');
+    
+    // Track current mode: 'chat' or 'image'
+    let currentMode = 'chat';
     const audioToggle = this.root.querySelector('#audioToggle');
     const voiceInputToggle = this.root.querySelector('#voiceInputToggle');
     
@@ -1013,18 +1266,24 @@ class NoteworthyChat extends HTMLElement {
       }, { once: true });
     }
     
-    // Toggle image generation section
-    if (imageGenerationToggle && imageGenerationSection) {
-      imageGenerationToggle.addEventListener('click', () => {
-        const isOpen = imageGenerationSection.classList.contains('open');
-        if (isOpen) {
-          imageGenerationSection.classList.remove('open');
-          imageGenerationToggle.classList.remove('active');
+    // Toggle between chat and image generation modes
+    if (modeToggle && modeIcon) {
+      modeToggle.addEventListener('click', () => {
+        currentMode = currentMode === 'chat' ? 'image' : 'chat';
+        
+        if (currentMode === 'image') {
+          modeIcon.textContent = '🎨';
+          modeToggle.classList.add('active');
+          input.placeholder = 'Describe the image you want to generate…';
+          modeToggle.setAttribute('title', 'Click to switch to chat mode');
         } else {
-          imageGenerationSection.classList.add('open');
-          imageGenerationToggle.classList.add('active');
-          imagePromptInput.focus();
+          modeIcon.textContent = '💬';
+          modeToggle.classList.remove('active');
+          input.placeholder = 'Ask about a story or topic…';
+          modeToggle.setAttribute('title', 'Click to switch to image generation mode');
         }
+        
+        input.focus();
       });
     }
 
@@ -1035,9 +1294,13 @@ class NoteworthyChat extends HTMLElement {
     };
 
     const setSize = (w, h) => {
+      // Minimum sizes to ensure all buttons and UI elements remain visible
+      const MIN_WIDTH = 360;  // Enough for mode toggle + input + send button + padding
+      const MIN_HEIGHT = 450; // Enough for header + body + input area + padding
+      
       this.size = { 
-        w: Math.max(320, Math.min(w, window.innerWidth - 48)), 
-        h: Math.max(400, Math.min(h, window.innerHeight - 48)) 
+        w: Math.max(MIN_WIDTH, Math.min(w, window.innerWidth - 48)), 
+        h: Math.max(MIN_HEIGHT, Math.min(h, window.innerHeight - 48)) 
       };
       wrap.style.width = this.size.w + 'px';
       wrap.style.height = this.size.h + 'px';
@@ -1092,14 +1355,20 @@ class NoteworthyChat extends HTMLElement {
       const w = window.innerWidth;
       const h = window.innerHeight;
       
+      // Calculate maximum sizes based on window and position
       const maxW = w - this.pos.x - 12;
       const maxH = h - this.pos.y - 12;
       
-      setSize(
-        Math.min(newW, maxW),
-        Math.min(newH, maxH)
-      );
+      // Enforce minimum sizes (setSize will also enforce, but we do it here for clarity)
+      const MIN_WIDTH = 360;
+      const MIN_HEIGHT = 450;
       
+      const constrainedW = Math.max(MIN_WIDTH, Math.min(newW, maxW));
+      const constrainedH = Math.max(MIN_HEIGHT, Math.min(newH, maxH));
+      
+      setSize(constrainedW, constrainedH);
+      
+      // Adjust position if needed to keep widget on screen
       if (this.pos.x + this.size.w > w - 12) {
         setPos(w - 12 - this.size.w, this.pos.y);
       }
@@ -1175,12 +1444,123 @@ class NoteworthyChat extends HTMLElement {
       if (t) startResize(t.clientX, t.clientY);
     }, { passive: false });
 
+    // Tutorial functionality
+    const tutorialOverlay = this.root.querySelector('#tutorialOverlay');
+    const tutorialClose = this.root.querySelector('.tutorial-close');
+    const tutorialGotIt = this.root.querySelector('#tutorialGotIt');
+    const dontShowAgain = this.root.querySelector('#dontShowAgain');
+    const helpBtn = document.createElement('button');
+    
+    // Check if tutorial should be shown
+    const shouldShowTutorial = () => {
+      const dontShow = localStorage.getItem('noteworthy-ai-tutorial-dismissed') === 'true';
+      return !dontShow;
+    };
+    
+    // Show tutorial
+    const showTutorial = () => {
+      if (tutorialOverlay) {
+        tutorialOverlay.classList.add('show');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+      }
+    };
+    
+    // Hide tutorial
+    const hideTutorial = (savePreference = false) => {
+      if (tutorialOverlay) {
+        tutorialOverlay.classList.remove('show');
+        document.body.style.overflow = ''; // Restore scrolling
+        
+        if (savePreference && dontShowAgain && dontShowAgain.checked) {
+          localStorage.setItem('noteworthy-ai-tutorial-dismissed', 'true');
+        }
+      }
+    };
+    
+    // Add help button to header
+    helpBtn.className = 'help-btn';
+    helpBtn.innerHTML = '❓';
+    helpBtn.setAttribute('aria-label', 'Show tutorial');
+    helpBtn.title = 'How to use Noteworthy AI';
+    helpBtn.style.cssText = `
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      margin-right: 8px;
+    `;
+    helpBtn.onmouseenter = () => {
+      helpBtn.style.background = 'rgba(74, 144, 226, 0.2)';
+      helpBtn.style.color = 'rgba(74, 144, 226, 0.9)';
+      helpBtn.style.transform = 'scale(1.1)';
+    };
+    helpBtn.onmouseleave = () => {
+      helpBtn.style.background = 'transparent';
+      helpBtn.style.color = 'rgba(255, 255, 255, 0.7)';
+      helpBtn.style.transform = 'scale(1)';
+    };
+    helpBtn.onclick = (e) => {
+      e.stopPropagation();
+      showTutorial();
+    };
+    
+    // Insert help button before close button
+    const headRight = this.root.querySelector('.head-right');
+    if (headRight && closeBtn) {
+      headRight.insertBefore(helpBtn, closeBtn);
+    }
+    
+    // Tutorial event handlers
+    if (tutorialClose) {
+      tutorialClose.onclick = () => hideTutorial(false);
+    }
+    
+    if (tutorialGotIt) {
+      tutorialGotIt.onclick = () => hideTutorial(true);
+    }
+    
+    // Close tutorial on overlay click (but not on modal click)
+    if (tutorialOverlay) {
+      tutorialOverlay.onclick = (e) => {
+        if (e.target === tutorialOverlay) {
+          hideTutorial(false);
+        }
+      };
+    }
+    
+    // Close tutorial on Escape key (updated handler)
+    const escapeHandler = (e) => {
+      if (e.key === 'Escape') {
+        if (tutorialOverlay && tutorialOverlay.classList.contains('show')) {
+          hideTutorial(false);
+          return;
+        }
+        if (wrap.classList.contains('open')) {
+          wrap.classList.remove('open');
+          launcher.setAttribute('aria-expanded', 'false');
+        }
+      }
+    };
+    document.addEventListener('keydown', escapeHandler);
+
     // Toggle open/close
     launcher.onclick = () => {
       wrap.classList.toggle('open');
       if (wrap.classList.contains('open')) {
         launcher.setAttribute('aria-expanded', 'true');
         input.focus();
+        
+        // Show tutorial on first open if not dismissed
+        if (shouldShowTutorial()) {
+          // Small delay to let the chat open first
+          setTimeout(() => {
+            showTutorial();
+          }, 300);
+        }
       } else {
         launcher.setAttribute('aria-expanded', 'false');
       }
@@ -1191,20 +1571,12 @@ class NoteworthyChat extends HTMLElement {
       launcher.setAttribute('aria-expanded', 'false');
     };
 
-    // Escape key to close
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && wrap.classList.contains('open')) {
-        wrap.classList.remove('open');
-        launcher.setAttribute('aria-expanded', 'false');
-      }
-    });
-
     // Generate image function
-    async function generateImage() {
-      const prompt = imagePromptInput.value.trim();
-      if (!prompt) return;
-      imagePromptInput.value = '';
-      generateImageBtn.disabled = true;
+    async function generateImage(prompt) {
+      if (!prompt || !prompt.trim()) {
+        send.disabled = false;
+        return;
+      }
 
       // Remove tip
       if (tip && tip.parentNode) {
@@ -1223,16 +1595,33 @@ class NoteworthyChat extends HTMLElement {
       body.appendChild(userGroup);
       body.scrollTop = body.scrollHeight;
 
-      // Show thinking indicator
+      // Update header to show image generation mode
+      const subText = this.root.querySelector('.sub');
+      let originalSub = null;
+      if (subText) {
+        originalSub = subText.textContent;
+        subText.textContent = '🎨 Generating Image…';
+        subText.style.color = 'rgba(74, 144, 226, 0.9)';
+        subText.style.fontWeight = '700';
+      }
+      
+      // Show thinking indicator with distinctive styling for image generation
       const thinking = document.createElement('div');
+      
+      // Store original subtitle for restoration
+      if (originalSub) {
+        thinking._originalSub = originalSub;
+      }
       thinking.className = 'message-group ai-msg-group';
       thinking.innerHTML = `
           <div class="message-avatar">
           <img src="/IMG_5794.PNG" alt="Noteworthy News" />
         </div>
         <div class="message-content">
-          <div class="thinking">
-            <span class="spinner"></span>Generating image…
+          <div class="thinking generating-image">
+            <span class="thinking-icon">🎨</span>
+            <span class="spinner"></span>
+            <span><strong>Generating Image…</strong> Creating your image with AI</span>
           </div>
         </div>
       `;
@@ -1266,6 +1655,14 @@ class NoteworthyChat extends HTMLElement {
 
         const data = await imageRes.json();
         thinking.remove();
+        
+        // Restore header subtitle
+        const subText = this.root.querySelector('.sub');
+        if (subText && thinking._originalSub) {
+          subText.textContent = thinking._originalSub;
+          subText.style.color = '';
+          subText.style.fontWeight = '';
+        }
 
         // Show image with NW logo
         const aiGroup = document.createElement('div');
@@ -1300,14 +1697,17 @@ class NoteworthyChat extends HTMLElement {
         body.appendChild(aiGroup);
 
         body.scrollTop = body.scrollHeight;
-        
-        // Close the image generation section after successful generation
-        if (imageGenerationSection) {
-          imageGenerationSection.classList.remove('open');
-          imageGenerationToggle.classList.remove('active');
-        }
       } catch (e) {
         thinking.remove();
+        
+        // Restore header subtitle on error
+        const subText = this.root.querySelector('.sub');
+        if (subText && thinking && thinking._originalSub) {
+          subText.textContent = thinking._originalSub;
+          subText.style.color = '';
+          subText.style.fontWeight = '';
+        }
+        
         const aiGroup = document.createElement('div');
         aiGroup.className = 'message-group ai-msg-group';
         const err = document.createElement('div');
@@ -1324,21 +1724,8 @@ class NoteworthyChat extends HTMLElement {
         body.appendChild(aiGroup);
         body.scrollTop = body.scrollHeight;
       } finally {
-        generateImageBtn.disabled = false;
+        send.disabled = false;
       }
-    }
-
-    // Generate image button handler
-    if (generateImageBtn) {
-      generateImageBtn.addEventListener('click', generateImage);
-    }
-    
-    if (imagePromptInput) {
-      imagePromptInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !generateImageBtn.disabled) {
-          generateImage();
-        }
-      });
     }
 
     async function ask() {
@@ -1350,6 +1737,12 @@ class NoteworthyChat extends HTMLElement {
       // Remove tip
       if (tip && tip.parentNode) {
         tip.style.display = 'none';
+      }
+
+      // Check if we're in image generation mode
+      if (currentMode === 'image') {
+        await generateImage(message);
+        return;
       }
 
       // Show user message with avatar
@@ -1364,8 +1757,23 @@ class NoteworthyChat extends HTMLElement {
       body.appendChild(userGroup);
       body.scrollTop = body.scrollHeight;
 
-      // Show thinking indicator with NW logo
+      // Update header to show thinking mode
+      const subText = this.root.querySelector('.sub');
+      let originalSub = null;
+      if (subText) {
+        originalSub = subText.textContent;
+        subText.textContent = '💭 Thinking…';
+        subText.style.color = 'rgba(74, 144, 226, 0.9)';
+        subText.style.fontWeight = '700';
+      }
+      
+      // Show thinking indicator with NW logo - distinctive styling for chat
       const thinking = document.createElement('div');
+      
+      // Store original subtitle for restoration
+      if (originalSub) {
+        thinking._originalSub = originalSub;
+      }
       thinking.className = 'message-group ai-msg-group';
       thinking.innerHTML = `
         <div class="message-avatar">
@@ -1373,7 +1781,9 @@ class NoteworthyChat extends HTMLElement {
         </div>
         <div class="message-content">
           <div class="thinking">
-            <span class="spinner"></span>Thinking…
+            <span class="thinking-icon">💭</span>
+            <span class="spinner"></span>
+            <span><strong>Thinking…</strong> Processing your question</span>
           </div>
         </div>
       `;
@@ -1441,6 +1851,14 @@ class NoteworthyChat extends HTMLElement {
         const data = await res.json();
         console.log('API Success:', { reply: data.reply?.substring(0, 50) + '...' });
         thinking.remove();
+        
+        // Restore header subtitle
+        const subText = this.root.querySelector('.sub');
+        if (subText && thinking._originalSub) {
+          subText.textContent = thinking._originalSub;
+          subText.style.color = '';
+          subText.style.fontWeight = '';
+        }
 
         // Show reply with NW logo
         const aiGroup = document.createElement('div');
@@ -1467,6 +1885,15 @@ class NoteworthyChat extends HTMLElement {
         }
       } catch (e) {
         thinking.remove();
+        
+        // Restore header subtitle on error
+        const subText = this.root.querySelector('.sub');
+        if (subText && thinking._originalSub) {
+          subText.textContent = thinking._originalSub;
+          subText.style.color = '';
+          subText.style.fontWeight = '';
+        }
+        
         const aiGroup = document.createElement('div');
         aiGroup.className = 'message-group ai-msg-group';
         const err = document.createElement('div');

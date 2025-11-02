@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Literacy Guide - Noteworthy News</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="IMG_5794.PNG">
+    <meta name="theme-color" content="#0f234a">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overscroll-behavior: none !important;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%);
+            color: white;
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 80%, rgba(74, 144, 226, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(46, 204, 113, 0.1) 0%, transparent 50%);
+            z-index: -1;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding: 40px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(74, 144, 226, 0.2);
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+        
+        .logo a {
+            display: block;
+            width: 100%;
+            height: 100%;
+            text-decoration: none;
+        }
+        
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #4A90E2, #2ECC71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .last-updated {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        .content {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid rgba(74, 144, 226, 0.2);
+        }
+        
+        .content h2 {
+            font-size: 1.8rem;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #4A90E2;
+            border-bottom: 2px solid rgba(74, 144, 226, 0.3);
+            padding-bottom: 10px;
+        }
+        
+        .content h2:first-child {
+            margin-top: 0;
+        }
+        
+        .content h3 {
+            font-size: 1.3rem;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            color: #2ECC71;
+        }
+        
+        .content p {
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.8;
+        }
+        
+        .content ul {
+            margin-left: 30px;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .content li {
+            margin-bottom: 10px;
+            line-height: 1.8;
+        }
+        
+        .content strong {
+            color: #4A90E2;
+        }
+        
+        .info-box {
+            background: rgba(74, 144, 226, 0.1);
+            border-left: 4px solid #4A90E2;
+            padding: 25px;
+            margin: 30px 0;
+            border-radius: 10px;
+        }
+        
+        .info-box p {
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .tip-box {
+            background: rgba(46, 204, 113, 0.1);
+            border-left: 4px solid #2ECC71;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 10px;
+        }
+        
+        .tip-box h3 {
+            margin-top: 0;
+            color: #2ECC71;
+        }
+        
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .skill-card {
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .skill-card h3 {
+            color: #2ECC71;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            margin-top: 0;
+        }
+        
+        .footer-link {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px;
+        }
+        
+        .footer-link a {
+            color: #4A90E2;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .footer-link a:hover {
+            color: #2ECC71;
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 25px;
+            }
+            
+            .content h2 {
+                font-size: 1.5rem;
+            }
+            
+            .skills-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <a href="index.html" aria-label="Go to Noteworthy News homepage">
+                    <img src="IMG_5794.PNG" alt="Noteworthy News Logo">
+                </a>
+            </div>
+            <h1>Media Literacy Guide</h1>
+            <p class="last-updated">Your comprehensive guide to navigating today's information landscape</p>
+        </div>
+        
+        <div class="content">
+            <div class="info-box">
+                <p><strong>What is Media Literacy?</strong> Media literacy is the ability to access, analyze, evaluate, create, and act using all forms of communication. In an era of information overload, media literacy skills are essential for making informed decisions and participating effectively in a democratic society.</p>
+            </div>
+            
+            <h2>1. Understanding Information Sources</h2>
+            <p>Not all sources are created equal. Learn to identify and evaluate different types of information sources:</p>
+            
+            <div class="tip-box">
+                <h3>Source Types</h3>
+                <ul>
+                    <li><strong>Primary Sources:</strong> Original documents, eyewitness accounts, research studies, official records</li>
+                    <li><strong>Secondary Sources:</strong> Articles, books, or reports that analyze or interpret primary sources</li>
+                    <li><strong>Tertiary Sources:</strong> Summaries, compilations, or collections of information from other sources</li>
+                </ul>
+            </div>
+            
+            <h3>Evaluating Source Credibility</h3>
+            <ul>
+                <li><strong>Authority:</strong> Who created the information? What are their credentials?</li>
+                <li><strong>Accuracy:</strong> Is the information correct? Can it be verified?</li>
+                <li><strong>Objectivity:</strong> Is the source biased? Are multiple perspectives presented?</li>
+                <li><strong>Currency:</strong> When was the information published? Is it up to date?</li>
+                <li><strong>Coverage:</strong> Does the source cover the topic comprehensively?</li>
+            </ul>
+            
+            <h2>2. Recognizing Bias and Perspective</h2>
+            <p>Every piece of information has a perspective. Learn to identify different types of bias:</p>
+            
+            <div class="skills-grid">
+                <div class="skill-card">
+                    <h3>Confirmation Bias</h3>
+                    <p>Tendency to favor information that confirms existing beliefs</p>
+                </div>
+                <div class="skill-card">
+                    <h3>Selection Bias</h3>
+                    <p>Information presented selectively to support a particular view</p>
+                </div>
+                <div class="skill-card">
+                    <h3>Framing</h3>
+                    <p>How information is presented influences perception</p>
+                </div>
+                <div class="skill-card">
+                    <h3>Omission</h3>
+                    <p>Important context or information left out</p>
+                </div>
+            </div>
+            
+            <h3>Questions to Ask</h3>
+            <ul>
+                <li>What perspective is this source presenting?</li>
+                <li>What information might be missing?</li>
+                <li>How might the framing affect my understanding?</li>
+                <li>What would someone with a different perspective say?</li>
+            </ul>
+            
+            <h2>3. Analyzing Visual Media</h2>
+            <p>Images and videos can be powerful tools for communication, but they can also be manipulated or taken out of context:</p>
+            
+            <div class="tip-box">
+                <h3>Visual Literacy Checklist</h3>
+                <ul>
+                    <li>When was the image or video created?</li>
+                    <li>Who created it? What was their purpose?</li>
+                    <li>Has it been edited or manipulated?</li>
+                    <li>Is it being used in the original context?</li>
+                    <li>What emotions or messages is it designed to evoke?</li>
+                </ul>
+            </div>
+            
+            <h2>4. Understanding Social Media Information</h2>
+            <p>Social media platforms present unique challenges for media literacy:</p>
+            
+            <ul>
+                <li><strong>Algorithmic Curation:</strong> Content you see is selected by algorithms, not necessarily what's most important</li>
+                <li><strong>Echo Chambers:</strong> Algorithms may show you content that reinforces your existing views</li>
+                <li><strong>Viral Misinformation:</strong> False information can spread rapidly on social platforms</li>
+                <li><strong>Context Collapse:</strong> Information may be shared without original context</li>
+            </ul>
+            
+            <div class="info-box">
+                <p><strong>Best Practice:</strong> Before sharing information on social media, verify it from reliable sources. Break the chain of misinformation by not sharing unverified content.</p>
+            </div>
+            
+            <h2>5. Critical Thinking Skills</h2>
+            <p>Develop these essential critical thinking skills:</p>
+            
+            <div class="skills-grid">
+                <div class="skill-card">
+                    <h3>Question Everything</h3>
+                    <p>Don't accept information at face value. Ask who, what, when, where, why, and how.</p>
+                </div>
+                <div class="skill-card">
+                    <h3>Seek Multiple Sources</h3>
+                    <p>Verify information across multiple credible sources before accepting it as true.</p>
+                </div>
+                <div class="skill-card">
+                    <h3>Identify Assumptions</h3>
+                    <p>Recognize underlying assumptions and challenge them when necessary.</p>
+                </div>
+                <div class="skill-card">
+                    <h3>Consider Consequences</h3>
+                    <p>Think about the implications of accepting or sharing information.</p>
+                </div>
+            </div>
+            
+            <h2>6. Recognizing Misinformation Patterns</h2>
+            <p>Common patterns in misinformation include:</p>
+            
+            <ul>
+                <li><strong>Emotional Appeals:</strong> Content designed to trigger strong emotions</li>
+                <li><strong>Urgency:</strong> Claims that require immediate action without time for verification</li>
+                <li><strong>Conspiracy Theories:</strong> Complex explanations that attribute events to secret plots</li>
+                <li><strong>Fake Experts:</strong> Use of unqualified or fabricated authorities</li>
+                <li><strong>Logical Fallacies:</strong> Flawed reasoning patterns</li>
+            </ul>
+            
+            <h2>7. Practical Media Literacy Habits</h2>
+            
+            <div class="tip-box">
+                <h3>Daily Practices</h3>
+                <ul>
+                    <li>Verify before you share</li>
+                    <li>Check multiple sources</li>
+                    <li>Read beyond headlines</li>
+                    <li>Consider the source's motivation</li>
+                    <li>Look for primary sources</li>
+                    <li>Check publication dates</li>
+                    <li>Be aware of your own biases</li>
+                </ul>
+            </div>
+            
+            <h2>8. Tools and Resources</h2>
+            <p>Use these tools to enhance your media literacy:</p>
+            
+            <ul>
+                <li><strong>Fact-Checking Websites:</strong> Snopes, FactCheck.org, PolitiFact, AP News Fact Check</li>
+                <li><strong>Reverse Image Search:</strong> Google Images, TinEye to verify image origins</li>
+                <li><strong>Archive Tools:</strong> Wayback Machine to see how content has changed over time</li>
+                <li><strong>News Literacy Resources:</strong> NewsGuard, Media Bias/Fact Check</li>
+            </ul>
+            
+            <h2>9. Teaching Media Literacy</h2>
+            <p>If you're teaching media literacy to others:</p>
+            
+            <ul>
+                <li>Start with basic concepts and build complexity gradually</li>
+                <li>Use real-world examples relevant to your audience</li>
+                <li>Encourage questions and critical thinking</li>
+                <li>Model media literacy practices yourself</li>
+                <li>Create a safe space for exploring different perspectives</li>
+                <li>Focus on skills, not just information</li>
+            </ul>
+            
+            <h2>10. Staying Updated</h2>
+            <p>Media literacy is an ongoing process. The information landscape continues to evolve, and new challenges emerge regularly. Stay informed about:</p>
+            
+            <ul>
+                <li>New types of misinformation and disinformation</li>
+                <li>Changes in how platforms operate</li>
+                <li>Emerging tools and technologies</li>
+                <li>Best practices from media literacy organizations</li>
+                <li>Current events and case studies</li>
+            </ul>
+            
+            <div class="info-box">
+                <p><strong>Remember:</strong> Media literacy is not about being cynical or distrustful of all information. It's about being thoughtful, questioning appropriately, and making informed judgments about what to believe and share.</p>
+            </div>
+            
+            <div class="footer-link">
+                <a href="index.html">← Back to Home</a> | <a href="fact-checking-tips.html">Fact-Checking Tips</a> | <a href="educational-resources.html">Educational Resources</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Background Music - Shared across all pages -->
+    <audio id="backgroundMusic" preload="metadata">
+        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Second track (plays after first) -->
+    <audio id="backgroundMusicSecond" preload="metadata">
+        <source src="YEAHHHHHH.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Third track (loops after second) -->
+    <audio id="backgroundMusicLoop" preload="metadata" loop>
+        <source src="Audiolandingpage.m4a" type="audio/mp4">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <script src="music-system.js"></script>
+</body>
+</html>
+

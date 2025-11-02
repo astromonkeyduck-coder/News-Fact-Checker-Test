@@ -1,0 +1,29 @@
+{
+  "name": "x-feed-worker",
+  "version": "1.0.0",
+  "description": "Dynamic X/Twitter feed worker using oEmbed and Cloudflare KV",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "cloudflare-workers",
+    "twitter",
+    "feed",
+    "kv"
+  ],
+  "author": "Noteworthy News",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240125.0",
+    "typescript": "^5.3.3",
+    "wrangler": "^3.37.0"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^4.20240125.0"
+  }
+}
+
+

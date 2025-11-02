@@ -440,6 +440,13 @@ class NewsNavigation {
                 e.stopPropagation();
                 
                 const targetSection = link.getAttribute("href").substring(1);
+                
+                // Special handling for AI Chat link - open chat widget
+                if (targetSection === 'ai-assistant-section') {
+                    this.openChatWidget();
+                    return;
+                }
+                
                 this.navigateToSection(targetSection);
             });
         });
@@ -478,6 +485,17 @@ class NewsNavigation {
             case "about":
                 this.showAboutContent();
                 break;
+        }
+    }
+
+    openChatWidget() {
+        // Use the global function
+        if (typeof window.openChatWidget === 'function') {
+            window.openChatWidget();
+        } else if (typeof openChatWidget === 'function') {
+            openChatWidget();
+        } else {
+            console.warn('openChatWidget function not available');
         }
     }
 
@@ -535,6 +553,10 @@ class BreakingNewsGame {
         this.isPaused = false;
         this.pauseTimeLeft = 0;
         this.notificationShown = false;
+        // Load AI preference from localStorage, default to true
+        const savedAI = localStorage.getItem('noteworthy_ai_enabled');
+        this.aiEnabled = savedAI !== null ? savedAI === 'true' : true;
+        this.aiLoading = false;
         
         // Create and shuffle questions
         this.questions = this.createAndShuffleQuestions();
@@ -542,6 +564,11 @@ class BreakingNewsGame {
         console.log('First question:', this.questions[0]);
         
         this.initializeGame();
+        
+        // Initialize AI button state after a brief delay to ensure DOM is ready
+        setTimeout(() => {
+            this.updateAIButtonState();
+        }, 100);
     }
     
     createAndShuffleQuestions() {
@@ -1070,10 +1097,34 @@ class BreakingNewsGame {
         this.initLogoAnimation(); // Initialize logo animation with puzzle piece sound
         this.showStartScreen();
         
-        // Add user interaction listener to start music
+        // Sync with global music state
+        const syncMusicState = () => {
+            if (typeof window.getGlobalMusicState === 'function') {
+                const state = window.getGlobalMusicState();
+                this.musicEnabled = state.enabled;
+                this.isMusicPlaying = state.isPlaying;
+            }
+            this.updateMusicButton();
+        };
+        
+        // Sync music state periodically and on events
+        syncMusicState();
+        setInterval(syncMusicState, 2000); // Check every 2 seconds
+        
+        // Listen for music state changes on global audio elements
+        ['play', 'pause', 'ended'].forEach(event => {
+            const bgMusic = document.getElementById('backgroundMusic');
+            if (bgMusic) {
+                bgMusic.addEventListener(event, syncMusicState);
+            }
+        });
+        
+        // Also try to start game's own music if global music isn't available
         const startMusicOnInteraction = () => {
             if (!this.isMusicPlaying && this.musicEnabled) {
-                this.startBackgroundMusic();
+                if (typeof window.toggleGlobalMusic !== 'function') {
+                    this.startBackgroundMusic();
+                }
             }
             document.removeEventListener('click', startMusicOnInteraction);
             document.removeEventListener('touchstart', startMusicOnInteraction);
@@ -1525,13 +1576,67 @@ class BreakingNewsGame {
             });
         }
         
+        // AI toggle functionality
+        const aiToggleBtn = document.getElementById('aiToggleBtn');
+        if (aiToggleBtn) {
+            aiToggleBtn.addEventListener('click', () => {
+                this.playSound('button', 'toggle');
+                this.toggleAI();
+            });
+        }
+        
         // Add hover sounds to all buttons
         this.setupHoverSounds();
     }
     
+    toggleAI() {
+        this.aiEnabled = !this.aiEnabled;
+        localStorage.setItem('noteworthy_ai_enabled', this.aiEnabled.toString());
+        this.updateAIButtonState();
+        
+        // Show notification
+        const notification = document.createElement('div');
+        notification.className = 'ai-notification';
+        notification.textContent = this.aiEnabled 
+            ? '✨ AI-Enhanced explanations enabled!' 
+            : 'AI explanations disabled';
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.classList.add('fade-out');
+            setTimeout(() => notification.remove(), 300);
+        }, 2000);
+    }
+    
+    updateAIButtonState() {
+        const aiToggleBtn = document.getElementById('aiToggleBtn');
+        if (aiToggleBtn) {
+            const icon = aiToggleBtn.querySelector('.btn-icon');
+            const text = aiToggleBtn.querySelector('.btn-text');
+            
+            if (this.aiEnabled) {
+                aiToggleBtn.classList.add('active');
+                if (icon) icon.textContent = '✨';
+                if (text) text.textContent = 'AI On';
+                aiToggleBtn.setAttribute('aria-pressed', 'true');
+            } else {
+                aiToggleBtn.classList.remove('active');
+                if (icon) icon.textContent = '🤖';
+                if (text) text.textContent = 'AI Off';
+                aiToggleBtn.setAttribute('aria-pressed', 'false');
+            }
+        }
+        
+        // Load saved preference
+        const savedPreference = localStorage.getItem('noteworthy_ai_enabled');
+        if (savedPreference !== null) {
+            this.aiEnabled = savedPreference === 'true';
+        }
+    }
+    
     setupHoverSounds() {
         // Get all buttons and add hover sound effects
-        const buttons = document.querySelectorAll('.btn, .tips-toggle-btn, .how-to-play-toggle-btn, .sound-toggle-btn, .music-toggle-btn, .theme-toggle-btn, .pause-toggle-btn, .sidebar-toggle');
+        const buttons = document.querySelectorAll('.btn, .tips-toggle-btn, .how-to-play-toggle-btn, .sound-toggle-btn, .music-toggle-btn, .theme-toggle-btn, .pause-toggle-btn, .ai-toggle-btn, .sidebar-toggle');
         
         buttons.forEach(button => {
             // Desktop hover effect
@@ -1840,7 +1945,8 @@ class BreakingNewsGame {
     }
     
     timeUp() {
-        this.playSound('timer');
+        // Timer sound removed per user request
+        // this.playSound('timer');
         clearInterval(this.timer);
         this.checkAnswer(null); // null means time ran out
     }
@@ -1880,7 +1986,7 @@ class BreakingNewsGame {
         }
     }
     
-    showFeedback(isCorrect, question, timeBonus) {
+    async showFeedback(isCorrect, question, timeBonus) {
         this.gameState = 'feedback';
         this.hideAllScreens();
         
@@ -1890,6 +1996,7 @@ class BreakingNewsGame {
         
         if (!feedbackElement || !titleElement || !textElement) return;
         
+        // Show initial feedback
         if (isCorrect) {
             titleElement.textContent = 'Correct! ✅';
             titleElement.style.color = '#2ecc71';
@@ -1900,7 +2007,7 @@ class BreakingNewsGame {
             textElement.textContent = question.explanation;
         }
         
-        // Update tips
+        // Update tips with standard tips
         const factCheckTips = document.getElementById('factCheckTips');
         if (factCheckTips) {
             factCheckTips.innerHTML = `
@@ -1916,6 +2023,134 @@ class BreakingNewsGame {
         }
         
         feedbackElement.style.display = 'block';
+        
+        // Enhance with AI if enabled
+        if (this.aiEnabled && !this.aiLoading) {
+            this.aiLoading = true;
+            this.enhanceFeedbackWithAI(isCorrect, question, timeBonus).catch(err => {
+                console.error('AI enhancement error:', err);
+                this.aiLoading = false;
+            });
+        }
+    }
+    
+    async enhanceFeedbackWithAI(isCorrect, question, timeBonus) {
+        try {
+            const aiIndicator = document.getElementById('aiIndicator');
+            if (aiIndicator) {
+                aiIndicator.style.display = 'flex';
+                aiIndicator.innerHTML = '<span class="ai-spinner">🤖</span> AI is enhancing your feedback...';
+            }
+            
+            // Get current player stats
+            const playerStats = {
+                score: this.score,
+                streak: this.streak,
+                level: this.level,
+                correctAnswers: this.correctAnswers,
+                totalAnswers: this.totalAnswers,
+                accuracy: this.totalAnswers > 0 ? (this.correctAnswers / this.totalAnswers * 100).toFixed(1) : 0
+            };
+            
+            // Call AI to enhance explanation
+            const response = await fetch('/.netlify/functions/game-ai', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'enhance_explanation',
+                    headline: question.headline,
+                    source: question.source,
+                    isFactual: question.isFactual,
+                    userAnswer: isCorrect,
+                    explanation: question.explanation,
+                    playerStats: playerStats,
+                    category: question.category || 'general'
+                }),
+            });
+            
+            if (!response.ok) {
+                throw new Error('AI service unavailable');
+            }
+            
+            const data = await response.json();
+            
+            if (data.success && data.message) {
+                // Update feedback text with AI-enhanced explanation
+                const textElement = document.getElementById('feedbackText');
+                if (textElement) {
+                    const enhancedText = data.message.trim();
+                    textElement.innerHTML = `
+                        <div class="ai-enhanced-explanation">
+                            ${enhancedText}
+                            ${timeBonus > 0 && isCorrect ? ` <strong>+${timeBonus} bonus points for quick answer!</strong>` : ''}
+                        </div>
+                        <div class="ai-badge">✨ AI-Enhanced Explanation</div>
+                    `;
+                }
+                
+                // Add personalized feedback
+                await this.addPersonalizedFeedback(question, isCorrect, playerStats);
+                
+                // Update AI indicator
+                if (aiIndicator) {
+                    aiIndicator.innerHTML = '<span class="ai-icon">✨</span> AI-Enhanced';
+                    setTimeout(() => {
+                        if (aiIndicator) aiIndicator.style.display = 'none';
+                    }, 3000);
+                }
+            }
+        } catch (error) {
+            console.error('AI enhancement failed:', error);
+            // Silently fail - don't disrupt user experience
+            const aiIndicator = document.getElementById('aiIndicator');
+            if (aiIndicator) {
+                aiIndicator.style.display = 'none';
+            }
+        } finally {
+            this.aiLoading = false;
+        }
+    }
+    
+    async addPersonalizedFeedback(question, isCorrect, playerStats) {
+        try {
+            const response = await fetch('/.netlify/functions/game-ai', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'personalized_feedback',
+                    headline: question.headline,
+                    source: question.source,
+                    isFactual: question.isFactual,
+                    userAnswer: isCorrect,
+                    playerStats: playerStats
+                }),
+            });
+            
+            if (!response.ok) return;
+            
+            const data = await response.json();
+            
+            if (data.success && data.message) {
+                // Add personalized feedback section
+                const factCheckTips = document.getElementById('factCheckTips');
+                if (factCheckTips) {
+                    const personalizedSection = document.createElement('div');
+                    personalizedSection.className = 'ai-personalized-feedback';
+                    personalizedSection.innerHTML = `
+                        <h4>🎯 AI Insight:</h4>
+                        <p>${data.message}</p>
+                    `;
+                    factCheckTips.appendChild(personalizedSection);
+                }
+            }
+        } catch (error) {
+            console.error('Personalized feedback failed:', error);
+            // Silently fail
+        }
     }
     
     nextQuestion() {
@@ -2190,20 +2425,16 @@ class BreakingNewsGame {
         this.generateSoftPop(1500, 35, 0.08); // Very soft and short
     }
     
-    // Generate timer sound
+    // Generate timer sound - DISABLED per user request
     generateTimerSound() {
-        // Create a gentle warning sound
-        setTimeout(() => this.generateKeyboardClick(400, 200, 0.25), 0);
-        setTimeout(() => this.generateKeyboardClick(300, 300, 0.25), 250);
+        // Timer sound completely disabled - no sound will play
+        return;
     }
     
-    // Generate game start sound
+    // Generate game start sound - DISABLED per user request
     generateGameStartSound() {
-        // Play a pleasant startup sequence
-        setTimeout(() => this.generateKeyboardClick(800, 60, 0.15), 0);
-        setTimeout(() => this.generateKeyboardClick(1000, 60, 0.15), 100);
-        setTimeout(() => this.generateKeyboardClick(1200, 60, 0.15), 200);
-        setTimeout(() => this.generateKeyboardClick(1400, 120, 0.2), 300);
+        // Game start sound disabled - no sound will play
+        return;
     }
     
     // Generate game over sound
@@ -2237,9 +2468,11 @@ class BreakingNewsGame {
         // Add audio to document
         document.body.appendChild(this.bgAudio);
         
-        // Restore music state from localStorage
-        this.isMusicPlaying = localStorage.getItem('musicPlaying') === 'true';
-        this.musicEnabled = localStorage.getItem('musicEnabled') !== 'false'; // Default to true
+        // Restore music state from localStorage (check both global and game-specific)
+        const globalMusicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+        const globalMusicPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
+        this.isMusicPlaying = globalMusicPlaying || localStorage.getItem('musicPlaying') === 'true';
+        this.musicEnabled = globalMusicEnabled && localStorage.getItem('musicEnabled') !== 'false'; // Default to true
         
         // If music was playing, start it automatically
         if (this.isMusicPlaying && this.musicEnabled) {
@@ -2354,17 +2587,37 @@ class BreakingNewsGame {
     
     updateMusicButton() {
         const musicBtn = document.getElementById('musicToggleBtn');
-        const icon = musicBtn.querySelector('.btn-icon');
+        if (!musicBtn) return;
         
-        if (this.musicEnabled && this.isMusicPlaying) {
+        const icon = musicBtn.querySelector('.btn-icon');
+        if (!icon) return;
+        
+        // Check global music state if available
+        let isPlaying = false;
+        let enabled = this.musicEnabled;
+        
+        if (typeof window.getGlobalMusicState === 'function') {
+            const state = window.getGlobalMusicState();
+            isPlaying = state.isPlaying;
+            enabled = state.enabled;
+            this.musicEnabled = enabled;
+            this.isMusicPlaying = isPlaying;
+        } else {
+            isPlaying = this.isMusicPlaying;
+        }
+        
+        if (enabled && isPlaying) {
             icon.textContent = '🎵';
             musicBtn.classList.remove('disabled');
-        } else if (this.musicEnabled && !this.isMusicPlaying) {
+            musicBtn.setAttribute('aria-pressed', 'true');
+        } else if (enabled && !isPlaying) {
             icon.textContent = '⏸️';
             musicBtn.classList.remove('disabled');
+            musicBtn.setAttribute('aria-pressed', 'false');
         } else {
             icon.textContent = '🔇';
             musicBtn.classList.add('disabled');
+            musicBtn.setAttribute('aria-pressed', 'false');
         }
     }
     
@@ -2570,8 +2823,8 @@ class BreakingNewsGame {
                     this.generateHoverSound();
                     break;
                 case 'timer':
-                    this.generateTimerSound();
-                    break;
+                    // Timer sound completely disabled per user request
+                    return;
                 case 'gameStart':
                     this.generateGameStartSound();
                     break;
@@ -2601,13 +2854,23 @@ class BreakingNewsGame {
     }
     
     toggleMusic() {
-        this.musicEnabled = !this.musicEnabled;
-        localStorage.setItem('musicEnabled', this.musicEnabled.toString());
-        
-        if (this.musicEnabled) {
-            this.startBackgroundMusic();
+        // Use global music system if available
+        if (typeof window.toggleGlobalMusic === 'function') {
+            const isPlaying = window.toggleGlobalMusic();
+            this.musicEnabled = isPlaying;
+            this.isMusicPlaying = isPlaying;
+            localStorage.setItem('globalMusicEnabled', isPlaying ? 'true' : 'false');
+            localStorage.setItem('globalMusicPlaying', isPlaying ? 'true' : 'false');
         } else {
-            this.stopBackgroundMusic();
+            // Fallback to game's own music system
+            this.musicEnabled = !this.musicEnabled;
+            localStorage.setItem('musicEnabled', this.musicEnabled.toString());
+            
+            if (this.musicEnabled) {
+                this.startBackgroundMusic();
+            } else {
+                this.stopBackgroundMusic();
+            }
         }
         
         this.updateMusicButton();
@@ -2627,11 +2890,11 @@ class BreakingNewsGame {
         console.log('initLogoAnimation called!');
         
         // N and W logos meet in the middle at 2 seconds (0.5s delay + 1.5s animation)
-        // Add a small delay to ensure audio context is ready
-        setTimeout(() => {
-            console.log('Playing puzzle piece sound!');
-            playPuzzlePiece();
-        }, 2500); // Increased to 2.5s to ensure logos have fully met
+        // Puzzle piece sound disabled per user request
+        // setTimeout(() => {
+        //     console.log('Playing puzzle piece sound!');
+        //     playPuzzlePiece();
+        // }, 2500);
     }
     
     toggleTheme() {
@@ -2838,6 +3101,9 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener("DOMContentLoaded", function() {
     console.log("Noteworthy News website initialized successfully!");
     
+    // Make openChatWidget globally available
+    window.openChatWidget = openChatWidget;
+    
     // Initialize authentication system
     window.authSystem = new AuthSystem();
     
@@ -3009,6 +3275,112 @@ function initWelcomeTextCycling() {
     }, CONFIG.ANIMATION_DELAYS.INITIAL_DELAY);
 }
 
+// Welcome location functionality - Automatic IP-based detection (no permission needed)
+function initWelcomeLocation() {
+    const locationElement = document.getElementById('welcomeLocation');
+    if (!locationElement) return;
+    
+    // Get location automatically from IP after a short delay (to let the page settle)
+    setTimeout(() => {
+        getLocationFromIP(locationElement);
+    }, 2000);
+}
+
+function getLocationFromIP(locationElement) {
+    // Use a free IP geolocation service - automatic, no permission required
+    // Show region/state and country for privacy (not specific city)
+    fetch('https://ipapi.co/json/')
+        .then(response => response.json())
+        .then(data => {
+            let locationName = '';
+            
+            // Try multiple possible field names for region/state
+            // ipapi.co uses 'region' for most countries, but some APIs use 'region_name', 'subdivision', 'state', etc.
+            const region = data.region || 
+                          data.region_name || 
+                          data.subdivision || 
+                          data.state || 
+                          data.state_province ||
+                          data.province ||
+                          data.administrative_area_level_1 ||
+                          '';
+            
+            const country = data.country_name || 
+                           data.country || 
+                           '';
+            
+            // Show region/state and country for all countries (not just US)
+            // Format: "Region, Country" or "State, Country"
+            if (region && country) {
+                locationName = `${region}, ${country}`;
+            } else if (country) {
+                // Fallback to just country if no region available
+                locationName = country;
+            } else if (region) {
+                // Fallback to just region if no country (shouldn't happen, but handle it)
+                locationName = region;
+            }
+            
+            if (locationName) {
+                displayLocation(locationElement, locationName);
+            }
+        })
+        .catch(error => {
+            console.log('IP geolocation error:', error);
+            // Try alternative API as fallback
+            tryAlternativeLocationAPI(locationElement);
+        });
+}
+
+function tryAlternativeLocationAPI(locationElement) {
+    // Fallback to ip-api.com if ipapi.co fails (uses HTTPS for mixed content)
+    fetch('https://ip-api.com/json/')
+        .then(response => response.json())
+        .then(data => {
+            let locationName = '';
+            
+            // ip-api.com uses 'regionName' and 'country'
+            // Check multiple possible field names
+            const region = data.regionName || 
+                          data.region || 
+                          data.state || 
+                          data.state_province ||
+                          data.subdivision ||
+                          data.province ||
+                          '';
+            
+            const country = data.country || 
+                           data.countryName || 
+                           '';
+            
+            if (region && country) {
+                locationName = `${region}, ${country}`;
+            } else if (country) {
+                locationName = country;
+            } else if (region) {
+                locationName = region;
+            }
+            
+            if (locationName) {
+                displayLocation(locationElement, locationName);
+            }
+        })
+        .catch(error => {
+            console.log('Alternative IP geolocation also failed:', error);
+            // Silently fail - don't show anything if location can't be determined
+        });
+}
+
+function displayLocation(locationElement, locationName) {
+    if (locationElement && locationName) {
+        locationElement.textContent = `Welcome from ${locationName}`;
+        // Fade in the location text
+        setTimeout(() => {
+            locationElement.classList.add('visible');
+        }, 500);
+    }
+}
+
 // Function to create sparkles around the welcome text
 function createSparkles() {
     const welcomeText = document.getElementById('welcomeText');
@@ -3052,12 +3424,76 @@ function createSparkles() {
     }, 3000);
 }
 
+// Function to open the chat widget (can be called from anywhere)
+function openChatWidget() {
+    // Try to find the chat widget - retry if not immediately available
+    let chatWidget = document.querySelector('noteworthy-chat-widget');
+    
+    // If not found, wait a bit and try again (widget might still be loading)
+    if (!chatWidget) {
+        setTimeout(() => {
+            chatWidget = document.querySelector('noteworthy-chat-widget');
+            if (chatWidget) {
+                openChatWidgetElement(chatWidget);
+            } else {
+                console.warn('Chat widget not found after retry');
+            }
+        }, 100);
+        return;
+    }
+    
+    openChatWidgetElement(chatWidget);
+}
+
+// Helper function to actually open the widget
+function openChatWidgetElement(chatWidget) {
+    // Access the shadow DOM
+    const shadowRoot = chatWidget.shadowRoot;
+    if (!shadowRoot) {
+        console.warn('Chat widget shadow root not found');
+        return;
+    }
+
+    // Find the wrap element inside shadow DOM
+    const wrap = shadowRoot.querySelector('.wrap');
+    if (!wrap) {
+        console.warn('Chat widget wrap element not found');
+        return;
+    }
+
+    // Add 'open' class to show the widget
+    wrap.classList.add('open');
+
+    // Focus the input field
+    const input = shadowRoot.querySelector('.input input');
+    if (input) {
+        setTimeout(() => input.focus(), 100);
+    }
+
+    // Update launcher aria-expanded
+    const launcher = shadowRoot.querySelector('.launcher');
+    if (launcher) {
+        launcher.setAttribute('aria-expanded', 'true');
+    }
+}
+
 // Navigation functionality
 function initNavigation() {
     // Smooth scrolling for navigation links
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
+            
+            const href = link.getAttribute('href');
+            
+            // Special handling for AI Chat link - open chat widget
+            if (href === '#ai-assistant-section') {
+                openChatWidget();
+                // Still update active state
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                return;
+            }
             
             // Remove active class from all links
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -3545,6 +3981,7 @@ function initNewsCarousel() {
 // Initialize background music autoplay
 function initBackgroundMusic() {
     const backgroundMusic = document.getElementById('backgroundMusic');
+    const backgroundMusicSecond = document.getElementById('backgroundMusicSecond');
     const backgroundMusicLoop = document.getElementById('backgroundMusicLoop');
     const musicControlBtn = document.getElementById('musicControlBtn');
     
@@ -3559,6 +3996,9 @@ function initBackgroundMusic() {
     
     // Set volume to a reasonable level (0.0 to 1.0)
     backgroundMusic.volume = 0.5;
+    if (backgroundMusicSecond) {
+        backgroundMusicSecond.volume = 0.5;
+    }
     if (backgroundMusicLoop) {
         backgroundMusicLoop.volume = 0.5;
     }
@@ -3570,10 +4010,12 @@ function initBackgroundMusic() {
     backgroundMusic.volume = 0.5;
     backgroundMusic.muted = false;
     
-    // Update button state based on music playing status (either track)
+    // Update button state based on music playing status (any track)
     function updateMusicButtonState() {
         if (musicControlBtn) {
-            const isPlaying = (!backgroundMusic.paused) || (backgroundMusicLoop && !backgroundMusicLoop.paused);
+            const isPlaying = (!backgroundMusic.paused) || 
+                             (backgroundMusicSecond && !backgroundMusicSecond.paused) || 
+                             (backgroundMusicLoop && !backgroundMusicLoop.paused);
             if (isPlaying) {
                 musicControlBtn.classList.add('playing');
                 musicControlBtn.querySelector('.btn-icon').textContent = '🔇';
@@ -3589,7 +4031,29 @@ function initBackgroundMusic() {
     // Add event listeners for music state changes
     backgroundMusic.addEventListener('play', updateMusicButtonState);
     backgroundMusic.addEventListener('pause', updateMusicButtonState);
-    backgroundMusic.addEventListener('ended', updateMusicButtonState);
+    backgroundMusic.addEventListener('ended', () => {
+        updateMusicButtonState();
+        // When first track ends, play second track
+        if (backgroundMusicSecond) {
+            pauseAllTracks();
+            backgroundMusicSecond.volume = backgroundMusic.volume;
+            backgroundMusicSecond.play().catch(err => console.log('Failed to play second track:', err));
+        }
+    });
+    
+    if (backgroundMusicSecond) {
+        backgroundMusicSecond.addEventListener('play', updateMusicButtonState);
+        backgroundMusicSecond.addEventListener('pause', updateMusicButtonState);
+        backgroundMusicSecond.addEventListener('ended', () => {
+            updateMusicButtonState();
+            // When second track ends, play loop track
+            if (backgroundMusicLoop) {
+                pauseAllTracks();
+                backgroundMusicLoop.volume = backgroundMusicSecond.volume;
+                backgroundMusicLoop.play().catch(err => console.log('Failed to play loop track:', err));
+            }
+        });
+    }
     
     if (backgroundMusicLoop) {
         backgroundMusicLoop.addEventListener('play', updateMusicButtonState);
@@ -3599,11 +4063,14 @@ function initBackgroundMusic() {
     // Function to ensure only one track plays at a time
     function pauseAllTracks() {
         if (backgroundMusic && !backgroundMusic.paused) {
-                    backgroundMusic.pause();
-                }
-                if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
-                    backgroundMusicLoop.pause();
-                }
+            backgroundMusic.pause();
+        }
+        if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
+            backgroundMusicSecond.pause();
+        }
+        if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+            backgroundMusicLoop.pause();
+        }
     }
     
     function playTrackOnly(track) {
@@ -3613,22 +4080,27 @@ function initBackgroundMusic() {
         }
     }
     
-    // Music control button functionality - pause/play both tracks (mutually exclusive)
+    // Music control button functionality - pause/play all tracks (mutually exclusive)
     if (musicControlBtn) {
         musicControlBtn.addEventListener('click', () => {
-            const isPlaying = (!backgroundMusic.paused) || (backgroundMusicLoop && !backgroundMusicLoop.paused);
+            const isPlaying = (!backgroundMusic.paused) || 
+                             (backgroundMusicSecond && !backgroundMusicSecond.paused) || 
+                             (backgroundMusicLoop && !backgroundMusicLoop.paused);
             if (isPlaying) {
-                // Pause both tracks
+                // Pause all tracks
                 pauseAllTracks();
                 console.log('Background music paused');
             } else {
-                // Play - start with main track if it hasn't finished, otherwise loop track
+                // Play - start with appropriate track based on what has finished
                 if (backgroundMusic.currentTime < (backgroundMusic.duration || Infinity)) {
                     playTrackOnly(backgroundMusic);
-                        console.log('Background music started');
+                    console.log('Background music started');
+                } else if (backgroundMusicSecond && backgroundMusicSecond.currentTime < (backgroundMusicSecond.duration || Infinity)) {
+                    playTrackOnly(backgroundMusicSecond);
+                    console.log('Background second music started');
                 } else if (backgroundMusicLoop) {
                     playTrackOnly(backgroundMusicLoop);
-                        console.log('Background loop music started');
+                    console.log('Background loop music started');
                 }
             }
         });
@@ -3637,16 +4109,33 @@ function initBackgroundMusic() {
     // Ensure mutual exclusivity when tracks play
     if (backgroundMusic) {
         backgroundMusic.addEventListener('play', () => {
+            if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
+                backgroundMusicSecond.pause();
+            }
             if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
                 backgroundMusicLoop.pause();
             }
-                    });
-                }
+        });
+    }
+    
+    if (backgroundMusicSecond) {
+        backgroundMusicSecond.addEventListener('play', () => {
+            if (backgroundMusic && !backgroundMusic.paused) {
+                backgroundMusic.pause();
+            }
+            if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+                backgroundMusicLoop.pause();
+            }
+        });
+    }
     
     if (backgroundMusicLoop) {
         backgroundMusicLoop.addEventListener('play', () => {
             if (backgroundMusic && !backgroundMusic.paused) {
                 backgroundMusic.pause();
+            }
+            if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
+                backgroundMusicSecond.pause();
             }
         });
     }
@@ -3907,6 +4396,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize welcome text cycling
     initWelcomeTextCycling();
+    
+    // Initialize location display
+    initWelcomeLocation();
     
     // Initialize news carousel
     initNewsCarousel();
@@ -4450,4 +4942,164 @@ function initNewsletterSubscription() {
             resetAllStars();
         }, 250);
     });
+})();
+
+// Interactive Image Tilt - Make images slightly tilt away from mouse (very subtle)
+(function initInteractiveImageTilt() {
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initInteractiveImageTilt);
+        return;
+    }
+
+    // Configuration - highly interactive movement
+    const DETECTION_SCALE = 0.7; // Detection box is 70% of image size (smaller than actual)
+    const MAX_TILT_DEGREES = 15; // Maximum tilt in degrees (very noticeable)
+    const MAX_SCALE = 1.05; // Slight scale up on hover for more interactivity
+    const INTERACTION_DISTANCE_MULTIPLIER = 2.0; // Detection distance multiplier (much wider detection)
+
+    // Get the target images
+    function getTargetImages() {
+        const images = document.querySelectorAll('.welcome-bg-img, .hero-logo-image');
+        return Array.from(images).filter(img => {
+            const src = img.src || img.getAttribute('src') || '';
+            return src.includes('7680cb96-729f-4344-b08a-4f9a2aa314f8') || 
+                   src.includes('e2e66fe2-12c0-428b-ba44-0ff07b895551');
+        });
+    }
+
+    // Get image detection area (smaller than actual image)
+    function getImageDetectionArea(img) {
+        const rect = img.getBoundingClientRect();
+        const detectionWidth = rect.width * DETECTION_SCALE;
+        const detectionHeight = rect.height * DETECTION_SCALE;
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        
+        return {
+            centerX: centerX,
+            centerY: centerY,
+            width: detectionWidth,
+            height: detectionHeight,
+            maxDistance: Math.max(detectionWidth, detectionHeight) * INTERACTION_DISTANCE_MULTIPLIER
+        };
+    }
+
+    // Calculate tilt angle based on mouse position
+    function calculateTilt(mouseX, mouseY, imgArea) {
+        // Calculate distance from mouse to image center
+        const dx = mouseX - imgArea.centerX;
+        const dy = mouseY - imgArea.centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Calculate tilt intensity based on distance (closer = more tilt)
+        // Use extended detection distance for smoother, more responsive interaction
+        const extendedDetectionDistance = imgArea.maxDistance * 2.0;
+        
+        // If mouse is too far away, no tilt
+        if (distance > extendedDetectionDistance) {
+            return { rotationX: 0, rotationY: 0, rotation: 0, scale: 1 };
+        }
+        
+        // Calculate tilt intensity - stronger when closer, fades out smoothly
+        const normalizedDistance = Math.min(distance / extendedDetectionDistance, 1);
+        // Use inverse easing for stronger response when close
+        const intensity = 1 - normalizedDistance;
+        const easeOut = intensity * intensity; // Quadratic easing for snappier feel
+        const tiltIntensity = easeOut * MAX_TILT_DEGREES;
+        const scaleIntensity = 1 + (easeOut * (MAX_SCALE - 1)); // Scale up when close
+        
+        // Calculate tilt direction - tilt away from mouse
+        // Normalize the direction vector
+        const magnitude = Math.sqrt(dx * dx + dy * dy) || 1;
+        const normalizedDx = dx / magnitude;
+        const normalizedDy = dy / magnitude;
+        
+        // Strong tilt perpendicular to mouse direction (tilt away from mouse)
+        const rotationY = -normalizedDx * tiltIntensity; // Horizontal tilt (rotateY) - full intensity
+        const rotationX = normalizedDy * tiltIntensity; // Vertical tilt (rotateX) - full intensity
+        
+        return {
+            rotationX: rotationX,
+            rotationY: rotationY,
+            rotation: 0,
+            scale: scaleIntensity // Add scale for more interactivity
+        };
+    }
+
+    // Handle mouse movement
+    function handleMouseMove(e) {
+        const mouseX = e.clientX;
+        const mouseY = e.clientY;
+        
+        const images = getTargetImages();
+        
+        images.forEach(img => {
+            const detectionArea = getImageDetectionArea(img);
+            const tilt = calculateTilt(mouseX, mouseY, detectionArea);
+            
+            // Apply interactive 3D tilt with scale using transform
+            // Always apply transform for smooth interaction
+            const scale = tilt.scale || 1;
+            img.style.transform = `perspective(1000px) rotateX(${tilt.rotationX.toFixed(2)}deg) rotateY(${tilt.rotationY.toFixed(2)}deg) scale(${scale.toFixed(3)})`;
+            
+            // Use very fast transition for snappy, responsive feel
+            if (Math.abs(tilt.rotationX) > 2 || Math.abs(tilt.rotationY) > 2 || (tilt.scale && tilt.scale > 1.02)) {
+                img.style.transition = 'transform 0.1s ease-out'; // Very snappy when close
+            } else {
+                img.style.transition = 'transform 0.2s ease-out'; // Still fast for smoothness
+            }
+        });
+    }
+
+    // Reset all images to normal position
+    function resetImages() {
+        const images = getTargetImages();
+        images.forEach(img => {
+            img.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
+            img.style.transition = 'transform 0.3s ease-out';
+        });
+    }
+
+    // Initialize when page loads
+    function init() {
+        // Wait a bit for images to load and styles to be computed
+        setTimeout(() => {
+            const images = getTargetImages();
+            if (images.length === 0) {
+                // Images not found yet, try again
+                setTimeout(init, 100);
+                return;
+            }
+            
+            console.log(`Interactive image tilt initialized for ${images.length} image(s)`);
+            
+            // Add transition styles and prepare images
+            images.forEach(img => {
+                img.style.willChange = 'transform';
+                img.style.transformOrigin = 'center center';
+                img.style.backfaceVisibility = 'hidden'; // Better 3D performance
+                img.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)'; // Initialize
+            });
+            
+            // Add mouse move listener with throttling for better performance
+            let lastTime = 0;
+            const throttleDelay = 16; // ~60fps
+            function throttledHandleMouseMove(e) {
+                const now = Date.now();
+                if (now - lastTime >= throttleDelay) {
+                    handleMouseMove(e);
+                    lastTime = now;
+                }
+            }
+            
+            document.addEventListener('mousemove', throttledHandleMouseMove);
+            
+            // Reset images when mouse leaves the window
+            document.addEventListener('mouseleave', resetImages);
+        }, 200);
+    }
+
+    // Initialize
+    init();
 })();
