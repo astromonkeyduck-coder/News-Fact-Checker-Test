@@ -106,8 +106,17 @@ class CommentSection {
         this.saveComments();
         this.render();
       } else {
-        const error = await response.json();
-        alert(error.error || 'Failed to post comment. Please try again.');
+        let errorMessage = 'Failed to post comment. Please try again.';
+        try {
+          const error = await response.json();
+          errorMessage = error.error || error.message || errorMessage;
+          console.error('[Comments] API error:', error);
+        } catch (parseErr) {
+          const text = await response.text();
+          console.error('[Comments] API error (non-JSON):', text);
+          errorMessage = text || errorMessage;
+        }
+        alert(errorMessage);
       }
     } catch (err) {
       console.error('[Comments] Error posting comment:', err);

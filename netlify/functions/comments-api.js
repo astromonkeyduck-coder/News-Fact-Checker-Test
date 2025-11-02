@@ -69,14 +69,12 @@ exports.handler = async (event, context) => {
         };
       } catch (err) {
         // If no comments exist, return empty array
-        if (err.status === 404 || err.message?.includes("not found")) {
-          return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({ comments: [] }),
-          };
-        }
-        throw err;
+        console.log('[Comments API] GET error (likely no comments yet):', err.message);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ comments: [] }),
+        };
       }
     }
 
@@ -110,6 +108,7 @@ exports.handler = async (event, context) => {
         comments = existing || [];
       } catch (err) {
         // No existing comments, start fresh
+        console.log('[Comments API] No existing comments for', commentsKey);
         comments = [];
       }
 
@@ -127,10 +126,8 @@ exports.handler = async (event, context) => {
       // Add to beginning of array
       comments.unshift(newComment);
 
-      // Save back to store
-      await store.set(commentsKey, JSON.stringify(comments), {
-        contentType: "application/json",
-      });
+      // Save back to store using setJSON (convenience method for JSON)
+      await store.setJSON(commentsKey, comments);
 
       return {
         statusCode: 200,
@@ -188,10 +185,8 @@ exports.handler = async (event, context) => {
       // Remove comment
       comments.splice(commentIndex, 1);
 
-      // Save back to store
-      await store.set(commentsKey, JSON.stringify(comments), {
-        contentType: "application/json",
-      });
+      // Save back to store using setJSON
+      await store.setJSON(commentsKey, comments);
 
       return {
         statusCode: 200,
