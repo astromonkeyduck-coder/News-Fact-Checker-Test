@@ -9064,6 +9064,35 @@
                 display: none !important;
             }
         }
+        
+        /* Fix white blocks from empty Google AdSense ads */
+        ins.adsbygoogle {
+            background: transparent !important;
+            min-height: 0 !important;
+        }
+        
+        /* Hide empty ad containers (when ads fail to load or are empty) */
+        ins.adsbygoogle[data-ad-status="unfilled"],
+        ins.adsbygoogle:empty,
+        ins.adsbygoogle:not(:has(iframe)),
+        ins.adsbygoogle:not(:has(*)) {
+            display: none !important;
+            height: 0 !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            visibility: hidden !important;
+        }
+        
+        /* Hide ad containers with white backgrounds that haven't loaded */
+        ins.adsbygoogle {
+            overflow: hidden;
+        }
+        
+        /* Ensure ad containers don't create unwanted spacing when empty */
+        ins.adsbygoogle[style*="display:block"]:empty {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -10626,6 +10655,43 @@
                 })
                 .catch(err => console.log('Auto-refresh failed:', err));
         }, 5 * 60 * 1000); // 5 minutes
+        
+        // Fix white blocks from empty Google AdSense ads
+        // Check for empty ad containers and hide them after ads have had time to load
+        function hideEmptyAdContainers() {
+            const adContainers = document.querySelectorAll('ins.adsbygoogle');
+            adContainers.forEach(container => {
+                // Check if ad container is empty or hasn't loaded properly
+                const hasIframe = container.querySelector('iframe');
+                const hasContent = container.innerHTML.trim().length > 0;
+                const isUnfilled = container.getAttribute('data-ad-status') === 'unfilled';
+                
+                // Hide if empty, unfilled, or has no iframe after a delay
+                if (isUnfilled || (!hasIframe && !hasContent && container.children.length === 0)) {
+                    container.style.display = 'none';
+                    container.style.height = '0';
+                    container.style.minHeight = '0';
+                    container.style.margin = '0';
+                    container.style.padding = '0';
+                    container.style.visibility = 'hidden';
+                }
+            });
+        }
+        
+        // Run immediately and after delays to catch ads that load at different times
+        setTimeout(hideEmptyAdContainers, 1000);
+        setTimeout(hideEmptyAdContainers, 3000);
+        setTimeout(hideEmptyAdContainers, 5000);
+        
+        // Also run when ad status changes
+        if (window.adsbygoogle) {
+            const originalPush = window.adsbygoogle.push;
+            window.adsbygoogle.push = function(...args) {
+                const result = originalPush.apply(this, args);
+                setTimeout(hideEmptyAdContainers, 2000);
+                return result;
+            };
+        }
     </script>
     
     <!-- X Widgets Script - Load after page content -->
