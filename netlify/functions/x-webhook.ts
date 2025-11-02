@@ -52,7 +52,24 @@ async function handleWebhookEvent(body: any): Promise<{ status: string; processe
   }
 
   // Get blob store
-  const store = getStore({ name: "x-posts" });
+  const siteID = process.env.NETLIFY_SITE_ID;
+  const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
+  
+  let store;
+  try {
+    if (siteID && token) {
+      store = getStore({
+        name: "x-posts",
+        siteID: siteID,
+        token: token,
+      });
+    } else {
+      store = getStore({ name: "x-posts" });
+    }
+  } catch (storeErr: any) {
+    console.error('[x-webhook] Failed to create store:', storeErr);
+    throw new Error(`Storage configuration error: ${storeErr.message}`);
+  }
   
   // Read current index
   let indexData: IndexData = { ids: [] };

@@ -112,7 +112,32 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    const store = getStore({ name: "x-posts" });
+    // Get siteID and token from environment
+    const siteID = process.env.NETLIFY_SITE_ID || (event as any).headers?.['x-nf-site-id'];
+    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || (event as any).headers?.['x-nf-token'];
+    
+    let store;
+    try {
+      if (siteID && token) {
+        store = getStore({
+          name: "x-posts",
+          siteID: siteID,
+          token: token,
+        });
+      } else {
+        store = getStore({ name: "x-posts" });
+      }
+    } catch (storeErr: any) {
+      console.error('[fetch-profile-tweets] Failed to create store:', storeErr);
+      return {
+        statusCode: 503,
+        headers,
+        body: JSON.stringify({
+          error: "Storage configuration error",
+          message: storeErr.message,
+        }),
+      };
+    }
 
     // GET: Fetch tweets from profile and return as cards
     if (event.httpMethod === "GET") {

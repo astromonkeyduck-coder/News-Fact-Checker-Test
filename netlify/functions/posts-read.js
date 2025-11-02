@@ -37,7 +37,37 @@ exports.handler = async (event) => {
     const limit = parseInt(event.queryStringParameters?.limit || "30", 10);
     const maxLimit = Math.min(limit, 200); // Cap at 200
 
-    const store = getStore({ name: "x-posts" });
+    // Get siteID and token from environment (Netlify automatically sets these)
+    // For Functions, we need to explicitly pass them if auto-detection fails
+    const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
+    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
+    
+    let store;
+    try {
+      // Try with explicit siteID and token if available
+      if (siteID && token) {
+        console.log('[posts-read] Using explicit siteID and token');
+        store = getStore({
+          name: "x-posts",
+          siteID: siteID,
+          token: token,
+        });
+      } else {
+        // Fallback: try automatic detection (works in most Netlify environments)
+        console.log('[posts-read] Using automatic detection');
+        store = getStore({ name: "x-posts" });
+      }
+    } catch (storeErr) {
+      console.error('[posts-read] Failed to create store:', storeErr);
+      return {
+        statusCode: 503,
+        headers,
+        body: JSON.stringify({
+          error: "Storage configuration error",
+          message: storeErr.message,
+        }),
+      };
+    }
 
     // Read index
     let indexData = { ids: [] };
