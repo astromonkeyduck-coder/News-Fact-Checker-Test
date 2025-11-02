@@ -4,6 +4,8 @@ Since X/Twitter often blocks automated scraping, you can manually add posts usin
 
 ## Method 1: Using Browser Console (Easiest)
 
+**⚠️ Important:** If you see a `429` error, it means X/Twitter is rate-limiting requests. Wait 5-10 minutes between adding posts, or add them one at a time.
+
 1. Open your website in a browser
 2. Press **F12** to open Developer Tools
 3. Go to the **Console** tab

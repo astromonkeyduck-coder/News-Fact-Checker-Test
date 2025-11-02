@@ -174,18 +174,31 @@ export const handler: Handler = async (event) => {
           };
         }
 
-        // Fetch each tweet via oEmbed
-        const cards = await Promise.all(
-          tweetUrls.map(async (url) => {
-            try {
-              const oembed = await fetchTweetOEmbed(url);
-              return oEmbedToCard(oembed, url);
-            } catch (err) {
-              console.error(`Error fetching tweet ${url}:`, err);
-              return null;
+        // Fetch each tweet via oEmbed with rate limiting
+        // Add delays between requests to avoid 429 errors
+        const cards = [];
+        for (let i = 0; i < tweetUrls.length; i++) {
+          const url = tweetUrls[i];
+          try {
+            // Add delay between requests (except first one)
+            if (i > 0) {
+              await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
             }
-          })
-        );
+            
+            const oembed = await fetchTweetOEmbed(url);
+            const card = oEmbedToCard(oembed, url);
+            cards.push(card);
+            console.log(`[fetch-profile-tweets] Fetched tweet ${i + 1}/${tweetUrls.length}: ${url}`);
+          } catch (err: any) {
+            console.error(`[fetch-profile-tweets] Error fetching tweet ${url}:`, err);
+            // If rate limited, stop processing more tweets
+            if (err.message?.includes('429') || err.message?.includes('Rate limited')) {
+              console.error('[fetch-profile-tweets] Rate limited by X. Stopping fetch. Try again later or add posts manually.');
+              break;
+            }
+            // For other errors, continue with next tweet
+          }
+        }
 
         const validCards = cards.filter(c => c !== null);
 
