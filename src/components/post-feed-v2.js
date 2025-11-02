@@ -206,8 +206,8 @@ function renderPostCard(post) {
       class="feed-post-card" 
       data-post-id="${post.id}"
       style="
-        min-height: 360px;
-        padding: 1rem;
+        min-height: 520px;
+        padding: 1.5rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         transition: background 0.2s ease;
         display: grid;
@@ -228,8 +228,8 @@ function renderPostCard(post) {
             src="${post.author.avatarUrl}" 
             alt="${escapeHtml(post.author.name)}"
             style="
-              width: 40px;
-              height: 40px;
+              width: 56px;
+              height: 56px;
               border-radius: 50%;
               object-fit: cover;
               display: block;
@@ -238,15 +238,15 @@ function renderPostCard(post) {
           />
           <div 
             style="
-              width: 40px;
-              height: 40px;
+              width: 56px;
+              height: 56px;
               border-radius: 50%;
               background: linear-gradient(135deg, #1DA1F2 0%, #1a91da 100%);
               display: none;
               align-items: center;
               justify-content: center;
               font-weight: 700;
-              font-size: 1rem;
+              font-size: 1.25rem;
               color: white;
             "
           >NW</div>
@@ -260,16 +260,16 @@ function renderPostCard(post) {
               rel="noopener noreferrer"
               style="
                 font-weight: 700;
-                font-size: 0.938rem;
+                font-size: 1.125rem;
                 color: rgb(231, 233, 234);
                 text-decoration: none;
-                line-height: 1.25rem;
+                line-height: 1.5rem;
               "
               onmouseover="this.style.textDecoration='underline'"
               onmouseout="this.style.textDecoration='none'"
             >${escapeHtml(post.author.name)}</a>
             
-            <span style="color: rgb(113, 118, 123); font-size: 0.938rem; line-height: 1.25rem;">
+            <span style="color: rgb(113, 118, 123); font-size: 1rem; line-height: 1.5rem;">
               @${post.author.handle}
             </span>
             
@@ -281,9 +281,9 @@ function renderPostCard(post) {
               rel="noopener noreferrer"
               style="
                 color: rgb(113, 118, 123);
-                font-size: 0.938rem;
+                font-size: 1rem;
                 text-decoration: none;
-                line-height: 1.25rem;
+                line-height: 1.5rem;
               "
               title="${timestampTooltip}"
               onmouseover="this.style.textDecoration='underline'"
@@ -298,13 +298,13 @@ function renderPostCard(post) {
         <div 
           style="
             color: rgb(231, 233, 234);
-            font-size: 0.938rem;
-            line-height: 1.375rem;
+            font-size: 1.125rem;
+            line-height: 1.625rem;
             white-space: pre-wrap;
             word-wrap: break-word;
-            margin-bottom: 0.75rem;
+            margin-bottom: 1rem;
             display: -webkit-box;
-            -webkit-line-clamp: 6;
+            -webkit-line-clamp: 8;
             -webkit-box-orient: vertical;
             overflow: hidden;
           "
@@ -394,10 +394,10 @@ function renderMedia(media) {
         <div 
           style="
             width: 100%;
-            max-height: 400px;
+            max-height: 500px;
             border-radius: 16px;
             overflow: hidden;
-            margin-bottom: 0.75rem;
+            margin-bottom: 1rem;
             border: 1px solid rgba(255,255,255,0.08);
           "
         >
@@ -415,10 +415,10 @@ function renderMedia(media) {
         <div 
           style="
             width: 100%;
-            max-height: 400px;
+            max-height: 500px;
             border-radius: 16px;
             overflow: hidden;
-            margin-bottom: 0.75rem;
+            margin-bottom: 1rem;
             border: 1px solid rgba(255,255,255,0.08);
           "
         >
@@ -441,10 +441,10 @@ function renderMedia(media) {
         grid-template-columns: ${gridCols};
         gap: 2px;
         width: 100%;
-        max-height: 400px;
+        max-height: 500px;
         overflow: hidden;
         border-radius: 16px;
-        margin-bottom: 0.75rem;
+        margin-bottom: 1rem;
         border: 1px solid rgba(255,255,255,0.08);
       "
     >
@@ -597,61 +597,125 @@ function renderFeedControls(totalPosts) {
   controlsDiv.style.cssText = `
     position: sticky;
     top: 0;
-    z-index: 10;
-    background: rgba(15, 15, 35, 0.95);
-    backdrop-filter: blur(10px);
-    padding: 1rem;
+    z-index: 100;
+    background: linear-gradient(135deg, rgba(15, 15, 35, 0.98) 0%, rgba(20, 20, 45, 0.98) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    padding: 1.25rem 1.5rem;
     margin-bottom: 2rem;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 1.25rem;
     align-items: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   `;
   
-  // Search input
+  // Search input with icon
   const searchContainer = document.createElement('div');
-  searchContainer.style.cssText = 'flex: 1; min-width: 250px;';
+  searchContainer.style.cssText = 'flex: 1; min-width: 280px; position: relative;';
+  
+  const searchIcon = document.createElement('div');
+  searchIcon.style.cssText = `
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 1.125rem;
+    pointer-events: none;
+    z-index: 1;
+  `;
+  searchIcon.textContent = '🔍';
+  
   const searchInput = document.createElement('input');
   searchInput.id = searchId;
   searchInput.type = 'text';
-  searchInput.placeholder = '🔍 Search posts, tags, @handles...';
+  searchInput.placeholder = 'Search posts, tags, @handles...';
   searchInput.value = currentSearch;
   searchInput.className = 'feed-search-input';
   searchInput.style.cssText = `
     width: 100%;
-    padding: 0.75rem 1rem;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 8px;
+    padding: 0.875rem 1rem 0.875rem 3rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
     color: #fff;
     font-size: 1rem;
-    transition: all 0.3s ease;
+    font-weight: 400;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
   `;
+  
+  searchInput.addEventListener('focus', function() {
+    this.style.background = 'rgba(255, 255, 255, 0.12)';
+    this.style.borderColor = '#4A90E2';
+    this.style.boxShadow = '0 0 0 4px rgba(74, 144, 226, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3)';
+    searchIcon.style.color = '#4A90E2';
+  });
+  
+  searchInput.addEventListener('blur', function() {
+    this.style.background = 'rgba(255, 255, 255, 0.08)';
+    this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+    this.style.boxShadow = 'none';
+    searchIcon.style.color = 'rgba(255, 255, 255, 0.5)';
+  });
+  
+  searchContainer.appendChild(searchIcon);
   searchContainer.appendChild(searchInput);
   
-  // Sort select
+  // Sort select with icon
   const sortContainer = document.createElement('div');
-  sortContainer.style.cssText = 'display: flex; gap: 0.5rem; align-items: center;';
+  sortContainer.style.cssText = 'display: flex; gap: 0.75rem; align-items: center; position: relative;';
+  
+  const sortIcon = document.createElement('div');
+  sortIcon.style.cssText = `
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1.125rem;
+    pointer-events: none;
+  `;
+  sortIcon.textContent = '↓↑';
+  
   const sortLabel = document.createElement('label');
   sortLabel.htmlFor = sortId;
-  sortLabel.textContent = 'Sort by:';
-  sortLabel.style.cssText = 'color: rgba(255,255,255,0.9); font-size: 0.9rem; white-space: nowrap;';
+  sortLabel.textContent = 'Sort:';
+  sortLabel.style.cssText = 'color: rgba(255,255,255,0.7); font-size: 0.875rem; font-weight: 500; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.5px;';
+  
   const sortSelect = document.createElement('select');
   sortSelect.id = sortId;
   sortSelect.className = 'feed-sort-select';
   sortSelect.style.cssText = `
-    padding: 0.75rem 1rem;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 8px;
+    padding: 0.875rem 2.5rem 0.875rem 1rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
     color: #fff;
     font-size: 1rem;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 12px;
   `;
+  
+  sortSelect.addEventListener('focus', function() {
+    this.style.background = 'rgba(255, 255, 255, 0.12)';
+    this.style.borderColor = '#4A90E2';
+    this.style.boxShadow = '0 0 0 4px rgba(74, 144, 226, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3)';
+    sortIcon.style.color = '#4A90E2';
+  });
+  
+  sortSelect.addEventListener('blur', function() {
+    this.style.background = 'rgba(255, 255, 255, 0.08)';
+    this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+    this.style.boxShadow = 'none';
+    sortIcon.style.color = 'rgba(255, 255, 255, 0.6)';
+  });
   const options = [
     { value: 'recent', text: 'Most Recent' },
     { value: 'views', text: 'Most Views' },
@@ -666,19 +730,39 @@ function renderFeedControls(totalPosts) {
     if (opt.value === currentSort) option.selected = true;
     sortSelect.appendChild(option);
   });
+  sortContainer.appendChild(sortIcon);
   sortContainer.appendChild(sortLabel);
   sortContainer.appendChild(sortSelect);
   
-  // Post count
+  // Post count badge
   const countDiv = document.createElement('div');
   countDiv.className = 'feed-post-count';
-  countDiv.textContent = `${totalPosts} ${totalPosts === 1 ? 'post' : 'posts'}`;
   countDiv.style.cssText = `
-    color: rgba(255,255,255,0.7);
-    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.2) 0%, rgba(74, 144, 226, 0.15) 100%);
+    border: 1px solid rgba(74, 144, 226, 0.3);
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 0.875rem;
+    font-weight: 600;
     margin-left: auto;
     white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.15);
   `;
+  
+  const countNumber = document.createElement('span');
+  countNumber.style.cssText = 'color: #4A90E2; font-size: 1rem;';
+  countNumber.textContent = totalPosts.toLocaleString();
+  
+  const countLabel = document.createElement('span');
+  countLabel.textContent = totalPosts === 1 ? 'post' : 'posts';
+  countLabel.style.cssText = 'opacity: 0.8;';
+  
+  countDiv.appendChild(countNumber);
+  countDiv.appendChild(countLabel);
   
   controlsDiv.appendChild(searchContainer);
   controlsDiv.appendChild(sortContainer);
