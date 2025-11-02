@@ -268,7 +268,7 @@ export const handler: Handler = async (event) => {
   }
 
   // POST: Manual tweet URL entry
-    if (event.httpMethod === "POST") {
+  if (event.httpMethod === "POST") {
       const body = JSON.parse(event.body || "{}");
       const { tweetUrl } = body;
 
