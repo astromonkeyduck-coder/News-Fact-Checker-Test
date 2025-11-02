@@ -11000,8 +11000,8 @@
     <!-- Premium Features (Ad-free, Early Access, Exclusive Content) -->
     <script src="/src/components/premium-features.js"></script>
     
-    <!-- X Posts Feed - Load tweets and display as cards -->
-    <script src="/src/components/post-feed.js?v=3.1"></script>
+    <!-- X Posts Feed v2 - Refactored X-style feed -->
+    <script src="/src/components/post-feed-v2.js?v=1.0"></script>
     <script>
         // Load X posts when page is ready
         document.addEventListener('DOMContentLoaded', function() {
@@ -11075,7 +11075,15 @@
                     .finally(() => {
                         // Step 2: Always display posts from storage (works even if profile fetch fails)
                         console.log('[X Posts] Loading posts from storage...');
-                        renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 200);
+                        // Use new v2 feed
+                        if (window.renderPostFeedV2) {
+                            window.renderPostFeedV2('articlesTrack', '/.netlify/functions/posts-read', 200);
+                        } else {
+                            // Fallback to old feed if v2 not loaded
+                            if (typeof renderPostFeed !== 'undefined') {
+                                renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 200);
+                            }
+                        }
                     });
             }, 1000); // Wait 1 second after DOM load
         });
@@ -11097,12 +11105,20 @@
                 })
                 .then(() => {
                     // Force refresh to show new posts immediately (bypass cache)
-                    renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 200, true);
+                    if (window.renderPostFeedV2) {
+                        window.renderPostFeedV2('articlesTrack', '/.netlify/functions/posts-read', 200, true);
+                    } else {
+                        renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 200, true);
+                    }
                 })
                 .catch(err => {
                     console.error('[X Posts] Auto-refresh failed:', err);
                     // Still try to refresh display even if fetch fails (maybe there are new posts in storage)
-                    renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 200, true);
+                    if (window.renderPostFeedV2) {
+                        window.renderPostFeedV2('articlesTrack', '/.netlify/functions/posts-read', 200, true);
+                    } else {
+                        renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 200, true);
+                    }
                 });
         }, 5 * 60 * 1000); // 5 minutes
         
