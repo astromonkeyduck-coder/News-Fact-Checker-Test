@@ -1167,6 +1167,14 @@ function renderFeedControls(totalPosts) {
   countDiv.appendChild(countNumber);
   countDiv.appendChild(countLabel);
   
+  // Add both to input row
+  inputRow.appendChild(searchContainer);
+  inputRow.appendChild(sortContainer);
+  
+  // Append everything to controls
+  controlsDiv.appendChild(inputRow);
+  controlsDiv.appendChild(countDiv);
+  
   // If "Near Me" is selected and we don't have location yet, request it
   if (currentSort === 'nearby' && !userLocation && !locationPermissionRequested) {
     getUserLocation().then(loc => {
@@ -1177,17 +1185,20 @@ function renderFeedControls(totalPosts) {
         // Location failed, switch back to recent
         currentSort = 'recent';
         localStorage.setItem('feed-sort', 'recent');
-        const recentOption = sortDropdown.querySelector('[data-value="recent"]');
-        if (recentOption) {
-          sortButtonText.textContent = 'Most Recent';
-          recentOption.click();
-        }
+        sortButtonText.textContent = 'Most Recent';
+        // Update dropdown option styles
+        options.forEach((o, idx) => {
+          const optEl = sortDropdown.children[idx];
+          if (optEl) {
+            optEl.style.background = o.value === 'recent' ? 'rgba(74, 144, 226, 0.15)' : 'transparent';
+            optEl.style.color = o.value === 'recent' ? '#4A90E2' : 'rgba(255, 255, 255, 0.9)';
+            optEl.style.fontWeight = o.value === 'recent' ? '600' : '400';
+          }
+        });
+        renderFeed();
       }
     });
   }
-  
-  controlsDiv.appendChild(inputRow);
-  controlsDiv.appendChild(countDiv);
   
   // Event listeners
   let searchTimeout;
@@ -1210,13 +1221,6 @@ function renderFeedControls(totalPosts) {
       e.preventDefault();
       searchInput.focus();
     }
-  });
-  
-  sortSelect.addEventListener('change', function(e) {
-    currentSort = e.target.value;
-    localStorage.setItem('feed-sort', currentSort);
-    updateURLParams();
-    renderFeed();
   });
   
   return controlsDiv;
