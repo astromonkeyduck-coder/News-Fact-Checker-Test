@@ -67,6 +67,7 @@ class GeographyGame {
         this.zoomLevel = 1;
         this.panX = 0;
         this.panY = 0;
+        // Will be calculated when SVG loads to ensure horizontal scrolling is possible
         this.isPanning = false;
         this.startX = 0;
         this.startY = 0;
@@ -577,19 +578,31 @@ class GeographyGame {
                     }
                 }
                 
-                // Calculate how the SVG is displayed (accounting for aspect ratio and container size)
+                // Calculate how the SVG is displayed
+                // Since preserveAspectRatio is 'none', the SVG fills the container
+                // But we need to calculate the actual displayed size based on the SVG's natural aspect ratio
+                // and how it's stretched/fitted to the container
                 const svgAspect = this.svgNaturalWidth / this.svgNaturalHeight;
                 const containerAspect = containerWidth / containerHeight;
                 
                 let displayedWidth, displayedHeight;
-                if (svgAspect > containerAspect) {
-                    // SVG is wider - fit to width
-                    displayedWidth = containerWidth;
-                    displayedHeight = containerWidth / svgAspect;
-                } else {
-                    // SVG is taller - fit to height
+                // Calculate displayed size - scale to fit width first (world maps are typically wide)
+                // This ensures we can scroll horizontally
+                displayedWidth = containerWidth;
+                displayedHeight = containerWidth / svgAspect;
+                
+                // Only fit to height if SVG would be taller than container
+                // This allows horizontal scrolling for wide maps
+                if (displayedHeight > containerHeight) {
                     displayedHeight = containerHeight;
                     displayedWidth = containerHeight * svgAspect;
+                    // For wide maps, ensure we can scroll horizontally by ensuring width >= containerWidth
+                    if (displayedWidth < containerWidth) {
+                        // Scale up to container width
+                        const scale = containerWidth / displayedWidth;
+                        displayedWidth = containerWidth;
+                        displayedHeight = displayedHeight * scale;
+                    }
                 }
                 
                 // Calculate minimum zoom level - if SVG fits at zoom 1.0, don't allow zooming out
@@ -597,7 +610,15 @@ class GeographyGame {
                 const fitsWidth = displayedWidth <= containerWidth;
                 const fitsHeight = displayedHeight <= containerHeight;
                 
-                if (fitsWidth && fitsHeight) {
+                // For world maps, we want to enable horizontal scrolling
+                // So we set minimum zoom to allow the map to be wider than container
+                if (svgAspect > 1.5) {
+                    // Wide map - allow it to be wider than container for horizontal scrolling
+                    // Set minimum zoom to fit height, which makes width larger
+                    this.minZoomLevel = containerHeight / displayedHeight;
+                    // Ensure minimum zoom isn't below 0.8 to prevent too much zoom out
+                    this.minZoomLevel = Math.max(0.8, this.minZoomLevel);
+                } else if (fitsWidth && fitsHeight) {
                     // SVG fits completely at zoom 1.0 - don't allow zooming out below 1.0
                     this.minZoomLevel = 1.0;
                 } else {
@@ -619,6 +640,20 @@ class GeographyGame {
                     this.zoomLevel = this.minZoomLevel;
                     scaledWidth = displayedWidth * this.zoomLevel;
                     scaledHeight = displayedHeight * this.zoomLevel;
+                }
+                
+                // Debug: Log dimensions to help diagnose scrolling issues
+                if (this.zoomLevel === this.minZoomLevel && this.panX === 0 && this.panY === 0) {
+                    console.log('Map dimensions:', {
+                        container: { width: containerWidth, height: containerHeight },
+                        svgNatural: { width: this.svgNaturalWidth, height: this.svgNaturalHeight },
+                        aspect: svgAspect,
+                        displayed: { width: displayedWidth, height: displayedHeight },
+                        scaled: { width: scaledWidth, height: scaledHeight },
+                        zoom: this.zoomLevel,
+                        canScrollHorizontally: scaledWidth > containerWidth,
+                        canScrollVertically: scaledHeight > containerHeight
+                    });
                 }
                 
                 // Center the SVG initially if it hasn't been manually panned yet
@@ -1097,11 +1132,9 @@ function loadSVGMap() {
                     svgElement.setAttribute('viewBox', `0 0 ${width} ${height}`);
                 }
                 
-                svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+                svgElement.setAttribute('preserveAspectRatio', 'none');
                 svgElement.style.width = '100%';
                 svgElement.style.height = '100%';
-                svgElement.style.minWidth = '800px';
-                svgElement.style.minHeight = '400px';
                 svgElement.style.display = 'block';
                 svgElement.style.visibility = 'visible';
                 svgElement.style.opacity = '1';
