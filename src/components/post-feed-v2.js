@@ -594,22 +594,15 @@ function renderFeedControls(totalPosts) {
   
   const controlsDiv = document.createElement('div');
   controlsDiv.className = 'feed-controls';
+  // Styles are handled by CSS class, but we set critical inline styles for reliability
   controlsDiv.style.cssText = `
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: linear-gradient(135deg, rgba(15, 15, 35, 0.98) 0%, rgba(20, 20, 45, 0.98) 100%);
-    backdrop-filter: blur(20px) saturate(180%);
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 2rem;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.25rem;
-    align-items: center;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 100 !important;
+    width: 100% !important;
+    max-width: 100% !important;
   `;
   
   // Search input with icon
