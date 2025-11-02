@@ -15,28 +15,28 @@ You'll see an HTML template editor. Find the section that shows the login messag
 
 ### Look for this code (around line 30-60):
 ```html
-<h1>{{trans "Welcome"}}</h1>
-<p>{{trans "Log in to {clientName} to continue to {appName}."}}</p>
+<h1>{% raw %}{{trans "Welcome"}}{% endraw %}</h1>
+<p>{% raw %}{{trans "Log in to {clientName} to continue to {appName}."}}{% endraw %}</p>
 ```
 
 ### Replace it with one of these options:
 
 **Option A: Simple Welcome (No tenant name)**
 ```html
-<h1>{{trans "Welcome to Noteworthy News"}}</h1>
-<p>{{trans "Sign in to access fact-checked news and media literacy tools."}}</p>
+<h1>{% raw %}{{trans "Welcome to Noteworthy News"}}{% endraw %}</h1>
+<p>{% raw %}{{trans "Sign in to access fact-checked news and media literacy tools."}}{% endraw %}</p>
 ```
 
 **Option B: Just App Name**
 ```html
-<h1>{{trans "Noteworthy News"}}</h1>
-<p>{{trans "Sign in to continue."}}</p>
+<h1>{% raw %}{{trans "Noteworthy News"}}{% endraw %}</h1>
+<p>{% raw %}{{trans "Sign in to continue."}}{% endraw %}</p>
 ```
 
 **Option C: Complete Custom Message**
 ```html
-<h1>{{trans "Welcome to Noteworthy News"}}</h1>
-<p>{{trans "Your trusted source for fact-checked journalism and digital literacy education."}}</p>
+<h1>{% raw %}{{trans "Welcome to Noteworthy News"}}{% endraw %}</h1>
+<p>{% raw %}{{trans "Your trusted source for fact-checked journalism and digital literacy education."}}{% endraw %}</p>
 ```
 
 ## Step 3: Also Fix Sign Up Page
@@ -45,14 +45,14 @@ You'll see an HTML template editor. Find the section that shows the login messag
 2. Click the **Sign Up** tab (or switch template view)
 3. Find similar code:
 ```html
-<h1>{{trans "Sign Up"}}</h1>
-<p>{{trans "Sign up to {clientName} to continue to {appName}."}}</p>
+<h1>{% raw %}{{trans "Sign Up"}}{% endraw %}</h1>
+<p>{% raw %}{{trans "Sign up to {clientName} to continue to {appName}."}}{% endraw %}</p>
 ```
 
 ### Replace with:
 ```html
-<h1>{{trans "Join Noteworthy News"}}</h1>
-<p>{{trans "Create your account to access fact-checked news and media literacy tools."}}</p>
+<h1>{% raw %}{{trans "Join Noteworthy News"}}{% endraw %}</h1>
+<p>{% raw %}{{trans "Create your account to access fact-checked news and media literacy tools."}}{% endraw %}</p>
 ```
 
 ## Step 4: Save Changes

@@ -20,36 +20,36 @@ This message comes from Auth0's Universal Login template and **must be edited in
 In the template editor, you need to find this code. It's usually around lines 30-80. Look for:
 
 ```html
-<p>{{trans "Log in to {clientName} to continue to {appName}."}}</p>
+<p>{% raw %}{{trans "Log in to {clientName} to continue to {appName}."}}{% endraw %}</p>
 ```
 
 OR it might be:
 
 ```html
-<p>{{trans "Sign in to {clientName}"}}</p>
+<p>{% raw %}{{trans "Sign in to {clientName}"}}{% endraw %}</p>
 ```
 
 OR:
 
 ```html
-<h2>{{trans "Log in to {clientName} to continue to {appName}."}}</h2>
+<h2>{% raw %}{{trans "Log in to {clientName} to continue to {appName}."}}{% endraw %}</h2>
 ```
 
 ### Step 3: Replace It
 
 **Option 1: Remove clientName completely (RECOMMENDED)**
 ```html
-<p>{{trans "Welcome to Noteworthy News"}}</p>
+<p>{% raw %}{{trans "Welcome to Noteworthy News"}}{% endraw %}</p>
 ```
 
 **Option 2: Just show app name**
 ```html
-<p>{{trans "Log in to Noteworthy News"}}</p>
+<p>{% raw %}{{trans "Log in to Noteworthy News"}}{% endraw %}</p>
 ```
 
 **Option 3: Custom message**
 ```html
-<p>{{trans "Sign in to access fact-checked news"}}</p>
+<p>{% raw %}{{trans "Sign in to access fact-checked news"}}{% endraw %}</p>
 ```
 
 ### Step 4: Search and Replace in Template
@@ -90,12 +90,12 @@ If you want a simple replacement, find this pattern:
 
 **Find:**
 ```html
-{{trans "Log in to {clientName} to continue to {appName}."}}
+{% raw %}{{trans "Log in to {clientName} to continue to {appName}."}}{% endraw %}
 ```
 
 **Replace with:**
 ```html
-{{trans "Welcome to Noteworthy News"}}
+{% raw %}{{trans "Welcome to Noteworthy News"}}{% endraw %}
 ```
 
 ## If You Can't Find Branding Menu

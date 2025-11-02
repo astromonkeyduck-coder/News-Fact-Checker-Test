@@ -45,14 +45,14 @@ To change specific text like "Create Your Account":
 
 In the login template, look for:
 ```html
-<h1>{{trans "Create Your Account"}}</h1>
-<p>{{trans "Sign Up to {clientName} to continue to {appName}."}}</p>
+<h1>{% raw %}{{trans "Create Your Account"}}{% endraw %}</h1>
+<p>{% raw %}{{trans "Sign Up to {clientName} to continue to {appName}."}}{% endraw %}</p>
 ```
 
 Change to:
 ```html
-<h1>{{trans "Join Noteworthy News"}}</h1>
-<p>{{trans "Create your account to access fact-checked news and media literacy tools."}}</p>
+<h1>{% raw %}{{trans "Join Noteworthy News"}}{% endraw %}</h1>
+<p>{% raw %}{{trans "Create your account to access fact-checked news and media literacy tools."}}{% endraw %}</p>
 ```
 
 ### Step 5: Update Application Login URL (Optional)
