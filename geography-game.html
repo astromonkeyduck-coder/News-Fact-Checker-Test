@@ -335,6 +335,13 @@
             justify-content: center;
             transition: all 0.3s ease;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        .zoom-btn:focus {
+            outline: 2px solid rgba(74, 144, 226, 0.5);
+            outline-offset: 2px;
         }
         
         .zoom-btn:hover {
@@ -506,20 +513,225 @@
         @media (max-width: 768px) {
             .geography-game-container {
                 padding-top: 80px;
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            
+            .header-container {
+                padding: 0 1rem;
+            }
+            
+            .brand-info h1 {
+                font-size: 0.85rem;
+            }
+            
+            .brand-info p {
+                font-size: 0.7rem;
+            }
+            
+            .home-btn-geo {
+                padding: 8px 16px;
+                font-size: 0.9rem;
             }
             
             .game-header h1 {
-                font-size: 1.8rem;
+                font-size: 1.6rem;
+            }
+            
+            .game-header p {
+                font-size: 0.9rem;
+                padding: 0 10px;
             }
             
             .country-prompt {
-                font-size: 1.2rem;
-                padding: 15px;
+                font-size: 1.1rem;
+                padding: 15px 10px;
+                margin-bottom: 15px;
             }
             
             .stat-item-geo {
-                padding: 10px 15px;
-                min-width: 100px;
+                padding: 10px 12px;
+                min-width: 90px;
+                flex: 1;
+            }
+            
+            .stat-label-geo {
+                font-size: 0.9rem;
+            }
+            
+            .stat-value-geo {
+                font-size: 1.4rem;
+            }
+            
+            .game-stats-geo {
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+            
+            .world-map-container {
+                padding: 10px;
+                min-height: 400px;
+                max-height: 60vh;
+            }
+            
+            .world-map {
+                height: 400px;
+                min-height: 350px;
+            }
+            
+            .world-map svg {
+                min-width: 100%;
+                min-height: 350px;
+            }
+            
+            .zoom-controls {
+                top: 15px;
+                right: 15px;
+                gap: 8px;
+            }
+            
+            .zoom-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 1.4rem;
+            }
+            
+            .btn-geo {
+                padding: 14px 24px;
+                font-size: 1.1rem;
+            }
+            
+            .game-controls {
+                gap: 12px;
+                margin-top: 20px;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+            }
+            
+            .feedback-message {
+                font-size: 1.1rem;
+                padding: 15px;
+                margin-top: 10px;
+            }
+            
+            .feedback-message.correct,
+            .feedback-message.incorrect {
+                font-size: 1.5rem;
+                letter-spacing: 1px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .geography-game-container {
+                padding-top: 70px;
+                padding-left: 8px;
+                padding-right: 8px;
+            }
+            
+            .header-container {
+                padding: 0 0.75rem;
+                height: 56px;
+            }
+            
+            .main-header {
+                height: 56px;
+            }
+            
+            .brand-info h1 {
+                font-size: 0.75rem;
+            }
+            
+            .brand-info p {
+                font-size: 0.65rem;
+            }
+            
+            .header-logo {
+                font-size: 0.9rem;
+            }
+            
+            .home-btn-geo {
+                padding: 6px 12px;
+                font-size: 0.85rem;
+            }
+            
+            .game-header h1 {
+                font-size: 1.3rem;
+                margin-bottom: 8px;
+            }
+            
+            .game-header p {
+                font-size: 0.8rem;
+            }
+            
+            .country-prompt {
+                font-size: 1rem;
+                padding: 12px 8px;
+            }
+            
+            .stat-item-geo {
+                padding: 8px 10px;
+                min-width: 75px;
+            }
+            
+            .stat-label-geo {
+                font-size: 0.8rem;
+            }
+            
+            .stat-value-geo {
+                font-size: 1.2rem;
+            }
+            
+            .game-stats-geo {
+                gap: 8px;
+            }
+            
+            .world-map-container {
+                min-height: 350px;
+                max-height: 55vh;
+                padding: 8px;
+            }
+            
+            .world-map {
+                height: 350px;
+                min-height: 300px;
+            }
+            
+            .world-map svg {
+                min-height: 300px;
+            }
+            
+            .zoom-controls {
+                top: 10px;
+                right: 10px;
+                gap: 6px;
+            }
+            
+            .zoom-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+            
+            .btn-geo {
+                padding: 12px 20px;
+                font-size: 1rem;
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            .game-controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .feedback-message {
+                font-size: 1rem;
+                padding: 12px;
+            }
+            
+            .feedback-message.correct,
+            .feedback-message.incorrect {
+                font-size: 1.3rem;
             }
         }
     </style>

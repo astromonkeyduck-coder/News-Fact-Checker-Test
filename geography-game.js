@@ -385,30 +385,109 @@ class GeographyGame {
                 this.mapContainer.style.cursor = 'grab';
             });
             
-            // Pan with touch
+            // Pan with touch - improved for mobile
             let touchStartX = 0;
             let touchStartY = 0;
+            let touchStartTime = 0;
+            let touchMoved = false;
+            let touchTarget = null;
             
+            // Pinch to zoom on mobile
+            let initialDistance = 0;
+            let initialZoom = 1;
+            let pinchCenterX = 0;
+            let pinchCenterY = 0;
+            
+            // Unified touch handler for pan, tap, and pinch zoom
             this.mapContainer.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1) {
+                if (e.touches.length === 2) {
+                    // Two finger touch - prepare for pinch zoom
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    initialDistance = Math.hypot(
+                        touch2.clientX - touch1.clientX,
+                        touch2.clientY - touch1.clientY
+                    );
+                    initialZoom = this.zoomLevel;
+                    const rect = this.mapContainer.getBoundingClientRect();
+                    pinchCenterX = ((touch1.clientX + touch2.clientX) / 2) - rect.left;
+                    pinchCenterY = ((touch1.clientY + touch2.clientY) / 2) - rect.top;
+                    this.isPanning = false; // Disable panning during pinch
+                    e.preventDefault();
+                } else if (e.touches.length === 1) {
+                    // Single touch - prepare for pan or tap
                     this.isPanning = true;
                     touchStartX = e.touches[0].clientX - this.panX;
                     touchStartY = e.touches[0].clientY - this.panY;
+                    touchStartTime = Date.now();
+                    touchMoved = false;
+                    touchTarget = e.target;
+                    // Don't prevent default here - let click through if it's a country path
+                    if (touchTarget.tagName === 'path' && touchTarget.hasAttribute('data-country-code')) {
+                        // This is a country click, allow it
+                        return;
+                    }
                     e.preventDefault();
                 }
-            });
+            }, { passive: false });
             
             this.mapContainer.addEventListener('touchmove', (e) => {
-                if (this.isPanning && e.touches.length === 1) {
-                    this.panX = e.touches[0].clientX - touchStartX;
-                    this.panY = e.touches[0].clientY - touchStartY;
-                    this.updateTransform();
+                if (e.touches.length === 2) {
+                    // Pinch zoom
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    const currentDistance = Math.hypot(
+                        touch2.clientX - touch1.clientX,
+                        touch2.clientY - touch1.clientY
+                    );
+                    const scale = currentDistance / initialDistance;
+                    const newZoom = initialZoom * scale;
+                    this.zoomLevel = Math.min(3, Math.max(this.minZoomLevel || 1, newZoom));
+                    this.zoom(1, pinchCenterX, pinchCenterY); // Update zoom and center
                     e.preventDefault();
+                } else if (this.isPanning && e.touches.length === 1) {
+                    // Single touch pan
+                    const deltaX = Math.abs(e.touches[0].clientX - (touchStartX + this.panX));
+                    const deltaY = Math.abs(e.touches[0].clientY - (touchStartY + this.panY));
+                    
+                    // If moved more than 10px, consider it a pan
+                    if (deltaX > 10 || deltaY > 10) {
+                        touchMoved = true;
+                    }
+                    
+                    if (touchMoved) {
+                        this.panX = e.touches[0].clientX - touchStartX;
+                        this.panY = e.touches[0].clientY - touchStartY;
+                        this.updateTransform();
+                        e.preventDefault();
+                    }
                 }
-            });
+            }, { passive: false });
             
-            this.mapContainer.addEventListener('touchend', () => {
-                this.isPanning = false;
+            this.mapContainer.addEventListener('touchend', (e) => {
+                if (e.touches.length === 0) {
+                    // All fingers lifted
+                    if (!touchMoved && touchStartTime) {
+                        const touchDuration = Date.now() - touchStartTime;
+                        const wasQuickTap = !touchMoved && touchDuration < 300;
+                        
+                        // If it was a quick tap on a country path, trigger click
+                        if (wasQuickTap && touchTarget && touchTarget.tagName === 'path' && touchTarget.hasAttribute('data-country-code')) {
+                            // Trigger click event on the path
+                            const clickEvent = new MouseEvent('click', {
+                                bubbles: true,
+                                cancelable: true,
+                                view: window
+                            });
+                            touchTarget.dispatchEvent(clickEvent);
+                        }
+                    }
+                    
+                    this.isPanning = false;
+                    touchMoved = false;
+                    touchTarget = null;
+                    initialDistance = 0;
+                }
             });
             
             // Zoom with mouse wheel
