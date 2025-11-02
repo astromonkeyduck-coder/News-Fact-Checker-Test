@@ -97,50 +97,50 @@ export const handler: Handler = async (event) => {
     return { statusCode: 204, headers, body: "" };
   }
 
+  // Get siteID and token from environment (shared for both GET and POST)
+  const siteID = process.env.NETLIFY_SITE_ID || (event as any).headers?.['x-nf-site-id'];
+  const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || (event as any).headers?.['x-nf-token'];
+  
+  let store;
   try {
-    const username = event.queryStringParameters?.username;
-    const limit = parseInt(event.queryStringParameters?.limit || "10", 10);
-
-    if (!username) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ 
-          error: "username parameter required",
-          example: "/.netlify/functions/fetch-profile-tweets?username=newsnoteworthy&limit=10"
-        }),
-      };
+    if (siteID && token) {
+      store = getStore({
+        name: "x-posts",
+        siteID: siteID,
+        token: token,
+      });
+    } else {
+      store = getStore({ name: "x-posts" });
     }
+  } catch (storeErr: any) {
+    console.error('[fetch-profile-tweets] Failed to create store:', storeErr);
+    return {
+      statusCode: 503,
+      headers,
+      body: JSON.stringify({
+        error: "Storage configuration error",
+        message: storeErr.message,
+      }),
+    };
+  }
 
-    // Get siteID and token from environment
-    const siteID = process.env.NETLIFY_SITE_ID || (event as any).headers?.['x-nf-site-id'];
-    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || (event as any).headers?.['x-nf-token'];
-    
-    let store;
+  // GET: Fetch tweets from profile and return as cards
+  if (event.httpMethod === "GET") {
     try {
-      if (siteID && token) {
-        store = getStore({
-          name: "x-posts",
-          siteID: siteID,
-          token: token,
-        });
-      } else {
-        store = getStore({ name: "x-posts" });
-      }
-    } catch (storeErr: any) {
-      console.error('[fetch-profile-tweets] Failed to create store:', storeErr);
-      return {
-        statusCode: 503,
-        headers,
-        body: JSON.stringify({
-          error: "Storage configuration error",
-          message: storeErr.message,
-        }),
-      };
-    }
+      const username = event.queryStringParameters?.username;
+      const limit = parseInt(event.queryStringParameters?.limit || "10", 10);
 
-    // GET: Fetch tweets from profile and return as cards
-    if (event.httpMethod === "GET") {
+      if (!username) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: "username parameter required",
+            example: "/.netlify/functions/fetch-profile-tweets?username=newsnoteworthy&limit=10"
+          }),
+        };
+      }
+
       try {
         // Fetch profile page
         const profileUrl = `https://twitter.com/${username}`;
@@ -337,11 +337,4 @@ export const handler: Handler = async (event) => {
       headers,
       body: JSON.stringify({ error: "Method not allowed" }),
     };
-  } catch (error: any) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: error?.message || "Internal server error" }),
-    };
-  }
 };

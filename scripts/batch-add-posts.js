@@ -35,6 +35,8 @@ function loadProgress() {
     if (fs.existsSync(PROGRESS_FILE)) {
       return JSON.parse(fs.readFileSync(PROGRESS_FILE, 'utf8'));
     }
+  } catch (err) {
+    console.log('No existing progress file, starting fresh');
   }
   return { completed: [], failed: [], lastIndex: -1 };
 }
@@ -102,22 +104,23 @@ async function addPost(tweetUrl, index, total) {
  */
 async function processPosts(tweetUrls) {
   const progress = loadProgress();
-  const alreadyCompleted = new Set(progress.completed);
+  const completedArray = Array.isArray(progress.completed) ? progress.completed : [];
+  const alreadyCompleted = new Set(completedArray);
   
   // Filter out already completed URLs
-  const toProcess = tweetUrls.filter(url => !alreadyCompleted.includes(url));
+  const toProcess = tweetUrls.filter(url => !alreadyCompleted.has(url));
   
   if (toProcess.length === 0) {
     console.log('All posts have already been processed!');
     return;
   }
 
-  console.log(`\n📊 Processing ${toProcess.length} posts (${progress.completed.length} already completed)`);
+  console.log(`\n📊 Processing ${toProcess.length} posts (${completedArray.length} already completed)`);
   console.log(`⏱️  Estimated time: ~${Math.ceil((toProcess.length * DELAY_BETWEEN_REQUESTS) / 60000)} minutes\n`);
 
-  let completed = [...progress.completed];
-  let failed = [...progress.failed];
-  let lastIndex = progress.lastIndex;
+  let completed = [...completedArray];
+  let failed = Array.isArray(progress.failed) ? [...progress.failed] : [];
+  let lastIndex = progress.lastIndex || -1;
 
   // Process in batches
   for (let i = 0; i < toProcess.length; i++) {
