@@ -6634,3 +6634,41 @@ body.dark-mode .ai-personalized-feedback p {
     }
 }
 
+/* Post Feed Controls - Always positioned above posts */
+.post-feed-controls {
+    margin-bottom: 2rem !important;
+    padding: 1rem;
+    background: rgba(15, 15, 35, 0.8);
+    border-radius: 12px;
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    position: relative !important;
+    z-index: 10;
+    width: 100%;
+    order: -1; /* Ensure it comes before other elements in flex containers */
+    clear: both; /* Ensure it's on its own line */
+}
+
+/* Ensure parent containers position controls correctly */
+.news-carousel:has(.post-feed-controls) {
+    display: flex;
+    flex-direction: column;
+}
+
+.news-section:has(.post-feed-controls) {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Make sure controls come before articles-track container */
+.post-feed-controls + #articlesTrack,
+.post-feed-controls + .articles-track,
+.post-feed-controls + [id="articlesTrack"] {
+    order: 1;
+    margin-top: 0;
+}
+

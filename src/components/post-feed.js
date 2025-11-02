@@ -689,7 +689,7 @@ function renderPosts(posts, container, originalContent = null) {
       return mediaHtml;
     };
     
-    // Render engagement stats
+    // Render engagement stats (modern style)
     const renderStats = (post) => {
       const stats = [];
       // Always show stats if they exist (even if 0)
@@ -698,25 +698,23 @@ function renderPosts(posts, container, originalContent = null) {
       const reposts = post.reposts !== undefined && post.reposts !== null ? post.reposts : null;
       const replies = post.replies !== undefined && post.replies !== null ? post.replies : null;
       
-      if (views !== null) stats.push({ icon: '👁️', label: 'Views', value: formatNumber(views) });
-      if (likes !== null) stats.push({ icon: '❤️', label: 'Likes', value: formatNumber(likes) });
-      if (reposts !== null) stats.push({ icon: '🔄', label: 'Reposts', value: formatNumber(reposts) });
-      if (replies !== null) stats.push({ icon: '💬', label: 'Replies', value: formatNumber(replies) });
+      if (views !== null) stats.push({ icon: '👁️', label: '', value: formatNumber(views), color: 'rgba(255,255,255,0.7)' });
+      if (likes !== null) stats.push({ icon: '❤️', label: '', value: formatNumber(likes), color: '#ff6b9d' });
+      if (reposts !== null) stats.push({ icon: '🔄', label: '', value: formatNumber(reposts), color: '#4A90E2' });
+      if (replies !== null) stats.push({ icon: '💬', label: '', value: formatNumber(replies), color: 'rgba(255,255,255,0.7)' });
       
       // Debug logging
       if (stats.length === 0) {
         console.log('[PostFeed] No stats for post', post.id, { views, likes, reposts, replies, post: post });
-        return '<div class="post-stats-placeholder" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); font-size: 0.85rem;">Stats coming soon</div>';
+        return '';
       }
       
-      return `<div class="post-stats" style="display: flex; gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); flex-wrap: wrap;">
-        ${stats.map(stat => `
-          <div class="post-stat-item" style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255,255,255,0.8); font-size: 0.9rem;">
-            <span>${stat.icon}</span>
-            <span><strong>${stat.value}</strong> ${stat.label}</span>
-          </div>
-        `).join('')}
-      </div>`;
+      return stats.map(stat => `
+        <div class="modern-stat-item" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: rgba(255,255,255,0.05); border-radius: 8px; transition: all 0.2s ease; cursor: default;" onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.transform='translateY(0)'">
+          <span style="font-size: 1.1rem; filter: ${stat.color !== 'rgba(255,255,255,0.7)' ? 'none' : 'brightness(0.9)'}">${stat.icon}</span>
+          <span style="font-weight: 600; font-size: 0.95rem; color: ${stat.color};">${stat.value}</span>
+        </div>
+      `).join('');
     };
     
     const postsHtml = filteredPosts.map((post, index) => {
@@ -727,16 +725,19 @@ function renderPosts(posts, container, originalContent = null) {
       }
       
       // Extract fields with multiple fallbacks
-      const title = post.title || post.text || post.story?.substring(0, 80) || `Post ${index + 1}`;
-      const story = post.story || post.text || post.html?.replace(/<[^>]*>/g, '').substring(0, 500) || '';
+      const fullStory = post.story || post.text || post.html?.replace(/<[^>]*>/g, '') || '';
       const link = post.link || post.url || `https://x.com/newsnoteworthy/status/${post.id || ''}`;
       const datePosted = post.datePosted || post.created_at || new Date().toISOString();
+      
+      // Title is the full content (displayed as big bold heading)
+      // Story is empty since title shows everything
+      const titleText = fullStory || `Post ${index + 1}`;
       
       // Debug: Log first few posts to see what data we have
       if (index < 3) {
         console.log(`[PostFeed] Post ${index + 1}:`, {
           id: post.id,
-          title: title.substring(0, 50),
+          storyLength: fullStory.length,
           datePosted,
           views: post.views,
           likes: post.likes,
@@ -747,25 +748,33 @@ function renderPosts(posts, container, originalContent = null) {
       }
       
       return `
-        <article class="article-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || index}" style="margin-bottom: 2rem;">
-          <div class="article-content" style="display: flex; flex-direction: column;">
-            <div style="flex: 1;">
-              <h3 class="article-headline" style="margin-bottom: 0.75rem;">
-                <a href="${link}" target="_blank" rel="noopener noreferrer" style="color: #4A90E2; text-decoration: none;">${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</a>
-              </h3>
-              ${story ? `<p class="article-excerpt" style="color: rgba(255,255,255,0.9); line-height: 1.6; margin-bottom: 1rem;">${formatStory(story)}</p>` : ''}
-              
-              ${renderMedia(post)}
-              
-              <div class="article-meta" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); font-size: 0.85rem;">
-                <span class="article-date">${formatRelativeTime(datePosted)}</span>
-                <span class="article-read-time">${post.readTime || Math.ceil((story || title).split(/\s+/).length / 200) || 1} min read</span>
+        <article class="modern-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || index}" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; transition: all 0.3s ease; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);">
+          <div class="modern-post-header" style="margin-bottom: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #4A90E2 0%, #2A60B0 100%); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; color: white; flex-shrink: 0;">
+                  NW
+                </div>
+                <div>
+                  <div style="font-weight: 700; font-size: 0.95rem; color: #fff; margin-bottom: 2px;">Noteworthy News</div>
+                  <div style="font-size: 0.85rem; color: rgba(255,255,255,0.6);">${formatRelativeTime(datePosted)}</div>
+                </div>
               </div>
-              
-              ${renderStats(post)}
+              <a href="${link}" target="_blank" rel="noopener noreferrer" style="color: rgba(255,255,255,0.6); text-decoration: none; font-size: 1.2rem; transition: color 0.2s;" onmouseover="this.style.color='#4A90E2'" onmouseout="this.style.color='rgba(255,255,255,0.6)'">↗</a>
             </div>
+            
+            <h2 class="modern-post-title" style="font-size: 1.5rem; font-weight: 700; line-height: 1.4; color: #fff; margin: 0; word-wrap: break-word;">
+              <a href="${link}" target="_blank" rel="noopener noreferrer" style="color: #fff; text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='#4A90E2'" onmouseout="this.style.color='#fff'">${formatStory(titleText)}</a>
+            </h2>
           </div>
-          <div class="comment-section-separated" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(74, 144, 226, 0.3);">
+          
+          ${renderMedia(post)}
+          
+          <div class="modern-post-stats" style="display: flex; align-items: center; gap: 1.5rem; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid rgba(255,255,255,0.1); flex-wrap: wrap;">
+            ${renderStats(post)}
+          </div>
+          
+          <div class="comment-section-separated" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(74, 144, 226, 0.2);">
             <div class="comment-section" data-article-id="post-${post.id}"></div>
           </div>
         </article>
@@ -792,14 +801,32 @@ function renderPosts(posts, container, originalContent = null) {
     
     // Insert controls before container if they don't exist
     const parentContainer = container.parentElement;
+    if (!parentContainer) {
+      console.error('[PostFeed] Container has no parent element, cannot insert controls');
+      container.innerHTML = postsHtml;
+      return;
+    }
+    
     let controlsElement = parentContainer.querySelector('.post-feed-controls');
     
     if (!controlsElement) {
+      // Create and insert controls BEFORE the container
       controlsElement = document.createElement('div');
       controlsElement.className = 'post-feed-controls';
       parentContainer.insertBefore(controlsElement, container);
+      console.log('[PostFeed] Created new controls element above container');
     }
+    
+    // Update controls HTML (preserves position above container)
     controlsElement.outerHTML = controlsHtml;
+    
+    // Re-select the controls element after outerHTML replacement (creates new element)
+    const newControlsElement = parentContainer.querySelector('.post-feed-controls');
+    if (newControlsElement && newControlsElement.nextSibling !== container) {
+      // If controls ended up in wrong position, move them before container
+      parentContainer.insertBefore(newControlsElement, container);
+      console.log('[PostFeed] Repositioned controls above container');
+    }
     
     // Update container with posts
     container.innerHTML = postsHtml;
