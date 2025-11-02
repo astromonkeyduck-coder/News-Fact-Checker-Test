@@ -12,9 +12,6 @@ class CommentSection {
   }
   
   async init() {
-    // Load existing comments
-    this.loadComments();
-    
     // Check if user is authenticated
     this.user = null;
     if (window.auth0 && typeof window.auth0.isAuthenticated === 'function') {
@@ -28,26 +25,45 @@ class CommentSection {
       }
     }
     
+    // Load existing comments from API (visible across all devices)
+    await this.loadComments();
     this.render();
   }
   
-  loadComments() {
+  async loadComments() {
     try {
-      const saved = localStorage.getItem(this.commentKey);
-      if (saved) {
-        this.comments = JSON.parse(saved);
+      const response = await fetch(`/.netlify/functions/comments-api?articleId=${encodeURIComponent(this.articleId)}`);
+      if (response.ok) {
+        const data = await response.json();
+        this.comments = data.comments || [];
+      } else {
+        // If API fails, fall back to localStorage for backward compatibility
+        console.warn('[Comments] API load failed, trying localStorage');
+        const saved = localStorage.getItem(this.commentKey);
+        if (saved) {
+          this.comments = JSON.parse(saved);
+        }
       }
     } catch (err) {
       console.error('[Comments] Error loading comments:', err);
-      this.comments = [];
+      // Fall back to localStorage
+      try {
+        const saved = localStorage.getItem(this.commentKey);
+        if (saved) {
+          this.comments = JSON.parse(saved);
+        }
+      } catch (localErr) {
+        this.comments = [];
+      }
     }
   }
   
-  saveComments() {
+  async saveComments() {
+    // Comments are now saved via API, but keep this for backward compatibility
     try {
       localStorage.setItem(this.commentKey, JSON.stringify(this.comments));
     } catch (err) {
-      console.error('[Comments] Error saving comments:', err);
+      console.error('[Comments] Error saving to localStorage:', err);
     }
   }
   
@@ -62,19 +78,54 @@ class CommentSection {
       return;
     }
     
-    const comment = {
-      id: Date.now().toString(),
-      text: text.trim(),
-      author: this.user.name || this.user.nickname || this.user.email?.split('@')[0] || 'Anonymous',
-      authorEmail: this.user.email || '',
-      authorId: this.user.sub || '',
-      timestamp: Date.now(),
-      date: new Date().toLocaleDateString()
-    };
+    const author = this.user.name || this.user.nickname || this.user.email?.split('@')[0] || 'Anonymous';
+    const authorEmail = this.user.email || '';
+    const authorId = this.user.sub || '';
     
-    this.comments.unshift(comment); // Add to beginning
-    this.saveComments();
-    this.render();
+    try {
+      // Save to API (visible across all devices)
+      const response = await fetch('/.netlify/functions/comments-api', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          articleId: this.articleId,
+          text: text.trim(),
+          author: author,
+          authorEmail: authorEmail,
+          authorId: authorId,
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Add new comment to beginning of array
+        this.comments.unshift(data.comment);
+        // Also save to localStorage for backward compatibility
+        this.saveComments();
+        this.render();
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to post comment. Please try again.');
+      }
+    } catch (err) {
+      console.error('[Comments] Error posting comment:', err);
+      // Fallback: save to localStorage only (won't be visible on other devices)
+      const comment = {
+        id: Date.now().toString(),
+        text: text.trim(),
+        author: author,
+        authorEmail: authorEmail,
+        authorId: authorId,
+        timestamp: Date.now(),
+        date: new Date().toLocaleDateString()
+      };
+      this.comments.unshift(comment);
+      this.saveComments();
+      this.render();
+      alert('Comment saved locally, but may not be visible on other devices. Check your connection.');
+    }
   }
   
   render() {
@@ -162,7 +213,7 @@ class CommentSection {
     }
   }
   
-  deleteComment(commentId) {
+  async deleteComment(commentId) {
     if (!this.user) {
       alert('You must be signed in to delete comments');
       return;
@@ -182,17 +233,44 @@ class CommentSection {
     }
     
     // Confirm deletion
-    if (confirm('Are you sure you want to delete this comment?')) {
-      // Remove comment from array
+    if (!confirm('Are you sure you want to delete this comment?')) {
+      return;
+    }
+    
+    try {
+      // Delete via API
+      const response = await fetch('/.netlify/functions/comments-api', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Email': this.user.email || '',
+        },
+        body: JSON.stringify({
+          articleId: this.articleId,
+          commentId: commentId,
+          authorId: userId,
+        }),
+      });
+      
+      if (response.ok) {
+        // Remove comment from array
+        this.comments.splice(commentIndex, 1);
+        // Save updated comments to localStorage for backward compatibility
+        this.saveComments();
+        // Re-render
+        this.render();
+        console.log(`[Comments] Deleted comment ${commentId}`);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to delete comment. Please try again.');
+      }
+    } catch (err) {
+      console.error('[Comments] Error deleting comment:', err);
+      // Fallback: delete from local array only
       this.comments.splice(commentIndex, 1);
-      
-      // Save updated comments
       this.saveComments();
-      
-      // Re-render
       this.render();
-      
-      console.log(`[Comments] Deleted comment ${commentId}`);
+      alert('Comment removed locally, but may still appear on other devices.');
     }
   }
   
