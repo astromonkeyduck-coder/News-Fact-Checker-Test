@@ -79,17 +79,36 @@ async function updatePost(postData) {
 function parseTSV(tsvText) {
   const lines = tsvText.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
   const posts = [];
+  let isFirstLine = true;
   
   for (const line of lines) {
+    // Skip header row
+    if (isFirstLine) {
+      isFirstLine = false;
+      // Check if it looks like a header (contains "Post id" or "Date")
+      if (line.toLowerCase().includes('post id') || line.toLowerCase().includes('date')) {
+        console.log('📋 Skipping header row');
+        continue;
+      }
+    }
+    
     const parts = line.split('\t');
     if (parts.length < 12) {
       console.warn(`⚠ Skipping malformed line: ${line.substring(0, 50)}...`);
       continue;
     }
     
+    const postId = parts[0].trim();
+    const date = parts[1].trim();
+    
+    // Skip if postId is "Post id" (header row got through)
+    if (postId.toLowerCase() === 'post id' || date.toLowerCase() === 'date') {
+      continue;
+    }
+    
     const post = {
-      id: parts[0].trim(),
-      date: parts[1].trim(),
+      id: postId,
+      date: date,
       text: parts[2].trim(),
       link: parts[3].trim(),
       impressions: parseNumber(parts[4]),
@@ -102,7 +121,7 @@ function parseTSV(tsvText) {
       reposts: parseNumber(parts[11]),
     };
     
-    if (post.id && post.date) {
+    if (post.id && post.date && post.id !== 'Post id' && post.date !== 'Date') {
       posts.push(post);
     }
   }
