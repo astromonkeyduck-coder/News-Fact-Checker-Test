@@ -692,12 +692,22 @@ function renderPosts(posts, container, originalContent = null) {
     // Render engagement stats
     const renderStats = (post) => {
       const stats = [];
-      if (post.views !== undefined && post.views !== null) stats.push({ icon: '👁️', label: 'Views', value: formatNumber(post.views) });
-      if (post.likes !== undefined && post.likes !== null) stats.push({ icon: '❤️', label: 'Likes', value: formatNumber(post.likes) });
-      if (post.reposts !== undefined && post.reposts !== null) stats.push({ icon: '🔄', label: 'Reposts', value: formatNumber(post.reposts) });
-      if (post.replies !== undefined && post.replies !== null) stats.push({ icon: '💬', label: 'Replies', value: formatNumber(post.replies) });
+      // Always show stats if they exist (even if 0)
+      const views = post.views !== undefined && post.views !== null ? post.views : null;
+      const likes = post.likes !== undefined && post.likes !== null ? post.likes : null;
+      const reposts = post.reposts !== undefined && post.reposts !== null ? post.reposts : null;
+      const replies = post.replies !== undefined && post.replies !== null ? post.replies : null;
       
-      if (stats.length === 0) return '';
+      if (views !== null) stats.push({ icon: '👁️', label: 'Views', value: formatNumber(views) });
+      if (likes !== null) stats.push({ icon: '❤️', label: 'Likes', value: formatNumber(likes) });
+      if (reposts !== null) stats.push({ icon: '🔄', label: 'Reposts', value: formatNumber(reposts) });
+      if (replies !== null) stats.push({ icon: '💬', label: 'Replies', value: formatNumber(replies) });
+      
+      // Debug logging
+      if (stats.length === 0) {
+        console.log('[PostFeed] No stats for post', post.id, { views, likes, reposts, replies, post: post });
+        return '<div class="post-stats-placeholder" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); font-size: 0.85rem;">Stats coming soon</div>';
+      }
       
       return `<div class="post-stats" style="display: flex; gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); flex-wrap: wrap;">
         ${stats.map(stat => `
@@ -806,20 +816,55 @@ function renderPosts(posts, container, originalContent = null) {
     
     // Initialize comment sections (separated from cards)
     setTimeout(() => {
+      console.log('[PostFeed] Initializing comment sections for', filteredPosts.length, 'posts');
       filteredPosts.forEach(post => {
         const articleId = `post-${post.id}`;
         const commentContainer = document.querySelector(`[data-article-id="${articleId}"]`);
-        if (commentContainer) {
-          // Initialize if not already initialized
-          if (!window.commentSections || !window.commentSections[articleId]) {
-            // Create CommentSection instance if available
-            if (typeof CommentSection !== 'undefined') {
-              if (!window.commentSections) window.commentSections = {};
+        
+        if (!commentContainer) {
+          console.warn('[PostFeed] Comment container not found for', articleId);
+          return;
+        }
+        
+        console.log('[PostFeed] Found comment container for', articleId);
+        
+        // Initialize if not already initialized
+        if (!window.commentSections) window.commentSections = {};
+        
+        if (!window.commentSections[articleId]) {
+          // Create CommentSection instance if available
+          if (typeof CommentSection !== 'undefined') {
+            try {
               window.commentSections[articleId] = new CommentSection(articleId);
+              console.log('[PostFeed] Initialized CommentSection for', articleId);
+            } catch (err) {
+              console.error('[PostFeed] Failed to initialize CommentSection for', articleId, err);
+              // Show placeholder if CommentSection fails
+              commentContainer.innerHTML = '<div style="padding: 1rem; color: rgba(255,255,255,0.7); font-size: 0.9rem;">Comments will appear here once initialized.</div>';
             }
           } else {
-            // Re-render existing section
+            console.warn('[PostFeed] CommentSection class not available');
+            // Show placeholder if CommentSection isn't loaded
+            commentContainer.innerHTML = '<div style="padding: 1rem; color: rgba(255,255,255,0.7); font-size: 0.9rem;">Loading comment section...</div>';
+            // Try to initialize later
+            setTimeout(() => {
+              if (typeof CommentSection !== 'undefined') {
+                try {
+                  window.commentSections[articleId] = new CommentSection(articleId);
+                  console.log('[PostFeed] Delayed initialization successful for', articleId);
+                } catch (err) {
+                  console.error('[PostFeed] Delayed initialization failed for', articleId, err);
+                }
+              }
+            }, 1000);
+          }
+        } else {
+          // Re-render existing section
+          try {
             window.commentSections[articleId].render();
+            console.log('[PostFeed] Re-rendered existing CommentSection for', articleId);
+          } catch (err) {
+            console.error('[PostFeed] Failed to re-render CommentSection for', articleId, err);
           }
         }
       });
