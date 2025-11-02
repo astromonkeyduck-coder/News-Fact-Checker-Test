@@ -187,58 +187,98 @@ function extractLocationFromPost(post) {
 }
 
 /**
- * Get user's location from browser
+ * Get user's location from IP address (geolocation service)
  */
 async function getUserLocation() {
   if (userLocation) return userLocation;
   if (locationPermissionRequested) return null;
   
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) {
-      console.log('[Feed] Geolocation not supported');
-      resolve(null);
-      return;
+  locationPermissionRequested = true;
+  
+  try {
+    // Try cached location first
+    const cached = localStorage.getItem('user-location');
+    const cachedTime = localStorage.getItem('user-location-time');
+    if (cached && cachedTime) {
+      const age = Date.now() - parseInt(cachedTime, 10);
+      if (age < 24 * 60 * 60 * 1000) { // 24 hours
+        userLocation = JSON.parse(cached);
+        console.log('[Feed] Using cached location:', userLocation);
+        return userLocation;
+      }
     }
     
-    locationPermissionRequested = true;
+    // Fetch location from IP using free IP geolocation service
+    const response = await fetch('https://ipapi.co/json/', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
     
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        userLocation = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
-        localStorage.setItem('user-location', JSON.stringify(userLocation));
-        console.log('[Feed] User location:', userLocation);
-        resolve(userLocation);
-      },
-      (error) => {
-        console.log('[Feed] Location access denied or failed:', error.message);
-        // Try to use cached location
-        try {
-          const cached = localStorage.getItem('user-location');
-          if (cached) {
-            userLocation = JSON.parse(cached);
-            resolve(userLocation);
-            return;
-          }
-        } catch (e) {
-          // Ignore cache errors
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.latitude && data.longitude) {
+      userLocation = {
+        lat: parseFloat(data.latitude),
+        lng: parseFloat(data.longitude),
+        city: data.city,
+        region: data.region,
+        country: data.country_name,
+      };
+      
+      localStorage.setItem('user-location', JSON.stringify(userLocation));
+      localStorage.setItem('user-location-time', Date.now().toString());
+      console.log('[Feed] User location from IP:', userLocation);
+      return userLocation;
+    }
+    
+    console.warn('[Feed] IP geolocation did not return coordinates');
+    return null;
+  } catch (error) {
+    console.error('[Feed] Failed to get location from IP:', error);
+    
+    // Try fallback service
+    try {
+      const fallbackResponse = await fetch('https://freeipapi.com/api/json/', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+      
+      if (fallbackResponse.ok) {
+        const fallbackData = await fallbackResponse.json();
+        if (fallbackData.latitude && fallbackData.longitude) {
+          userLocation = {
+            lat: parseFloat(fallbackData.latitude),
+            lng: parseFloat(fallbackData.longitude),
+            city: fallbackData.cityName,
+            region: fallbackData.regionName,
+            country: fallbackData.countryName,
+          };
+          
+          localStorage.setItem('user-location', JSON.stringify(userLocation));
+          localStorage.setItem('user-location-time', Date.now().toString());
+          console.log('[Feed] User location from fallback IP service:', userLocation);
+          return userLocation;
         }
-        resolve(null);
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 5000,
-        maximumAge: 24 * 60 * 60 * 1000, // 24 hours
       }
-    );
-  });
+    } catch (fallbackError) {
+      console.error('[Feed] Fallback IP service also failed:', fallbackError);
+    }
+    
+    return null;
+  }
 }
 
 /**
  * Calculate approximate distance score between user location and post
- * This is a simplified heuristic - in production you'd use proper geocoding
+ * Enhanced with IP-based location matching
  */
 function calculateLocationRelevance(post, userLoc) {
   if (!userLoc) return 0;
@@ -246,29 +286,39 @@ function calculateLocationRelevance(post, userLoc) {
   const postLocation = extractLocationFromPost(post);
   if (!postLocation) return 0;
   
-  // Simple keyword matching - posts with location mentions get higher relevance
-  // In a production system, you'd geocode locations and calculate actual distances
   const postText = (post.text || '').toLowerCase();
   const postLocationLower = postLocation.toLowerCase();
-  
-  // Check if post mentions locations that might be near user
-  // For now, we'll use a simple relevance score based on location keywords
-  // Posts with location mentions get boosted relevance
-  
-  // You could enhance this with:
-  // 1. Reverse geocoding user location to get city/state
-  // 2. Geocoding post locations
-  // 3. Calculating actual distance
-  
-  // For now, simple heuristic: posts with location mentions get relevance boost
   let relevance = 0;
   
-  // If post mentions a location, give it some relevance
+  // If post mentions a location, give it base relevance
   if (postLocation) {
-    relevance = 100; // Base relevance for having a location
+    relevance = 50; // Base relevance for having a location
     
-    // Could add more sophisticated matching here
-    // For example, check if mentioned location matches user's city/state
+    // Boost relevance if location matches user's region
+    if (userLoc.city && postText.includes(userLoc.city.toLowerCase())) {
+      relevance += 100; // Strong match for same city
+    }
+    
+    if (userLoc.region && postText.includes(userLoc.region.toLowerCase())) {
+      relevance += 50; // Match for same state/region
+    }
+    
+    if (userLoc.country && postText.includes(userLoc.country.toLowerCase())) {
+      relevance += 25; // Match for same country
+    }
+    
+    // Also check location name directly
+    const userCityLower = (userLoc.city || '').toLowerCase();
+    const userRegionLower = (userLoc.region || '').toLowerCase();
+    const userCountryLower = (userLoc.country || '').toLowerCase();
+    
+    if (userCityLower && postLocationLower.includes(userCityLower)) {
+      relevance += 100;
+    } else if (userRegionLower && postLocationLower.includes(userRegionLower)) {
+      relevance += 50;
+    } else if (userCountryLower && postLocationLower.includes(userCountryLower)) {
+      relevance += 25;
+    }
   }
   
   return relevance;
@@ -363,8 +413,10 @@ function searchPosts(posts, query) {
  * Render post card
  */
 function renderPostCard(post) {
-  const timestamp = formatRelativeTime(post.createdAt);
-  const timestampTooltip = formatAbsoluteTime(post.createdAt);
+  // Always ensure we have a valid date
+  const postDate = post.createdAt || post.datePosted || new Date().toISOString();
+  const timestamp = formatRelativeTime(postDate);
+  const timestampTooltip = formatAbsoluteTime(postDate);
   
   // Format text with links and images detected
   // Pass post.media to remove redundant Twitter URLs if media is already displayed
@@ -994,8 +1046,26 @@ function renderFeedControls(totalPosts) {
   countDiv.appendChild(countNumber);
   countDiv.appendChild(countLabel);
   
-  controlsDiv.appendChild(searchContainer);
-  controlsDiv.appendChild(sortContainer);
+  // If "Near Me" is selected and we don't have location yet, request it
+  if (currentSort === 'nearby' && !userLocation && !locationPermissionRequested) {
+    getUserLocation().then(loc => {
+      if (loc) {
+        // Re-render feed with location-based sorting
+        renderFeed();
+      } else {
+        // Location failed, switch back to recent
+        currentSort = 'recent';
+        localStorage.setItem('feed-sort', 'recent');
+        const recentOption = sortDropdown.querySelector('[data-value="recent"]');
+        if (recentOption) {
+          sortButtonText.textContent = 'Most Recent';
+          recentOption.click();
+        }
+      }
+    });
+  }
+  
+  controlsDiv.appendChild(inputRow);
   controlsDiv.appendChild(countDiv);
   
   // Event listeners
@@ -1490,6 +1560,17 @@ async function renderPostFeedV2(
   
   // Read URL params
   readURLParams();
+  
+  // Load cached user location if available
+  try {
+    const cachedLocation = localStorage.getItem('user-location');
+    if (cachedLocation) {
+      userLocation = JSON.parse(cachedLocation);
+      console.log('[Feed] Loaded cached user location:', userLocation);
+    }
+  } catch (e) {
+    // Ignore cache errors
+  }
   
   // Check cache
   if (!forceRefresh) {
