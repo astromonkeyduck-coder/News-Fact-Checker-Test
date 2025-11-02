@@ -857,6 +857,10 @@ function renderFeedControls(totalPosts) {
     max-width: 100% !important;
   `;
   
+  // Create a horizontal flex container to align search and sort on same line
+  const inputRow = document.createElement('div');
+  inputRow.style.cssText = 'display: flex; align-items: center; gap: 1rem; flex: 1; min-width: 0;';
+  
   // Search input with icon
   const searchContainer = document.createElement('div');
   searchContainer.style.cssText = 'flex: 1; min-width: 280px; position: relative; display: flex; align-items: center;';
@@ -912,33 +916,18 @@ function renderFeedControls(totalPosts) {
   searchContainer.appendChild(searchIcon);
   searchContainer.appendChild(searchInput);
   
-  // Sort select - aligned on same Y position as search
+  // Professional custom sort dropdown
   const sortContainer = document.createElement('div');
-  sortContainer.style.cssText = 'position: relative; display: flex; align-items: center; min-width: 200px;';
+  sortContainer.style.cssText = 'position: relative; min-width: 220px; height: 48px;';
   
-  const sortSelectWrapper = document.createElement('div');
-  sortSelectWrapper.style.cssText = 'position: relative; width: 100%;';
-  
-  const sortIcon = document.createElement('div');
-  sortIcon.style.cssText = `
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 1.125rem;
-    pointer-events: none;
-    z-index: 1;
-  `;
-  sortIcon.textContent = '↓↑';
-  
-  const sortSelect = document.createElement('select');
-  sortSelect.id = sortId;
-  sortSelect.className = 'feed-sort-select';
-  sortSelect.style.cssText = `
+  const sortButton = document.createElement('button');
+  sortButton.id = sortId + '-button';
+  sortButton.type = 'button';
+  sortButton.className = 'feed-sort-button';
+  sortButton.style.cssText = `
     width: 100%;
     height: 48px;
-    padding: 0.875rem 2.5rem 0.875rem 3rem;
+    padding: 0.875rem 3rem 0.875rem 1rem;
     background: rgba(255, 255, 255, 0.08);
     border: 2px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
@@ -948,73 +937,205 @@ function renderFeedControls(totalPosts) {
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     outline: none;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath fill='%23ffffff' d='M7 10L2 5h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.875rem center;
-    background-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
     box-sizing: border-box;
   `;
   
-  sortSelect.addEventListener('focus', function() {
-    this.style.background = 'rgba(255, 255, 255, 0.12)';
-    this.style.borderColor = '#4A90E2';
-    this.style.boxShadow = '0 0 0 4px rgba(74, 144, 226, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3)';
-    sortIcon.style.color = '#4A90E2';
-  });
+  const sortButtonText = document.createElement('span');
+  sortButtonText.className = 'feed-sort-button-text';
+  const currentSortText = {
+    'recent': 'Most Recent',
+    'nearby': '📍 Near Me',
+    'views': 'Most Views',
+    'likes': 'Most Likes',
+    'comments': 'Most Comments',
+    'reposts': 'Most Reposts'
+  }[currentSort] || 'Most Recent';
+  sortButtonText.textContent = currentSortText;
+  sortButtonText.style.cssText = 'flex: 1;';
   
-  sortSelect.addEventListener('blur', function() {
-    this.style.background = 'rgba(255, 255, 255, 0.08)';
-    this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-    this.style.boxShadow = 'none';
-    sortIcon.style.color = 'rgba(255, 255, 255, 0.5)';
-  });
+  const sortButtonIcon = document.createElement('span');
+  sortButtonIcon.className = 'feed-sort-button-icon';
+  sortButtonIcon.textContent = '▼';
+  sortButtonIcon.style.cssText = `
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    transition: transform 0.3s ease;
+    margin-left: 0.5rem;
+  `;
   
-  sortSelect.addEventListener('change', function() {
-    // Add visual feedback
-    this.style.transform = 'scale(0.98)';
-    setTimeout(() => {
-      this.style.transform = 'scale(1)';
-    }, 150);
-  });
+  sortButton.appendChild(sortButtonText);
+  sortButton.appendChild(sortButtonIcon);
+  
+  // Custom dropdown menu
+  const sortDropdown = document.createElement('div');
+  sortDropdown.id = sortId + '-dropdown';
+  sortDropdown.className = 'feed-sort-dropdown';
+  sortDropdown.style.cssText = `
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    right: 0;
+    background: rgba(15, 15, 35, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: none;
+    overflow: hidden;
+    max-height: 400px;
+    overflow-y: auto;
+  `;
+  
   const options = [
-    { value: 'recent', text: 'Most Recent' },
-    { value: 'nearby', text: '📍 Near Me' },
-    { value: 'views', text: 'Most Views' },
-    { value: 'likes', text: 'Most Likes' },
-    { value: 'comments', text: 'Most Comments' },
-    { value: 'reposts', text: 'Most Reposts' }
+    { value: 'recent', text: 'Most Recent', icon: '🕐' },
+    { value: 'nearby', text: 'Near Me', icon: '📍' },
+    { value: 'views', text: 'Most Views', icon: '👁️' },
+    { value: 'likes', text: 'Most Likes', icon: '❤️' },
+    { value: 'comments', text: 'Most Comments', icon: '💬' },
+    { value: 'reposts', text: 'Most Reposts', icon: '🔄' }
   ];
   
-  // If "Near Me" is selected and we don't have location yet, request it
-  if (currentSort === 'nearby' && !userLocation && !locationPermissionRequested) {
-    getUserLocation().then(loc => {
-      if (loc) {
-        // Re-render feed with location-based sorting
-        renderFeed();
-      } else {
-        // Location denied, switch back to recent
-        currentSort = 'recent';
-        localStorage.setItem('feed-sort', 'recent');
-        sortSelect.value = 'recent';
-        renderFeed();
+  options.forEach(opt => {
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.className = 'feed-sort-option';
+    option.dataset.value = opt.value;
+    option.style.cssText = `
+      width: 100%;
+      padding: 0.875rem 1rem;
+      background: ${opt.value === currentSort ? 'rgba(74, 144, 226, 0.15)' : 'transparent'};
+      border: none;
+      color: ${opt.value === currentSort ? '#4A90E2' : 'rgba(255, 255, 255, 0.9)'};
+      font-size: 1rem;
+      font-weight: ${opt.value === currentSort ? '600' : '400'};
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: all 0.2s ease;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    `;
+    
+    const optionIcon = document.createElement('span');
+    optionIcon.textContent = opt.icon;
+    optionIcon.style.cssText = 'font-size: 1.125rem; flex-shrink: 0;';
+    
+    const optionText = document.createElement('span');
+    optionText.textContent = opt.text;
+    
+    option.appendChild(optionIcon);
+    option.appendChild(optionText);
+    
+    option.addEventListener('mouseenter', function() {
+      if (opt.value !== currentSort) {
+        this.style.background = 'rgba(255, 255, 255, 0.08)';
+        this.style.color = '#fff';
       }
     });
-  }
-  options.forEach(opt => {
-    const option = document.createElement('option');
-    option.value = opt.value;
-    option.textContent = opt.text;
-    option.style.cssText = 'background: rgba(15, 15, 35, 0.95); color: #fff; padding: 0.5rem;';
-    if (opt.value === currentSort) option.selected = true;
-    sortSelect.appendChild(option);
+    
+    option.addEventListener('mouseleave', function() {
+      if (opt.value !== currentSort) {
+        this.style.background = 'transparent';
+        this.style.color = 'rgba(255, 255, 255, 0.9)';
+      }
+    });
+    
+    option.addEventListener('click', async function() {
+      const newSort = this.dataset.value;
+      currentSort = newSort;
+      localStorage.setItem('feed-sort', currentSort);
+      
+      // Update button text
+      sortButtonText.textContent = opt.text;
+      
+      // Update option styles
+      options.forEach((o, idx) => {
+        const optEl = sortDropdown.children[idx];
+        if (optEl) {
+          optEl.style.background = o.value === newSort ? 'rgba(74, 144, 226, 0.15)' : 'transparent';
+          optEl.style.color = o.value === newSort ? '#4A90E2' : 'rgba(255, 255, 255, 0.9)';
+          optEl.style.fontWeight = o.value === newSort ? '600' : '400';
+        }
+      });
+      
+      // Close dropdown
+      sortDropdown.style.display = 'none';
+      sortButtonIcon.style.transform = 'rotate(0deg)';
+      dropdownOpen = false;
+      
+      // If "Near Me" is selected, request location
+      if (newSort === 'nearby' && !userLocation) {
+        const loc = await getUserLocation();
+        if (!loc) {
+          // Location failed, switch back to recent
+          alert('Unable to determine your location. Switching to "Most Recent".');
+          currentSort = 'recent';
+          localStorage.setItem('feed-sort', 'recent');
+          sortButtonText.textContent = 'Most Recent';
+          // Update to recent option
+          const recentOption = sortDropdown.querySelector('[data-value="recent"]');
+          if (recentOption) recentOption.click();
+          return;
+        }
+      }
+      
+      updateURLParams();
+      renderFeed();
+      
+      // Visual feedback
+      sortButton.style.transform = 'scale(0.98)';
+      setTimeout(() => {
+        sortButton.style.transform = 'scale(1)';
+      }, 150);
+    });
+    
+    sortDropdown.appendChild(option);
   });
   
-  sortSelectWrapper.appendChild(sortIcon);
-  sortSelectWrapper.appendChild(sortSelect);
-  sortContainer.appendChild(sortSelectWrapper);
+  // Toggle dropdown
+  let dropdownOpen = false;
+  sortButton.addEventListener('click', function(e) {
+    e.stopPropagation();
+    dropdownOpen = !dropdownOpen;
+    sortDropdown.style.display = dropdownOpen ? 'block' : 'none';
+    sortButtonIcon.style.transform = dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+    
+    if (dropdownOpen) {
+      sortButton.style.background = 'rgba(255, 255, 255, 0.12)';
+      sortButton.style.borderColor = '#4A90E2';
+      sortButton.style.boxShadow = '0 0 0 4px rgba(74, 144, 226, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3)';
+    } else {
+      sortButton.style.background = 'rgba(255, 255, 255, 0.08)';
+      sortButton.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+      sortButton.style.boxShadow = 'none';
+    }
+  });
+  
+  // Close dropdown when clicking outside
+  const outsideClickHandler = function(e) {
+    if (!sortContainer.contains(e.target) && dropdownOpen) {
+      dropdownOpen = false;
+      sortDropdown.style.display = 'none';
+      sortButtonIcon.style.transform = 'rotate(0deg)';
+      sortButton.style.background = 'rgba(255, 255, 255, 0.08)';
+      sortButton.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+      sortButton.style.boxShadow = 'none';
+    }
+  };
+  document.addEventListener('click', outsideClickHandler);
+  
+  sortContainer.appendChild(sortButton);
+  sortContainer.appendChild(sortDropdown);
+  
+  // Add both to input row
+  inputRow.appendChild(searchContainer);
+  inputRow.appendChild(sortContainer);
   
   // Post count badge
   const countDiv = document.createElement('div');
