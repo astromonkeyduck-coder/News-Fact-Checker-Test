@@ -3105,7 +3105,16 @@ document.addEventListener("DOMContentLoaded", function() {
     window.openChatWidget = openChatWidget;
     
     // Initialize authentication system
-    window.authSystem = new AuthSystem();
+    // Note: Auth0 integration will replace the mock AuthSystem
+    // Auth0 is initialized automatically via auth0.js script
+    // If Auth0 is not configured, fallback to mock auth system
+    if (window.auth0 && window.auth0.isAuthenticated()) {
+      console.log('[Auth] Using Auth0 authentication');
+      // Auth0 is active, hide/show auth buttons accordingly
+    } else {
+      console.log('[Auth] Using mock authentication system (Auth0 not configured)');
+      window.authSystem = new AuthSystem();
+    }
     
     // Initialize navigation system
     window.newsNavigation = new NewsNavigation();

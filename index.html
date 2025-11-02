@@ -9146,6 +9146,8 @@
             
             <div class="header-right">
                 <div class="last-update">Last Update: 11/01/25</div>
+                <button class="auth-btn signin-btn" id="signinBtn">Sign In</button>
+                <button class="auth-btn signup-btn" id="signupBtn">Sign Up</button>
                 <button class="music-control-btn" id="musicControlBtn" title="Toggle Background Music">
                     <span class="btn-icon">🎵</span>
                 </button>
@@ -10620,6 +10622,12 @@
             }
         })();
     </script>
+    
+    <!-- Auth0 SDK -->
+    <script src="https://cdn.auth0.com/js/auth0/2.3/auth0.min.js"></script>
+    
+    <!-- Auth0 Integration -->
+    <script src="/src/auth/auth0.js"></script>
     
     <!-- X Posts Feed - Load tweets and display as cards -->
     <script src="/src/components/post-feed.js?v=3.1"></script>
