@@ -16,6 +16,8 @@ let currentSearch = localStorage.getItem('feed-search') || '';
 let currentPosts = [];
 let commentDrawerOpen = false;
 let commentDrawerPostId = null;
+let userLocation = null; // { lat, lng } or null
+let locationPermissionRequested = false;
 
 /**
  * Format count with abbreviations
@@ -29,27 +31,41 @@ function formatCount(n) {
 }
 
 /**
- * Format relative time
+ * Format relative time - Always shows date, uses seconds/minutes/hours for < 1 day
  */
 function formatRelativeTime(dateString) {
+  if (!dateString) return 'Just now';
+  
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
+  
+  // If date is invalid
+  if (isNaN(date.getTime())) return 'Just now';
+  
   const diffSec = Math.floor(diffMs / 1000);
   const diffMin = Math.floor(diffSec / 60);
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
+  
+  // If less than 1 day ago, show seconds/minutes/hours
+  if (diffDay < 1) {
+    if (diffSec < 60) return `${diffSec}${diffSec === 1 ? ' second' : ' seconds'} ago`;
+    if (diffMin < 60) return `${diffMin}${diffMin === 1 ? ' minute' : ' minutes'} ago`;
+    return `${diffHour}${diffHour === 1 ? ' hour' : ' hours'} ago`;
+  }
+  
+  // If 1 day or more, show the actual date
   const diffWeek = Math.floor(diffDay / 7);
   const diffMonth = Math.floor(diffDay / 30);
   const diffYear = Math.floor(diffDay / 365);
-
-  if (diffSec < 60) return `${diffSec}s`;
-  if (diffMin < 60) return `${diffMin}m`;
-  if (diffHour < 24) return `${diffHour}h`;
-  if (diffDay < 7) return `${diffDay}d`;
-  if (diffWeek < 4) return `${diffWeek}w`;
-  if (diffMonth < 12) return `${diffMonth}mo`;
-  return `${diffYear}y`;
+  
+  if (diffDay === 1) return '1 day ago';
+  if (diffDay < 7) return `${diffDay} days ago`;
+  if (diffWeek < 4) return `${diffWeek}${diffWeek === 1 ? ' week' : ' weeks'} ago`;
+  if (diffMonth < 12) return `${diffMonth}${diffMonth === 1 ? ' month' : ' months'} ago`;
+  if (diffYear === 1) return '1 year ago';
+  return `${diffYear} years ago`;
 }
 
 /**
@@ -126,6 +142,139 @@ function mapRawPostToPost(raw) {
 }
 
 /**
+ * Extract location mentions from post text
+ * Simple heuristic: looks for common location patterns
+ */
+function extractLocationFromPost(post) {
+  const text = (post.text || '').toLowerCase();
+  const locations = [];
+  
+  // Common location indicators
+  const locationPatterns = [
+    // City, State format
+    /\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*),\s*([A-Z]{2})\b/g,
+    // "in [City]", "from [City]", "at [City]"
+    /\b(in|from|at|near|around)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b/g,
+    // Country names (common ones)
+    /\b(USA|United States|UK|United Kingdom|Canada|Mexico|Brazil|India|China|Japan|Australia|Germany|France|Italy|Spain|Russia)\b/gi,
+    // State names (US)
+    /\b(Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West Virginia|Wisconsin|Wyoming)\b/gi,
+  ];
+  
+  // Try to extract locations
+  locationPatterns.forEach(pattern => {
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      const location = match[2] || match[1] || match[0];
+      if (location && location.length > 2) {
+        locations.push(location.trim());
+      }
+    }
+  });
+  
+  // Also check tags for location keywords
+  if (post.tags) {
+    post.tags.forEach(tag => {
+      const tagLower = tag.toLowerCase();
+      // Check if tag looks like a location
+      if (tagLower.includes('location') || tagLower.includes('city') || tagLower.includes('region') || tagLower.includes('state') || tagLower.includes('country')) {
+        locations.push(tag);
+      }
+    });
+  }
+  
+  return locations.length > 0 ? locations[0] : null;
+}
+
+/**
+ * Get user's location from browser
+ */
+async function getUserLocation() {
+  if (userLocation) return userLocation;
+  if (locationPermissionRequested) return null;
+  
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      console.log('[Feed] Geolocation not supported');
+      resolve(null);
+      return;
+    }
+    
+    locationPermissionRequested = true;
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        userLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        localStorage.setItem('user-location', JSON.stringify(userLocation));
+        console.log('[Feed] User location:', userLocation);
+        resolve(userLocation);
+      },
+      (error) => {
+        console.log('[Feed] Location access denied or failed:', error.message);
+        // Try to use cached location
+        try {
+          const cached = localStorage.getItem('user-location');
+          if (cached) {
+            userLocation = JSON.parse(cached);
+            resolve(userLocation);
+            return;
+          }
+        } catch (e) {
+          // Ignore cache errors
+        }
+        resolve(null);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 5000,
+        maximumAge: 24 * 60 * 60 * 1000, // 24 hours
+      }
+    );
+  });
+}
+
+/**
+ * Calculate approximate distance score between user location and post
+ * This is a simplified heuristic - in production you'd use proper geocoding
+ */
+function calculateLocationRelevance(post, userLoc) {
+  if (!userLoc) return 0;
+  
+  const postLocation = extractLocationFromPost(post);
+  if (!postLocation) return 0;
+  
+  // Simple keyword matching - posts with location mentions get higher relevance
+  // In a production system, you'd geocode locations and calculate actual distances
+  const postText = (post.text || '').toLowerCase();
+  const postLocationLower = postLocation.toLowerCase();
+  
+  // Check if post mentions locations that might be near user
+  // For now, we'll use a simple relevance score based on location keywords
+  // Posts with location mentions get boosted relevance
+  
+  // You could enhance this with:
+  // 1. Reverse geocoding user location to get city/state
+  // 2. Geocoding post locations
+  // 3. Calculating actual distance
+  
+  // For now, simple heuristic: posts with location mentions get relevance boost
+  let relevance = 0;
+  
+  // If post mentions a location, give it some relevance
+  if (postLocation) {
+    relevance = 100; // Base relevance for having a location
+    
+    // Could add more sophisticated matching here
+    // For example, check if mentioned location matches user's city/state
+  }
+  
+  return relevance;
+}
+
+/**
  * Sort posts
  */
 function sortPosts(posts, mode) {
@@ -168,6 +317,25 @@ function sortPosts(posts, mode) {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
       break;
+    case 'nearby':
+      // Sort by location relevance (requires user location)
+      if (userLocation) {
+        sorted.sort((a, b) => {
+          const relevanceA = calculateLocationRelevance(a, userLocation);
+          const relevanceB = calculateLocationRelevance(b, userLocation);
+          if (relevanceB !== relevanceA) return relevanceB - relevanceA;
+          // Tie-breaker: most recent first
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+      } else {
+        // If no location, fall back to recent
+        sorted.sort((a, b) => {
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return dateB - dateA;
+        });
+      }
+      break;
   }
   
   return sorted;
@@ -199,7 +367,8 @@ function renderPostCard(post) {
   const timestampTooltip = formatAbsoluteTime(post.createdAt);
   
   // Format text with links and images detected
-  const text = formatPostText(post.text);
+  // Pass post.media to remove redundant Twitter URLs if media is already displayed
+  const text = formatPostText(post.text, post.media);
   
   return `
     <article 
@@ -279,16 +448,18 @@ function renderPostCard(post) {
               href="${post.url}" 
               target="_blank" 
               rel="noopener noreferrer"
+              class="feed-timestamp-link"
               style="
                 color: rgb(113, 118, 123);
                 font-size: 1rem;
                 text-decoration: none;
                 line-height: 1.5rem;
+                font-weight: 400;
               "
               title="${timestampTooltip}"
-              onmouseover="this.style.textDecoration='underline'"
-              onmouseout="this.style.textDecoration='none'"
-            >${timestamp}</a>
+              onmouseover="this.style.textDecoration='underline'; this.style.color='rgb(29, 155, 240)'"
+              onmouseout="this.style.textDecoration='none'; this.style.color='rgb(113, 118, 123)'"
+            >${timestamp || formatRelativeTime(post.createdAt)}</a>
           </div>
         </div>
       </div>
@@ -331,22 +502,44 @@ function renderPostCard(post) {
 
 /**
  * Format post text with links and images
+ * Removes Twitter URL shorteners (pic.twitter.com, t.co) since media is displayed separately
  */
-function formatPostText(text) {
+function formatPostText(text, postMedia = []) {
   if (!text) return '';
   
-  // Split by URLs
+  // Remove Twitter URL shorteners if we have media (they're redundant)
+  let cleanedText = text;
+  const hasMedia = postMedia && postMedia.length > 0;
+  
+  if (hasMedia) {
+    // Remove pic.twitter.com links (media is shown separately)
+    cleanedText = cleanedText.replace(/https?:\/\/(pic\.twitter\.com|pbs\.twimg\.com)[^\s<>"']+/gi, '').trim();
+    // Remove t.co links that are likely media (if we have media, these are probably redundant)
+    cleanedText = cleanedText.replace(/https?:\/\/t\.co\/[a-zA-Z0-9]+/gi, '').trim();
+  }
+  
+  // Clean up extra whitespace after removing URLs
+  cleanedText = cleanedText.replace(/\s+/g, ' ').trim();
+  
+  // Split by remaining URLs
   const urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
   const parts = [];
   let lastIndex = 0;
   let match;
   
-  while ((match = urlRegex.exec(text)) !== null) {
+  while ((match = urlRegex.exec(cleanedText)) !== null) {
     if (match.index > lastIndex) {
-      parts.push({ type: 'text', content: text.substring(lastIndex, match.index) });
+      parts.push({ type: 'text', content: cleanedText.substring(lastIndex, match.index) });
     }
     
     const url = match[0];
+    
+    // Skip pic.twitter.com and t.co links if we have media
+    if (hasMedia && (url.includes('pic.twitter.com') || url.includes('t.co/'))) {
+      lastIndex = match.index + match[0].length;
+      continue;
+    }
+    
     const isImage = /\.(jpg|jpeg|png|gif|webp|svg|JPG|JPEG|PNG|GIF|WEBP|SVG)(\?[^\s]*)?$/i.test(url);
     
     if (isImage) {
@@ -355,7 +548,14 @@ function formatPostText(text) {
         content: `<img src="${url}" alt="Post image" loading="lazy" style="max-width: 100%; height: auto; border-radius: 12px; margin: 0.5rem 0; display: block;" onerror="this.style.display='none';" />` 
       });
     } else {
-      const displayUrl = url.length > 50 ? url.substring(0, 47) + '...' : url;
+      // Make t.co links cleaner
+      let displayUrl = url;
+      if (url.includes('t.co/')) {
+        displayUrl = '🔗 Link';
+      } else {
+        displayUrl = url.length > 50 ? url.substring(0, 47) + '...' : url;
+      }
+      
       parts.push({ 
         type: 'link', 
         content: `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: rgb(29, 155, 240); text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${escapeHtml(displayUrl)}</a>` 
@@ -365,12 +565,12 @@ function formatPostText(text) {
     lastIndex = match.index + match[0].length;
   }
   
-  if (lastIndex < text.length) {
-    parts.push({ type: 'text', content: text.substring(lastIndex) });
+  if (lastIndex < cleanedText.length) {
+    parts.push({ type: 'text', content: cleanedText.substring(lastIndex) });
   }
   
   if (parts.length === 0) {
-    parts.push({ type: 'text', content: text });
+    parts.push({ type: 'text', content: cleanedText });
   }
   
   return parts.map(part => {
@@ -607,7 +807,7 @@ function renderFeedControls(totalPosts) {
   
   // Search input with icon
   const searchContainer = document.createElement('div');
-  searchContainer.style.cssText = 'flex: 1; min-width: 280px; position: relative;';
+  searchContainer.style.cssText = 'flex: 1; min-width: 280px; position: relative; display: flex; align-items: center;';
   
   const searchIcon = document.createElement('div');
   searchIcon.style.cssText = `
@@ -630,6 +830,7 @@ function renderFeedControls(totalPosts) {
   searchInput.className = 'feed-search-input';
   searchInput.style.cssText = `
     width: 100%;
+    height: 48px;
     padding: 0.875rem 1rem 0.875rem 3rem;
     background: rgba(255, 255, 255, 0.08);
     border: 2px solid rgba(255, 255, 255, 0.1);
@@ -639,6 +840,7 @@ function renderFeedControls(totalPosts) {
     font-weight: 400;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     outline: none;
+    box-sizing: border-box;
   `;
   
   searchInput.addEventListener('focus', function() {
@@ -658,28 +860,33 @@ function renderFeedControls(totalPosts) {
   searchContainer.appendChild(searchIcon);
   searchContainer.appendChild(searchInput);
   
-  // Sort select with icon
+  // Sort select - aligned on same Y position as search
   const sortContainer = document.createElement('div');
-  sortContainer.style.cssText = 'display: flex; gap: 0.75rem; align-items: center; position: relative;';
+  sortContainer.style.cssText = 'position: relative; display: flex; align-items: center; min-width: 200px;';
+  
+  const sortSelectWrapper = document.createElement('div');
+  sortSelectWrapper.style.cssText = 'position: relative; width: 100%;';
   
   const sortIcon = document.createElement('div');
   sortIcon.style.cssText = `
-    color: rgba(255, 255, 255, 0.6);
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.5);
     font-size: 1.125rem;
     pointer-events: none;
+    z-index: 1;
   `;
   sortIcon.textContent = '↓↑';
-  
-  const sortLabel = document.createElement('label');
-  sortLabel.htmlFor = sortId;
-  sortLabel.textContent = 'Sort:';
-  sortLabel.style.cssText = 'color: rgba(255,255,255,0.7); font-size: 0.875rem; font-weight: 500; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.5px;';
   
   const sortSelect = document.createElement('select');
   sortSelect.id = sortId;
   sortSelect.className = 'feed-sort-select';
   sortSelect.style.cssText = `
-    padding: 0.875rem 2.5rem 0.875rem 1rem;
+    width: 100%;
+    height: 48px;
+    padding: 0.875rem 2.5rem 0.875rem 3rem;
     background: rgba(255, 255, 255, 0.08);
     border: 2px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
@@ -690,10 +897,13 @@ function renderFeedControls(totalPosts) {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     outline: none;
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14'%3E%3Cpath fill='%23ffffff' d='M7 10L2 5h10z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 0.75rem center;
-    background-size: 12px;
+    background-position: right 0.875rem center;
+    background-size: 14px;
+    box-sizing: border-box;
   `;
   
   sortSelect.addEventListener('focus', function() {
@@ -707,25 +917,52 @@ function renderFeedControls(totalPosts) {
     this.style.background = 'rgba(255, 255, 255, 0.08)';
     this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
     this.style.boxShadow = 'none';
-    sortIcon.style.color = 'rgba(255, 255, 255, 0.6)';
+    sortIcon.style.color = 'rgba(255, 255, 255, 0.5)';
+  });
+  
+  sortSelect.addEventListener('change', function() {
+    // Add visual feedback
+    this.style.transform = 'scale(0.98)';
+    setTimeout(() => {
+      this.style.transform = 'scale(1)';
+    }, 150);
   });
   const options = [
     { value: 'recent', text: 'Most Recent' },
+    { value: 'nearby', text: '📍 Near Me' },
     { value: 'views', text: 'Most Views' },
     { value: 'likes', text: 'Most Likes' },
     { value: 'comments', text: 'Most Comments' },
     { value: 'reposts', text: 'Most Reposts' }
   ];
+  
+  // If "Near Me" is selected and we don't have location yet, request it
+  if (currentSort === 'nearby' && !userLocation && !locationPermissionRequested) {
+    getUserLocation().then(loc => {
+      if (loc) {
+        // Re-render feed with location-based sorting
+        renderFeed();
+      } else {
+        // Location denied, switch back to recent
+        currentSort = 'recent';
+        localStorage.setItem('feed-sort', 'recent');
+        sortSelect.value = 'recent';
+        renderFeed();
+      }
+    });
+  }
   options.forEach(opt => {
     const option = document.createElement('option');
     option.value = opt.value;
     option.textContent = opt.text;
+    option.style.cssText = 'background: rgba(15, 15, 35, 0.95); color: #fff; padding: 0.5rem;';
     if (opt.value === currentSort) option.selected = true;
     sortSelect.appendChild(option);
   });
-  sortContainer.appendChild(sortIcon);
-  sortContainer.appendChild(sortLabel);
-  sortContainer.appendChild(sortSelect);
+  
+  sortSelectWrapper.appendChild(sortIcon);
+  sortSelectWrapper.appendChild(sortSelect);
+  sortContainer.appendChild(sortSelectWrapper);
   
   // Post count badge
   const countDiv = document.createElement('div');
