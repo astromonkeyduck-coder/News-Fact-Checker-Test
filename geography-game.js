@@ -662,37 +662,57 @@ class GeographyGame {
                 
                 if (isInitialLoad) {
                     // Note: panY controls horizontal (X) movement, panX controls vertical (Y) movement (due to swap in transform)
-                    // If scaled map is smaller than container, center it horizontally
-                    if (scaledWidth < containerWidth) {
-                        this.panY = (containerWidth - scaledWidth) / 2; // panY = horizontal center
-                    }
-                    // If scaled map is smaller than container, center it vertically
-                    if (scaledHeight < containerHeight) {
-                        this.panX = (containerHeight - scaledHeight) / 2; // panX = vertical center
-                    }
-                    // If scaled map is larger than container, center it
+                    // For world maps, we want to show the left side (where Africa is) initially
+                    // instead of centering, so users can immediately see and scroll to Africa
                     if (scaledWidth > containerWidth) {
-                        // Center horizontally by using panY (horizontal control)
-                        this.panY = -(scaledWidth - containerWidth) / 2;
+                        // Map is wider than container - start at left edge (panY = minPanY) to show Africa
+                        // This puts the map's left side at the container's left edge
+                        this.panY = containerWidth - scaledWidth; // Start at left edge (negative value)
+                    } else {
+                        // Map fits - center it
+                        this.panY = (containerWidth - scaledWidth) / 2;
                     }
+                    
+                    // Center vertically if smaller, otherwise center
                     if (scaledHeight > containerHeight) {
-                        // Center vertically by using panX (vertical control)
+                        // Center vertically
                         this.panX = -(scaledHeight - containerHeight) / 2;
+                    } else {
+                        // Center vertically if fits
+                        this.panX = (containerHeight - scaledHeight) / 2;
                     }
+                    
+                    console.log('Initial map position set:', {
+                        panY: this.panY,
+                        panX: this.panX,
+                        scaledWidth,
+                        containerWidth,
+                        showingLeftEdge: scaledWidth > containerWidth && this.panY < 0
+                    });
                 }
                 
                 // Constrain panning to keep SVG within container bounds
                 // Note: panY controls horizontal (X), panX controls vertical (Y) due to transform swap
-                // Horizontal constraints (using panY)
-                const maxPanY = Math.max(0, containerWidth - scaledWidth);
-                const minPanY = Math.min(0, containerWidth - scaledWidth);
-                // Vertical constraints (using panX)
-                const maxPanX = Math.max(0, containerHeight - scaledHeight);
-                const minPanX = Math.min(0, containerHeight - scaledHeight);
+                // Horizontal constraints (using panY) - allow negative values for left scrolling
+                const maxPanY = Math.max(0, containerWidth - scaledWidth); // Right edge
+                const minPanY = Math.min(0, containerWidth - scaledWidth); // Left edge (negative when scaledWidth > containerWidth)
+                // Vertical constraints (using panX) - allow negative values for up scrolling
+                const maxPanX = Math.max(0, containerHeight - scaledHeight); // Bottom edge
+                const minPanX = Math.min(0, containerHeight - scaledHeight); // Top edge (negative when scaledHeight > containerHeight)
                 
-                // Clamp pan values
+                // Clamp pan values - ensure we can scroll to see all parts of the map
                 this.panY = Math.max(minPanY, Math.min(maxPanY, this.panY)); // Horizontal constraint
                 this.panX = Math.max(minPanX, Math.min(maxPanX, this.panX)); // Vertical constraint
+                
+                // Debug: Log if constraints are preventing scrolling
+                if (scaledWidth > containerWidth && (this.panY === maxPanY || this.panY === minPanY)) {
+                    console.log('Horizontal scrolling constraint:', { 
+                        minPanY, maxPanY, currentPanY: this.panY, 
+                        scaledWidth, containerWidth,
+                        canScrollLeft: this.panY > minPanY,
+                        canScrollRight: this.panY < maxPanY
+                    });
+                }
                 
                 // Apply transform: translate(x, y) 
                 // Swapped: panY controls horizontal movement, panX controls vertical movement
