@@ -1,7 +1,10 @@
 [build]
-  command = ""
+  command = "npm run build"
   functions = "netlify/functions"
   publish = "."
+  
+# Environment variables for Auth0 will be injected during build
+# Set AUTH0_DOMAIN and AUTH0_CLIENT_ID in Netlify Dashboard → Site Settings → Environment Variables
 
 # Netlify automatically serves 404.html for 404 errors
 # Make sure 404.html is in the root directory (publish directory)

@@ -2166,7 +2166,7 @@ class BreakingNewsGame {
         }
     }
     
-    endGame() {
+    async endGame() {
         this.playSound('gameOver');
         this.gameState = 'gameOver';
         this.hideAllScreens();
@@ -2178,11 +2178,42 @@ class BreakingNewsGame {
         }
         this.isPaused = false;
 
-        // High score logic
-        let highScore = localStorage.getItem('noteworthy_high_score');
-        if (!highScore || this.score > parseInt(highScore)) {
-            highScore = this.score;
-            localStorage.setItem('noteworthy_high_score', highScore);
+        // High score logic - save per user if logged in
+        let highScore;
+        let userId = null;
+        
+        // Check if user is logged in
+        if (window.auth0 && typeof window.auth0.isAuthenticated === 'function') {
+            try {
+                const isAuth = await window.auth0.isAuthenticated();
+                if (isAuth) {
+                    const user = await window.auth0.getUser();
+                    if (user && user.sub) {
+                        userId = user.sub;
+                        // Save per-user high score
+                        const userHighScoreKey = `noteworthy_high_score_${user.sub}`;
+                        highScore = localStorage.getItem(userHighScoreKey);
+                        if (!highScore || this.score > parseInt(highScore)) {
+                            highScore = this.score;
+                            localStorage.setItem(userHighScoreKey, highScore);
+                            // Also save to general high score for backward compatibility
+                            localStorage.setItem('noteworthy_high_score', highScore);
+                            console.log(`[Game] Saved high score ${highScore} for user ${user.sub}`);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.log('[Game] Could not check auth status, using default:', err);
+            }
+        }
+        
+        // Fallback to general high score if not logged in
+        if (!userId) {
+            highScore = localStorage.getItem('noteworthy_high_score');
+            if (!highScore || this.score > parseInt(highScore)) {
+                highScore = this.score;
+                localStorage.setItem('noteworthy_high_score', highScore);
+            }
         }
 
         const finalScore = document.getElementById('finalScore');
@@ -3108,13 +3139,26 @@ document.addEventListener("DOMContentLoaded", function() {
     // Note: Auth0 integration will replace the mock AuthSystem
     // Auth0 is initialized automatically via auth0.js script
     // If Auth0 is not configured, fallback to mock auth system
-    if (window.auth0 && window.auth0.isAuthenticated()) {
-      console.log('[Auth] Using Auth0 authentication');
-      // Auth0 is active, hide/show auth buttons accordingly
-    } else {
-      console.log('[Auth] Using mock authentication system (Auth0 not configured)');
-      window.authSystem = new AuthSystem();
-    }
+    // Wait for Auth0 to initialize (it's async)
+    setTimeout(async () => {
+      if (window.auth0 && typeof window.auth0.isAuthenticated === 'function') {
+        try {
+          const isAuth = await window.auth0.isAuthenticated();
+          if (isAuth) {
+            console.log('[Auth] Using Auth0 authentication');
+            // Auth0 is active, hide/show auth buttons accordingly
+            return;
+          }
+        } catch (e) {
+          console.log('[Auth] Auth0 check failed, using mock auth system');
+        }
+      }
+      // Fallback to mock auth if Auth0 not available
+      if (!window.authSystem) {
+        console.log('[Auth] Using mock authentication system (Auth0 not configured)');
+        window.authSystem = new AuthSystem();
+      }
+    }, 1000); // Wait 1 second for Auth0 to initialize
     
     // Initialize navigation system
     window.newsNavigation = new NewsNavigation();

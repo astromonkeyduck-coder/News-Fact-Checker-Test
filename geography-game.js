@@ -1124,9 +1124,47 @@ class GeographyGame {
         }
     }
     
-    endGame() {
+    async endGame() {
         this.gameActive = false;
         this.promptEl.textContent = 'Game Complete!';
+        
+        // Save game progress per user if logged in
+        let userId = null;
+        if (window.auth0 && typeof window.auth0.isAuthenticated === 'function') {
+            try {
+                const isAuth = await window.auth0.isAuthenticated();
+                if (isAuth) {
+                    const user = await window.auth0.getUser();
+                    if (user && user.sub) {
+                        userId = user.sub;
+                        // Save geography game progress
+                        const progressKey = `geography_progress_${user.sub}`;
+                        const progress = {
+                            correct: this.correct,
+                            wrong: this.wrong,
+                            score: this.score,
+                            answered: Array.from(this.answered),
+                            timestamp: Date.now()
+                        };
+                        localStorage.setItem(progressKey, JSON.stringify(progress));
+                        console.log(`[Geography Game] Saved progress for user ${user.sub}:`, progress);
+                    }
+                }
+            } catch (err) {
+                console.log('[Geography Game] Could not save progress:', err);
+            }
+        }
+        
+        // Fallback: save general progress if not logged in
+        if (!userId) {
+            const generalProgress = {
+                correct: this.correct,
+                wrong: this.wrong,
+                score: this.score,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('geography_progress', JSON.stringify(generalProgress));
+        }
         this.feedbackEl.textContent = `Final Score: ${this.score} | Correct: ${this.correct} | Wrong: ${this.wrong}`;
         this.feedbackEl.className = 'feedback-message';
         

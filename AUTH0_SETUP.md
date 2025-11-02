@@ -25,10 +25,13 @@
 
 **Allowed Callback URLs** (where users return after login):
 ```
-https://noteworthynews.co/, http://localhost:8888/, http://localhost:3000/
+http://localhost:8888/, http://localhost:8888/index.html, https://noteworthynews.co/, https://noteworthynews.co/index.html
 ```
+- **IMPORTANT**: Include both with and without trailing slash
+- Include both the root path and `/index.html` path
 - Copy and paste all URLs separated by commas (no spaces after commas)
 - Or add each URL on a new line
+- The exact URL must match what your app sends (check browser console for the actual URL)
 
 **Allowed Logout URLs** (where users return after logout):
 ```
