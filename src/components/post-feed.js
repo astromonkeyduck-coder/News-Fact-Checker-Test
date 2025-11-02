@@ -343,22 +343,36 @@ async function renderPostFeed(containerId, endpoint = '/.netlify/functions/posts
       }
       
       // Show helpful message if no posts
+      const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const isProduction = window.location.hostname.includes('noteworthynews.co');
+      
+      let helpMessage = '';
       if (isLocalDev) {
-        container.innerHTML = originalContent + 
+        helpMessage = 
           '<div style="padding: 1.5rem; margin-top: 1rem; background: rgba(74, 144, 226, 0.15); border: 1px solid rgba(74, 144, 226, 0.4); border-radius: 8px; color: rgba(255,255,255,0.9);">' +
           '<p style="margin: 0 0 0.75rem 0; font-weight: 600; font-size: 1.05em;">📭 No Posts Yet</p>' +
           '<p style="margin: 0 0 1rem 0; font-size: 0.95em; opacity: 0.9; line-height: 1.6;">The function is working, but there are no posts stored yet.</p>' +
-          '<p style="margin: 0 0 1rem 0; font-size: 0.9em; opacity: 0.8;">To add posts:</p>' +
+          '<p style="margin: 0 0 1rem 0; font-size: 0.9em; opacity: 0.8;">To add posts manually:</p>' +
           '<ol style="margin: 0.5rem 0 1rem 0; padding-left: 1.5rem; font-size: 0.9em; opacity: 0.9;">' +
-          '<li>Visit: <code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px;">http://localhost:8888/.netlify/functions/fetch-profile-tweets?username=newsnoteworthy&limit=10</code></li>' +
-          '<li>Or set up the X webhook to auto-fetch posts</li>' +
+          '<li>Open browser console (F12) and run:</li>' +
+          '<li><code style="background: rgba(0,0,0,0.2); padding: 2px 6px; border-radius: 4px; display: block; margin-top: 0.5rem;">fetch(\'/.netlify/functions/fetch-profile-tweets\', {method: \'POST\', headers: {\'Content-Type\': \'application/json\'}, body: JSON.stringify({tweetUrl: \'https://x.com/newsnoteworthy/status/YOUR_TWEET_ID\'})})</code></li>' +
+          '<li>Or visit the function URL directly in browser</li>' +
           '<li>Then refresh this page</li>' +
           '</ol>' +
           '</div>';
-      } else {
-        container.innerHTML = originalContent;
+      } else if (isProduction) {
+        helpMessage = 
+          '<div style="padding: 1.5rem; margin-top: 1rem; background: rgba(255, 165, 0, 0.15); border: 1px solid rgba(255, 165, 0, 0.4); border-radius: 8px; color: rgba(255,255,255,0.9);">' +
+          '<p style="margin: 0 0 0.75rem 0; font-weight: 600; font-size: 1.05em;">📭 No Posts Available</p>' +
+          '<p style="margin: 0 0 1rem 0; font-size: 0.95em; opacity: 0.9; line-height: 1.6;">Posts are being set up. Check back soon or follow us on <a href="https://x.com/newsnoteworthy" target="_blank" style="color: #4A90E2;">X/Twitter</a> for updates.</p>' +
+          '</div>';
       }
-      console.info('[PostFeed] No posts in storage yet. Add posts via fetch-profile-tweets or x-webhook.');
+      
+      container.innerHTML = originalContent + helpMessage;
+      console.info('[PostFeed] No posts in storage yet. Posts need to be added via:');
+      console.info('[PostFeed] 1. Manual POST to fetch-profile-tweets with tweetUrl');
+      console.info('[PostFeed] 2. X webhook (if configured)');
+      console.info('[PostFeed] 3. Profile scraping (may be blocked by X)');
       return;
     }
     

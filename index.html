@@ -9619,15 +9619,19 @@
         <div class="about-section" id="about-section">
             <h2 class="about-title">About Noteworthy News</h2>
             <p class="about-text">
-                Noteworthy News is committed to delivering accurate, fact-checked journalism in an era of information overload. 
-                We believe that reliable news is the foundation of an informed democracy.
+                <strong>Noteworthy News</strong> is committed to delivering accurate, fact-checked journalism in an era of information overload. 
+                When you search for "Noteworthy News," you'll find a trusted source dedicated to reliable reporting and media literacy education.
             </p>
             <p class="about-text">
-                Our team combines traditional journalistic standards with modern fact-checking tools to provide you with 
-                stories you can trust. We're dedicated to separating fact from fiction and helping you develop critical thinking skills.
+                <strong>Noteworthy News</strong> combines traditional journalistic standards with modern fact-checking tools to provide you with 
+                stories you can trust. We're dedicated to separating fact from fiction and helping you develop critical thinking skills through our interactive games and educational resources.
             </p>
             <p class="about-text">
-                From breaking news to in-depth analysis, we're here to keep you informed with the truth, not just the headlines.
+                From breaking news to in-depth analysis, <strong>Noteworthy News</strong> is here to keep you informed with the truth, not just the headlines. 
+                Our fact-checking games and media literacy guides make learning about news verification accessible and engaging.
+            </p>
+            <p class="about-text">
+                <strong>Noteworthy News</strong> serves millions of readers worldwide with breaking news, fact-checked stories, and educational content designed to help you navigate today's media landscape with confidence.
             </p>
     </div>
     
@@ -10633,32 +10637,52 @@
                 const fetchEndpoint = '/.netlify/functions/fetch-profile-tweets?username=' + encodeURIComponent(username) + '&limit=' + limit;
                 const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
                 
+                console.log('[X Posts] Attempting to fetch tweets from:', fetchEndpoint);
+                
                 fetch(fetchEndpoint)
                     .then(res => {
+                        console.log('[X Posts] Fetch response status:', res.status);
                         if (!res.ok) {
                             // Silently handle 404s (functions not deployed in local dev)
                             if (res.status === 404) {
+                                console.warn('[X Posts] Function not found (404) - this is normal in local dev');
                                 return [];
                             }
-                            // Only log non-404 errors
-                            if (!isLocalDev) {
-                                console.warn('Profile fetch returned:', res.status, res.statusText);
-                            }
-                            return [];
+                            // Log errors for debugging
+                            console.error('[X Posts] Profile fetch failed:', res.status, res.statusText);
+                            return res.text().then(text => {
+                                console.error('[X Posts] Error response:', text.substring(0, 500));
+                                return [];
+                            });
                         }
                         return res.json();
                     })
                     .then(data => {
-                        if (data && data.length > 0) {
-                            console.log('Fetched', data.length, 'tweets');
+                        console.log('[X Posts] Fetch result:', data);
+                        if (data && Array.isArray(data) && data.length > 0) {
+                            console.log('[X Posts] Successfully fetched and stored', data.length, 'tweets');
+                        } else if (data && data.error) {
+                            console.error('[X Posts] Fetch error:', data.error);
+                            if (data.hint) {
+                                console.warn('[X Posts] Hint:', data.hint);
+                            }
+                        } else if (data && data.message) {
+                            console.warn('[X Posts] Message:', data.message);
+                        } else {
+                            console.warn('[X Posts] No tweets returned. This might mean:');
+                            console.warn('[X Posts] 1. X is blocking automated requests');
+                            console.warn('[X Posts] 2. HTML structure changed');
+                            console.warn('[X Posts] 3. Profile page not accessible');
+                            console.warn('[X Posts] Solution: Use manual tweet entry via POST to fetch-profile-tweets');
                         }
                     })
                     .catch(err => {
-                        // Silently handle expected fetch errors in local development
-                        // Network errors are expected when functions aren't deployed
+                        console.error('[X Posts] Fetch exception:', err);
+                        // Log errors for debugging
                     })
                     .finally(() => {
                         // Step 2: Always display posts from storage (works even if profile fetch fails)
+                        console.log('[X Posts] Loading posts from storage...');
                         renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', limit);
                     });
             }, 1000); // Wait 1 second after DOM load
