@@ -255,6 +255,15 @@ export const handler: Handler = async (event) => {
           }),
         };
       }
+    } catch (outerError: any) {
+      console.error('[fetch-profile-tweets] Outer error in GET handler:', outerError);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: outerError?.message || "Internal server error",
+        }),
+      };
     }
 
     // POST: Manual tweet URL entry
