@@ -37,8 +37,37 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // getStore automatically uses the site ID and token when called from Netlify Functions
-  const store = getStore("comments");
+  // Get siteID and token from environment (Netlify automatically sets these)
+  // For Functions, we need to explicitly pass them if auto-detection fails
+  const siteID = process.env.NETLIFY_SITE_ID || context?.site?.id || event.headers['x-nf-site-id'];
+  const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || context?.token || event.headers['x-nf-token'];
+  
+  let store;
+  try {
+    // Try with explicit siteID and token if available
+    if (siteID && token) {
+      console.log('[Comments API] Using explicit siteID and token');
+      store = getStore({
+        name: "comments",
+        siteID: siteID,
+        token: token,
+      });
+    } else {
+      // Fallback: try automatic detection (works in most Netlify environments)
+      console.log('[Comments API] Using automatic detection');
+      store = getStore("comments");
+    }
+  } catch (storeErr) {
+    console.error('[Comments API] Failed to create store:', storeErr);
+    return {
+      statusCode: 503,
+      headers,
+      body: JSON.stringify({
+        error: "Storage configuration error",
+        message: storeErr.message,
+      }),
+    };
+  }
 
   try {
     const { articleId, commentId, text, author, authorEmail, authorId } = JSON.parse(
