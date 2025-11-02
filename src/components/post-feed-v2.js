@@ -1133,10 +1133,6 @@ function renderFeedControls(totalPosts) {
   sortContainer.appendChild(sortButton);
   sortContainer.appendChild(sortDropdown);
   
-  // Add both to input row
-  inputRow.appendChild(searchContainer);
-  inputRow.appendChild(sortContainer);
-  
   // Post count badge
   const countDiv = document.createElement('div');
   countDiv.className = 'feed-post-count';
