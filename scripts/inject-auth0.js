@@ -15,18 +15,20 @@ const path = require('path');
 const indexPath = path.join(__dirname, '..', 'index.html');
 
 if (!fs.existsSync(indexPath)) {
-  console.error('❌ index.html not found at:', indexPath);
-  process.exit(1);
+  console.warn('⚠️  index.html not found at:', indexPath);
+  console.warn('   Skipping Auth0 injection (this is OK for GitHub Pages)');
+  process.exit(0); // Exit gracefully instead of failing
 }
 
-let html = fs.readFileSync(indexPath, 'utf8');
-
-// Get environment variables
+// Get environment variables (declare outside try for logging)
 const auth0Domain = process.env.AUTH0_DOMAIN || '';
 const auth0ClientId = process.env.AUTH0_CLIENT_ID || '';
 
-// Create script tag with injected values
-const scriptTag = `
+try {
+  let html = fs.readFileSync(indexPath, 'utf8');
+
+  // Create script tag with injected values
+  const scriptTag = `
     <script>
       // Auth0 credentials injected at build time
       window.AUTH0_DOMAIN = ${auth0Domain ? `'${auth0Domain}'` : 'null'};
@@ -34,36 +36,46 @@ const scriptTag = `
       ${auth0Domain && auth0ClientId ? 'console.log("[Auth0] Production credentials loaded");' : ''}
     </script>`;
 
-// Find and replace the placeholder script
-const placeholderPattern = /<!-- Auth0 Configuration - Inject environment variables for production -->[\s\S]*?<script>[\s\S]*?window\.AUTH0_DOMAIN = window\.AUTH0_DOMAIN \|\| null;[\s\S]*?<\/script>/;
+  // Find and replace the placeholder script
+  const placeholderPattern = /<!-- Auth0 Configuration - Inject environment variables for production -->[\s\S]*?<script>[\s\S]*?window\.AUTH0_DOMAIN = window\.AUTH0_DOMAIN \|\| null;[\s\S]*?<\/script>/;
 
-if (placeholderPattern.test(html)) {
-  html = html.replace(
-    placeholderPattern,
-    `<!-- Auth0 Configuration - Inject environment variables for production -->${scriptTag}`
-  );
-} else {
-  // Fallback: insert before Auth0 SPA SDK comment
-  const insertPoint = html.indexOf('<!-- Auth0 SPA SDK -->');
-  if (insertPoint !== -1) {
-    html = html.slice(0, insertPoint) + 
-           `<!-- Auth0 Configuration - Inject environment variables for production -->${scriptTag}\n    ` +
-           html.slice(insertPoint);
+  if (placeholderPattern.test(html)) {
+    html = html.replace(
+      placeholderPattern,
+      `<!-- Auth0 Configuration - Inject environment variables for production -->${scriptTag}`
+    );
   } else {
-    console.warn('⚠️  Could not find injection point, adding to head');
-    html = html.replace('</head>', `  ${scriptTag}\n</head>`);
+    // Fallback: insert before Auth0 SPA SDK comment
+    const insertPoint = html.indexOf('<!-- Auth0 SPA SDK -->');
+    if (insertPoint !== -1) {
+      html = html.slice(0, insertPoint) + 
+             `<!-- Auth0 Configuration - Inject environment variables for production -->${scriptTag}\n    ` +
+             html.slice(insertPoint);
+    } else {
+      console.warn('⚠️  Could not find injection point, adding to head');
+      html = html.replace('</head>', `  ${scriptTag}\n</head>`);
+    }
   }
-}
 
-fs.writeFileSync(indexPath, html);
-
-if (auth0Domain && auth0ClientId) {
-  console.log('✅ Auth0 production credentials injected successfully');
-  console.log(`   Domain: ${auth0Domain.substring(0, 20)}...`);
-  console.log(`   Client ID: ${auth0ClientId.substring(0, 10)}...`);
-} else {
-  console.warn('⚠️  No Auth0 environment variables found');
-  console.warn('   Using development credentials (will show warning in Auth0 dashboard)');
-  console.warn('   Set AUTH0_DOMAIN and AUTH0_CLIENT_ID environment variables for production');
+  fs.writeFileSync(indexPath, html);
+  
+  // Log success/failure
+  if (auth0Domain && auth0ClientId) {
+    console.log('✅ Auth0 production credentials injected successfully');
+    console.log(`   Domain: ${auth0Domain.substring(0, 20)}...`);
+    console.log(`   Client ID: ${auth0ClientId.substring(0, 10)}...`);
+  } else {
+    console.warn('⚠️  No Auth0 environment variables found');
+    console.warn('   Using development credentials (will show warning in Auth0 dashboard)');
+    console.warn('   Set AUTH0_DOMAIN and AUTH0_CLIENT_ID environment variables for production');
+  }
+} catch (error) {
+  console.warn('⚠️  Error during Auth0 injection:', error.message);
+  console.warn('   Continuing build without injection (this is OK for GitHub Pages)');
+  // Still log whether env vars were present
+  if (auth0Domain && auth0ClientId) {
+    console.warn('   Note: Environment variables were set but injection failed');
+  }
+  process.exit(0); // Exit gracefully, don't fail the build
 }
 
