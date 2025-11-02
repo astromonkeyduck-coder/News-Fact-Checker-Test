@@ -101,6 +101,7 @@ exports.handler = async (event, context) => {
     const safeEmail = String(email || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
     // Send notification email to admin
+    console.log('Sending notification email to admin:', notificationTo);
     const notificationResult = await resend.emails.send({
       from: fromEmail,
       to: notificationTo,
@@ -164,6 +165,13 @@ ${tip}
 ---
 This is an automated notification from your website.`,
     });
+    
+    // Log notification email result
+    if (notificationResult.error) {
+      console.error('Failed to send notification email to admin:', notificationResult.error);
+    } else {
+      console.log('Notification email sent successfully to admin. Email ID:', notificationResult.data?.id);
+    }
 
     // Send confirmation email to submitter (whenever email is provided, regardless of anonymous status)
     let autoReplyResult = null;
@@ -236,19 +244,22 @@ The Noteworthy News Team`,
 
     // Check if notification email was sent successfully
     if (notificationResult.error) {
-      console.error('Resend error:', notificationResult.error);
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({
-          error: 'Failed to send tip notification',
-          details: notificationResult.error,
-        }),
-      };
+      console.error('CRITICAL: Failed to send notification email to admin:', notificationResult.error);
+      console.error('Notification error details:', JSON.stringify(notificationResult.error, null, 2));
+      // Still try to send confirmation email, but log the critical error
+      // Don't fail the entire request, but we need to know about this
+    } else {
+      console.log('✓ Admin notification email sent successfully. Email ID:', notificationResult.data?.id);
+      console.log('✓ Admin notification sent to:', notificationTo);
     }
 
     // Determine success message based on whether confirmation email was sent
     const confirmationSent = autoReplyResult && !autoReplyResult.error;
+    const notificationSent = !notificationResult.error;
+    
+    // Log final status
+    console.log('Final email status - Notification sent:', notificationSent, 'Confirmation sent:', confirmationSent);
+    
     const successMessage = confirmationSent
       ? 'Tip submitted successfully! Check your email for a confirmation.'
       : (email && email.includes('@'))
@@ -263,7 +274,9 @@ The Noteworthy News Team`,
         message: successMessage,
         notificationId: notificationResult.data?.id,
         autoReplyId: autoReplyResult?.data?.id,
+        notificationSent: notificationSent,
         confirmationSent: confirmationSent,
+        adminEmail: notificationTo, // Include for debugging
       }),
     };
 
