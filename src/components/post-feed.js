@@ -732,6 +732,20 @@ function renderPosts(posts, container, originalContent = null) {
       const link = post.link || post.url || `https://x.com/newsnoteworthy/status/${post.id || ''}`;
       const datePosted = post.datePosted || post.created_at || new Date().toISOString();
       
+      // Debug: Log first few posts to see what data we have
+      if (index < 3) {
+        console.log(`[PostFeed] Post ${index + 1}:`, {
+          id: post.id,
+          title: title.substring(0, 50),
+          datePosted,
+          views: post.views,
+          likes: post.likes,
+          reposts: post.reposts,
+          replies: post.replies,
+          hasStats: !!(post.views || post.likes || post.reposts || post.replies)
+        });
+      }
+      
       return `
         <article class="article-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || index}" style="margin-bottom: 2rem;">
           <div class="article-content" style="display: flex; flex-direction: column;">
@@ -817,17 +831,32 @@ function renderPosts(posts, container, originalContent = null) {
     // Initialize comment sections (separated from cards)
     setTimeout(() => {
       console.log('[PostFeed] Initializing comment sections for', filteredPosts.length, 'posts');
-      filteredPosts.forEach(post => {
+      console.log('[PostFeed] CommentSection available?', typeof CommentSection !== 'undefined');
+      console.log('[PostFeed] window.commentSections?', !!window.commentSections);
+      
+      filteredPosts.forEach((post, idx) => {
         const articleId = `post-${post.id}`;
         const commentContainer = document.querySelector(`[data-article-id="${articleId}"]`);
         
         if (!commentContainer) {
-          console.warn('[PostFeed] Comment container not found for', articleId);
+          console.warn('[PostFeed] Comment container not found for', articleId, 'at index', idx);
+          // Try to find by parent
+          const articleCard = document.querySelector(`article[data-post-id="${post.id}"]`);
+          if (articleCard) {
+            const commentSection = articleCard.querySelector('.comment-section-separated .comment-section');
+            if (commentSection) {
+              console.log('[PostFeed] Found comment container via parent for', articleId);
+              initCommentSection(commentSection, articleId);
+            }
+          }
           return;
         }
         
         console.log('[PostFeed] Found comment container for', articleId);
-        
+        initCommentSection(commentContainer, articleId);
+      });
+      
+      function initCommentSection(container, articleId) {
         // Initialize if not already initialized
         if (!window.commentSections) window.commentSections = {};
         
@@ -836,39 +865,39 @@ function renderPosts(posts, container, originalContent = null) {
           if (typeof CommentSection !== 'undefined') {
             try {
               window.commentSections[articleId] = new CommentSection(articleId);
-              console.log('[PostFeed] Initialized CommentSection for', articleId);
+              console.log('[PostFeed] ✓ Initialized CommentSection for', articleId);
             } catch (err) {
-              console.error('[PostFeed] Failed to initialize CommentSection for', articleId, err);
-              // Show placeholder if CommentSection fails
-              commentContainer.innerHTML = '<div style="padding: 1rem; color: rgba(255,255,255,0.7); font-size: 0.9rem;">Comments will appear here once initialized.</div>';
+              console.error('[PostFeed] ✗ Failed to initialize CommentSection for', articleId, err);
+              container.innerHTML = '<div style="padding: 1rem; color: rgba(255,255,255,0.7); font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px;">💬 Comments will appear here</div>';
             }
           } else {
-            console.warn('[PostFeed] CommentSection class not available');
-            // Show placeholder if CommentSection isn't loaded
-            commentContainer.innerHTML = '<div style="padding: 1rem; color: rgba(255,255,255,0.7); font-size: 0.9rem;">Loading comment section...</div>';
-            // Try to initialize later
-            setTimeout(() => {
-              if (typeof CommentSection !== 'undefined') {
-                try {
-                  window.commentSections[articleId] = new CommentSection(articleId);
-                  console.log('[PostFeed] Delayed initialization successful for', articleId);
-                } catch (err) {
-                  console.error('[PostFeed] Delayed initialization failed for', articleId, err);
+            console.warn('[PostFeed] ⚠ CommentSection class not available - script may not be loaded');
+            container.innerHTML = '<div style="padding: 1rem; color: rgba(255,255,255,0.7); font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px;">💬 <a href="#" onclick="location.reload(); return false;" style="color: #4A90E2;">Reload page</a> to load comments</div>';
+            // Try multiple times with increasing delays
+            [1000, 2000, 3000].forEach((delay, attempt) => {
+              setTimeout(() => {
+                if (typeof CommentSection !== 'undefined') {
+                  try {
+                    window.commentSections[articleId] = new CommentSection(articleId);
+                    console.log('[PostFeed] ✓ Delayed initialization successful for', articleId, `(attempt ${attempt + 1})`);
+                  } catch (err) {
+                    console.error('[PostFeed] ✗ Delayed initialization failed for', articleId, err);
+                  }
                 }
-              }
-            }, 1000);
+              }, delay);
+            });
           }
         } else {
           // Re-render existing section
           try {
             window.commentSections[articleId].render();
-            console.log('[PostFeed] Re-rendered existing CommentSection for', articleId);
+            console.log('[PostFeed] ✓ Re-rendered existing CommentSection for', articleId);
           } catch (err) {
-            console.error('[PostFeed] Failed to re-render CommentSection for', articleId, err);
+            console.error('[PostFeed] ✗ Failed to re-render CommentSection for', articleId, err);
           }
         }
-      });
-    }, 200);
+      }
+    }, 500); // Increased delay to ensure DOM is ready
     
     // Verify the replacement worked
     const articleCards = container.querySelectorAll('article.article-card');
