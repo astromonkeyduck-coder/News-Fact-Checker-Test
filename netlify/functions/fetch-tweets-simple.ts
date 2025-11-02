@@ -7,7 +7,8 @@
 import { Handler } from "@netlify/functions";
 import { getStore } from "@netlify/blobs";
 import { fetchTweetOEmbed, extractTweetId, extractUsername } from "../../src/lib/posts/oembed-fetch";
-import { normalizeTweetToCard } from "../../src/lib/posts/normalize";
+import { normalizeTweetToCard, toTitle, readTimeFromText } from "../../src/lib/posts/normalize";
+import { extractEnhancedData } from "../../src/lib/posts/enhanced-extract";
 
 interface IndexData {
   ids: string[];
@@ -15,7 +16,7 @@ interface IndexData {
 }
 
 /**
- * Convert oEmbed response to our Card format
+ * Convert oEmbed response to our Card format with enhanced data
  */
 function oEmbedToCard(oembed: any, tweetUrl: string): any {
   const tweetId = extractTweetId(tweetUrl);
@@ -25,22 +26,41 @@ function oEmbedToCard(oembed: any, tweetUrl: string): any {
     throw new Error("Could not extract tweet ID from URL");
   }
 
-  // Extract text from HTML (basic, can be improved)
+  // Extract text from HTML
   const textMatch = oembed.html.match(/<p[^>]*>(.*?)<\/p>/s);
   const text = textMatch ? textMatch[1].replace(/<[^>]+>/g, '') : '';
   
-  // Extract image if present (oEmbed doesn't always include media)
-  // We'd need to parse the HTML or use a different approach
+  // Extract enhanced data (images, videos, date, stats)
+  const enhanced = extractEnhancedData(tweetId, oembed.html);
+  
+  // Determine post type based on media
+  let postType: "text" | "photo" | "video" = "text";
+  if (enhanced.videos && enhanced.videos.length > 0) {
+    postType = "video";
+  } else if (enhanced.images && enhanced.images.length > 0) {
+    postType = "photo";
+  }
+  
+  // Use first image as main image for backward compatibility
+  const mainImage = enhanced.images && enhanced.images.length > 0 ? enhanced.images[0] : null;
   
   return {
     id: tweetId,
-    image: null, // oEmbed doesn't provide images directly
-    title: text.substring(0, 80) + (text.length > 80 ? '...' : ''),
+    image: mainImage,
+    images: enhanced.images.length > 0 ? enhanced.images : undefined,
+    videos: enhanced.videos.length > 0 ? enhanced.videos : undefined,
+    title: toTitle(text) || text.substring(0, 80) + (text.length > 80 ? '...' : ''),
     story: text,
-    datePosted: new Date().toISOString(), // oEmbed doesn't provide date
+    datePosted: enhanced.datePosted,
     link: tweetUrl,
-    postType: 'text' as const,
-    readTime: Math.ceil((text.split(/\s+/).length) / 200) || 1,
+    postType,
+    readTime: readTimeFromText(text),
+    views: enhanced.views,
+    likes: enhanced.likes,
+    reposts: enhanced.reposts,
+    replies: enhanced.replies,
+    author: oembed.author_name || username || 'Noteworthy News',
+    authorUrl: oembed.author_url || (username ? `https://x.com/${username}` : undefined),
   };
 }
 

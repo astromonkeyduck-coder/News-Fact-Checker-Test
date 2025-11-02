@@ -21,7 +21,8 @@ const path = require('path');
 const readline = require('readline');
 
 // Configuration
-const API_ENDPOINT = process.env.NETLIFY_FUNCTION_URL || 'https://your-site.netlify.app/.netlify/functions/fetch-profile-tweets';
+// Use fetch-tweets-simple which handles POST requests correctly
+const API_ENDPOINT = process.env.NETLIFY_FUNCTION_URL || process.env.NETLIFY_SIMPLE_FUNCTION_URL || 'https://your-site.netlify.app/.netlify/functions/fetch-tweets-simple';
 const DELAY_BETWEEN_REQUESTS = 2000; // 2 seconds between requests
 const DELAY_ON_429 = 60000; // 60 seconds if rate limited
 const BATCH_SIZE = 10; // Process in batches of 10
@@ -120,17 +121,17 @@ async function processPosts(tweetUrls) {
 
   let completed = [...completedArray];
   let failed = Array.isArray(progress.failed) ? [...progress.failed] : [];
-  let lastIndex = progress.lastIndex || -1;
+  // Remove failed URLs that we're about to retry
+  const failedUrls = failed.map(f => typeof f === 'object' ? f.url : f);
+  failed = failed.filter(f => {
+    const url = typeof f === 'object' ? f.url : f;
+    return !toProcess.includes(url); // Remove if we're retrying it
+  });
 
   // Process in batches
   for (let i = 0; i < toProcess.length; i++) {
     const tweetUrl = toProcess[i];
     const globalIndex = tweetUrls.indexOf(tweetUrl);
-    
-    // Skip if we already processed up to this point
-    if (globalIndex <= lastIndex) {
-      continue;
-    }
 
     const result = await addPost(tweetUrl, i, toProcess.length);
     
@@ -144,7 +145,7 @@ async function processPosts(tweetUrls) {
     saveProgress({
       completed,
       failed,
-      lastIndex: globalIndex,
+      lastIndex: Math.max(progress.lastIndex || -1, globalIndex),
       total: tweetUrls.length,
       processed: completed.length + failed.length
     });

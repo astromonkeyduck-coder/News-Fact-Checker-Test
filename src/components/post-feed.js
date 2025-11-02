@@ -464,17 +464,95 @@ async function renderPostFeed(containerId, endpoint = '/.netlify/functions/posts
 }
 
 /**
- * Render posts to the container
+ * Global state for sorting and filtering
+ */
+let currentSort = 'recent'; // 'recent', 'views', 'likes', 'reposts'
+let currentSearch = '';
+
+/**
+ * Sort posts based on current sort option
+ */
+function sortPosts(posts, sortBy) {
+  const sorted = [...posts];
+  
+  switch(sortBy) {
+    case 'views':
+      sorted.sort((a, b) => (b.views || 0) - (a.views || 0));
+      break;
+    case 'likes':
+      sorted.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+      break;
+    case 'reposts':
+      sorted.sort((a, b) => (b.reposts || 0) - (a.reposts || 0));
+      break;
+    case 'recent':
+    default:
+      sorted.sort((a, b) => {
+        const dateA = new Date(a.datePosted || 0);
+        const dateB = new Date(b.datePosted || 0);
+        return dateB - dateA; // Newest first
+      });
+      break;
+  }
+  
+  return sorted;
+}
+
+/**
+ * Filter posts by search query
+ */
+function filterPosts(posts, searchQuery) {
+  if (!searchQuery || searchQuery.trim() === '') {
+    return posts;
+  }
+  
+  const query = searchQuery.toLowerCase().trim();
+  
+  return posts.filter(post => {
+    const title = (post.title || '').toLowerCase();
+    const story = (post.story || '').toLowerCase();
+    const keywords = `${title} ${story}`;
+    return keywords.includes(query);
+  });
+}
+
+/**
+ * Format number with abbreviations (K, M, B)
+ */
+function formatNumber(num) {
+  if (!num && num !== 0) return '0';
+  if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+  return num.toString();
+}
+
+/**
+ * Format relative time (e.g., "2 hours ago")
+ */
+function formatRelativeTime(dateString) {
+  try {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  } catch {
+    return dateString;
+  }
+}
+
+/**
+ * Render posts to the container with enhanced features
  */
 function renderPosts(posts, container, originalContent = null) {
-  const formatDate = (isoString) => {
-    try {
-      return new Date(isoString).toLocaleString();
-    } catch {
-      return isoString;
-    }
-  };
-
   const formatStory = (text) => {
     if (!text) return '';
     // Escape HTML
@@ -491,7 +569,6 @@ function renderPosts(posts, container, originalContent = null) {
   // Validate posts before rendering
   if (!posts || !Array.isArray(posts)) {
     console.error('[PostFeed] Invalid posts data:', posts);
-    // Show original content (placeholder cards) if available, otherwise error message
     if (originalContent && originalContent.trim().length > 50) {
       container.innerHTML = originalContent;
     } else {
@@ -502,7 +579,6 @@ function renderPosts(posts, container, originalContent = null) {
 
   if (posts.length === 0) {
     console.warn('[PostFeed] Empty posts array');
-    // Show original content if available
     if (originalContent && originalContent.trim().length > 50) {
       container.innerHTML = originalContent;
     } else {
@@ -511,18 +587,124 @@ function renderPosts(posts, container, originalContent = null) {
     return;
   }
 
-  console.log('[PostFeed] Rendering', posts.length, 'posts');
-  console.log('[PostFeed] Sample post data:', posts.length > 0 ? {
-    id: posts[0].id,
-    title: posts[0].title,
-    story: posts[0].story?.substring(0, 100),
-    link: posts[0].link,
-    image: posts[0].image,
-    datePosted: posts[0].datePosted
-  } : 'No posts');
+  // Apply filtering and sorting
+  let filteredPosts = filterPosts(posts, currentSearch);
+  filteredPosts = sortPosts(filteredPosts, currentSort);
+  
+  // Create controls UI (search and sort)
+  const controlsHtml = `
+    <div class="post-feed-controls" style="margin-bottom: 2rem; padding: 1rem; background: rgba(15, 15, 35, 0.8); border-radius: 12px; display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+      <div class="post-search" style="flex: 1; min-width: 250px;">
+        <input 
+          type="text" 
+          id="postSearchInput" 
+          placeholder="🔍 Search by title or keywords..." 
+          value="${currentSearch}"
+          style="width: 100%; padding: 0.75rem 1rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 1rem;"
+        />
+      </div>
+      <div class="post-sort" style="display: flex; gap: 0.5rem; align-items: center;">
+        <label style="color: rgba(255,255,255,0.9); font-size: 0.9rem;">Sort by:</label>
+        <select 
+          id="postSortSelect" 
+          style="padding: 0.75rem 1rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 1rem; cursor: pointer;"
+        >
+          <option value="recent" ${currentSort === 'recent' ? 'selected' : ''}>Most Recent</option>
+          <option value="views" ${currentSort === 'views' ? 'selected' : ''}>Most Views</option>
+          <option value="likes" ${currentSort === 'likes' ? 'selected' : ''}>Most Likes</option>
+          <option value="reposts" ${currentSort === 'reposts' ? 'selected' : ''}>Most Reposts</option>
+        </select>
+      </div>
+      <div class="post-count" style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">
+        ${filteredPosts.length} of ${posts.length} posts
+      </div>
+    </div>
+  `;
+
+  // Store original posts array for re-rendering on sort/search change
+  if (!container.dataset.originalPosts) {
+    container.dataset.originalPosts = JSON.stringify(posts);
+  } else {
+    // Update stored posts if we have new data
+    container.dataset.originalPosts = JSON.stringify(posts);
+  }
+  
+  console.log('[PostFeed] Rendering', filteredPosts.length, 'filtered posts from', posts.length, 'total');
   
   try {
-    const postsHtml = posts.map((post, index) => {
+    // Render media gallery (images/videos)
+    const renderMedia = (post) => {
+      let mediaHtml = '';
+      const images = post.images || (post.image ? [post.image] : []);
+      const videos = post.videos || [];
+      
+      if (images.length > 0 || videos.length > 0) {
+        mediaHtml = '<div class="post-media" style="margin: 1rem 0;">';
+        
+        // Render images
+        if (images.length > 0) {
+          if (images.length === 1) {
+            mediaHtml += `<div class="post-image-single" style="border-radius: 8px; overflow: hidden;">
+              <img src="${images[0]}" alt="Post image" loading="lazy" style="width: 100%; height: auto; display: block;" onerror="this.style.display='none';" />
+            </div>`;
+          } else {
+            mediaHtml += `<div class="post-image-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem;">
+              ${images.slice(0, 4).map(img => `
+                <div style="aspect-ratio: 1; overflow: hidden; border-radius: 8px;">
+                  <img src="${img}" alt="Post image" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none';" />
+                </div>
+              `).join('')}
+            </div>`;
+          }
+        }
+        
+        // Render videos
+        if (videos.length > 0) {
+          videos.forEach(video => {
+            if (video.includes('youtube.com') || video.includes('youtu.be')) {
+              // YouTube embed
+              const videoId = video.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+              if (videoId) {
+                mediaHtml += `<div class="post-video" style="margin-top: 0.5rem; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px;">
+                  <iframe src="https://www.youtube.com/embed/${videoId}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen></iframe>
+                </div>`;
+              }
+            } else {
+              // Regular video tag
+              mediaHtml += `<div class="post-video" style="margin-top: 0.5rem;">
+                <video src="${video}" controls style="width: 100%; border-radius: 8px;" onerror="this.style.display='none';"></video>
+              </div>`;
+            }
+          });
+        }
+        
+        mediaHtml += '</div>';
+      }
+      
+      return mediaHtml;
+    };
+    
+    // Render engagement stats
+    const renderStats = (post) => {
+      const stats = [];
+      if (post.views !== undefined && post.views !== null) stats.push({ icon: '👁️', label: 'Views', value: formatNumber(post.views) });
+      if (post.likes !== undefined && post.likes !== null) stats.push({ icon: '❤️', label: 'Likes', value: formatNumber(post.likes) });
+      if (post.reposts !== undefined && post.reposts !== null) stats.push({ icon: '🔄', label: 'Reposts', value: formatNumber(post.reposts) });
+      if (post.replies !== undefined && post.replies !== null) stats.push({ icon: '💬', label: 'Replies', value: formatNumber(post.replies) });
+      
+      if (stats.length === 0) return '';
+      
+      return `<div class="post-stats" style="display: flex; gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); flex-wrap: wrap;">
+        ${stats.map(stat => `
+          <div class="post-stat-item" style="display: flex; align-items: center; gap: 0.5rem; color: rgba(255,255,255,0.8); font-size: 0.9rem;">
+            <span>${stat.icon}</span>
+            <span><strong>${stat.value}</strong> ${stat.label}</span>
+          </div>
+        `).join('')}
+      </div>`;
+    };
+    
+    const postsHtml = filteredPosts.map((post, index) => {
       // Validate post structure
       if (!post || typeof post !== 'object') {
         console.warn(`[PostFeed] Invalid post at index ${index}:`, post);
@@ -531,39 +713,35 @@ function renderPosts(posts, container, originalContent = null) {
       
       // Extract fields with multiple fallbacks
       const title = post.title || post.text || post.story?.substring(0, 80) || `Post ${index + 1}`;
-      const story = post.story || post.text || post.html?.replace(/<[^>]*>/g, '').substring(0, 200) || '';
+      const story = post.story || post.text || post.html?.replace(/<[^>]*>/g, '').substring(0, 500) || '';
       const link = post.link || post.url || `https://x.com/newsnoteworthy/status/${post.id || ''}`;
-      const imageUrl = post.image || post.thumbnail || null;
+      const datePosted = post.datePosted || post.created_at || new Date().toISOString();
       
-      console.log(`[PostFeed] Rendering post ${index + 1}:`, {
-        title: title.substring(0, 50),
-        hasStory: !!story,
-        link,
-        hasImage: !!imageUrl
-      });
-      
-      const imageHtml = imageUrl 
-        ? `<div class="article-image">
-            <img src="${imageUrl}" alt="${title.replace(/"/g, '&quot;')}" loading="lazy" onerror="this.style.display='none';" />
-          </div>`
-        : '';
-
       return `
-        <article class="article-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || index}">
-          ${imageHtml}
-          <div class="article-content">
-            <h3 class="article-headline">
-              <a href="${link}" target="_blank" rel="noopener noreferrer">${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</a>
-            </h3>
-            ${story ? `<p class="article-excerpt">${formatStory(story)}</p>` : ''}
-            <div class="article-meta">
-              <span class="article-date">${formatDate(post.datePosted || post.created_at || new Date().toISOString())}</span>
-              <span class="article-read-time">${post.readTime || Math.ceil((story || title).split(/\s+/).length / 200) || 1} min read</span>
+        <article class="article-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || index}" style="margin-bottom: 2rem;">
+          <div class="article-content" style="display: flex; flex-direction: column;">
+            <div style="flex: 1;">
+              <h3 class="article-headline" style="margin-bottom: 0.75rem;">
+                <a href="${link}" target="_blank" rel="noopener noreferrer" style="color: #4A90E2; text-decoration: none;">${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</a>
+              </h3>
+              ${story ? `<p class="article-excerpt" style="color: rgba(255,255,255,0.9); line-height: 1.6; margin-bottom: 1rem;">${formatStory(story)}</p>` : ''}
+              
+              ${renderMedia(post)}
+              
+              <div class="article-meta" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); font-size: 0.85rem;">
+                <span class="article-date">${formatRelativeTime(datePosted)}</span>
+                <span class="article-read-time">${post.readTime || Math.ceil((story || title).split(/\s+/).length / 200) || 1} min read</span>
+              </div>
+              
+              ${renderStats(post)}
             </div>
+          </div>
+          <div class="comment-section-separated" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid rgba(74, 144, 226, 0.3);">
+            <div class="comment-section" data-article-id="post-${post.id}"></div>
           </div>
         </article>
       `;
-    }).filter(html => html.length > 0).join(''); // Filter out empty posts
+    }).filter(html => html.length > 0).join('');
     
     console.log('[PostFeed] Generated HTML for', posts.length, 'posts, HTML length:', postsHtml.length);
     
@@ -583,8 +761,64 @@ function renderPosts(posts, container, originalContent = null) {
     console.log('[PostFeed] Container before:', container.children.length, 'children');
     console.log('[PostFeed] Container ID:', container.id);
     
-    // Clear and replace ALL content in the container
+    // Insert controls before container if they don't exist
+    const parentContainer = container.parentElement;
+    let controlsElement = parentContainer.querySelector('.post-feed-controls');
+    
+    if (!controlsElement) {
+      controlsElement = document.createElement('div');
+      controlsElement.className = 'post-feed-controls';
+      parentContainer.insertBefore(controlsElement, container);
+    }
+    controlsElement.outerHTML = controlsHtml;
+    
+    // Update container with posts
     container.innerHTML = postsHtml;
+    
+    // Setup event listeners for search and sort
+    const searchInput = document.getElementById('postSearchInput');
+    const sortSelect = document.getElementById('postSortSelect');
+    
+    if (searchInput) {
+      let searchTimeout;
+      searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          currentSearch = e.target.value;
+          const storedPosts = JSON.parse(container.dataset.originalPosts || '[]');
+          renderPosts(storedPosts, container, originalContent);
+        }, 300); // Debounce 300ms
+      });
+    }
+    
+    if (sortSelect) {
+      sortSelect.addEventListener('change', (e) => {
+        currentSort = e.target.value;
+        const storedPosts = JSON.parse(container.dataset.originalPosts || '[]');
+        renderPosts(storedPosts, container, originalContent);
+      });
+    }
+    
+    // Initialize comment sections (separated from cards)
+    setTimeout(() => {
+      filteredPosts.forEach(post => {
+        const articleId = `post-${post.id}`;
+        const commentContainer = document.querySelector(`[data-article-id="${articleId}"]`);
+        if (commentContainer) {
+          // Initialize if not already initialized
+          if (!window.commentSections || !window.commentSections[articleId]) {
+            // Create CommentSection instance if available
+            if (typeof CommentSection !== 'undefined') {
+              if (!window.commentSections) window.commentSections = {};
+              window.commentSections[articleId] = new CommentSection(articleId);
+            }
+          } else {
+            // Re-render existing section
+            window.commentSections[articleId].render();
+          }
+        }
+      });
+    }, 200);
     
     // Verify the replacement worked
     const articleCards = container.querySelectorAll('article.article-card');
