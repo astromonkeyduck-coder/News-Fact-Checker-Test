@@ -586,24 +586,36 @@ class GeographyGame {
                 const containerAspect = containerWidth / containerHeight;
                 
                 let displayedWidth, displayedHeight;
-                // Calculate displayed size to enable BOTH horizontal and vertical scrolling
-                // For world maps, we want the map to be larger than the container in both dimensions
-                // Scale to fit width first
-                displayedWidth = containerWidth;
-                displayedHeight = containerWidth / svgAspect;
+                // Calculate displayed size to fit the container properly while allowing scrolling
+                // For world maps, we want the map to be larger than the container to enable scrolling
+                // but initially position it to fit well
                 
-                // If that makes height too small (fits in container), scale to fit height instead
-                // This ensures vertical scrolling is always possible
-                if (displayedHeight <= containerHeight) {
-                    // Height fits - scale to height to enable vertical scrolling
-                    displayedHeight = containerHeight * 1.1; // Make it 10% taller to ensure scrolling
-                    displayedWidth = displayedHeight * svgAspect;
-                }
+                // Calculate the scale needed to fit both dimensions
+                const scaleToFitWidth = containerWidth / this.svgNaturalWidth;
+                const scaleToFitHeight = containerHeight / this.svgNaturalHeight;
                 
-                // Ensure width is also larger than container for horizontal scrolling
-                if (displayedWidth <= containerWidth) {
-                    displayedWidth = containerWidth * 1.1; // Make it 10% wider
-                    displayedHeight = displayedWidth / svgAspect;
+                // Use the smaller scale to ensure it fits in both dimensions initially
+                const fitScale = Math.min(scaleToFitWidth, scaleToFitHeight);
+                
+                // Base displayed size that fits the container
+                displayedWidth = this.svgNaturalWidth * fitScale;
+                displayedHeight = this.svgNaturalHeight * fitScale;
+                
+                // If the map fits perfectly, make it slightly larger to enable scrolling
+                // Otherwise keep it at the fit size
+                if (displayedWidth <= containerWidth && displayedHeight <= containerHeight) {
+                    // Map fits - make it 10% larger in the dimension that needs it most
+                    const widthRatio = containerWidth / displayedWidth;
+                    const heightRatio = containerHeight / displayedHeight;
+                    if (widthRatio < heightRatio) {
+                        // Make wider to enable horizontal scrolling
+                        displayedWidth = containerWidth * 1.1;
+                        displayedHeight = displayedWidth / svgAspect;
+                    } else {
+                        // Make taller to enable vertical scrolling
+                        displayedHeight = containerHeight * 1.1;
+                        displayedWidth = displayedHeight * svgAspect;
+                    }
                 }
                 
                 // Calculate minimum zoom level - if SVG fits at zoom 1.0, don't allow zooming out
@@ -663,32 +675,32 @@ class GeographyGame {
                 
                 if (isInitialLoad) {
                     // Note: panY controls horizontal (X) movement, panX controls vertical (Y) movement (due to swap in transform)
-                    // For world maps, we want to show the left side (where Africa is) initially
-                    // instead of centering, so users can immediately see and scroll to Africa
+                    // Position map to fit perfectly in container - center it if it fits, or start at top-left if larger
+                    
                     if (scaledWidth > containerWidth) {
-                        // Map is wider than container - start at left edge (panY = minPanY) to show Africa
-                        // This puts the map's left side at the container's left edge
-                        this.panY = containerWidth - scaledWidth; // Start at left edge (negative value)
+                        // Map is wider than container - center it horizontally
+                        this.panY = -(scaledWidth - containerWidth) / 2;
                     } else {
-                        // Map fits - center it
+                        // Map fits or is smaller - center it horizontally
                         this.panY = (containerWidth - scaledWidth) / 2;
                     }
                     
-                    // Center vertically if smaller, otherwise center
                     if (scaledHeight > containerHeight) {
-                        // Center vertically
+                        // Map is taller than container - center it vertically
                         this.panX = -(scaledHeight - containerHeight) / 2;
                     } else {
-                        // Center vertically if fits
+                        // Map fits or is smaller - center it vertically
                         this.panX = (containerHeight - scaledHeight) / 2;
                     }
                     
-                    console.log('Initial map position set:', {
+                    console.log('Initial map position set (centered):', {
                         panY: this.panY,
                         panX: this.panX,
                         scaledWidth,
+                        scaledHeight,
                         containerWidth,
-                        showingLeftEdge: scaledWidth > containerWidth && this.panY < 0
+                        containerHeight,
+                        isCentered: true
                     });
                 }
                 
