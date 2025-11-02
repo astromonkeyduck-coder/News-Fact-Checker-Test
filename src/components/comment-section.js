@@ -32,16 +32,26 @@ class CommentSection {
   
   async loadComments() {
     try {
-      const response = await fetch(`/.netlify/functions/comments-api?articleId=${encodeURIComponent(this.articleId)}`);
+      // Determine API endpoint (handle localhost vs production)
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const endpoint = isLocalhost 
+        ? `http://localhost:8888/.netlify/functions/comments-api?articleId=${encodeURIComponent(this.articleId)}`
+        : `/.netlify/functions/comments-api?articleId=${encodeURIComponent(this.articleId)}`;
+      
+      console.log('[Comments] Loading comments from:', endpoint);
+      const response = await fetch(endpoint);
+      
       if (response.ok) {
         const data = await response.json();
         this.comments = data.comments || [];
+        console.log('[Comments] Loaded', this.comments.length, 'comments from API');
       } else {
         // If API fails, fall back to localStorage for backward compatibility
-        console.warn('[Comments] API load failed, trying localStorage');
+        console.warn('[Comments] API load failed (status:', response.status, '), trying localStorage');
         const saved = localStorage.getItem(this.commentKey);
         if (saved) {
           this.comments = JSON.parse(saved);
+          console.log('[Comments] Loaded', this.comments.length, 'comments from localStorage');
         }
       }
     } catch (err) {
@@ -51,6 +61,7 @@ class CommentSection {
         const saved = localStorage.getItem(this.commentKey);
         if (saved) {
           this.comments = JSON.parse(saved);
+          console.log('[Comments] Loaded', this.comments.length, 'comments from localStorage (fallback)');
         }
       } catch (localErr) {
         this.comments = [];
@@ -83,8 +94,16 @@ class CommentSection {
     const authorId = this.user.sub || '';
     
     try {
+      // Determine API endpoint (handle localhost vs production)
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const endpoint = isLocalhost 
+        ? 'http://localhost:8888/.netlify/functions/comments-api'
+        : '/.netlify/functions/comments-api';
+      
+      console.log('[Comments] Posting comment to:', endpoint);
+      
       // Save to API (visible across all devices)
-      const response = await fetch('/.netlify/functions/comments-api', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,8 +117,11 @@ class CommentSection {
         }),
       });
       
+      console.log('[Comments] Response status:', response.status, response.statusText);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('[Comments] Comment saved successfully:', data);
         // Add new comment to beginning of array
         this.comments.unshift(data.comment);
         // Also save to localStorage for backward compatibility
@@ -110,16 +132,21 @@ class CommentSection {
         try {
           const error = await response.json();
           errorMessage = error.error || error.message || errorMessage;
-          console.error('[Comments] API error:', error);
+          console.error('[Comments] API error response:', error);
         } catch (parseErr) {
           const text = await response.text();
-          console.error('[Comments] API error (non-JSON):', text);
-          errorMessage = text || errorMessage;
+          console.error('[Comments] API error (non-JSON):', text, 'Status:', response.status);
+          errorMessage = `Error ${response.status}: ${text || response.statusText || errorMessage}`;
         }
         alert(errorMessage);
       }
     } catch (err) {
-      console.error('[Comments] Error posting comment:', err);
+      console.error('[Comments] Network error posting comment:', err);
+      console.error('[Comments] Error details:', {
+        message: err.message,
+        stack: err.stack,
+        name: err.name
+      });
       // Fallback: save to localStorage only (won't be visible on other devices)
       const comment = {
         id: Date.now().toString(),
@@ -133,7 +160,7 @@ class CommentSection {
       this.comments.unshift(comment);
       this.saveComments();
       this.render();
-      alert('Comment saved locally, but may not be visible on other devices. Check your connection.');
+      alert('Comment saved locally, but may not be visible on other devices. Check your connection and try refreshing the page.');
     }
   }
   
