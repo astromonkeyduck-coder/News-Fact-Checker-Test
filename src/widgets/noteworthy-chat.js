@@ -1069,6 +1069,29 @@ class NoteworthyChat extends HTMLElement {
     const modeToggle = this.root.querySelector('#modeToggle');
     const modeIcon = this.root.querySelector('#modeIcon');
     
+    // Debug: Log if elements are found
+    console.log('Noteworthy Chat initialized:', {
+      wrap: !!wrap,
+      launcher: !!launcher,
+      input: !!input,
+      send: !!send,
+      body: !!body,
+      endpoint: endpoint
+    });
+    
+    // Ensure all critical elements exist
+    if (!input || !send || !body) {
+      console.error('Noteworthy Chat: Missing critical elements!', {
+        input: !!input,
+        send: !!send,
+        body: !!body
+      });
+      return;
+    }
+    
+    // Store reference to root for use in nested functions
+    const rootRef = this.root;
+    
     // Track current mode: 'chat' or 'image'
     let currentMode = 'chat';
     const audioToggle = this.root.querySelector('#audioToggle');
@@ -1596,7 +1619,7 @@ class NoteworthyChat extends HTMLElement {
       body.scrollTop = body.scrollHeight;
 
       // Update header to show image generation mode
-      const subText = this.root.querySelector('.sub');
+      const subText = rootRef.querySelector('.sub');
       let originalSub = null;
       if (subText) {
         originalSub = subText.textContent;
@@ -1657,7 +1680,7 @@ class NoteworthyChat extends HTMLElement {
         thinking.remove();
         
         // Restore header subtitle
-        const subText = this.root.querySelector('.sub');
+        const subText = rootRef.querySelector('.sub');
         if (subText && thinking._originalSub) {
           subText.textContent = thinking._originalSub;
           subText.style.color = '';
@@ -1701,7 +1724,7 @@ class NoteworthyChat extends HTMLElement {
         thinking.remove();
         
         // Restore header subtitle on error
-        const subText = this.root.querySelector('.sub');
+        const subText = rootRef.querySelector('.sub');
         if (subText && thinking && thinking._originalSub) {
           subText.textContent = thinking._originalSub;
           subText.style.color = '';
@@ -1729,8 +1752,13 @@ class NoteworthyChat extends HTMLElement {
     }
 
     async function ask() {
+      console.log('ask() function called');
       const message = input.value.trim();
-      if (!message) return;
+      if (!message) {
+        console.log('Empty message, returning');
+        return;
+      }
+      console.log('Processing message:', message.substring(0, 50));
       input.value = '';
       send.disabled = true;
 
@@ -1758,7 +1786,7 @@ class NoteworthyChat extends HTMLElement {
       body.scrollTop = body.scrollHeight;
 
       // Update header to show thinking mode
-      const subText = this.root.querySelector('.sub');
+      const subText = rootRef.querySelector('.sub');
       let originalSub = null;
       if (subText) {
         originalSub = subText.textContent;
@@ -1795,49 +1823,126 @@ class NoteworthyChat extends HTMLElement {
         // Handle localhost vs production endpoint
         const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         
-        // For localhost, try the function directly first, then fallback to redirect
+        // Determine the correct endpoint
         let apiEndpoint = endpoint;
-        if (isLocalhost && endpoint === '/api/noteworthy') {
-          // Try direct function call for localhost
-          apiEndpoint = 'http://localhost:8888/.netlify/functions/noteworthy-chat';
+        if (endpoint === '/api/noteworthy' || !endpoint) {
+          if (isLocalhost) {
+            // Use direct function path for localhost
+            apiEndpoint = 'http://localhost:8888/.netlify/functions/noteworthy-chat';
+          } else {
+            // In production, use direct function path (more reliable than redirect for POST)
+            apiEndpoint = '/.netlify/functions/noteworthy-chat';
+          }
         }
 
-        console.log('Calling API:', { endpoint: apiEndpoint, method: 'POST', message: message.substring(0, 50) + '...' });
-
-        const res = await fetch(apiEndpoint, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({ message }),
+        console.log('Calling API:', { 
+          endpoint: apiEndpoint, 
+          method: 'POST', 
+          message: message.substring(0, 50) + '...',
+          isLocalhost: isLocalhost,
+          hostname: window.location.hostname
         });
+
+        let res;
+        let lastError = null;
+        
+        // Try primary endpoint
+        try {
+          res = await fetch(apiEndpoint, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({ message }),
+          });
+          console.log('Fetch response:', { ok: res.ok, status: res.status, statusText: res.statusText });
+        } catch (fetchError) {
+          console.error('Fetch error:', fetchError);
+          lastError = fetchError;
+          
+          // If we tried direct function path and it failed, try redirect path as fallback
+          if (!isLocalhost && apiEndpoint === '/.netlify/functions/noteworthy-chat') {
+            console.warn('Direct function path failed, trying redirect path:', fetchError);
+            apiEndpoint = '/api/noteworthy';
+            try {
+              res = await fetch(apiEndpoint, {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json'
+                },
+                body: JSON.stringify({ message }),
+              });
+              console.log('Redirect path response:', { ok: res.ok, status: res.status });
+            } catch (redirectError) {
+              console.error('Redirect path also failed:', redirectError);
+              throw new Error(`Failed to connect to API. Network error: ${fetchError.message || fetchError}`);
+            }
+          } else if (isLocalhost && apiEndpoint.includes('localhost:8888')) {
+            // If localhost fails, try the redirect path as fallback
+            console.warn('Localhost direct path failed, trying redirect:', fetchError);
+            apiEndpoint = '/api/noteworthy';
+            try {
+              res = await fetch(apiEndpoint, {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json'
+                },
+                body: JSON.stringify({ message }),
+              });
+              console.log('Redirect path response:', { ok: res.ok, status: res.status });
+            } catch (redirectError) {
+              console.error('Redirect path also failed:', redirectError);
+              throw new Error(`Failed to connect to API. Make sure Netlify Dev is running. Error: ${fetchError.message || fetchError}`);
+            }
+          } else {
+            throw new Error(`Failed to connect to API: ${fetchError.message || fetchError}`);
+          }
+        }
 
         if (!res.ok) {
           let errorText;
           let isRateLimit = false;
           let resetIn = null;
           
+          // Read response as text first to avoid body consumption issues
           try {
-            const errorData = await res.json();
-            errorText = errorData.error || errorData.message || `Server error (${res.status})`;
+            const responseText = await res.text();
+            console.error('API Error Response:', { status: res.status, text: responseText.substring(0, 200) });
             
-            // Check if it's a rate limit error
-            if (res.status === 429) {
-              isRateLimit = true;
-              resetIn = errorData.resetIn;
-              errorText = errorData.message || `Rate limit exceeded. Please try again in ${resetIn || 'a few'} minute(s).`;
+            // Check for 501 error (Netlify Dev not running)
+            if (res.status === 501 && isLocalhost) {
+              throw new Error('Netlify Dev is not running. Please run "netlify dev" in your terminal to start the local development server.');
             }
             
-            console.error('API Error:', { status: res.status, error: errorData });
-          } catch {
-            errorText = await res.text().catch(() => `Server error (${res.status})`);
-            console.error('API Error (non-JSON):', { status: res.status, text: errorText });
-            
-            if (res.status === 429) {
-              isRateLimit = true;
-              errorText = 'Rate limit exceeded. You\'ve reached the limit of 10 messages per 30 minutes. Please wait before trying again.';
+            try {
+              const errorData = JSON.parse(responseText);
+              errorText = errorData.error || errorData.message || `Server error (${res.status})`;
+              
+              // Check if it's a rate limit error
+              if (res.status === 429) {
+                isRateLimit = true;
+                resetIn = errorData.resetIn;
+                errorText = errorData.message || `Rate limit exceeded. Please try again in ${resetIn || 'a few'} minute(s).`;
+              }
+            } catch (parseError) {
+              // Not JSON, use raw text
+              errorText = responseText || `Server error (${res.status})`;
+              if (res.status === 429) {
+                isRateLimit = true;
+                errorText = 'Rate limit exceeded. You\'ve reached the limit of 10 messages per 30 minutes. Please wait before trying again.';
+              } else if (res.status === 501 && isLocalhost) {
+                errorText = 'Netlify Dev is not running. Please run "netlify dev" in your terminal to start the local development server.';
+              }
             }
+          } catch (readError) {
+            console.error('Failed to read error response:', readError);
+            if (readError.message && readError.message.includes('Netlify Dev')) {
+              throw readError; // Re-throw the helpful error
+            }
+            errorText = `Server error (${res.status}). Unable to read error details.`;
           }
           
           const error = new Error(errorText);
@@ -1848,12 +1953,27 @@ class NoteworthyChat extends HTMLElement {
           throw error;
         }
 
-        const data = await res.json();
-        console.log('API Success:', { reply: data.reply?.substring(0, 50) + '...' });
+        let data;
+        try {
+          const responseText = await res.text();
+          console.log('API Response text:', responseText.substring(0, 200));
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('Failed to parse API response:', parseError);
+          throw new Error('Invalid response from server. Please try again.');
+        }
+        
+        console.log('API Success:', { reply: data.reply?.substring(0, 50) + '...', fullData: data });
+        
+        if (!data || !data.reply) {
+          console.error('API response missing reply field:', data);
+          throw new Error('Server did not return a valid response. Please try again.');
+        }
+        
         thinking.remove();
         
         // Restore header subtitle
-        const subText = this.root.querySelector('.sub');
+        const subText = rootRef.querySelector('.sub');
         if (subText && thinking._originalSub) {
           subText.textContent = thinking._originalSub;
           subText.style.color = '';
@@ -1884,11 +2004,12 @@ class NoteworthyChat extends HTMLElement {
           speakText(text);
         }
       } catch (e) {
+        console.error('Ask function error:', e);
         thinking.remove();
         
         // Restore header subtitle on error
-        const subText = this.root.querySelector('.sub');
-        if (subText && thinking._originalSub) {
+        const subText = rootRef.querySelector('.sub');
+        if (subText && thinking && thinking._originalSub) {
           subText.textContent = thinking._originalSub;
           subText.style.color = '';
           subText.style.fontWeight = '';
@@ -1912,7 +2033,44 @@ class NoteworthyChat extends HTMLElement {
           `;
         } else {
           err.className = 'error';
-          err.textContent = e?.message || 'Network error. Please try again.';
+          // Show more detailed error message for debugging
+          const errorMessage = e?.message || e?.toString() || 'Network error. Please try again.';
+          console.error('Error details:', { message: errorMessage, error: e });
+          
+          // Check for Netlify Dev error
+          if (errorMessage.includes('Netlify Dev is not running')) {
+            err.innerHTML = `
+              <strong>🚫 Development Server Required</strong>
+              <p>${errorMessage}</p>
+              <p style="font-size: 13px; opacity: 0.9; margin-top: 12px; line-height: 1.6;">
+                <strong>To fix this:</strong><br>
+                1. Install Netlify CLI: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">npm install -g netlify-cli</code><br>
+                2. Run: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">netlify dev</code><br>
+                3. Or deploy to production to test the live version
+              </p>
+            `;
+          } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+            err.innerHTML = `
+              <strong>Connection Error</strong>
+              <p>Unable to connect to the server. Please check your internet connection and try again.</p>
+              <p style="font-size: 12px; opacity: 0.8; margin-top: 8px;">
+                Error: ${errorMessage}
+              </p>
+            `;
+          } else if (errorMessage.includes('501') || errorMessage.includes('Unsupported method')) {
+            err.innerHTML = `
+              <strong>🚫 Development Server Required</strong>
+              <p>The local server doesn't support serverless functions. You need to run Netlify Dev.</p>
+              <p style="font-size: 13px; opacity: 0.9; margin-top: 12px; line-height: 1.6;">
+                <strong>To fix this:</strong><br>
+                1. Install Netlify CLI: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">npm install -g netlify-cli</code><br>
+                2. Run: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">netlify dev</code><br>
+                3. Open the URL shown by Netlify Dev (usually http://localhost:8888)
+              </p>
+            `;
+          } else {
+            err.textContent = errorMessage;
+          }
         }
         
         aiGroup.innerHTML = `
@@ -1929,12 +2087,33 @@ class NoteworthyChat extends HTMLElement {
       }
     }
 
-    send.onclick = ask;
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !send.disabled) {
-        ask();
-      }
-    });
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
 
     // Initial position and size
     setPos(this.pos.x, this.pos.y);

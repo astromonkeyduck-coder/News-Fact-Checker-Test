@@ -11,6 +11,7 @@
   to = "/.netlify/functions/noteworthy-chat"
   status = 200
   force = false
+  headers = { X-From = "/api/noteworthy" }
 
 [functions]
   # Use esbuild to automatically compile TypeScript functions

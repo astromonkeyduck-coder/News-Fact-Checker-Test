@@ -633,6 +633,51 @@
         // Initialize stars when page loads
         window.addEventListener('load', createStars);
     </script>
+    
+    <!-- Noteworthy Chat Widget - Shadow DOM Web Component -->
+    <script src="src/widgets/noteworthy-chat.js"></script>
+    <script>
+        // Initialize the Shadow DOM chat widget
+        (function() {
+            // Wait for DOM to be ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initChat);
+            } else {
+                initChat();
+            }
+            
+            function initChat() {
+                console.log('Initializing Noteworthy Chat widget...');
+                
+                // Check if custom element is defined
+                if (!customElements.get('noteworthy-chat-widget')) {
+                    console.error('noteworthy-chat-widget custom element not defined! Script may not have loaded.');
+                    // Retry after a short delay
+                    setTimeout(() => {
+                        if (customElements.get('noteworthy-chat-widget')) {
+                            console.log('Custom element now defined, retrying initialization...');
+                            initChat();
+                        } else {
+                            console.error('Custom element still not defined after retry.');
+                        }
+                    }, 500);
+                    return;
+                }
+                
+                try {
+                    // Create and mount the Shadow DOM web component to body
+                    const el = document.createElement('noteworthy-chat-widget');
+                    el.setAttribute('data-endpoint', '/api/noteworthy');
+                    // Set data-open="false" to start closed (set to "true" for dev/testing)
+                    el.setAttribute('data-open', 'false');
+                    document.body.appendChild(el);
+                    console.log('Noteworthy Chat widget added to DOM');
+                } catch (error) {
+                    console.error('Error initializing Noteworthy Chat widget:', error);
+                }
+            }
+        })();
+    </script>
 </body>
 </html>
 
