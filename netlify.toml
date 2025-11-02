@@ -6,6 +6,11 @@
 # Environment variables for Auth0 will be injected during build
 # Set AUTH0_DOMAIN and AUTH0_CLIENT_ID in Netlify Dashboard → Site Settings → Environment Variables
 
+# Configure secrets scanning to allow Auth0 credentials in client-side code
+# Auth0 Client ID and Domain are meant to be public in SPA applications
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "AUTH0_DOMAIN,AUTH0_CLIENT_ID"
+
 # Netlify automatically serves 404.html for 404 errors
 # Make sure 404.html is in the root directory (publish directory)
 
