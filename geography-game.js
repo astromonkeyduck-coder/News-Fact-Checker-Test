@@ -361,16 +361,19 @@ class GeographyGame {
                 
                 if (e.button === 0) { // Left mouse button
                     this.isPanning = true;
-                    this.startX = e.clientX - this.panX;
-                    this.startY = e.clientY - this.panY;
+                    // Note: panY controls horizontal (X), panX controls vertical (Y) due to transform swap
+                    this.startX = e.clientX - this.panY; // clientX -> panY (horizontal)
+                    this.startY = e.clientY - this.panX; // clientY -> panX (vertical)
                     this.mapContainer.style.cursor = 'grabbing';
                 }
             });
             
             this.mapContainer.addEventListener('mousemove', (e) => {
                 if (this.isPanning) {
-                    this.panX = e.clientX - this.startX;
-                    this.panY = e.clientY - this.startY;
+                    // Horizontal mouse movement (clientX) controls horizontal scrolling (panY)
+                    // Vertical mouse movement (clientY) controls vertical scrolling (panX)
+                    this.panY = e.clientX - this.startX; // Horizontal
+                    this.panX = e.clientY - this.startY; // Vertical
                     this.updateTransform();
                 }
             });
@@ -416,9 +419,10 @@ class GeographyGame {
                     e.preventDefault();
                 } else if (e.touches.length === 1) {
                     // Single touch - prepare for pan or tap
+                    // Note: panY controls horizontal (X), panX controls vertical (Y) due to transform swap
                     this.isPanning = true;
-                    touchStartX = e.touches[0].clientX - this.panX;
-                    touchStartY = e.touches[0].clientY - this.panY;
+                    touchStartX = e.touches[0].clientX - this.panY; // clientX -> panY (horizontal)
+                    touchStartY = e.touches[0].clientY - this.panX; // clientY -> panX (vertical)
                     touchStartTime = Date.now();
                     touchMoved = false;
                     touchTarget = e.target;
@@ -447,8 +451,9 @@ class GeographyGame {
                     e.preventDefault();
                 } else if (this.isPanning && e.touches.length === 1) {
                     // Single touch pan
-                    const deltaX = Math.abs(e.touches[0].clientX - (touchStartX + this.panX));
-                    const deltaY = Math.abs(e.touches[0].clientY - (touchStartY + this.panY));
+                    // Note: panY controls horizontal (X), panX controls vertical (Y) due to transform swap
+                    const deltaX = Math.abs(e.touches[0].clientX - (touchStartX + this.panY));
+                    const deltaY = Math.abs(e.touches[0].clientY - (touchStartY + this.panX));
                     
                     // If moved more than 10px, consider it a pan
                     if (deltaX > 10 || deltaY > 10) {
@@ -456,8 +461,10 @@ class GeographyGame {
                     }
                     
                     if (touchMoved) {
-                        this.panX = e.touches[0].clientX - touchStartX;
-                        this.panY = e.touches[0].clientY - touchStartY;
+                        // Horizontal touch movement (clientX) moves map horizontally (panY)
+                        // Vertical touch movement (clientY) moves map vertically (panX)
+                        this.panY = e.touches[0].clientX - touchStartX; // Horizontal
+                        this.panX = e.touches[0].clientY - touchStartY; // Vertical
                         this.updateTransform();
                         e.preventDefault();
                     }
@@ -525,11 +532,13 @@ class GeographyGame {
         this.zoomLevel = Math.min(3, newZoom);
         
         // Zoom toward mouse position if provided
+        // Note: panY controls horizontal (X), panX controls vertical (Y) due to transform swap
         if (centerX !== undefined && centerY !== undefined && this.mapContainer) {
             // centerX and centerY are already in local coordinates (from wheel event)
             const zoomChange = this.zoomLevel / oldZoom;
-            this.panX = centerX - (centerX - this.panX) * zoomChange;
-            this.panY = centerY - (centerY - this.panY) * zoomChange;
+            // centerX (horizontal) -> panY, centerY (vertical) -> panX
+            this.panY = centerX - (centerX - this.panY) * zoomChange; // Horizontal zoom center
+            this.panX = centerY - (centerY - this.panX) * zoomChange; // Vertical zoom center
         }
         
         // updateTransform will enforce the minimum zoom based on SVG fit
@@ -617,36 +626,43 @@ class GeographyGame {
                                      (this.zoomLevel === this.minZoomLevel || this.zoomLevel === 1);
                 
                 if (isInitialLoad) {
-                    // If scaled map is smaller than container, center it
+                    // Note: panY controls horizontal (X) movement, panX controls vertical (Y) movement (due to swap in transform)
+                    // If scaled map is smaller than container, center it horizontally
                     if (scaledWidth < containerWidth) {
-                        this.panX = (containerWidth - scaledWidth) / 2;
+                        this.panY = (containerWidth - scaledWidth) / 2; // panY = horizontal center
                     }
+                    // If scaled map is smaller than container, center it vertically
                     if (scaledHeight < containerHeight) {
-                        this.panY = (containerHeight - scaledHeight) / 2;
+                        this.panX = (containerHeight - scaledHeight) / 2; // panX = vertical center
                     }
-                    // If scaled map is larger than container, start from top-left (panX/panY = 0)
-                    // which will show the left side. Instead, center it by panning left.
+                    // If scaled map is larger than container, center it
                     if (scaledWidth > containerWidth) {
-                        // Start centered, showing middle of map
-                        this.panX = -(scaledWidth - containerWidth) / 2;
+                        // Center horizontally by using panY (horizontal control)
+                        this.panY = -(scaledWidth - containerWidth) / 2;
                     }
                     if (scaledHeight > containerHeight) {
-                        // Start centered vertically
-                        this.panY = -(scaledHeight - containerHeight) / 2;
+                        // Center vertically by using panX (vertical control)
+                        this.panX = -(scaledHeight - containerHeight) / 2;
                     }
                 }
                 
                 // Constrain panning to keep SVG within container bounds
-                const maxPanX = Math.max(0, containerWidth - scaledWidth);
-                const minPanX = Math.min(0, containerWidth - scaledWidth);
-                const maxPanY = Math.max(0, containerHeight - scaledHeight);
-                const minPanY = Math.min(0, containerHeight - scaledHeight);
+                // Note: panY controls horizontal (X), panX controls vertical (Y) due to transform swap
+                // Horizontal constraints (using panY)
+                const maxPanY = Math.max(0, containerWidth - scaledWidth);
+                const minPanY = Math.min(0, containerWidth - scaledWidth);
+                // Vertical constraints (using panX)
+                const maxPanX = Math.max(0, containerHeight - scaledHeight);
+                const minPanX = Math.min(0, containerHeight - scaledHeight);
                 
                 // Clamp pan values
-                this.panX = Math.max(minPanX, Math.min(maxPanX, this.panX));
-                this.panY = Math.max(minPanY, Math.min(maxPanY, this.panY));
+                this.panY = Math.max(minPanY, Math.min(maxPanY, this.panY)); // Horizontal constraint
+                this.panX = Math.max(minPanX, Math.min(maxPanX, this.panX)); // Vertical constraint
                 
-                svgElement.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoomLevel})`;
+                // Apply transform: translate(x, y) 
+                // Swapped: panY controls horizontal movement, panX controls vertical movement
+                // This fixes the issue where horizontal dragging was scrolling vertically
+                svgElement.style.transform = `translate(${this.panY}px, ${this.panX}px) scale(${this.zoomLevel})`;
                 svgElement.style.transformOrigin = 'top left';
             }
         }
