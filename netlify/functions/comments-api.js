@@ -37,11 +37,8 @@ exports.handler = async (event, context) => {
     };
   }
 
-  const store = getStore({
-    name: "comments",
-    siteID: process.env.NETLIFY_SITE_ID,
-    token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
-  });
+  // getStore automatically uses the site ID and token when called from Netlify Functions
+  const store = getStore("comments");
 
   try {
     const { articleId, commentId, text, author, authorEmail, authorId } = JSON.parse(
