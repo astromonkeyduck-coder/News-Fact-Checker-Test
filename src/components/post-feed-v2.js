@@ -32,6 +32,7 @@ function formatCount(n) {
 
 /**
  * Format relative time - Always shows date, uses seconds/minutes/hours for < 1 day
+ * Shows actual date for posts older than 1 month
  */
 function formatRelativeTime(dateString) {
   if (!dateString) return 'Just now';
@@ -55,17 +56,37 @@ function formatRelativeTime(dateString) {
     return `${diffHour}${diffHour === 1 ? ' hour' : ' hours'} ago`;
   }
   
-  // If 1 day or more, show the actual date
+  // Calculate time differences
   const diffWeek = Math.floor(diffDay / 7);
-  const diffMonth = Math.floor(diffDay / 30);
+  // Use actual month calculation to avoid "0 months"
+  const yearDiff = now.getFullYear() - date.getFullYear();
+  const monthDiff = now.getMonth() - date.getMonth() + (yearDiff * 12);
   const diffYear = Math.floor(diffDay / 365);
   
+  // Less than 1 week
   if (diffDay === 1) return '1 day ago';
   if (diffDay < 7) return `${diffDay} days ago`;
+  
+  // Less than 4 weeks (but show weeks, not months if less than 30 days)
   if (diffWeek < 4) return `${diffWeek}${diffWeek === 1 ? ' week' : ' weeks'} ago`;
-  if (diffMonth < 12) return `${diffMonth}${diffMonth === 1 ? ' month' : ' months'} ago`;
-  if (diffYear === 1) return '1 year ago';
-  return `${diffYear} years ago`;
+  
+  // If less than 30 days, show days instead of months to avoid "0 months"
+  if (diffDay < 30) return `${diffDay} days ago`;
+  
+  // For posts older than 1 month, show actual date
+  // Format: "Jan 15" or "Jan 15, 2024" if different year
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[date.getMonth()];
+  const day = date.getDate();
+  const year = date.getFullYear();
+  const currentYear = now.getFullYear();
+  
+  // If same year, show "Jan 15", otherwise "Jan 15, 2024"
+  if (year === currentYear) {
+    return `${month} ${day}`;
+  } else {
+    return `${month} ${day}, ${year}`;
+  }
 }
 
 /**
@@ -1157,7 +1178,7 @@ function renderFeedControls(totalPosts) {
   countNumber.textContent = totalPosts.toLocaleString();
   
   const countLabel = document.createElement('span');
-  countLabel.textContent = totalPosts === 1 ? 'post' : 'posts';
+  countLabel.textContent = totalPosts === 1 ? 'post loaded' : 'posts loaded';
   countLabel.style.cssText = 'opacity: 0.8;';
   
   countDiv.appendChild(countNumber);
