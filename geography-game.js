@@ -907,12 +907,18 @@ function loadSVGMap() {
                 
                 svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet');
                 svgElement.style.width = '100%';
-                svgElement.style.height = 'auto';
+                svgElement.style.height = '100%';
                 svgElement.style.minWidth = '800px';
                 svgElement.style.minHeight = '400px';
                 svgElement.style.display = 'block';
+                svgElement.style.visibility = 'visible';
+                svgElement.style.opacity = '1';
                 
                 mapContainer.appendChild(svgElement);
+                
+                // Log success
+                console.log('✓ SVG map loaded successfully');
+                console.log('SVG dimensions:', svgElement.getBoundingClientRect());
                 
                 // Store SVG reference in game instance if available
                 if (window.geoGame) {
@@ -930,11 +936,9 @@ function loadSVGMap() {
             }
         })
         .catch(error => {
-            console.log('SVG map file not found. Using placeholder.');
-            console.log('To add a map:');
-            console.log('1. Download a free SVG world map (e.g., from simplemaps.com)');
-            console.log('2. Save it as "world-map.svg" in the same directory');
-            console.log('3. The game will automatically load it');
+            console.error('Error loading SVG map:', error);
+            console.log('SVG map file not found or failed to load.');
+            console.log('Error details:', error.message);
             
             // Create a helpful placeholder
             createMapPlaceholder();
