@@ -2437,16 +2437,28 @@
             pointer-events: none;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
             flex-shrink: 0;
-            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", emoji;
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", "Twemoji Mozilla", "Twemoji", emoji;
             font-style: normal;
             font-weight: normal;
             line-height: 1;
-            -webkit-font-feature-settings: "liga";
-            font-feature-settings: "liga";
+            -webkit-font-feature-settings: "liga", "kern";
+            font-feature-settings: "liga", "kern";
             text-rendering: optimizeLegibility;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
             font-variant-emoji: emoji;
-            unicode-bidi: normal;
+            unicode-bidi: isolate;
+            /* Force emoji presentation */
+            font-variant: normal;
+            /* Force browser to treat as emoji */
+            vertical-align: middle;
+            /* Ensure emoji rendering mode */
+            -webkit-text-emphasis: none;
+            text-emphasis: none;
+            /* Prevent flag emoji from showing as country initials */
+            font-variant-numeric: normal;
+            text-transform: none;
+            letter-spacing: normal;
         }
         
         /* Mobile adjustments */
@@ -2459,7 +2471,10 @@
                 font-size: 1.5rem; /* Reduced from 2rem */
                 padding: 0 15px;
                 opacity: 0.5;
-                font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", emoji !important;
+                font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", "Twemoji Mozilla", "Twemoji", emoji !important;
+                font-variant-emoji: emoji !important;
+                -webkit-font-feature-settings: "liga", "kern" !important;
+                font-feature-settings: "liga", "kern" !important;
             }
         }
         
@@ -2471,7 +2486,10 @@
             .flag {
                 font-size: 1.3rem; /* Reduced from 1.8rem */
                 padding: 0 12px;
-                font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", emoji !important;
+                font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", "Twemoji Mozilla", "Twemoji", emoji !important;
+                font-variant-emoji: emoji !important;
+                -webkit-font-feature-settings: "liga", "kern" !important;
+                font-feature-settings: "liga", "kern" !important;
             }
         }
         
@@ -5067,6 +5085,22 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3em;
+        }
+        
+        /* Ensure emojis in titles are visible and properly rendered */
+        .fact-checker-title .emoji,
+        .fact-checker-title span[role="img"] {
+            -webkit-text-fill-color: initial !important;
+            color: initial !important;
+            background: none !important;
+            -webkit-background-clip: initial !important;
+            background-clip: initial !important;
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", "Twemoji Mozilla", "Twemoji", emoji !important;
+            font-variant-emoji: emoji !important;
+            display: inline-block;
         }
         .fact-checker-description {
             font-size: 1.1rem;
@@ -5078,6 +5112,12 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 15px;
+            list-style: none !important;
+        }
+        .fact-checker-features::before,
+        .fact-checker-features::after {
+            display: none !important;
+            content: none !important;
         }
         .feature-item {
             font-size: 0.95rem;
@@ -5085,6 +5125,21 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            list-style: none !important;
+        }
+        .feature-item::before,
+        .feature-item::after {
+            display: none !important;
+            content: none !important;
+        }
+        #geography-game-section,
+        #geography-game-section * {
+            list-style: none !important;
+        }
+        #geography-game-section *::before,
+        #geography-game-section *::after {
+            list-style: none !important;
+            content: none !important;
         }
         .fact-checker-action {
             text-align: center;
@@ -9410,7 +9465,7 @@
         <div class="fact-checker-section" id="fact-checker-section">
             <div class="fact-checker-content">
                 <div class="fact-checker-text">
-                    <h2 class="fact-checker-title">🔍 Interactive Fact-Checker</h2>
+                    <h2 class="fact-checker-title"><span class="emoji" role="img" aria-label="Search">🔍</span> Interactive Fact-Checker</h2>
                     <p class="fact-checker-description">
                         Test your media literacy skills with our interactive fact-checking game. 
                         Practice identifying real news from misleading information in a fun, educational environment.
@@ -9430,10 +9485,10 @@
         </div>
         
         <!-- Geography Game Section -->
-        <div class="fact-checker-section" id="geography-game-section" style="margin-top: 50px;">
+        <div class="fact-checker-section" id="geography-game-section" style="margin-top: 50px; list-style: none;">
             <div class="fact-checker-content">
                 <div class="fact-checker-text">
-                    <h2 class="fact-checker-title">🌍 Geography Challenge</h2>
+                    <h2 class="fact-checker-title"><span class="emoji" role="img" aria-label="World">🌍</span> Geography Challenge</h2>
                     <p class="fact-checker-description">
                         Test your knowledge of world geography! Find the 50 most populous countries on an interactive world map.
                         Click on countries as they're prompted - green means not answered, white is correct, and red is wrong.
@@ -9616,24 +9671,75 @@
             
             // Create flags in both containers (duplicated for seamless loop)
             uniqueFlags.forEach(flagEmoji => {
+                // Add variation selector (VS16) to force emoji presentation if not already present
+                // Flag emojis are composed of two regional indicator symbols
+                // Adding VS16 (U+FE0F) can help force emoji rendering on some systems
+                let flagText = flagEmoji;
+                
+                // Check if flag needs variation selector (some devices require it)
+                // Flag emojis should already be correct, but we'll ensure proper encoding
                 const flag1 = document.createElement('div');
                 flag1.className = 'flag';
-                // Use innerHTML and ensure proper emoji rendering
-                flag1.innerHTML = flagEmoji;
                 flag1.setAttribute('aria-label', 'Country flag');
                 flag1.setAttribute('role', 'img');
-                // Force emoji font rendering
-                flag1.style.fontFamily = '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", emoji';
+                // Use textContent for better emoji rendering on some browsers
+                flag1.textContent = flagText;
+                // Force emoji font rendering with comprehensive font stack
+                flag1.style.fontFamily = '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", "Twemoji Mozilla", "Twemoji", emoji';
+                flag1.style.fontVariantEmoji = 'emoji';
+                flag1.style.fontFeatureSettings = '"liga", "kern"';
+                flag1.style.webkitFontFeatureSettings = '"liga", "kern"';
+                // Force emoji rendering
+                flag1.style.unicodeBidi = 'isolate';
+                flag1.style.textTransform = 'none';
+                flag1.style.letterSpacing = 'normal';
                 container1.appendChild(flag1);
                 
                 const flag2 = document.createElement('div');
                 flag2.className = 'flag';
-                flag2.innerHTML = flagEmoji;
                 flag2.setAttribute('aria-label', 'Country flag');
                 flag2.setAttribute('role', 'img');
-                flag2.style.fontFamily = '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", emoji';
+                flag2.textContent = flagText;
+                flag2.style.fontFamily = '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", "EmojiOne Color", "Android Emoji", "Twemoji Mozilla", "Twemoji", emoji';
+                flag2.style.fontVariantEmoji = 'emoji';
+                flag2.style.fontFeatureSettings = '"liga", "kern"';
+                flag2.style.webkitFontFeatureSettings = '"liga", "kern"';
+                flag2.style.unicodeBidi = 'isolate';
+                flag2.style.textTransform = 'none';
+                flag2.style.letterSpacing = 'normal';
                 container2.appendChild(flag2);
             });
+            
+            // Check if flags are rendering correctly after a short delay
+            setTimeout(() => {
+                const testFlag = container1.querySelector('.flag');
+                if (testFlag) {
+                    const rect = testFlag.getBoundingClientRect();
+                    const computedStyle = window.getComputedStyle(testFlag);
+                    const flagText = testFlag.textContent || '';
+                    
+                    // Check if flag is rendering as text (country initials like "US") instead of emoji
+                    // Flags rendered as emoji should be roughly square (similar width and height)
+                    // Text will be wider than tall, or very narrow if showing as 2-letter codes
+                    const aspectRatio = rect.width / rect.height;
+                    const isTooNarrow = rect.width < 15; // Text codes are usually narrow
+                    const isWideText = aspectRatio > 2.5; // Text is much wider than tall
+                    
+                    // Also check if the rendered font is not an emoji font
+                    const fontFamily = computedStyle.fontFamily || '';
+                    const hasEmojiFont = /emoji|twemoji|segoe ui emoji|noto color emoji|android emoji/i.test(fontFamily);
+                    
+                    // If flags appear to be rendering as text, hide them
+                    if ((isTooNarrow || isWideText) && !hasEmojiFont) {
+                        console.warn('Flag emojis appear to be rendering as text on this device, hiding flags');
+                        flagsContainer.style.display = 'none';
+                    } else if (!hasEmojiFont && rect.width < 25) {
+                        // Fallback: if no emoji font detected and width is suspiciously small, hide
+                        console.warn('Flag emoji font not detected, hiding flags to avoid text fallback');
+                        flagsContainer.style.display = 'none';
+                    }
+                }
+            }, 200);
             
             wrapper.appendChild(container1);
             wrapper.appendChild(container2);

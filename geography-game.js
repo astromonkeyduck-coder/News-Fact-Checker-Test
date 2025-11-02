@@ -63,6 +63,7 @@ class GeographyGame {
         this.answered = new Set();
         this.gameActive = false;
         this.countryMap = {}; // Maps country codes to SVG paths
+        this.attempts = new Map(); // Track attempts per country: countryCode -> attemptCount
         this.zoomLevel = 1;
         this.panX = 0;
         this.panY = 0;
@@ -551,6 +552,7 @@ class GeographyGame {
         this.correct = 0;
         this.wrong = 0;
         this.answered.clear();
+        this.attempts.clear();
         
         // Shuffle countries
         this.shuffledCountries = [...this.countries].sort(() => Math.random() - 0.5);
@@ -590,6 +592,7 @@ class GeographyGame {
     resetGame() {
         this.gameActive = false;
         this.answered.clear();
+        this.attempts.clear();
         
         // Reset all country colors to green
         Object.values(this.countryMap).forEach(path => {
@@ -634,6 +637,8 @@ class GeographyGame {
         }
         
         this.currentCountry = remaining[0];
+        // Reset attempts for new country
+        this.attempts.set(this.currentCountry.code, 0);
         this.promptEl.textContent = `Find: ${this.currentCountry.name}`;
     }
     
@@ -683,6 +688,9 @@ class GeographyGame {
         
         const isCorrect = clickedCode.toLowerCase() === this.currentCountry.code.toLowerCase();
         
+        // Get current attempt count
+        const currentAttempts = this.attempts.get(this.currentCountry.code) || 0;
+        
         // Get the clicked path first
         let clickedPath = this.countryMap[clickedCode.toLowerCase()];
         
@@ -703,37 +711,22 @@ class GeographyGame {
             // Find ALL paths for the clicked country
             const allPathsForClickedCountry = this.findAllPathsForCountry(clickedCode);
             
-            // Also find all paths for the correct country if this was wrong
-            let allPathsForCorrectCountry = [];
-            if (!isCorrect) {
-                allPathsForCorrectCountry = this.findAllPathsForCountry(this.currentCountry.code);
-            }
-            
-            // Update all paths for the clicked country
-            allPathsForClickedCountry.forEach(path => {
-                path.style.transition = 'none';
-                path.style.transform = 'none';
-                path.style.position = 'static';
-                
-                if (isCorrect) {
+            if (isCorrect) {
+                // Correct answer - mark all paths as correct
+                allPathsForClickedCountry.forEach(path => {
+                    path.style.transition = 'none';
+                    path.style.transform = 'none';
+                    path.style.position = 'static';
                     path.setAttribute('fill', '#FFFFFF');
                     path.setAttribute('stroke', '#E0E0E0');
                     path.setAttribute('stroke-width', '3');
                     path.classList.add('correct');
                     path.classList.remove('incorrect');
-                } else {
-                    path.setAttribute('fill', '#E74C3C');
-                    path.setAttribute('stroke', '#C0392B');
-                    path.setAttribute('stroke-width', '3');
-                    path.classList.add('incorrect');
-                    path.classList.remove('correct');
-                }
-            });
-            
-            if (isCorrect) {
+                });
+                
                 // Add glow effect to all paths
                 allPathsForClickedCountry.forEach(path => {
-                    path.style.filter = 'drop-shadow(0 0 16px rgba(255, 255, 255, 1)) drop-shadow(0 0 8px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 4px rgba(255, 255, 255, 0.7))';
+                    path.style.filter = 'drop-shadow(0 0 6px rgba(255, 255, 255, 0.6)) drop-shadow(0 0 3px rgba(255, 255, 255, 0.4))';
                 });
                 setTimeout(() => {
                     allPathsForClickedCountry.forEach(path => {
@@ -741,46 +734,123 @@ class GeographyGame {
                     });
                 }, 500);
                 
-                this.score += 10;
+                // Score based on attempts (fewer attempts = higher score)
+                const scoreMultiplier = 3 - currentAttempts;
+                this.score += 10 * scoreMultiplier;
                 this.correct++;
                 this.feedbackEl.textContent = '✓ Correct!';
                 this.feedbackEl.className = 'feedback-message correct';
                 
                 // Play success sound
                 this.playSuccessSound();
+                
+                // Mark as answered and move to next country
+                this.answered.add(this.currentCountry.code);
+                this.updateStats();
+                
+                setTimeout(() => {
+                    this.getNextCountry();
+                    if (this.gameActive) {
+                        this.feedbackEl.textContent = '';
+                        this.feedbackEl.className = 'feedback-message';
+                    }
+                }, 2000);
             } else {
-                // Add glow effect to all clicked paths
-                allPathsForClickedCountry.forEach(path => {
+                // Wrong answer - increment attempts
+                const newAttempts = currentAttempts + 1;
+                this.attempts.set(this.currentCountry.code, newAttempts);
+                
+                // Store reference to clicked country for resetting later
+                const clickedCountryPaths = allPathsForClickedCountry;
+                
+                // Temporarily mark clicked country as incorrect (visual feedback)
+                clickedCountryPaths.forEach(path => {
+                    path.style.transition = 'none';
+                    path.style.transform = 'none';
+                    path.style.position = 'static';
+                    path.setAttribute('fill', '#E74C3C');
+                    path.setAttribute('stroke', '#C0392B');
+                    path.setAttribute('stroke-width', '3');
+                    // Don't add 'incorrect' class to wrong countries - only add it temporarily
+                });
+                
+                // Add glow effect
+                clickedCountryPaths.forEach(path => {
                     path.style.filter = 'drop-shadow(0 0 12px rgba(231, 76, 60, 1)) drop-shadow(0 0 6px rgba(231, 76, 60, 0.8))';
                 });
-                setTimeout(() => {
-                    allPathsForClickedCountry.forEach(path => {
-                        path.style.filter = '';
+                
+                if (newAttempts >= 3) {
+                    // Out of attempts - mark the CORRECT country as wrong
+                    this.wrong++;
+                    this.feedbackEl.textContent = `✗ Incorrect! No attempts remaining.`;
+                    this.feedbackEl.className = 'feedback-message incorrect';
+                    
+                    // Play error sound
+                    this.playErrorSound();
+                    
+                    // Find all paths for the CORRECT country (the one that should have been clicked)
+                    const allPathsForCorrectCountry = this.findAllPathsForCountry(this.currentCountry.code);
+                    
+                    // Mark the CORRECT country as incorrect (red)
+                    allPathsForCorrectCountry.forEach(path => {
+                        path.style.transition = 'none';
+                        path.style.transform = 'none';
+                        path.style.position = 'static';
+                        path.setAttribute('fill', '#E74C3C');
+                        path.setAttribute('stroke', '#C0392B');
+                        path.setAttribute('stroke-width', '3');
+                        path.classList.add('incorrect');
+                        path.classList.remove('correct');
                     });
-                }, 500);
-                
-                this.wrong++;
-                this.feedbackEl.textContent = '✗ Incorrect!';
-                this.feedbackEl.className = 'feedback-message incorrect';
-                
-                // Play error sound
-                this.playErrorSound();
+                    
+                    // Mark as answered
+                    this.answered.add(this.currentCountry.code);
+                    this.updateStats();
+                    
+                    setTimeout(() => {
+                        // Reset the incorrectly clicked country back to green (so it can be clicked later)
+                        clickedCountryPaths.forEach(path => {
+                            path.setAttribute('fill', '#2ECC71');
+                            path.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
+                            path.setAttribute('stroke-width', '1');
+                            path.classList.remove('incorrect');
+                            path.style.filter = '';
+                        });
+                        
+                        this.getNextCountry();
+                        if (this.gameActive) {
+                            this.feedbackEl.textContent = '';
+                            this.feedbackEl.className = 'feedback-message';
+                        }
+                    }, 2000);
+                } else {
+                    // Still have attempts remaining
+                    const remainingAttempts = 3 - newAttempts;
+                    this.feedbackEl.textContent = `✗ Incorrect! ${remainingAttempts} attempt${remainingAttempts === 1 ? '' : 's'} remaining.`;
+                    this.feedbackEl.className = 'feedback-message incorrect';
+                    
+                    // Play error sound
+                    this.playErrorSound();
+                    
+                    // Reset the clicked country back to green after showing error (so it can be clicked if it becomes correct)
+                    setTimeout(() => {
+                        clickedCountryPaths.forEach(path => {
+                            path.setAttribute('fill', '#2ECC71');
+                            path.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
+                            path.setAttribute('stroke-width', '1');
+                            path.classList.remove('incorrect');
+                            path.style.filter = '';
+                            // Ensure the country can be clicked again even if it becomes the correct answer
+                            path.style.pointerEvents = 'auto';
+                        });
+                        
+                        this.feedbackEl.textContent = '';
+                        this.feedbackEl.className = 'feedback-message';
+                        this.updateStats();
+                    }, 2000);
+                }
             }
-            
-            // Mark as answered
-            this.answered.add(this.currentCountry.code);
         }
-        
-        this.updateStats();
-        
-        // Move to next country after a short delay
-        setTimeout(() => {
-            this.getNextCountry();
-            if (this.gameActive) {
-                this.feedbackEl.textContent = '';
-                this.feedbackEl.className = 'feedback-message';
-            }
-        }, 2000);
     }
     
     updateStats() {

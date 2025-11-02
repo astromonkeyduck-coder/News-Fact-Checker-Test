@@ -13,12 +13,67 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        .stars-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        
+        .floating-star {
+            position: absolute;
+            background: #FFFFFF;
+            border-radius: 50%;
+            box-shadow: 
+                0 0 6px rgba(255, 255, 255, 0.8),
+                0 0 12px rgba(255, 255, 255, 0.6),
+                0 0 18px rgba(255, 255, 255, 0.4),
+                0 0 24px rgba(74, 144, 226, 0.3);
+            animation: floatStar linear infinite;
+            opacity: 0.9;
+        }
+        
+        @keyframes floatStar {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.9;
+            }
+            25% {
+                transform: translate(20px, -30px) scale(1.1);
+                opacity: 1;
+            }
+            50% {
+                transform: translate(-15px, -60px) scale(0.9);
+                opacity: 0.7;
+            }
+            75% {
+                transform: translate(30px, -90px) scale(1.05);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translate(0, -120px) scale(1);
+                opacity: 0.9;
+            }
+        }
+        
         .geography-game-container {
             padding-top: 100px;
             max-width: 1400px;
             margin: 0 auto;
             padding-left: 20px;
             padding-right: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .container,
+        .main-header {
+            position: relative;
+            z-index: 1;
         }
         
         .header-container {
@@ -235,7 +290,7 @@
             fill: #FFFFFF !important;
             stroke: #E0E0E0 !important;
             stroke-width: 3px !important;
-            filter: drop-shadow(0 0 12px rgba(255, 255, 255, 1)) drop-shadow(0 0 6px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 3px rgba(255, 255, 255, 0.6));
+            filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.3));
             transition: none !important;
         }
         
@@ -271,30 +326,73 @@
         .game-controls {
             display: flex;
             justify-content: center;
-            gap: 15px;
-            margin-top: 20px;
+            gap: 20px;
+            margin-top: 30px;
+            margin-bottom: 30px;
         }
         
         .btn-geo {
-            padding: 12px 30px;
-            font-size: 1rem;
-            font-weight: 600;
-            border: none;
-            border-radius: 10px;
+            padding: 18px 40px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #4A90E2, #2A60B0);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
             cursor: pointer;
             transition: all 0.3s ease;
-            background: linear-gradient(135deg, #4A90E2, #2A60B0);
+            box-shadow: 
+                0 8px 25px rgba(74, 144, 226, 0.5),
+                0 0 20px rgba(74, 144, 226, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
             color: white;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-geo::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-geo:hover::before {
+            left: 100%;
         }
         
         .btn-geo:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4);
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 
+                0 12px 35px rgba(74, 144, 226, 0.6),
+                0 0 30px rgba(74, 144, 226, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            background: linear-gradient(135deg, #5BA0F2, #3A70C0);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .btn-geo:active {
+            transform: translateY(-1px) scale(1.02);
         }
         
         .btn-geo:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-geo:disabled:hover {
+            transform: none;
+            box-shadow: 
+                0 8px 25px rgba(74, 144, 226, 0.5),
+                0 0 20px rgba(74, 144, 226, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
         }
         
         .feedback-message {
@@ -355,6 +453,7 @@
 </head>
 <body>
     <div class="matrix-rain"></div>
+    <div class="stars-background" id="starsBackground"></div>
     
     <header class="main-header">
         <div class="header-container">
@@ -407,6 +506,11 @@
                 Click "Start Game" to begin!
             </div>
             
+            <div class="game-controls">
+                <button class="btn-geo" id="startBtn">Start Game</button>
+                <button class="btn-geo" id="resetBtn" disabled>Reset Game</button>
+            </div>
+            
             <div class="world-map-container">
                 <div class="zoom-controls">
                     <button class="zoom-btn" id="zoomIn" aria-label="Zoom in">+</button>
@@ -419,15 +523,43 @@
             </div>
             
             <div class="feedback-message" id="feedbackMessage"></div>
-            
-            <div class="game-controls">
-                <button class="btn-geo" id="startBtn">Start Game</button>
-                <button class="btn-geo" id="resetBtn" disabled>Reset Game</button>
-            </div>
         </div>
     </div>
     
     <script src="geography-game.js"></script>
+    <script>
+        // Create floating glowing stars
+        function createStars() {
+            const starsContainer = document.getElementById('starsBackground');
+            const numStars = 50;
+            
+            for (let i = 0; i < numStars; i++) {
+                const star = document.createElement('div');
+                star.className = 'floating-star';
+                
+                // Random size (small to medium)
+                const size = Math.random() * 3 + 1; // 1px to 4px
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+                
+                // Random position
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                
+                // Random animation duration (slow drift)
+                const duration = Math.random() * 20 + 15; // 15s to 35s
+                star.style.animationDuration = duration + 's';
+                
+                // Random delay
+                star.style.animationDelay = Math.random() * 5 + 's';
+                
+                starsContainer.appendChild(star);
+            }
+        }
+        
+        // Initialize stars when page loads
+        window.addEventListener('load', createStars);
+    </script>
 </body>
 </html>
 
