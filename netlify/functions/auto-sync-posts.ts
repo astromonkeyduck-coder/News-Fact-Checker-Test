@@ -8,7 +8,7 @@
  * 3. Stores new posts automatically
  */
 
-import { Handler, schedule } from "@netlify/functions";
+import { Handler } from "@netlify/functions";
 import { getStore } from "@netlify/blobs";
 import { fetchTweetOEmbed } from "../../src/lib/posts/oembed-fetch";
 import { extractTweetId } from "../../src/lib/posts/oembed-fetch";
