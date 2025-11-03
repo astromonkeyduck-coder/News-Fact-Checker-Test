@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Noteworthy News - Add Post Bookmarklet</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: #0f0f23;
+            color: #fff;
+            line-height: 1.6;
+        }
+        .bookmarklet-box {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #4A90E2;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+        .bookmarklet-link {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: #4A90E2;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 1rem 0;
+            cursor: move;
+        }
+        .bookmarklet-link:hover {
+            background: #357ABD;
+        }
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        .steps {
+            margin: 1.5rem 0;
+        }
+        .step {
+            margin: 1rem 0;
+            padding-left: 1.5rem;
+        }
+        h1, h2 {
+            color: #4A90E2;
+        }
+    </style>
+</head>
+<body>
+    <h1>📱 Noteworthy News - Quick Add Post Bookmarklet</h1>
+    
+    <p>This bookmarklet lets you instantly add any X/Twitter post to your website with one click!</p>
+    
+    <div class="bookmarklet-box">
+        <h2>📌 Quick Setup:</h2>
+        <div class="steps">
+            <div class="step">
+                <strong>Step 1:</strong> Drag the button below to your browser's bookmarks bar
+            </div>
+            <div class="step">
+                <strong>Step 2:</strong> Visit any tweet on X/Twitter
+            </div>
+            <div class="step">
+                <strong>Step 3:</strong> Click the bookmarklet in your bookmarks bar
+            </div>
+            <div class="step">
+                <strong>Done!</strong> The post will be added automatically
+            </div>
+        </div>
+        
+        <a href="javascript:(function(){const tweetId=window.location.pathname.match(/\/status\/(\d+)/)?.[1];if(!tweetId){alert('Not a tweet page! Visit a tweet URL first.');return;}const url=`https://x.com/newsnoteworthy/status/${tweetId}`;fetch('https://noteworthynews.co/.netlify/functions/fetch-tweets-simple',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tweetUrl:url})}).then(r=>r.json()).then(d=>{if(d.error){alert('Error: '+d.error);console.error(d);}else{alert('✅ Post added successfully! Refresh your website to see it.');console.log('Added:',d);}}).catch(e=>{alert('Error: '+e.message);console.error(e);});})();" 
+           class="bookmarklet-link" 
+           id="bookmarklet">
+            ➕ Add to Noteworthy
+        </a>
+        
+        <p style="margin-top: 1rem; font-size: 0.9em; opacity: 0.8;">
+            <strong>💡 Tip:</strong> Drag this button to your bookmarks bar, then click it on any tweet page to add it instantly!
+        </p>
+    </div>
+    
+    <h2>🎯 How It Works:</h2>
+    <ol>
+        <li>The bookmarklet extracts the tweet ID from the current page URL</li>
+        <li>It sends the tweet URL to your Netlify function</li>
+        <li>The function fetches the tweet data and stores it</li>
+        <li>Refresh your website to see the new post!</li>
+    </ol>
+    
+    <h2>⚡ For Automatic Posts (Best Solution):</h2>
+    <p>For truly automatic posts, set up the <strong>X Webhook</strong> system. See <code>SETUP_AUTO_POSTS.md</code> for complete instructions.</p>
+    <p>The webhook will automatically add every new tweet you post, with no manual action needed!</p>
+    
+    <h2>📋 Alternative Methods:</h2>
+    <ul>
+        <li><strong>Command Line:</strong> <code>node scripts/quick-add-post.js &lt;tweet-url&gt;</code></li>
+        <li><strong>Browser Console:</strong> See SETUP_AUTO_POSTS.md for scripts</li>
+        <li><strong>X Webhook:</strong> Fully automatic (recommended)</li>
+    </ul>
+</body>
+</html>
+

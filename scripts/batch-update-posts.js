@@ -28,7 +28,7 @@ function parseNumber(str) {
   return parseInt(str.replace(/,/g, ''), 10);
 }
 
-// API endpoint
+// API endpoint - use update-post-data function
 const API_ENDPOINT = process.env.NETLIFY_FUNCTION_URL || 'https://noteworthynews.co/.netlify/functions/update-post-data';
 
 async function updatePost(postData) {
@@ -52,8 +52,20 @@ async function updatePost(postData) {
     shares: postData.shares,
   };
   
+  // Remove undefined values to avoid sending null
+  Object.keys(updatePayload).forEach(key => {
+    if (updatePayload[key] === undefined) {
+      delete updatePayload[key];
+    }
+  });
+  
   try {
-    const response = await fetch(API_ENDPOINT, {
+    // Ensure we're calling the correct endpoint
+    const endpoint = API_ENDPOINT.includes('update-post-data') 
+      ? API_ENDPOINT 
+      : 'https://noteworthynews.co/.netlify/functions/update-post-data';
+    
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

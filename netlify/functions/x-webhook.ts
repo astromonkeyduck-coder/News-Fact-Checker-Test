@@ -136,12 +136,18 @@ async function handleWebhookEvent(body: any): Promise<{ status: string; processe
   }
 
   // Update index if we have new posts
+  // Smart indexing: remove duplicates and keep within 200 limit
   if (newIds.length > 0) {
-    // Prepend new IDs and cap at 200
-    const updatedIds = [...newIds, ...indexData.ids].slice(0, 200);
+    // Remove any duplicates from existing index
+    const existingIds = indexData.ids.filter(id => !newIds.includes(id));
+    // Prepend new IDs (newest first)
+    const updatedIds = [...newIds, ...existingIds].slice(0, 200);
     await store.set("index.json", JSON.stringify({ ids: updatedIds }), {
       contentType: "application/json",
     });
+    
+    // Note: For top-performing posts, run rebuild-index function periodically
+    // This ensures high-view posts don't get pushed out permanently
   }
 
   return { status: "ok", processed };

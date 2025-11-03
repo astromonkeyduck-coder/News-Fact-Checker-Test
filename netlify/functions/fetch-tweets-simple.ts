@@ -195,8 +195,23 @@ export const handler: Handler = async (event) => {
         }
       } catch {}
 
-      const updatedIds = [tweetId, ...indexData.ids].slice(0, 200);
-      const updatedUrls = [tweetUrl, ...indexData.urls].slice(0, 200);
+      // Smart index update: keep top-performing posts
+      // Strategy: Always include top 50 by views, then add newest
+      const existingIds = indexData.ids || [];
+      const existingUrls = indexData.urls || [];
+      
+      // If post already exists in index, remove it first (will re-add at correct position)
+      const filteredIds = existingIds.filter(id => id !== tweetId);
+      const filteredUrls = existingUrls.filter((url, idx) => existingIds[idx] !== tweetId);
+      
+      // Prepend new post
+      const newIds = [tweetId, ...filteredIds];
+      const newUrls = [tweetUrl, ...filteredUrls];
+      
+      // If we have stats, prioritize high-view posts
+      // For now, just cap at 200 and let rebuild-index handle optimization
+      const updatedIds = newIds.slice(0, 200);
+      const updatedUrls = newUrls.slice(0, 200);
       
       await store.set("index.json", JSON.stringify({ ids: updatedIds, urls: updatedUrls }), {
         contentType: "application/json",
