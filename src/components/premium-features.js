@@ -11,43 +11,13 @@ class PremiumFeatures {
   }
   
   async init() {
-    // Check if user is authenticated
-    if (window.auth0 && typeof window.auth0.isAuthenticated === 'function') {
-      try {
-        const isAuth = await window.auth0.isAuthenticated();
-        if (isAuth) {
-          this.user = await window.auth0.getUser();
-          this.isPremium = true; // All authenticated users get premium features for now
-          this.applyPremiumFeatures();
-        }
-      } catch (err) {
-        console.log('[Premium] Could not check auth:', err);
-      }
-    }
-    
-    // Monitor auth state changes
-    this.monitorAuthState();
+    // Premium features are now available to everyone
+    this.isPremium = true;
+    this.applyPremiumFeatures();
   }
   
   monitorAuthState() {
-    // Check every 2 seconds for auth state changes
-    setInterval(async () => {
-      if (window.auth0 && typeof window.auth0.isAuthenticated === 'function') {
-        try {
-          const isAuth = await window.auth0.isAuthenticated();
-          if (isAuth && !this.isPremium) {
-            this.user = await window.auth0.getUser();
-            this.isPremium = true;
-            this.applyPremiumFeatures();
-          } else if (!isAuth && this.isPremium) {
-            this.isPremium = false;
-            this.removePremiumFeatures();
-          }
-        } catch (err) {
-          // Auth check failed, ignore
-        }
-      }
-    }, 2000);
+    // Premium features are always available, no need to monitor auth state
   }
   
   applyPremiumFeatures() {

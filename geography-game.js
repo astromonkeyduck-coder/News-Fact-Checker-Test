@@ -61,6 +61,7 @@ class GeographyGame {
         this.correct = 0;
         this.wrong = 0;
         this.answered = new Set();
+        this.wrongCountries = new Set(); // Track which countries were answered wrong (to avoid double counting)
         this.gameActive = false;
         this.countryMap = {}; // Maps country codes to SVG paths
         this.attempts = new Map(); // Track attempts per country: countryCode -> attemptCount
@@ -74,6 +75,16 @@ class GeographyGame {
         this.svgNaturalWidth = 0;
         this.svgNaturalHeight = 0;
         this.minZoomLevel = 1; // Minimum zoom - will be calculated based on SVG fit
+        
+        // Timer and competitive features
+        this.startTime = null;
+        this.timerInterval = null;
+        this.elapsedTime = 0; // in milliseconds
+        this.questionStartTime = null;
+        this.questionTimerInterval = null; // Interval for per-question timer
+        this.questionTimes = []; // Track time per question
+        this.bestTime = this.loadBestTime(); // Best completion time
+        this.speedBonus = 0; // Total speed bonuses earned
         
         // Initialize audio context for sound effects
         this.audioContext = null;
@@ -100,6 +111,10 @@ class GeographyGame {
         this.startBtn = document.getElementById('startBtn');
         this.resetBtn = document.getElementById('resetBtn');
         this.directionsCountEl = document.getElementById('directionsCount');
+        this.timerEl = document.getElementById('geoTimer');
+        this.speedEl = document.getElementById('geoSpeed');
+        this.questionTimerEl = document.getElementById('questionTimer');
+        this.questionTimerValueEl = document.getElementById('questionTimerValue');
     }
     
     loadWorldMap() {
@@ -750,7 +765,15 @@ class GeographyGame {
         this.correct = 0;
         this.wrong = 0;
         this.answered.clear();
+        this.wrongCountries.clear();
         this.attempts.clear();
+        this.speedBonus = 0;
+        this.questionTimes = [];
+        
+        // Reset timer
+        this.elapsedTime = 0;
+        this.startTime = Date.now();
+        this.startTimer();
         
         // Shuffle countries
         this.shuffledCountries = [...this.countries].sort(() => Math.random() - 0.5);
@@ -790,7 +813,23 @@ class GeographyGame {
     resetGame() {
         this.gameActive = false;
         this.answered.clear();
+        this.wrongCountries.clear();
         this.attempts.clear();
+        this.stopTimer();
+        this.elapsedTime = 0;
+        this.questionTimes = [];
+        this.speedBonus = 0;
+        
+        // Stop question timer
+        if (this.questionTimerInterval) {
+            clearInterval(this.questionTimerInterval);
+            this.questionTimerInterval = null;
+        }
+        
+        // Hide question timer
+        if (this.questionTimerEl) {
+            this.questionTimerEl.style.display = 'none';
+        }
         
         // Reset all country colors to green
         Object.values(this.countryMap).forEach(path => {
@@ -838,6 +877,13 @@ class GeographyGame {
         // Reset attempts for new country
         this.attempts.set(this.currentCountry.code, 0);
         this.promptEl.textContent = `Find: ${this.currentCountry.name}`;
+        
+        // Start question timer
+        this.questionStartTime = Date.now();
+        if (this.questionTimerEl) {
+            this.questionTimerEl.style.display = 'flex';
+        }
+        this.updateQuestionTimer();
     }
     
     findAllPathsForCountry(countryCode) {
@@ -848,33 +894,184 @@ class GeographyGame {
         const codeUpper = countryCode.toUpperCase();
         const codeLower = countryCode.toLowerCase();
         
-        // Get from countryMap
+        // Get country info first (needed for filtering)
+        const country = POPULOUS_COUNTRIES.find(c => c.code.toUpperCase() === codeUpper);
+        
+        // Get from countryMap (with filtering for South Korea)
         if (this.countryMap[codeLower]) {
-            allPaths.add(this.countryMap[codeLower]);
+            const path = this.countryMap[codeLower];
+            // For South Korea, check if it's North Korea
+            if (country && country.code === 'KR') {
+                const pathId = path.id || '';
+                const pathName = path.getAttribute('name') || '';
+                const pathDataName = path.getAttribute('data-country-name') || '';
+                const pathText = `${pathId} ${pathName} ${pathDataName}`.toLowerCase();
+                if (!(/\bnorth\s+korea\b/i.test(pathText) || 
+                      /\bkorea.*north\b/i.test(pathText) ||
+                      /\bnorth.*korea\b/i.test(pathText) ||
+                      /\bkp\b/i.test(pathId) ||
+                      pathDataName.toLowerCase() === 'north korea')) {
+                    allPaths.add(path);
+                }
+            } else {
+                allPaths.add(path);
+            }
         }
         if (this.countryMap[codeUpper]) {
-            allPaths.add(this.countryMap[codeUpper]);
+            const path = this.countryMap[codeUpper];
+            // For South Korea, check if it's North Korea
+            if (country && country.code === 'KR') {
+                const pathId = path.id || '';
+                const pathName = path.getAttribute('name') || '';
+                const pathDataName = path.getAttribute('data-country-name') || '';
+                const pathText = `${pathId} ${pathName} ${pathDataName}`.toLowerCase();
+                if (!(/\bnorth\s+korea\b/i.test(pathText) || 
+                      /\bkorea.*north\b/i.test(pathText) ||
+                      /\bnorth.*korea\b/i.test(pathText) ||
+                      /\bkp\b/i.test(pathId) ||
+                      pathDataName.toLowerCase() === 'north korea')) {
+                    allPaths.add(path);
+                }
+            } else {
+                allPaths.add(path);
+            }
         }
         
         // Find by data-country-code attribute (case insensitive)
         const pathsByCode = this.svg.querySelectorAll(`path[data-country-code="${codeUpper}"], path[data-country-code="${codeLower}"]`);
-        pathsByCode.forEach(p => allPaths.add(p));
+        pathsByCode.forEach(p => {
+            // For South Korea, exclude paths that are clearly North Korea
+            if (country && country.code === 'KR') {
+                const pathId = p.id || '';
+                const pathName = p.getAttribute('name') || '';
+                const pathDataName = p.getAttribute('data-country-name') || '';
+                const pathText = `${pathId} ${pathName} ${pathDataName}`.toLowerCase();
+                // Exclude if it mentions North Korea or has KP code
+                if (/\bnorth\s+korea\b/i.test(pathText) || 
+                    /\bkorea.*north\b/i.test(pathText) ||
+                    /\bnorth.*korea\b/i.test(pathText) ||
+                    /\bkp\b/i.test(pathId) ||
+                    pathDataName.toLowerCase() === 'north korea') {
+                    return; // Skip North Korea paths
+                }
+            }
+            allPaths.add(p);
+        });
         
-        // Find by ID
+        // Find by ID - exact match
         const pathsById = this.svg.querySelectorAll(`path#${codeUpper}, path#${codeLower}`);
-        pathsById.forEach(p => allPaths.add(p));
+        pathsById.forEach(p => {
+            // For South Korea, exclude paths that are clearly North Korea
+            if (country && country.code === 'KR') {
+                const pathId = p.id || '';
+                const pathName = p.getAttribute('name') || '';
+                const pathDataName = p.getAttribute('data-country-name') || '';
+                const pathText = `${pathId} ${pathName} ${pathDataName}`.toLowerCase();
+                // Exclude if it mentions North Korea or has KP code
+                if (/\bnorth\s+korea\b/i.test(pathText) || 
+                    /\bkorea.*north\b/i.test(pathText) ||
+                    /\bnorth.*korea\b/i.test(pathText) ||
+                    /\bkp\b/i.test(pathId) ||
+                    pathDataName.toLowerCase() === 'north korea') {
+                    return; // Skip North Korea paths
+                }
+            }
+            allPaths.add(p);
+        });
+        
+        // For archipelagos, also find paths with numbered IDs (e.g., "PH-1", "PH-2")
+        if (country && (country.code === 'PH' || country.code === 'ID' || country.code === 'JP')) {
+            // Find all paths whose ID starts with the country code
+            const allPathsInSVG = this.svg.querySelectorAll('path');
+            allPathsInSVG.forEach(path => {
+                const pathId = path.id || '';
+                // Match IDs like "PH", "PH-1", "PH-2", "ph-1", etc.
+                if (new RegExp(`^${codeUpper}[-_]?\\d*$|^${codeLower}[-_]?\\d*$`, 'i').test(pathId)) {
+                    allPaths.add(path);
+                }
+                // Also match IDs containing country name with numbers (e.g., "philippines-1")
+                const countryNameLower = country.name.toLowerCase();
+                if (new RegExp(`^${countryNameLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[-_]?\\d*$`, 'i').test(pathId)) {
+                    allPaths.add(path);
+                }
+            });
+        }
         
         // Also search by data-country-name if available
-        const country = POPULOUS_COUNTRIES.find(c => c.code.toUpperCase() === codeUpper);
         if (country) {
             const pathsByName = this.svg.querySelectorAll(`path[data-country-name="${country.name}"], path[data-country-name="${country.name.toLowerCase()}"]`);
             pathsByName.forEach(p => allPaths.add(p));
             
-            // Try alternative names
+            // Try alternative names, but be careful with countries that have similar names
             country.alt.forEach(altName => {
+                // For South Korea, don't match generic "korea" - only match "south korea"
+                if (country.code === 'KR' && altName.toLowerCase() === 'korea') {
+                    // Skip generic "korea" to avoid matching North Korea
+                    return;
+                }
                 const pathsByAlt = this.svg.querySelectorAll(`path[data-country-name="${altName}"], path[data-country-name="${altName.toLowerCase()}"]`);
-                pathsByAlt.forEach(p => allPaths.add(p));
+                pathsByAlt.forEach(p => {
+                    // Additional check for South Korea - exclude paths that mention "north"
+                    if (country.code === 'KR') {
+                        const pathId = p.id || '';
+                        const pathName = p.getAttribute('name') || '';
+                        const pathClass = p.className?.baseVal || p.getAttribute('class') || '';
+                        const pathTitle = p.querySelector('title')?.textContent || '';
+                        const pathText = `${pathId} ${pathName} ${pathClass} ${pathTitle}`.toLowerCase();
+                        
+                        // Exclude if it mentions "north korea"
+                        if (/\bnorth\s+korea\b/i.test(pathText) || 
+                            /\bkorea.*north\b/i.test(pathText) ||
+                            /\bnorth.*korea\b/i.test(pathText)) {
+                            return; // Skip this path - it's North Korea
+                        }
+                    }
+                    allPaths.add(p);
+                });
             });
+        }
+        
+        // Additional filtering for South Korea - remove any paths that might be North Korea
+        if (country && country.code === 'KR') {
+            const filteredPaths = new Set();
+            allPaths.forEach(path => {
+                const pathId = path.id || '';
+                const pathName = path.getAttribute('name') || '';
+                const pathClass = path.className?.baseVal || path.getAttribute('class') || '';
+                const pathTitle = path.querySelector('title')?.textContent || '';
+                const pathDataName = path.getAttribute('data-country-name') || '';
+                const pathDataCode = path.getAttribute('data-country-code') || '';
+                const pathText = `${pathId} ${pathName} ${pathClass} ${pathTitle} ${pathDataName} ${pathDataCode}`.toLowerCase();
+                
+                // Check for North Korea indicators
+                const hasNorthKorea = /\bnorth\s+korea\b/i.test(pathText) || 
+                                     /\bkorea.*north\b/i.test(pathText) ||
+                                     /\bnorth.*korea\b/i.test(pathText) ||
+                                     /\bkp\b/i.test(pathId) || // North Korea code is KP
+                                     pathDataCode.toUpperCase() === 'KP';
+                
+                // If it's clearly North Korea, exclude it
+                if (hasNorthKorea) {
+                    return; // Skip this path - it's North Korea
+                }
+                
+                // Check for South Korea indicators
+                const hasSouthKorea = /\bsouth\s+korea\b/i.test(pathText) || 
+                                     /\bkorea.*south\b/i.test(pathText) ||
+                                     pathDataCode.toUpperCase() === 'KR' ||
+                                     pathDataName.toLowerCase() === 'south korea';
+                
+                // Include if:
+                // 1. It has data-country-code="KR" (processed by our matching logic = South Korea)
+                // 2. It explicitly mentions "south korea"
+                // 3. It has ID "KR" and doesn't mention north
+                if (hasSouthKorea || 
+                    (pathDataCode.toUpperCase() === 'KR') ||
+                    (pathId.toUpperCase() === 'KR' && !hasNorthKorea)) {
+                    filteredPaths.add(path);
+                }
+            });
+            return Array.from(filteredPaths).filter(p => p && p.tagName === 'path');
         }
         
         // Remove any null/undefined paths
@@ -910,6 +1107,19 @@ class GeographyGame {
             const allPathsForClickedCountry = this.findAllPathsForCountry(clickedCode);
             
             if (isCorrect) {
+                // Calculate question time
+                const questionTime = this.questionStartTime ? (Date.now() - this.questionStartTime) / 1000 : 0;
+                this.questionTimes.push(questionTime);
+                
+                // Stop and hide question timer
+                if (this.questionTimerInterval) {
+                    clearInterval(this.questionTimerInterval);
+                    this.questionTimerInterval = null;
+                }
+                if (this.questionTimerEl) {
+                    this.questionTimerEl.style.display = 'none';
+                }
+                
                 // Correct answer - mark all paths as correct
                 allPathsForClickedCountry.forEach(path => {
                     path.style.transition = 'none';
@@ -934,10 +1144,43 @@ class GeographyGame {
                 
                 // Score based on attempts (fewer attempts = higher score)
                 const scoreMultiplier = 3 - currentAttempts;
-                this.score += 10 * scoreMultiplier;
+                let baseScore = 10 * scoreMultiplier;
+                
+                // Speed bonus: faster answers get more points
+                // < 2 seconds = 50 bonus, < 5 seconds = 30 bonus, < 10 seconds = 15 bonus
+                let speedBonus = 0;
+                let speedMessage = '';
+                if (questionTime < 2) {
+                    speedBonus = 50;
+                    speedMessage = '⚡ Lightning Fast! +50';
+                } else if (questionTime < 5) {
+                    speedBonus = 30;
+                    speedMessage = '⚡ Very Fast! +30';
+                } else if (questionTime < 10) {
+                    speedBonus = 15;
+                    speedMessage = '⚡ Fast! +15';
+                }
+                
+                this.speedBonus += speedBonus;
+                const totalScore = baseScore + speedBonus;
+                this.score += totalScore;
                 this.correct++;
-                this.feedbackEl.textContent = '✓ Correct!';
-                this.feedbackEl.className = 'feedback-message correct';
+                
+                // Show feedback with speed bonus if applicable
+                if (speedBonus > 0) {
+                    this.feedbackEl.textContent = `✓ Correct! ${speedMessage}`;
+                    this.feedbackEl.className = 'feedback-message correct';
+                    // Flash speed indicator
+                    if (this.speedEl) {
+                        this.speedEl.classList.add('speed-bonus');
+                        setTimeout(() => {
+                            this.speedEl.classList.remove('speed-bonus');
+                        }, 500);
+                    }
+                } else {
+                    this.feedbackEl.textContent = '✓ Correct!';
+                    this.feedbackEl.className = 'feedback-message correct';
+                }
                 
                 // Play success sound
                 this.playSuccessSound();
@@ -979,12 +1222,16 @@ class GeographyGame {
                 
                 if (newAttempts >= 3) {
                     // Out of attempts - mark the CORRECT country as wrong
-                    this.wrong++;
+                    // Only increment wrong if this country hasn't been counted as wrong yet
+                    if (!this.wrongCountries.has(this.currentCountry.code)) {
+                        this.wrong++;
+                        this.wrongCountries.add(this.currentCountry.code);
+                    }
                     this.feedbackEl.textContent = `✗ Incorrect! No attempts remaining.`;
                     this.feedbackEl.className = 'feedback-message incorrect';
                     
-                    // Play error sound
-                    this.playErrorSound();
+                    // Play sad failure sound for third attempt
+                    this.playFailureSound();
                     
                     // Find all paths for the CORRECT country (the one that should have been clicked)
                     const allPathsForCorrectCountry = this.findAllPathsForCountry(this.currentCountry.code);
@@ -1057,9 +1304,89 @@ class GeographyGame {
         this.wrongEl.textContent = this.wrong;
         this.remainingEl.textContent = this.countries.length - this.answered.size;
         
+        // Update timer display
+        if (this.timerEl) {
+            const minutes = Math.floor(this.elapsedTime / 60000);
+            const seconds = Math.floor((this.elapsedTime % 60000) / 1000);
+            this.timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+        
+        // Update speed indicator (average time per question)
+        if (this.speedEl && this.questionTimes.length > 0) {
+            const avgTime = this.questionTimes.reduce((a, b) => a + b, 0) / this.questionTimes.length;
+            this.speedEl.textContent = `${avgTime.toFixed(1)}s avg`;
+        } else if (this.speedEl) {
+            this.speedEl.textContent = '--';
+        }
+        
         // Update directions count
         if (this.directionsCountEl) {
             this.directionsCountEl.textContent = `${this.correct} / 50`;
+        }
+    }
+    
+    startTimer() {
+        this.stopTimer(); // Clear any existing timer
+        this.timerInterval = setInterval(() => {
+            if (this.startTime) {
+                this.elapsedTime = Date.now() - this.startTime;
+                this.updateStats();
+            }
+        }, 100); // Update every 100ms for smooth display
+    }
+    
+    stopTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+    }
+    
+    updateQuestionTimer() {
+        // Clear any existing question timer interval
+        if (this.questionTimerInterval) {
+            clearInterval(this.questionTimerInterval);
+            this.questionTimerInterval = null;
+        }
+        
+        if (!this.questionStartTime || !this.questionTimerValueEl) return;
+        
+        this.questionTimerInterval = setInterval(() => {
+            if (!this.gameActive || !this.questionStartTime) {
+                if (this.questionTimerInterval) {
+                    clearInterval(this.questionTimerInterval);
+                    this.questionTimerInterval = null;
+                }
+                return;
+            }
+            
+            const questionTime = (Date.now() - this.questionStartTime) / 1000;
+            if (this.questionTimerValueEl) {
+                this.questionTimerValueEl.textContent = `${questionTime.toFixed(1)}s`;
+            }
+        }, 100);
+    }
+    
+    loadBestTime() {
+        try {
+            const stored = localStorage.getItem('geography_best_time');
+            return stored ? parseInt(stored, 10) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+    
+    saveBestTime(time) {
+        try {
+            const currentBest = this.loadBestTime();
+            if (!currentBest || time < currentBest) {
+                localStorage.setItem('geography_best_time', time.toString());
+                this.bestTime = time;
+                return true;
+            }
+            return false;
+        } catch (e) {
+            return false;
         }
     }
     
@@ -1124,8 +1451,112 @@ class GeographyGame {
         }
     }
     
+    playFailureSound() {
+        if (!this.audioContext) return;
+        
+        try {
+            // Resume audio context if suspended
+            if (this.audioContext.state === 'suspended') {
+                this.audioContext.resume();
+            }
+            
+            // Create a sad, despairing chord progression for third attempt failure
+            const now = this.audioContext.currentTime;
+            const duration = 0.8; // Longer, more dramatic
+            
+            // Create multiple oscillators for a sad chord
+            const osc1 = this.audioContext.createOscillator(); // Root note
+            const osc2 = this.audioContext.createOscillator(); // Minor third
+            const osc3 = this.audioContext.createOscillator(); // Fifth
+            const gain1 = this.audioContext.createGain();
+            const gain2 = this.audioContext.createGain();
+            const gain3 = this.audioContext.createGain();
+            
+            // Minor chord (sad) - A minor: A (220Hz), C (261.63Hz), E (329.63Hz)
+            osc1.frequency.setValueAtTime(220, now); // A3
+            osc1.frequency.exponentialRampToValueAtTime(180, now + duration * 0.5);
+            osc1.frequency.exponentialRampToValueAtTime(150, now + duration);
+            
+            osc2.frequency.setValueAtTime(261.63, now); // C4
+            osc2.frequency.exponentialRampToValueAtTime(220, now + duration * 0.5);
+            osc2.frequency.exponentialRampToValueAtTime(190, now + duration);
+            
+            osc3.frequency.setValueAtTime(329.63, now); // E4
+            osc3.frequency.exponentialRampToValueAtTime(280, now + duration * 0.5);
+            osc3.frequency.exponentialRampToValueAtTime(240, now + duration);
+            
+            // Use sine waves for a softer, more melancholic sound
+            osc1.type = 'sine';
+            osc2.type = 'sine';
+            osc3.type = 'sine';
+            
+            // Create a slow fade-out for dramatic effect
+            gain1.gain.setValueAtTime(0.15, now);
+            gain1.gain.exponentialRampToValueAtTime(0.08, now + duration * 0.6);
+            gain1.gain.exponentialRampToValueAtTime(0.01, now + duration);
+            
+            gain2.gain.setValueAtTime(0.12, now);
+            gain2.gain.exponentialRampToValueAtTime(0.06, now + duration * 0.6);
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + duration);
+            
+            gain3.gain.setValueAtTime(0.1, now);
+            gain3.gain.exponentialRampToValueAtTime(0.05, now + duration * 0.6);
+            gain3.gain.exponentialRampToValueAtTime(0.01, now + duration);
+            
+            // Connect oscillators
+            osc1.connect(gain1);
+            osc2.connect(gain2);
+            osc3.connect(gain3);
+            gain1.connect(this.audioContext.destination);
+            gain2.connect(this.audioContext.destination);
+            gain3.connect(this.audioContext.destination);
+            
+            // Start all oscillators together
+            osc1.start(now);
+            osc2.start(now);
+            osc3.start(now);
+            
+            // Stop all at the same time
+            osc1.stop(now + duration);
+            osc2.stop(now + duration);
+            osc3.stop(now + duration);
+        } catch (e) {
+            console.log('Could not play failure sound:', e);
+        }
+    }
+    
     async endGame() {
         this.gameActive = false;
+        this.stopTimer();
+        
+        // Stop question timer
+        if (this.questionTimerInterval) {
+            clearInterval(this.questionTimerInterval);
+            this.questionTimerInterval = null;
+        }
+        
+        // Hide question timer
+        if (this.questionTimerEl) {
+            this.questionTimerEl.style.display = 'none';
+        }
+        
+        // Calculate final time
+        const finalTime = this.elapsedTime;
+        const minutes = Math.floor(finalTime / 60000);
+        const seconds = Math.floor((finalTime % 60000) / 1000);
+        const timeString = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        
+        // Check for best time
+        const isNewBest = this.saveBestTime(finalTime);
+        const bestTimeString = this.bestTime ? 
+            `${Math.floor(this.bestTime / 60000)}:${String(Math.floor((this.bestTime % 60000) / 1000)).padStart(2, '0')}` : 
+            'N/A';
+        
+        // Calculate average time per question
+        const avgTime = this.questionTimes.length > 0 ? 
+            (this.questionTimes.reduce((a, b) => a + b, 0) / this.questionTimes.length).toFixed(1) : 
+            '0.0';
+        
         this.promptEl.textContent = 'Game Complete!';
         
         // Save game progress per user if logged in
@@ -1143,6 +1574,9 @@ class GeographyGame {
                             correct: this.correct,
                             wrong: this.wrong,
                             score: this.score,
+                            time: finalTime,
+                            speedBonus: this.speedBonus,
+                            avgTime: parseFloat(avgTime),
                             answered: Array.from(this.answered),
                             timestamp: Date.now()
                         };
@@ -1161,14 +1595,70 @@ class GeographyGame {
                 correct: this.correct,
                 wrong: this.wrong,
                 score: this.score,
+                time: finalTime,
+                speedBonus: this.speedBonus,
+                avgTime: parseFloat(avgTime),
                 timestamp: Date.now()
             };
             localStorage.setItem('geography_progress', JSON.stringify(generalProgress));
         }
-        this.feedbackEl.textContent = `Final Score: ${this.score} | Correct: ${this.correct} | Wrong: ${this.wrong}`;
+        
+        // Show completion message with time stats
+        let completionMessage = `Final Score: ${this.score} | Time: ${timeString} | Correct: ${this.correct} | Wrong: ${this.wrong}`;
+        if (this.speedBonus > 0) {
+            completionMessage += ` | Speed Bonus: +${this.speedBonus}`;
+        }
+        if (isNewBest) {
+            completionMessage += ` | 🏆 NEW BEST TIME!`;
+        } else if (this.bestTime) {
+            completionMessage += ` | Best: ${bestTimeString}`;
+        }
+        completionMessage += ` | Avg: ${avgTime}s/q`;
+        
+        this.feedbackEl.textContent = completionMessage;
         this.feedbackEl.className = 'feedback-message';
         
+        // Submit to leaderboard if user is signed in
+        if (userId) {
+            try {
+                const user = await window.auth0.getUser();
+                await this.submitToLeaderboard({
+                    gameType: 'geography',
+                    score: this.score,
+                    userId: user.sub,
+                    userName: user.name || user.email || 'Anonymous',
+                    correct: this.correct,
+                    wrong: this.wrong,
+                    time: finalTime,
+                    speedBonus: this.speedBonus,
+                    avgTime: parseFloat(avgTime),
+                });
+            } catch (err) {
+                console.log('[Geography Game] Could not submit to leaderboard:', err);
+            }
+        }
+        
         this.startBtn.disabled = false;
+    }
+    
+    async submitToLeaderboard(scoreData) {
+        try {
+            const response = await fetch('/.netlify/functions/leaderboard', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(scoreData),
+            });
+            
+            if (response.ok) {
+                console.log('[Geography Game] Score submitted to leaderboard');
+            } else {
+                console.error('[Geography Game] Failed to submit score:', await response.text());
+            }
+        } catch (error) {
+            console.error('[Geography Game] Leaderboard submission error:', error);
+        }
     }
 }
 
@@ -1288,45 +1778,237 @@ function processSVGMap(svg) {
             );
         }
         
-        // Then try name matching from name attribute
+        // Also check if ID contains country code (for paths like "PH-1", "PH-2" for archipelagos)
+        if (!country && id) {
+            for (const c of POPULOUS_COUNTRIES) {
+                const codeRegex = new RegExp(`^${c.code}\\b|\\b${c.code}\\b`, 'i');
+                if (codeRegex.test(id)) {
+                    country = c;
+                    break;
+                }
+            }
+        }
+        
+        // Helper function for precise name matching
+        const matchCountryName = (searchText, countryList) => {
+            const normalizedSearch = normalizeName(searchText);
+            
+            // First, try exact matches (most specific)
+            let match = countryList.find(c => {
+                const normalizedCountryName = normalizeName(c.name);
+                const normalizedAltNames = c.alt.map(a => normalizeName(a));
+                return normalizedCountryName === normalizedSearch ||
+                       normalizedAltNames.some(alt => alt === normalizedSearch);
+            });
+            
+            // If no exact match, try word boundary matching (prevents "sudan" matching "south sudan")
+            if (!match) {
+                // Sort countries by name length (longer names first) to match more specific ones first
+                const sortedCountries = [...countryList].sort((a, b) => 
+                    normalizeName(b.name).length - normalizeName(a.name).length
+                );
+                
+                for (const c of sortedCountries) {
+                    const normalizedCountryName = normalizeName(c.name);
+                    const normalizedAltNames = c.alt.map(a => normalizeName(a));
+                    
+                    // Special handling for archipelagos/island nations that might have numbered paths
+                    // (e.g., "Philippines-1", "Philippines-2" for different islands)
+                    if (c.code === 'PH' || c.code === 'ID' || c.code === 'JP') {
+                        // For archipelagos, be more lenient - match if the country name appears
+                        const archipelagoRegex = new RegExp(normalizedCountryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+                        const archipelagoAltRegexes = normalizedAltNames.map(alt => 
+                            new RegExp(alt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+                        );
+                        
+                        if (archipelagoRegex.test(normalizedSearch) || 
+                            archipelagoAltRegexes.some(regex => regex.test(normalizedSearch))) {
+                            match = c;
+                            break;
+                        }
+                    }
+                    
+                    // Use word boundary matching to avoid partial matches
+                    // Check if the search text contains the full country name as a word
+                    const countryNameRegex = new RegExp(`\\b${normalizedCountryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+                    const altNameRegexes = normalizedAltNames.map(alt => 
+                        new RegExp(`\\b${alt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
+                    );
+                    
+                    if (countryNameRegex.test(normalizedSearch) || 
+                        altNameRegexes.some(regex => regex.test(normalizedSearch))) {
+                        match = c;
+                        break;
+                    }
+                }
+            }
+            
+            return match;
+        };
+        
+        // Then try name matching from name attribute (with precise matching)
         if (!country && nameAttr) {
-            const normalizedNameAttr = normalizeName(nameAttr);
-            country = POPULOUS_COUNTRIES.find(c => {
-                const normalizedCountryName = normalizeName(c.name);
-                const normalizedAltNames = c.alt.map(a => normalizeName(a));
-                
-                return normalizedCountryName === normalizedNameAttr ||
-                       normalizedAltNames.some(alt => alt === normalizedNameAttr) ||
-                       normalizedNameAttr.includes(normalizedCountryName) ||
-                       normalizedCountryName.includes(normalizedNameAttr);
-            });
+            country = matchCountryName(nameAttr, POPULOUS_COUNTRIES);
         }
         
-        // Then try class name matching
+        // Then try class name matching (with precise matching)
         if (!country && className) {
-            const normalizedClassName = normalizeName(className);
-            country = POPULOUS_COUNTRIES.find(c => {
-                const normalizedCountryName = normalizeName(c.name);
-                const normalizedAltNames = c.alt.map(a => normalizeName(a));
-                
-                return normalizedCountryName === normalizedClassName ||
-                       normalizedAltNames.some(alt => alt === normalizedClassName) ||
-                       normalizedClassName.includes(normalizedCountryName) ||
-                       normalizedCountryName.includes(normalizedClassName);
-            });
+            country = matchCountryName(className, POPULOUS_COUNTRIES);
         }
         
-        // Finally try fuzzy matching from all sources
+        // Finally try fuzzy matching from all sources (but still prioritize specific matches)
         if (!country) {
             const searchText = `${id} ${nameAttr} ${className} ${title}`.toLowerCase();
-            country = POPULOUS_COUNTRIES.find(c => {
-                const normalizedCountryName = normalizeName(c.name);
-                const normalizedAltNames = c.alt.map(a => normalizeName(a));
+            
+            // Special handling for archipelagos - check if ID contains country code with numbers
+            // (e.g., "PH-1", "PH-2", "philippines-1", etc.)
+            for (const c of POPULOUS_COUNTRIES) {
+                // Check if ID starts with country code (for numbered paths like "PH-1")
+                if (id && new RegExp(`^${c.code}[-_]?\\d*`, 'i').test(id)) {
+                    country = c;
+                    break;
+                }
+                // Check if ID contains country name with numbers (for paths like "philippines-1")
+                const countryNameLower = normalizeName(c.name);
+                if (id && new RegExp(`${countryNameLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[-_]?\\d*`, 'i').test(id)) {
+                    country = c;
+                    break;
+                }
+            }
+            
+            // Check for combined paths (e.g., "Sudan and South Sudan" or "North and South Korea")
+            // If a path mentions both parts, it's likely a combined path
+            
+            // Check for combined Sudan/South Sudan
+            const hasSudan = /\bsudan\b/i.test(searchText);
+            const hasSouthSudan = /\bsouth\s+sudan\b/i.test(searchText) || /\bsudan.*south\b/i.test(searchText);
+            
+            // Check for combined North/South Korea
+            const hasKorea = /\bkorea\b/i.test(searchText);
+            const hasNorthKorea = /\bnorth\s+korea\b/i.test(searchText) || /\bkorea.*north\b/i.test(searchText);
+            const hasSouthKorea = /\bsouth\s+korea\b/i.test(searchText) || /\bkorea.*south\b/i.test(searchText);
+            const hasBothKoreas = hasNorthKorea && hasSouthKorea;
+            
+            // Check for combined Congo paths (DRC and Republic of the Congo)
+            const hasCongo = /\bcongo\b/i.test(searchText);
+            const hasDRC = /\bdemocratic\s+republic\s+of\s+the\s+congo\b/i.test(searchText) || 
+                          /\bdrc\b/i.test(searchText) || 
+                          /\bdr\s+congo\b/i.test(searchText);
+            // Only match "Republic of Congo" if it doesn't have "democratic" before it
+            const hasRepublicCongo = (/\brepublic\s+of\s+the\s+congo\b/i.test(searchText) && !/\bdemocratic\b/i.test(searchText)) || 
+                                    (/\brepublic\s+congo\b/i.test(searchText) && !/\bdemocratic\b/i.test(searchText)) ||
+                                    (/\bcongo\b/i.test(searchText) && /\brepublic\b/i.test(searchText) && !/\bdemocratic\b/i.test(searchText));
+            const hasBothCongos = hasDRC && hasRepublicCongo;
+            
+            // If it's a combined Sudan/South Sudan path, don't match it to just "Sudan"
+            // since South Sudan is not in our list, this should be marked as non-populous
+            if (hasSudan && hasSouthSudan) {
+                // This is a combined path - don't match it to Sudan alone
+                country = null;
+            } 
+            // If it's a combined North/South Korea path, don't match it to just "South Korea"
+            else if (hasBothKoreas || (hasKorea && (hasNorthKorea || hasSouthKorea))) {
+                // This is a combined path - don't match it to South Korea alone
+                country = null;
+            }
+            // If it's a combined Congo path, don't match it to just "Democratic Republic of the Congo"
+            else if (hasBothCongos || (hasCongo && hasRepublicCongo)) {
+                // This is a combined path - don't match it to DRC alone
+                country = null;
+            } else {
+                // Sort countries by name length (longer = more specific) to match "South Sudan" before "Sudan"
+                const sortedCountries = [...POPULOUS_COUNTRIES].sort((a, b) => 
+                    normalizeName(b.name).length - normalizeName(a.name).length
+                );
                 
-                return normalizedAltNames.some(alt => searchText.includes(alt)) ||
-                       searchText.includes(normalizedCountryName) ||
-                       normalizedCountryName.includes(searchText);
-            });
+                for (const c of sortedCountries) {
+                    const normalizedCountryName = normalizeName(c.name);
+                    const normalizedAltNames = c.alt.map(a => normalizeName(a));
+                    
+                    // Special handling for archipelagos - be more lenient with matching
+                    if (c.code === 'PH' || c.code === 'ID' || c.code === 'JP') {
+                        // For archipelagos, match if country name appears anywhere (even with numbers/suffixes)
+                        const archipelagoRegex = new RegExp(normalizedCountryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+                        const archipelagoAltRegexes = normalizedAltNames.map(alt => 
+                            new RegExp(alt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+                        );
+                        
+                        if (archipelagoRegex.test(searchText) || 
+                            archipelagoAltRegexes.some(regex => regex.test(searchText))) {
+                            country = c;
+                            break;
+                        }
+                    }
+                    
+                    // Use word boundary matching to avoid "sudan" matching "south sudan"
+                    const countryNameRegex = new RegExp(`\\b${normalizedCountryName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+                    const altNameRegexes = normalizedAltNames.map(alt => 
+                        new RegExp(`\\b${alt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i')
+                    );
+                    
+                    if (countryNameRegex.test(searchText) || 
+                        altNameRegexes.some(regex => regex.test(searchText))) {
+                        country = c;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Additional safety checks: if we matched to a country but the path might be combined,
+        // be more cautious - only match if we're confident it's just that country
+        
+        // Check for Sudan combined with South Sudan
+        if (country && country.code === 'SD') {
+            const searchText = `${id} ${nameAttr} ${className} ${title}`.toLowerCase();
+            // If the path name suggests it might include South Sudan, don't match it
+            if (/\bsouth\s+sudan\b/i.test(searchText) || 
+                /\bsudan.*south\b/i.test(searchText) ||
+                /\bsouth.*sudan\b/i.test(searchText)) {
+                // This might be a combined path - mark as non-populous instead
+                country = null;
+            }
+        }
+        
+        // Check for South Korea combined with North Korea
+        if (country && country.code === 'KR') {
+            const searchText = `${id} ${nameAttr} ${className} ${title}`.toLowerCase();
+            // If the path name suggests it might include North Korea, don't match it
+            if (/\bnorth\s+korea\b/i.test(searchText) || 
+                /\bkorea.*north\b/i.test(searchText) ||
+                /\bnorth.*korea\b/i.test(searchText)) {
+                // Check if it's clearly just South Korea (mentions "south" but not "north")
+                const hasSouth = /\bsouth\s+korea\b/i.test(searchText) || /\bkorea.*south\b/i.test(searchText);
+                const hasNorth = /\bnorth\s+korea\b/i.test(searchText) || /\bkorea.*north\b/i.test(searchText);
+                // If it mentions both or just "korea" without specifying, it might be combined
+                if (hasNorth || (!hasSouth && /\bkorea\b/i.test(searchText))) {
+                    // This might be a combined path - mark as non-populous instead
+                    country = null;
+                }
+            }
+        }
+        
+        // Check for Democratic Republic of the Congo combined with Republic of the Congo
+        if (country && country.code === 'CD') {
+            const searchText = `${id} ${nameAttr} ${className} ${title}`.toLowerCase();
+            // Check for clear DRC indicators
+            const hasDRC = /\bdemocratic\s+republic\s+of\s+the\s+congo\b/i.test(searchText) || 
+                          /\bdrc\b/i.test(searchText) || 
+                          /\bdr\s+congo\b/i.test(searchText);
+            // Check for Republic of the Congo indicators (without "democratic")
+            // Only exclude if it's clearly "Republic of Congo" without "Democratic"
+            const hasRepublicCongo = (/\brepublic\s+of\s+the\s+congo\b/i.test(searchText) && !/\bdemocratic\b/i.test(searchText)) || 
+                                    (/\brepublic\s+congo\b/i.test(searchText) && !/\bdemocratic\b/i.test(searchText));
+            // Only exclude if it's clearly the other Congo (Republic of Congo) or combined
+            // Don't exclude if it's clearly DRC
+            if (hasRepublicCongo && !hasDRC) {
+                // This is the other Congo (Republic of Congo) - mark as non-populous instead
+                country = null;
+            }
+            // If it has both, it's combined - exclude it
+            else if (hasDRC && hasRepublicCongo) {
+                country = null;
+            }
         }
         
         if (country) {
@@ -1362,7 +2044,17 @@ function processSVGMap(svg) {
             
             // Log unmapped paths for debugging (only if they have identifiers)
             if (id || nameAttr || className) {
-                console.log(`⚠ Unmapped path (non-populous): id="${id}", name="${nameAttr}", class="${className}"`);
+                const searchText = `${id} ${nameAttr} ${className} ${title}`.toLowerCase();
+                // Special logging for combined path issues
+                if (/\bsudan\b/i.test(searchText)) {
+                    console.log(`⚠ Unmapped Sudan-related path (may be combined with South Sudan): id="${id}", name="${nameAttr}", class="${className}", title="${title}"`);
+                } else if (/\bkorea\b/i.test(searchText)) {
+                    console.log(`⚠ Unmapped Korea-related path (may be combined North/South Korea): id="${id}", name="${nameAttr}", class="${className}", title="${title}"`);
+                } else if (/\bcongo\b/i.test(searchText)) {
+                    console.log(`⚠ Unmapped Congo-related path (may be combined DRC/Republic of Congo): id="${id}", name="${nameAttr}", class="${className}", title="${title}"`);
+                } else {
+                    console.log(`⚠ Unmapped path (non-populous): id="${id}", name="${nameAttr}", class="${className}"`);
+                }
             }
         }
     });

@@ -68,15 +68,10 @@ class Auth0Integration {
   bindAuthEvents() {
     // Find auth buttons (may need to be updated based on your HTML structure)
     const signinBtn = document.getElementById('signinBtn');
-    const signupBtn = document.getElementById('signupBtn');
     const logoutBtn = document.getElementById('logoutBtn');
 
     if (signinBtn) {
       signinBtn.addEventListener('click', () => this.login());
-    }
-
-    if (signupBtn && !this.isAuthenticated) {
-      signupBtn.addEventListener('click', () => this.loginWithSignup());
     }
 
     if (logoutBtn) {
@@ -97,18 +92,6 @@ class Auth0Integration {
     }
   }
 
-  async loginWithSignup() {
-    try {
-      await this.auth0Client.loginWithRedirect({
-        authorizationParams: {
-          screen_hint: 'signup',
-        },
-      });
-    } catch (error) {
-      console.error('[Auth0] Signup error:', error);
-      this.showNotification('Signup failed. Please try again.', 'error');
-    }
-  }
 
   async logout() {
     try {
@@ -134,23 +117,14 @@ class Auth0Integration {
 
   updateAuthUI() {
     const signinBtn = document.getElementById('signinBtn');
-    const signupBtn = document.getElementById('signupBtn');
 
     if (this.isAuthenticated && this.user) {
       if (signinBtn) {
         signinBtn.textContent = `Hi, ${this.user.name || this.user.email || 'User'}`;
       }
-      if (signupBtn) {
-        signupBtn.textContent = 'Sign Out';
-        signupBtn.onclick = () => this.logout();
-      }
     } else {
       if (signinBtn) {
         signinBtn.textContent = 'Sign In';
-      }
-      if (signupBtn) {
-        signupBtn.textContent = 'Sign Up';
-        signupBtn.onclick = () => this.loginWithSignup();
       }
     }
   }

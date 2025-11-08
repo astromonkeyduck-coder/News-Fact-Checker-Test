@@ -167,7 +167,6 @@ async function initAuth0() {
 
 // Store button handlers so we can remove them before adding new ones
 let signinHandler = null;
-let signupHandler = null;
 let isAuthenticated = false;
 
 /**
@@ -176,13 +175,12 @@ let isAuthenticated = false;
 async function bindAuthButtons() {
   console.log('[Auth0] Binding button events...');
   const signinBtn = document.getElementById('signinBtn');
-  const signupBtn = document.getElementById('signupBtn');
   
-  console.log('[Auth0] Found buttons:', { signinBtn: !!signinBtn, signupBtn: !!signupBtn });
+  console.log('[Auth0] Found button:', { signinBtn: !!signinBtn });
   
-  if (!signinBtn || !signupBtn) {
-    console.warn('[Auth0] Buttons not found in DOM yet, retrying...');
-    // Retry after a delay if buttons aren't found
+  if (!signinBtn) {
+    console.warn('[Auth0] Button not found in DOM yet, retrying...');
+    // Retry after a delay if button isn't found
     setTimeout(() => bindAuthButtons(), 500);
     return;
   }
@@ -204,22 +202,17 @@ async function bindAuthButtons() {
     signinBtn.removeEventListener('click', signinHandler);
   }
   
-  if (signupBtn && signupHandler) {
-    signupBtn.removeEventListener('click', signupHandler);
-  }
-  
   // Create new handlers based on actual auth state
   if (currentAuthState) {
-    // Both buttons do logout when authenticated
+    // Button does logout when authenticated
     signinHandler = async (e) => {
       e.preventDefault();
       e.stopPropagation();
       console.log('[Auth0] Logout button clicked');
       await logout();
     };
-    signupHandler = signinHandler; // Same handler for both
   } else {
-    // Different handlers for login/signup when not authenticated
+    // Handler for login when not authenticated
     signinHandler = async (e) => {
       console.log('[Auth0] Sign In button clicked - handler triggered');
       if (e) {
@@ -232,17 +225,6 @@ async function bindAuthButtons() {
       } catch (error) {
         console.error('[Auth0] Login error in handler:', error);
         alert('Login failed: ' + (error.message || 'Unknown error'));
-      }
-    };
-    
-    signupHandler = async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      console.log('[Auth0] Sign Up button clicked');
-      try {
-        await signup();
-      } catch (error) {
-        console.error('[Auth0] Signup error in handler:', error);
       }
     };
   }
@@ -268,37 +250,14 @@ async function bindAuthButtons() {
     console.error('[Auth0] Sign In button not found in DOM!');
   }
   
-  if (signupBtn) {
-    // Clear existing handlers
-    signupBtn.replaceWith(signupBtn.cloneNode(true));
-    const freshSignupBtn = document.getElementById('signupBtn');
-    
-    if (freshSignupBtn) {
-      freshSignupBtn.onclick = signupHandler;
-      freshSignupBtn.addEventListener('click', signupHandler);
-      
-      // Test that the handler works
-      freshSignupBtn.addEventListener('click', () => {
-        console.log('[Auth0] Sign Up button click detected!');
-      }, { once: true });
-      
-      console.log('[Auth0] Sign Up button bound successfully');
-    }
-  } else {
-    console.error('[Auth0] Sign Up button not found in DOM!');
-  }
-  
   console.log('[Auth0] Button events bound successfully');
   
-  // Debug: Verify buttons exist and have handlers
+  // Debug: Verify button exists and has handler
   setTimeout(() => {
     const verifySignin = document.getElementById('signinBtn');
-    const verifySignup = document.getElementById('signupBtn');
     console.log('[Auth0] Button verification:', {
       signinExists: !!verifySignin,
-      signinHasOnclick: verifySignin && verifySignin.onclick !== null,
-      signupExists: !!verifySignup,
-      signupHasOnclick: verifySignup && verifySignup.onclick !== null
+      signinHasOnclick: verifySignin && verifySignin.onclick !== null
     });
   }, 200);
 }
@@ -359,38 +318,6 @@ async function login() {
   }
 }
 
-/**
- * Signup with Auth0
- */
-async function signup() {
-  console.log('[Auth0] Signup function called');
-  if (!auth0Client) {
-    console.log('[Auth0] Client not initialized, initializing now...');
-    await initAuth0();
-  }
-  
-  if (!auth0Client) {
-    console.error('[Auth0] Failed to initialize client');
-    showAuthNotification('Authentication service not available. Please refresh the page.', 'error');
-    return;
-  }
-  
-  try {
-    console.log('[Auth0] Redirecting to signup...');
-    await auth0Client.loginWithRedirect({
-      authorizationParams: {
-        screen_hint: 'signup',
-        ui_locales: 'en',
-        appState: {
-          returnTo: window.location.href,
-        },
-      },
-    });
-  } catch (error) {
-    console.error('[Auth0] Signup error:', error);
-    showAuthNotification('Signup failed. Please try again.', 'error');
-  }
-}
 
 /**
  * Logout
@@ -441,7 +368,6 @@ async function getToken() {
 async function updateAuthUI(user) {
   // Find auth buttons - update these selectors to match your HTML
   const signinBtn = document.getElementById('signinBtn');
-  const signupBtn = document.getElementById('signupBtn');
   const authButtons = document.querySelectorAll('.auth-btn');
 
   // Update authentication state
@@ -468,19 +394,6 @@ async function updateAuthUI(user) {
       signinBtn.title = `Signed in as ${displayName}`;
     }
     
-    if (signupBtn) {
-      // Update text while preserving event handlers
-      const firstChild = signupBtn.firstChild;
-      if (firstChild && firstChild.nodeType === Node.TEXT_NODE) {
-        firstChild.textContent = 'Sign Out';
-      } else {
-        signupBtn.textContent = 'Sign Out';
-      }
-      signupBtn.style.background = 'rgba(231, 76, 60, 0.1)';
-      signupBtn.style.borderColor = 'rgba(231, 76, 60, 0.5)';
-      signupBtn.style.color = '#e74c3c';
-    }
-    
     // Add logged-in indicator to header
     document.body.setAttribute('data-user-logged-in', 'true');
     document.body.setAttribute('data-user-name', firstName);
@@ -493,7 +406,7 @@ async function updateAuthUI(user) {
     authButtons.forEach(btn => {
       if (btn.dataset.action === 'logout') {
         btn.style.display = 'inline-block';
-      } else if (btn.dataset.action === 'login' || btn.dataset.action === 'signup') {
+      } else if (btn.dataset.action === 'login') {
         btn.style.display = 'none';
       }
     });
@@ -513,19 +426,6 @@ async function updateAuthUI(user) {
       signinBtn.title = '';
     }
     
-    if (signupBtn) {
-      // Update text while preserving event handlers
-      const firstChild = signupBtn.firstChild;
-      if (firstChild && firstChild.nodeType === Node.TEXT_NODE) {
-        firstChild.textContent = 'Sign Up';
-      } else {
-        signupBtn.textContent = 'Sign Up';
-      }
-      signupBtn.style.background = '';
-      signupBtn.style.borderColor = '';
-      signupBtn.style.color = '';
-    }
-    
     // Remove logged-in indicator
     document.body.removeAttribute('data-user-logged-in');
     document.body.removeAttribute('data-user-name');
@@ -534,7 +434,7 @@ async function updateAuthUI(user) {
     authButtons.forEach(btn => {
       if (btn.dataset.action === 'logout') {
         btn.style.display = 'none';
-      } else if (btn.dataset.action === 'login' || btn.dataset.action === 'signup') {
+      } else if (btn.dataset.action === 'login') {
         btn.style.display = 'inline-block';
       }
     });
@@ -625,8 +525,7 @@ function startAuth0() {
   // Also try binding buttons after a delay as fallback
   setTimeout(async () => {
     const signinBtn = document.getElementById('signinBtn');
-    const signupBtn = document.getElementById('signupBtn');
-    if ((signinBtn || signupBtn) && !signinHandler && !signupHandler) {
+    if (signinBtn && !signinHandler) {
       console.log('[Auth0] Fallback: Binding buttons again...');
       await bindAuthButtons();
     }
@@ -643,7 +542,6 @@ if (document.readyState === 'loading') {
 // Also try on window load as a final fallback
 window.addEventListener('load', async () => {
   const signinBtn = document.getElementById('signinBtn');
-  const signupBtn = document.getElementById('signupBtn');
   if (signinBtn && !signinBtn.onclick && !signinHandler) {
     console.log('[Auth0] Window load fallback: Initializing...');
     if (!auth0Client) {
@@ -656,11 +554,9 @@ window.addEventListener('load', async () => {
 // Export for use - make sure these are always available
 window.initAuth0 = initAuth0;
 window.auth0Login = login;
-window.auth0Signup = signup;
 window.auth0Logout = logout;
 
 // Also expose directly for inline handlers
 window.login = login;
-window.signup = signup;
 window.logout = logout;
 

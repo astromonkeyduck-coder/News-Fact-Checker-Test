@@ -1339,16 +1339,7 @@ window.feedOpenCommentDrawer = async function(postId) {
   commentDrawerOpen = true;
   commentDrawerPostId = postId;
   
-  // Check auth
-  let isAuthenticated = false;
-  if (window.auth0 && typeof window.auth0.isAuthenticated === 'function') {
-    try {
-      isAuthenticated = await window.auth0.isAuthenticated();
-    } catch (err) {
-      console.log('[PostFeed v2] Auth check failed:', err);
-    }
-  }
-  
+  // Comments are open to everyone - no auth check needed
   const drawerHtml = `
     <div 
       class="feed-comment-drawer-overlay"
@@ -1420,23 +1411,22 @@ window.feedOpenCommentDrawer = async function(postId) {
           </div>
         </div>
         
-        ${isAuthenticated ? `
-          <div 
-            style="
-              padding: 1rem;
-              border-top: 1px solid rgba(255, 255, 255, 0.1);
-            "
+        <div 
+          style="
+            padding: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+          "
+        >
+          <form 
+            id="feed-comment-form-${postId}"
+            onsubmit="event.preventDefault(); window.feedSubmitComment('${postId}', this); return false;"
           >
-            <form 
-              id="feed-comment-form-${postId}"
-              onsubmit="event.preventDefault(); window.feedSubmitComment('${postId}', this); return false;"
-            >
-              <textarea
-                name="comment"
-                placeholder="Add a comment..."
-                required
-                minlength="3"
-                rows="3"
+            <textarea
+              name="comment"
+              placeholder="Add a comment..."
+              required
+              minlength="3"
+              rows="3"
                 style="
                   width: 100%;
                   padding: 0.75rem;
@@ -1468,29 +1458,6 @@ window.feedOpenCommentDrawer = async function(postId) {
               >Post Comment</button>
             </form>
           </div>
-        ` : `
-          <div 
-            style="
-              padding: 1rem;
-              border-top: 1px solid rgba(255, 255, 255, 0.1);
-              text-align: center;
-            "
-          >
-            <button
-              onclick="if (window.auth0Login) window.auth0Login();"
-              style="
-                width: 100%;
-                padding: 0.75rem;
-                background: rgba(255, 255, 255, 0.1);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: 8px;
-                color: #fff;
-                font-weight: 600;
-                cursor: pointer;
-              "
-            >Sign In to Comment</button>
-          </div>
-        `}
       </div>
     </div>
     
@@ -1618,7 +1585,7 @@ window.feedSubmitComment = async function(postId, form) {
     return;
   }
   
-  // Get user info
+  // Get user info if available, otherwise use anonymous
   let user = null;
   if (window.auth0 && typeof window.auth0.getUser === 'function') {
     try {
@@ -1628,18 +1595,12 @@ window.feedSubmitComment = async function(postId, form) {
     }
   }
   
-  if (!user) {
-    alert('Please sign in to comment');
-    if (window.auth0Login) window.auth0Login();
-    return;
-  }
-  
   const commentData = {
     articleId: `post-${postId}`,
     text: text,
-    author: user.name || user.email?.split('@')[0] || 'Anonymous',
-    authorEmail: user.email,
-    authorId: user.sub || user.email,
+    author: user ? (user.name || user.email?.split('@')[0] || 'Anonymous') : 'Anonymous',
+    authorEmail: user ? user.email : '',
+    authorId: user ? (user.sub || user.email) : 'anonymous',
   };
   
   try {

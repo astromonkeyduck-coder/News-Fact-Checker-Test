@@ -191,233 +191,8 @@ function playPuzzlePiece() {
     }
 }
 
-// Authentication System
-class AuthSystem {
-    constructor() {
-        this.isAuthenticated = false;
-        this.currentUser = null;
-        this.init();
-    }
-
-    init() {
-        this.bindAuthEvents();
-        this.checkAuthStatus();
-    }
-
-    bindAuthEvents() {
-        const signinBtn = document.getElementById("signinBtn");
-        const signupBtn = document.getElementById("signupBtn");
-        const closeAuth = document.getElementById("closeAuth");
-        const authModal = document.getElementById("authModal");
-        const authTabs = document.querySelectorAll(".auth-tab");
-        const signinForm = document.getElementById("signinForm");
-        const signupForm = document.getElementById("signupForm");
-
-        if (signinBtn) {
-            signinBtn.addEventListener("click", () => {
-                this.showAuthModal("signin");
-            });
-        }
-
-        if (signupBtn) {
-            signupBtn.addEventListener("click", () => {
-                this.showAuthModal("signup");
-            });
-        }
-
-        if (closeAuth) {
-            closeAuth.addEventListener("click", () => {
-                this.hideAuthModal();
-            });
-        }
-
-        if (authModal) {
-            authModal.addEventListener("click", (e) => {
-                if (e.target === authModal) {
-                    this.hideAuthModal();
-                }
-            });
-        }
-
-        // Tab switching
-        if (authTabs.length > 0) {
-            authTabs.forEach(tab => {
-                tab.addEventListener("click", () => {
-                    this.switchAuthTab(tab.dataset.tab);
-                });
-            });
-        }
-
-        // Form submissions
-        if (signinForm) {
-            signinForm.addEventListener("submit", (e) => {
-                e.preventDefault();
-                this.handleSignin(e.target);
-            });
-        }
-
-        if (signupForm) {
-            signupForm.addEventListener("submit", (e) => {
-                e.preventDefault();
-                this.handleSignup(e.target);
-            });
-        }
-    }
-
-    showAuthModal(tab = "signin") {
-        const authModal = document.getElementById("authModal");
-        if (authModal) {
-            authModal.style.display = "flex";
-            this.switchAuthTab(tab);
-        }
-    }
-
-    hideAuthModal() {
-        const authModal = document.getElementById("authModal");
-        if (authModal) {
-            authModal.style.display = "none";
-        }
-    }
-
-    switchAuthTab(tab) {
-        const authTabs = document.querySelectorAll(".auth-tab");
-        const signinForm = document.getElementById("signinForm");
-        const signupForm = document.getElementById("signupForm");
-
-        authTabs.forEach(t => t.classList.remove("active"));
-        const activeTab = document.querySelector(`[data-tab="${tab}"]`);
-        if (activeTab) activeTab.classList.add("active");
-
-        if (tab === "signin") {
-            if (signinForm) signinForm.style.display = "flex";
-            if (signupForm) signupForm.style.display = "none";
-        } else {
-            if (signinForm) signinForm.style.display = "none";
-            if (signupForm) signupForm.style.display = "flex";
-        }
-    }
-
-    handleSignin(form) {
-        const email = form.querySelector("input[type=email]").value;
-        const password = form.querySelector("input[type=password]").value;
-
-        // Enhanced validation using new validator
-        if (!Validator.isValidEmail(email)) {
-            this.showNotification("Please enter a valid email address", "error");
-            return;
-        }
-
-        if (!Validator.isValidPassword(password)) {
-            this.showNotification("Password must be at least 8 characters with uppercase, lowercase, and number", "error");
-            return;
-        }
-
-        // Simulate authentication
-        this.isAuthenticated = true;
-        this.currentUser = { email };
-        this.updateAuthUI();
-        this.hideAuthModal();
-        
-        // Show success message
-        this.showNotification("Successfully signed in!", "success");
-    }
-
-    handleSignup(form) {
-        const fullName = form.querySelector("input[type=text]").value;
-        const email = form.querySelector("input[type=email]").value;
-        const password = form.querySelector("input[type=password]").value;
-        const confirmPassword = form.querySelector("input[type=password]:last-of-type").value;
-
-        // Enhanced validation using new validator
-        if (!Validator.isValidName(fullName)) {
-            this.showNotification("Please enter a valid name (2-50 characters)", "error");
-            return;
-        }
-
-        if (!Validator.isValidEmail(email)) {
-            this.showNotification("Please enter a valid email address", "error");
-            return;
-        }
-
-        if (!Validator.isValidPassword(password)) {
-            this.showNotification("Password must be at least 8 characters with uppercase, lowercase, and number", "error");
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            this.showNotification("Passwords do not match", "error");
-            return;
-        }
-
-        // Simulate registration
-        this.isAuthenticated = true;
-        this.currentUser = { fullName, email };
-        this.updateAuthUI();
-        this.hideAuthModal();
-        
-        // Show success message
-        this.showNotification("Successfully signed up!", "success");
-    }
-
-    updateAuthUI() {
-        const signinBtn = document.getElementById("signinBtn");
-        const signupBtn = document.getElementById("signupBtn");
-
-        if (this.isAuthenticated) {
-            if (signinBtn) signinBtn.textContent = `Hi, ${this.currentUser.fullName || this.currentUser.email}`;
-            if (signupBtn) signupBtn.textContent = "Sign Out";
-            
-            // Update button event listeners
-            if (signupBtn) {
-                signupBtn.onclick = () => this.signOut();
-            }
-        } else {
-            if (signinBtn) signinBtn.textContent = "Sign In";
-            if (signupBtn) signupBtn.textContent = "Sign Up";
-            
-            // Restore original event listeners
-            if (signupBtn) {
-                signupBtn.onclick = () => this.showAuthModal("signup");
-            }
-        }
-    }
-
-    signOut() {
-        this.isAuthenticated = false;
-        this.currentUser = null;
-        this.updateAuthUI();
-        this.showNotification("Successfully signed out!", "info");
-    }
-
-    checkAuthStatus() {
-        // Check if user was previously authenticated
-        const savedUser = localStorage.getItem("noteworthy_user");
-        if (savedUser) {
-            try {
-                this.currentUser = JSON.parse(savedUser);
-                this.isAuthenticated = true;
-                this.updateAuthUI();
-            } catch (e) {
-                localStorage.removeItem("noteworthy_user");
-            }
-        }
-    }
-
-    showNotification(message, type = "info") {
-        const notification = document.createElement("div");
-        notification.className = `notification notification-${type}`;
-        notification.textContent = message;
-        
-        document.body.appendChild(notification);
-        
-        // Remove after 3 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 3000);
-    }
-}
+// Authentication System - DISABLED: All features are now open to everyone
+// AuthSystem class removed - no authentication required
 
 // News Navigation System
 class NewsNavigation {
@@ -489,13 +264,23 @@ class NewsNavigation {
     }
 
     openChatWidget() {
-        // Use the global function
+        // Use the global function - ensure it's available
         if (typeof window.openChatWidget === 'function') {
             window.openChatWidget();
         } else if (typeof openChatWidget === 'function') {
             openChatWidget();
         } else {
-            console.warn('openChatWidget function not available');
+            console.warn('openChatWidget function not available, trying to initialize...');
+            // Fallback: try to find and click the launcher button directly
+            setTimeout(() => {
+                const chatWidget = document.querySelector('noteworthy-chat-widget');
+                if (chatWidget && chatWidget.shadowRoot) {
+                    const launcher = chatWidget.shadowRoot.querySelector('.launcher');
+                    if (launcher) {
+                        launcher.click();
+                    }
+                }
+            }, 500);
         }
     }
 
@@ -539,6 +324,7 @@ class BreakingNewsGame {
         this.score = 0;
         this.level = 1;
         this.streak = 0;
+        this.combo = 1; // Combo multiplier
         this.currentQuestion = 0;
         this.gameState = 'start'; // start, playing, feedback, gameOver
         this.difficulty = 'easy';
@@ -547,12 +333,25 @@ class BreakingNewsGame {
         this.timeLeft = 30;
         this.correctAnswers = 0;
         this.totalAnswers = 0;
+        this.lives = 3; // Lives system
+        this.maxLives = 3;
         this.soundEnabled = true;
         this.musicEnabled = true;
         this.currentMusicIndex = 0;
         this.isPaused = false;
         this.pauseTimeLeft = 0;
         this.notificationShown = false;
+        
+        // Advanced competitive features
+        this.startTime = null;
+        this.gameTimerInterval = null;
+        this.elapsedTime = 0; // Total game time in milliseconds
+        this.questionStartTime = null;
+        this.questionTimerInterval = null;
+        this.questionTimes = []; // Track time per question
+        this.speedBonus = 0; // Total speed bonuses
+        this.bestTime = this.loadBestTime();
+        
         // Load AI preference from localStorage, default to true
         const savedAI = localStorage.getItem('noteworthy_ai_enabled');
         this.aiEnabled = savedAI !== null ? savedAI === 'true' : true;
@@ -589,15 +388,6 @@ class BreakingNewsGame {
                 isFactual: true,
                 explanation: "This is factual breaking news from Noteworthy News. Aviation accidents are verified through official aviation authorities and local emergency services.",
                 tips: "Breaking news about accidents should be verified through official sources like aviation authorities and emergency services.",
-                level: 1,
-                category: "breaking"
-            },
-            {
-                headline: "ACTIVE SHOOTER at U.S. Army base Fort Stewart in Georgia. At least four people have been shot near Building 8420 (2nd Brigade). Reports indicate there may be two shooters. The base is on lockdown, and the scene is being treated as a mass casualty event.",
-                source: "Noteworthy News",
-                isFactual: true,
-                explanation: "This is factual breaking news from Noteworthy News. Military base incidents are verified through official military sources and law enforcement.",
-                tips: "Breaking news about military incidents should be verified through official military sources and law enforcement agencies.",
                 level: 1,
                 category: "breaking"
             },
@@ -1069,6 +859,1197 @@ class BreakingNewsGame {
                 tips: "Conspiracy theories about 'hidden cures' are red flags for misinformation.",
                 level: 5,
                 category: "conspiracy"
+            },
+            
+            // NEW REAL NEWS STORIES
+            {
+                headline: "James Webb Space Telescope discovers oldest galaxies ever observed",
+                source: "NASA.gov",
+                isFactual: true,
+                explanation: "This is factual. The James Webb Space Telescope has indeed discovered some of the oldest galaxies, dating back to just 400 million years after the Big Bang. NASA regularly publishes these findings.",
+                tips: "NASA's official website is a reliable source for space discoveries.",
+                level: 1,
+                category: "science"
+            },
+            {
+                headline: "ChatGPT reaches 100 million users in record time",
+                source: "Reuters",
+                isFactual: true,
+                explanation: "This is factual. ChatGPT reached 100 million monthly active users faster than any consumer app in history, according to Reuters reporting based on company data.",
+                tips: "Major news agencies like Reuters verify statistics with companies before reporting.",
+                level: 1,
+                category: "technology"
+            },
+            {
+                headline: "FDA approves first gene therapy for sickle cell disease",
+                source: "Food and Drug Administration",
+                isFactual: true,
+                explanation: "This is factual. The FDA approved the first gene therapies for sickle cell disease in December 2023, marking a significant medical breakthrough.",
+                tips: "FDA announcements are official government sources for medical approvals.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "Amazon rainforest faces worst drought in over a century",
+                source: "BBC News",
+                isFactual: true,
+                explanation: "This is factual. The Amazon experienced severe drought conditions in 2023, with water levels reaching historic lows, as reported by BBC and verified by environmental agencies.",
+                tips: "Established news organizations like BBC verify environmental data with scientific sources.",
+                level: 2,
+                category: "environment"
+            },
+            {
+                headline: "Taylor Swift becomes first artist to have four albums in Billboard Top 10 simultaneously",
+                source: "Billboard",
+                isFactual: true,
+                explanation: "This is factual. Taylor Swift achieved this historic milestone in 2023, as verified by Billboard's official chart data.",
+                tips: "Billboard is the authoritative source for music chart data.",
+                level: 1,
+                category: "entertainment"
+            },
+            {
+                headline: "Scientists create first synthetic human embryo without egg or sperm",
+                source: "Nature Journal",
+                isFactual: true,
+                explanation: "This is factual. Researchers created synthetic human embryos using stem cells, published in Nature. This represents a significant scientific advancement.",
+                tips: "Nature is one of the world's most prestigious scientific journals with rigorous peer review.",
+                level: 3,
+                category: "science"
+            },
+            {
+                headline: "Global carbon emissions reach new record high despite climate pledges",
+                source: "International Energy Agency",
+                isFactual: true,
+                explanation: "This is factual. The IEA reported that global energy-related CO2 emissions reached a new record in 2023, despite climate commitments.",
+                tips: "The IEA is a respected international organization that tracks energy data.",
+                level: 2,
+                category: "environment"
+            },
+            {
+                headline: "Apple becomes first company to reach $3 trillion market value",
+                source: "The Wall Street Journal",
+                isFactual: true,
+                explanation: "This is factual. Apple briefly reached a $3 trillion market capitalization in 2023, as reported by financial news outlets and verified by stock market data.",
+                tips: "The Wall Street Journal is a reputable financial news source.",
+                level: 1,
+                category: "business"
+            },
+            {
+                headline: "WHO declares end of COVID-19 global health emergency",
+                source: "World Health Organization",
+                isFactual: true,
+                explanation: "This is factual. The WHO declared the end of the COVID-19 global health emergency in May 2023, after over three years.",
+                tips: "WHO official announcements are authoritative sources for global health news.",
+                level: 1,
+                category: "health"
+            },
+            {
+                headline: "Record-breaking heat wave hits Europe, temperatures exceed 45°C",
+                source: "European Centre for Medium-Range Weather Forecasts",
+                isFactual: true,
+                explanation: "This is factual. Europe experienced extreme heat waves in 2023, with temperatures reaching record highs, verified by meteorological agencies.",
+                tips: "Official meteorological organizations provide reliable weather data.",
+                level: 1,
+                category: "weather"
+            },
+            {
+                headline: "SpaceX successfully launches and lands reusable rocket for 200th time",
+                source: "SpaceX",
+                isFactual: true,
+                explanation: "This is factual. SpaceX achieved this milestone in 2023, demonstrating the reliability of reusable rocket technology. The company provides official launch data.",
+                tips: "Company press releases from major corporations are generally reliable for their own achievements.",
+                level: 1,
+                category: "technology"
+            },
+            {
+                headline: "Study finds microplastics in human blood for first time",
+                source: "Environment International Journal",
+                isFactual: true,
+                explanation: "This is factual. A peer-reviewed study published in Environment International found microplastics in human blood samples, representing a significant health concern.",
+                tips: "Peer-reviewed scientific journals are reliable sources for research findings.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "China's population declines for first time in 60 years",
+                source: "National Bureau of Statistics of China",
+                isFactual: true,
+                explanation: "This is factual. China's population decreased in 2022 for the first time since 1961, as reported by official government statistics.",
+                tips: "Official government statistics bureaus are reliable sources for demographic data.",
+                level: 2,
+                category: "demographics"
+            },
+            {
+                headline: "Artificial intelligence passes medical licensing exam",
+                source: "PLOS Digital Health",
+                isFactual: true,
+                explanation: "This is factual. ChatGPT and other AI systems have passed medical licensing exams, as documented in peer-reviewed research published in PLOS Digital Health.",
+                tips: "Peer-reviewed research publications are reliable sources for scientific achievements.",
+                level: 2,
+                category: "technology"
+            },
+            {
+                headline: "Record number of wildfires burn across Canada",
+                source: "Natural Resources Canada",
+                isFactual: true,
+                explanation: "This is factual. Canada experienced its worst wildfire season in 2023, with millions of hectares burned, as reported by government natural resources agencies.",
+                tips: "Government natural resources agencies provide reliable data on wildfires.",
+                level: 1,
+                category: "environment"
+            },
+            {
+                headline: "Scientists successfully reverse aging in mice using cellular reprogramming",
+                source: "Cell Journal",
+                isFactual: true,
+                explanation: "This is factual. Research published in Cell demonstrated partial age reversal in mice through cellular reprogramming, though human applications remain distant.",
+                tips: "Top-tier scientific journals like Cell publish rigorously peer-reviewed research.",
+                level: 3,
+                category: "science"
+            },
+            {
+                headline: "Global food prices reach highest level in decade",
+                source: "Food and Agriculture Organization",
+                isFactual: true,
+                explanation: "This is factual. The FAO's Food Price Index reached record highs in 2022-2023 due to various factors including conflict and climate events.",
+                tips: "The FAO is a UN agency that provides authoritative data on global food prices.",
+                level: 2,
+                category: "economics"
+            },
+            {
+                headline: "First successful transplant of pig heart into human patient",
+                source: "University of Maryland Medical Center",
+                isFactual: true,
+                explanation: "This is factual. Surgeons at the University of Maryland performed the first successful pig-to-human heart transplant in 2022, though the patient later passed away. This represents a medical milestone.",
+                tips: "Major medical centers provide reliable information about groundbreaking procedures.",
+                level: 3,
+                category: "health"
+            },
+            {
+                headline: "Ocean temperatures reach record highs, threatening marine ecosystems",
+                source: "NOAA",
+                isFactual: true,
+                explanation: "This is factual. NOAA and other oceanographic agencies documented record-high ocean temperatures in 2023, causing widespread coral bleaching and ecosystem stress.",
+                tips: "NOAA is a trusted government agency for oceanographic and climate data.",
+                level: 2,
+                category: "environment"
+            },
+            {
+                headline: "Meta announces new AI model that can generate realistic video",
+                source: "Meta",
+                isFactual: true,
+                explanation: "This is factual. Meta (Facebook) has developed and demonstrated AI models capable of generating realistic video content, as announced in official company releases.",
+                tips: "Major tech companies' official announcements about their own products are generally reliable.",
+                level: 2,
+                category: "technology"
+            },
+            {
+                headline: "Study links ultra-processed foods to increased risk of depression",
+                source: "JAMA Network Open",
+                isFactual: true,
+                explanation: "This is factual. A large-scale study published in JAMA Network Open found associations between ultra-processed food consumption and depression risk, though correlation doesn't prove causation.",
+                tips: "JAMA publications are reputable medical journals, but remember correlation doesn't equal causation.",
+                level: 2,
+                category: "health"
+            },
+            
+            // NEW BELIEVABLE FAKE NEWS STORIES
+            {
+                headline: "Breaking: Scientists discover that drinking 8 glasses of water daily actually causes dehydration",
+                source: "HealthRevolution.net",
+                isFactual: false,
+                explanation: "This is misleading. The 8-glasses-of-water recommendation is well-established, and there's no credible evidence it causes dehydration. The source is not a reputable medical publication.",
+                tips: "Be skeptical of claims that contradict well-established medical advice from reputable sources.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "Exclusive: Major tech company admits their products are designed to be addictive",
+                source: "TechTruthExposed.com",
+                isFactual: false,
+                explanation: "This is misleading. While tech companies do use design techniques to increase engagement, no major company has made such a blanket admission. The source is not credible.",
+                tips: "Be wary of 'exclusive' claims from unknown sources, especially when they seem designed to provoke outrage.",
+                level: 2,
+                category: "technology"
+            },
+            {
+                headline: "Study reveals that exercise actually accelerates aging process",
+                source: "AlternativeHealthResearch.org",
+                isFactual: false,
+                explanation: "This is misleading. Extensive research shows exercise has numerous health benefits and may slow aging. The source is not a reputable scientific publication.",
+                tips: "Claims that contradict decades of established research should be viewed with extreme skepticism.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "Shocking discovery: Vegetables contain harmful chemicals that cause cancer",
+                source: "NaturalWellnessToday.com",
+                isFactual: false,
+                explanation: "This is misleading. While vegetables can contain trace amounts of various compounds, the overwhelming scientific consensus is that vegetables are beneficial for health. The source is not credible.",
+                tips: "Be extremely skeptical of health claims that contradict decades of nutritional science.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "BREAKING: Government secretly monitoring all smartphone cameras and microphones",
+                source: "PrivacyWatch.net",
+                isFactual: false,
+                explanation: "This is misleading. While government surveillance exists, there's no evidence of widespread secret monitoring of all smartphone cameras and microphones. The source is not credible.",
+                tips: "Extraordinary surveillance claims require extraordinary evidence from credible sources.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Doctors shocked: New study proves vaccines cause autism (finally admitted)",
+                source: "MedicalTruthRevealed.com",
+                isFactual: false,
+                explanation: "This is dangerously misleading. Extensive research has found no link between vaccines and autism. The original study claiming this was retracted and debunked. The source is not credible.",
+                tips: "Vaccine safety is one of the most studied topics in medicine. Be extremely skeptical of claims contradicting the scientific consensus.",
+                level: 1,
+                category: "health"
+            },
+            {
+                headline: "Scientists discover that the Earth is actually flat, NASA has been lying",
+                source: "TruthSeekersUnite.org",
+                isFactual: false,
+                explanation: "This is completely false. The Earth is demonstrably round, proven by countless observations and experiments. NASA and all space agencies operate based on this fact. The source is not credible.",
+                tips: "Claims that contradict fundamental, well-established scientific facts should be immediately dismissed.",
+                level: 1,
+                category: "conspiracy"
+            },
+            {
+                headline: "Exclusive: Major pharmaceutical company admits they profit from keeping people sick",
+                source: "BigPharmaExposed.net",
+                isFactual: false,
+                explanation: "This is misleading. While pharmaceutical companies are profit-driven, no major company has made such an admission. The source is not credible and appears designed to promote conspiracy theories.",
+                tips: "Be wary of 'exclusive' admissions from unknown sources, especially when they align with popular conspiracy theories.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Breaking: Study finds that reading actually damages your brain",
+                source: "CognitiveHealthResearch.com",
+                isFactual: false,
+                explanation: "This is misleading. Extensive research shows reading has numerous cognitive benefits. The source is not a reputable scientific publication, and this contradicts decades of neuroscience research.",
+                tips: "Claims that contradict well-established scientific consensus should be viewed with extreme skepticism.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "Shocking revelation: Sleep is actually harmful to your health, doctors discover",
+                source: "SleepScienceRevolution.net",
+                isFactual: false,
+                explanation: "This is completely false. Sleep is essential for health, and decades of research demonstrate its critical importance. The source is not credible.",
+                tips: "Be extremely skeptical of health claims that contradict fundamental biological processes.",
+                level: 1,
+                category: "health"
+            },
+            {
+                headline: "BREAKING: Climate change is a hoax, leaked documents reveal",
+                source: "ClimateTruthNow.org",
+                isFactual: false,
+                explanation: "This is misleading. Climate change is supported by overwhelming scientific evidence from thousands of studies. No credible 'leaked documents' have revealed it to be a hoax. The source is not credible.",
+                tips: "Climate science is one of the most studied fields. Be extremely skeptical of claims contradicting the scientific consensus.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Doctors stunned: New research proves that stress is actually good for you",
+                source: "StressScienceUpdate.com",
+                isFactual: false,
+                explanation: "This is misleading. While some stress can be beneficial in small amounts (eustress), chronic stress is harmful. The source oversimplifies and misrepresents stress research. The source is not credible.",
+                tips: "Be wary of health claims that oversimplify complex scientific topics.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "Exclusive: Tech billionaire admits social media is designed to make you depressed",
+                source: "TechInsiderTruth.com",
+                isFactual: false,
+                explanation: "This is misleading. While tech executives have acknowledged concerns about social media's impact, no major figure has made such a blanket admission. The source is not credible.",
+                tips: "Be skeptical of 'exclusive' admissions from unknown sources, especially when they seem designed to go viral.",
+                level: 2,
+                category: "technology"
+            },
+            {
+                headline: "Scientists discover that the sun is actually getting colder, not hotter",
+                source: "SolarScienceRevolution.net",
+                isFactual: false,
+                explanation: "This is misleading. The sun follows natural cycles, but there's no evidence it's getting colder overall. Solar activity is well-monitored and documented. The source is not credible.",
+                tips: "Be skeptical of claims about well-monitored natural phenomena that contradict established scientific data.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Breaking: Study reveals that fruits and vegetables are actually toxic",
+                source: "NutritionTruthExposed.com",
+                isFactual: false,
+                explanation: "This is dangerously misleading. Fruits and vegetables are fundamental to a healthy diet, supported by decades of nutritional research. The source is not credible.",
+                tips: "Be extremely skeptical of health claims that contradict fundamental nutritional science.",
+                level: 1,
+                category: "health"
+            },
+            {
+                headline: "Shocking: Medical study proves that doctors are causing more harm than good",
+                source: "MedicalSystemExposed.net",
+                isFactual: false,
+                explanation: "This is misleading. While medical errors occur, the overall benefit of medical care is well-documented. No credible study has proven doctors cause more harm than good. The source is not credible.",
+                tips: "Be wary of claims that attack entire professions or systems without credible evidence.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "BREAKING: Government admits to controlling the weather with secret technology",
+                source: "WeatherControlTruth.org",
+                isFactual: false,
+                explanation: "This is misleading. While weather modification exists in limited forms (cloud seeding), there's no evidence of widespread secret weather control. The source is not credible.",
+                tips: "Be skeptical of claims about secret government technologies, especially from unknown sources.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Doctors discover that exercise actually weakens your immune system",
+                source: "ExerciseScienceUpdate.com",
+                isFactual: false,
+                explanation: "This is misleading. While intense exercise can temporarily suppress immunity, regular moderate exercise strengthens the immune system. The source misrepresents the research. The source is not credible.",
+                tips: "Be wary of health claims that oversimplify or misrepresent complex scientific findings.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "Exclusive: Major news outlet admits to fabricating stories for clicks",
+                source: "MediaTruthExposed.net",
+                isFactual: false,
+                explanation: "This is misleading. While media bias and errors occur, no major reputable news outlet has admitted to fabricating stories. The source is not credible and appears designed to undermine trust in journalism.",
+                tips: "Be skeptical of claims that attack entire institutions, especially from sources with clear agendas.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Scientists shocked: New study proves that the moon landing was faked",
+                source: "SpaceTruthRevealed.com",
+                isFactual: false,
+                explanation: "This is completely false. The moon landing is one of the most well-documented events in history, with overwhelming evidence. No credible study has proven it was faked. The source is not credible.",
+                tips: "Be extremely skeptical of claims that contradict well-documented historical events with overwhelming evidence.",
+                level: 1,
+                category: "conspiracy"
+            },
+            {
+                headline: "Breaking: Research reveals that education actually makes you dumber",
+                source: "EducationSystemExposed.org",
+                isFactual: false,
+                explanation: "This is misleading. Extensive research demonstrates the benefits of education. The source is not credible and contradicts decades of educational research.",
+                tips: "Be extremely skeptical of claims that contradict fundamental aspects of human development and learning.",
+                level: 2,
+                category: "conspiracy"
+            },
+            
+            // MORE REAL NEWS
+            {
+                headline: "United States achieves first fusion energy net gain breakthrough",
+                source: "U.S. Department of Energy",
+                isFactual: true,
+                explanation: "This is factual. Scientists at Lawrence Livermore National Laboratory achieved net energy gain from nuclear fusion in December 2022, a major milestone for clean energy research.",
+                tips: "Government energy departments are reliable sources for major scientific breakthroughs.",
+                level: 3,
+                category: "science"
+            },
+            {
+                headline: "Global internet outage affects millions after major cloud provider fails",
+                source: "Associated Press",
+                isFactual: true,
+                explanation: "This is factual. Major cloud service providers have experienced outages that affected millions of users, as reported by major news agencies like AP.",
+                tips: "Established news agencies like AP verify technical incidents with companies before reporting.",
+                level: 2,
+                category: "technology"
+            },
+            {
+                headline: "New antibiotic discovered that can kill drug-resistant bacteria",
+                source: "Science Journal",
+                isFactual: true,
+                explanation: "This is factual. Researchers have discovered new antibiotics effective against drug-resistant bacteria, published in top scientific journals like Science.",
+                tips: "Top-tier scientific journals are reliable sources for medical breakthroughs.",
+                level: 3,
+                category: "health"
+            },
+            {
+                headline: "Record number of species declared extinct in 2023",
+                source: "International Union for Conservation of Nature",
+                isFactual: true,
+                explanation: "This is factual. The IUCN regularly updates its Red List of threatened species, and extinction rates have been increasing due to habitat loss and climate change.",
+                tips: "The IUCN is the authoritative international organization for species conservation status.",
+                level: 2,
+                category: "environment"
+            },
+            {
+                headline: "Cryptocurrency exchange collapses, customers lose billions",
+                source: "Financial Times",
+                isFactual: true,
+                explanation: "This is factual. Major cryptocurrency exchanges have collapsed, resulting in significant losses for customers, as reported by reputable financial news outlets.",
+                tips: "Established financial news sources like Financial Times verify major financial events.",
+                level: 2,
+                category: "business"
+            },
+            {
+                headline: "Scientists develop AI that can predict protein structures with high accuracy",
+                source: "Nature Journal",
+                isFactual: true,
+                explanation: "This is factual. AI systems like AlphaFold have revolutionized protein structure prediction, published in Nature and recognized as a major scientific achievement.",
+                tips: "Nature is one of the world's most prestigious scientific journals.",
+                level: 3,
+                category: "science"
+            },
+            {
+                headline: "Antarctic sea ice reaches record low levels",
+                source: "National Snow and Ice Data Center",
+                isFactual: true,
+                explanation: "This is factual. Antarctic sea ice reached record low levels in 2023, as documented by the NSIDC and other scientific monitoring organizations.",
+                tips: "The NSIDC is a trusted scientific organization that monitors polar ice data.",
+                level: 2,
+                category: "environment"
+            },
+            {
+                headline: "Major social media platform announces new content moderation policies",
+                source: "Company Press Release",
+                isFactual: true,
+                explanation: "This is factual. Social media companies regularly update their content policies and announce changes through official press releases.",
+                tips: "Company press releases are reliable sources for official company policy announcements.",
+                level: 1,
+                category: "technology"
+            },
+            {
+                headline: "Study finds link between air pollution and increased dementia risk",
+                source: "BMJ (British Medical Journal)",
+                isFactual: true,
+                explanation: "This is factual. Research published in BMJ has found associations between air pollution exposure and increased dementia risk, though more research is needed.",
+                tips: "BMJ is a reputable medical journal, but remember correlation doesn't prove causation.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "World's largest battery storage facility begins operation",
+                source: "Reuters",
+                isFactual: true,
+                explanation: "This is factual. Large-scale battery storage facilities are being built worldwide to support renewable energy, as reported by major news agencies.",
+                tips: "Major news agencies like Reuters verify infrastructure projects with companies and governments.",
+                level: 2,
+                category: "technology"
+            },
+            
+            // MORE BELIEVABLE FAKE NEWS
+            {
+                headline: "BREAKING: Scientists discover that breathing oxygen is actually toxic",
+                source: "OxygenTruthRevealed.com",
+                isFactual: false,
+                explanation: "This is completely false. Oxygen is essential for human life. While pure oxygen can be harmful in certain medical contexts, the claim that breathing oxygen is toxic is absurd. The source is not credible.",
+                tips: "Be extremely skeptical of claims that contradict fundamental biological necessities.",
+                level: 1,
+                category: "health"
+            },
+            {
+                headline: "Exclusive: NASA admits the International Space Station is actually on Earth",
+                source: "SpaceTruthExposed.net",
+                isFactual: false,
+                explanation: "This is completely false. The ISS is demonstrably in orbit, visible from Earth and regularly visited by astronauts. NASA has never made such an admission. The source is not credible.",
+                tips: "Be extremely skeptical of claims that contradict easily verifiable facts.",
+                level: 1,
+                category: "conspiracy"
+            },
+            {
+                headline: "Doctors discover that medicine actually makes diseases worse",
+                source: "MedicalSystemTruth.org",
+                isFactual: false,
+                explanation: "This is misleading. While medical errors occur, the overall benefit of medicine is well-documented. No credible doctors have made such a claim. The source is not credible.",
+                tips: "Be extremely skeptical of claims that attack entire fields of science without credible evidence.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Shocking: Study proves that gravity doesn't actually exist",
+                source: "PhysicsRevolution.net",
+                isFactual: false,
+                explanation: "This is completely false. Gravity is one of the fundamental forces of nature, well-documented and essential to physics. The source is not credible.",
+                tips: "Be extremely skeptical of claims that contradict fundamental laws of physics.",
+                level: 1,
+                category: "conspiracy"
+            },
+            {
+                headline: "BREAKING: Major university admits all their research is fabricated",
+                source: "AcademicTruthExposed.com",
+                isFactual: false,
+                explanation: "This is misleading. While research fraud occurs, no major university has admitted to fabricating all research. The source is not credible and appears designed to undermine trust in science.",
+                tips: "Be skeptical of claims that attack entire institutions, especially from unknown sources.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Scientists discover that the human brain is actually shrinking",
+                source: "BrainScienceUpdate.com",
+                isFactual: false,
+                explanation: "This is misleading. While some studies suggest slight changes in brain size over evolutionary time, there's no evidence of current shrinking. The source misrepresents research. The source is not credible.",
+                tips: "Be wary of health claims that oversimplify or misrepresent complex scientific findings.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "Exclusive: Tech company admits their AI is actually sentient and planning takeover",
+                source: "AITruthRevealed.net",
+                isFactual: false,
+                explanation: "This is misleading. While AI capabilities are advancing, there's no evidence of sentient AI or takeover plans. No major tech company has made such an admission. The source is not credible.",
+                tips: "Be skeptical of sensational claims about AI, especially from unknown sources.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Breaking: Study finds that hospitals are actually making people sicker",
+                source: "HealthcareSystemExposed.org",
+                isFactual: false,
+                explanation: "This is misleading. While hospital-acquired infections occur, hospitals overall save countless lives. The source misrepresents the data. The source is not credible.",
+                tips: "Be wary of claims that attack entire healthcare systems without proper context.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Doctors shocked: New research proves that surgery is actually harmful",
+                source: "SurgicalTruthRevealed.com",
+                isFactual: false,
+                explanation: "This is misleading. While surgery has risks, it saves countless lives. No credible research has proven surgery is overall harmful. The source is not credible.",
+                tips: "Be extremely skeptical of medical claims that contradict well-established medical practices.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "BREAKING: Government admits to controlling people's thoughts with technology",
+                source: "MindControlTruth.org",
+                isFactual: false,
+                explanation: "This is completely false. While governments use various forms of influence, there's no technology that can control thoughts. The source is not credible.",
+                tips: "Be extremely skeptical of claims about mind control technology, especially from unknown sources.",
+                level: 1,
+                category: "conspiracy"
+            },
+            
+            // REAL NEWS STORIES WITH SOURCES
+            {
+                headline: "Russia launches full-scale invasion of Ukraine, triggering major sanctions and military aid from dozens of countries",
+                source: "Wikipedia",
+                isFactual: true,
+                explanation: "This is factual. Russia's full-scale invasion of Ukraine began in February 2022, leading to unprecedented international sanctions, military aid packages from NATO and other countries, and a fundamental reshaping of European security alliances. Source: https://en.wikipedia.org/wiki/Russo-Ukrainian_War",
+                tips: "Wikipedia can be a reliable starting point for major historical events, but always verify with primary sources and established news outlets.",
+                level: 2,
+                category: "politics"
+            },
+            {
+                headline: "Middle Eastern crisis escalates with Red Sea attacks, Houthi involvement, and major impacts on global shipping and trade",
+                source: "Wikipedia",
+                isFactual: true,
+                explanation: "This is factual. The ongoing Middle Eastern crisis since 2023 has included Houthi attacks on shipping in the Red Sea, proxy engagements, and significant disruptions to global trade routes affecting ports and logistics worldwide. Source: https://en.wikipedia.org/wiki/Red_Sea_crisis",
+                tips: "Major geopolitical events affecting global trade are typically well-documented by multiple international news sources.",
+                level: 2,
+                category: "politics"
+            },
+            {
+                headline: "Analysis: Donald Trump's influence on U.S. culture and governance shows pattern of symbolic acts and institutional changes",
+                source: "The Guardian",
+                isFactual: true,
+                explanation: "This is factual. The Guardian has published analysis examining Donald Trump's impact on U.S. political culture, governance patterns, and institutional changes. The Guardian is a reputable international news source known for quality analysis. Source: https://www.theguardian.com",
+                tips: "The Guardian is a well-established, reputable news organization known for quality journalism and political analysis.",
+                level: 3,
+                category: "politics"
+            },
+            {
+                headline: "U.S. judge blocks deportation of pro-Palestinian activist, sparking debates about free speech, immigration, and executive power",
+                source: "The Guardian",
+                isFactual: true,
+                explanation: "This is factual. U.S. courts have issued rulings blocking deportations of activists, raising questions about the intersection of free speech rights, immigration law, and executive authority. The Guardian is a reputable international news source. Source: https://www.theguardian.com",
+                tips: "The Guardian is a well-established, reputable news organization known for quality journalism.",
+                level: 3,
+                category: "politics"
+            },
+            {
+                headline: "United States and Ukraine sign major economic deal aimed at attracting global investment into Ukraine's post-war recovery",
+                source: "Associated Press",
+                isFactual: true,
+                explanation: "This is factual. The U.S. and Ukraine have signed significant economic agreements to support Ukraine's recovery and attract international investment. AP News is a highly credible news agency. Source: https://apnews.com",
+                tips: "Associated Press (AP) is one of the world's most trusted news agencies, used by news outlets globally.",
+                level: 2,
+                category: "business"
+            },
+            {
+                headline: "Journalists honored with award for coverage of healthcare CEO assassination, recognized for major crime-reporting story",
+                source: "New York Post",
+                isFactual: true,
+                explanation: "This is factual. Journalists have been recognized with awards for their coverage of high-profile crime stories, including the assassination of healthcare executives. The New York Post is an established news outlet. Source: https://nypost.com",
+                tips: "Established news outlets like the New York Post are reliable sources for verified news stories, though be aware of editorial perspectives.",
+                level: 2,
+                category: "news"
+            },
+            {
+                headline: "2024's biggest news stories include natural disasters, major political shifts, AI's rise, and global economic headlines",
+                source: "The Wall Street Journal",
+                isFactual: true,
+                explanation: "This is factual. 2024 has been marked by significant natural disasters, political changes, AI developments, and major economic news. The Wall Street Journal is a highly reputable financial news source. Source: https://www.wsj.com",
+                tips: "The Wall Street Journal is one of the most respected financial and general news publications in the world.",
+                level: 1,
+                category: "news"
+            },
+            {
+                headline: "Trade and shipping disruptions intensify due to Red Sea crisis, affecting global logistics and major ports worldwide",
+                source: "The Wall Street Journal",
+                isFactual: true,
+                explanation: "This is factual. The Red Sea crisis has caused significant disruptions to global shipping routes, affecting logistics chains and port operations around the world. The Wall Street Journal is a highly credible source. Source: https://www.wsj.com",
+                tips: "Major economic disruptions affecting global trade are typically well-documented by financial news outlets.",
+                level: 2,
+                category: "business"
+            },
+            {
+                headline: "NVIDIA reaches market valuation making it one of the world's most valuable companies, driven by artificial intelligence growth",
+                source: "The Wall Street Journal",
+                isFactual: true,
+                explanation: "This is factual. NVIDIA's market capitalization has reached historic highs, making it among the most valuable companies globally, largely due to demand for AI chips. The Wall Street Journal is a highly reputable financial news source. Source: https://www.wsj.com",
+                tips: "Stock market valuations from established financial news sources are reliable and verifiable through public market data.",
+                level: 1,
+                category: "business"
+            },
+            {
+                headline: "Climate-linked extreme weather escalates: heavy floods in Brazil and discussions about warming beyond 1.5°C threshold",
+                source: "The Wall Street Journal",
+                isFactual: true,
+                explanation: "This is factual. Extreme weather events linked to climate change have intensified, including devastating floods in Brazil, while scientists discuss the possibility of exceeding the 1.5°C warming limit. The Wall Street Journal is a reputable source. Source: https://www.wsj.com",
+                tips: "Climate data from established news sources is typically based on scientific reports from meteorological and climate agencies.",
+                level: 2,
+                category: "environment"
+            },
+            {
+                headline: "Dual U.S.-Russian citizen living in Los Angeles arrested in Russia on treason charges for allegedly fundraising for Ukraine's army",
+                source: "Financial Times",
+                isFactual: true,
+                explanation: "This is factual. Russia has arrested dual citizens on treason charges related to supporting Ukraine. Financial Times is a highly reputable international news source. Source: https://www.ft.com",
+                tips: "Financial Times is one of the world's most respected international news publications, known for quality journalism.",
+                level: 3,
+                category: "politics"
+            },
+            {
+                headline: "U.S. southern border faces large migrant flows, policy pressure, and significant humanitarian challenges",
+                source: "Council on Foreign Relations",
+                isFactual: true,
+                explanation: "This is factual. The U.S. southern border has experienced large-scale migration, creating policy challenges and humanitarian concerns. The Council on Foreign Relations is a respected think tank providing analysis on international affairs. Source: https://www.cfr.org",
+                tips: "Think tanks like CFR provide expert analysis, but always cross-reference with news sources for current events.",
+                level: 2,
+                category: "politics"
+            },
+            {
+                headline: "Major shift in U.S. foreign policy away from nation-building towards strategic competition with China and Russia",
+                source: "Wikipedia",
+                isFactual: true,
+                explanation: "This is factual. U.S. foreign policy has shifted from nation-building efforts (like in Afghanistan) toward focusing on strategic competition with major powers like China and Russia. Source: https://en.wikipedia.org/wiki/United_States_foreign_policy",
+                tips: "Major policy shifts are documented by government sources and verified by multiple news outlets.",
+                level: 3,
+                category: "politics"
+            },
+            {
+                headline: "Large New Year's Day earthquake in Japan causes hundreds of deaths and triggers tsunami warnings",
+                source: "The Wall Street Journal",
+                isFactual: true,
+                explanation: "This is factual. A major earthquake struck Japan on New Year's Day 2024, resulting in hundreds of fatalities and triggering tsunami warnings. The Wall Street Journal is a reputable news source. Source: https://www.wsj.com",
+                tips: "Natural disasters are typically immediately reported by major news outlets and verified by government agencies.",
+                level: 1,
+                category: "breaking"
+            },
+            {
+                headline: "Weeks of flooding in Brazil kill over 100 people, displace hundreds of thousands, and leave towns uninhabitable",
+                source: "The Wall Street Journal",
+                isFactual: true,
+                explanation: "This is factual. Brazil experienced severe flooding in 2024, resulting in over 100 deaths, massive displacement, and making some areas uninhabitable. The Wall Street Journal is a reputable source. Source: https://www.wsj.com",
+                tips: "Natural disaster statistics are typically verified by government emergency management agencies and reported by major news outlets.",
+                level: 2,
+                category: "breaking"
+            },
+            {
+                headline: "U.S. Supreme Court strikes down ban on bump stocks in major gun-rights ruling",
+                source: "The Wall Street Journal",
+                isFactual: true,
+                explanation: "This is factual. The U.S. Supreme Court has issued rulings affecting bump stock regulations, with significant implications for gun rights. The Wall Street Journal is a highly reputable source. Source: https://www.wsj.com",
+                tips: "Supreme Court rulings are official government documents and are reported by all major news outlets.",
+                level: 2,
+                category: "politics"
+            },
+            {
+                headline: "U.S. dockworkers strike at major ports handling significant import and export volume",
+                source: "The Wall Street Journal",
+                isFactual: true,
+                explanation: "This is factual. Dockworker strikes at major U.S. ports have occurred, affecting significant portions of the country's import and export trade. The Wall Street Journal is a reputable source. Source: https://www.wsj.com",
+                tips: "Labor strikes affecting major infrastructure are typically reported by multiple news outlets and verified through union and company statements.",
+                level: 2,
+                category: "business"
+            },
+            {
+                headline: "High-profile university president resigns amid controversy over antisemitism and plagiarism allegations",
+                source: "The Wall Street Journal",
+                isFactual: true,
+                explanation: "This is factual. University presidents have resigned following controversies involving allegations of antisemitism and academic misconduct. The Wall Street Journal is a reputable source. Source: https://www.wsj.com",
+                tips: "Major institutional leadership changes are typically reported by multiple news outlets and verified through official statements.",
+                level: 2,
+                category: "education"
+            },
+            {
+                headline: "Earth expected to surpass 1.5°C warming threshold; global climate summit addresses ecosystem impacts",
+                source: "ABC News",
+                isFactual: true,
+                explanation: "This is factual. Climate scientists warn that global temperatures may exceed the 1.5°C warming threshold, with international climate summits addressing the implications. ABC News is a reputable news source. Source: https://abcnews.go.com",
+                tips: "Climate data comes from scientific organizations like NOAA and IPCC, reported by established news outlets like ABC News.",
+                level: 2,
+                category: "environment"
+            },
+            
+            // BELIEVABLE FAKE NEWS STORIES
+            {
+                headline: "New study: Drinking one cup of street coffee a day adds 10 years to your life",
+                source: "HealthTrendsDaily.com",
+                isFactual: false,
+                explanation: "This is misleading. The claim references a vague 'study' with no journal link, likely based on a small sample size and survivorship bias. Real scientific studies are published in peer-reviewed journals with full methodology. The source is not credible.",
+                tips: "Always check for original papers, sample sizes, and journal peer review. Vague 'study' claims without citations are red flags.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "Portland to ban cars entirely next month — official memo leaked",
+                source: "CityLeaks.net",
+                isFactual: false,
+                explanation: "This is misleading. The 'leaked memo' comes from an anonymous source and could be satire or forgery. Major city policy changes are announced through official channels, not leaks. The source is not credible.",
+                tips: "Always verify 'leaked' documents by checking official city government websites and press releases. Anonymous leaks are unreliable.",
+                level: 2,
+                category: "politics"
+            },
+            {
+                headline: "Viral video shows hospital using fake patients to inflate COVID numbers",
+                source: "TruthExposedMedia.com",
+                isFactual: false,
+                explanation: "This is misleading. A single unverified video clip without corroborating reporting could be misinterpreted or staged footage. Real investigative journalism requires multiple sources and verification. The source is not credible.",
+                tips: "Single viral videos without context are unreliable. Check hospital statements, multiple eyewitnesses, and video timestamps.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Local bakery's bread tested positive for traces of fentanyl",
+                source: "HealthAlertNews.com",
+                isFactual: false,
+                explanation: "This is misleading. Sensational lab claims without chain of custody or certification from accredited labs are unreliable. Real health alerts come from official health departments with verified testing. The source is not credible.",
+                tips: "Health claims require accredited lab reports and official health department alerts. Unverified lab claims are suspicious.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "Celebrity secretly funds offshore militia, leaked invoice proves it",
+                source: "CelebrityExposed.net",
+                isFactual: false,
+                explanation: "This is misleading. Invoices are easy to forge and the chain of custody is unknown. Real investigative reporting requires forensic document analysis and verification from reputable outlets. The source is not credible.",
+                tips: "Leaked documents require forensic verification. Check reputable investigative outlets for verified claims.",
+                level: 3,
+                category: "conspiracy"
+            },
+            {
+                headline: "Map proving city borders were redrawn to exclude poor neighborhoods",
+                source: "UrbanTruth.org",
+                isFactual: false,
+                explanation: "This is misleading. Maps can be doctored, use old boundaries, or wrong scales. Official boundary changes are documented in cadastral records with date stamps. The source is not credible.",
+                tips: "Always verify maps against official cadastral records and check date stamps. Maps can be easily manipulated.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "School textbook removes math section to push political agenda",
+                source: "EducationWatch.net",
+                isFactual: false,
+                explanation: "This is misleading. Claims designed to provoke moral panic often misread curriculum updates or take excerpts out of context. Real curriculum changes are documented in board minutes and publisher errata. The source is not credible.",
+                tips: "Check publisher errata and curriculum board minutes. Claims designed to provoke outrage are often misleading.",
+                level: 2,
+                category: "education"
+            },
+            {
+                headline: "New AI app can read minds with 70% accuracy",
+                source: "TechRevolution.com",
+                isFactual: false,
+                explanation: "This is misleading. Overhyped tech press releases without peer-reviewed evidence and ambiguous definitions are unreliable. Real AI breakthroughs are published in peer-reviewed journals with replicable methods. The source is not credible.",
+                tips: "Extraordinary tech claims require peer-reviewed evidence, demos, and replicability. Press releases alone are insufficient.",
+                level: 2,
+                category: "technology"
+            },
+            {
+                headline: "Satellite photo proves famous monument was moved overnight",
+                source: "SatelliteTruth.net",
+                isFactual: false,
+                explanation: "This is misleading. Old satellite images can be reposted with new captions or have altered metadata. Real satellite imagery has verifiable metadata, timestamps, and comes from providers like Sentinel or Landsat. The source is not credible.",
+                tips: "Always check image metadata, source provider, and timestamps. Satellite images can be mislabeled or repurposed.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Study: Eating oranges prevents all forms of cancer",
+                source: "NaturalCureDaily.com",
+                isFactual: false,
+                explanation: "This is misleading. Absolute health claims are almost always false. Real studies show correlations, not absolute prevention, and are verified through meta-analyses. The source is not credible.",
+                tips: "Be extremely skeptical of absolute health claims. Check meta-analyses, study disclaimers, and potential conflicts of interest.",
+                level: 1,
+                category: "health"
+            },
+            {
+                headline: "Charity steals donations — undercover footage surfaces",
+                source: "CharityWatchExposed.com",
+                isFactual: false,
+                explanation: "This is misleading. Single undercover clips can be edited or staged. Charities are vulnerable to smear campaigns. Real investigations require audited financial statements and multiple-source verification. The source is not credible.",
+                tips: "Check charity audited statements and multiple-source investigations. Single videos can be edited or staged.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Government quietly raises sales tax to 50% — leaked spreadsheet",
+                source: "TaxLeaks.org",
+                isFactual: false,
+                explanation: "This is misleading. Spreadsheets without signatures could be mockups. Real tax changes are documented in official budget documents and legislative records. The source is not credible.",
+                tips: "Verify tax changes through official budget documents and legislative records. Leaked spreadsheets are easily faked.",
+                level: 2,
+                category: "politics"
+            },
+            {
+                headline: "Town's tap water found to contain microchips",
+                source: "WaterSafetyAlert.com",
+                isFactual: false,
+                explanation: "This is misleading. This claim is physically improbable and likely based on misinterpreted microscopy images. Real water safety issues are verified through accredited lab tests. The source is not credible.",
+                tips: "Extraordinary claims require extraordinary evidence from accredited labs. Physically improbable claims are red flags.",
+                level: 1,
+                category: "conspiracy"
+            },
+            {
+                headline: "New drug cures Alzheimer's in mice; human trials start next week",
+                source: "MedicalBreakthrough.net",
+                isFactual: false,
+                explanation: "This is misleading. Preclinical mouse results are routine in drug development, but leaps to human cures are premature. Real drug development requires years of clinical trials registered with regulatory agencies. The source is not credible.",
+                tips: "Mouse study results don't guarantee human success. Check clinical trial registrations and peer review before believing cure claims.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "Photo shows politician at foreign rally — proves treason",
+                source: "PoliticalExposed.com",
+                isFactual: false,
+                explanation: "This is misleading. Photos can be cropped, misattributed, or from old events. Real verification requires reverse image search and checking original context. The source is not credible.",
+                tips: "Always reverse image search photos and verify original context. Photos can be cropped, misattributed, or from old events.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Study finds city's air quality improves COVID survival by 90%",
+                source: "HealthResearchDaily.com",
+                isFactual: false,
+                explanation: "This is misleading. This claim confuses correlation with causation and likely uses a small or biased dataset. Real scientific consensus requires multiple studies and rigorous methodology. The source is not credible.",
+                tips: "Correlation doesn't prove causation. Check multiple studies and methodology before believing dramatic health claims.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "Exclusive: Airline uses passengers for product ads mid-flight",
+                source: "TravelExposed.net",
+                isFactual: false,
+                explanation: "This is misleading. Single passenger claims could be misunderstandings or PR stunts. Real airline policies are documented in terms of service and passenger manifests. The source is not credible.",
+                tips: "Check airline official statements and terms of service. Single claims without verification are unreliable.",
+                level: 2,
+                category: "business"
+            },
+            {
+                headline: "Hologram technology used to fake news anchor's broadcast",
+                source: "MediaTruthExposed.com",
+                isFactual: false,
+                explanation: "This is misleading. This sounds like deepfake fear-mongering. Real verification requires forensic audio/image analysis of source video. The source is not credible.",
+                tips: "Check source video and use forensic audio/image analysis. Deepfake claims require technical verification.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Neighborhood turned into wildlife preserve overnight; residents not told",
+                source: "UrbanDevelopmentWatch.org",
+                isFactual: false,
+                explanation: "This is misleading. Zoning changes are public processes documented in municipal council meeting minutes and planning maps. Major changes can't happen 'overnight' without public notice. The source is not credible.",
+                tips: "Check municipal council meeting minutes and planning maps. Zoning changes are public processes with required notice.",
+                level: 2,
+                category: "politics"
+            },
+            {
+                headline: "University revokes degrees en masse for ideological reasons",
+                source: "AcademicFreedomWatch.net",
+                isFactual: false,
+                explanation: "This is misleading. Sweeping claims with no documented cases could be coordinated rumors. Real degree revocations are documented in registrar records and official announcements. The source is not credible.",
+                tips: "Check registrar records and official announcements. Sweeping claims without documentation are suspicious.",
+                level: 2,
+                category: "education"
+            },
+            {
+                headline: "Photos show vaccine vials filled with saline at clinics",
+                source: "VaccineTruthExposed.com",
+                isFactual: false,
+                explanation: "This is misleading. Photos can be staged and lack chain of custody and context. Real vaccine distribution requires clinic audits and multiple independent investigations. The source is not credible.",
+                tips: "Check clinic audits and multiple independent investigations. Photos can be staged or taken out of context.",
+                level: 1,
+                category: "health"
+            },
+            {
+                headline: "One company owns 90% of the world's bread flour, prices to triple",
+                source: "MarketWatchExposed.com",
+                isFactual: false,
+                explanation: "This is misleading. Monopoly claims require regulatory filings and market data verification. This likely misreads market share reports. Real market data is available through trade filings. The source is not credible.",
+                tips: "Check market data and trade filings. Monopoly claims require regulatory verification.",
+                level: 2,
+                category: "business"
+            },
+            {
+                headline: "Mayor signs law to change official language to 'Global English'",
+                source: "CityPolicyLeaks.com",
+                isFactual: false,
+                explanation: "This is misleading. Extreme policy changes like this are likely from satire or misquotes. Real policy changes are documented in city charters and official translations. The source is not credible.",
+                tips: "Check city charter and official translations. Extreme claims are often satire or misquotes.",
+                level: 1,
+                category: "politics"
+            },
+            {
+                headline: "Weather forecast screenshot shows city underwater next week — evacuation imminent",
+                source: "WeatherAlertNews.com",
+                isFactual: false,
+                explanation: "This is misleading. Weather model screenshots can be faked or edited. Real weather forecasts come from National Weather Service or official meteorological agencies. The source is not credible.",
+                tips: "Always check National Weather Service or official meteorological agency releases. Screenshots can be faked.",
+                level: 1,
+                category: "weather"
+            },
+            {
+                headline: "Teacher replaced entire curriculum with political pamphlets",
+                source: "EducationWatchdog.net",
+                isFactual: false,
+                explanation: "This is misleading. Single-parent social media posts without corroboration could be misunderstandings of materials. Real curriculum changes are documented in school board records and syllabi. The source is not credible.",
+                tips: "Check school board records and syllabi. Single social media posts without verification are unreliable.",
+                level: 2,
+                category: "education"
+            },
+            {
+                headline: "Bank introduces negative interest for all personal accounts",
+                source: "BankingAlert.com",
+                isFactual: false,
+                explanation: "This is misleading. Banks announce major policy changes through formal communication channels. Sensational posts about banking policies are often scams. Real banking policies are announced through official notices. The source is not credible.",
+                tips: "Check bank official notices and central bank regulations. Sensational banking claims are often scams.",
+                level: 2,
+                category: "business"
+            },
+            {
+                headline: "Popular food brand recalls due to human hair contamination — video shows factory",
+                source: "FoodSafetyAlert.net",
+                isFactual: false,
+                explanation: "This is misleading. Viral clips could be from different factories, countries, or old footage. Real food recalls are announced through company recall notices and inspection reports. The source is not credible.",
+                tips: "Check company recall notices and inspection reports. Viral videos may be from different locations or old footage.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "Secret treaty transfers Arctic territory to private company",
+                source: "DiplomaticLeaks.org",
+                isFactual: false,
+                explanation: "This is misleading. Territorial transfers involve treaties and UN records that are publicly accessible. Such transfers can't be 'secret.' Real treaties are registered in treaty registries. The source is not credible.",
+                tips: "Check treaty registries and diplomatic records. Territorial transfers are public processes, not secret.",
+                level: 3,
+                category: "conspiracy"
+            },
+            {
+                headline: "Influencer claims to have turned $100 into $1M with new token",
+                source: "CryptoSuccessStories.com",
+                isFactual: false,
+                explanation: "This is misleading. This is a typical pump-and-dump crypto pitch lacking verifiable transaction history. Real cryptocurrency transactions are verifiable on blockchain explorers. The source is not credible.",
+                tips: "Check blockchain explorers and exchange listings. Crypto success stories without verifiable transactions are scams.",
+                level: 2,
+                category: "scam"
+            },
+            {
+                headline: "Viral graph shows crime dropped 80% after policy X — but graph has truncated y-axis",
+                source: "DataVisualizationNews.com",
+                isFactual: false,
+                explanation: "This is misleading. Truncated y-axes create misleading visualizations that exaggerate effects. Real data analysis requires checking raw numbers and data sources. The source is not credible.",
+                tips: "Always check raw numbers and data sources. Truncated graph axes can be misleading.",
+                level: 2,
+                category: "misinformation"
+            },
+            {
+                headline: "Police department caught deleting bodycam from high-profile arrest",
+                source: "PoliceWatchExposed.net",
+                isFactual: false,
+                explanation: "This is misleading. Allegations require FOIA requests and administrative records. Single anonymous sources are insufficient. Real verification requires official bodycam logs and audits. The source is not credible.",
+                tips: "Check official bodycam logs and audits. Single anonymous sources are insufficient for serious allegations.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Study: Taking selfies reduces risk of dementia",
+                source: "HealthResearchDaily.com",
+                isFactual: false,
+                explanation: "This is misleading. This is likely cherry-picked correlation with sensational headline. Real studies account for sample representativeness and confounders. The source is not credible.",
+                tips: "Check for sample representativeness and confounders. Cherry-picked correlations are misleading.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "Fake news site claims extinct bird species spotted in suburban park",
+                source: "WildlifeWatchExposed.com",
+                isFactual: false,
+                explanation: "This is misleading. Claims about rare species require expert verification. This is likely a misidentified common species. Real wildlife sightings are verified by expert ornithologists and birdwatching groups. The source is not credible.",
+                tips: "Check birdwatching groups and expert ornithologists. Rare species claims require expert verification.",
+                level: 2,
+                category: "misinformation"
+            },
+            {
+                headline: "Video shows politician using teleprompter to read false confessions live",
+                source: "PoliticalTruthExposed.com",
+                isFactual: false,
+                explanation: "This is misleading. Videos can be edited to create false narratives. Real verification requires checking full footage and original broadcast sources. The source is not credible.",
+                tips: "Check full footage and original broadcast sources. Videos can be edited to mislead.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Study leaked: sugar company paid researchers to hide obesity links",
+                source: "IndustryLeaks.org",
+                isFactual: false,
+                explanation: "This is misleading. While industry influence is real, leaks require documentation. Real verification checks funding disclosures and original studies. The source is not credible.",
+                tips: "Check funding disclosures and original studies. Leaks require documentation to be credible.",
+                level: 3,
+                category: "conspiracy"
+            },
+            {
+                headline: "Company claims their face-scan vaccine is 99% effective",
+                source: "TechMedicalNews.com",
+                isFactual: false,
+                explanation: "This is misleading. Unverifiable corporate claims without trial data are unreliable. Real medical products require regulatory approvals and independent trials. The source is not credible.",
+                tips: "Check regulatory approvals and independent trials. Corporate claims without data are unreliable.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "Map shows refugee camp relocated to wealthy suburb — proof of conspiracy",
+                source: "GeographicTruthExposed.net",
+                isFactual: false,
+                explanation: "This is misleading. Maps can have mislabeled layers, old imagery, or geolocation errors. Real verification requires checking coordinates and official humanitarian sources. The source is not credible.",
+                tips: "Check coordinates and official humanitarian sources. Map errors and mislabeling are common.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Photo proves two rival politicians met secretly in foreign country",
+                source: "DiplomaticExposed.com",
+                isFactual: false,
+                explanation: "This is misleading. Photos could be from unrelated events or doctored. Real verification requires reverse image search and metadata analysis. The source is not credible.",
+                tips: "Always reverse image search photos and check metadata. Photos can be from unrelated events or doctored.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Warning: new app drains phone battery overnight and sells data",
+                source: "AppSecurityAlert.com",
+                isFactual: false,
+                explanation: "This is misleading. Viral claims often lack app permissions analysis. Real verification requires checking app store reviews, permissions lists, and antivirus scans. The source is not credible.",
+                tips: "Check app store reviews, permissions list, and AV scans. Viral security claims need technical verification.",
+                level: 2,
+                category: "technology"
+            },
+            {
+                headline: "Local company used cancer cells to test product in dorms",
+                source: "ResearchEthicsExposed.net",
+                isFactual: false,
+                explanation: "This is misleading. Highly inflammatory claims require lab access and ethical approvals. Real research involving human cells requires IRB notices and lab records. The source is not credible.",
+                tips: "Check IRB notices and lab records. Research involving human cells requires ethical approvals.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Audio leak: CEO admits to price-fixing on company podcast",
+                source: "CorporateLeaks.org",
+                isFactual: false,
+                explanation: "This is misleading. Audio can be edited or deepfaked. Real verification requires full recording access and voice forensics. The source is not credible.",
+                tips: "Verify via full recording and voice forensics. Audio can be edited or deepfaked.",
+                level: 3,
+                category: "conspiracy"
+            },
+            {
+                headline: "Hospital posts on social media offering 'miracle' therapy for infertility",
+                source: "MedicalMiracleNews.com",
+                isFactual: false,
+                explanation: "This is misleading. Medical claims on social media need scrutiny. Real medical treatments require clinical trials and peer review. The source is not credible.",
+                tips: "Check clinical trials and peer review. Medical claims on social media are often unverified.",
+                level: 2,
+                category: "health"
+            },
+            {
+                headline: "New pipeline will siphon river to private resorts — environmentalists silenced",
+                source: "EnvironmentalTruthExposed.net",
+                isFactual: false,
+                explanation: "This is misleading. Activist language suggests bias. Real infrastructure projects require environmental impact assessments and permits that are publicly accessible. The source is not credible.",
+                tips: "Check environmental impact assessments and permits. Activist language may indicate bias.",
+                level: 2,
+                category: "environment"
+            },
+            {
+                headline: "Study shows early school start times boost test scores by 50%",
+                source: "EducationResearchDaily.com",
+                isFactual: false,
+                explanation: "This is misleading. Implausibly large effect sizes are red flags. Real studies show modest effects and require replication. The source is not credible.",
+                tips: "Check study controls and replicability. Implausibly large effect sizes are suspicious.",
+                level: 2,
+                category: "education"
+            },
+            {
+                headline: "Viral post: landmark building collapsing tonight due to unpaid taxes",
+                source: "CityAlertNews.com",
+                isFactual: false,
+                explanation: "This is misleading. Buildings don't collapse overnight from unpaid taxes. Real building safety requires inspection records and structural engineer assessments. The source is not credible.",
+                tips: "Check building inspection records and structural engineers. Buildings don't collapse overnight from taxes.",
+                level: 1,
+                category: "misinformation"
+            },
+            {
+                headline: "Alert: 5G towers cause localized heat waves — citizen footage",
+                source: "5GTruthExposed.com",
+                isFactual: false,
+                explanation: "This is misleading. Scientific consensus rejects this claim. Footage is likely misattributed or shows thermal camera misreadings. Real science requires vetted sources. The source is not credible.",
+                tips: "Check vetted science sources. Scientific consensus rejects 5G health claims.",
+                level: 1,
+                category: "conspiracy"
+            },
+            {
+                headline: "Breaking: local bank paid hackers to launder money, internal memo leaked",
+                source: "BankingLeaksExposed.net",
+                isFactual: false,
+                explanation: "This is misleading. Memo authenticity needs verification. Real financial crimes are documented in regulatory filings and bank statements. The source is not credible.",
+                tips: "Check regulatory filings and bank statements. Leaked memos require authentication.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Video shows politician switching badges to enter restricted area",
+                source: "SecurityExposed.com",
+                isFactual: false,
+                explanation: "This is misleading. Clips may be sped up or cut. Real verification requires full CCTV footage and badge access logs. The source is not credible.",
+                tips: "Check full CCTV and badge logs. Video clips can be edited or taken out of context.",
+                level: 2,
+                category: "conspiracy"
+            },
+            {
+                headline: "Study: owning a pet doubles your income — correlation proves causation",
+                source: "LifestyleResearchDaily.com",
+                isFactual: false,
+                explanation: "This is misleading. This confuses correlation with causation and likely has reverse causality (higher income people can afford pets). Real studies account for confounders and study design. The source is not credible.",
+                tips: "Correlation doesn't prove causation. Check study design for reverse causality and confounders.",
+                level: 2,
+                category: "misinformation"
+            },
+            {
+                headline: "News site claims mountain range moved 3 miles after new highway built",
+                source: "GeologyNewsExposed.com",
+                isFactual: false,
+                explanation: "This is misleading. Geology doesn't shift overnight. This is likely a miscaptioned geological map or satire. Real geological changes require geospatial data and authoritative geology sources. The source is not credible.",
+                tips: "Check geospatial data and authoritative geology sources. Geology doesn't change overnight.",
+                level: 1,
+                category: "misinformation"
             }
         ];
         
@@ -1135,7 +2116,7 @@ class BreakingNewsGame {
         
         // Show dark mode notification after a delay
         setTimeout(() => {
-            this.showDarkModeNotification();
+            // Dark mode notification removed
         }, 2000);
     }
     
@@ -1350,6 +2331,13 @@ class BreakingNewsGame {
             const factHandler = () => {
                 console.log('Fact button clicked');
                 this.playSound('button', 'factual');
+                // Start timer and check answer directly
+                this.questionStartTime = Date.now();
+                const questionTimerEl = document.getElementById('questionTimer');
+                if (questionTimerEl) {
+                    questionTimerEl.style.display = 'block';
+                }
+                this.startQuestionTimer();
                 this.checkAnswer(true);
             };
             
@@ -1383,6 +2371,13 @@ class BreakingNewsGame {
             const fakeHandler = () => {
                 console.log('Fake button clicked');
                 this.playSound('button', 'misleading');
+                // Start timer and check answer directly
+                this.questionStartTime = Date.now();
+                const questionTimerEl = document.getElementById('questionTimer');
+                if (questionTimerEl) {
+                    questionTimerEl.style.display = 'block';
+                }
+                this.startQuestionTimer();
                 this.checkAnswer(false);
             };
             
@@ -1410,6 +2405,19 @@ class BreakingNewsGame {
                     isScrolling = false;
                 }, 150); // Wait 150ms after scrolling stops
             }, { passive: true });
+        }
+        
+        // AI Explanation button handler
+        const aiExplanationBtn = document.getElementById('aiExplanationBtn');
+        if (aiExplanationBtn) {
+            aiExplanationBtn.addEventListener('click', () => {
+                if (this.currentQuestion > 0) {
+                    const question = this.questions[this.currentQuestion - 1];
+                    if (question) {
+                        this.getAIExplanation(question);
+                    }
+                }
+            });
         }
         
         if (nextBtn) {
@@ -1549,14 +2557,7 @@ class BreakingNewsGame {
             });
         }
         
-        // Theme toggle functionality
-        const themeToggleBtn = document.getElementById('themeToggleBtn');
-        if (themeToggleBtn) {
-            themeToggleBtn.addEventListener('click', () => {
-                this.playSound('button', 'toggle');
-                this.toggleTheme();
-            });
-        }
+        // Theme toggle functionality removed
         
         // Pause toggle functionality
         const pauseToggleBtn = document.getElementById('pauseToggleBtn');
@@ -1817,6 +2818,24 @@ class BreakingNewsGame {
         this.gameState = 'playing';
         console.log('Game state set to playing');
         
+        // Reset advanced stats
+        this.score = 0;
+        this.level = 1;
+        this.streak = 0;
+        this.combo = 1;
+        this.currentQuestion = 0;
+        this.correctAnswers = 0;
+        this.totalAnswers = 0;
+        this.lives = this.maxLives;
+        this.questionTimes = [];
+        this.speedBonus = 0;
+        this.confidenceLevel = null;
+        
+        // Start game timer
+        this.elapsedTime = 0;
+        this.startTime = Date.now();
+        this.startGameTimer();
+        
         this.hideAllScreens();
         console.log('Screens hidden');
         
@@ -1834,11 +2853,21 @@ class BreakingNewsGame {
         
         this.showQuestion();
         console.log('showQuestion called from startGame');
+        
+        this.updateStats();
+        this.updateHearts(); // Ensure hearts are displayed correctly
     }
     
     showQuestion() {
         console.log('showQuestion called, currentQuestion:', this.currentQuestion);
         console.log('Questions array length:', this.questions.length);
+        
+        // Check if out of lives
+        if (this.lives <= 0) {
+            console.log('Game over - out of lives');
+            this.endGame();
+            return;
+        }
         
         if (this.currentQuestion >= this.questions.length) {
             console.log('Game over - no more questions');
@@ -1848,6 +2877,17 @@ class BreakingNewsGame {
         
         const question = this.questions[this.currentQuestion];
         console.log('Showing question:', question.headline);
+        
+        
+        // Hide AI explanation and button
+        const aiExplanation = document.getElementById('aiExplanation');
+        if (aiExplanation) {
+            aiExplanation.style.display = 'none';
+        }
+        const aiExplanationBtn = document.getElementById('aiExplanationBtn');
+        if (aiExplanationBtn) {
+            aiExplanationBtn.style.display = 'none';
+        }
         
         const headlineElement = document.getElementById('headline');
         const sourceElement = document.getElementById('source');
@@ -1896,6 +2936,14 @@ class BreakingNewsGame {
         if (nextHeadlineBtn) {
             nextHeadlineBtn.style.display = 'none';
         }
+        
+        // Hide question timer initially - it will show when user clicks Factual/Misleading
+        const questionTimerEl = document.getElementById('questionTimer');
+        if (questionTimerEl) {
+            questionTimerEl.style.display = 'none';
+        }
+        
+        // Question timer will start when user clicks Factual or Misleading
         
         // Start timer only if not the first question
         if (this.currentQuestion > 0) {
@@ -1953,10 +3001,46 @@ class BreakingNewsGame {
     
     checkAnswer(userAnswer) {
         clearInterval(this.timer);
+        this.stopQuestionTimer();
+        
+        // Hide question timer
+        const questionTimerEl = document.getElementById('questionTimer');
+        if (questionTimerEl) {
+            questionTimerEl.style.display = 'none';
+        }
         
         const question = this.questions[this.currentQuestion];
         const isCorrect = userAnswer === question.isFactual;
-        const timeBonus = userAnswer !== null ? Math.floor(this.timeLeft / 2) : 0;
+        
+        // Calculate question time
+        const questionTime = this.questionStartTime ? (Date.now() - this.questionStartTime) / 1000 : 0;
+        this.questionTimes.push(questionTime);
+        
+        // Calculate base score with difficulty multiplier
+        const difficultyMultipliers = { easy: 1, medium: 1.5, hard: 2 };
+        const difficultyMultiplier = difficultyMultipliers[this.difficulty] || 1;
+        const levelMultiplier = 1 + (this.level - 1) * 0.1; // 10% per level
+        let baseScore = 10 * difficultyMultiplier * levelMultiplier;
+        
+        // Time bonus (faster = more points)
+        let timeBonus = 0;
+        let timeMessage = '';
+        if (userAnswer !== null && questionTime > 0) {
+            if (questionTime < 3) {
+                timeBonus = 50;
+                timeMessage = '⚡ Lightning Fast! +50';
+            } else if (questionTime < 5) {
+                timeBonus = 30;
+                timeMessage = '⚡ Very Fast! +30';
+            } else if (questionTime < 8) {
+                timeBonus = 15;
+                timeMessage = '⚡ Fast! +15';
+            }
+            this.speedBonus += timeBonus;
+        }
+        
+        // No confidence multiplier - removed feature
+        const confidenceMultiplier = 1;
         
         // Disable buttons during feedback
         const factBtn = document.getElementById('factBtn');
@@ -1966,29 +3050,81 @@ class BreakingNewsGame {
         
         if (isCorrect) {
             this.playSound('correct');
-            this.score += 10 + timeBonus;
+            
+            // Calculate score with all multipliers
+            const streakBonus = Math.min(this.streak * 2, 20); // Max 20 from streak
+            const comboBonus = (this.combo - 1) * 10; // Bonus from combo multiplier
+            const totalScore = Math.floor((baseScore + timeBonus + streakBonus + comboBonus) * confidenceMultiplier);
+            this.score += totalScore;
+            
             this.streak++;
             this.correctAnswers++;
-            this.showFeedback(true, question, timeBonus);
+            
+            // Increase combo multiplier on correct answers
+            if (this.streak >= 3) {
+                this.combo = Math.min(1 + Math.floor(this.streak / 3), 5); // Max 5x combo
+            }
+            
+            this.showFeedback(true, question, timeBonus, timeMessage, totalScore, confidenceMultiplier);
         } else {
             this.playSound('incorrect');
             this.streak = 0;
-            this.showFeedback(false, question, timeBonus);
+            this.combo = 1; // Reset combo on wrong answer
+            
+            // Lose a life
+            const previousLives = this.lives;
+            this.lives--;
+            console.log('Life lost! Previous lives:', previousLives, 'Remaining lives:', this.lives);
+            
+            // Force update hearts immediately
+            this.updateHearts();
+            
+            // Also update again after a tiny delay to ensure it sticks
+            setTimeout(() => {
+                this.updateHearts();
+            }, 50);
+            
+            // Game over immediately when out of lives
+            if (this.lives <= 0) {
+                console.log('Game over - out of lives');
+                // Show feedback first, then end game
+                setTimeout(() => {
+                    this.endGame();
+                }, 1500); // Short delay to show feedback
+            }
+            
+            // Penalty for wrong answer (more if high confidence)
+            const penalty = Math.floor(baseScore * 0.3 * confidenceMultiplier);
+            this.score = Math.max(0, this.score - penalty);
+            
+            this.showFeedback(false, question, 0, '', 0, confidenceMultiplier, penalty);
         }
         
         this.totalAnswers++;
         this.updateStats();
-        this.currentQuestion++;
         
-        // Level up every 5 questions
-        if (this.currentQuestion % 5 === 0) {
-            this.level++;
+        // Only continue if we still have lives
+        if (this.lives > 0) {
+            this.currentQuestion++;
+            
+            // Progressive difficulty - level up every 5 questions, increase time pressure
+            if (this.currentQuestion % 5 === 0) {
+                this.level++;
+                // Reduce time limit slightly each level (more pressure)
+                this.timeLimit = Math.max(10, this.timeLimit - 1);
+            }
         }
     }
     
-    async showFeedback(isCorrect, question, timeBonus) {
+    async showFeedback(isCorrect, question, timeBonus, timeMessage, totalScore, confidenceMultiplier, penalty) {
         this.gameState = 'feedback';
         this.hideAllScreens();
+        
+        // Keep hearts display visible during feedback
+        const livesDisplay = document.getElementById('livesDisplay');
+        if (livesDisplay) {
+            livesDisplay.style.display = 'flex';
+        }
         
         const feedbackElement = document.getElementById('feedback');
         const titleElement = document.getElementById('feedbackTitle');
@@ -1996,15 +3132,32 @@ class BreakingNewsGame {
         
         if (!feedbackElement || !titleElement || !textElement) return;
         
-        // Show initial feedback
+        // Show initial feedback with advanced scoring info
         if (isCorrect) {
             titleElement.textContent = 'Correct! ✅';
             titleElement.style.color = '#2ecc71';
-            textElement.textContent = `${question.explanation}${timeBonus > 0 ? ` +${timeBonus} bonus points for quick answer!` : ''}`;
+            let feedbackText = question.explanation;
+            if (timeMessage) {
+                feedbackText += `\n\n${timeMessage}`;
+            }
+            if (this.combo > 1) {
+                feedbackText += `\n\nCombo Multiplier: ${this.combo}x!`;
+            }
+            feedbackText += `\n\nPoints Earned: +${totalScore}`;
+            textElement.textContent = feedbackText;
         } else {
             titleElement.textContent = 'Incorrect! ❌';
             titleElement.style.color = '#e74c3c';
-            textElement.textContent = question.explanation;
+            let feedbackText = question.explanation;
+            if (penalty > 0) {
+                feedbackText += `\n\nPenalty: -${penalty} points`;
+            }
+            if (this.lives > 0) {
+                feedbackText += `\n\nLives remaining: ${this.lives}`;
+            } else {
+                feedbackText += `\n\nGame Over! Out of lives.`;
+            }
+            textElement.textContent = feedbackText;
         }
         
         // Update tips with standard tips
@@ -2024,13 +3177,216 @@ class BreakingNewsGame {
         
         feedbackElement.style.display = 'block';
         
-        // Enhance with AI if enabled
-        if (this.aiEnabled && !this.aiLoading) {
-            this.aiLoading = true;
-            this.enhanceFeedbackWithAI(isCorrect, question, timeBonus).catch(err => {
-                console.error('AI enhancement error:', err);
-                this.aiLoading = false;
+        // Show AI explanation button only for incorrect answers
+        const aiExplanationBtn = document.getElementById('aiExplanationBtn');
+        if (aiExplanationBtn) {
+            if (!isCorrect) {
+                // Check daily limit before showing button
+                const canUseAI = this.checkAIExplanationLimit();
+                if (canUseAI.allowed) {
+                    aiExplanationBtn.style.display = 'inline-block';
+                    aiExplanationBtn.disabled = false;
+                } else {
+                    aiExplanationBtn.style.display = 'none';
+                }
+            } else {
+                // Hide AI explanation button for correct answers
+                aiExplanationBtn.style.display = 'none';
+            }
+        }
+        
+        // Don't auto-enhance with AI anymore - only manual explanations
+    }
+    
+    checkAIExplanationLimit() {
+        const today = new Date().toDateString();
+        const storageKey = 'noteworthy_ai_explanations';
+        const dateKey = 'noteworthy_ai_explanations_date';
+        
+        // Get stored data
+        const storedDate = localStorage.getItem(dateKey);
+        const storedCount = localStorage.getItem(storageKey);
+        
+        // Reset if it's a new day
+        if (storedDate !== today) {
+            localStorage.setItem(storageKey, '0');
+            localStorage.setItem(dateKey, today);
+            return { allowed: true, remaining: 3 };
+        }
+        
+        // Check current count
+        const count = parseInt(storedCount || '0');
+        const remaining = 3 - count;
+        
+        if (count >= 3) {
+            return { allowed: false, remaining: 0 };
+        }
+        
+        return { allowed: true, remaining: remaining };
+    }
+    
+    incrementAIExplanationCount() {
+        const today = new Date().toDateString();
+        const storageKey = 'noteworthy_ai_explanations';
+        const dateKey = 'noteworthy_ai_explanations_date';
+        
+        const storedDate = localStorage.getItem(dateKey);
+        
+        // Reset if it's a new day
+        if (storedDate !== today) {
+            localStorage.setItem(storageKey, '1');
+            localStorage.setItem(dateKey, today);
+            return 2; // Remaining
+        }
+        
+        // Increment count
+        const currentCount = parseInt(localStorage.getItem(storageKey) || '0');
+        const newCount = currentCount + 1;
+        localStorage.setItem(storageKey, newCount.toString());
+        
+        return 3 - newCount; // Remaining
+    }
+    
+    async getAIExplanation(question) {
+        // Check daily limit first
+        const limitCheck = this.checkAIExplanationLimit();
+        if (!limitCheck.allowed) {
+            alert('You have reached your daily limit of 3 AI explanations. Come back tomorrow for more!');
+            return;
+        }
+        
+        const aiExplanationDiv = document.getElementById('aiExplanation');
+        const aiExplanationContent = document.querySelector('.ai-explanation-content');
+        const aiExplanationBtn = document.getElementById('aiExplanationBtn');
+        
+        if (!aiExplanationDiv || !aiExplanationContent) return;
+        
+        // Increment usage count
+        const remaining = this.incrementAIExplanationCount();
+        
+        // Show loading state
+        aiExplanationDiv.style.display = 'block';
+        aiExplanationContent.innerHTML = `<p>🤖 AI is analyzing this story...</p><p style="font-size: 0.9em; color: rgba(255,255,255,0.7); margin-top: 10px;">AI explanations remaining today: ${remaining}</p>`;
+        if (aiExplanationBtn) aiExplanationBtn.disabled = true;
+        
+        try {
+            // Get current player stats for context
+            const playerStats = {
+                score: this.score,
+                streak: this.streak,
+                level: this.level,
+                correctAnswers: this.correctAnswers,
+                totalAnswers: this.totalAnswers,
+                accuracy: this.totalAnswers > 0 ? (this.correctAnswers / this.totalAnswers * 100).toFixed(1) : 0,
+                difficulty: this.difficulty,
+                lives: this.lives
+            };
+            
+            // Call AI with full context
+            const response = await fetch('/.netlify/functions/game-ai', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'detailed_explanation',
+                    headline: question.headline,
+                    source: question.source,
+                    isFactual: question.isFactual,
+                    explanation: question.explanation,
+                    tips: question.tips,
+                    category: question.category || 'general',
+                    level: question.level || 1,
+                    playerStats: playerStats,
+                    context: {
+                        gameType: 'fact-checker',
+                        currentScore: this.score,
+                        currentLevel: this.level,
+                        accuracy: playerStats.accuracy,
+                        difficulty: this.difficulty
+                    }
+                }),
             });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = errorData.error || errorData.message || `Server error (${response.status})`;
+                console.error('AI service error:', errorMessage, errorData);
+                
+                // Refund the usage count since it failed
+                const today = new Date().toDateString();
+                const storageKey = 'noteworthy_ai_explanations';
+                const dateKey = 'noteworthy_ai_explanations_date';
+                const storedDate = localStorage.getItem(dateKey);
+                if (storedDate === today) {
+                    const currentCount = parseInt(localStorage.getItem(storageKey) || '0');
+                    if (currentCount > 0) {
+                        localStorage.setItem(storageKey, (currentCount - 1).toString());
+                    }
+                }
+                
+                aiExplanationContent.innerHTML = `
+                    <p style="color: #e74c3c;">⚠️ Unable to load AI explanation.</p>
+                    <p style="color: rgba(255,255,255,0.7); font-size: 0.9em; margin-top: 10px;">
+                        ${errorMessage.includes('API key') || errorMessage.includes('configured') 
+                            ? 'AI features are not configured on the server. Please contact support.' 
+                            : 'The AI service is temporarily unavailable. Please try again later.'}
+                    </p>
+                `;
+                return;
+            }
+            
+            const data = await response.json();
+            
+            if (data.success && data.message) {
+                const remainingAfter = this.checkAIExplanationLimit().remaining;
+                aiExplanationContent.innerHTML = `
+                    <h4 style="color: #4A90E2; margin-bottom: 10px;">🤖 AI Detailed Explanation</h4>
+                    <div style="color: rgba(255, 255, 255, 0.9); line-height: 1.6;">
+                        ${data.message}
+                    </div>
+                    ${remainingAfter > 0 ? `<p style="font-size: 0.9em; color: rgba(255,255,255,0.7); margin-top: 15px;">AI explanations remaining today: ${remainingAfter}</p>` : '<p style="font-size: 0.9em; color: rgba(255,255,255,0.7); margin-top: 15px;">You have used all 3 AI explanations for today.</p>'}
+                `;
+            } else {
+                const errorMsg = data.error || data.message || 'Unknown error';
+                console.error('AI response error:', errorMsg, data);
+                aiExplanationContent.innerHTML = `
+                    <p style="color: #e74c3c;">⚠️ Unable to generate AI explanation.</p>
+                    <p style="color: rgba(255,255,255,0.7); font-size: 0.9em; margin-top: 10px;">${errorMsg}</p>
+                `;
+            }
+        } catch (error) {
+            console.error('AI explanation failed:', error);
+            
+            // Refund the usage count since it failed
+            const today = new Date().toDateString();
+            const storageKey = 'noteworthy_ai_explanations';
+            const dateKey = 'noteworthy_ai_explanations_date';
+            const storedDate = localStorage.getItem(dateKey);
+            if (storedDate === today) {
+                const currentCount = parseInt(localStorage.getItem(storageKey) || '0');
+                if (currentCount > 0) {
+                    localStorage.setItem(storageKey, (currentCount - 1).toString());
+                }
+            }
+            
+            let errorMessage = 'Error loading AI explanation. Please try again later.';
+            if (error.message) {
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMessage = 'Network error. Please check your internet connection and try again.';
+                } else {
+                    errorMessage = error.message;
+                }
+            }
+            
+            aiExplanationContent.innerHTML = `
+                <p style="color: #e74c3c;">⚠️ ${errorMessage}</p>
+                <p style="color: rgba(255,255,255,0.7); font-size: 0.9em; margin-top: 10px;">
+                    Your AI explanation count has been refunded. You can try again.
+                </p>
+            `;
+        } finally {
+            if (aiExplanationBtn) aiExplanationBtn.disabled = false;
         }
     }
     
@@ -2049,10 +3405,12 @@ class BreakingNewsGame {
                 level: this.level,
                 correctAnswers: this.correctAnswers,
                 totalAnswers: this.totalAnswers,
-                accuracy: this.totalAnswers > 0 ? (this.correctAnswers / this.totalAnswers * 100).toFixed(1) : 0
+                accuracy: this.totalAnswers > 0 ? (this.correctAnswers / this.totalAnswers * 100).toFixed(1) : 0,
+                difficulty: this.difficulty,
+                lives: this.lives
             };
             
-            // Call AI to enhance explanation
+            // Call AI to enhance explanation with full context
             const response = await fetch('/.netlify/functions/game-ai', {
                 method: 'POST',
                 headers: {
@@ -2065,8 +3423,18 @@ class BreakingNewsGame {
                     isFactual: question.isFactual,
                     userAnswer: isCorrect,
                     explanation: question.explanation,
+                    tips: question.tips,
+                    category: question.category || 'general',
+                    level: question.level || 1,
                     playerStats: playerStats,
-                    category: question.category || 'general'
+                    context: {
+                        gameType: 'fact-checker',
+                        currentScore: this.score,
+                        currentLevel: this.level,
+                        accuracy: playerStats.accuracy,
+                        difficulty: this.difficulty,
+                        timeBonus: timeBonus
+                    }
                 }),
             });
             
@@ -2154,9 +3522,22 @@ class BreakingNewsGame {
     }
     
     nextQuestion() {
+        // Don't show next question if out of lives
+        if (this.lives <= 0) {
+            console.log('Cannot show next question - out of lives');
+            this.endGame();
+            return;
+        }
+        
         this.gameState = 'playing';
         this.hideAllScreens();
         this.showGameArea();
+        // Ensure hearts are visible and updated
+        const livesDisplay = document.getElementById('livesDisplay');
+        if (livesDisplay) {
+            livesDisplay.style.display = 'flex';
+        }
+        this.updateHearts(); // Update hearts when showing next question
         this.showQuestion();
         
         // Hide the next headline button during question display
@@ -2166,7 +3547,60 @@ class BreakingNewsGame {
         }
     }
     
+    startGameTimer() {
+        this.stopGameTimer(); // Clear any existing timer
+        this.gameTimerInterval = setInterval(() => {
+            if (this.startTime) {
+                this.elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
+                this.updateStats();
+            }
+        }, 100);
+    }
+    
+    stopGameTimer() {
+        if (this.gameTimerInterval) {
+            clearInterval(this.gameTimerInterval);
+            this.gameTimerInterval = null;
+        }
+    }
+    
+    startQuestionTimer() {
+        this.stopQuestionTimer(); // Clear any existing timer
+        const questionTimerValueEl = document.getElementById('questionTimerValue');
+        this.questionTimerInterval = setInterval(() => {
+            if (this.questionStartTime) {
+                const elapsed = (Date.now() - this.questionStartTime) / 1000;
+                if (questionTimerValueEl) {
+                    questionTimerValueEl.textContent = `${elapsed.toFixed(1)}s`;
+                }
+            }
+        }, 100);
+    }
+    
+    stopQuestionTimer() {
+        if (this.questionTimerInterval) {
+            clearInterval(this.questionTimerInterval);
+            this.questionTimerInterval = null;
+        }
+    }
+    
+    
+    loadBestTime() {
+        const saved = localStorage.getItem('noteworthy_best_time');
+        return saved ? parseInt(saved) : null;
+    }
+    
+    saveBestTime(time) {
+        const currentBest = this.loadBestTime();
+        if (!currentBest || time < currentBest) {
+            localStorage.setItem('noteworthy_best_time', time.toString());
+            this.bestTime = time;
+        }
+    }
+    
     async endGame() {
+        this.stopGameTimer();
+        this.stopQuestionTimer();
         this.playSound('gameOver');
         this.gameState = 'gameOver';
         this.hideAllScreens();
@@ -2177,6 +3611,13 @@ class BreakingNewsGame {
             pauseBtn.classList.remove('paused');
         }
         this.isPaused = false;
+        
+        // Calculate final time
+        const finalTime = this.elapsedTime;
+        const timeString = `${Math.floor(finalTime / 60)}:${String(Math.floor(finalTime % 60)).padStart(2, '0')}`;
+        const avgTime = this.questionTimes.length > 0 
+            ? (this.questionTimes.reduce((a, b) => a + b, 0) / this.questionTimes.length).toFixed(1)
+            : '0.0';
 
         // High score logic - save per user if logged in
         let highScore;
@@ -2215,13 +3656,16 @@ class BreakingNewsGame {
                 localStorage.setItem('noteworthy_high_score', highScore);
             }
         }
+        
+        // Save best time
+        this.saveBestTime(finalTime);
 
         const finalScore = document.getElementById('finalScore');
         const finalLevel = document.getElementById('finalLevel');
         const finalStreak = document.getElementById('finalStreak');
         const gameOver = document.getElementById('gameOver');
         
-        if (finalScore) finalScore.textContent = this.score;
+        if (finalScore) finalScore.textContent = Math.floor(this.score);
         if (finalLevel) finalLevel.textContent = this.level;
         if (finalStreak) finalStreak.textContent = Math.max(...this.getBestStreak());
         
@@ -2230,17 +3674,100 @@ class BreakingNewsGame {
         if (highScoreElem) {
             highScoreElem.textContent = highScore;
         }
+        
+        // Update game over screen with advanced stats
+        const gameOverContent = document.querySelector('#gameOver .final-stats');
+        if (gameOverContent) {
+            const bestTimeString = this.bestTime ? `${Math.floor(this.bestTime / 60)}:${String(Math.floor(this.bestTime % 60)).padStart(2, '0')}` : 'N/A';
+            gameOverContent.innerHTML = `
+                <p>Final Score: <span id="finalScore">${Math.floor(this.score)}</span></p>
+                <p>Level Reached: <span id="finalLevel">${this.level}</span></p>
+                <p>Best Streak: <span id="finalStreak">${Math.max(...this.getBestStreak())}</span></p>
+                <p>Completion Time: ${timeString}</p>
+                <p>Best Time: ${bestTimeString}</p>
+                <p>Average Speed: ${avgTime}s per question</p>
+                <p>Speed Bonuses: +${this.speedBonus} points</p>
+                <p>Accuracy: ${this.totalAnswers > 0 ? Math.round((this.correctAnswers / this.totalAnswers) * 100) : 0}%</p>
+                <p>High Score: <span id="finalHighScore">${highScore}</span></p>
+            `;
+        }
 
         if (gameOver) gameOver.style.display = 'block';
+        
+        // Submit to leaderboard if user is signed in
+        if (userId) {
+            try {
+                const user = await window.auth0.getUser();
+                await this.submitToLeaderboard({
+                    gameType: 'fact-checker',
+                    score: this.score,
+                    userId: user.sub,
+                    userName: user.name || user.email || 'Anonymous',
+                    difficulty: this.difficulty,
+                    time: finalTime,
+                    speedBonus: this.speedBonus,
+                    avgTime: parseFloat(avgTime),
+                    level: this.level,
+                    streak: Math.max(...this.getBestStreak()),
+                });
+            } catch (err) {
+                console.log('[Game] Could not submit to leaderboard:', err);
+            }
+        }
+    }
+    
+    async submitToLeaderboard(scoreData) {
+        try {
+            const response = await fetch('/.netlify/functions/leaderboard', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(scoreData),
+            });
+            
+            if (response.ok) {
+                console.log('[Game] Score submitted to leaderboard');
+            } else {
+                console.error('[Game] Failed to submit score:', await response.text());
+            }
+        } catch (error) {
+            console.error('[Game] Leaderboard submission error:', error);
+        }
+    }
+    
+    async loadLeaderboard(gameType = 'fact-checker', limit = 10) {
+        try {
+            const response = await fetch(`/.netlify/functions/leaderboard?gameType=${gameType}&limit=${limit}`);
+            if (response.ok) {
+                const data = await response.json();
+                return data.scores || [];
+            }
+            return [];
+        } catch (error) {
+            console.error('[Game] Failed to load leaderboard:', error);
+            return [];
+        }
     }
     
     restartGame() {
+        // Stop all timers
+        this.stopGameTimer();
+        this.stopQuestionTimer();
+        clearInterval(this.timer);
+        
+        // Reset all stats
         this.score = 0;
         this.level = 1;
         this.streak = 0;
+        this.combo = 1;
         this.currentQuestion = 0;
         this.correctAnswers = 0;
         this.totalAnswers = 0;
+        this.lives = this.maxLives;
+        this.questionTimes = [];
+        this.speedBonus = 0;
+        this.elapsedTime = 0;
         this.updateStats();
         this.startGame();
     }
@@ -2295,21 +3822,95 @@ class BreakingNewsGame {
         const levelEl = document.getElementById('level');
         const streakEl = document.getElementById('streak');
         const accuracyEl = document.getElementById('accuracy');
+        const comboEl = document.getElementById('combo');
+        const avgSpeedEl = document.getElementById('avgSpeed');
+        const gameTimerEl = document.getElementById('gameTimer');
         
-        if (scoreEl) scoreEl.textContent = this.score;
+        if (scoreEl) scoreEl.textContent = Math.floor(this.score);
         if (levelEl) levelEl.textContent = this.level;
         if (streakEl) streakEl.textContent = this.streak;
+        if (comboEl) comboEl.textContent = `${this.combo}x`;
+        
+        // Update video game hearts
+        this.updateHearts();
         
         // Calculate and update accuracy
         const accuracy = this.totalAnswers > 0 ? Math.round((this.correctAnswers / this.totalAnswers) * 100) : 0;
         if (accuracyEl) accuracyEl.textContent = `${accuracy}%`;
         
-        // Show high score in stats bar
-        const highScore = localStorage.getItem('noteworthy_high_score') || 0;
-        const highScoreElem = document.getElementById('highScore');
-        if (highScoreElem) {
-            highScoreElem.textContent = highScore;
+        // Update average speed
+        if (this.questionTimes.length > 0) {
+            const avgTime = this.questionTimes.reduce((a, b) => a + b, 0) / this.questionTimes.length;
+            if (avgSpeedEl) avgSpeedEl.textContent = `${avgTime.toFixed(1)}s`;
         }
+        
+        // Update game timer
+        if (gameTimerEl && this.elapsedTime > 0) {
+            const minutes = Math.floor(this.elapsedTime / 60);
+            const seconds = Math.floor(this.elapsedTime % 60);
+            gameTimerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+    }
+    
+    updateHearts() {
+        const livesDisplay = document.getElementById('livesDisplay');
+        if (!livesDisplay) {
+            console.warn('livesDisplay not found');
+            return;
+        }
+        
+        // Make sure hearts display is visible
+        livesDisplay.style.display = 'flex';
+        
+        const hearts = livesDisplay.querySelectorAll('.heart');
+        if (hearts.length === 0) {
+            console.warn('No hearts found in livesDisplay');
+            return;
+        }
+        
+        console.log('Updating hearts, current lives:', this.lives);
+        
+        hearts.forEach((heart, index) => {
+            const heartNumber = index + 1;
+            // Check if heart was full BEFORE checking anything else
+            const wasFull = heart.classList.contains('heart-full');
+            const isCurrentlyFull = heartNumber <= this.lives;
+            
+            console.log(`Heart ${heartNumber}: wasFull=${wasFull}, isCurrentlyFull=${isCurrentlyFull}, lives=${this.lives}`);
+            
+            if (isCurrentlyFull) {
+                // Heart should be full - show it
+                if (!heart.classList.contains('heart-full')) {
+                    heart.classList.remove('heart-empty', 'heart-lost');
+                    heart.classList.add('heart-full');
+                }
+                heart.style.display = 'inline-block';
+                heart.style.opacity = '1';
+            } else {
+                // Heart should be empty
+                if (wasFull && !heart.classList.contains('heart-lost')) {
+                    // Just lost this heart - animate it
+                    console.log(`Animating heart ${heartNumber} loss`);
+                    heart.classList.remove('heart-full', 'heart-empty');
+                    heart.classList.add('heart-lost');
+                    setTimeout(() => {
+                        if (heart.parentNode) { // Make sure heart still exists
+                            heart.classList.remove('heart-lost');
+                            heart.classList.add('heart-empty');
+                            console.log(`Heart ${heartNumber} set to empty`);
+                        }
+                    }, 500);
+                } else {
+                    // Already empty or being set to empty
+                    if (!heart.classList.contains('heart-lost')) {
+                        heart.classList.remove('heart-full');
+                        heart.classList.add('heart-empty');
+                        heart.style.opacity = '0.25';
+                        console.log(`Heart ${heartNumber} set to empty (was already empty or transitioning)`);
+                    }
+                }
+            }
+        });
     }
     
     getRandomTimestamp() {
@@ -2982,13 +4583,22 @@ class BreakingNewsGame {
             this.pauseTimeLeft = this.timeLeft;
         }
         
+        // Pause game timer and question timer
+        this.stopGameTimer();
+        this.stopQuestionTimer();
+        
+        // Store pause time for game timer
+        if (this.startTime) {
+            this.pauseGameTime = Date.now() - this.startTime;
+        }
+        
         // Show pause overlay
         const pauseOverlay = document.getElementById('pauseOverlay');
         const pauseScore = document.getElementById('pauseScore');
         const pauseTime = document.getElementById('pauseTime');
         
         if (pauseOverlay && pauseScore && pauseTime) {
-            pauseScore.textContent = this.score;
+            pauseScore.textContent = Math.floor(this.score);
             pauseTime.textContent = `${this.timeLeft}s`;
             pauseOverlay.classList.add('show');
         }
@@ -2998,6 +4608,7 @@ class BreakingNewsGame {
         const fakeBtn = document.getElementById('fakeBtn');
         if (factBtn) factBtn.disabled = true;
         if (fakeBtn) fakeBtn.disabled = true;
+        
         
         // Disable other interactive elements
         const nextHeadlineBtn = document.getElementById('nextHeadlineBtn');
@@ -3018,11 +4629,29 @@ class BreakingNewsGame {
             pauseOverlay.classList.remove('show');
         }
         
+        // Resume game timer
+        if (this.pauseGameTime !== undefined && this.startTime) {
+            this.startTime = Date.now() - this.pauseGameTime;
+            this.startGameTimer();
+        }
+        
+        // Resume question timer if question is active
+        if (this.questionStartTime) {
+            this.startQuestionTimer();
+        }
+        
+        // Resume question timer if active
+        if (this.pauseTimeLeft) {
+            this.timeLeft = this.pauseTimeLeft;
+            this.startTimer();
+        }
+        
         // Re-enable game buttons
         const factBtn = document.getElementById('factBtn');
         const fakeBtn = document.getElementById('fakeBtn');
         if (factBtn) factBtn.disabled = false;
         if (fakeBtn) fakeBtn.disabled = false;
+        
         
         // Re-enable other interactive elements
         const nextHeadlineBtn = document.getElementById('nextHeadlineBtn');
@@ -3034,12 +4663,6 @@ class BreakingNewsGame {
         if (difficultyToggle) difficultyToggle.disabled = false;
         if (startBtn) startBtn.disabled = false;
         if (restartBtn) restartBtn.disabled = false;
-        
-        // Restart timer with remaining time if game is playing
-        if (this.gameState === 'playing' && this.pauseTimeLeft > 0) {
-            this.timeLeft = this.pauseTimeLeft;
-            this.startTimer();
-        }
     }
 }
 
@@ -3135,30 +4758,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Make openChatWidget globally available
     window.openChatWidget = openChatWidget;
     
-    // Initialize authentication system
-    // Note: Auth0 integration will replace the mock AuthSystem
-    // Auth0 is initialized automatically via auth0.js script
-    // If Auth0 is not configured, fallback to mock auth system
-    // Wait for Auth0 to initialize (it's async)
-    setTimeout(async () => {
-      if (window.auth0 && typeof window.auth0.isAuthenticated === 'function') {
-        try {
-          const isAuth = await window.auth0.isAuthenticated();
-          if (isAuth) {
-            console.log('[Auth] Using Auth0 authentication');
-            // Auth0 is active, hide/show auth buttons accordingly
-            return;
-          }
-        } catch (e) {
-          console.log('[Auth] Auth0 check failed, using mock auth system');
-        }
-      }
-      // Fallback to mock auth if Auth0 not available
-      if (!window.authSystem) {
-        console.log('[Auth] Using mock authentication system (Auth0 not configured)');
-        window.authSystem = new AuthSystem();
-      }
-    }, 1000); // Wait 1 second for Auth0 to initialize
+    // Authentication system disabled - all features are now open to everyone
     
     // Initialize navigation system
     window.newsNavigation = new NewsNavigation();
@@ -3477,29 +5077,52 @@ function createSparkles() {
     }, 3000);
 }
 
-// Function to open the chat widget (can be called from anywhere)
+// Function to toggle the chat widget (can be called from anywhere)
 function openChatWidget() {
-    // Try to find the chat widget - retry if not immediately available
+    // Try to find the chat widget - retry multiple times if not immediately available
     let chatWidget = document.querySelector('noteworthy-chat-widget');
     
     // If not found, wait a bit and try again (widget might still be loading)
     if (!chatWidget) {
-        setTimeout(() => {
+        let retries = 0;
+        const maxRetries = 10; // Try for up to 1 second (10 * 100ms)
+        
+        const checkForWidget = setInterval(() => {
+            retries++;
             chatWidget = document.querySelector('noteworthy-chat-widget');
+            
             if (chatWidget) {
-                openChatWidgetElement(chatWidget);
-            } else {
-                console.warn('Chat widget not found after retry');
+                clearInterval(checkForWidget);
+                toggleChatWidget(chatWidget);
+            } else if (retries >= maxRetries) {
+                clearInterval(checkForWidget);
+                console.warn('Chat widget not found after multiple retries. Make sure noteworthy-chat.js is loaded.');
+                // Try to create the widget if it doesn't exist
+                try {
+                    const el = document.createElement('noteworthy-chat-widget');
+                    el.setAttribute('data-endpoint', '/api/noteworthy');
+                    el.setAttribute('data-open', 'false');
+                    document.body.appendChild(el);
+                    // Wait a bit more and try again
+                    setTimeout(() => {
+                        chatWidget = document.querySelector('noteworthy-chat-widget');
+                        if (chatWidget) {
+                            toggleChatWidget(chatWidget);
+                        }
+                    }, 200);
+                } catch (err) {
+                    console.error('Failed to create chat widget:', err);
+                }
             }
         }, 100);
         return;
     }
     
-    openChatWidgetElement(chatWidget);
+    toggleChatWidget(chatWidget);
 }
 
-// Helper function to actually open the widget
-function openChatWidgetElement(chatWidget) {
+// Helper function to toggle the widget (open if closed, close if open)
+function toggleChatWidget(chatWidget) {
     // Access the shadow DOM
     const shadowRoot = chatWidget.shadowRoot;
     if (!shadowRoot) {
@@ -3514,20 +5137,37 @@ function openChatWidgetElement(chatWidget) {
         return;
     }
 
-    // Add 'open' class to show the widget
-    wrap.classList.add('open');
+    // Check if widget is currently open
+    const isOpen = wrap.classList.contains('open');
 
-    // Focus the input field
-    const input = shadowRoot.querySelector('.input input');
-    if (input) {
-        setTimeout(() => input.focus(), 100);
-    }
+    if (isOpen) {
+        // Close the widget
+        wrap.classList.remove('open');
+        const launcher = shadowRoot.querySelector('.launcher');
+        if (launcher) {
+            launcher.setAttribute('aria-expanded', 'false');
+        }
+    } else {
+        // Open the widget
+        wrap.classList.add('open');
+        
+        // Focus the input field
+        const input = shadowRoot.querySelector('.input input');
+        if (input) {
+            setTimeout(() => input.focus(), 100);
+        }
 
-    // Update launcher aria-expanded
-    const launcher = shadowRoot.querySelector('.launcher');
-    if (launcher) {
-        launcher.setAttribute('aria-expanded', 'true');
+        // Update launcher aria-expanded
+        const launcher = shadowRoot.querySelector('.launcher');
+        if (launcher) {
+            launcher.setAttribute('aria-expanded', 'true');
+        }
     }
+}
+
+// Legacy function name for backwards compatibility
+function openChatWidgetElement(chatWidget) {
+    toggleChatWidget(chatWidget);
 }
 
 // Navigation functionality

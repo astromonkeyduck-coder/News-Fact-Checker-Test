@@ -1774,6 +1774,369 @@
             color: rgba(255, 255, 255, 0.4);
         }
         
+        /* Developer Note Modal Styles - Cool pop-up box */
+        .dev-note-modal {
+            display: none;
+            position: fixed;
+            z-index: 2147482997;
+            bottom: 20px;
+            right: 20px;
+            pointer-events: none;
+        }
+        
+        .dev-note-modal.active {
+            display: block;
+            pointer-events: auto;
+        }
+        
+        .dev-note-content {
+            background: linear-gradient(135deg, rgba(15, 35, 58, 0.98) 0%, rgba(13, 31, 58, 0.98) 100%);
+            border: 2px solid rgba(74, 144, 226, 0.5);
+            border-radius: 16px;
+            padding: 0;
+            width: 320px;
+            max-width: calc(100vw - 40px);
+            box-shadow: 
+                0 12px 32px rgba(0, 0, 0, 0.5),
+                0 4px 16px rgba(74, 144, 226, 0.3),
+                0 0 0 1px rgba(74, 144, 226, 0.2) inset,
+                0 0 30px rgba(74, 144, 226, 0.4);
+            animation: popUpNote 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            backdrop-filter: blur(15px);
+            transform-origin: bottom right;
+        }
+        
+        .dev-note-content::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.4), rgba(46, 204, 113, 0.4));
+            border-radius: 16px;
+            z-index: -1;
+            opacity: 0.6;
+            filter: blur(8px);
+        }
+        
+        .dev-note-header {
+            padding: 16px 18px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px solid rgba(74, 144, 226, 0.3);
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(46, 204, 113, 0.1) 100%);
+            border-radius: 16px 16px 0 0;
+        }
+        
+        .dev-note-title {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .dev-note-close {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 20px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            font-weight: 300;
+            flex-shrink: 0;
+        }
+        
+        .dev-note-close:hover {
+            background: rgba(255, 107, 107, 0.2);
+            border-color: rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+            transform: scale(1.1);
+        }
+        
+        .dev-note-close:active {
+            transform: scale(0.95);
+        }
+        
+        .dev-note-body {
+            padding: 16px 18px;
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+        
+        .dev-note-text {
+            margin: 0;
+        }
+        
+        .dev-note-emoji {
+            font-size: 1rem;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        
+        @keyframes popUpNote {
+            0% {
+                transform: translateX(400px) scale(0.8) rotate(-5deg);
+                opacity: 0;
+            }
+            60% {
+                transform: translateX(-10px) scale(1.05) rotate(2deg);
+            }
+            100% {
+                transform: translateX(0) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .dev-note-modal {
+                bottom: 15px;
+                right: 15px;
+            }
+            
+            .dev-note-content {
+                width: 280px;
+                max-width: calc(100vw - 30px);
+            }
+            
+            .dev-note-header {
+                padding: 14px 16px 10px;
+            }
+            
+            .dev-note-title {
+                font-size: 0.85rem;
+            }
+            
+            .dev-note-body {
+                padding: 14px 16px;
+                font-size: 0.8rem;
+            }
+        }
+        
+        /* Airport-Style News Ticker Banner */
+        .celebration-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: linear-gradient(135deg, #4A90E2 0%, #2ECC71 100%);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            z-index: 10001;
+            overflow: hidden;
+            display: none;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .celebration-banner.active {
+            display: block;
+            animation: slideDownBanner 0.3s ease-out;
+        }
+        
+        .ticker-container {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .ticker-content {
+            display: inline-flex;
+            align-items: center;
+            gap: 80px;
+            padding: 0 50px;
+            color: white;
+            font-weight: 600;
+            font-size: 1.05rem;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+            animation: scroll-ticker 20s linear infinite;
+            will-change: transform;
+            transform: translateX(0);
+            letter-spacing: 0.3px;
+        }
+        
+        .ticker-emoji {
+            display: inline-flex;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            height: 50px;
+            vertical-align: top;
+        }
+        
+        .ticker-emoji img {
+            width: auto;
+            height: 60px;
+            object-fit: contain;
+            display: block;
+            max-width: 170px;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .ticker-text {
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            white-space: nowrap;
+            padding: 0 10px;
+        }
+        
+        .ticker-highlight {
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-weight: 800;
+            margin: 0 5px;
+            white-space: nowrap;
+        }
+        
+        .ticker-highlight-breaking {
+            background: rgba(74, 144, 226, 0.4);
+            border: 1px solid rgba(74, 144, 226, 0.6);
+        }
+        
+        .ticker-highlight-impressions {
+            background: rgba(46, 204, 113, 0.4);
+            border: 1px solid rgba(46, 204, 113, 0.6);
+        }
+        
+        @keyframes slideDownBanner {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes scroll-ticker {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-33.33%);
+            }
+        }
+        
+        @keyframes bounce-emoji {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+        
+        /* Header Confetti - Enhanced for visibility */
+        .header-confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            pointer-events: none;
+            z-index: 10000;
+            overflow: visible;
+        }
+        
+        .header-confetti-piece {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ffe66d;
+            top: -10px;
+            opacity: 1;
+            animation: header-confetti-fall linear forwards;
+            box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+        }
+        
+        .header-confetti-piece:nth-child(1n) { background: #ffe66d; }
+        .header-confetti-piece:nth-child(2n) { background: #4ecdc4; }
+        .header-confetti-piece:nth-child(3n) { background: #ff6b6b; }
+        .header-confetti-piece:nth-child(4n) { background: #95e1d3; }
+        .header-confetti-piece:nth-child(5n) { background: #aa96da; }
+        .header-confetti-piece:nth-child(6n) { background: #fcbad3; }
+        .header-confetti-piece:nth-child(7n) { background: #f38181; }
+        .header-confetti-piece:nth-child(8n) { background: #a8e6cf; }
+        
+        @keyframes header-confetti-fall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        /* Adjust header position when banner is active */
+        body.banner-active .main-header {
+            top: 50px;
+        }
+        
+        body.banner-active #news-section,
+        body.banner-active #fact-checker-section,
+        body.banner-active #geography-game-section,
+        body.banner-active #sudan-section,
+        body.banner-active #credibility-section,
+        body.banner-active #about-section,
+        body.banner-active #ai-assistant-section {
+            scroll-margin-top: 140px;
+        }
+        
+        @media (max-width: 768px) {
+            .celebration-banner {
+                height: 45px;
+            }
+            
+            .ticker-content {
+                font-size: 0.95rem;
+                gap: 20px;
+                padding: 0 30px;
+            }
+            
+            .ticker-emoji {
+                font-size: 1.3rem;
+            }
+            
+            .ticker-highlight {
+                padding: 3px 10px;
+                font-size: 0.9rem;
+            }
+            
+            body.banner-active .main-header {
+                top: 45px;
+            }
+            
+            body.banner-active #news-section,
+            body.banner-active #fact-checker-section,
+            body.banner-active #geography-game-section,
+            body.banner-active #sudan-section,
+            body.banner-active #credibility-section,
+            body.banner-active #about-section,
+            body.banner-active #ai-assistant-section {
+                scroll-margin-top: 115px;
+            }
+        }
+        
         /* Comment Section Styles */
         .comment-section {
             margin-top: 25px;
@@ -4410,7 +4773,8 @@
             background: rgba(255, 255, 255, 0.03);
             border-radius: 25px;
             padding: 50px;
-            margin-bottom: 60px;
+            margin: 0 auto 60px;
+            max-width: 900px;
             border: 1px solid rgba(255, 255, 255, 0.05);
             position: relative;
             overflow: hidden;
@@ -4451,6 +4815,8 @@
             line-height: 1.8;
             position: relative;
             z-index: 1;
+            text-align: left;
+            max-width: 100%;
         }
         
         .footer {
@@ -6439,6 +6805,18 @@
             }
             .fact-checker-description {
                 font-size: 1rem;
+            }
+            .about-section {
+                padding: 30px 20px;
+                margin-bottom: 40px;
+            }
+            .about-title {
+                font-size: 1.8rem;
+                margin-bottom: 20px;
+            }
+            .about-text {
+                font-size: 1rem;
+                line-height: 1.6;
             }
         }
         
@@ -9462,7 +9840,7 @@
             <nav class="main-nav" id="mainNav">
                 <ul>
                     <li><a href="#news-section" class="nav-link">News</a></li>
-                    <li><a href="#fact-checker-section" class="nav-link">Game</a></li>
+                    <li><a href="#fact-checker-section" class="nav-link">Games</a></li>
                     <li><a href="#credibility-section" class="nav-link">Credibility</a></li>
                     <li><a href="#about-section" class="nav-link">About</a></li>
                     <li><a href="#ai-assistant-section" class="nav-link">AI Chat</a></li>
@@ -9470,9 +9848,7 @@
             </nav>
             
             <div class="header-right">
-                <div class="last-update">Last Update: 11/01/25</div>
-                <button class="auth-btn signin-btn" id="signinBtn" onclick="if(window.auth0Login) { window.auth0Login(); } else { console.log('Auth0 not ready, please wait...'); }">Sign In</button>
-                <button class="auth-btn signup-btn" id="signupBtn" onclick="if(window.auth0Signup) { window.auth0Signup(); } else { console.log('Auth0 not ready, please wait...'); }">Sign Up</button>
+                <div class="last-update">Last Update: 11/8/25</div>
                 <button class="music-control-btn" id="musicControlBtn" title="Toggle Background Music">
                     <span class="btn-icon">🎵</span>
                 </button>
@@ -9647,8 +10023,8 @@
                 <div class="hero-stat-label-small">Likes</div>
             </div>
             
-            <div class="hero-stat-card" data-number="28.7M+">
-                <div class="hero-stat-number-small">28.7M+</div>
+            <div class="hero-stat-card" data-number="29M+">
+                <div class="hero-stat-number-small">29M+</div>
                 <div class="hero-stat-label-small">Total Impressions</div>
             </div>
             
@@ -9898,9 +10274,9 @@
             <p class="credibility-subtitle">Trusted by millions across the globe</p>
             
             <div class="stats-hero-container">
-                <div class="hero-stat-main" data-emoji="📊" data-number="28.7M+">
+                <div class="hero-stat-main" data-emoji="📊" data-number="29M+">
                     <div class="hero-stat-icon">📊</div>
-                    <div class="hero-stat-number">28.7M+</div>
+                    <div class="hero-stat-number">29M+</div>
                     <div class="hero-stat-label">Total Impressions</div>
                     <div class="hero-stat-description">Reaching millions with fact-checked news every day</div>
                 </div>
@@ -9978,20 +10354,20 @@
         <!-- Footer -->
         <footer class="site-footer">
             <div class="footer-container">
-        <div class="footer-content">
+                <div class="footer-content">
                     <div class="footer-section">
                         <h3>Noteworthy News</h3>
                         <p>Your trusted source for fact-checked journalism and media literacy education.</p>
-        </div>
+                    </div>
                     <div class="footer-section">
                         <h4>Quick Links</h4>
                         <ul>
                             <li><a href="#news-section">News</a></li>
-                            <li><a href="#fact-checker-section">Game</a></li>
+                            <li><a href="#fact-checker-section">Games</a></li>
                             <li><a href="#credibility-section">Credibility</a></li>
                             <li><a href="#about-section">About</a></li>
                         </ul>
-                </div>
+                    </div>
                     <div class="footer-section">
                         <h4>Resources</h4>
                         <ul>
@@ -10008,12 +10384,18 @@
                             <li><a href="editorial-policy.html">Editorial Policy</a></li>
                         </ul>
                     </div>
+                    <div class="footer-section">
+                        <h4>Contact</h4>
+                        <ul>
+                            <li><a href="contact.html">Contact Us</a></li>
+                        </ul>
+                    </div>
                 </div>
                 <div class="footer-bottom">
                     <p>Empowering critical thinking through trusted journalism.</p>
+                </div>
             </div>
-        </div>
-    </footer>
+        </footer>
     </div>
     
     <script src="script.js"></script>
@@ -10270,33 +10652,8 @@
                 tipModal.classList.add('active');
                 document.body.style.overflow = 'hidden';
                 
-                // Auto-fill form if user is logged in
-                if (window.auth0 && typeof window.auth0.isAuthenticated === 'function') {
-                    window.auth0.isAuthenticated().then(isAuth => {
-                        if (isAuth) {
-                            window.auth0.getUser().then(user => {
-                                if (user) {
-                                    const userName = user.name || user.nickname || user.email?.split('@')[0] || '';
-                                    const userEmail = user.email || '';
-                                    if (userName && document.getElementById('tipName')) {
-                                        document.getElementById('tipName').value = userName;
-                                    }
-                                    if (userEmail && document.getElementById('tipEmail')) {
-                                        document.getElementById('tipEmail').value = userEmail;
-                                    }
-                                }
-                            }).catch(err => console.log('Could not get user:', err));
-                        }
-                    });
-                } else if (window.currentUser) {
-                    // Fallback to stored user info
-                    if (window.currentUser.name && document.getElementById('tipName')) {
-                        document.getElementById('tipName').value = window.currentUser.name;
-                    }
-                    if (window.currentUser.email && document.getElementById('tipEmail')) {
-                        document.getElementById('tipEmail').value = window.currentUser.email;
-                    }
-                }
+                // Authentication removed - forms work without sign-in
+                // Users can fill forms manually
             }
             
             // Close modal
@@ -10473,31 +10830,9 @@
             });
         }
         
-        // Auto-fill newsletter when user logs in
+        // Auto-fill newsletter - DISABLED: Authentication removed
         function autoFillNewsletter() {
-            if (window.auth0 && typeof window.auth0.isAuthenticated === 'function') {
-                window.auth0.isAuthenticated().then(isAuth => {
-                    if (isAuth) {
-                        window.auth0.getUser().then(user => {
-                            if (user && user.email) {
-                                const newsletterInputs = document.querySelectorAll('.newsletter-input[type="email"], input.newsletter-input');
-                                newsletterInputs.forEach(input => {
-                                    if (!input.value) {
-                                        input.value = user.email;
-                                    }
-                                });
-                            }
-                        }).catch(err => console.log('Could not get user for newsletter:', err));
-                    }
-                });
-            } else if (window.currentUser && window.currentUser.email) {
-                const newsletterInputs = document.querySelectorAll('.newsletter-input[type="email"], input.newsletter-input');
-                newsletterInputs.forEach(input => {
-                    if (!input.value) {
-                        input.value = window.currentUser.email;
-                    }
-                });
-            }
+            // Users can fill newsletter forms manually
         }
         
         // Run auto-fill when forms are visible and periodically check
@@ -11023,7 +11358,8 @@
         })();
     </script>
     
-    <!-- Auth0 Configuration - Inject environment variables for production -->
+    <!-- Auth0 Configuration - DISABLED: Authentication removed -->
+    <!--
     <script>
       // Placeholder for build-time injection
       // Will be replaced by scripts/inject-auth0.js during build
@@ -11031,11 +11367,10 @@
       window.AUTH0_CLIENT_ID = window.AUTH0_CLIENT_ID || null;
     </script>
     
-    <!-- Auth0 SPA SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@auth0/auth0-spa-js@2.1.2/dist/auth0-spa-js.production.js"></script>
     
-    <!-- Auth0 Integration -->
     <script src="/src/auth/auth0.js"></script>
+    -->
     
     <!-- Comment Section Component -->
     <script src="/src/components/comment-section.js"></script>
@@ -11205,9 +11540,198 @@
         }
     </script>
     
+    <!-- 29 Million Impressions Celebration Banner -->
+    <div class="celebration-banner" id="celebrationBanner">
+        <div class="ticker-container">
+            <div class="ticker-content">
+                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
+                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
+                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
+                <span class="ticker-text">
+                    <span class="ticker-highlight ticker-highlight-breaking">BREAKING NEWS:</span>
+                    Noteworthy News has JUST reached <span class="ticker-highlight ticker-highlight-impressions">29 MILLION IMPRESSIONS ON X/TWITTER!</span>
+                    Thank you for being part of our incredible journey!
+                </span>
+                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
+                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
+                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
+                <span class="ticker-text">
+                    <span class="ticker-highlight ticker-highlight-breaking">BREAKING NEWS:</span>
+                    Noteworthy News has JUST reached <span class="ticker-highlight ticker-highlight-impressions">29 MILLION IMPRESSIONS ON X/TWITTER!</span>
+                    Thank you for being part of our incredible journey!
+                </span>
+                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
+                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
+                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
+                <span class="ticker-text">
+                    <span class="ticker-highlight ticker-highlight-breaking">BREAKING NEWS:</span>
+                    Noteworthy News has JUST reached <span class="ticker-highlight ticker-highlight-impressions">29 MILLION IMPRESSIONS ON X/TWITTER!</span>
+                    Thank you for being part of our incredible journey!
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Header Confetti Container -->
+    <div class="header-confetti" id="headerConfetti"></div>
+    
+    <!-- Developer Note - Subtle corner note -->
+    <div class="dev-note-modal" id="devNoteModal">
+        <div class="dev-note-content">
+            <div class="dev-note-header">
+                <h2 class="dev-note-title">Note from Developer</h2>
+                <button class="dev-note-close" id="devNoteClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="dev-note-body">
+                <p class="dev-note-text">
+                    Hey! I'm so glad that you're here! Feel free to check out this website I developed. You can sign up for the newsletter, interact with the Noteworthy News AI Chatbox, see our recent posts, or you can even just sit back and relax to some music!<br><br>
+                    Thanks for being here 😁
+                </p>
+            </div>
+        </div>
+    </div>
+    
     <!-- X Widgets Script - Load after page content -->
     <!-- Twitter Widgets Script Removed - Using custom post feed instead -->
     <!-- This was causing 429 rate limit errors from Twitter -->
     <!-- <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script> -->
+    
+    <script>
+        // Developer Note Modal - Subtle corner note
+        (function() {
+            const devNoteModal = document.getElementById('devNoteModal');
+            const devNoteClose = document.getElementById('devNoteClose');
+            
+            // Check if user has already dismissed the note (using sessionStorage)
+            const noteDismissed = sessionStorage.getItem('devNoteDismissed');
+            
+            // Show modal on page load if not dismissed (with longer delay so it's not the first thing noticed)
+            if (!noteDismissed && devNoteModal) {
+                // Longer delay - appears after user has had time to see the page
+                setTimeout(function() {
+                    devNoteModal.classList.add('active');
+                }, 3000); // 3 second delay
+            }
+            
+            // Close modal function
+            function closeDevNote() {
+                if (devNoteModal) {
+                    devNoteModal.classList.remove('active');
+                    // Remember dismissal for this session
+                    sessionStorage.setItem('devNoteDismissed', 'true');
+                }
+            }
+            
+            // Close button click
+            if (devNoteClose) {
+                devNoteClose.addEventListener('click', closeDevNote);
+            }
+            
+            // Close on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && devNoteModal && devNoteModal.classList.contains('active')) {
+                    closeDevNote();
+                }
+            });
+        })();
+        
+        // 29 Million Impressions Celebration - Airport-Style Ticker Banner!
+        (function() {
+            // Set to true to disable celebration temporarily
+            const CELEBRATION_ENABLED = true;
+            
+            if (!CELEBRATION_ENABLED) {
+                return; // Skip celebration if disabled
+            }
+            
+            const banner = document.getElementById('celebrationBanner');
+            const confettiContainer = document.getElementById('headerConfetti');
+            
+            if (!banner || !confettiContainer) {
+                return;
+            }
+            
+            // Create continuous confetti that falls continuously
+            function createHeaderConfetti() {
+                const confettiCount = 150; // Much more confetti!
+                const colors = ['#ffe66d', '#4ecdc4', '#ff6b6b', '#95e1d3', '#aa96da', '#fcbad3', '#f38181', '#a8e6cf'];
+                
+                for (let i = 0; i < confettiCount; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'header-confetti-piece';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+                    confetti.style.animationDelay = Math.random() * 2 + 's';
+                    confetti.style.width = (Math.random() * 6 + 5) + 'px';
+                    confetti.style.height = (Math.random() * 6 + 5) + 'px';
+                    confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0%';
+                    confettiContainer.appendChild(confetti);
+                }
+            }
+            
+            // Function to continuously add more confetti
+            function addMoreConfetti() {
+                const colors = ['#ffe66d', '#4ecdc4', '#ff6b6b', '#95e1d3', '#aa96da', '#fcbad3', '#f38181', '#a8e6cf'];
+                
+                // Add 20-30 new pieces every 0.3 seconds for more confetti!
+                const newPieces = Math.floor(Math.random() * 11) + 20;
+                for (let i = 0; i < newPieces; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'header-confetti-piece';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+                    confetti.style.animationDelay = '0s';
+                    confetti.style.width = (Math.random() * 6 + 5) + 'px';
+                    confetti.style.height = (Math.random() * 6 + 5) + 'px';
+                    confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0%';
+                    confettiContainer.appendChild(confetti);
+                    
+                    // Remove after animation completes
+                    setTimeout(function() {
+                        if (confetti.parentNode) {
+                            confetti.parentNode.removeChild(confetti);
+                        }
+                    }, 3500);
+                }
+            }
+            
+            // Trigger celebration immediately on page load
+            // Show banner and add body class to adjust header position
+            banner.classList.add('active');
+            document.body.classList.add('banner-active');
+            
+            // Create initial confetti
+            createHeaderConfetti();
+            
+            // Continuously add more confetti while banner is visible
+            const confettiInterval = setInterval(addMoreConfetti, 300);
+            
+            // Remove banner after 5 seconds and restore page to normal
+            setTimeout(function() {
+                clearInterval(confettiInterval);
+                
+                // Hide banner smoothly
+                banner.style.transition = 'transform 0.4s ease-out, opacity 0.4s ease-out';
+                banner.style.transform = 'translateY(-100%)';
+                banner.style.opacity = '0';
+                document.body.classList.remove('banner-active');
+                
+                // Clear confetti and reset banner after animation
+                setTimeout(function() {
+                    if (confettiContainer.parentNode) {
+                        confettiContainer.innerHTML = '';
+                    }
+                    if (banner.parentNode) {
+                        banner.classList.remove('active');
+                        banner.style.transition = '';
+                        banner.style.transform = '';
+                        banner.style.opacity = '';
+                    }
+                }, 400);
+            }, 10000); // Hide after 10 seconds
+        })();
+    </script>
 </body>
 </html>

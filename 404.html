@@ -5,13 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Page Not Found - Noteworthy News</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="IMG_5794.PNG">
+    <!-- Favicon and Theme -->
+    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
+    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="192x192">
+    <link rel="shortcut icon" type="image/png" href="IMG_5794.PNG">
+    <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
+    <link rel="mask-icon" href="IMG_5794.PNG" color="#0f234a">
     <meta name="theme-color" content="#0f234a">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+        
+        /* Ensure background covers entire document and prevents white overscroll */
+        html {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overscroll-behavior: none !important;
+            overscroll-behavior-x: none !important;
+            overscroll-behavior-y: none !important;
+            -webkit-overflow-scrolling: touch;
         }
         
         body {
@@ -248,5 +264,26 @@
             document.removeEventListener('click', playOnClick);
         }, { once: true });
     </script>
+    
+    <!-- Background Music - Shared across all pages -->
+    <audio id="backgroundMusic" preload="metadata">
+        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Second track (plays after first) -->
+    <audio id="backgroundMusicSecond" preload="metadata">
+        <source src="YEAHHHHHH.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Third track (loops after second) -->
+    <audio id="backgroundMusicLoop" preload="metadata" loop>
+        <source src="Audiolandingpage.m4a" type="audio/mp4">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Shared Music Manager Script -->
+    <script src="music-system.js"></script>
 </body>
 </html>

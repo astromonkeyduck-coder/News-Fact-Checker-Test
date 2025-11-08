@@ -1,8 +1,28 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Noteworthy News - Add Post Bookmarklet</title>
+    <!-- Favicon and Theme -->
+    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
+    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="192x192">
+    <link rel="shortcut icon" type="image/png" href="IMG_5794.PNG">
+    <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
+    <link rel="mask-icon" href="IMG_5794.PNG" color="#0f234a">
+    <meta name="theme-color" content="#0f234a">
     <style>
+        /* Ensure background covers entire document and prevents white overscroll */
+        html {
+            background: #0f0f23 !important;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overscroll-behavior: none !important;
+            overscroll-behavior-x: none !important;
+            overscroll-behavior-y: none !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             max-width: 800px;
@@ -102,6 +122,27 @@
         <li><strong>Browser Console:</strong> See SETUP_AUTO_POSTS.md for scripts</li>
         <li><strong>X Webhook:</strong> Fully automatic (recommended)</li>
     </ul>
+    
+    <!-- Background Music - Shared across all pages -->
+    <audio id="backgroundMusic" preload="metadata">
+        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Second track (plays after first) -->
+    <audio id="backgroundMusicSecond" preload="metadata">
+        <source src="YEAHHHHHH.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Third track (loops after second) -->
+    <audio id="backgroundMusicLoop" preload="metadata" loop>
+        <source src="Audiolandingpage.m4a" type="audio/mp4">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Shared Music Manager Script -->
+    <script src="music-system.js"></script>
 </body>
 </html>
 

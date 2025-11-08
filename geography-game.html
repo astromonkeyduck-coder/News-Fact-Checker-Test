@@ -13,6 +13,17 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Ensure background covers entire document and prevents white overscroll */
+        html {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overscroll-behavior: none !important;
+            overscroll-behavior-x: none !important;
+            overscroll-behavior-y: none !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        
         .stars-background {
             position: fixed;
             top: 0;
@@ -160,7 +171,42 @@
             margin-left: auto;
             display: flex;
             align-items: center;
+            gap: 10px;
             padding-right: 20px;
+        }
+        
+        .auth-btn {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            background: rgba(74, 144, 226, 0.2);
+            color: white;
+        }
+        
+        .auth-btn:hover {
+            background: rgba(74, 144, 226, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+        
+        .auth-btn.signin-btn {
+            background: rgba(74, 144, 226, 0.2);
+            border-color: rgba(74, 144, 226, 0.4);
+        }
+        
+        .auth-btn.signup-btn {
+            background: rgba(46, 204, 113, 0.2);
+            border-color: rgba(46, 204, 113, 0.4);
+        }
+        
+        .auth-btn.signup-btn:hover {
+            background: rgba(46, 204, 113, 0.3);
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
         }
         
         .home-btn-geo {
@@ -252,6 +298,79 @@
         #geoRemaining {
             color: #9B59B6;
             text-shadow: 0 2px 6px rgba(155, 89, 182, 0.6);
+        }
+        
+        .stat-timer {
+            border: 2px solid rgba(255, 215, 0, 0.5) !important;
+            background: rgba(255, 215, 0, 0.1) !important;
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 10px rgba(255, 215, 0, 0.3);
+            }
+            50% {
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 215, 0, 0.6);
+            }
+        }
+        
+        #geoTimer {
+            color: #FFD700;
+            text-shadow: 0 2px 6px rgba(255, 215, 0, 0.8);
+            font-family: 'Courier New', monospace;
+            font-size: 2rem;
+            letter-spacing: 2px;
+        }
+        
+        .stat-speed {
+            border: 2px solid rgba(46, 204, 113, 0.5) !important;
+            background: rgba(46, 204, 113, 0.1) !important;
+        }
+        
+        #geoSpeed {
+            color: #2ECC71;
+            text-shadow: 0 2px 6px rgba(46, 204, 113, 0.6);
+        }
+        
+        .question-timer {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(74, 144, 226, 0.2);
+            border-radius: 8px;
+            border: 1px solid rgba(74, 144, 226, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .question-timer-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 600;
+        }
+        
+        .question-timer-value {
+            color: #4A90E2;
+            font-weight: 900;
+            font-family: 'Courier New', monospace;
+            font-size: 1.3rem;
+            text-shadow: 0 2px 4px rgba(74, 144, 226, 0.6);
+        }
+        
+        .speed-bonus {
+            animation: speed-bonus-flash 0.5s ease;
+        }
+        
+        @keyframes speed-bonus-flash {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.2);
+                color: #FFD700;
+            }
         }
         
         .country-prompt {
@@ -476,6 +595,185 @@
                 inset 0 1px 0 rgba(255, 255, 255, 0.3);
         }
         
+        /* Leaderboard Button */
+        .btn-leaderboard {
+            background: rgba(255, 215, 0, 0.2);
+            border: 2px solid rgba(255, 215, 0, 0.4);
+            color: #FFD700;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+        
+        .btn-leaderboard:hover {
+            background: rgba(255, 215, 0, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+        }
+        
+        .btn-leaderboard:active {
+            transform: translateY(0);
+        }
+        
+        /* Leaderboard Styles */
+        .leaderboard-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .leaderboard-modal {
+            background: rgba(15, 15, 35, 0.95);
+            border: 2px solid rgba(74, 144, 226, 0.3);
+            border-radius: 16px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .leaderboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            border-bottom: 1px solid rgba(74, 144, 226, 0.3);
+        }
+        
+        .leaderboard-header h2 {
+            font-size: 2rem;
+            color: white;
+            margin: 0;
+        }
+        
+        .leaderboard-close {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid #e74c3c;
+            color: #e74c3c;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .leaderboard-close:hover {
+            background: rgba(231, 76, 60, 0.3);
+        }
+        
+        .leaderboard-list {
+            padding: 20px 30px;
+        }
+        
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(74, 144, 226, 0.1);
+            border: 1px solid rgba(74, 144, 226, 0.2);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .leaderboard-item:hover {
+            background: rgba(74, 144, 226, 0.2);
+            transform: translateX(5px);
+        }
+        
+        .leaderboard-item.top-three {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: rgba(255, 215, 0, 0.4);
+        }
+        
+        .leaderboard-rank {
+            font-size: 1.5rem;
+            font-weight: 700;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .leaderboard-user {
+            flex: 1;
+        }
+        
+        .leaderboard-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 5px;
+        }
+        
+        .leaderboard-meta {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .leaderboard-score {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #4A90E2;
+            min-width: 100px;
+            text-align: right;
+        }
+        
+        .leaderboard-empty {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.1rem;
+        }
+        
+        .leaderboard-signin-prompt {
+            padding: 20px 30px;
+            border-top: 1px solid rgba(74, 144, 226, 0.3);
+            text-align: center;
+            background: rgba(74, 144, 226, 0.1);
+        }
+        
+        .leaderboard-signin-prompt p {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 15px;
+        }
+        
+        .btn-signin {
+            background: linear-gradient(135deg, #4A90E2, #2A60B0);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-signin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
+        }
+        
         .feedback-message {
             text-align: center;
             font-size: 1.2rem;
@@ -535,6 +833,15 @@
                 font-size: 0.9rem;
             }
             
+            .auth-btn {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+            
+            .header-right {
+                gap: 6px;
+            }
+            
             .game-header h1 {
                 font-size: 1.6rem;
             }
@@ -564,9 +871,22 @@
                 font-size: 1.4rem;
             }
             
+            #geoTimer {
+                font-size: 1.6rem;
+            }
+            
             .game-stats-geo {
                 gap: 10px;
                 margin-bottom: 20px;
+            }
+            
+            .question-timer {
+                font-size: 1rem;
+                padding: 8px;
+            }
+            
+            .question-timer-value {
+                font-size: 1.1rem;
             }
             
             .world-map-container {
@@ -655,6 +975,16 @@
                 font-size: 0.85rem;
             }
             
+            .auth-btn {
+                padding: 5px 10px;
+                font-size: 0.75rem;
+            }
+            
+            .header-right {
+                gap: 4px;
+                flex-wrap: wrap;
+            }
+            
             .game-header h1 {
                 font-size: 1.3rem;
                 margin-bottom: 8px;
@@ -682,8 +1012,21 @@
                 font-size: 1.2rem;
             }
             
+            #geoTimer {
+                font-size: 1.4rem;
+            }
+            
             .game-stats-geo {
                 gap: 8px;
+            }
+            
+            .question-timer {
+                font-size: 0.9rem;
+                padding: 6px;
+            }
+            
+            .question-timer-value {
+                font-size: 1rem;
             }
             
             .world-map-container {
@@ -766,10 +1109,14 @@
         <div class="geography-game-container">
             <div class="game-header">
                 <h1>🌍 50 Most Populous Countries</h1>
-                <p>Click on the country that's prompted. Green = not answered, White = correct, Red = incorrect | <span id="directionsCount">0 / 50</span> correct</p>
+                <p>Click on the country that's prompted. Green = not answered, White = correct, Red = incorrect | <span id="directionsCount">0 / 50</span> correct | ⚡ Speed bonuses for fast answers!</p>
             </div>
             
             <div class="game-stats-geo">
+                <div class="stat-item-geo stat-timer">
+                    <div class="stat-label-geo">⏱️ Time</div>
+                    <div class="stat-value-geo" id="geoTimer">00:00</div>
+                </div>
                 <div class="stat-item-geo">
                     <div class="stat-label-geo">Score</div>
                     <div class="stat-value-geo" id="geoScore">0</div>
@@ -786,13 +1133,25 @@
                     <div class="stat-label-geo">Remaining</div>
                     <div class="stat-value-geo" id="geoRemaining">50</div>
                 </div>
+                <div class="stat-item-geo stat-speed">
+                    <div class="stat-label-geo">⚡ Speed</div>
+                    <div class="stat-value-geo" id="geoSpeed">--</div>
+                </div>
             </div>
             
             <div class="country-prompt" id="countryPrompt">
                 Click "Start Game" to begin!
+                <div class="question-timer" id="questionTimer" style="display: none;">
+                    <span class="question-timer-label">Question time:</span>
+                    <span class="question-timer-value" id="questionTimerValue">0.0s</span>
+                </div>
             </div>
             
             <div class="game-controls">
+                <button class="btn-leaderboard" id="leaderboardBtnGeo">
+                    <span class="btn-icon">🏆</span>
+                    <span class="btn-text">Leaderboard</span>
+                </button>
                 <button class="btn-geo" id="startBtn">Start Game</button>
                 <button class="btn-geo" id="resetBtn" disabled>Reset Game</button>
             </div>
@@ -812,7 +1171,42 @@
         </div>
     </div>
     
+    <!-- Auth0 Configuration - DISABLED: Authentication removed -->
+    <!--
+    <script>
+      // Placeholder for build-time injection
+      // Will be replaced by scripts/inject-auth0.js during build
+      window.AUTH0_DOMAIN = window.AUTH0_DOMAIN || null;
+      window.AUTH0_CLIENT_ID = window.AUTH0_CLIENT_ID || null;
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@auth0/auth0-spa-js@2.1.2/dist/auth0-spa-js.production.js"></script>
+    
+    <script src="/src/auth/auth0.js"></script>
+    -->
+    
+    <script src="src/components/leaderboard.js"></script>
     <script src="geography-game.js"></script>
+    <script>
+        // Initialize leaderboard for geography game
+        let leaderboardGeo;
+        document.addEventListener('DOMContentLoaded', async () => {
+            leaderboardGeo = new Leaderboard('geography');
+            await leaderboardGeo.init();
+            
+            // Bind leaderboard button
+            const leaderboardBtn = document.getElementById('leaderboardBtnGeo');
+            if (leaderboardBtn) {
+                leaderboardBtn.addEventListener('click', () => {
+                    leaderboardGeo.loadScores(10).then(() => {
+                        leaderboardGeo.render();
+                        leaderboardGeo.show();
+                    });
+                });
+            }
+            
+        });
+    </script>
     <script>
         // Create floating glowing stars
         function createStars() {
@@ -891,6 +1285,27 @@
             }
         })();
     </script>
+    
+    <!-- Background Music - Shared across all pages -->
+    <audio id="backgroundMusic" preload="metadata">
+        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Second track (plays after first) -->
+    <audio id="backgroundMusicSecond" preload="metadata">
+        <source src="YEAHHHHHH.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Third track (loops after second) -->
+    <audio id="backgroundMusicLoop" preload="metadata" loop>
+        <source src="Audiolandingpage.m4a" type="audio/mp4">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Shared Music Manager Script -->
+    <script src="music-system.js"></script>
 </body>
 </html>
 

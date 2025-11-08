@@ -54,6 +54,12 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // Calculate accuracy once for all actions
+    const accuracy = playerStats && playerStats.totalAnswers > 0 
+      ? (playerStats.correctAnswers / playerStats.totalAnswers * 100).toFixed(1)
+      : 0;
+    const context = body.context || {};
+
     let systemPrompt = '';
     let userPrompt = '';
 
@@ -69,31 +75,39 @@ Your explanations should:
 - Use clear, accessible language
 - Encourage critical thinking without being preachy`;
 
-        userPrompt = `A player in our fact-checking game just answered a question. Please provide an enhanced explanation:
+        userPrompt = `A player in our fact-checking game just answered a question. Please provide an enhanced explanation with full context:
 
-Headline: "${headline}"
-Source: "${source}"
-Correct Answer: ${isFactual ? 'FACTUAL' : 'MISLEADING'}
-Player's Answer: ${userAnswer === isFactual ? 'CORRECT ✅' : 'INCORRECT ❌'}
+GAME CONTEXT:
+- Player's Current Score: ${context.currentScore || 0}
+- Current Level: ${context.currentLevel || 1}
+- Player's Accuracy: ${accuracy}%
+- Difficulty: ${context.difficulty || 'medium'}
+- Time Bonus: ${context.timeBonus || 0} points
+
+HEADLINE DETAILS:
+- Headline: "${headline}"
+- Source: "${source}"
+- Correct Answer: ${isFactual ? 'FACTUAL' : 'MISLEADING'}
+- Player's Answer: ${userAnswer === isFactual ? 'CORRECT ✅' : 'INCORRECT ❌'}
+- Category: ${body.category || 'general'}
+- Level: ${body.level || 1}
 
 Current explanation: "${explanation}"
+Tips: "${body.tips || 'N/A'}"
 
 Please provide a more detailed, educational explanation that:
-1. Explains WHY this is ${isFactual ? 'factual' : 'misleading'}
-2. Teaches the player specific fact-checking techniques they could use
-3. Highlights any red flags (if misleading) or verification methods (if factual)
-4. Is encouraging and educational
+1. Explains WHY this is ${isFactual ? 'factual' : 'misleading'} with specific reasoning
+2. Analyzes the source "${source}" and why it's ${isFactual ? 'credible' : 'not credible'}
+3. Teaches the player specific fact-checking techniques they could use
+4. Highlights any red flags (if misleading) or verification methods (if factual)
+5. Is encouraging and educational
 
-Format your response as a concise explanation (2-3 sentences).`;
+Format your response as a concise but informative explanation (2-3 sentences).`;
 
         break;
 
       case 'personalized_feedback':
         // Provide personalized feedback based on player performance
-        const accuracy = playerStats.totalAnswers > 0 
-          ? (playerStats.correctAnswers / playerStats.totalAnswers * 100).toFixed(1)
-          : 0;
-        
         systemPrompt = `You are an encouraging and educational AI assistant for Noteworthy News' fact-checking game. You help players improve their media literacy skills with personalized, constructive feedback.
 
 Be:
@@ -144,11 +158,58 @@ Keep it very brief and educational.`;
 
         break;
 
+      case 'detailed_explanation':
+        // Provide a comprehensive AI explanation with full context
+        systemPrompt = `You are an expert media literacy educator and fact-checker for Noteworthy News. You provide detailed, comprehensive explanations that help users understand why news is factual or misleading. You have access to the full context of the game, the headline, source, and all relevant information.
+
+Your explanations should:
+- Be comprehensive and detailed (3-5 sentences)
+- Explain WHY the headline is ${isFactual ? 'factual' : 'misleading'} with specific reasoning
+- Point out specific red flags, verification methods, or credibility indicators
+- Reference the source credibility and why it matters
+- Explain the category and level of difficulty
+- Provide actionable fact-checking techniques
+- Be educational and help users learn critical thinking skills
+- Use clear, accessible language`;
+
+        userPrompt = `Provide a detailed, comprehensive explanation for this news story in the fact-checking game:
+
+CONTEXT:
+- Game Type: ${context.gameType || 'fact-checker'}
+- Player's Current Score: ${context.currentScore || 0}
+- Current Level: ${context.currentLevel || 1}
+- Player's Accuracy: ${accuracy}%
+- Difficulty Setting: ${context.difficulty || 'medium'}
+
+HEADLINE DETAILS:
+- Headline: "${headline}"
+- Source: "${source}"
+- Is Factual: ${isFactual ? 'YES (Factual)' : 'NO (Misleading)'}
+- Category: ${body.category || 'general'}
+- Difficulty Level: ${body.level || 1}
+
+EXPLANATION PROVIDED:
+"${explanation}"
+
+TIPS PROVIDED:
+"${body.tips || 'N/A'}"
+
+Please provide a comprehensive, detailed explanation (3-5 sentences) that:
+1. Clearly explains WHY this headline is ${isFactual ? 'factual and reliable' : 'misleading and unreliable'}
+2. Analyzes the SOURCE credibility - why "${source}" is ${isFactual ? 'a trustworthy source' : 'not a credible source'}
+3. Points out SPECIFIC indicators that make this ${isFactual ? 'factual' : 'misleading'} (e.g., language patterns, source reputation, evidence quality)
+4. Explains what FACT-CHECKING TECHNIQUES a person could use to verify this type of claim
+5. Provides educational context about why this type of ${isFactual ? 'reliable' : 'misleading'} information ${isFactual ? 'can be trusted' : 'should be questioned'}
+
+Make your explanation detailed, educational, and comprehensive. Help the player understand not just WHAT the answer is, but WHY and HOW to identify similar stories in the future.`;
+
+        break;
+
       default:
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: 'Invalid action. Supported: enhance_explanation, personalized_feedback, educational_insight' }),
+          body: JSON.stringify({ error: 'Invalid action. Supported: enhance_explanation, personalized_feedback, educational_insight, detailed_explanation' }),
         };
     }
 

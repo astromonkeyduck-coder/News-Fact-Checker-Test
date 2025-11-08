@@ -79,19 +79,15 @@ class CommentSection {
   }
   
   async addComment(text) {
-    if (!this.user) {
-      alert('Please sign in to comment');
-      return;
-    }
-    
     if (!text || text.trim().length < 3) {
       alert('Comment must be at least 3 characters');
       return;
     }
     
-    const author = this.user.name || this.user.nickname || this.user.email?.split('@')[0] || 'Anonymous';
-    const authorEmail = this.user.email || '';
-    const authorId = this.user.sub || '';
+    // Allow anonymous comments - use user info if available, otherwise use anonymous
+    const author = this.user ? (this.user.name || this.user.nickname || this.user.email?.split('@')[0] || 'Anonymous') : 'Anonymous';
+    const authorEmail = this.user ? (this.user.email || '') : '';
+    const authorId = this.user ? (this.user.sub || '') : 'anonymous';
     
     try {
       // Determine API endpoint (handle localhost vs production)
@@ -188,25 +184,18 @@ class CommentSection {
     container.innerHTML = `
       <div class="comments-header">
         <h3>Comments (${this.comments.length})</h3>
-        ${!isAuthenticated ? '<p class="comment-signin-prompt">Sign in to join the discussion</p>' : ''}
       </div>
       
-      ${isAuthenticated ? `
-        <form class="comment-form" onsubmit="event.preventDefault(); window.commentSections['${this.articleId}'].submitComment(this);">
-          <textarea 
-            class="comment-input" 
-            placeholder="Share your thoughts..." 
-            required 
-            minlength="3"
-            rows="3"
-            data-preserve-on-render="true">${this.escapeHtml(preservedText)}</textarea>
-          <button type="submit" class="comment-submit-btn">Post Comment</button>
-        </form>
-      ` : `
-        <div class="comment-signin-cta">
-          <button class="comment-signin-btn" onclick="window.auth0Login && window.auth0Login()">Sign In to Comment</button>
-        </div>
-      `}
+      <form class="comment-form" onsubmit="event.preventDefault(); window.commentSections['${this.articleId}'].submitComment(this);">
+        <textarea 
+          class="comment-input" 
+          placeholder="Share your thoughts..." 
+          required 
+          minlength="3"
+          rows="3"
+          data-preserve-on-render="true">${this.escapeHtml(preservedText)}</textarea>
+        <button type="submit" class="comment-submit-btn">Post Comment</button>
+      </form>
       
       <div class="comments-list">
         ${this.comments.length === 0 ? '<p class="no-comments">No comments yet. Be the first to comment!</p>' : ''}
@@ -250,22 +239,26 @@ class CommentSection {
   }
   
   async deleteComment(commentId) {
-    if (!this.user) {
-      alert('You must be signed in to delete comments');
-      return;
-    }
-    
     // Find the comment
     const commentIndex = this.comments.findIndex(c => c.id === commentId);
     if (commentIndex === -1) return;
     
     const comment = this.comments[commentIndex];
-    const userId = this.user.sub || this.user.email;
     
-    // Verify it's the user's own comment
-    if (comment.authorId !== userId && comment.authorEmail !== this.user.email) {
-      alert('You can only delete your own comments');
-      return;
+    // If user is signed in, verify it's their own comment
+    if (this.user) {
+      const userId = this.user.sub || this.user.email;
+      // Verify it's the user's own comment
+      if (comment.authorId !== userId && comment.authorEmail !== this.user.email) {
+        alert('You can only delete your own comments');
+        return;
+      }
+    } else {
+      // For anonymous comments, allow deletion if it's an anonymous comment
+      if (comment.authorId !== 'anonymous' && comment.authorEmail) {
+        alert('You can only delete your own comments');
+        return;
+      }
     }
     
     // Confirm deletion

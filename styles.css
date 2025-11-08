@@ -1,3 +1,18 @@
+/* Base Styles - Must be first */
+html, body {
+    background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
+    background-color: #07152a !important;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    color: white;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+}
+
 /* Feed v2 Styles - Professional X-style cards */
 
 /* Remove ugly overlays and filters from old post cards */
