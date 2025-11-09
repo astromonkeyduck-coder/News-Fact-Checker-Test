@@ -354,17 +354,24 @@ function sortPosts(posts, mode) {
   switch (mode) {
     case 'recent':
       sorted.sort((a, b) => {
-        const dateA = new Date(a.createdAt).getTime();
-        const dateB = new Date(b.createdAt).getTime();
+        const dateA = new Date(a.createdAt || a.datePosted || 0).getTime();
+        const dateB = new Date(b.createdAt || b.datePosted || 0).getTime();
         if (dateB !== dateA) return dateB - dateA;
-        return b.id.localeCompare(a.id);
+        // Handle missing IDs
+        const idA = a.id || '';
+        const idB = b.id || '';
+        return idB.localeCompare(idA);
       });
       break;
     case 'views':
       sorted.sort((a, b) => {
-        const diff = b.stats.views - a.stats.views;
+        const viewsA = (a.stats?.views || a.views || 0);
+        const viewsB = (b.stats?.views || b.views || 0);
+        const diff = viewsB - viewsA;
         if (diff !== 0) return diff;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        const dateA = new Date(a.createdAt || a.datePosted || 0).getTime();
+        const dateB = new Date(b.createdAt || b.datePosted || 0).getTime();
+        return dateB - dateA;
       });
       break;
     case 'likes':
