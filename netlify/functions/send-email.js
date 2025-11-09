@@ -323,8 +323,18 @@ This is an automated notification from your website.`,
     const encodedEmail = Buffer.from(email).toString('base64');
     const unsubscribeUrl = `https://noteworthynews.co/unsubscribe.html?email=${encodeURIComponent(encodedEmail)}`;
     
+    // Extract first name from email or use fallback
+    // Extract from email (part before @, first part if there's a dot)
+    const emailPrefix = email.split('@')[0];
+    let firstName = emailPrefix.split('.')[0] || emailPrefix.split('_')[0] || 'there';
+    
+    // Capitalize first letter and make rest lowercase
+    if (firstName && firstName !== 'there') {
+      firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+    }
+    
     // Send auto-reply to the subscriber
-    console.log('Sending welcome email to subscriber:', email);
+    console.log('Sending welcome email to subscriber:', email, 'with firstName:', firstName);
     const autoReplyResult = await resend.emails.send({
       from: fromEmail,
       to: email,
@@ -333,7 +343,7 @@ This is an automated notification from your website.`,
       clickTracking: false, // Disable click tracking for better deliverability
       text: `Welcome to Noteworthy News!
 
-Hi there,
+Hi ${firstName},
 
 Thank you for subscribing to Noteworthy News! We're thrilled to have you join our community of fact-checkers and critical thinkers.
 
@@ -371,7 +381,7 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
           </tr>
           <tr>
             <td style="padding: 30px; background-color: #ffffff;">
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 15px 0;">Hi there,</p>
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 15px 0;">Hi ${firstName},</p>
               <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Thank you for subscribing to Noteworthy News! We're thrilled to have you join our community of fact-checkers and critical thinkers.</p>
               <p style="color: #4a90e2; font-size: 17px; font-weight: bold; margin: 0 0 15px 0;">You'll now receive:</p>
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
