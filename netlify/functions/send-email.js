@@ -10,6 +10,11 @@ if (process.env.NETLIFY_DEV || !process.env.RESEND_API_KEY) {
 
 const { Resend } = require('resend');
 
+// Resend Audience ID for newsletter subscribers
+// Get this from: https://resend.com/audiences
+// Create an audience called "Newsletter Subscribers" and copy the Audience ID
+const NEWSLETTER_AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID || null;
+
 exports.handler = async (event, context) => {
   // Enable CORS
   const headers = {
@@ -78,12 +83,24 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Use verified domain email (since domain is verified in Resend)
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
+    // Use verified domain email - IMPORTANT: Domain must be verified in Resend
+    // If domain is not verified, Resend will bounce emails
+    // Fallback to Resend's default domain if custom domain not verified
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
     console.log('Using from email:', fromEmail);
+    
+    // Warn if using unverified domain (for debugging)
+    if (fromEmail.includes('noteworthynews.co') && !process.env.RESEND_FROM_EMAIL) {
+      console.warn('WARNING: Using noteworthynews.co domain. Make sure this domain is verified in Resend at https://resend.com/domains');
+      console.warn('If emails are bouncing, verify the domain in Resend or use onboarding@resend.dev for testing');
+    }
 
-    // Send notification email to admin (domain is verified)
-    const notificationTo = 'richard@noteworthynews.co';
+    // Send notification email to admin
+    // Try to use environment variable first, fallback to default
+    const notificationTo = process.env.ADMIN_NOTIFICATION_EMAIL || 'richard@noteworthynews.co';
+    console.log('Sending notification email to admin:', notificationTo);
+    console.log('Using from email:', fromEmail);
+    console.log('Subscriber email:', email);
     
     const notificationResult = await resend.emails.send({
       from: fromEmail,
@@ -141,7 +158,15 @@ This is an automated notification from your website.`,
 </html>`,
     });
 
+    // Log notification result before sending auto-reply
+    console.log('Notification email result:', {
+      success: !notificationResult.error,
+      error: notificationResult.error,
+      emailId: notificationResult.data?.id,
+    });
+    
     // Send auto-reply to the subscriber
+    console.log('Sending welcome email to subscriber:', email);
     const autoReplyResult = await resend.emails.send({
       from: fromEmail,
       to: email,
@@ -228,8 +253,42 @@ If you didn't subscribe to this newsletter, you can safely ignore this email.`,
 </html>`,
     });
 
+    // Log auto-reply result
+    console.log('Auto-reply email result:', {
+      success: !autoReplyResult.error,
+      error: autoReplyResult.error,
+      emailId: autoReplyResult.data?.id,
+    });
+    
+    // Add subscriber to Resend Audience for mass emailing
+    let audienceResult = null;
+    if (NEWSLETTER_AUDIENCE_ID) {
+      try {
+        console.log('Adding subscriber to audience:', NEWSLETTER_AUDIENCE_ID);
+        audienceResult = await resend.contacts.create({
+          audienceId: NEWSLETTER_AUDIENCE_ID,
+          email: email,
+        });
+        console.log('Subscriber added to audience:', {
+          success: !audienceResult.error,
+          contactId: audienceResult.data?.id,
+          error: audienceResult.error,
+        });
+      } catch (audienceError) {
+        console.error('Error adding to audience:', audienceError);
+        // Don't fail the subscription if audience add fails
+        // The email was already sent successfully
+      }
+    } else {
+      console.warn('RESEND_AUDIENCE_ID not set. Subscriber not added to audience.');
+      console.warn('To enable audience management:');
+      console.warn('1. Go to https://resend.com/audiences');
+      console.warn('2. Create an audience called "Newsletter Subscribers"');
+      console.warn('3. Copy the Audience ID');
+      console.warn('4. Set RESEND_AUDIENCE_ID in Netlify environment variables');
+    }
+    
     // Check if both emails were sent successfully
-    // Note: Using onboarding@resend.dev is fine for development - no domain verification needed
     if (notificationResult.error || autoReplyResult.error) {
       const errorDetails = {
         notificationError: notificationResult.error,
@@ -240,21 +299,31 @@ If you didn't subscribe to this newsletter, you can safely ignore this email.`,
       
       // Provide helpful error messages
       let errorMessage = 'Failed to send email';
+      let isDomainError = false;
+      
       if (notificationResult.error) {
-        if (notificationResult.error.message?.includes('domain')) {
-          errorMessage = 'Domain verification issue in Resend. Please check your domain settings at resend.com/domains';
-        } else if (notificationResult.error.message?.includes('API')) {
-          errorMessage = 'Invalid Resend API key. Please check your RESEND_API_KEY in Netlify';
+        const errorMsg = notificationResult.error.message || '';
+        if (errorMsg.includes('domain') || errorMsg.includes('not verified') || errorMsg.includes('bounce')) {
+          errorMessage = 'Domain not verified in Resend. Please verify noteworthynews.co at https://resend.com/domains or use onboarding@resend.dev for testing';
+          isDomainError = true;
+        } else if (errorMsg.includes('API') || errorMsg.includes('unauthorized')) {
+          errorMessage = 'Invalid Resend API key. Please check your RESEND_API_KEY in Netlify environment variables';
+        } else if (errorMsg.includes('rate limit')) {
+          errorMessage = 'Rate limit exceeded. Please try again later';
         } else {
-          errorMessage = notificationResult.error.message || 'Failed to send notification email';
+          errorMessage = errorMsg || 'Failed to send notification email';
         }
       } else if (autoReplyResult.error) {
-        if (autoReplyResult.error.message?.includes('domain')) {
-          errorMessage = 'Domain verification issue in Resend. Please check your domain settings at resend.com/domains';
-        } else if (autoReplyResult.error.message?.includes('API')) {
-          errorMessage = 'Invalid Resend API key. Please check your RESEND_API_KEY in Netlify';
+        const errorMsg = autoReplyResult.error.message || '';
+        if (errorMsg.includes('domain') || errorMsg.includes('not verified') || errorMsg.includes('bounce')) {
+          errorMessage = 'Domain not verified in Resend. Please verify noteworthynews.co at https://resend.com/domains or use onboarding@resend.dev for testing';
+          isDomainError = true;
+        } else if (errorMsg.includes('API') || errorMsg.includes('unauthorized')) {
+          errorMessage = 'Invalid Resend API key. Please check your RESEND_API_KEY in Netlify environment variables';
+        } else if (errorMsg.includes('rate limit')) {
+          errorMessage = 'Rate limit exceeded. Please try again later';
         } else {
-          errorMessage = autoReplyResult.error.message || 'Failed to send auto-reply email';
+          errorMessage = errorMsg || 'Failed to send auto-reply email';
         }
       }
       
@@ -264,10 +333,29 @@ If you didn't subscribe to this newsletter, you can safely ignore this email.`,
         body: JSON.stringify({
           error: errorMessage,
           details: errorDetails,
-          hint: 'Check Netlify function logs for more details',
+          hint: isDomainError 
+            ? 'To fix: 1) Go to https://resend.com/domains and verify noteworthynews.co domain, OR 2) Set RESEND_FROM_EMAIL=onboarding@resend.dev in Netlify environment variables'
+            : 'Check Netlify function logs for more details',
         }),
       };
     }
+
+    // Check if notification email actually succeeded (even if no error)
+    if (!notificationResult.data?.id) {
+      console.warn('WARNING: Notification email may not have been sent. No email ID returned.');
+      console.warn('Notification result:', JSON.stringify(notificationResult, null, 2));
+    }
+
+    // Return success, but log if notification failed silently
+    const notificationSent = !!notificationResult.data?.id;
+    const autoReplySent = !!autoReplyResult.data?.id;
+    
+    console.log('Final email status:', {
+      notificationSent,
+      autoReplySent,
+      notificationId: notificationResult.data?.id,
+      autoReplyId: autoReplyResult.data?.id,
+    });
 
     return {
       statusCode: 200,
@@ -277,6 +365,13 @@ If you didn't subscribe to this newsletter, you can safely ignore this email.`,
         message: 'Subscription successful! Check your email for a welcome message.',
         notificationId: notificationResult.data?.id,
         autoReplyId: autoReplyResult.data?.id,
+        notificationSent,
+        autoReplySent,
+        audienceAdded: !!audienceResult?.data?.id,
+        // Include warning if notification didn't send
+        ...(notificationSent ? {} : { warning: 'Admin notification email may not have been sent. Check Netlify logs.' }),
+        // Include warning if audience not configured
+        ...(NEWSLETTER_AUDIENCE_ID ? {} : { audienceWarning: 'RESEND_AUDIENCE_ID not configured. Subscriber not added to mailing list.' }),
       }),
     };
 
