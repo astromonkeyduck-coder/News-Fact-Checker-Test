@@ -128,19 +128,28 @@ exports.handler = async (event, context) => {
     }
 
     // Log image generation (non-blocking - don't wait for it)
-    const { logData } = require("./log-data");
-    logData("image-generation", {
-      userPrompt: prompt.trim(),
-      revisedPrompt: revisedPrompt,
-      imageUrl: imageUrl,
-      size: size,
-      quality: quality,
-      style: style,
-      model: "dall-e-3",
-    }, event).catch(err => {
-      console.error("[Generate Image] Failed to log data:", err);
+    try {
+      const { logData } = require("./log-data");
+      console.log("[Generate Image] Attempting to log image generation...");
+      const logResult = await logData("image-generation", {
+        userPrompt: prompt.trim(),
+        revisedPrompt: revisedPrompt,
+        imageUrl: imageUrl,
+        size: size,
+        quality: quality,
+        style: style,
+        model: "dall-e-3",
+      }, event);
+      
+      if (logResult.success) {
+        console.log("[Generate Image] Successfully logged image generation:", logResult.id);
+      } else {
+        console.error("[Generate Image] Logging failed:", logResult.error);
+      }
+    } catch (err) {
+      console.error("[Generate Image] Error logging data:", err);
       // Don't fail the request if logging fails
-    });
+    }
 
     return {
       statusCode: 200,

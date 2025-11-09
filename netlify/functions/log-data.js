@@ -86,7 +86,19 @@ async function logData(dataType, data, event = null) {
   try {
     // Check if store is configured
     if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_BLOB_READ_WRITE_TOKEN) {
-      console.error("Data logging not configured - missing environment variables");
+      console.error("[Data Log] Missing environment variables:", {
+        hasSiteId: !!process.env.NETLIFY_SITE_ID,
+        hasToken: !!process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+        dataType: dataType
+      });
+      // In local dev, still log to console for debugging
+      if (process.env.NETLIFY_DEV) {
+        console.log("[Data Log] Local dev mode - logging to console:", {
+          dataType,
+          data,
+          timestamp: new Date().toISOString()
+        });
+      }
       return { success: false, error: "Not configured" };
     }
 
