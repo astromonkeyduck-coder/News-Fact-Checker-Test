@@ -351,72 +351,44 @@
     </audio>
     
     <script>
-        // Play the unsubscribe music when page loads - more aggressive approach
-        function playUnsubscribeMusic() {
+        (function() {
             const audio = document.getElementById('unsubscribeMusic');
-            if (audio) {
-                audio.volume = 0.5; // Set volume to 50%
-                
-                // Try to play immediately
-                const playPromise = audio.play();
+            if (!audio) return;
             
-                if (playPromise !== undefined) {
-                    playPromise.then(function() {
-                        // Successfully started playing
-                        console.log('Audio started playing');
-                    }).catch(function(error) {
-                        // Autoplay was prevented, try again after user interaction
-                        console.log('Autoplay prevented:', error);
-                        
-                        // Try to play on any user interaction
-                        const tryPlay = function() {
-                            audio.play().then(function() {
-                                console.log('Audio started after user interaction');
-                            }).catch(function(e) {
-                                console.log('Still cannot play:', e);
-                            });
-                            // Remove listeners after first successful play
-                            document.removeEventListener('click', tryPlay);
-                            document.removeEventListener('touchstart', tryPlay);
-                            document.removeEventListener('keydown', tryPlay);
-                            document.removeEventListener('mousemove', tryPlay);
+            audio.volume = 0.5;
+            
+            // Wait for audio to load, then play
+            function tryPlay() {
+                if (audio.readyState >= 2) { // HAVE_CURRENT_DATA or better
+                    audio.play().catch(function(err) {
+                        console.log('Autoplay blocked, will play on interaction');
+                        // Play on any user interaction
+                        const playOnInteraction = function() {
+                            audio.play().catch(function() {});
+                            document.removeEventListener('click', playOnInteraction);
+                            document.removeEventListener('touchstart', playOnInteraction);
+                            document.removeEventListener('keydown', playOnInteraction);
+                            document.removeEventListener('mousemove', playOnInteraction);
                         };
-                        
-                        // Add multiple event listeners to catch any interaction
-                        document.addEventListener('click', tryPlay, { once: true });
-                        document.addEventListener('touchstart', tryPlay, { once: true });
-                        document.addEventListener('keydown', tryPlay, { once: true });
-                        document.addEventListener('mousemove', tryPlay, { once: true });
+                        document.addEventListener('click', playOnInteraction, { once: true });
+                        document.addEventListener('touchstart', playOnInteraction, { once: true });
+                        document.addEventListener('keydown', playOnInteraction, { once: true });
+                        document.addEventListener('mousemove', playOnInteraction, { once: true });
                     });
+                } else {
+                    // Wait for audio to load
+                    audio.addEventListener('canplay', tryPlay, { once: true });
+                    audio.load();
                 }
             }
-        }
-        
-        // Try multiple times to ensure it plays
-        // Try immediately
-        playUnsubscribeMusic();
-        
-        // Try when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                playUnsubscribeMusic();
-            });
-        } else {
-            // DOM is already loaded
-            playUnsubscribeMusic();
-        }
-        
-        // Try after short delays (sometimes helps with autoplay)
-        setTimeout(playUnsubscribeMusic, 100);
-        setTimeout(playUnsubscribeMusic, 500);
-        setTimeout(playUnsubscribeMusic, 1000);
-        
-        // Also try when the page becomes visible (in case it was in background)
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                playUnsubscribeMusic();
+            
+            // Start trying to play
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', tryPlay);
+            } else {
+                tryPlay();
             }
-        });
+        })();
     </script>
 </body>
 </html>
