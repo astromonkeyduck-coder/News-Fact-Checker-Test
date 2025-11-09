@@ -30,46 +30,165 @@ function getRequestMetadata(event) {
   };
 }
 
-// Convert logs to CSV format
+// Convert logs to CSV format with human-readable columns
 function logsToCSV(logs) {
   if (!logs || logs.length === 0) {
     return "No data available\n";
   }
 
-  // Get all unique keys from all log entries
-  const allKeys = new Set();
-  logs.forEach(log => {
-    Object.keys(log).forEach(key => allKeys.add(key));
-    if (log.data && typeof log.data === 'object') {
-      Object.keys(log.data).forEach(key => allKeys.add(`data.${key}`));
+  // Define column order and friendly names
+  const baseColumns = [
+    { key: 'timestamp', name: 'Date & Time' },
+    { key: 'dataType', name: 'Activity Type' },
+    { key: 'userEmail', name: 'User Email' },
+    { key: 'userName', name: 'User Name' },
+    { key: 'ip', name: 'IP Address' },
+    { key: 'location', name: 'Location' },
+  ];
+
+  // Type-specific columns with friendly names
+  const typeSpecificColumns = {
+    'image-generation': [
+      { key: 'data.userPrompt', name: 'Image Prompt' },
+      { key: 'data.revisedPrompt', name: 'Revised Prompt' },
+      { key: 'data.imageUrl', name: 'Image URL' },
+      { key: 'data.size', name: 'Image Size' },
+      { key: 'data.quality', name: 'Image Quality' },
+      { key: 'data.model', name: 'AI Model' },
+    ],
+    'ai-chat': [
+      { key: 'data.userMessage', name: 'User Message' },
+      { key: 'data.aiResponse', name: 'AI Response' },
+      { key: 'data.model', name: 'AI Model' },
+      { key: 'data.endpoint', name: 'Chat Endpoint' },
+      { key: 'data.usage.prompt_tokens', name: 'Input Tokens' },
+      { key: 'data.usage.completion_tokens', name: 'Output Tokens' },
+      { key: 'data.usage.total_tokens', name: 'Total Tokens' },
+    ],
+    'game-score': [
+      { key: 'data.gameType', name: 'Game Type' },
+      { key: 'data.userName', name: 'Player Name' },
+      { key: 'data.score', name: 'Score' },
+      { key: 'data.level', name: 'Level Reached' },
+      { key: 'data.difficulty', name: 'Difficulty' },
+      { key: 'data.streak', name: 'Best Streak' },
+      { key: 'data.time', name: 'Time (seconds)' },
+    ],
+    'page-view': [
+      { key: 'data.url', name: 'Page URL' },
+      { key: 'data.title', name: 'Page Title' },
+      { key: 'data.referrer', name: 'Referrer' },
+    ],
+    'comment': [
+      { key: 'data.comment', name: 'Comment Text' },
+      { key: 'data.postId', name: 'Post ID' },
+      { key: 'data.author', name: 'Author' },
+    ],
+    'newsletter-signup': [
+      { key: 'data.email', name: 'Email' },
+      { key: 'data.source', name: 'Signup Source' },
+    ],
+    'tip-submission': [
+      { key: 'data.name', name: 'Submitter Name' },
+      { key: 'data.email', name: 'Submitter Email' },
+      { key: 'data.tip', name: 'Tip Content' },
+      { key: 'data.isAnonymous', name: 'Is Anonymous' },
+      { key: 'data.tipLength', name: 'Tip Length' },
+      { key: 'data.notificationSent', name: 'Notification Sent' },
+      { key: 'data.confirmationSent', name: 'Confirmation Sent' },
+    ],
+  };
+
+  // Get all unique data types in the logs
+  const dataTypes = [...new Set(logs.map(log => log.dataType))];
+  
+  // Build column list: base columns + type-specific columns
+  const allColumns = [...baseColumns];
+  
+  // Add type-specific columns for each type found
+  dataTypes.forEach(type => {
+    if (typeSpecificColumns[type]) {
+      typeSpecificColumns[type].forEach(col => {
+        // Only add if not already in list
+        if (!allColumns.find(c => c.key === col.key)) {
+          allColumns.push(col);
+        }
+      });
     }
   });
 
-  const headers = Array.from(allKeys).sort();
-  
-  // Create CSV header
-  const csvRows = [headers.map(h => `"${h}"`).join(',')];
+  // Helper function to get nested value
+  function getNestedValue(obj, path) {
+    return path.split('.').reduce((current, key) => {
+      return current && current[key] !== undefined ? current[key] : null;
+    }, obj);
+  }
+
+  // Helper function to format value for CSV
+  function formatValue(value) {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    if (typeof value === 'object') {
+      // For objects, create a readable string
+      if (Array.isArray(value)) {
+        return value.join('; ');
+      }
+      // For location objects, format nicely
+      if (value.city || value.country) {
+        const parts = [];
+        if (value.city) parts.push(value.city);
+        if (value.region) parts.push(value.region);
+        if (value.country) parts.push(value.country);
+        return parts.join(', ');
+      }
+      // For other objects, use JSON but make it readable
+      return JSON.stringify(value).replace(/"/g, "'");
+    }
+    // Format dates nicely
+    if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}T/)) {
+      try {
+        const date = new Date(value);
+        return date.toLocaleString('en-US', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+      } catch (e) {
+        return value;
+      }
+    }
+    // Escape quotes and newlines
+    return String(value).replace(/"/g, '""').replace(/\n/g, ' ').replace(/\r/g, '');
+  }
+
+  // Create CSV header with friendly names
+  const headerRow = allColumns.map(col => `"${col.name}"`).join(',');
+  const csvRows = [headerRow];
 
   // Create CSV rows
   logs.forEach(log => {
-    const row = headers.map(header => {
+    const row = allColumns.map(col => {
       let value;
-      if (header.startsWith('data.')) {
-        const dataKey = header.substring(5);
-        value = log.data?.[dataKey];
+      
+      if (col.key.startsWith('data.')) {
+        // Get from log.data
+        const dataPath = col.key.substring(5);
+        value = getNestedValue(log.data, dataPath);
+      } else if (col.key === 'location') {
+        // Special handling for location
+        value = log.location;
       } else {
-        value = log[header];
+        // Get from log root
+        value = log[col.key];
       }
       
-      // Handle different value types
-      if (value === null || value === undefined) {
-        return '""';
-      } else if (typeof value === 'object') {
-        return `"${JSON.stringify(value).replace(/"/g, '""')}"`;
-      } else {
-        return `"${String(value).replace(/"/g, '""')}"`;
-      }
+      return `"${formatValue(value)}"`;
     });
+    
     csvRows.push(row.join(','));
   });
 

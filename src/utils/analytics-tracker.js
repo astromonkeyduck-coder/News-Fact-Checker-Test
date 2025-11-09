@@ -191,14 +191,8 @@ class AnalyticsTracker {
       }, 500);
     });
 
-    // Track mouse movements (heatmap data) - throttled
-    let mouseMoveTimeout;
-    document.addEventListener('mousemove', (e) => {
-      clearTimeout(mouseMoveTimeout);
-      mouseMoveTimeout = setTimeout(() => {
-        this.trackMouseMove(e);
-      }, 1000); // Only log every second
-    });
+    // Mouse movement tracking DISABLED - not needed for click heatmap
+    // Removed to reduce noise and focus on click data
 
     // Track errors
     window.addEventListener('error', (e) => {
@@ -237,13 +231,21 @@ class AnalyticsTracker {
       position: {
         x: e.clientX,
         y: e.clientY,
+        // Normalize to percentage for responsive heatmap
+        xPercent: (e.clientX / window.innerWidth) * 100,
+        yPercent: (e.clientY / window.innerHeight) * 100,
+      },
+      pageUrl: window.location.pathname,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
       },
       timestamp: new Date().toISOString(),
     };
 
     this.clicks.push(clickData);
     
-    // Only log every 10th click to avoid spam
+    // Log every 10th click to avoid spam, but keep all click data for heatmap
     if (this.clicks.length % 10 === 0) {
       this.log('click-batch', {
         clicks: this.clicks.slice(-10),

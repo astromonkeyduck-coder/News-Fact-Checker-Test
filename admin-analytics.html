@@ -530,7 +530,18 @@
     
     <!-- Main Dashboard (hidden until login) -->
     <div id="dashboardContent" style="display: none;">
-    <div class="header">
+        <!-- Tabs -->
+        <div class="tabs" style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid rgba(74, 144, 226, 0.3);">
+            <button class="tab-btn active" onclick="switchTab('logs')" id="tab-logs">📊 Logs</button>
+            <button class="tab-btn" onclick="switchTab('images')" id="tab-images">🖼️ Image Gallery</button>
+            <button class="tab-btn" onclick="switchTab('chats')" id="tab-chats">💬 Chat Logs</button>
+            <button class="tab-btn" onclick="switchTab('clicks')" id="tab-clicks">🖱️ Click Heatmap</button>
+            <button class="tab-btn" onclick="switchTab('tips')" id="tab-tips">💡 Tips</button>
+        </div>
+        
+        <!-- Logs Tab (existing content) -->
+        <div id="tab-content-logs" class="tab-content">
+            <div class="header">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <h1>📊 Analytics Dashboard</h1>
@@ -680,11 +691,230 @@
         }
     </style>
     
-    <div class="logs-container">
-        <div id="logsList">
-            <p style="text-align: center; color: rgba(255, 255, 255, 0.5);">Click "Load Data" to view logs</p>
+            <div class="logs-container">
+                <div id="logsList">
+                    <p style="text-align: center; color: rgba(255, 255, 255, 0.5);">Click "Load Data" to view logs</p>
+                </div>
+            </div>
+        </div> <!-- End tab-content-logs -->
+        
+        <!-- Image Gallery Tab -->
+        <div id="tab-content-images" class="tab-content" style="display: none;">
+            <div class="controls" style="margin-bottom: 30px;">
+                <div class="control-group">
+                    <label>Date Range</label>
+                    <input type="date" id="imageDateInput" value="">
+                </div>
+                <div class="control-group">
+                    <label>Limit</label>
+                    <input type="number" id="imageLimitInput" value="100" min="1" max="1000">
+                </div>
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadImageGallery()">Load Images</button>
+                </div>
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadAllImages()" style="background: linear-gradient(135deg, #ff9800, #f57c00);">Load All Images</button>
+                </div>
+            </div>
+            
+            <div id="imageGalleryStats" style="padding: 20px; background: rgba(15, 15, 35, 0.6); border-radius: 16px; margin-bottom: 20px; border: 1px solid rgba(74, 144, 226, 0.2);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Total Images</div>
+                        <div id="totalImagesCount" style="font-size: 2rem; font-weight: 700; color: #4A90E2;">0</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Loaded</div>
+                        <div id="loadedImagesCount" style="font-size: 2rem; font-weight: 700; color: #2ecc71;">0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="imageGalleryContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">
+                    Click "Load Images" to view the gallery
+                </div>
+            </div>
         </div>
-    </div>
+        
+        <!-- Chat Logs Tab -->
+        <div id="tab-content-chats" class="tab-content" style="display: none;">
+            <div class="controls" style="margin-bottom: 30px;">
+                <div class="control-group">
+                    <label>Date Range</label>
+                    <input type="date" id="chatDateInput" value="">
+                </div>
+                <div class="control-group">
+                    <label>Limit</label>
+                    <input type="number" id="chatLimitInput" value="100" min="1" max="1000">
+                </div>
+                <div class="control-group">
+                    <label>Filter by User Email</label>
+                    <input type="email" id="chatUserEmailInput" placeholder="user@example.com" style="padding: 10px; border: 2px solid rgba(74, 144, 226, 0.5); border-radius: 6px; background: rgba(15, 15, 35, 0.8); color: white; font-size: 1rem;">
+                </div>
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadChatLogs()">Load Chats</button>
+                </div>
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadAllChats()" style="background: linear-gradient(135deg, #ff9800, #f57c00);">Load All Chats</button>
+                </div>
+            </div>
+            
+            <div id="chatLogsStats" style="padding: 20px; background: rgba(15, 15, 35, 0.6); border-radius: 16px; margin-bottom: 20px; border: 1px solid rgba(74, 144, 226, 0.2);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Total Conversations</div>
+                        <div id="totalChatsCount" style="font-size: 2rem; font-weight: 700; color: #4A90E2;">0</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Loaded</div>
+                        <div id="loadedChatsCount" style="font-size: 2rem; font-weight: 700; color: #2ecc71;">0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="chatLogsContainer" style="display: flex; flex-direction: column; gap: 20px;">
+                <div style="text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">
+                    Click "Load Chats" to view conversations
+                </div>
+            </div>
+        </div>
+        
+        <!-- Click Heatmap Tab -->
+        <div id="tab-content-clicks" class="tab-content" style="display: none;">
+            <div class="controls" style="margin-bottom: 30px;">
+                <div class="control-group">
+                    <label>Date Range</label>
+                    <input type="date" id="clickDateInput" value="">
+                </div>
+                <div class="control-group">
+                    <label>Page URL (optional)</label>
+                    <input type="text" id="clickPageFilter" placeholder="/index.html" style="padding: 10px; border: 2px solid rgba(74, 144, 226, 0.5); border-radius: 6px; background: rgba(15, 15, 35, 0.8); color: white; font-size: 1rem;">
+                </div>
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadClickHeatmap()">Load Click Data</button>
+                </div>
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadAllClicks()" style="background: linear-gradient(135deg, #ff9800, #f57c00);">Load All Clicks (7 days)</button>
+                </div>
+            </div>
+            
+            <div id="clickStats" style="padding: 20px; background: rgba(15, 15, 35, 0.6); border-radius: 16px; margin-bottom: 20px; border: 1px solid rgba(74, 144, 226, 0.2);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Total Clicks</div>
+                        <div id="totalClicksCount" style="font-size: 2rem; font-weight: 700; color: #4A90E2;">0</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Unique Pages</div>
+                        <div id="uniquePagesCount" style="font-size: 2rem; font-weight: 700; color: #2ecc71;">0</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Most Clicked Element</div>
+                        <div id="mostClickedElement" style="font-size: 1.2rem; font-weight: 600; color: #ffc107;">-</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Peak Hour</div>
+                        <div id="peakHour" style="font-size: 1.2rem; font-weight: 600; color: #f5576c;">-</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div style="background: rgba(15, 15, 35, 0.6); border-radius: 16px; padding: 20px; border: 1px solid rgba(74, 144, 226, 0.2);">
+                    <h3 style="color: #4A90E2; margin-bottom: 15px;">Page Selection</h3>
+                    <select id="clickPageSelect" style="width: 100%; padding: 10px; border: 2px solid rgba(74, 144, 226, 0.5); border-radius: 6px; background: rgba(15, 15, 35, 0.8); color: white; font-size: 1rem;" onchange="updateClickHeatmap()">
+                        <option value="">All Pages</option>
+                    </select>
+                </div>
+                <div style="background: rgba(15, 15, 35, 0.6); border-radius: 16px; padding: 20px; border: 1px solid rgba(74, 144, 226, 0.2);">
+                    <h3 style="color: #4A90E2; margin-bottom: 15px;">Heatmap Options</h3>
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <label style="display: flex; align-items: center; gap: 8px; color: rgba(255, 255, 255, 0.8);">
+                            <input type="checkbox" id="showClickDots" checked onchange="updateClickHeatmap()">
+                            Show Click Dots
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; color: rgba(255, 255, 255, 0.8);">
+                            <input type="checkbox" id="showHeatmap" checked onchange="updateClickHeatmap()">
+                            Show Heat Overlay
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="background: rgba(15, 15, 35, 0.6); border-radius: 16px; padding: 20px; border: 1px solid rgba(74, 144, 226, 0.2); margin-bottom: 20px;">
+                <h3 style="color: #4A90E2; margin-bottom: 15px;">Click Heatmap</h3>
+                <div id="clickHeatmapContainer" style="position: relative; background: #fff; border-radius: 12px; min-height: 600px; overflow: hidden;">
+                    <div style="text-align: center; padding: 40px; color: rgba(0, 0, 0, 0.5);">
+                        Load click data to view heatmap
+                    </div>
+                </div>
+            </div>
+            
+            <div style="background: rgba(15, 15, 35, 0.6); border-radius: 16px; padding: 20px; border: 1px solid rgba(74, 144, 226, 0.2);">
+                <h3 style="color: #4A90E2; margin-bottom: 15px;">Click Trends & Statistics</h3>
+                <div id="clickTrendsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    <div style="text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">
+                        Load click data to view trends
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tips Tab -->
+        <div id="tab-content-tips" class="tab-content" style="display: none;">
+            <div class="controls" style="margin-bottom: 30px;">
+                <div class="control-group">
+                    <label>Date Range</label>
+                    <input type="date" id="tipDateInput" value="">
+                </div>
+                <div class="control-group">
+                    <label>Limit</label>
+                    <input type="number" id="tipLimitInput" value="100" min="1" max="1000">
+                </div>
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadTips()">Load Tips</button>
+                </div>
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadAllTips()" style="background: linear-gradient(135deg, #ff9800, #f57c00);">Load All Tips (7 days)</button>
+                </div>
+            </div>
+            
+            <div id="tipStats" style="padding: 20px; background: rgba(15, 15, 35, 0.6); border-radius: 16px; margin-bottom: 20px; border: 1px solid rgba(74, 144, 226, 0.2);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Total Tips</div>
+                        <div id="totalTipsCount" style="font-size: 2rem; font-weight: 700; color: #4A90E2;">0</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Anonymous</div>
+                        <div id="anonymousTipsCount" style="font-size: 2rem; font-weight: 700; color: #ffc107;">0</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">With Contact Info</div>
+                        <div id="contactTipsCount" style="font-size: 2rem; font-weight: 700; color: #2ecc71;">0</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Avg Length</div>
+                        <div id="avgTipLength" style="font-size: 2rem; font-weight: 700; color: #f5576c;">0 chars</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="tipsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px;">
+                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">
+                    Click "Load Tips" to view submitted tips
+                </div>
+            </div>
+        </div>
     </div> <!-- End dashboardContent -->
     
     <script>
@@ -695,6 +925,8 @@
         let currentType = '';
         let currentLimit = 100;
         let lastTimestamp = null;
+        let isLoadingLogs = false; // Prevent duplicate calls to loadLogs
+        let clickHeatmapData = []; // Click heatmap data storage
         
         // Check if token is stored in sessionStorage
         window.addEventListener('load', () => {
@@ -919,6 +1151,16 @@
         }
         
         async function loadLogs() {
+            // Prevent duplicate calls
+            if (isLoadingLogs) {
+                if (window.debugLogs) {
+                    console.log('[Dashboard] Already loading logs, skipping duplicate call');
+                }
+                return;
+            }
+            
+            isLoadingLogs = true;
+            
             const date = document.getElementById('dateInput').value;
             const type = document.getElementById('typeSelect').value;
             const userEmail = document.getElementById('userEmailInput').value.trim();
@@ -933,7 +1175,12 @@
             try {
                 let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}${type ? `&type=${type}` : ''}${userEmail ? `&userEmail=${encodeURIComponent(userEmail)}` : ''}`;
                 url = addTokenToUrl(url);
-                console.log('[Dashboard] Loading logs from:', url.replace(/token=[^&]+/, 'token=***'));
+                
+                // Only log URL in debug mode (set window.debugLogs = true to enable)
+                if (window.debugLogs) {
+                    console.log('[Dashboard] Loading logs from:', url.replace(/token=[^&]+/, 'token=***'));
+                }
+                
                 const response = await fetch(url);
                 
                 if (!response.ok) {
@@ -943,22 +1190,29 @@
                 }
                 
                 const data = await response.json();
-                console.log('[Dashboard] Received data:', {
-                    count: data.count,
-                    logsLength: data.logs ? data.logs.length : 0,
-                    type: type || 'all types',
-                    date: date
-                });
                 
-                // Log how many image-generation entries we got
-                if (!type || type === 'image-generation') {
+                // Only log detailed data in debug mode
+                if (window.debugLogs) {
+                    console.log('[Dashboard] Received data:', {
+                        count: data.count,
+                        logsLength: data.logs ? data.logs.length : 0,
+                        type: type || 'all types',
+                        date: date
+                    });
+                }
+                
+                // Log how many image-generation entries we got (only if specifically filtering for it)
+                if (type === 'image-generation') {
                     const imageLogs = data.logs ? data.logs.filter(log => log.dataType === 'image-generation') : [];
-                    console.log('[Dashboard] Image generation logs found:', imageLogs.length);
                     if (imageLogs.length > 0) {
+                        console.log('[Dashboard] Image generation logs found:', imageLogs.length);
                         console.log('[Dashboard] Sample image log:', imageLogs[0]);
                     } else {
                         console.warn('[Dashboard] ⚠️ No image generation logs found for date:', date);
-                        console.log('[Dashboard] Available log types:', [...new Set((data.logs || []).map(log => log.dataType))]);
+                        const availableTypes = [...new Set((data.logs || []).map(log => log.dataType))];
+                        if (availableTypes.length > 0) {
+                            console.log('[Dashboard] Available log types:', availableTypes);
+                        }
                     }
                 }
                 
@@ -974,6 +1228,8 @@
             } catch (error) {
                 showStatus(`Error: ${error.message}`, 'error');
                 console.error('Error loading logs:', error);
+            } finally {
+                isLoadingLogs = false;
             }
         }
         
@@ -995,11 +1251,18 @@
                 }
                 
                 const csv = await response.text();
-                const blob = new Blob([csv], { type: 'text/csv' });
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                 const url2 = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url2;
-                a.download = `noteworthy-data-${date}${type ? `-${type}` : ''}.csv`;
+                
+                // Better filename with descriptive labels
+                const typeLabel = type ? type.replace(/-/g, '_') : 'all_types';
+                const dateLabel = date || 'all_dates';
+                const userLabel = userEmail ? `_user_${userEmail.split('@')[0]}` : '';
+                const timestamp = new Date().toISOString().split('T')[0];
+                a.download = `noteworthy_analytics_${dateLabel}_${typeLabel}${userLabel}_${timestamp}.csv`;
+                
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -1025,7 +1288,7 @@
             document.getElementById('streamBtn').textContent = 'Stop Streaming';
             document.getElementById('streamBtn').style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
             
-            // Load initial data
+            // Load initial data (will skip if already loading)
             loadLogs();
             
             // Poll for new data every 5 seconds
@@ -1739,6 +2002,779 @@
             });
             
             showStatus(`Found ${users.length} users with email addresses`, 'success');
+        }
+        
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(`tab-content-${tabName}`).style.display = 'block';
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            // Set default dates when switching tabs
+            if (tabName === 'images' && !document.getElementById('imageDateInput').value) {
+                document.getElementById('imageDateInput').value = new Date().toISOString().split('T')[0];
+            }
+            if (tabName === 'chats' && !document.getElementById('chatDateInput').value) {
+                document.getElementById('chatDateInput').value = new Date().toISOString().split('T')[0];
+            }
+            if (tabName === 'clicks') {
+                if (!document.getElementById('clickDateInput').value) {
+                    document.getElementById('clickDateInput').value = new Date().toISOString().split('T')[0];
+                }
+                // Auto-load clicks when switching to this tab if not loaded
+                if (clickHeatmapData.length === 0) {
+                    loadClickHeatmap();
+                }
+            }
+        }
+        
+        // Click Heatmap Functions
+        async function loadClickHeatmap() {
+            const date = document.getElementById('clickDateInput').value;
+            const pageFilter = document.getElementById('clickPageFilter').value.trim();
+            
+            showStatus('Loading click data...', 'info');
+            
+            try {
+                let url = `/.netlify/functions/log-data?date=${date}&limit=10000&type=click-batch`;
+                url = addTokenToUrl(url);
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const logs = data.logs || [];
+                
+                // Extract all clicks from batches
+                let allClicks = [];
+                logs.forEach(log => {
+                    if (log.data && log.data.clicks && Array.isArray(log.data.clicks)) {
+                        log.data.clicks.forEach(click => {
+                            // Add page URL from log if not in click
+                            if (!click.pageUrl && log.data.pageUrl) {
+                                click.pageUrl = log.data.pageUrl;
+                            }
+                            // Filter by page if specified
+                            if (!pageFilter || (click.pageUrl && click.pageUrl.includes(pageFilter))) {
+                                allClicks.push(click);
+                            }
+                        });
+                    }
+                });
+                
+                clickHeatmapData = allClicks;
+                updateClickHeatmap();
+                updateClickStats(allClicks);
+                updateClickTrends(allClicks);
+                
+                showStatus(`Loaded ${allClicks.length} clicks`, 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error('Error loading clicks:', error);
+            }
+        }
+        
+        async function loadAllClicks() {
+            showStatus('Loading all clicks (last 7 days)...', 'info');
+            
+            try {
+                const dates = [];
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    dates.push(d.toISOString().split('T')[0]);
+                }
+                
+                let allClicks = [];
+                for (const date of dates) {
+                    try {
+                        let url = `/.netlify/functions/log-data?date=${date}&limit=10000&type=click-batch`;
+                        url = addTokenToUrl(url);
+                        const response = await fetch(url);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.logs && data.logs.length > 0) {
+                                data.logs.forEach(log => {
+                                    if (log.data && log.data.clicks && Array.isArray(log.data.clicks)) {
+                                        log.data.clicks.forEach(click => {
+                                            if (!click.pageUrl && log.data.pageUrl) {
+                                                click.pageUrl = log.data.pageUrl;
+                                            }
+                                            allClicks.push(click);
+                                        });
+                                    }
+                                });
+                            }
+                        }
+                    } catch (e) {
+                        console.error(`Error loading clicks for ${date}:`, e);
+                    }
+                }
+                
+                clickHeatmapData = allClicks;
+                updateClickHeatmap();
+                updateClickStats(allClicks);
+                updateClickTrends(allClicks);
+                
+                showStatus(`Loaded ${allClicks.length} clicks from last 7 days`, 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error('Error loading all clicks:', error);
+            }
+        }
+        
+        function updateClickStats(clicks) {
+            document.getElementById('totalClicksCount').textContent = clicks.length;
+            
+            // Unique pages
+            const uniquePages = new Set(clicks.map(c => c.pageUrl || 'unknown'));
+            document.getElementById('uniquePagesCount').textContent = uniquePages.size;
+            
+            // Most clicked element
+            const elementCounts = {};
+            clicks.forEach(click => {
+                const tag = click.target?.tag || 'unknown';
+                const id = click.target?.id || '';
+                const className = click.target?.className?.split(' ')[0] || '';
+                const key = `${tag}${id ? '#' + id : ''}${className ? '.' + className : ''}`;
+                elementCounts[key] = (elementCounts[key] || 0) + 1;
+            });
+            const mostClicked = Object.entries(elementCounts).sort((a, b) => b[1] - a[1])[0];
+            document.getElementById('mostClickedElement').textContent = mostClicked ? `${mostClicked[0]} (${mostClicked[1]} clicks)` : '-';
+            
+            // Peak hour
+            const hourCounts = {};
+            clicks.forEach(click => {
+                const hour = new Date(click.timestamp).getHours();
+                hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+            });
+            const peakHour = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0];
+            document.getElementById('peakHour').textContent = peakHour ? `${peakHour[0]}:00 (${peakHour[1]} clicks)` : '-';
+        }
+        
+        function updateClickHeatmap() {
+            const container = document.getElementById('clickHeatmapContainer');
+            const pageSelect = document.getElementById('clickPageSelect');
+            const selectedPage = pageSelect.value;
+            const showDots = document.getElementById('showClickDots').checked;
+            const showHeat = document.getElementById('showHeatmap').checked;
+            
+            // Filter clicks by selected page
+            let filteredClicks = clickHeatmapData;
+            if (selectedPage) {
+                filteredClicks = clickHeatmapData.filter(c => c.pageUrl === selectedPage);
+            }
+            
+            if (filteredClicks.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: rgba(0, 0, 0, 0.5);">No clicks found for selected page</div>';
+                return;
+            }
+            
+            // Get viewport dimensions (use most common viewport size)
+            const viewports = {};
+            filteredClicks.forEach(click => {
+                if (click.viewport) {
+                    const key = `${click.viewport.width}x${click.viewport.height}`;
+                    viewports[key] = (viewports[key] || 0) + 1;
+                }
+            });
+            const mostCommonViewport = Object.entries(viewports).sort((a, b) => b[1] - a[1])[0];
+            const [width, height] = mostCommonViewport ? mostCommonViewport[0].split('x').map(Number) : [1920, 1080];
+            
+            // Set container size
+            container.style.width = `${Math.min(width, 1200)}px`;
+            container.style.height = `${Math.min(height, 800)}px`;
+            container.style.margin = '0 auto';
+            container.style.background = '#f5f5f5';
+            container.style.position = 'relative';
+            
+            // Create heatmap overlay
+            container.innerHTML = '';
+            
+            // Create heatmap canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.min(width, 1200);
+            canvas.height = Math.min(height, 800);
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.opacity = showHeat ? '0.6' : '0';
+            container.appendChild(canvas);
+            
+            const ctx = canvas.getContext('2d');
+            const scaleX = canvas.width / width;
+            const scaleY = canvas.height / height;
+            
+            // Create heatmap data
+            const heatData = {};
+            filteredClicks.forEach(click => {
+                if (click.position) {
+                    const x = Math.round((click.position.x || (click.position.xPercent * width / 100)) * scaleX);
+                    const y = Math.round((click.position.y || (click.position.yPercent * height / 100)) * scaleY);
+                    const key = `${x},${y}`;
+                    heatData[key] = (heatData[key] || 0) + 1;
+                }
+            });
+            
+            // Draw heatmap
+            if (showHeat && Object.keys(heatData).length > 0) {
+                const maxCount = Math.max(...Object.values(heatData));
+                Object.entries(heatData).forEach(([key, count]) => {
+                    const [x, y] = key.split(',').map(Number);
+                    const intensity = count / maxCount;
+                    const radius = 30;
+                    
+                    // Create gradient
+                    const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+                    gradient.addColorStop(0, `rgba(255, 0, 0, ${intensity * 0.8})`);
+                    gradient.addColorStop(0.5, `rgba(255, 165, 0, ${intensity * 0.4})`);
+                    gradient.addColorStop(1, 'rgba(255, 255, 0, 0)');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+                });
+            }
+            
+            // Draw click dots
+            if (showDots) {
+                filteredClicks.forEach(click => {
+                    if (click.position) {
+                        const x = (click.position.x || (click.position.xPercent * width / 100)) * scaleX;
+                        const y = (click.position.y || (click.position.yPercent * height / 100)) * scaleY;
+                        
+                        const dot = document.createElement('div');
+                        dot.style.position = 'absolute';
+                        dot.style.left = `${x}px`;
+                        dot.style.top = `${y}px`;
+                        dot.style.width = '8px';
+                        dot.style.height = '8px';
+                        dot.style.background = 'rgba(74, 144, 226, 0.7)';
+                        dot.style.borderRadius = '50%';
+                        dot.style.transform = 'translate(-50%, -50%)';
+                        dot.style.pointerEvents = 'none';
+                        dot.style.zIndex = '10';
+                        container.appendChild(dot);
+                    }
+                });
+            }
+            
+            // Add info overlay
+            const info = document.createElement('div');
+            info.style.position = 'absolute';
+            info.style.top = '10px';
+            info.style.right = '10px';
+            info.style.background = 'rgba(0, 0, 0, 0.7)';
+            info.style.color = 'white';
+            info.style.padding = '10px 15px';
+            info.style.borderRadius = '8px';
+            info.style.fontSize = '0.85rem';
+            info.style.zIndex = '20';
+            info.innerHTML = `
+                <div><strong>Clicks:</strong> ${filteredClicks.length}</div>
+                <div><strong>Viewport:</strong> ${width}×${height}</div>
+                <div><strong>Page:</strong> ${selectedPage || 'All Pages'}</div>
+            `;
+            container.appendChild(info);
+        }
+        
+        function updateClickTrends(clicks) {
+            const container = document.getElementById('clickTrendsContainer');
+            container.innerHTML = '';
+            
+            if (clicks.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">No click data available</div>';
+                return;
+            }
+            
+            // Hourly distribution
+            const hourlyData = {};
+            clicks.forEach(click => {
+                const hour = new Date(click.timestamp).getHours();
+                hourlyData[hour] = (hourlyData[hour] || 0) + 1;
+            });
+            
+            const hourlyChart = document.createElement('div');
+            hourlyChart.style.cssText = 'background: rgba(15, 15, 35, 0.6); border-radius: 12px; padding: 20px; border: 1px solid rgba(74, 144, 226, 0.2);';
+            const maxHourly = Math.max(...Object.values(hourlyData), 1);
+            hourlyChart.innerHTML = `
+                <h4 style="color: #4A90E2; margin-bottom: 15px;">Clicks by Hour of Day</h4>
+                <div style="display: flex; align-items: flex-end; gap: 4px; height: 200px;">
+                    ${Array.from({length: 24}, (_, i) => {
+                        const count = hourlyData[i] || 0;
+                        const height = maxHourly > 0 ? (count / maxHourly) * 100 : 0;
+                        return `<div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;">
+                            <div style="width: 100%; background: linear-gradient(to top, #4A90E2, #2ecc71); height: ${height}%; border-radius: 4px 4px 0 0; min-height: ${count > 0 ? '2px' : '0'};" title="${i}:00 - ${count} clicks"></div>
+                            <div style="font-size: 0.7rem; color: rgba(255, 255, 255, 0.6); margin-top: 5px; writing-mode: vertical-rl; text-orientation: mixed;">${i}</div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            `;
+            container.appendChild(hourlyChart);
+            
+            // Top clicked elements
+            const elementCounts = {};
+            clicks.forEach(click => {
+                const tag = click.target?.tag || 'unknown';
+                const id = click.target?.id || '';
+                const className = click.target?.className?.split(' ')[0] || '';
+                const key = `${tag}${id ? '#' + id : ''}${className ? '.' + className : ''}`;
+                elementCounts[key] = (elementCounts[key] || 0) + 1;
+            });
+            
+            const topElements = Object.entries(elementCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            const topElementsChart = document.createElement('div');
+            topElementsChart.style.cssText = 'background: rgba(15, 15, 35, 0.6); border-radius: 12px; padding: 20px; border: 1px solid rgba(74, 144, 226, 0.2);';
+            topElementsChart.innerHTML = `
+                <h4 style="color: #4A90E2; margin-bottom: 15px;">Top Clicked Elements</h4>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    ${topElements.map(([element, count], index) => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(74, 144, 226, 0.1); border-radius: 8px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="color: #4A90E2; font-weight: 700; width: 30px;">#${index + 1}</span>
+                                <code style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem;">${escapeHtml(element)}</code>
+                            </div>
+                            <span style="color: #2ecc71; font-weight: 600;">${count} clicks</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            container.appendChild(topElementsChart);
+            
+            // Page distribution
+            const pageCounts = {};
+            clicks.forEach(click => {
+                const page = click.pageUrl || 'unknown';
+                pageCounts[page] = (pageCounts[page] || 0) + 1;
+            });
+            
+            const topPages = Object.entries(pageCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            // Update page select dropdown
+            const pageSelect = document.getElementById('clickPageSelect');
+            if (pageSelect) {
+                pageSelect.innerHTML = '<option value="">All Pages</option>' + 
+                    topPages.map(([page, count]) => 
+                        `<option value="${escapeHtml(page)}">${escapeHtml(page)} (${count} clicks)</option>`
+                    ).join('');
+            }
+        }
+        
+        // Tips Functions
+        async function loadTips() {
+            const date = document.getElementById('tipDateInput').value;
+            const limit = parseInt(document.getElementById('tipLimitInput').value);
+            
+            showStatus('Loading tips...', 'info');
+            
+            try {
+                let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}&type=tip-submission`;
+                url = addTokenToUrl(url);
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const tips = data.logs || [];
+                
+                displayTips(tips);
+                updateTipStats(tips);
+                
+                showStatus(`Loaded ${tips.length} tips`, 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error('Error loading tips:', error);
+            }
+        }
+        
+        async function loadAllTips() {
+            showStatus('Loading all tips (last 7 days)...', 'info');
+            
+            try {
+                const dates = [];
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    dates.push(d.toISOString().split('T')[0]);
+                }
+                
+                let allTips = [];
+                for (const date of dates) {
+                    try {
+                        let url = `/.netlify/functions/log-data?date=${date}&limit=1000&type=tip-submission`;
+                        url = addTokenToUrl(url);
+                        const response = await fetch(url);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.logs && data.logs.length > 0) {
+                                allTips = allTips.concat(data.logs);
+                            }
+                        }
+                    } catch (e) {
+                        console.error(`Error loading tips for ${date}:`, e);
+                    }
+                }
+                
+                // Sort by timestamp (newest first)
+                allTips.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                // Limit
+                const limit = parseInt(document.getElementById('tipLimitInput').value);
+                allTips = allTips.slice(0, limit);
+                
+                displayTips(allTips);
+                updateTipStats(allTips);
+                
+                showStatus(`Loaded ${allTips.length} tips from last 7 days`, 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error('Error loading all tips:', error);
+            }
+        }
+        
+        function updateTipStats(tips) {
+            document.getElementById('totalTipsCount').textContent = tips.length;
+            
+            const anonymous = tips.filter(t => t.data?.isAnonymous).length;
+            const withContact = tips.length - anonymous;
+            document.getElementById('anonymousTipsCount').textContent = anonymous;
+            document.getElementById('contactTipsCount').textContent = withContact;
+            
+            const totalLength = tips.reduce((sum, t) => sum + (t.data?.tipLength || 0), 0);
+            const avgLength = tips.length > 0 ? Math.round(totalLength / tips.length) : 0;
+            document.getElementById('avgTipLength').textContent = `${avgLength} chars`;
+        }
+        
+        function displayTips(tips) {
+            const container = document.getElementById('tipsContainer');
+            container.innerHTML = '';
+            
+            if (tips.length === 0) {
+                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">No tips found</div>';
+                return;
+            }
+            
+            tips.forEach((log, index) => {
+                const data = log.data || {};
+                const tip = data.tip || 'No tip content';
+                const name = data.name || 'Unknown';
+                const email = data.email || 'No email';
+                const isAnonymous = data.isAnonymous || false;
+                const timestamp = new Date(log.timestamp).toLocaleString();
+                const location = data.location ? 
+                    `${data.location.city || ''}${data.location.city && data.location.region ? ', ' : ''}${data.location.region || ''}${(data.location.city || data.location.region) && data.location.country ? ', ' : ''}${data.location.country || ''}`.replace(/^,\s*|,\s*$/g, '') : 
+                    'Unknown';
+                
+                const tipCard = document.createElement('div');
+                tipCard.className = 'log-entry';
+                tipCard.style.cssText = 'background: rgba(15, 15, 35, 0.6); border-radius: 16px; padding: 20px; border: 1px solid rgba(74, 144, 226, 0.2); transition: transform 0.2s, box-shadow 0.2s;';
+                tipCard.onmouseenter = function() {
+                    this.style.transform = 'translateY(-4px)';
+                    this.style.boxShadow = '0 8px 24px rgba(74, 144, 226, 0.3)';
+                };
+                tipCard.onmouseleave = function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = 'none';
+                };
+                
+                tipCard.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(74, 144, 226, 0.2);">
+                        <div>
+                            <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.6); margin-bottom: 5px;">${timestamp}</div>
+                            <div style="font-size: 1.1rem; font-weight: 600; color: #4A90E2;">
+                                ${isAnonymous ? '🔒 Anonymous' : `👤 ${escapeHtml(name)}`}
+                            </div>
+                        </div>
+                        ${isAnonymous ? '' : `<div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.5);">📧 ${escapeHtml(email)}</div>`}
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-size: 1.05rem; line-height: 1.7; color: rgba(255, 255, 255, 0.9); background: rgba(74, 144, 226, 0.1); padding: 15px; border-radius: 8px; white-space: pre-wrap;">${escapeHtml(tip)}</div>
+                    </div>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; font-size: 0.85rem; color: rgba(255, 255, 255, 0.6);">
+                        ${location !== 'Unknown' ? `<span>📍 ${escapeHtml(location)}</span>` : ''}
+                        <span>📏 ${data.tipLength || tip.length} chars</span>
+                        ${data.notificationSent !== undefined ? `<span>${data.notificationSent ? '✅' : '❌'} Notification</span>` : ''}
+                        ${data.confirmationSent !== undefined ? `<span>${data.confirmationSent ? '✅' : '❌'} Confirmation</span>` : ''}
+                    </div>
+                `;
+                
+                container.appendChild(tipCard);
+            });
+        }
+        
+        // Image Gallery Functions
+        async function loadImageGallery() {
+            const date = document.getElementById('imageDateInput').value;
+            const limit = parseInt(document.getElementById('imageLimitInput').value);
+            
+            showStatus('Loading images...', 'info');
+            
+            try {
+                let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}&type=image-generation`;
+                url = addTokenToUrl(url);
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const images = data.logs || [];
+                
+                displayImageGallery(images);
+                document.getElementById('totalImagesCount').textContent = images.length;
+                document.getElementById('loadedImagesCount').textContent = images.length;
+                
+                showStatus(`Loaded ${images.length} images`, 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error('Error loading images:', error);
+            }
+        }
+        
+        async function loadAllImages() {
+            showStatus('Loading all images (last 7 days)...', 'info');
+            
+            try {
+                const dates = [];
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    dates.push(d.toISOString().split('T')[0]);
+                }
+                
+                let allImages = [];
+                for (const date of dates) {
+                    try {
+                        let url = `/.netlify/functions/log-data?date=${date}&limit=1000&type=image-generation`;
+                        url = addTokenToUrl(url);
+                        const response = await fetch(url);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.logs && data.logs.length > 0) {
+                                allImages = allImages.concat(data.logs);
+                            }
+                        }
+                    } catch (e) {
+                        console.error(`Error loading images for ${date}:`, e);
+                    }
+                }
+                
+                // Sort by timestamp (newest first)
+                allImages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                // Limit
+                const limit = parseInt(document.getElementById('imageLimitInput').value);
+                allImages = allImages.slice(0, limit);
+                
+                displayImageGallery(allImages);
+                document.getElementById('totalImagesCount').textContent = allImages.length;
+                document.getElementById('loadedImagesCount').textContent = allImages.length;
+                
+                showStatus(`Loaded ${allImages.length} images from last 7 days`, 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error('Error loading all images:', error);
+            }
+        }
+        
+        function displayImageGallery(images) {
+            const container = document.getElementById('imageGalleryContainer');
+            container.innerHTML = '';
+            
+            if (images.length === 0) {
+                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">No images found</div>';
+                return;
+            }
+            
+            images.forEach((log, index) => {
+                const data = log.data || {};
+                const imageUrl = data.imageUrl;
+                const prompt = data.userPrompt || 'No prompt';
+                const timestamp = new Date(log.timestamp).toLocaleString();
+                
+                if (!imageUrl) return;
+                
+                const imageCard = document.createElement('div');
+                imageCard.className = 'log-entry';
+                imageCard.style.cssText = 'background: rgba(15, 15, 35, 0.6); border-radius: 16px; padding: 20px; border: 1px solid rgba(74, 144, 226, 0.2); transition: transform 0.2s, box-shadow 0.2s;';
+                imageCard.onmouseenter = function() {
+                    this.style.transform = 'translateY(-4px)';
+                    this.style.boxShadow = '0 8px 24px rgba(74, 144, 226, 0.3)';
+                };
+                imageCard.onmouseleave = function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = 'none';
+                };
+                
+                imageCard.innerHTML = `
+                    <div style="margin-bottom: 15px;">
+                        <img src="${imageUrl}" alt="AI Generated Image" 
+                             style="width: 100%; height: auto; border-radius: 12px; cursor: pointer;"
+                             onclick="window.open('${imageUrl}', '_blank')"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div style="display: none; text-align: center; padding: 40px; background: rgba(255, 193, 7, 0.1); border-radius: 12px; color: #ffc107;">
+                            Image failed to load
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.6); margin-bottom: 8px;">${timestamp}</div>
+                        <div style="font-size: 1rem; line-height: 1.6; color: rgba(255, 255, 255, 0.9); background: rgba(74, 144, 226, 0.1); padding: 12px; border-radius: 8px;">
+                            ${escapeHtml(prompt)}
+                        </div>
+                    </div>
+                    ${data.revisedPrompt && data.revisedPrompt !== prompt ? `
+                    <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.5); font-style: italic;">
+                        Revised: ${escapeHtml(data.revisedPrompt.substring(0, 100))}${data.revisedPrompt.length > 100 ? '...' : ''}
+                    </div>
+                    ` : ''}
+                `;
+                
+                container.appendChild(imageCard);
+            });
+        }
+        
+        // Chat Logs Functions
+        async function loadChatLogs() {
+            const date = document.getElementById('chatDateInput').value;
+            const limit = parseInt(document.getElementById('chatLimitInput').value);
+            const userEmail = document.getElementById('chatUserEmailInput').value.trim();
+            
+            showStatus('Loading chat logs...', 'info');
+            
+            try {
+                let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}&type=ai-chat${userEmail ? `&userEmail=${encodeURIComponent(userEmail)}` : ''}`;
+                url = addTokenToUrl(url);
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const chats = data.logs || [];
+                
+                displayChatLogs(chats);
+                document.getElementById('totalChatsCount').textContent = chats.length;
+                document.getElementById('loadedChatsCount').textContent = chats.length;
+                
+                showStatus(`Loaded ${chats.length} chat conversations`, 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error('Error loading chats:', error);
+            }
+        }
+        
+        async function loadAllChats() {
+            showStatus('Loading all chats (last 7 days)...', 'info');
+            
+            try {
+                const dates = [];
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    dates.push(d.toISOString().split('T')[0]);
+                }
+                
+                let allChats = [];
+                for (const date of dates) {
+                    try {
+                        let url = `/.netlify/functions/log-data?date=${date}&limit=1000&type=ai-chat`;
+                        url = addTokenToUrl(url);
+                        const response = await fetch(url);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.logs && data.logs.length > 0) {
+                                allChats = allChats.concat(data.logs);
+                            }
+                        }
+                    } catch (e) {
+                        console.error(`Error loading chats for ${date}:`, e);
+                    }
+                }
+                
+                // Sort by timestamp (newest first)
+                allChats.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                // Limit
+                const limit = parseInt(document.getElementById('chatLimitInput').value);
+                allChats = allChats.slice(0, limit);
+                
+                displayChatLogs(allChats);
+                document.getElementById('totalChatsCount').textContent = allChats.length;
+                document.getElementById('loadedChatsCount').textContent = allChats.length;
+                
+                showStatus(`Loaded ${allChats.length} chat conversations from last 7 days`, 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error('Error loading all chats:', error);
+            }
+        }
+        
+        function displayChatLogs(chats) {
+            const container = document.getElementById('chatLogsContainer');
+            container.innerHTML = '';
+            
+            if (chats.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">No chat logs found</div>';
+                return;
+            }
+            
+            chats.forEach((log, index) => {
+                const data = log.data || {};
+                const userMessage = data.userMessage || 'No message';
+                const aiResponse = data.aiResponse || 'No response';
+                const timestamp = new Date(log.timestamp).toLocaleString();
+                const userEmail = log.userEmail || 'Unknown';
+                
+                const chatCard = document.createElement('div');
+                chatCard.className = 'log-entry';
+                chatCard.style.cssText = 'background: rgba(15, 15, 35, 0.6); border-radius: 16px; padding: 20px; border: 1px solid rgba(74, 144, 226, 0.2);';
+                
+                chatCard.innerHTML = `
+                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(74, 144, 226, 0.2);">
+                        <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.6);">${timestamp}</div>
+                        <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.5); margin-top: 5px;">📧 ${escapeHtml(userEmail)}</div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div class="message-bubble user" style="background: rgba(46, 204, 113, 0.15); border-left: 4px solid #2ecc71; padding: 15px; border-radius: 8px;">
+                            <strong style="color: #2ecc71; display: block; margin-bottom: 8px;">👤 User:</strong>
+                            <div style="font-size: 1.05rem; line-height: 1.6; color: rgba(255, 255, 255, 0.9);">${escapeHtml(userMessage)}</div>
+                        </div>
+                        <div class="message-bubble ai" style="background: rgba(74, 144, 226, 0.15); border-left: 4px solid #4A90E2; padding: 15px; border-radius: 8px;">
+                            <strong style="color: #4A90E2; display: block; margin-bottom: 8px;">🤖 AI:</strong>
+                            <div style="font-size: 1.05rem; line-height: 1.6; color: rgba(255, 255, 255, 0.9); white-space: pre-wrap;">${escapeHtml(aiResponse)}</div>
+                        </div>
+                        <div class="compact-info" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(74, 144, 226, 0.2);">
+                            ${data.model ? `<span>🧠 Model: ${data.model}</span>` : ''}
+                            ${data.endpoint ? `<span>📍 Endpoint: ${data.endpoint}</span>` : ''}
+                            ${data.usage ? `<span>💬 Tokens: ${data.usage.prompt_tokens || 0} + ${data.usage.completion_tokens || 0}</span>` : ''}
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(chatCard);
+            });
         }
         
         // Logout function

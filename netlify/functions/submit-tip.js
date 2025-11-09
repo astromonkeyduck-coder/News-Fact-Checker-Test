@@ -303,6 +303,30 @@ The Noteworthy News Team`,
     // Log final status
     console.log('Final email status - Notification sent:', notificationSent, 'Confirmation sent:', confirmationSent);
     
+    // Log tip submission to analytics (non-blocking)
+    try {
+      const { logData, getClientIP } = require("./log-data");
+      const { getLocationFromIP } = require("./get-location");
+      
+      const ip = getClientIP(event);
+      const location = await getLocationFromIP(ip).catch(() => null);
+      
+      logData("tip-submission", {
+        name: tipName,
+        email: tipEmail,
+        tip: tip,
+        isAnonymous: isAnonymous,
+        tipLength: tip.length,
+        notificationSent: notificationSent,
+        confirmationSent: confirmationSent,
+        location: location,
+      }, event).catch(err => {
+        console.error("[Submit Tip] Failed to log tip submission:", err);
+      });
+    } catch (logErr) {
+      console.error("[Submit Tip] Error setting up tip logging:", logErr);
+    }
+    
     const successMessage = confirmationSent
       ? 'Tip submitted successfully! Check your email for a confirmation.'
       : (email && email.includes('@'))
