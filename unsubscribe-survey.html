@@ -294,8 +294,19 @@
             const encodedEmail = urlParams.get('email');
             
             const formData = new FormData(form);
+            
+            // Decode base64 email in browser
+            let decodedEmail = null;
+            if (encodedEmail) {
+                try {
+                    decodedEmail = atob(decodeURIComponent(encodedEmail));
+                } catch (e) {
+                    console.error('Error decoding email:', e);
+                }
+            }
+            
             const surveyData = {
-                email: encodedEmail ? Buffer.from(encodedEmail, 'base64').toString('utf-8') : null,
+                email: decodedEmail,
                 reason: formData.get('reason'),
                 otherReason: formData.get('otherReason') || '',
                 comeback: formData.get('comeback'),
