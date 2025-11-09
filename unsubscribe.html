@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unsubscribe - Noteworthy News</title>
+    <!-- Favicon and Theme -->
+    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
+    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="192x192">
+    <link rel="shortcut icon" type="image/png" href="IMG_5794.PNG">
+    <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
+    <link rel="mask-icon" href="IMG_5794.PNG" color="#0f234a">
+    <meta name="theme-color" content="#0f234a">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* Ensure background covers entire document and prevents white overscroll */
+        html {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overscroll-behavior: none !important;
+            overscroll-behavior-x: none !important;
+            overscroll-behavior-y: none !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .unsubscribe-container {
+            max-width: 500px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 60px 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        
+        .logo {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 30px;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+        
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .status-message {
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        
+        .status-message.success {
+            background: rgba(46, 204, 113, 0.2);
+            border: 2px solid rgba(46, 204, 113, 0.5);
+            color: #2ecc71;
+        }
+        
+        .status-message.error {
+            background: rgba(231, 76, 60, 0.2);
+            border: 2px solid rgba(231, 76, 60, 0.5);
+            color: #e74c3c;
+        }
+        
+        .status-message.loading {
+            background: rgba(74, 144, 226, 0.2);
+            border: 2px solid rgba(74, 144, 226, 0.5);
+            color: #4a90e2;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #4A90E2 0%, #2A60B0 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(74, 144, 226, 0.3);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        @media (max-width: 600px) {
+            .unsubscribe-container {
+                padding: 40px 20px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="unsubscribe-container">
+        <div class="logo">
+            <a href="index.html" aria-label="Go to Noteworthy News homepage">
+                <img src="IMG_5992.PNG" alt="Noteworthy News Logo" loading="lazy">
+            </a>
+        </div>
+        <h1>Unsubscribe</h1>
+        <div id="statusMessage" class="status-message loading">
+            Processing your unsubscribe request...
+        </div>
+        <a href="index.html" class="btn" id="homeBtn" style="display: none;">Back to Home</a>
+    </div>
+    
+    <script>
+        (async function() {
+            const statusMessage = document.getElementById('statusMessage');
+            const homeBtn = document.getElementById('homeBtn');
+            
+            // Get email from URL parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const encodedEmail = urlParams.get('email');
+            
+            if (!encodedEmail) {
+                statusMessage.className = 'status-message error';
+                statusMessage.textContent = 'Invalid unsubscribe link. Please contact us if you need help unsubscribing.';
+                homeBtn.style.display = 'inline-block';
+                return;
+            }
+            
+            try {
+                // Call unsubscribe API
+                const response = await fetch('/.netlify/functions/unsubscribe?email=' + encodeURIComponent(encodedEmail), {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    statusMessage.className = 'status-message success';
+                    statusMessage.textContent = '✓ You have been successfully unsubscribed from the Noteworthy News newsletter. You will no longer receive emails from us.';
+                } else {
+                    statusMessage.className = 'status-message error';
+                    statusMessage.textContent = data.error || 'An error occurred while processing your unsubscribe request. Please try again later.';
+                }
+            } catch (error) {
+                console.error('Unsubscribe error:', error);
+                statusMessage.className = 'status-message error';
+                statusMessage.textContent = 'An error occurred while processing your request. Please try again later or contact us for assistance.';
+            }
+            
+            homeBtn.style.display = 'inline-block';
+        })();
+    </script>
+    
+    <!-- Background Music - Shared across all pages -->
+    <audio id="backgroundMusic" preload="metadata">
+        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Second track (plays after first) -->
+    <audio id="backgroundMusicSecond" preload="metadata">
+        <source src="YEAHHHHHH.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Third track (loops after second) -->
+    <audio id="backgroundMusicLoop" preload="metadata" loop>
+        <source src="Audiolandingpage.m4a" type="audio/mp4">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Shared Music Manager Script -->
+    <script src="music-system.js"></script>
+</body>
+</html>
+

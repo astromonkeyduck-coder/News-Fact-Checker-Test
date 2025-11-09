@@ -165,6 +165,11 @@ This is an automated notification from your website.`,
       emailId: notificationResult.data?.id,
     });
     
+    // Generate unsubscribe link
+    // Base64 encode email for security (prevents tampering)
+    const encodedEmail = Buffer.from(email).toString('base64');
+    const unsubscribeUrl = `https://noteworthynews.co/unsubscribe.html?email=${encodeURIComponent(encodedEmail)}`;
+    
     // Send auto-reply to the subscriber
     console.log('Sending welcome email to subscriber:', email);
     const autoReplyResult = await resend.emails.send({
@@ -191,7 +196,9 @@ Best regards,
 The Noteworthy News Team
 
 ---
-If you didn't subscribe to this newsletter, you can safely ignore this email.`,
+If you didn't subscribe to this newsletter, you can safely ignore this email.
+
+To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
       html: `<!DOCTYPE html>
 <html>
 <head>
@@ -243,6 +250,9 @@ If you didn't subscribe to this newsletter, you can safely ignore this email.`,
             <td style="padding: 25px 30px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-top: 2px solid #4a90e2; border-radius: 0 0 10px 10px;">
               <p style="color: #333333; font-size: 16px; margin: 0 0 8px 0; line-height: 1.5;"><strong>The Noteworthy News Team</strong></p>
               <p style="color: #999999; font-size: 12px; margin: 15px 0 0 0; line-height: 1.4;">If you didn't subscribe to this newsletter, you can safely ignore this email.</p>
+              <p style="text-align: center; margin: 20px 0 0 0; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                <a href="${unsubscribeUrl}" style="color: #999999; font-size: 12px; text-decoration: underline;">Unsubscribe from this newsletter</a>
+              </p>
             </td>
           </tr>
         </table>
@@ -264,18 +274,73 @@ If you didn't subscribe to this newsletter, you can safely ignore this email.`,
     let audienceResult = null;
     if (NEWSLETTER_AUDIENCE_ID) {
       try {
-        console.log('Adding subscriber to audience:', NEWSLETTER_AUDIENCE_ID);
-        audienceResult = await resend.contacts.create({
+        console.log('Adding subscriber to audience:', {
           audienceId: NEWSLETTER_AUDIENCE_ID,
           email: email,
         });
-        console.log('Subscriber added to audience:', {
-          success: !audienceResult.error,
-          contactId: audienceResult.data?.id,
-          error: audienceResult.error,
-        });
+        
+        // First, check if contact already exists in the audience
+        let contactExists = false;
+        try {
+          const contactsResponse = await resend.contacts.list({
+            audienceId: NEWSLETTER_AUDIENCE_ID,
+          });
+          const contacts = contactsResponse.data?.data || [];
+          contactExists = contacts.some(c => c.email === email);
+          
+          if (contactExists) {
+            console.log('Contact already exists in audience, updating subscription status');
+            // Find the contact and update it
+            const existingContact = contacts.find(c => c.email === email);
+            if (existingContact && existingContact.id) {
+              // Update contact to ensure they're subscribed
+              audienceResult = await resend.contacts.update({
+                audienceId: NEWSLETTER_AUDIENCE_ID,
+                id: existingContact.id,
+                unsubscribed: false,
+              });
+              console.log('Contact subscription status updated:', {
+                contactId: existingContact.id,
+                email: email,
+              });
+            }
+          }
+        } catch (listError) {
+          console.warn('Could not check existing contacts, proceeding with create:', listError.message);
+        }
+        
+        // If contact doesn't exist, create it
+        if (!contactExists) {
+          audienceResult = await resend.contacts.create({
+            audienceId: NEWSLETTER_AUDIENCE_ID,
+            email: email,
+            unsubscribed: false, // Explicitly set as subscribed
+          });
+        }
+        
+        // Check for errors in the response
+        if (audienceResult && audienceResult.error) {
+          console.error('Resend API error when adding to audience:', {
+            error: audienceResult.error,
+            message: audienceResult.error.message,
+            name: audienceResult.error.name,
+            code: audienceResult.error.code,
+          });
+        } else if (audienceResult) {
+          console.log('Subscriber successfully added/updated in audience:', {
+            contactId: audienceResult.data?.id,
+            email: audienceResult.data?.email || email,
+            audienceId: NEWSLETTER_AUDIENCE_ID,
+          });
+        }
       } catch (audienceError) {
-        console.error('Error adding to audience:', audienceError);
+        console.error('Exception when adding to audience:', {
+          error: audienceError,
+          message: audienceError.message,
+          stack: audienceError.stack,
+          audienceId: NEWSLETTER_AUDIENCE_ID,
+          email: email,
+        });
         // Don't fail the subscription if audience add fails
         // The email was already sent successfully
       }
@@ -284,8 +349,9 @@ If you didn't subscribe to this newsletter, you can safely ignore this email.`,
       console.warn('To enable audience management:');
       console.warn('1. Go to https://resend.com/audiences');
       console.warn('2. Create an audience called "Newsletter Subscribers"');
-      console.warn('3. Copy the Audience ID');
+      console.warn('3. Copy the Audience ID (looks like: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)');
       console.warn('4. Set RESEND_AUDIENCE_ID in Netlify environment variables');
+      console.warn('5. Redeploy your site after adding the environment variable');
     }
     
     // Check if both emails were sent successfully
@@ -367,11 +433,19 @@ If you didn't subscribe to this newsletter, you can safely ignore this email.`,
         autoReplyId: autoReplyResult.data?.id,
         notificationSent,
         autoReplySent,
-        audienceAdded: !!audienceResult?.data?.id,
+        audienceAdded: !!(audienceResult && !audienceResult.error && audienceResult.data?.id),
+        audienceError: audienceResult?.error ? {
+          message: audienceResult.error.message,
+          name: audienceResult.error.name,
+        } : null,
         // Include warning if notification didn't send
         ...(notificationSent ? {} : { warning: 'Admin notification email may not have been sent. Check Netlify logs.' }),
         // Include warning if audience not configured
         ...(NEWSLETTER_AUDIENCE_ID ? {} : { audienceWarning: 'RESEND_AUDIENCE_ID not configured. Subscriber not added to mailing list.' }),
+        // Include warning if audience add failed
+        ...(NEWSLETTER_AUDIENCE_ID && audienceResult?.error ? { 
+          audienceAddWarning: `Failed to add to audience: ${audienceResult.error.message || 'Unknown error'}. Check Netlify logs for details.` 
+        } : {}),
       }),
     };
 

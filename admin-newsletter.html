@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Newsletter - Noteworthy News Admin</title>
+    <!-- Favicon and Theme -->
+    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
+    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="192x192">
+    <link rel="shortcut icon" type="image/png" href="IMG_5794.PNG">
+    <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
+    <link rel="mask-icon" href="IMG_5794.PNG" color="#0f234a">
+    <meta name="theme-color" content="#0f234a">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            min-height: 100vh;
+            overflow-x: hidden;
+            overscroll-behavior: none !important;
+            overscroll-behavior-x: none !important;
+            overscroll-behavior-y: none !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            color: #aaaaaa;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #cccccc;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #4A90E2;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+        
+        textarea {
+            min-height: 300px;
+            resize: vertical;
+        }
+        
+        .btn {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #4A90E2 0%, #2A60B0 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 15px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(74, 144, 226, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .status-message {
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 1rem;
+            line-height: 1.6;
+            display: none;
+        }
+        
+        .status-message.show {
+            display: block;
+        }
+        
+        .status-message.success {
+            background: rgba(46, 204, 113, 0.2);
+            border: 2px solid rgba(46, 204, 113, 0.5);
+            color: #2ecc71;
+        }
+        
+        .status-message.error {
+            background: rgba(231, 76, 60, 0.2);
+            border: 2px solid rgba(231, 76, 60, 0.5);
+            color: #e74c3c;
+        }
+        
+        .status-message.info {
+            background: rgba(74, 144, 226, 0.2);
+            border: 2px solid rgba(74, 144, 226, 0.5);
+            color: #4a90e2;
+        }
+        
+        .help-text {
+            color: #999999;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 30px;
+            color: #4a90e2;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← Back to Home</a>
+        <h1>Send Newsletter</h1>
+        <p class="subtitle">Send a weekly newsletter to all subscribers in your audience</p>
+        
+        <div id="statusMessage" class="status-message"></div>
+        
+        <form id="newsletterForm">
+            <div class="form-group">
+                <label for="subject">Subject Line *</label>
+                <input type="text" id="subject" name="subject" required placeholder="Weekly Newsletter - Noteworthy News" value="Weekly Newsletter - Noteworthy News">
+            </div>
+            
+            <div class="form-group">
+                <label for="html">HTML Content *</label>
+                <textarea id="html" name="html" required placeholder="Enter your HTML newsletter content..."></textarea>
+                <p class="help-text">Use {{UNSUBSCRIBE_URL}} as a placeholder for the unsubscribe link</p>
+            </div>
+            
+            <div class="form-group">
+                <label for="text">Plain Text Content (Optional)</label>
+                <textarea id="text" name="text" placeholder="Enter plain text version (optional)..."></textarea>
+                <p class="help-text">Plain text version for email clients that don't support HTML</p>
+            </div>
+            
+            <div>
+                <button type="submit" class="btn" id="sendBtn">Send Newsletter</button>
+                <button type="button" class="btn btn-secondary" id="previewBtn">Preview Default Template</button>
+            </div>
+        </form>
+    </div>
+    
+    <script>
+        const form = document.getElementById('newsletterForm');
+        const statusMessage = document.getElementById('statusMessage');
+        const sendBtn = document.getElementById('sendBtn');
+        const previewBtn = document.getElementById('previewBtn');
+        
+        // Default template
+        const defaultHTML = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(46, 204, 113, 0.1) 100%); border-radius: 10px 10px 0 0;">
+              <img src="https://noteworthynews.co/IMG_5992.PNG" alt="Noteworthy News Logo" style="max-width: 150px; height: auto; border-radius: 50%; display: block; margin: 0 auto 20px; border: 3px solid #4a90e2; box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);" />
+              <h2 style="color: #4a90e2; margin: 0; font-size: 24px; font-weight: bold;">Weekly Newsletter</h2>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 30px; background-color: #ffffff;">
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Hi there,</p>
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Welcome to your weekly Noteworthy News newsletter! Here's what's happening this week:</p>
+              
+              <div style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-left: 4px solid #4a90e2; padding: 20px; margin: 20px 0; border-radius: 5px;">
+                <h3 style="color: #4a90e2; margin: 0 0 15px 0; font-size: 20px;">📰 This Week's Highlights</h3>
+                <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0;">Stay tuned for fact-checked news stories, media literacy tips, and updates from Noteworthy News!</p>
+              </div>
+              
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 25px 0 0 0;"><strong>Stay informed and stay curious!</strong></p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 25px 30px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-top: 2px solid #4a90e2; border-radius: 0 0 10px 10px;">
+              <p style="color: #333333; font-size: 16px; margin: 0 0 8px 0; line-height: 1.5;"><strong>The Noteworthy News Team</strong></p>
+              <p style="text-align: center; margin: 20px 0 0 0; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                <a href="{{{UNSUBSCRIBE_URL}}}" style="color: #999999; font-size: 12px; text-decoration: underline;">Unsubscribe from this newsletter</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+        
+        const defaultText = `Weekly Newsletter - Noteworthy News
+
+Hi there,
+
+Welcome to your weekly Noteworthy News newsletter! Here's what's happening this week:
+
+📰 This Week's Highlights
+Stay tuned for fact-checked news stories, media literacy tips, and updates from Noteworthy News!
+
+Stay informed and stay curious!
+
+The Noteworthy News Team
+
+---
+To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
+        
+        previewBtn.addEventListener('click', () => {
+            document.getElementById('html').value = defaultHTML;
+            document.getElementById('text').value = defaultText;
+            showStatus('Default template loaded. Customize it as needed!', 'info');
+        });
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const subject = document.getElementById('subject').value;
+            const html = document.getElementById('html').value;
+            const text = document.getElementById('text').value;
+            
+            if (!subject || !html) {
+                showStatus('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+            showStatus('Sending newsletter to all subscribers. This may take a few minutes...', 'info');
+            
+            try {
+                const response = await fetch('/.netlify/functions/send-newsletter', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        subject,
+                        html,
+                        text: text || undefined,
+                    }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showStatus(
+                        `✓ Newsletter sent successfully! Sent to ${data.emailsSent} subscribers.${data.errors > 0 ? ` (${data.errors} errors)` : ''}`,
+                        'success'
+                    );
+                } else {
+                    showStatus(data.error || 'Failed to send newsletter', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus('An error occurred while sending the newsletter. Please try again.', 'error');
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send Newsletter';
+            }
+        });
+        
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type} show`;
+            
+            // Auto-hide success messages after 10 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusMessage.classList.remove('show');
+                }, 10000);
+            }
+        }
+    </script>
+    
+    <!-- Background Music - Shared across all pages -->
+    <audio id="backgroundMusic" preload="metadata">
+        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <audio id="backgroundMusicSecond" preload="metadata">
+        <source src="YEAHHHHHH.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <audio id="backgroundMusicLoop" preload="metadata" loop>
+        <source src="Audiolandingpage.m4a" type="audio/mp4">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <script src="music-system.js"></script>
+</body>
+</html>
+
