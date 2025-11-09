@@ -190,21 +190,40 @@ exports.handler = async (event, context) => {
     // to ensure proper unsubscribe handling and avoid rate limits
     const emailAddresses = allContacts.map(contact => contact.email).filter(Boolean);
     
-    // Generate unsubscribe URLs for each email
-    const emailsWithUnsubscribe = emailAddresses.map(email => {
+    // Generate personalized emails for each contact
+    const emailsWithPersonalization = allContacts.map(contact => {
+      const email = contact.email;
+      if (!email) return null;
+      
       const encodedEmail = Buffer.from(email).toString('base64');
       const unsubscribeUrl = `https://noteworthynews.co/unsubscribe.html?email=${encodeURIComponent(encodedEmail)}`;
       
-      // Replace unsubscribe placeholder in HTML
-      const personalizedHtml = htmlContent.replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl);
-      const personalizedText = textContent.replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl);
+      // Get contact data for personalization
+      const firstName = contact.firstName || contact.first_name || '';
+      const lastName = contact.lastName || contact.last_name || '';
+      const fullName = contact.name || `${firstName} ${lastName}`.trim() || email.split('@')[0];
+      
+      // Replace personalization placeholders
+      let personalizedHtml = htmlContent
+        .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl)
+        .replace(/\{\{FIRST_NAME\}\}/g, firstName || 'there')
+        .replace(/\{\{LAST_NAME\}\}/g, lastName || '')
+        .replace(/\{\{FULL_NAME\}\}/g, fullName)
+        .replace(/\{\{EMAIL\}\}/g, email);
+      
+      let personalizedText = textContent
+        .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl)
+        .replace(/\{\{FIRST_NAME\}\}/g, firstName || 'there')
+        .replace(/\{\{LAST_NAME\}\}/g, lastName || '')
+        .replace(/\{\{FULL_NAME\}\}/g, fullName)
+        .replace(/\{\{EMAIL\}\}/g, email);
       
       return {
         email,
         html: personalizedHtml,
         text: personalizedText,
       };
-    });
+    }).filter(Boolean);
 
     // Send emails in batches to avoid rate limits
     const batchSize = 10; // Send 10 emails at a time
@@ -212,8 +231,8 @@ exports.handler = async (event, context) => {
     let errorCount = 0;
     const errors = [];
 
-    for (let i = 0; i < emailsWithUnsubscribe.length; i += batchSize) {
-      const batch = emailsWithUnsubscribe.slice(i, i + batchSize);
+    for (let i = 0; i < emailsWithPersonalization.length; i += batchSize) {
+      const batch = emailsWithPersonalization.slice(i, i + batchSize);
       
       // Send emails in parallel within each batch
       const batchPromises = batch.map(async ({ email, html, text }) => {
@@ -335,7 +354,7 @@ function getDefaultNewsletterHTML() {
 function getDefaultNewsletterText() {
   return `Weekly Newsletter - Noteworthy News
 
-Hi there,
+Hi {{FIRST_NAME}},
 
 Welcome to your weekly Noteworthy News newsletter! Here's what's happening this week:
 

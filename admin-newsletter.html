@@ -196,7 +196,7 @@
             <div class="form-group">
                 <label for="html">HTML Content *</label>
                 <textarea id="html" name="html" required placeholder="Enter your HTML newsletter content..."></textarea>
-                <p class="help-text">Use {{UNSUBSCRIBE_URL}} as a placeholder for the unsubscribe link</p>
+                <p class="help-text">Personalization: Use {{FIRST_NAME}}, {{LAST_NAME}}, {{FULL_NAME}}, {{EMAIL}}, or {{UNSUBSCRIBE_URL}} as placeholders</p>
             </div>
             
             <div class="form-group">
@@ -206,7 +206,8 @@
             </div>
             
             <div>
-                <button type="submit" class="btn" id="sendBtn">Send Newsletter</button>
+                <button type="submit" class="btn" id="sendBtn">Send Newsletter to Audience</button>
+                <button type="button" class="btn btn-secondary" id="testBtn">Send Test Email</button>
                 <button type="button" class="btn btn-secondary" id="previewBtn">Preview Default Template</button>
             </div>
         </form>
@@ -216,6 +217,7 @@
         const form = document.getElementById('newsletterForm');
         const statusMessage = document.getElementById('statusMessage');
         const sendBtn = document.getElementById('sendBtn');
+        const testBtn = document.getElementById('testBtn');
         const previewBtn = document.getElementById('previewBtn');
         
         // Default template
@@ -238,7 +240,7 @@
           </tr>
           <tr>
             <td style="padding: 30px; background-color: #ffffff;">
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Hi there,</p>
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Hi {{FIRST_NAME}},</p>
               <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Welcome to your weekly Noteworthy News newsletter! Here's what's happening this week:</p>
               
               <div style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-left: 4px solid #4a90e2; padding: 20px; margin: 20px 0; border-radius: 5px;">
@@ -266,7 +268,7 @@
         
         const defaultText = `Weekly Newsletter - Noteworthy News
 
-Hi there,
+Hi {{FIRST_NAME}},
 
 Welcome to your weekly Noteworthy News newsletter! Here's what's happening this week:
 
