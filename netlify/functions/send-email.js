@@ -716,17 +716,34 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
       autoReplyId: autoReplyResult.data?.id,
     });
 
+    // Get firstName for personalized success message
+    // We already have firstName from earlier, but let's make sure we have the best one
+    let finalFirstName = firstName;
+    if (!finalFirstName || finalFirstName === 'there') {
+      // Try to get from newly created contact
+      if (audienceResult && audienceResult.data) {
+        const contactData = audienceResult.data;
+        finalFirstName = contactData.firstName || 
+                        contactData.first_name || 
+                        (contactData.name ? contactData.name.split(' ')[0] : null) ||
+                        null;
+      }
+    }
+
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        message: 'Subscription successful! Check your email for a welcome message.',
+        message: finalFirstName && finalFirstName !== 'there'
+          ? `Thanks ${finalFirstName}! Successfully subscribed! Check your email for a welcome message.`
+          : 'Subscription successful! Check your email for a welcome message.',
         notificationId: notificationResult.data?.id,
         autoReplyId: autoReplyResult.data?.id,
         notificationSent,
         autoReplySent,
         audienceAdded: !!(audienceResult && !audienceError && audienceResult.data?.id),
+        firstName: finalFirstName && finalFirstName !== 'there' ? finalFirstName : null,
         audienceError: audienceError ? {
           message: audienceError.message || 'Unknown error',
           name: audienceError.name,
