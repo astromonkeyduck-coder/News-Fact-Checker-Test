@@ -127,6 +127,44 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // Get user email from event (if available)
+    let userEmail = null;
+    try {
+      const { logData, getClientIP } = require("./log-data");
+      const ip = getClientIP(event);
+      
+      // Try to get email from previous logs by IP
+      if (ip && ip !== "unknown" && !ip.startsWith("127.") && !ip.startsWith("192.168.")) {
+        const { getStore } = require("@netlify/blobs");
+        const store = getStore({
+          name: "analytics-data",
+          siteID: process.env.NETLIFY_SITE_ID,
+          token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+        });
+        
+        const today = new Date().toISOString().split('T')[0];
+        const logsKey = `logs-${today}`;
+        try {
+          const existing = await store.get(logsKey, { type: "json" });
+          if (existing && Array.isArray(existing)) {
+            const matchingLog = existing.find(log => 
+              log.ip === ip && 
+              log.userEmail && 
+              log.userEmail !== 'Unknown' &&
+              log.userEmail.includes('@')
+            );
+            if (matchingLog) {
+              userEmail = matchingLog.userEmail;
+            }
+          }
+        } catch (e) {
+          // Continue without email
+        }
+      }
+    } catch (e) {
+      // Continue without email
+    }
+
     // Log image generation (non-blocking - don't wait for it)
     try {
       const { logData } = require("./log-data");
@@ -155,6 +193,126 @@ exports.handler = async (event, context) => {
       console.error("[Generate Image] ❌ Error logging data:", err);
       console.error("[Generate Image] Error stack:", err.stack);
       // Don't fail the request if logging fails
+    }
+
+    // Send email notification (non-blocking - don't wait for it)
+    try {
+      const { Resend } = require('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      
+      // Get notification emails from environment variable (comma-separated or JSON array)
+      let notificationEmails = [];
+      if (process.env.AI_NOTIFICATION_EMAILS) {
+        try {
+          // Try parsing as JSON array first
+          notificationEmails = JSON.parse(process.env.AI_NOTIFICATION_EMAILS);
+          if (!Array.isArray(notificationEmails)) {
+            throw new Error('Not an array');
+          }
+        } catch {
+          // If not JSON, treat as comma-separated string
+          notificationEmails = process.env.AI_NOTIFICATION_EMAILS.split(',').map(e => e.trim()).filter(e => e);
+        }
+      }
+      
+      // Fallback to default if no emails configured
+      if (notificationEmails.length === 0) {
+        notificationEmails = [process.env.ADMIN_NOTIFICATION_EMAIL || 'richard@noteworthynews.co'];
+      }
+      
+      const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
+      
+      const safePrompt = String(prompt.trim())
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .substring(0, 500);
+      
+      // Send to all notification emails
+      await Promise.all(notificationEmails.map(email => 
+        resend.emails.send({
+          from: fromEmail,
+          to: email,
+          subject: '🎨 New AI Image Generated',
+        html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(74, 144, 226, 0.1) 100%); border-radius: 10px 10px 0 0;">
+              <h2 style="color: #ffc107; margin: 0; font-size: 24px; font-weight: bold;">🎨 New AI Image Generated</h2>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 30px; background-color: #ffffff;">
+              <div style="margin-bottom: 25px; text-align: center; padding: 20px; background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(74, 144, 226, 0.1) 100%); border-radius: 12px; border: 3px solid #ffc107;">
+                <h3 style="color: #ffc107; margin: 0 0 15px 0; font-size: 18px; font-weight: bold;">🎨 Generated Image</h3>
+                <img src="${imageUrl}" alt="Generated Image" style="max-width: 100%; max-height: 500px; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border: 2px solid #fff;">
+                <p style="margin-top: 15px; color: #666666; font-size: 14px;">
+                  <a href="${imageUrl}" style="color: #4A90E2; text-decoration: none;">🔗 View Full Size Image</a>
+                </p>
+              </div>
+              <div style="padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: 2px solid #ffc107; border-radius: 8px; margin-bottom: 20px;">
+                ${userEmail ? `
+                <div style="padding: 15px; background: rgba(74, 144, 226, 0.1); border-left: 4px solid #4A90E2; border-radius: 6px; margin-bottom: 15px;">
+                  <p style="color: #333333; font-size: 16px; margin: 0; line-height: 1.6;"><strong style="color: #4A90E2;">👤 Generated By:</strong> <span style="color: #666666; font-weight: 600;">${userEmail}</span></p>
+                </div>
+                ` : `
+                <div style="padding: 15px; background: rgba(100, 100, 100, 0.1); border-left: 4px solid #666666; border-radius: 6px; margin-bottom: 15px;">
+                  <p style="color: #333333; font-size: 16px; margin: 0; line-height: 1.6;"><strong style="color: #666666;">👤 Generated By:</strong> <span style="color: #666666;">Unknown User</span></p>
+                </div>
+                `}
+                <p style="color: #333333; font-size: 16px; margin: 10px 0; line-height: 1.6;"><strong style="color: #ffc107;">💬 Prompt:</strong><br><span style="color: #666666; font-size: 15px;">${safePrompt}</span></p>
+                ${revisedPrompt && revisedPrompt !== prompt.trim() ? `<p style="color: #333333; font-size: 16px; margin: 10px 0; line-height: 1.6;"><strong style="color: #ffc107;">✨ Revised Prompt:</strong><br><span style="color: #666666; font-size: 15px;">${String(revisedPrompt).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 500)}</span></p>` : ''}
+              </div>
+              <div style="padding: 15px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: 2px solid #4A90E2; border-radius: 8px;">
+                <p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">📐 Size:</strong> <span style="color: #666666;">${size}</span></p>
+                <p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">✨ Quality:</strong> <span style="color: #666666;">${quality}</span></p>
+                <p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">🎨 Style:</strong> <span style="color: #666666;">${style}</span></p>
+                <p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">📅 Generated:</strong> <span style="color: #666666;">${new Date().toLocaleString()}</span></p>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 30px 30px 30px; background-color: #ffffff; border-radius: 0 0 10px 10px;">
+              <p style="color: #999999; font-size: 13px; margin: 0; line-height: 1.5; text-align: center;">This is an automated notification from your website.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+        text: `New AI Image Generated
+
+Prompt: ${prompt.trim()}
+${revisedPrompt && revisedPrompt !== prompt.trim() ? `Revised Prompt: ${revisedPrompt}\n` : ''}
+Size: ${size}
+Quality: ${quality}
+Style: ${style}
+${userEmail ? `User: ${userEmail}\n` : ''}
+Generated: ${new Date().toLocaleString()}
+
+Image URL: ${imageUrl}
+
+---
+This is an automated notification from your website.`,
+      }).catch(err => {
+        console.error("[Generate Image] Failed to send email notification:", err);
+      });
+    } catch (emailErr) {
+      console.error("[Generate Image] Error sending email notification:", emailErr);
+      // Don't fail the request if email fails
     }
 
     return {

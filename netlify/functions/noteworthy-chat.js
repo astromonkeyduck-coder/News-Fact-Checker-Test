@@ -267,6 +267,64 @@ RESPONSE STYLE:
     const reply = data?.choices?.[0]?.message?.content?.trim() || "No response generated.";
     const usage = data?.usage || null;
 
+    // Get user email and chat history from event (if available)
+    let userEmail = null;
+    let chatHistory = [];
+    try {
+      const { logData, getClientIP } = require("./log-data");
+      const ip = getClientIP(event);
+      
+      // Try to get email and chat history from previous logs by IP
+      if (ip && ip !== "unknown" && !ip.startsWith("127.") && !ip.startsWith("192.168.")) {
+        const { getStore } = require("@netlify/blobs");
+        const store = getStore({
+          name: "analytics-data",
+          siteID: process.env.NETLIFY_SITE_ID,
+          token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+        });
+        
+        const today = new Date().toISOString().split('T')[0];
+        const logsKey = `logs-${today}`;
+        try {
+          const existing = await store.get(logsKey, { type: "json" });
+          if (existing && Array.isArray(existing)) {
+            // Find email from any log with same IP
+            const matchingLog = existing.find(log => 
+              log.ip === ip && 
+              log.userEmail && 
+              log.userEmail !== 'Unknown' &&
+              log.userEmail.includes('@')
+            );
+            if (matchingLog) {
+              userEmail = matchingLog.userEmail;
+            }
+            
+            // Get recent chat history for this user/IP (last 10 chats, most recent first)
+            const recentChats = existing
+              .filter(log => 
+                log.dataType === 'ai-chat' && 
+                log.ip === ip &&
+                log.data &&
+                log.data.userMessage
+              )
+              .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+              .slice(0, 10)
+              .map(log => ({
+                timestamp: log.timestamp,
+                userMessage: log.data.userMessage,
+                aiResponse: log.data.aiResponse,
+              }));
+            
+            chatHistory = recentChats;
+          }
+        } catch (e) {
+          // Continue without email/history
+        }
+      }
+    } catch (e) {
+      // Continue without email/history
+    }
+
     // Log AI interaction (non-blocking - don't wait for it)
     const { logData } = require("./log-data");
     logData("ai-chat", {
@@ -280,6 +338,162 @@ RESPONSE STYLE:
       console.error("[Noteworthy Chat] Failed to log data:", err);
       // Don't fail the request if logging fails
     });
+
+    // Send email notification (non-blocking - don't wait for it)
+    try {
+      const { Resend } = require('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      
+      // Get notification emails from environment variable (comma-separated or JSON array)
+      let notificationEmails = [];
+      if (process.env.AI_NOTIFICATION_EMAILS) {
+        try {
+          // Try parsing as JSON array first
+          notificationEmails = JSON.parse(process.env.AI_NOTIFICATION_EMAILS);
+          if (!Array.isArray(notificationEmails)) {
+            throw new Error('Not an array');
+          }
+        } catch {
+          // If not JSON, treat as comma-separated string
+          notificationEmails = process.env.AI_NOTIFICATION_EMAILS.split(',').map(e => e.trim()).filter(e => e);
+        }
+      }
+      
+      // Fallback to default if no emails configured
+      if (notificationEmails.length === 0) {
+        notificationEmails = [process.env.ADMIN_NOTIFICATION_EMAIL || 'richard@noteworthynews.co'];
+      }
+      
+      const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
+      
+      const safeMessage = String(message)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .substring(0, 500);
+      
+      const safeReply = String(reply)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .substring(0, 1000);
+      
+      // Send to all notification emails
+      await Promise.all(notificationEmails.map(email => 
+        resend.emails.send({
+          from: fromEmail,
+          to: email,
+          subject: '💬 New AI Chat Interaction',
+        html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(46, 204, 113, 0.1) 100%); border-radius: 10px 10px 0 0;">
+              <h2 style="color: #4A90E2; margin: 0; font-size: 24px; font-weight: bold;">💬 New AI Chat Interaction</h2>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 30px; background-color: #ffffff;">
+              ${userEmail ? `
+              <div style="padding: 15px; background: rgba(74, 144, 226, 0.15); border-left: 4px solid #4A90E2; border-radius: 8px; margin-bottom: 20px;">
+                <p style="color: #333333; font-size: 16px; margin: 0; line-height: 1.6;"><strong style="color: #4A90E2;">👤 Chat User:</strong> <span style="color: #666666; font-weight: 600;">${userEmail}</span></p>
+              </div>
+              ` : `
+              <div style="padding: 15px; background: rgba(100, 100, 100, 0.1); border-left: 4px solid #666666; border-radius: 8px; margin-bottom: 20px;">
+                <p style="color: #333333; font-size: 16px; margin: 0; line-height: 1.6;"><strong style="color: #666666;">👤 Chat User:</strong> <span style="color: #666666;">Unknown User</span></p>
+              </div>
+              `}
+              
+              <div style="padding: 20px; background: rgba(46, 204, 113, 0.1); border-left: 4px solid #2ecc71; border-radius: 8px; margin-bottom: 20px;">
+                <p style="color: #2ecc71; font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">👤 NEW USER MESSAGE:</p>
+                <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${safeMessage}</p>
+              </div>
+              <div style="padding: 20px; background: rgba(74, 144, 226, 0.1); border-left: 4px solid #4A90E2; border-radius: 8px; margin-bottom: 20px;">
+                <p style="color: #4A90E2; font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">🤖 AI RESPONSE:</p>
+                <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${safeReply}</p>
+              </div>
+              
+              ${chatHistory.length > 0 ? `
+              <div style="padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: 2px solid #9b59b6; border-radius: 8px; margin-bottom: 20px;">
+                <p style="color: #9b59b6; font-size: 16px; font-weight: bold; margin: 0 0 15px 0;">💬 Recent Chat History (Last ${chatHistory.length} conversations):</p>
+                ${chatHistory.map((chat, idx) => {
+                  const chatTime = new Date(chat.timestamp).toLocaleString();
+                  const safeUserMsg = String(chat.userMessage || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 300);
+                  const safeAiResp = String(chat.aiResponse || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 400);
+                  return `
+                  <div style="margin-bottom: ${idx < chatHistory.length - 1 ? '20px' : '0'}; padding-bottom: ${idx < chatHistory.length - 1 ? '20px' : '0'}; border-bottom: ${idx < chatHistory.length - 1 ? '1px solid rgba(155, 89, 182, 0.2)' : 'none'};">
+                    <p style="color: #666666; font-size: 12px; margin: 0 0 8px 0;">${chatTime}</p>
+                    <div style="padding: 12px; background: rgba(46, 204, 113, 0.05); border-left: 3px solid #2ecc71; border-radius: 4px; margin-bottom: 8px;">
+                      <p style="color: #2ecc71; font-size: 12px; font-weight: bold; margin: 0 0 5px 0;">User:</p>
+                      <p style="color: #333333; font-size: 14px; line-height: 1.5; margin: 0;">${safeUserMsg}${chat.userMessage && chat.userMessage.length > 300 ? '...' : ''}</p>
+                    </div>
+                    <div style="padding: 12px; background: rgba(74, 144, 226, 0.05); border-left: 3px solid #4A90E2; border-radius: 4px;">
+                      <p style="color: #4A90E2; font-size: 12px; font-weight: bold; margin: 0 0 5px 0;">AI:</p>
+                      <p style="color: #333333; font-size: 14px; line-height: 1.5; margin: 0;">${safeAiResp}${chat.aiResponse && chat.aiResponse.length > 400 ? '...' : ''}</p>
+                    </div>
+                  </div>
+                  `;
+                }).join('')}
+              </div>
+              ` : ''}
+              
+              <div style="padding: 15px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: 2px solid #4A90E2; border-radius: 8px;">
+                <p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">🧠 Model:</strong> <span style="color: #666666;">gpt-4o</span></p>
+                ${usage ? `<p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">💬 Tokens:</strong> <span style="color: #666666;">${usage.prompt_tokens || 0} input + ${usage.completion_tokens || 0} output = ${usage.total_tokens || 0} total</span></p>` : ''}
+                <p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">📅 Time:</strong> <span style="color: #666666;">${new Date().toLocaleString()}</span></p>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 30px 30px 30px; background-color: #ffffff; border-radius: 0 0 10px 10px;">
+              <p style="color: #999999; font-size: 13px; margin: 0; line-height: 1.5; text-align: center;">This is an automated notification from your website.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+        text: `New AI Chat Interaction
+
+${userEmail ? `Chat User: ${userEmail}\n` : 'Chat User: Unknown User\n'}
+
+NEW USER MESSAGE:
+${message.substring(0, 500)}
+
+AI RESPONSE:
+${reply.substring(0, 1000)}
+
+${chatHistory.length > 0 ? `\nRecent Chat History (Last ${chatHistory.length} conversations):\n${chatHistory.map((chat, idx) => {
+  return `\n[${new Date(chat.timestamp).toLocaleString()}]\nUser: ${(chat.userMessage || '').substring(0, 300)}\nAI: ${(chat.aiResponse || '').substring(0, 400)}\n`;
+}).join('\n---\n')}\n` : ''}
+
+Model: gpt-4o
+${usage ? `Tokens: ${usage.prompt_tokens || 0} input + ${usage.completion_tokens || 0} output = ${usage.total_tokens || 0} total\n` : ''}
+Time: ${new Date().toLocaleString()}
+
+---
+This is an automated notification from your website.`,
+      }).catch(err => {
+        console.error("[Noteworthy Chat] Failed to send email notification:", err);
+      });
+    } catch (emailErr) {
+      console.error("[Noteworthy Chat] Error sending email notification:", emailErr);
+      // Don't fail the request if email fails
+    }
 
     return {
       statusCode: 200,
