@@ -1666,6 +1666,8 @@ class GeographyGame {
             submitForm.style.display = 'block';
             submitForm.style.visibility = 'visible';
             submitForm.style.opacity = '1';
+            // Scroll form into view
+            submitForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
             console.log('[Geography Game] Leaderboard form should now be visible');
         } else {
             console.error('[Geography Game] Leaderboard submit form not found!');
