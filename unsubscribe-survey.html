@@ -345,23 +345,53 @@
     </script>
     
     <!-- Background Music - Unsubscribe Theme -->
-    <audio id="unsubscribeMusic" preload="auto" autoplay>
+    <audio id="unsubscribeMusic" preload="auto" loop>
         <source src="Unsubscribed(But StillinMyHeart).mp3" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
     
     <script>
         // Play the unsubscribe music when page loads
-        document.addEventListener('DOMContentLoaded', function() {
+        function playUnsubscribeMusic() {
             const audio = document.getElementById('unsubscribeMusic');
             if (audio) {
                 audio.volume = 0.5; // Set volume to 50%
-                audio.play().catch(function(error) {
-                    // Autoplay was prevented, user interaction required
-                    console.log('Autoplay prevented, will play on user interaction');
-                });
+                const playPromise = audio.play();
+            
+                if (playPromise !== undefined) {
+                    playPromise.catch(function(error) {
+                        // Autoplay was prevented, try again after user interaction
+                        console.log('Autoplay prevented, will play on user interaction');
+                        
+                        // Try to play on any user interaction
+                        const tryPlay = function() {
+                            audio.play().catch(function(e) {
+                                console.log('Still cannot play:', e);
+                            });
+                            // Remove listeners after first successful play
+                            document.removeEventListener('click', tryPlay);
+                            document.removeEventListener('touchstart', tryPlay);
+                            document.removeEventListener('keydown', tryPlay);
+                        };
+                        
+                        document.addEventListener('click', tryPlay, { once: true });
+                        document.addEventListener('touchstart', tryPlay, { once: true });
+                        document.addEventListener('keydown', tryPlay, { once: true });
+                    });
+                }
             }
-        });
+        }
+        
+        // Try to play immediately when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', playUnsubscribeMusic);
+        } else {
+            // DOM is already loaded
+            playUnsubscribeMusic();
+        }
+        
+        // Also try to play after a short delay (sometimes helps with autoplay)
+        setTimeout(playUnsubscribeMusic, 500);
     </script>
 </body>
 </html>
