@@ -6395,7 +6395,13 @@ function initNewsletterSubscription() {
 
             // Success!
             clearTimeout(timeoutId);
-            showNewsletterMessage('Successfully subscribed! Check your email for a welcome message.', 'success');
+            
+            // Check if they're already subscribed
+            if (data.alreadySubscribed) {
+                showNewsletterMessage('You are already subscribed to our newsletter!', 'success');
+            } else {
+                showNewsletterMessage('Successfully subscribed! Check your email for a welcome message.', 'success');
+            }
             newsletterInput.value = '';
             
         } catch (error) {

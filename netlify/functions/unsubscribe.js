@@ -129,6 +129,82 @@ exports.handler = async (event, context) => {
       console.warn('RESEND_AUDIENCE_ID not configured. Cannot remove from audience.');
     }
 
+    // Send survey email after successful unsubscribe
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
+    const encodedEmail = Buffer.from(email).toString('base64');
+    const surveyUrl = `https://noteworthynews.co/unsubscribe-survey.html?email=${encodeURIComponent(encodedEmail)}`;
+    
+    let surveyEmailSent = false;
+    try {
+      console.log('Sending unsubscribe survey email to:', email);
+      const surveyResult = await resend.emails.send({
+        from: fromEmail,
+        to: email,
+        replyTo: 'richard@noteworthynews.co',
+        subject: 'Quick Question: Why did you unsubscribe? 🤔',
+        clickTracking: false,
+        text: `Thanks for being part of Noteworthy News!
+
+We're sorry to see you go! 😢
+
+Before you leave, we'd love to know why you're unsubscribing. It only takes 30 seconds and helps us improve!
+
+Take our quick survey: ${surveyUrl}
+
+Thanks for your feedback!
+
+The Noteworthy News Team`,
+        html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(46, 204, 113, 0.1) 100%); border-radius: 10px 10px 0 0;">
+              <img src="https://noteworthynews.co/IMG_5992.PNG" alt="Noteworthy News Logo" style="max-width: 150px; height: auto; border-radius: 50%; display: block; margin: 0 auto 20px; border: 3px solid #4a90e2; box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);" />
+              <h2 style="color: #4a90e2; margin: 0; font-size: 24px; font-weight: bold;">Thanks for being part of Noteworthy News! 🤔</h2>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 30px; background-color: #ffffff;">
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">We're sorry to see you go! 😢</p>
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Before you leave, we'd love to know why you're unsubscribing. It only takes 30 seconds and helps us improve!</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${surveyUrl}" style="display: inline-block; padding: 15px 30px; background: linear-gradient(135deg, #4A90E2 0%, #2A60B0 100%); color: white; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px;">Take Our Quick Survey 📝</a>
+              </div>
+              <p style="color: #999999; font-size: 14px; margin: 20px 0 0 0; text-align: center;">Thanks for your feedback!</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 25px 30px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-top: 2px solid #4a90e2; border-radius: 0 0 10px 10px;">
+              <p style="color: #333333; font-size: 16px; margin: 0 0 8px 0; line-height: 1.5;"><strong>The Noteworthy News Team</strong></p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+      });
+      
+      if (!surveyResult.error) {
+        surveyEmailSent = true;
+        console.log('Survey email sent successfully');
+      } else {
+        console.error('Error sending survey email:', surveyResult.error);
+      }
+    } catch (surveyError) {
+      console.error('Exception sending survey email:', surveyError);
+      // Don't fail unsubscribe if survey email fails
+    }
+
     return {
       statusCode: 200,
       headers,
@@ -137,6 +213,7 @@ exports.handler = async (event, context) => {
         message: 'You have been successfully unsubscribed from the newsletter.',
         email: email,
         removedFromAudience,
+        surveyEmailSent,
       }),
     };
 
