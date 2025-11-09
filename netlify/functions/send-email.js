@@ -13,13 +13,7 @@ try {
 }
 
 // Load Resend module
-let Resend;
-try {
-  Resend = require('resend').Resend;
-} catch (e) {
-  console.error('Error loading Resend module:', e);
-  throw new Error('Failed to load Resend module: ' + e.message);
-}
+const { Resend } = require('resend');
 
 // Resend Audience ID for newsletter subscribers
 // Get this from: https://resend.com/audiences
