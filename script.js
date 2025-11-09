@@ -6646,6 +6646,18 @@ function initNewsletterSubscription() {
             }
         }, 200);
         
+        // Stop confetti after 20 seconds
+        setTimeout(function() {
+            console.log('[Subscription Sound] Stopping confetti after 20 seconds');
+            clearInterval(confettiInterval);
+            // Clean up confetti container after a delay to let remaining pieces fall
+            setTimeout(function() {
+                if (confettiContainer && confettiContainer.parentNode) {
+                    confettiContainer.innerHTML = '';
+                }
+            }, 3000);
+        }, 20000);
+        
         // Create and play subscription sound
         console.log('[Subscription Sound] Creating audio element...');
         const subscriptionSound = new Audio('Subscribedv1.mp3');
@@ -6715,7 +6727,7 @@ function initNewsletterSubscription() {
                 });
             }
         });
-    }
+    };
 
     function showNewsletterMessage(message, type) {
         // Remove existing messages
