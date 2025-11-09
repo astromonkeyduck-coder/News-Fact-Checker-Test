@@ -46,7 +46,7 @@ exports.handler = async (event) => {
 
     if (event.httpMethod === "POST" || event.httpMethod === "PATCH") {
       const body = JSON.parse(event.body || "{}");
-      const { postId, datePosted, views, likes, reposts, replies, engagements, bookmarks, shares } = body;
+      const { postId, datePosted, views, likes, reposts, replies, engagements, bookmarks, shares, story, text, link, url } = body;
 
       if (!postId) {
         return {
@@ -77,7 +77,10 @@ exports.handler = async (event) => {
         const updatedPost = {
           ...post,
           id: post.id || postId, // Ensure ID is always set
-          link: post.link || `https://x.com/newsnoteworthy/status/${postId}`, // Ensure link is always set
+          link: link || url || post.link || `https://x.com/newsnoteworthy/status/${postId}`, // Ensure link is always set
+          url: url || link || post.url || post.link || `https://x.com/newsnoteworthy/status/${postId}`, // Ensure url is always set
+          story: story || text || post.story || post.text || post.title || '', // Ensure story/text is always set
+          text: text || story || post.text || post.story || post.title || '', // Ensure text is always set
           ...(datePosted && { datePosted }),
           ...(views !== undefined && { views }),
           ...(likes !== undefined && { likes }),
