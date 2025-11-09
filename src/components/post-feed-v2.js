@@ -604,17 +604,23 @@ function renderPostCard(post) {
  * Removes Twitter URL shorteners (pic.twitter.com, t.co) since media is displayed separately
  */
 function formatPostText(text, postMedia = []) {
-  if (!text) return '';
+  if (!text || (typeof text === 'string' && text.trim() === '')) return '';
   
   // Remove Twitter URL shorteners if we have media (they're redundant)
-  let cleanedText = text;
+  let cleanedText = String(text); // Ensure it's a string
   const hasMedia = postMedia && postMedia.length > 0;
   
   if (hasMedia) {
     // Remove pic.twitter.com links (media is shown separately)
     cleanedText = cleanedText.replace(/https?:\/\/(pic\.twitter\.com|pbs\.twimg\.com)[^\s<>"']+/gi, '').trim();
     // Remove t.co links that are likely media (if we have media, these are probably redundant)
+    // But keep the text before the link
     cleanedText = cleanedText.replace(/https?:\/\/t\.co\/[a-zA-Z0-9]+/gi, '').trim();
+  }
+  
+  // If after cleaning we have no text, return the original (might be important)
+  if (!cleanedText || cleanedText.trim() === '') {
+    cleanedText = String(text);
   }
   
   // Clean up extra whitespace after removing URLs
