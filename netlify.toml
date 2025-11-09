@@ -21,6 +21,12 @@
   force = false
   headers = { X-From = "/api/noteworthy" }
 
+[[redirects]]
+  from = "/datalogging"
+  to = "/admin-analytics.html"
+  status = 200
+  force = false
+
 [functions]
   # Use esbuild to automatically compile TypeScript functions
   node_bundler = "esbuild"

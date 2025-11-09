@@ -206,6 +206,18 @@ exports.handler = async (event, context) => {
     }
 
     if (event.httpMethod === "GET") {
+      // SECURITY: Require admin token for viewing logs (GET requests)
+      const adminToken = process.env.ADMIN_ANALYTICS_TOKEN;
+      const providedToken = event.queryStringParameters?.token || event.headers["x-admin-token"];
+      
+      if (adminToken && providedToken !== adminToken) {
+        return {
+          statusCode: 401,
+          headers,
+          body: JSON.stringify({ error: "Unauthorized - Admin token required" }),
+        };
+      }
+      
       // Check for CSV export
       const format = event.queryStringParameters?.format;
       const date = event.queryStringParameters?.date || new Date().toISOString().split("T")[0];

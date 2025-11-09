@@ -22,6 +22,18 @@ exports.handler = async (event, context) => {
   // SSE requires a persistent connection, but Netlify Functions have time limits
   // So we'll return recent logs and provide a polling mechanism
   try {
+    // SECURITY: Require admin token for streaming logs
+    const adminToken = process.env.ADMIN_ANALYTICS_TOKEN;
+    const providedToken = event.queryStringParameters?.token || event.headers["x-admin-token"];
+    
+    if (adminToken && providedToken !== adminToken) {
+      return {
+        statusCode: 401,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ error: "Unauthorized - Admin token required" }),
+      };
+    }
+    
     const date = event.queryStringParameters?.date || new Date().toISOString().split("T")[0];
     const dataType = event.queryStringParameters?.type;
     const since = event.queryStringParameters?.since; // Timestamp to get logs after

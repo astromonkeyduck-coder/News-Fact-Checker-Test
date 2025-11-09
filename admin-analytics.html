@@ -199,9 +199,27 @@
     </style>
 </head>
 <body>
+    <!-- Login Screen -->
+    <div id="loginScreen" style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
+        <div style="background: rgba(74, 144, 226, 0.1); padding: 40px; border-radius: 12px; border: 1px solid rgba(74, 144, 226, 0.3); max-width: 400px; width: 100%;">
+            <h2 style="margin-bottom: 20px; text-align: center;">🔒 Admin Access Required</h2>
+            <p style="margin-bottom: 20px; color: rgba(255,255,255,0.7); text-align: center;">Enter admin password to access analytics data</p>
+            <input type="password" id="adminPassword" placeholder="Admin Password" style="width: 100%; padding: 12px; border: 2px solid rgba(74, 144, 226, 0.5); border-radius: 6px; background: rgba(15, 15, 35, 0.8); color: white; font-size: 1rem; margin-bottom: 15px;" onkeypress="if(event.key==='Enter') checkPassword()">
+            <button class="btn" onclick="checkPassword()" style="width: 100%;">Login</button>
+            <p id="loginError" style="color: #f44336; margin-top: 15px; text-align: center; display: none;"></p>
+        </div>
+    </div>
+    
+    <!-- Main Dashboard (hidden until login) -->
+    <div id="dashboardContent" style="display: none;">
     <div class="header">
-        <h1>📊 Analytics Dashboard</h1>
-        <p>Real-time data monitoring and export for Noteworthy News</p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1>📊 Analytics Dashboard</h1>
+                <p>Real-time data monitoring and export for Noteworthy News</p>
+            </div>
+            <button class="btn" onclick="logout()" style="background: linear-gradient(135deg, #f44336, #d32f2f);">Logout</button>
+        </div>
     </div>
     
     <div class="controls">
@@ -286,8 +304,10 @@
             <p style="text-align: center; color: rgba(255, 255, 255, 0.5);">Click "Load Data" to view logs</p>
         </div>
     </div>
+    </div> <!-- End dashboardContent -->
     
     <script>
+        let adminToken = null;
         let isStreaming = false;
         let streamInterval = null;
         let currentDate = '';
@@ -295,8 +315,74 @@
         let currentLimit = 100;
         let lastTimestamp = null;
         
-        // Set today's date as default
-        document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
+        // Check if token is stored in sessionStorage
+        window.addEventListener('load', () => {
+            const storedToken = sessionStorage.getItem('adminAnalyticsToken');
+            if (storedToken) {
+                adminToken = storedToken;
+                showDashboard();
+            }
+        });
+        
+        async function checkPassword() {
+            const password = document.getElementById('adminPassword').value;
+            const errorEl = document.getElementById('loginError');
+            
+            if (!password) {
+                errorEl.textContent = 'Please enter a password';
+                errorEl.style.display = 'block';
+                return;
+            }
+            
+            // Try to authenticate by making a test request
+            try {
+                const testUrl = `/.netlify/functions/log-data?token=${encodeURIComponent(password)}&limit=1`;
+                const response = await fetch(testUrl);
+                
+                if (response.ok || response.status === 200) {
+                    // Password is correct
+                    adminToken = password;
+                    sessionStorage.setItem('adminAnalyticsToken', password);
+                    showDashboard();
+                } else if (response.status === 401) {
+                    errorEl.textContent = 'Incorrect password';
+                    errorEl.style.display = 'block';
+                } else {
+                    // If no token is configured, allow access (for development)
+                    const data = await response.json().catch(() => ({}));
+                    if (data.error && data.error.includes('token')) {
+                        // Token is required but not set up - allow access for now
+                        adminToken = password;
+                        sessionStorage.setItem('adminAnalyticsToken', password);
+                        showDashboard();
+                    } else {
+                        errorEl.textContent = 'Authentication failed';
+                        errorEl.style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                console.error('Auth error:', error);
+                errorEl.textContent = 'Connection error. Please try again.';
+                errorEl.style.display = 'block';
+            }
+        }
+        
+        function showDashboard() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('dashboardContent').style.display = 'block';
+            // Set today's date as default
+            document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
+            // Auto-load data
+            loadLogs();
+        }
+        
+        function addTokenToUrl(url) {
+            if (adminToken) {
+                const separator = url.includes('?') ? '&' : '?';
+                return `${url}${separator}token=${encodeURIComponent(adminToken)}`;
+            }
+            return url;
+        }
         
         async function loadLogs() {
             const date = document.getElementById('dateInput').value;
@@ -310,7 +396,8 @@
             showStatus('Loading data...', 'info');
             
             try {
-                const url = `/.netlify/functions/log-data?date=${date}&limit=${limit}${type ? `&type=${type}` : ''}`;
+                let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}${type ? `&type=${type}` : ''}`;
+                url = addTokenToUrl(url);
                 const response = await fetch(url);
                 
                 if (!response.ok) {
@@ -341,7 +428,8 @@
             showStatus('Exporting CSV...', 'info');
             
             try {
-                const url = `/.netlify/functions/log-data?date=${date}&limit=${limit}&format=csv${type ? `&type=${type}` : ''}`;
+                let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}&format=csv${type ? `&type=${type}` : ''}`;
+                url = addTokenToUrl(url);
                 const response = await fetch(url);
                 
                 if (!response.ok) {
@@ -405,7 +493,8 @@
             if (!currentDate || !lastTimestamp) return;
             
             try {
-                const url = `/.netlify/functions/stream-logs?date=${currentDate}&limit=50${currentType ? `&type=${currentType}` : ''}&since=${lastTimestamp}`;
+                let url = `/.netlify/functions/stream-logs?date=${currentDate}&limit=50${currentType ? `&type=${currentType}` : ''}&since=${lastTimestamp}`;
+                url = addTokenToUrl(url);
                 const response = await fetch(url);
                 
                 if (!response.ok) return;
@@ -524,10 +613,18 @@
             statusDiv.style.display = 'block';
         }
         
-        // Auto-load today's data on page load
-        window.addEventListener('load', () => {
-            loadLogs();
-        });
+        // Logout function
+        function logout() {
+            sessionStorage.removeItem('adminAnalyticsToken');
+            adminToken = null;
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('dashboardContent').style.display = 'none';
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('loginError').style.display = 'none';
+            if (isStreaming) {
+                stopStreaming();
+            }
+        }
     </script>
 </body>
 </html>
