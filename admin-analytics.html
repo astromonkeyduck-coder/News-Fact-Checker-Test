@@ -703,7 +703,7 @@
             <div class="controls" style="margin-bottom: 30px;">
                 <div class="control-group">
                     <label>Date Range</label>
-                    <input type="date" id="imageDateInput" value="">
+                    <input type="date" id="imageDateInput" value="" onchange="loadImageGallery()">
                 </div>
                 <div class="control-group">
                     <label>Limit</label>
@@ -716,6 +716,10 @@
                 <div class="control-group" style="justify-content: flex-end;">
                     <label>&nbsp;</label>
                     <button class="btn" onclick="loadAllImages()" style="background: linear-gradient(135deg, #ff9800, #f57c00);">Load All Images</button>
+                </div>
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadImageGallery()" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">🔄 Refresh</button>
                 </div>
             </div>
             
@@ -2021,8 +2025,15 @@
             document.getElementById(`tab-${tabName}`).classList.add('active');
             
             // Set default dates when switching tabs
-            if (tabName === 'images' && !document.getElementById('imageDateInput').value) {
-                document.getElementById('imageDateInput').value = new Date().toISOString().split('T')[0];
+            if (tabName === 'images') {
+                const imageDateInput = document.getElementById('imageDateInput');
+                if (!imageDateInput.value) {
+                    imageDateInput.value = new Date().toISOString().split('T')[0];
+                }
+                // Auto-load images when switching to this tab
+                if (imageDateInput.value === new Date().toISOString().split('T')[0]) {
+                    loadImageGallery();
+                }
             }
             if (tabName === 'chats' && !document.getElementById('chatDateInput').value) {
                 document.getElementById('chatDateInput').value = new Date().toISOString().split('T')[0];
@@ -2524,7 +2535,12 @@
         
         // Image Gallery Functions
         async function loadImageGallery() {
-            const date = document.getElementById('imageDateInput').value;
+            const dateInput = document.getElementById('imageDateInput');
+            // If no date set, default to today
+            if (!dateInput.value) {
+                dateInput.value = new Date().toISOString().split('T')[0];
+            }
+            const date = dateInput.value;
             const limit = parseInt(document.getElementById('imageLimitInput').value);
             
             showStatus('Loading images...', 'info');
@@ -2532,6 +2548,9 @@
             try {
                 let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}&type=image-generation`;
                 url = addTokenToUrl(url);
+                
+                console.log('[Image Gallery] Loading images from:', url.replace(/token=[^&]+/, 'token=***'));
+                
                 const response = await fetch(url);
                 
                 if (!response.ok) {
@@ -2541,11 +2560,20 @@
                 const data = await response.json();
                 const images = data.logs || [];
                 
+                console.log('[Image Gallery] Received', images.length, 'image-generation logs for date:', date);
+                if (images.length > 0) {
+                    console.log('[Image Gallery] Sample image log:', images[0]);
+                    console.log('[Image Gallery] Sample image URL:', images[0].data?.imageUrl);
+                } else {
+                    const availableTypes = [...new Set((data.logs || []).map(log => log.dataType))];
+                    console.warn('[Image Gallery] No image-generation logs found. Available log types:', availableTypes);
+                }
+                
                 displayImageGallery(images);
                 document.getElementById('totalImagesCount').textContent = images.length;
                 document.getElementById('loadedImagesCount').textContent = images.length;
                 
-                showStatus(`Loaded ${images.length} images`, 'success');
+                showStatus(`Loaded ${images.length} images`, images.length > 0 ? 'success' : 'info');
             } catch (error) {
                 showStatus(`Error: ${error.message}`, 'error');
                 console.error('Error loading images:', error);
@@ -2603,11 +2631,22 @@
             container.innerHTML = '';
             
             if (images.length === 0) {
-                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">No images found</div>';
+                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">No images found for selected date. Try selecting today\'s date or use "Load All Images" to see images from the last 7 days.</div>';
                 return;
             }
             
-            images.forEach((log, index) => {
+            // Filter out logs that don't have imageUrl
+            const validImages = images.filter(log => {
+                const data = log.data || {};
+                return data.imageUrl && data.imageUrl.trim() !== '';
+            });
+            
+            if (validImages.length === 0) {
+                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">Found ' + images.length + ' image-generation logs but none have valid image URLs.</div>';
+                return;
+            }
+            
+            validImages.forEach((log, index) => {
                 const data = log.data || {};
                 const imageUrl = data.imageUrl;
                 const prompt = data.userPrompt || 'No prompt';
