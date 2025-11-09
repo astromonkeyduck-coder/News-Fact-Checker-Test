@@ -12,6 +12,23 @@ const { Resend } = require('resend');
 // Resend Audience ID for newsletter subscribers
 const NEWSLETTER_AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID || null;
 
+// Load email name mapping from environment variable
+let knownNamesMap = {};
+if (process.env.KNOWN_NAMES) {
+  try {
+    knownNamesMap = JSON.parse(process.env.KNOWN_NAMES);
+  } catch (parseError) {
+    console.warn('Failed to parse KNOWN_NAMES from environment:', parseError.message);
+  }
+}
+
+// Helper function to get name from email
+function getNameFromEmail(email) {
+  if (!email) return null;
+  const normalizedEmail = email.toLowerCase().trim();
+  return knownNamesMap[normalizedEmail] || null;
+}
+
 exports.handler = async (event, context) => {
   // Enable CORS
   const headers = {
@@ -103,6 +120,21 @@ exports.handler = async (event, context) => {
         const contacts = contactsResponse.data?.data || [];
         const contact = contacts.find(c => c.email === email);
         
+        // Get name for personalization
+        let firstName = null;
+        if (contact) {
+          firstName = contact.firstName || 
+                     contact.first_name || 
+                     (contact.name ? contact.name.split(' ')[0] : null);
+        }
+        // Fallback to email mapping
+        if (!firstName) {
+          const mappedName = getNameFromEmail(email);
+          if (mappedName) {
+            firstName = mappedName.split(' ')[0] || mappedName;
+          }
+        }
+        
         if (contact && contact.id) {
           // Remove the contact from the audience using the contact ID
           await resend.contacts.remove({
@@ -129,23 +161,52 @@ exports.handler = async (event, context) => {
       console.warn('RESEND_AUDIENCE_ID not configured. Cannot remove from audience.');
     }
 
+    // Get name for personalization (if not already got from contact)
+    let firstName = null;
+    if (NEWSLETTER_AUDIENCE_ID) {
+      try {
+        const contactsResponse = await resend.contacts.list({
+          audienceId: NEWSLETTER_AUDIENCE_ID,
+        });
+        const contacts = contactsResponse.data?.data || [];
+        const contact = contacts.find(c => c.email === email);
+        if (contact) {
+          firstName = contact.firstName || 
+                     contact.first_name || 
+                     (contact.name ? contact.name.split(' ')[0] : null);
+        }
+      } catch (e) {
+        // Ignore errors, will use email mapping
+      }
+    }
+    // Fallback to email mapping
+    if (!firstName) {
+      const mappedName = getNameFromEmail(email);
+      if (mappedName) {
+        firstName = mappedName.split(' ')[0] || mappedName;
+      }
+    }
+    
     // Send survey email after successful unsubscribe
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
     const encodedEmail = Buffer.from(email).toString('base64');
     const surveyUrl = `https://noteworthynews.co/unsubscribe-survey.html?email=${encodeURIComponent(encodedEmail)}`;
+    const greeting = firstName ? `Hi ${firstName},` : 'Hi there,';
     
     let surveyEmailSent = false;
     try {
-      console.log('Sending unsubscribe survey email to:', email);
+      console.log('Sending unsubscribe survey email to:', email, 'with firstName:', firstName);
       const surveyResult = await resend.emails.send({
         from: fromEmail,
         to: email,
         replyTo: 'richard@noteworthynews.co',
-        subject: 'Quick Question: Why did you unsubscribe? 🤔',
+        subject: 'Quick Question: Why did you unsubscribe?',
         clickTracking: false,
-        text: `Thanks for being part of Noteworthy News!
+        text: `${greeting}
 
-We're sorry to see you go! 😢
+Thanks for being part of Noteworthy News!
+
+We're sorry to see you go!
 
 Before you leave, we'd love to know why you're unsubscribing. It only takes 30 seconds and helps us improve!
 
@@ -168,15 +229,16 @@ The Noteworthy News Team`,
           <tr>
             <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(46, 204, 113, 0.1) 100%); border-radius: 10px 10px 0 0;">
               <img src="https://noteworthynews.co/IMG_5992.PNG" alt="Noteworthy News Logo" style="max-width: 150px; height: auto; border-radius: 50%; display: block; margin: 0 auto 20px; border: 3px solid #4a90e2; box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);" />
-              <h2 style="color: #4a90e2; margin: 0; font-size: 24px; font-weight: bold;">Thanks for being part of Noteworthy News! 🤔</h2>
+              <h2 style="color: #4a90e2; margin: 0; font-size: 24px; font-weight: bold;">Thanks for being part of Noteworthy News!</h2>
             </td>
           </tr>
           <tr>
             <td style="padding: 30px; background-color: #ffffff;">
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">We're sorry to see you go! 😢</p>
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 15px 0;">${greeting}</p>
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">We're sorry to see you go!</p>
               <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Before you leave, we'd love to know why you're unsubscribing. It only takes 30 seconds and helps us improve!</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${surveyUrl}" style="display: inline-block; padding: 15px 30px; background: linear-gradient(135deg, #4A90E2 0%, #2A60B0 100%); color: white; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px;">Take Our Quick Survey 📝</a>
+                <a href="${surveyUrl}" style="display: inline-block; padding: 15px 30px; background: linear-gradient(135deg, #4A90E2 0%, #2A60B0 100%); color: white; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px;">Take Our Quick Survey</a>
               </div>
               <p style="color: #999999; font-size: 14px; margin: 20px 0 0 0; text-align: center;">Thanks for your feedback!</p>
             </td>
@@ -210,8 +272,11 @@ The Noteworthy News Team`,
       headers,
       body: JSON.stringify({
         success: true,
-        message: 'You have been successfully unsubscribed from the newsletter.',
+        message: firstName 
+          ? `${firstName}, you have been successfully unsubscribed from the newsletter.`
+          : 'You have been successfully unsubscribed from the newsletter.',
         email: email,
+        firstName: firstName,
         removedFromAudience,
         surveyEmailSent,
       }),

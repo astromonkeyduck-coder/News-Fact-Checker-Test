@@ -131,6 +131,9 @@ exports.handler = async (event, context) => {
     try {
       const { logData } = require("./log-data");
       console.log("[Generate Image] Attempting to log image generation...");
+      console.log("[Generate Image] Image URL:", imageUrl);
+      console.log("[Generate Image] Prompt:", prompt.trim());
+      
       const logResult = await logData("image-generation", {
         userPrompt: prompt.trim(),
         revisedPrompt: revisedPrompt,
@@ -141,13 +144,16 @@ exports.handler = async (event, context) => {
         model: "dall-e-3",
       }, event);
       
-      if (logResult.success) {
-        console.log("[Generate Image] Successfully logged image generation:", logResult.id);
+      if (logResult && logResult.success) {
+        console.log("[Generate Image] ✅ Successfully logged image generation:", logResult.id);
+        console.log("[Generate Image] Log entry ID:", logResult.id);
       } else {
-        console.error("[Generate Image] Logging failed:", logResult.error);
+        console.error("[Generate Image] ❌ Logging failed:", logResult ? logResult.error : "No result returned");
+        console.error("[Generate Image] Full result:", JSON.stringify(logResult, null, 2));
       }
     } catch (err) {
-      console.error("[Generate Image] Error logging data:", err);
+      console.error("[Generate Image] ❌ Error logging data:", err);
+      console.error("[Generate Image] Error stack:", err.stack);
       // Don't fail the request if logging fails
     }
 

@@ -916,7 +916,7 @@ function renderFeedControls(totalPosts) {
   
   // Search input with icon
   const searchContainer = document.createElement('div');
-  searchContainer.style.cssText = 'flex: 1; min-width: 280px; position: relative; display: flex; align-items: center;';
+  searchContainer.style.cssText = 'flex: 1; min-width: 0; position: relative; display: flex; align-items: center;';
   
   const searchIcon = document.createElement('div');
   searchIcon.style.cssText = `

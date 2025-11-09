@@ -68,10 +68,15 @@
             font-weight: 900;
             margin-bottom: 10px;
             text-align: center;
-            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #ffffff;
+        }
+        
+        h1 .emoji {
+            display: inline-block;
+            background: none;
+            -webkit-background-clip: unset;
+            -webkit-text-fill-color: unset;
+            background-clip: unset;
         }
         
         .subtitle {
@@ -201,8 +206,8 @@
                 <img src="IMG_5992.PNG" alt="Noteworthy News Logo" loading="lazy">
             </a>
         </div>
-        <h1>Why Are You Leaving? 😢</h1>
-        <p class="subtitle">Help us improve with this quick 30-second survey!</p>
+        <h1 id="surveyTitle">Why Are You Leaving? 😢</h1>
+        <p class="subtitle" id="surveySubtitle">Help us improve with this quick 30-second survey!</p>
         
         <form id="surveyForm">
             <div class="question">
@@ -271,6 +276,37 @@
         const submitBtn = document.getElementById('submitBtn');
         const backLink = document.getElementById('backLink');
         const otherReasonDiv = document.getElementById('otherReasonDiv');
+        const surveyTitle = document.getElementById('surveyTitle');
+        const surveySubtitle = document.getElementById('surveySubtitle');
+        
+        // Get email from URL and fetch name
+        (async function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const encodedEmail = urlParams.get('email');
+            
+            if (encodedEmail) {
+                try {
+                    // Decode email
+                    const decodedEmail = atob(decodeURIComponent(encodedEmail));
+                    
+                    // Fetch name from unsubscribe API (which has access to KNOWN_NAMES)
+                    const response = await fetch('/.netlify/functions/unsubscribe?email=' + encodeURIComponent(encodedEmail), {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.firstName) {
+                            surveyTitle.textContent = `Hi ${data.firstName}, why are you leaving? 😢`;
+                            surveySubtitle.textContent = `Help us improve with this quick 30-second survey!`;
+                        }
+                    }
+                } catch (e) {
+                    console.log('Could not fetch name:', e);
+                }
+            }
+        })();
         
         // Show other reason textarea when "other" is selected
         document.querySelectorAll('input[name="reason"]').forEach(radio => {
@@ -325,7 +361,28 @@
                 
                 if (response.ok && data.success) {
                     statusMessage.className = 'status-message success show';
-                    statusMessage.textContent = '✓ Thanks for your feedback! We really appreciate it. 🙏';
+                    // Get name from URL if available
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const encodedEmail = urlParams.get('email');
+                    let firstName = null;
+                    if (encodedEmail) {
+                        try {
+                            const nameResponse = await fetch('/.netlify/functions/unsubscribe?email=' + encodeURIComponent(encodedEmail), {
+                                method: 'GET',
+                                headers: { 'Content-Type': 'application/json' },
+                            });
+                            if (nameResponse.ok) {
+                                const nameData = await nameResponse.json();
+                                firstName = nameData.firstName;
+                            }
+                        } catch (e) {
+                            // Ignore errors
+                        }
+                    }
+                    const thanksMessage = firstName 
+                        ? `✓ Thanks ${firstName} for your feedback! We really appreciate it. 🙏`
+                        : '✓ Thanks for your feedback! We really appreciate it. 🙏';
+                    statusMessage.textContent = thanksMessage;
                     form.style.display = 'none';
                     backLink.style.display = 'inline-block';
                 } else {

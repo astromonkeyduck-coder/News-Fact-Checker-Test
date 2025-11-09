@@ -535,13 +535,13 @@ class GeographyGame {
                             
                             // Small delay to ensure touch events are fully processed
                             setTimeout(() => {
-                                // Trigger click event on the path
-                                const clickEvent = new MouseEvent('click', {
-                                    bubbles: true,
-                                    cancelable: true,
-                                    view: window
-                                });
-                                touchTarget.dispatchEvent(clickEvent);
+                            // Trigger click event on the path
+                            const clickEvent = new MouseEvent('click', {
+                                bubbles: true,
+                                cancelable: true,
+                                view: window
+                            });
+                            touchTarget.dispatchEvent(clickEvent);
                             }, 50);
                         }
                     }
@@ -1752,15 +1752,15 @@ class GeographyGame {
         
         // Store score data for leaderboard submission
         this.pendingScoreData = {
-            gameType: 'geography',
-            score: this.score,
+                    gameType: 'geography',
+                    score: this.score,
             userId: userId || null, // Will be generated on backend if null
             userName: null, // Will be set by user input
-            correct: this.correct,
-            wrong: this.wrong,
-            time: finalTime,
-            speedBonus: this.speedBonus,
-            avgTime: parseFloat(avgTime),
+                    correct: this.correct,
+                    wrong: this.wrong,
+                    time: finalTime,
+                    speedBonus: this.speedBonus,
+                    avgTime: parseFloat(avgTime),
         };
         
         // Show leaderboard submit form

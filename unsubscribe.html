@@ -176,7 +176,10 @@
                 
                 if (response.ok && data.success) {
                     statusMessage.className = 'status-message success';
-                    statusMessage.textContent = '✓ You have been successfully unsubscribed from the Noteworthy News newsletter. You will no longer receive emails from us.';
+                    const message = data.message || (data.firstName 
+                        ? `${data.firstName}, you have been successfully unsubscribed from the Noteworthy News newsletter. You will no longer receive emails from us.`
+                        : '✓ You have been successfully unsubscribed from the Noteworthy News newsletter. You will no longer receive emails from us.');
+                    statusMessage.textContent = '✓ ' + message;
                 } else {
                     statusMessage.className = 'status-message error';
                     statusMessage.textContent = data.error || 'An error occurred while processing your unsubscribe request. Please try again later.';

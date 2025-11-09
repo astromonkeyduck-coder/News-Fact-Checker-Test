@@ -1,0 +1,120 @@
+[
+  {
+    "id": "hexgl",
+    "title": "HexGL",
+    "category": "Driving",
+    "src": "/games/hexgl/index.html",
+    "thumb": "/games/hexgl/cover.svg",
+    "description": "Fast-paced futuristic racing game with stunning visuals",
+    "approved": true
+  },
+  {
+    "id": "stunt-city",
+    "title": "Stunt City",
+    "category": "Driving",
+    "src": "/games/stunt-city/index.html",
+    "thumb": "/games/stunt-city/cover.svg",
+    "description": "Open-map stunt driving with physics-based gameplay",
+    "approved": true
+  },
+  {
+    "id": "parkour-blocks",
+    "title": "Parkour Blocks",
+    "category": "Parkour",
+    "src": "/games/parkour-blocks/index.html",
+    "thumb": "/games/parkour-blocks/cover.svg",
+    "description": "Navigate through challenging parkour courses",
+    "approved": true
+  },
+  {
+    "id": "urban-runner",
+    "title": "Urban Runner",
+    "category": "Parkour",
+    "src": "/games/urban-runner/index.html",
+    "thumb": "/games/urban-runner/cover.svg",
+    "description": "Run, jump, and climb through urban environments",
+    "approved": true
+  },
+  {
+    "id": "puzzle-master",
+    "title": "Puzzle Master",
+    "category": "Puzzle",
+    "src": "/games/puzzle-master/index.html",
+    "thumb": "/games/puzzle-master/cover.svg",
+    "description": "Challenge your mind with intricate puzzles",
+    "approved": true
+  },
+  {
+    "id": "sudoku-pro",
+    "title": "Sudoku Pro",
+    "category": "Puzzle",
+    "src": "/games/sudoku-pro/index.html",
+    "thumb": "/games/sudoku-pro/cover.svg",
+    "description": "Classic Sudoku with multiple difficulty levels",
+    "approved": true
+  },
+  {
+    "id": "word-search",
+    "title": "Word Search Challenge",
+    "category": "Puzzle",
+    "src": "/games/word-search/index.html",
+    "thumb": "/games/word-search/cover.svg",
+    "description": "Find hidden words in a grid of letters",
+    "approved": true
+  },
+  {
+    "id": "basketball-shootout",
+    "title": "Basketball Shootout",
+    "category": "Sports",
+    "src": "/games/basketball-shootout/index.html",
+    "thumb": "/games/basketball-shootout/cover.svg",
+    "description": "Test your shooting skills on the court",
+    "approved": true
+  },
+  {
+    "id": "soccer-striker",
+    "title": "Soccer Striker",
+    "category": "Sports",
+    "src": "/games/soccer-striker/index.html",
+    "thumb": "/games/soccer-striker/cover.svg",
+    "description": "Score goals and master your soccer skills",
+    "approved": true
+  },
+  {
+    "id": "tennis-ace",
+    "title": "Tennis Ace",
+    "category": "Sports",
+    "src": "/games/tennis-ace/index.html",
+    "thumb": "/games/tennis-ace/cover.svg",
+    "description": "Serve and volley like a pro",
+    "approved": true
+  },
+  {
+    "id": "extreme-parkour",
+    "title": "Extreme Parkour",
+    "category": "Parkour",
+    "src": "/games/extreme-parkour/index.html",
+    "thumb": "/games/extreme-parkour/cover.svg",
+    "description": "Push your limits with extreme parkour challenges",
+    "approved": true
+  },
+  {
+    "id": "racing-championship",
+    "title": "Racing Championship",
+    "category": "Driving",
+    "src": "/games/racing-championship/index.html",
+    "thumb": "/games/racing-championship/cover.svg",
+    "description": "Compete in high-speed racing tournaments",
+    "approved": true
+  },
+  {
+    "id": "external-game-example",
+    "title": "External Game (Example)",
+    "category": "Puzzle",
+    "src": "https://partner.example.com/embed/game-slug",
+    "thumb": "/games/external-game-example/cover.svg",
+    "description": "Example of an external embed URL - requires approval",
+    "approved": false
+  }
+]
+

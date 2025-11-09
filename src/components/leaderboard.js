@@ -22,9 +22,9 @@ class Leaderboard {
                 return;
             }
             
-            const data = await response.json();
+                const data = await response.json();
             console.log(`[Leaderboard] Loaded ${data.scores?.length || 0} scores`, data);
-            this.scores = data.scores || [];
+                this.scores = data.scores || [];
         } catch (error) {
             console.error('[Leaderboard] Failed to load scores:', error);
             this.scores = [];
@@ -53,9 +53,9 @@ class Leaderboard {
 
             const result = await response.json();
             console.log('[Leaderboard] Score submitted successfully:', result);
-            await this.loadScores();
-            this.render();
-            return true;
+                await this.loadScores();
+                this.render();
+                return true;
         } catch (error) {
             console.error('[Leaderboard] Failed to submit score:', error);
             return false;

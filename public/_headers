@@ -1,0 +1,12 @@
+# Security Headers for Games Gallery
+# These headers are automatically applied by Netlify
+
+/*
+  Content-Security-Policy: default-src 'self'; frame-src 'self' https://trusted-embed.com; script-src 'self' 'unsafe-inline' https://trusted-embed.com; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:;
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+
+/games/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-src 'self';
+

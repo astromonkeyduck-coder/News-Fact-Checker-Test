@@ -634,16 +634,20 @@ class NoteworthyChat extends HTMLElement {
         
         @media (max-width: 768px) {
           .wrap {
-            width: 90vw !important;
-            max-width: 400px !important;
-            height: 60vh !important;
-            max-height: 500px !important;
-            min-height: 450px !important;
-            left: 50% !important;
-            top: 50% !important;
-            transform: translate(-50%, -50%) !important;
+            width: calc(100vw - 32px) !important;
+            max-width: calc(100vw - 32px) !important;
+            height: calc(100vh - 100px) !important;
+            max-height: calc(100vh - 100px) !important;
+            min-height: 400px !important;
+            left: 16px !important;
+            top: 80px !important;
+            transform: none !important;
             border-radius: 16px !important;
-            min-width: 360px !important;
+            min-width: calc(100vw - 32px) !important;
+          }
+          
+          .wrap.open {
+            transform: none !important;
           }
           
           .launcher {
@@ -682,12 +686,18 @@ class NoteworthyChat extends HTMLElement {
         
         @media (max-width: 480px) {
           .wrap {
-            width: 85vw !important;
-            max-width: 360px !important;
-            height: 55vh !important;
-            max-height: 450px !important;
-            min-height: 420px !important;
-            transform: translate(-50%, -50%) !important;
+            width: calc(100vw - 24px) !important;
+            max-width: calc(100vw - 24px) !important;
+            height: calc(100vh - 80px) !important;
+            max-height: calc(100vh - 80px) !important;
+            min-height: 350px !important;
+            left: 12px !important;
+            top: 70px !important;
+            transform: none !important;
+          }
+          
+          .wrap.open {
+            transform: none !important;
           }
           
           .head {
@@ -731,7 +741,7 @@ class NoteworthyChat extends HTMLElement {
           bottom: 0;
           background: rgba(0, 0, 0, 0.75);
           backdrop-filter: blur(4px);
-          z-index: 10000;
+          z-index: 2147483001;
           align-items: center;
           justify-content: center;
           padding: 20px;
@@ -930,10 +940,16 @@ class NoteworthyChat extends HTMLElement {
         }
         
         @media (max-width: 768px) {
+          .tutorial-overlay {
+            padding: 16px;
+          }
+          
           .tutorial-modal {
             max-width: 100%;
+            width: 100%;
             border-radius: 16px;
             max-height: 90vh;
+            margin: 0;
           }
           
           .tutorial-header {
@@ -962,6 +978,38 @@ class NoteworthyChat extends HTMLElement {
           .tutorial-btn-primary {
             width: 100%;
             margin-top: 8px;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .tutorial-overlay {
+            padding: 12px;
+          }
+          
+          .tutorial-modal {
+            max-height: 85vh;
+            border-radius: 12px;
+          }
+          
+          .tutorial-header {
+            padding: 16px;
+          }
+          
+          .tutorial-header h2 {
+            font-size: 18px;
+          }
+          
+          .tutorial-content {
+            padding: 16px;
+          }
+          
+          .tutorial-step {
+            padding: 12px;
+            margin-bottom: 16px;
+          }
+          
+          .tutorial-footer {
+            padding: 12px 16px;
           }
         }
       </style>
@@ -1483,6 +1531,11 @@ class NoteworthyChat extends HTMLElement {
     // Show tutorial
     const showTutorial = () => {
       if (tutorialOverlay) {
+        // On mobile, close chat box if open to prevent overlap
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile && wrap && wrap.classList.contains('open')) {
+          wrap.classList.remove('open');
+        }
         tutorialOverlay.classList.add('show');
         document.body.style.overflow = 'hidden'; // Prevent background scrolling
       }

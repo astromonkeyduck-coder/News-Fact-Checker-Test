@@ -1,12 +1,12 @@
 // Load environment variables from .env file for local development
 // Netlify dev should auto-load .env, but this ensures it works
 try {
-if (process.env.NETLIFY_DEV || !process.env.RESEND_API_KEY) {
-  try {
-    require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
-  } catch (e) {
-    // dotenv not needed in production
-  }
+  if (process.env.NETLIFY_DEV || !process.env.RESEND_API_KEY) {
+    try {
+      require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
+    } catch (e) {
+      // dotenv not needed in production
+    }
   }
 } catch (e) {
   console.warn('Error loading dotenv:', e.message);
@@ -106,36 +106,36 @@ exports.handler = async (event, context) => {
 
   // Wrap everything in try-catch to ensure we always return JSON
   try {
-  // Handle OPTIONS request for CORS preflight
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: '',
-    };
-  }
+    // Handle OPTIONS request for CORS preflight
+    if (event.httpMethod === 'OPTIONS') {
+      return {
+        statusCode: 200,
+        headers,
+        body: '',
+      };
+    }
 
-  // Only allow POST requests
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' }),
-    };
-  }
-
+    // Only allow POST requests
+    if (event.httpMethod !== 'POST') {
+      return {
+        statusCode: 405,
+        headers,
+        body: JSON.stringify({ error: 'Method not allowed' }),
+      };
+    }
+    
     // Log that we received the request
     console.log('Received POST request to send-email');
 
     // Main handler logic
-  try {
-    // Debug: Log all environment variables (remove in production)
-    console.log('Environment check:', {
-      hasResendKey: !!process.env.RESEND_API_KEY,
-      keyPrefix: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 10) + '...' : 'NOT SET',
-      allEnvKeys: Object.keys(process.env).filter(k => k.includes('RESEND')),
-      netlifyDev: process.env.NETLIFY_DEV
-    });
+    try {
+      // Debug: Log all environment variables (remove in production)
+      console.log('Environment check:', {
+        hasResendKey: !!process.env.RESEND_API_KEY,
+        keyPrefix: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 10) + '...' : 'NOT SET',
+        allEnvKeys: Object.keys(process.env).filter(k => k.includes('RESEND')),
+        netlifyDev: process.env.NETLIFY_DEV
+      });
 
     // Check if API key is configured BEFORE initializing Resend
     if (!process.env.RESEND_API_KEY) {
@@ -349,11 +349,11 @@ exports.handler = async (event, context) => {
       
       try {
         notificationResult = await resend.emails.send({
-      from: fromEmail,
-      to: notificationTo,
-      subject: 'New Newsletter Subscription',
-      clickTracking: false, // Disable click tracking for better deliverability
-      text: `New Newsletter Subscription
+          from: fromEmail,
+          to: notificationTo,
+          subject: 'New Newsletter Subscription',
+          clickTracking: false, // Disable click tracking for better deliverability
+        text: `New Newsletter Subscription
 
 A new subscriber has signed up for the Noteworthy News newsletter:
 
@@ -402,7 +402,7 @@ This is an automated notification from your website.`,
   </table>
 </body>
 </html>`,
-    });
+        });
         
         // Log notification result
         console.log('Notification email result:', {
@@ -753,14 +753,14 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
       }
       
       // Check welcome email error (this is critical)
-      const errorMsg = autoReplyResult.error.message || '';
-      if (errorMsg.includes('domain') || errorMsg.includes('not verified') || errorMsg.includes('bounce')) {
-        errorMessage = 'Domain not verified in Resend. Please verify noteworthynews.co at https://resend.com/domains or use onboarding@resend.dev for testing';
-        isDomainError = true;
-      } else if (errorMsg.includes('API') || errorMsg.includes('unauthorized')) {
-        errorMessage = 'Invalid Resend API key. Please check your RESEND_API_KEY in Netlify environment variables';
-      } else if (errorMsg.includes('rate limit')) {
-        errorMessage = 'Rate limit exceeded. Please try again later';
+        const errorMsg = autoReplyResult.error.message || '';
+        if (errorMsg.includes('domain') || errorMsg.includes('not verified') || errorMsg.includes('bounce')) {
+          errorMessage = 'Domain not verified in Resend. Please verify noteworthynews.co at https://resend.com/domains or use onboarding@resend.dev for testing';
+          isDomainError = true;
+        } else if (errorMsg.includes('API') || errorMsg.includes('unauthorized')) {
+          errorMessage = 'Invalid Resend API key. Please check your RESEND_API_KEY in Netlify environment variables';
+        } else if (errorMsg.includes('rate limit')) {
+          errorMessage = 'Rate limit exceeded. Please try again later';
         } else {
         errorMessage = errorMsg || 'Failed to send welcome email';
       }
@@ -872,8 +872,8 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
       }),
     };
 
-  } catch (error) {
-    console.error('Email sending error:', error);
+    } catch (error) {
+      console.error('Email sending error:', error);
       console.error('Error stack:', error.stack);
       console.error('Error details:', {
         name: error.name,

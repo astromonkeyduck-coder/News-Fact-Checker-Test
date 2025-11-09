@@ -178,15 +178,15 @@ export const handler: Handler = async (event) => {
       // If post doesn't exist, fetch and create it
       if (!postExists) {
 
-        // Convert to Card format
-        const card = oEmbedToCard(oembed, tweetUrl);
+      // Convert to Card format
+      const card = oEmbedToCard(oembed, tweetUrl);
 
-        // Store post
-        await store.set(`post-${tweetId}.json`, JSON.stringify(card), {
-          contentType: "application/json",
-        });
+      // Store post
+      await store.set(`post-${tweetId}.json`, JSON.stringify(card), {
+        contentType: "application/json",
+      });
       }
-      
+
       // Always update index (even if post already existed in storage)
       // This ensures posts are added to index if they were missing
       let indexData: IndexData = { ids: [], urls: [] };

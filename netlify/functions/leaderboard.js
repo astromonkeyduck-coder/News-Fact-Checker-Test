@@ -97,8 +97,8 @@ exports.handler = async (event, context) => {
       
       try {
         leaderboardData = await store.get(leaderboardKey, {
-          type: "json",
-        });
+        type: "json",
+      });
         console.log(`[Leaderboard API] Retrieved data for ${leaderboardKey}:`, leaderboardData ? `${Array.isArray(leaderboardData) ? leaderboardData.length : 'object'} items` : 'null');
       } catch (storeError) {
         console.error(`[Leaderboard API] Error getting data from store:`, storeError);
@@ -153,8 +153,8 @@ exports.handler = async (event, context) => {
       
       try {
         leaderboardData = await store.get(leaderboardKey, {
-          type: "json",
-        });
+        type: "json",
+      });
         console.log(`[Leaderboard API] Retrieved existing data:`, leaderboardData ? `${Array.isArray(leaderboardData) ? leaderboardData.length : 'object'} items` : 'null');
       } catch (storeError) {
         console.error(`[Leaderboard API] Error getting data from store:`, storeError);
@@ -197,8 +197,8 @@ exports.handler = async (event, context) => {
       scores = scores.slice(0, 100);
 
       try {
-        await store.set(leaderboardKey, JSON.stringify(scores), {
-          contentType: "application/json",
+      await store.set(leaderboardKey, JSON.stringify(scores), {
+        contentType: "application/json",
         });
         console.log(`[Leaderboard API] Successfully saved ${scores.length} scores to ${leaderboardKey}`);
       } catch (storeError) {

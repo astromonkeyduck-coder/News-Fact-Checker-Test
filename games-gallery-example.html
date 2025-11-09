@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Games Gallery - Example</title>
+    
+    <!-- Include CSS -->
+    <link rel="stylesheet" href="/src/components/games-gallery.css">
+    
+    <!-- React and ReactDOM (for CDN usage) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <!-- Mount point for React component -->
+    <div id="games-root"></div>
+    
+    <!-- Load GamesGallery component -->
+    <script type="text/babel" src="/src/components/GamesGallery.jsx"></script>
+    
+    <!-- Initialize -->
+    <script type="text/babel">
+        const { createRoot } = ReactDOM;
+        const root = createRoot(document.getElementById('games-root'));
+        root.render(React.createElement(GamesGallery, {
+            gamesSource: '/games.json',
+            maxColumns: 4
+        }));
+    </script>
+</body>
+</html>
+
