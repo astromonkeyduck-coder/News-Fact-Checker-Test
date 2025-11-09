@@ -6534,7 +6534,8 @@ function initNewsletterSubscription() {
     }
 
     // Function to play subscription sound and resume background music
-    function playSubscriptionSound() {
+    // Define this function early so it's available when needed
+    const playSubscriptionSound = function() {
         const backgroundMusic = document.getElementById('backgroundMusic');
         const backgroundMusicSecond = document.getElementById('backgroundMusicSecond');
         const backgroundMusicLoop = document.getElementById('backgroundMusicLoop');
