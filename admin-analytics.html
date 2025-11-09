@@ -311,16 +311,27 @@
             <select id="typeSelect">
                 <option value="">All Types</option>
                 <option value="page-view">Page Views</option>
-                <option value="ai-chat">AI Chat</option>
+                <option value="page-exit">Page Exits (When people leave)</option>
+                <option value="scroll-depth">Scroll Depth (How far people read)</option>
                 <option value="image-generation">Image Generation</option>
+                <option value="ai-chat">AI Chat</option>
+                <option value="comment">Comments</option>
                 <option value="game-score">Game Scores</option>
                 <option value="newsletter-signup">Newsletter Signups</option>
                 <option value="click-batch">Clicks</option>
-                <option value="scroll-depth">Scroll Depth</option>
                 <option value="form-submit">Form Submissions</option>
-                <option value="page-exit">Page Exits</option>
                 <option value="custom-event">Custom Events</option>
             </select>
+        </div>
+        
+        <div class="control-group">
+            <label>Filter by User Email</label>
+            <input type="email" id="userEmailInput" placeholder="user@example.com" style="padding: 10px; border: 2px solid rgba(74, 144, 226, 0.5); border-radius: 6px; background: rgba(15, 15, 35, 0.8); color: white; font-size: 1rem;">
+        </div>
+        
+        <div class="control-group" style="justify-content: flex-end;">
+            <label>&nbsp;</label>
+            <button class="btn" onclick="loadUsers()">View All Users</button>
         </div>
         
         <div class="control-group">
@@ -372,8 +383,32 @@
             <div class="value" id="newsletterSignups">0</div>
         </div>
         <div class="stat-card">
-            <h3>Unique IPs</h3>
+            <h3>Comments</h3>
+            <div class="value" id="comments">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Unique Visitors</h3>
             <div class="value" id="uniqueIPs">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Total Active Users</h3>
+            <div class="value" id="totalUsers">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Active Today</h3>
+            <div class="value" id="activeToday">0</div>
+        </div>
+    </div>
+    
+    <!-- Alert Section -->
+    <div id="alertSection" style="display: none; margin-bottom: 30px;">
+        <div style="background: linear-gradient(135deg, #f44336, #d32f2f); padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(244, 67, 54, 0.3); border: 2px solid #f44336;">
+            <h2 style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                <span>🚨</span>
+                <span>Location Alert</span>
+            </h2>
+            <div id="alertContent" style="font-size: 1.1rem; line-height: 1.8;"></div>
+            <button class="btn" onclick="document.getElementById('alertSection').style.display='none';" style="margin-top: 15px; background: rgba(255, 255, 255, 0.2);">Dismiss</button>
         </div>
     </div>
     
@@ -399,8 +434,66 @@
             if (storedToken) {
                 adminToken = storedToken;
                 showDashboard();
+                // Start checking for alerts
+                checkAlerts();
+                setInterval(checkAlerts, 10000); // Check every 10 seconds
             }
         });
+        
+        async function checkAlerts() {
+            try {
+                let url = `/.netlify/functions/log-data?alerts=true`;
+                url = addTokenToUrl(url);
+                const response = await fetch(url);
+                
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                if (data.alerts && data.alerts.length > 0) {
+                    // Get the most recent alert
+                    const latestAlert = data.alerts[0];
+                    const alertTime = new Date(latestAlert.timestamp);
+                    const now = new Date();
+                    // Only show if alert is from last 5 minutes
+                    if (now - alertTime < 5 * 60 * 1000) {
+                        showAlert(latestAlert);
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking alerts:', error);
+            }
+        }
+        
+        function showAlert(alert) {
+            const alertSection = document.getElementById('alertSection');
+            const alertContent = document.getElementById('alertContent');
+            
+            const locationStr = alert.location 
+                ? `${alert.location.city || ''}${alert.location.region ? ', ' + alert.location.region : ''}${alert.location.country ? ', ' + alert.location.country : ''}`
+                : 'Unknown location';
+            
+            const userInfo = alert.userEmail 
+                ? `<strong>👤 User:</strong> ${escapeHtml(alert.userName || 'Unknown')} (${escapeHtml(alert.userEmail)})<br>`
+                : '';
+            
+            alertContent.innerHTML = `
+                <div style="margin-bottom: 12px;">
+                    <strong>🚨 Alert Type:</strong> ${alert.alertType}<br>
+                    <strong>📍 Location:</strong> ${escapeHtml(locationStr)}<br>
+                    <strong>🌐 IP Address:</strong> ${alert.ip || 'Unknown'}<br>
+                    ${userInfo}
+                    <strong>📊 Activity:</strong> ${alert.dataType || 'Unknown'}<br>
+                    <strong>🕐 Time:</strong> ${new Date(alert.timestamp).toLocaleString()}
+                </div>
+            `;
+            
+            alertSection.style.display = 'block';
+            
+            // Auto-dismiss after 30 seconds
+            setTimeout(() => {
+                alertSection.style.display = 'none';
+            }, 30000);
+        }
         
         async function checkPassword() {
             const password = document.getElementById('adminPassword').value;
@@ -445,13 +538,46 @@
             }
         }
         
-        function showDashboard() {
+        async function showDashboard() {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('dashboardContent').style.display = 'block';
             // Set today's date as default
             document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
             // Auto-load data
-            loadLogs();
+            await loadLogs();
+            // Also load all users for accurate stats
+            await loadAllUsersForStats();
+        }
+        
+        async function loadAllUsersForStats() {
+            try {
+                // Get all logs to calculate total users
+                let url = `/.netlify/functions/log-data?limit=50000`;
+                url = addTokenToUrl(url);
+                const response = await fetch(url);
+                
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                const uniqueUsers = new Set();
+                const usersActiveToday = new Set();
+                const today = new Date().toISOString().split('T')[0];
+                
+                data.logs.forEach(log => {
+                    if (log.userEmail) {
+                        uniqueUsers.add(log.userEmail);
+                        const logDate = new Date(log.timestamp).toISOString().split('T')[0];
+                        if (logDate === today) {
+                            usersActiveToday.add(log.userEmail);
+                        }
+                    }
+                });
+                
+                document.getElementById('totalUsers').textContent = uniqueUsers.size;
+                document.getElementById('activeToday').textContent = usersActiveToday.size;
+            } catch (error) {
+                console.error('Error loading user stats:', error);
+            }
         }
         
         function addTokenToUrl(url) {
@@ -465,6 +591,7 @@
         async function loadLogs() {
             const date = document.getElementById('dateInput').value;
             const type = document.getElementById('typeSelect').value;
+            const userEmail = document.getElementById('userEmailInput').value.trim();
             const limit = parseInt(document.getElementById('limitInput').value);
             
             currentDate = date;
@@ -474,7 +601,7 @@
             showStatus('Loading data...', 'info');
             
             try {
-                let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}${type ? `&type=${type}` : ''}`;
+                let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}${type ? `&type=${type}` : ''}${userEmail ? `&userEmail=${encodeURIComponent(userEmail)}` : ''}`;
                 url = addTokenToUrl(url);
                 const response = await fetch(url);
                 
@@ -501,12 +628,13 @@
         async function exportCSV() {
             const date = document.getElementById('dateInput').value;
             const type = document.getElementById('typeSelect').value;
+            const userEmail = document.getElementById('userEmailInput').value.trim();
             const limit = parseInt(document.getElementById('limitInput').value);
             
             showStatus('Exporting CSV...', 'info');
             
             try {
-                let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}&format=csv${type ? `&type=${type}` : ''}`;
+                let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}&format=csv${type ? `&type=${type}` : ''}${userEmail ? `&userEmail=${encodeURIComponent(userEmail)}` : ''}`;
                 url = addTokenToUrl(url);
                 const response = await fetch(url);
                 
@@ -551,6 +679,7 @@
             // Poll for new data every 5 seconds
             streamInterval = setInterval(() => {
                 loadNewLogs();
+                checkAlerts(); // Also check for alerts
             }, 5000);
             
             showStatus('<span class="streaming-indicator"></span>Streaming active - checking for new data every 5 seconds', 'info');
@@ -614,34 +743,29 @@
                 case 'image-generation':
                     content = `
                         <div class="data-section">
+                            <div class="data-row" style="background: rgba(255, 193, 7, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin-bottom: 20px;">
+                                <span class="data-label" style="font-size: 1.2rem;">🎨 Someone generated an image!</span>
+                            </div>
                             ${data.imageUrl ? `
-                            <div class="image-container">
+                            <div class="image-container" style="margin-bottom: 20px;">
+                                <div style="text-align: center; margin-bottom: 10px; font-weight: 600; color: #4A90E2;">Here it is:</div>
                                 <img src="${data.imageUrl}" alt="AI Generated Image" class="image-preview" onerror="this.style.display='none'">
                             </div>
                             ` : ''}
                             <div class="data-row">
-                                <span class="data-label">What the user requested:</span>
-                                <span class="data-value" style="font-size: 1.05rem; line-height: 1.6;">${escapeHtml(data.userPrompt || 'Not specified')}</span>
+                                <span class="data-label">What they asked for:</span>
+                                <span class="data-value" style="font-size: 1.1rem; line-height: 1.7; padding: 12px; background: rgba(74, 144, 226, 0.1); border-radius: 6px;">${escapeHtml(data.userPrompt || 'Not specified')}</span>
                             </div>
                             ${data.revisedPrompt && data.revisedPrompt !== data.userPrompt ? `
                             <div class="data-row">
-                                <span class="data-label">How AI interpreted it:</span>
-                                <span class="data-value" style="font-size: 1.05rem; line-height: 1.6; color: rgba(255, 255, 255, 0.8);">${escapeHtml(data.revisedPrompt)}</span>
-                            </div>
-                            ` : ''}
-                            ${data.imageUrl ? `
-                            <div class="data-row">
-                                <span class="data-label">Image link:</span>
-                                <span class="data-value">
-                                    <a href="${data.imageUrl}" target="_blank" style="color: #4A90E2; text-decoration: underline; word-break: break-all;">${data.imageUrl}</a>
-                                </span>
+                                <span class="data-label">How the AI understood it:</span>
+                                <span class="data-value" style="font-size: 1.05rem; line-height: 1.6; color: rgba(255, 255, 255, 0.8); padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 6px;">${escapeHtml(data.revisedPrompt)}</span>
                             </div>
                             ` : ''}
                             <div class="compact-info" style="margin-top: 15px;">
-                                <span>📐 Dimensions: ${data.size || 'Standard'}</span>
+                                <span>📐 Image size: ${data.size || 'Standard'}</span>
                                 <span>✨ Quality: ${data.quality ? data.quality.charAt(0).toUpperCase() + data.quality.slice(1) : 'Standard'}</span>
                                 <span>🎨 Style: ${data.style ? data.style.charAt(0).toUpperCase() + data.style.slice(1) : 'Standard'}</span>
-                                <span>🤖 Model: DALL-E 3</span>
                             </div>
                         </div>
                     `;
@@ -732,19 +856,95 @@
                                    pagePath;
                     content = `
                         <div class="data-section">
-                            <div class="data-row">
-                                <span class="data-label">📄 Page visited:</span>
-                                <span class="data-value" style="font-size: 1.1rem; font-weight: 600;">${escapeHtml(pageName)}</span>
-                            </div>
-                            <div class="data-row">
-                                <span class="data-label">🔗 Full URL:</span>
-                                <span class="data-value" style="word-break: break-all;">${escapeHtml(pagePath)}</span>
+                            <div class="data-row" style="background: rgba(74, 144, 226, 0.1); padding: 15px; border-radius: 8px;">
+                                <span class="data-label" style="font-size: 1.1rem;">📄 Someone visited:</span>
+                                <span class="data-value" style="font-size: 1.2rem; font-weight: 700; color: #4A90E2;">${escapeHtml(pageName)}</span>
                             </div>
                             <div class="compact-info" style="margin-top: 15px;">
                                 <span>⏱️ Time on website: ${formatTime(data.timeOnSite || 0)}</span>
                                 <span>📌 Time on this page: ${formatTime(data.timeOnPage || 0)}</span>
                                 ${data.referrer && data.referrer !== 'unknown' ? `<span>🔙 Came from: ${escapeHtml(data.referrer.length > 40 ? data.referrer.substring(0, 40) + '...' : data.referrer)}</span>` : '<span>🔙 Direct visit</span>'}
                             </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'page-exit':
+                    const exitPagePath = data.path || log.pageUrl || 'Unknown page';
+                    const exitPageName = exitPagePath === '/' ? 'Homepage' : 
+                                       exitPagePath.includes('game.html') ? 'Fact Checker Game' :
+                                       exitPagePath.includes('geography') ? 'Geography Game' :
+                                       exitPagePath;
+                    const scrollPercent = data.maxScrollDepth || 0;
+                    content = `
+                        <div class="data-section">
+                            <div class="data-row" style="background: rgba(244, 67, 54, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #f44336;">
+                                <span class="data-label" style="font-size: 1.1rem;">👋 Someone left:</span>
+                                <span class="data-value" style="font-size: 1.2rem; font-weight: 700; color: #f44336;">${escapeHtml(exitPageName)}</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">📊 How far they scrolled:</span>
+                                <span class="data-value" style="font-size: 1.1rem; font-weight: 600;">
+                                    ${scrollPercent >= 90 ? '✅ Scrolled almost to the bottom' : 
+                                      scrollPercent >= 75 ? '📖 Read most of the page' : 
+                                      scrollPercent >= 50 ? '📄 Read about half' : 
+                                      scrollPercent >= 25 ? '👀 Scrolled a bit' : 
+                                      '🔝 Barely scrolled'} (${Math.round(scrollPercent)}%)
+                                </span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">⏱️ Time spent on page:</span>
+                                <span class="data-value" style="font-size: 1.1rem;">${formatTime(data.timeOnPage || 0)}</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">🌐 Total time on website:</span>
+                                <span class="data-value" style="font-size: 1.1rem;">${formatTime(data.timeOnSite || 0)}</span>
+                            </div>
+                            <div class="compact-info" style="margin-top: 15px;">
+                                <span>🖱️ Total clicks: ${data.clicks || 0}</span>
+                                <span>📄 Pages viewed: ${data.pageViews || 1}</span>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'scroll-depth':
+                    const depth = data.depth || 0;
+                    content = `
+                        <div class="data-section">
+                            <div class="data-row">
+                                <span class="data-label">📊 Scroll progress:</span>
+                                <span class="data-value" style="font-size: 1.1rem; font-weight: 600;">
+                                    ${depth >= 90 ? '✅ Almost finished reading' : 
+                                      depth >= 75 ? '📖 Reading most of it' : 
+                                      depth >= 50 ? '📄 About halfway through' : 
+                                      depth >= 25 ? '👀 Just started scrolling' : 
+                                      '🔝 Just beginning'} - ${Math.round(depth)}% down the page
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'comment':
+                    content = `
+                        <div class="data-section">
+                            <div class="message-bubble" style="background: rgba(255, 193, 7, 0.1); border-left-color: #ffc107;">
+                                <strong style="color: #ffc107;">💬 Comment:</strong>
+                                <div style="margin-top: 8px; font-size: 1.1rem; line-height: 1.6; padding: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 6px;">
+                                    ${escapeHtml(data.commentText || 'No comment text')}
+                                </div>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">👤 Comment author:</span>
+                                <span class="data-value" style="font-size: 1.1rem; font-weight: 600;">${escapeHtml(data.author || 'Anonymous')}</span>
+                            </div>
+                            ${data.articleId ? `
+                            <div class="data-row">
+                                <span class="data-label">📄 On article:</span>
+                                <span class="data-value">${escapeHtml(data.articleId.replace('post-', ''))}</span>
+                            </div>
+                            ` : ''}
                         </div>
                     `;
                     break;
@@ -769,13 +969,25 @@
                     }
             }
             
+            // Show user info prominently if available
+            const userInfo = log.userEmail ? `
+                <div style="background: rgba(46, 204, 113, 0.15); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #2ecc71;">
+                    <div style="font-weight: 700; color: #2ecc71; margin-bottom: 4px;">👤 ${escapeHtml(log.userName || 'User')}</div>
+                    <div style="color: rgba(255, 255, 255, 0.9); font-size: 0.95rem;">📧 ${escapeHtml(log.userEmail)}</div>
+                </div>
+            ` : '';
+            
             return `
                 <div class="header-row">
                     <span class="data-type">${log.dataType}</span>
                     <span class="timestamp">${timestamp}</span>
                 </div>
+                ${userInfo}
                 ${content}
                 <div class="compact-info" style="margin-top: 15px; padding-top: 15px; border-top: 2px solid rgba(74, 144, 226, 0.3); background: rgba(15, 15, 35, 0.3); padding: 12px; border-radius: 8px;">
+                    ${log.location && log.location.city !== 'Unknown' ? `
+                        <span>📍 Location: ${escapeHtml(log.location.city || '')}${log.location.region ? ', ' + log.location.region : ''}${log.location.country ? ', ' + log.location.country : ''}</span>
+                    ` : ''}
                     <span>🌐 IP Address: ${log.ip || 'Unknown'}</span>
                     ${log.userAgent ? `<span>💻 Device: ${getBrowserInfo(log.userAgent)}</span>` : ''}
                     ${log.acceptLanguage ? `<span>🌍 Language: ${log.acceptLanguage.split(',')[0]}</span>` : ''}
@@ -860,8 +1072,13 @@
                 imagesGenerated: 0,
                 gameScores: 0,
                 newsletterSignups: 0,
+                comments: 0,
                 uniqueIPs: new Set(),
+                uniqueUsers: new Set(),
+                usersActiveToday: new Set(),
             };
+            
+            const today = new Date().toISOString().split('T')[0];
             
             logs.forEach(log => {
                 if (log.dataType === 'page-view') stats.pageViews++;
@@ -869,7 +1086,16 @@
                 if (log.dataType === 'image-generation') stats.imagesGenerated++;
                 if (log.dataType === 'game-score') stats.gameScores++;
                 if (log.dataType === 'newsletter-signup') stats.newsletterSignups++;
+                if (log.dataType === 'comment') stats.comments = (stats.comments || 0) + 1;
                 if (log.ip && log.ip !== 'unknown') stats.uniqueIPs.add(log.ip);
+                if (log.userEmail) {
+                    stats.uniqueUsers.add(log.userEmail);
+                    // Check if active today
+                    const logDate = new Date(log.timestamp).toISOString().split('T')[0];
+                    if (logDate === today) {
+                        stats.usersActiveToday.add(log.userEmail);
+                    }
+                }
             });
             
             if (isIncremental) {
@@ -880,6 +1106,7 @@
                 document.getElementById('imagesGenerated').textContent = parseInt(document.getElementById('imagesGenerated').textContent) + stats.imagesGenerated;
                 document.getElementById('gameScores').textContent = parseInt(document.getElementById('gameScores').textContent) + stats.gameScores;
                 document.getElementById('newsletterSignups').textContent = parseInt(document.getElementById('newsletterSignups').textContent) + stats.newsletterSignups;
+                document.getElementById('comments').textContent = parseInt(document.getElementById('comments').textContent || '0') + (stats.comments || 0);
             } else {
                 // Full update
                 document.getElementById('totalLogs').textContent = stats.total;
@@ -888,9 +1115,12 @@
                 document.getElementById('imagesGenerated').textContent = stats.imagesGenerated;
                 document.getElementById('gameScores').textContent = stats.gameScores;
                 document.getElementById('newsletterSignups').textContent = stats.newsletterSignups;
+                document.getElementById('comments').textContent = stats.comments || 0;
             }
             
             document.getElementById('uniqueIPs').textContent = stats.uniqueIPs.size;
+            document.getElementById('totalUsers').textContent = stats.uniqueUsers.size;
+            document.getElementById('activeToday').textContent = stats.usersActiveToday.size;
         }
         
         function showStatus(message, type) {
@@ -898,6 +1128,113 @@
             statusDiv.className = `status ${type}`;
             statusDiv.innerHTML = message;
             statusDiv.style.display = 'block';
+        }
+        
+        async function loadUsers() {
+            showStatus('Loading all users...', 'info');
+            
+            try {
+                // Get all logs to extract unique users
+                let url = `/.netlify/functions/log-data?limit=10000`;
+                url = addTokenToUrl(url);
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const users = new Map();
+                
+                // Extract unique users from logs
+                data.logs.forEach(log => {
+                    if (log.userEmail) {
+                        if (!users.has(log.userEmail)) {
+                            users.set(log.userEmail, {
+                                email: log.userEmail,
+                                name: log.userName || 'Unknown',
+                                location: log.location,
+                                firstSeen: log.timestamp,
+                                lastSeen: log.timestamp,
+                                activityCount: 0,
+                                activities: []
+                            });
+                        }
+                        const user = users.get(log.userEmail);
+                        user.activityCount++;
+                        user.activities.push(log);
+                        if (new Date(log.timestamp) > new Date(user.lastSeen)) {
+                            user.lastSeen = log.timestamp;
+                        }
+                        if (new Date(log.timestamp) < new Date(user.firstSeen)) {
+                            user.firstSeen = log.timestamp;
+                        }
+                        if (log.userName && log.userName !== 'Unknown') {
+                            user.name = log.userName;
+                        }
+                    }
+                });
+                
+                // Display users
+                displayUsers(Array.from(users.values()));
+            } catch (error) {
+                showStatus(`Error loading users: ${error.message}`, 'error');
+                console.error('Error loading users:', error);
+            }
+        }
+        
+        function displayUsers(users) {
+            const container = document.getElementById('logsList');
+            container.innerHTML = '';
+            
+            if (users.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: rgba(255, 255, 255, 0.5); padding: 40px;">No users found with email addresses</p>';
+                return;
+            }
+            
+            // Sort by activity count (most active first)
+            users.sort((a, b) => b.activityCount - a.activityCount);
+            
+            users.forEach(user => {
+                const userCard = document.createElement('div');
+                userCard.className = 'log-entry';
+                userCard.style.cursor = 'pointer';
+                userCard.onclick = () => {
+                    document.getElementById('userEmailInput').value = user.email;
+                    loadLogs();
+                };
+                
+                const locationStr = user.location && user.location.city !== 'Unknown' 
+                    ? `${user.location.city}${user.location.region ? ', ' + user.location.region : ''}${user.location.country ? ', ' + user.location.country : ''}`
+                    : 'Unknown location';
+                
+                userCard.innerHTML = `
+                    <div class="header-row">
+                        <span class="data-type" style="background: #2ecc71;">USER</span>
+                        <span class="timestamp">Last seen: ${new Date(user.lastSeen).toLocaleString()}</span>
+                    </div>
+                    <div class="data-section">
+                        <div class="data-row" style="background: rgba(46, 204, 113, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 12px;">
+                            <div style="width: 100%;">
+                                <div style="font-size: 1.3rem; font-weight: 700; color: #2ecc71; margin-bottom: 8px;">${escapeHtml(user.name)}</div>
+                                <div style="font-size: 1.1rem; color: rgba(255, 255, 255, 0.9); margin-bottom: 8px;">📧 ${escapeHtml(user.email)}</div>
+                                <div style="color: rgba(255, 255, 255, 0.7);">📍 ${escapeHtml(locationStr)}</div>
+                            </div>
+                        </div>
+                        <div class="compact-info" style="margin-top: 12px;">
+                            <span>📊 Total activities: ${user.activityCount}</span>
+                            <span>📅 First seen: ${new Date(user.firstSeen).toLocaleDateString()}</span>
+                            <span>🕐 Last seen: ${new Date(user.lastSeen).toLocaleDateString()}</span>
+                        </div>
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(74, 144, 226, 0.2);">
+                            <button class="btn" onclick="event.stopPropagation(); document.getElementById('userEmailInput').value='${escapeHtml(user.email)}'; loadLogs();" style="width: 100%; margin-top: 8px;">View All Activities for This User</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(userCard);
+            });
+            
+            showStatus(`Found ${users.length} users with email addresses`, 'success');
         }
         
         // Logout function

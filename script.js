@@ -6647,6 +6647,16 @@ function initNewsletterSubscription() {
 
             // Success!
             clearTimeout(timeoutId);
+            // Store email in localStorage for user tracking across sessions
+            try {
+                localStorage.setItem('newsletterEmail', email);
+                localStorage.setItem('userEmail', email);
+                if (data && data.firstName) {
+                    localStorage.setItem('userName', data.firstName);
+                }
+            } catch (e) {
+                console.warn('Could not save email to localStorage:', e);
+            }
             
             // Check if they're already subscribed
             if (data.alreadySubscribed) {

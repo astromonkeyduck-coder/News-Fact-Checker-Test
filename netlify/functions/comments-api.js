@@ -158,6 +158,30 @@ exports.handler = async (event, context) => {
       // Save back to store using setJSON (convenience method for JSON)
       await store.setJSON(commentsKey, comments);
 
+      // Log comment submission (non-blocking)
+      try {
+        const { logData } = require("./log-data");
+        const { getLocationFromIP } = require("./get-location");
+        const ip = event.headers["x-forwarded-for"]?.split(",")[0]?.trim() || 
+                   event.headers["x-real-ip"] || 
+                   event.headers["cf-connecting-ip"] || 
+                   "unknown";
+        const location = await getLocationFromIP(ip);
+        
+        logData("comment", {
+          articleId: articleId,
+          commentText: text.trim(),
+          author: author.trim(),
+          authorEmail: authorEmail || "",
+          authorId: authorId,
+          location: location,
+        }, event).catch(err => {
+          console.error("[Comments API] Failed to log comment:", err);
+        });
+      } catch (logErr) {
+        console.error("[Comments API] Error setting up comment logging:", logErr);
+      }
+
       return {
         statusCode: 200,
         headers,

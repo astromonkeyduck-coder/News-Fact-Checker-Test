@@ -56,6 +56,52 @@ class AnalyticsTracker {
 
   async log(dataType, data) {
     try {
+      // Try to get user email from various sources
+      let userEmail = null;
+      let userName = null;
+      
+      // Check if user is logged in (Auth0)
+      if (window.auth0 && typeof window.auth0.getUser === 'function') {
+        try {
+          const user = await window.auth0.getUser();
+          if (user && user.email) {
+            userEmail = user.email.toLowerCase().trim();
+            userName = user.name || user.nickname || user.email.split('@')[0];
+          }
+        } catch (e) {
+          // Not logged in or error
+        }
+      }
+      
+      // Check for email in newsletter input fields
+      if (!userEmail) {
+        const newsletterInputs = document.querySelectorAll('input[type="email"], .newsletter-input');
+        for (const input of newsletterInputs) {
+          if (input.value && input.value.includes('@')) {
+            userEmail = input.value.toLowerCase().trim();
+            break;
+          }
+        }
+      }
+      
+      // Check for stored user info
+      if (!userEmail && window.currentUser && window.currentUser.email) {
+        userEmail = window.currentUser.email.toLowerCase().trim();
+        userName = window.currentUser.name;
+      }
+      
+      // Check localStorage for newsletter email
+      if (!userEmail) {
+        try {
+          const storedEmail = localStorage.getItem('newsletterEmail') || localStorage.getItem('userEmail');
+          if (storedEmail && storedEmail.includes('@')) {
+            userEmail = storedEmail.toLowerCase().trim();
+          }
+        } catch (e) {
+          // localStorage not available
+        }
+      }
+
       const fullData = {
         ...data,
         sessionId: this.sessionId,
@@ -73,6 +119,9 @@ class AnalyticsTracker {
         },
         timeOnSite: Date.now() - this.startTime,
         timeOnPage: Date.now() - this.pageStartTime,
+        // Include user email/name if available
+        ...(userEmail ? { email: userEmail, userEmail: userEmail } : {}),
+        ...(userName ? { userName: userName, name: userName } : {}),
       };
 
       await fetch('/.netlify/functions/log-data', {
