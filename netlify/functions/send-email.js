@@ -126,6 +126,7 @@ exports.handler = async (event, context) => {
     // Check if email is already in the audience (if audience is configured)
     // Need to check all pages since contacts.list is paginated
     let alreadySubscribed = false;
+    let existingContact = null; // Store contact data if found
     if (NEWSLETTER_AUDIENCE_ID) {
       try {
         console.log('Checking if email is already in audience:', email);
@@ -149,6 +150,7 @@ exports.handler = async (event, context) => {
           foundContact = contacts.find(c => c.email && c.email.toLowerCase().trim() === normalizedEmail);
           
           if (foundContact) {
+            existingContact = foundContact; // Store contact data for name extraction
             // Check if they're unsubscribed
             if (foundContact.unsubscribed === true) {
               console.log('Contact exists but is unsubscribed, will resubscribe them');
@@ -323,14 +325,29 @@ This is an automated notification from your website.`,
     const encodedEmail = Buffer.from(email).toString('base64');
     const unsubscribeUrl = `https://noteworthynews.co/unsubscribe.html?email=${encodeURIComponent(encodedEmail)}`;
     
-    // Extract first name from email or use fallback
-    // Extract from email (part before @, first part if there's a dot)
-    const emailPrefix = email.split('@')[0];
-    let firstName = emailPrefix.split('.')[0] || emailPrefix.split('_')[0] || 'there';
+    // Extract first name from contact data or email
+    let firstName = 'there';
     
-    // Capitalize first letter and make rest lowercase
-    if (firstName && firstName !== 'there') {
-      firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+    // First, try to get name from existing contact (if they already exist in audience)
+    if (existingContact) {
+      firstName = existingContact.firstName || 
+                  existingContact.first_name || 
+                  (existingContact.name ? existingContact.name.split(' ')[0] : null) ||
+                  null;
+      if (firstName) {
+        console.log('Using name from existing contact:', firstName);
+      }
+    }
+    
+    // If no name found from contact, extract from email as fallback
+    if (!firstName || firstName === 'there') {
+      const emailPrefix = email.split('@')[0];
+      firstName = emailPrefix.split('.')[0] || emailPrefix.split('_')[0] || 'there';
+      
+      // Capitalize first letter and make rest lowercase
+      if (firstName && firstName !== 'there') {
+        firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+      }
     }
     
     // Send auto-reply to the subscriber
@@ -539,7 +556,24 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
             contactId: audienceResult.data.id,
             email: audienceResult.data.email || email,
             audienceId: NEWSLETTER_AUDIENCE_ID,
+            name: audienceResult.data.name,
+            firstName: audienceResult.data.firstName || audienceResult.data.first_name,
           });
+          
+          // If we just created the contact and don't have a name yet, check the response
+          // Note: Resend doesn't automatically pull names from Gmail, but if name was manually added
+          // or contact was created with a name, it will be in the response
+          if ((!firstName || firstName === 'there') && audienceResult.data) {
+            const contactData = audienceResult.data;
+            const foundName = contactData.firstName || 
+                            contactData.first_name || 
+                            (contactData.name ? contactData.name.split(' ')[0] : null);
+            
+            if (foundName) {
+              firstName = foundName;
+              console.log('Found name from newly created contact response:', firstName);
+            }
+          }
         } else {
           console.warn('Unexpected audience result format:', audienceResult);
         }
