@@ -65,6 +65,8 @@ class GeographyGame {
         this.gameActive = false;
         this.countryMap = {}; // Maps country codes to SVG paths
         this.attempts = new Map(); // Track attempts per country: countryCode -> attemptCount
+        this.lastClickTime = 0; // Track last click time for debouncing
+        this.isProcessingClick = false; // Prevent double-processing of clicks
         this.zoomLevel = 1;
         this.panX = 0;
         this.panY = 0;
@@ -181,6 +183,24 @@ class GeographyGame {
         // Set up event delegation to handle clicks on any country path
         if (this.svg) {
             this.svg.addEventListener('click', (e) => {
+                // Debounce: prevent rapid double-clicks (especially on mobile)
+                const now = Date.now();
+                if (now - this.lastClickTime < 500) { // 500ms debounce
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+                
+                // Prevent double-processing
+                if (this.isProcessingClick) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+                
+                this.lastClickTime = now;
+                this.isProcessingClick = true;
+                
                 // Find the clicked path element
                 let path = e.target;
                 if (path.tagName !== 'path') {
@@ -189,11 +209,13 @@ class GeographyGame {
                 
                 if (!path) {
                     console.log('Click detected but no path found');
+                    this.isProcessingClick = false;
                     return;
                 }
                 
                 // Ignore non-populous countries
                 if (path.classList.contains('non-populous')) {
+                    this.isProcessingClick = false;
                     return;
                 }
                 
@@ -235,6 +257,7 @@ class GeographyGame {
                 if (!country) {
                     // Not a mapped country or not in our list
                     console.log('Country not found in populous list');
+                    this.isProcessingClick = false;
                     return;
                 }
                 
@@ -245,27 +268,37 @@ class GeographyGame {
                         this.feedbackEl.textContent = '';
                         this.feedbackEl.className = 'feedback-message';
                     }, 2000);
+                    this.isProcessingClick = false;
                     return;
                 }
                 
                 if (!this.currentCountry) {
                     console.log('No current country to find');
+                    this.isProcessingClick = false;
                     return;
                 }
                 
-                if (this.answered.has(country.code)) {
-                    // Country already answered
+                // Only check if already answered if it's NOT the current country being asked for
+                // This allows clicking the current country even if it was previously answered in a different game
+                if (this.answered.has(country.code) && country.code !== this.currentCountry.code) {
+                    // Country already answered (and it's not the one we're currently looking for)
                     this.feedbackEl.textContent = `${country.name} has already been answered!`;
                     this.feedbackEl.className = 'feedback-message incorrect';
                     setTimeout(() => {
                         this.feedbackEl.textContent = '';
                         this.feedbackEl.className = 'feedback-message';
                     }, 1500);
+                    this.isProcessingClick = false;
                     return;
                 }
                 
                 // Handle the click
                 this.handleCountryClick(country.code, country.name);
+                
+                // Reset processing flag after a short delay to allow the click to process
+                setTimeout(() => {
+                    this.isProcessingClick = false;
+                }, 100);
             });
             
             // Hover effects removed to prevent any movement or disappearing countries
@@ -496,13 +529,20 @@ class GeographyGame {
                         
                         // If it was a quick tap on a country path, trigger click
                         if (wasQuickTap && touchTarget && touchTarget.tagName === 'path' && touchTarget.hasAttribute('data-country-code')) {
-                            // Trigger click event on the path
-                            const clickEvent = new MouseEvent('click', {
-                                bubbles: true,
-                                cancelable: true,
-                                view: window
-                            });
-                            touchTarget.dispatchEvent(clickEvent);
+                            // Prevent default to avoid double-firing with native click
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            // Small delay to ensure touch events are fully processed
+                            setTimeout(() => {
+                                // Trigger click event on the path
+                                const clickEvent = new MouseEvent('click', {
+                                    bubbles: true,
+                                    cancelable: true,
+                                    view: window
+                                });
+                                touchTarget.dispatchEvent(clickEvent);
+                            }, 50);
                         }
                     }
                     
@@ -511,7 +551,7 @@ class GeographyGame {
                     touchTarget = null;
                     initialDistance = 0;
                 }
-            });
+            }, { passive: false });
             
             // Zoom with mouse wheel
             this.mapContainer.addEventListener('wheel', (e) => {
@@ -845,6 +885,8 @@ class GeographyGame {
         this.elapsedTime = 0;
         this.questionTimes = [];
         this.speedBonus = 0;
+        this.lastClickTime = 0;
+        this.isProcessingClick = false;
         
         // Reset leaderboard form
         this.resetLeaderboardForm();
@@ -1060,7 +1102,7 @@ class GeographyGame {
             });
         }
         
-        // Additional filtering for South Korea - remove any paths that might be North Korea
+        // Additional filtering for South Korea - remove any paths that might be North Korea or combined
         if (country && country.code === 'KR') {
             const filteredPaths = new Set();
             allPaths.forEach(path => {
@@ -1077,30 +1119,66 @@ class GeographyGame {
                                      /\bkorea.*north\b/i.test(pathText) ||
                                      /\bnorth.*korea\b/i.test(pathText) ||
                                      /\bkp\b/i.test(pathId) || // North Korea code is KP
-                                     pathDataCode.toUpperCase() === 'KP';
-                
-                // If it's clearly North Korea, exclude it
-                if (hasNorthKorea) {
-                    return; // Skip this path - it's North Korea
-                }
+                                     pathDataCode.toUpperCase() === 'KP' ||
+                                     pathDataName.toLowerCase() === 'north korea';
                 
                 // Check for South Korea indicators
                 const hasSouthKorea = /\bsouth\s+korea\b/i.test(pathText) || 
                                      /\bkorea.*south\b/i.test(pathText) ||
-                                     pathDataCode.toUpperCase() === 'KR' ||
                                      pathDataName.toLowerCase() === 'south korea';
                 
-                // Include if:
-                // 1. It has data-country-code="KR" (processed by our matching logic = South Korea)
-                // 2. It explicitly mentions "south korea"
-                // 3. It has ID "KR" and doesn't mention north
+                // Check if it mentions both (combined path)
+                const hasBothKoreas = (hasNorthKorea && hasSouthKorea) || 
+                                     (/\bkorea\b/i.test(pathText) && !hasSouthKorea && !hasNorthKorea);
+                
+                // EXCLUDE if:
+                // 1. It mentions North Korea
+                // 2. It mentions both Koreas (combined path)
+                // 3. It mentions "korea" without explicitly saying "south korea" (could be combined or North)
+                if (hasNorthKorea || hasBothKoreas || (/\bkorea\b/i.test(pathText) && !hasSouthKorea)) {
+                    return; // Skip this path
+                }
+                
+                // INCLUDE only if:
+                // 1. It explicitly mentions "south korea"
+                // 2. It has data-country-code="KR" AND doesn't mention north or both
+                // 3. It has ID "KR" AND explicitly mentions south or has KR code
                 if (hasSouthKorea || 
-                    (pathDataCode.toUpperCase() === 'KR') ||
-                    (pathId.toUpperCase() === 'KR' && !hasNorthKorea)) {
+                    (pathDataCode.toUpperCase() === 'KR' && !hasNorthKorea && !hasBothKoreas) ||
+                    (pathId.toUpperCase() === 'KR' && (hasSouthKorea || pathDataCode.toUpperCase() === 'KR'))) {
                     filteredPaths.add(path);
                 }
             });
             return Array.from(filteredPaths).filter(p => p && p.tagName === 'path');
+        }
+        
+        // Additional filtering for Sudan - ensure we find paths even if they might be combined
+        if (country && country.code === 'SD') {
+            // Also search by name to find Sudan paths
+            const allPathsInSVG = this.svg.querySelectorAll('path');
+            allPathsInSVG.forEach(path => {
+                const pathId = path.id || '';
+                const pathName = path.getAttribute('name') || '';
+                const pathDataName = path.getAttribute('data-country-name') || '';
+                const pathTitle = path.querySelector('title')?.textContent || '';
+                const pathText = `${pathId} ${pathName} ${pathDataName} ${pathTitle}`.toLowerCase();
+                
+                // Check if it's Sudan (but not South Sudan)
+                const hasSudan = /\bsudan\b/i.test(pathText);
+                const hasSouthSudan = /\bsouth\s+sudan\b/i.test(pathText) || 
+                                     /\bsudan.*south\b/i.test(pathText) ||
+                                     /\bsouth.*sudan\b/i.test(pathText);
+                
+                // Include if it mentions Sudan but NOT South Sudan
+                if (hasSudan && !hasSouthSudan) {
+                    // Also check if it has SD code or matches Sudan name
+                    if (pathId.toUpperCase() === 'SD' || 
+                        pathDataName.toLowerCase() === 'sudan' ||
+                        path.getAttribute('data-country-code')?.toUpperCase() === 'SD') {
+                        allPaths.add(path);
+                    }
+                }
+            });
         }
         
         // Remove any null/undefined paths
@@ -1108,7 +1186,15 @@ class GeographyGame {
     }
     
     handleCountryClick(clickedCode, clickedName) {
-        if (!this.gameActive || !this.currentCountry) return;
+        if (!this.gameActive || !this.currentCountry) {
+            this.isProcessingClick = false;
+            return;
+        }
+        
+        // Additional safety check: prevent processing if already processing
+        if (this.isProcessingClick && Date.now() - this.lastClickTime < 100) {
+            return;
+        }
         
         const isCorrect = clickedCode.toLowerCase() === this.currentCountry.code.toLowerCase();
         
@@ -1128,6 +1214,21 @@ class GeographyGame {
             }
             if (!clickedPath) {
                 clickedPath = this.svg.querySelector(`path#${clickedCode.toLowerCase()}`);
+            }
+            
+            // For Sudan, also try searching by name if code search fails
+            if (!clickedPath && clickedCode.toUpperCase() === 'SD') {
+                const allPaths = this.svg.querySelectorAll('path');
+                for (const path of allPaths) {
+                    const pathName = (path.getAttribute('name') || path.getAttribute('data-country-name') || '').toLowerCase();
+                    const pathId = (path.id || '').toLowerCase();
+                    if ((pathName === 'sudan' || pathId === 'sd') && 
+                        !pathName.includes('south sudan') && 
+                        !pathName.includes('south-sudan')) {
+                        clickedPath = path;
+                        break;
+                    }
+                }
             }
         }
         
@@ -1224,6 +1325,7 @@ class GeographyGame {
                         this.feedbackEl.textContent = '';
                         this.feedbackEl.className = 'feedback-message';
                     }
+                    this.isProcessingClick = false;
                 }, 2000);
             } else {
                 // Wrong answer - increment attempts
@@ -1296,6 +1398,7 @@ class GeographyGame {
                             this.feedbackEl.textContent = '';
                             this.feedbackEl.className = 'feedback-message';
                         }
+                        this.isProcessingClick = false;
                     }, 2000);
                 } else {
                     // Still have attempts remaining
@@ -1676,7 +1779,114 @@ class GeographyGame {
         // Set up submit button handler
         this.setupLeaderboardSubmit();
         
+        // Set up view leaderboard button
+        this.setupViewLeaderboard();
+        
+        // Load and prepare leaderboard immediately when game ends
+        this.prepareLeaderboard();
+        
         this.startBtn.disabled = false;
+    }
+    
+    setupViewLeaderboard() {
+        // Check if view leaderboard button exists, if not create it
+        let viewLeaderboardBtn = document.getElementById('viewLeaderboardBtnGeo');
+        const submitForm = document.getElementById('leaderboardSubmitForm');
+        
+        if (!viewLeaderboardBtn && submitForm) {
+            // Create button and insert it BEFORE the submit form so it's visible immediately
+            viewLeaderboardBtn = document.createElement('button');
+            viewLeaderboardBtn.id = 'viewLeaderboardBtnGeo';
+            viewLeaderboardBtn.className = 'btn btn-view-leaderboard';
+            viewLeaderboardBtn.textContent = '🏆 View Leaderboard';
+            viewLeaderboardBtn.style.cssText = `
+                margin: 20px auto;
+                width: 100%;
+                max-width: 400px;
+                padding: 15px 30px;
+                background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 193, 7, 0.3));
+                border: 2px solid rgba(255, 215, 0, 0.6);
+                color: white;
+                border-radius: 8px;
+                font-weight: 700;
+                font-size: 1.1rem;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: block;
+            `;
+            
+            // Insert before the submit form
+            submitForm.parentNode.insertBefore(viewLeaderboardBtn, submitForm);
+            
+            // Add hover effect
+            viewLeaderboardBtn.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 6px 20px rgba(255, 215, 0, 0.5)';
+                this.style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.4), rgba(255, 193, 7, 0.4))';
+            });
+            viewLeaderboardBtn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = 'none';
+                this.style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 193, 7, 0.3))';
+            });
+        }
+        
+        if (viewLeaderboardBtn) {
+            // Remove existing listeners
+            const newBtn = viewLeaderboardBtn.cloneNode(true);
+            viewLeaderboardBtn.parentNode.replaceChild(newBtn, viewLeaderboardBtn);
+            
+            // Re-add hover effects
+            newBtn.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 6px 20px rgba(255, 215, 0, 0.5)';
+                this.style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.4), rgba(255, 193, 7, 0.4))';
+            });
+            newBtn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = 'none';
+                this.style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 193, 7, 0.3))';
+            });
+            
+            newBtn.addEventListener('click', async () => {
+                console.log('[Geography Game] View leaderboard button clicked');
+                // Ensure leaderboard exists
+                if (!window.leaderboardGeo) {
+                    console.log('[Geography Game] Creating leaderboard instance...');
+                    window.leaderboardGeo = new Leaderboard('geography');
+                    await window.leaderboardGeo.init();
+                }
+                
+                try {
+                    await window.leaderboardGeo.loadScores(50);
+                    window.leaderboardGeo.render();
+                    window.leaderboardGeo.show();
+                } catch (error) {
+                    console.error('[Geography Game] Error showing leaderboard:', error);
+                    // Still try to show it
+                    window.leaderboardGeo.render();
+                    window.leaderboardGeo.show();
+                }
+            });
+        }
+    }
+    
+    async prepareLeaderboard() {
+        // Ensure leaderboard exists
+        if (!window.leaderboardGeo) {
+            console.log('[Geography Game] Creating leaderboard instance on game end...');
+            window.leaderboardGeo = new Leaderboard('geography');
+            await window.leaderboardGeo.init();
+        }
+        
+        // Load current scores so leaderboard is ready to show
+        try {
+            await window.leaderboardGeo.loadScores(50);
+            window.leaderboardGeo.render();
+            console.log('[Geography Game] Leaderboard prepared and ready to show');
+        } catch (error) {
+            console.error('[Geography Game] Error preparing leaderboard:', error);
+        }
     }
     
     setupLeaderboardSubmit() {
@@ -1712,13 +1922,41 @@ class GeographyGame {
                 const success = await this.submitToLeaderboard(scoreData);
                 
                 if (success) {
-                    this.showSubmitStatus('✓ Score submitted successfully!', 'success');
                     nameInput.disabled = true;
                     newSubmitBtn.disabled = true;
-                    // Refresh leaderboard if it's open
-                    if (window.leaderboardGeo) {
-                        await window.leaderboardGeo.loadScores();
+                    
+                    // Ensure leaderboard exists and is initialized
+                    if (!window.leaderboardGeo) {
+                        console.log('[Geography Game] Creating leaderboard instance...');
+                        window.leaderboardGeo = new Leaderboard('geography');
+                        await window.leaderboardGeo.init();
+                    }
+                    
+                    // Load leaderboard to show user their rank
+                    try {
+                        await window.leaderboardGeo.loadScores(50); // Load more to find user's rank
                         window.leaderboardGeo.render();
+                        
+                        // Find user's rank
+                        const userScore = scoreData.score;
+                        const userRank = window.leaderboardGeo.scores.findIndex(s => 
+                            s.userName === userName && Math.abs(s.score - userScore) < 0.01
+                        ) + 1;
+                        
+                        if (userRank > 0 && userRank <= 50) {
+                            this.showSubmitStatus(`✓ Score submitted! You're ranked #${userRank} on the leaderboard!`, 'success');
+                        } else {
+                            this.showSubmitStatus('✓ Score submitted successfully!', 'success');
+                        }
+                        
+                        // Show leaderboard after a short delay
+                        setTimeout(() => {
+                            console.log('[Geography Game] Showing leaderboard...');
+                            window.leaderboardGeo.show();
+                        }, 1500);
+                    } catch (error) {
+                        console.error('[Geography Game] Error loading/showing leaderboard:', error);
+                        this.showSubmitStatus('✓ Score submitted successfully!', 'success');
                     }
                 } else {
                     this.showSubmitStatus('Failed to submit score. Please try again.', 'error');

@@ -774,6 +774,97 @@
             box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
         }
         
+        .leaderboard-submit-form {
+            margin: 30px auto;
+            padding: 25px;
+            background: rgba(74, 144, 226, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            max-width: 500px;
+        }
+        
+        .leaderboard-submit-form h3 {
+            color: white;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        
+        .player-name-input {
+            width: 100%;
+            padding: 12px 15px;
+            font-size: 1rem;
+            border: 2px solid rgba(74, 144, 226, 0.5);
+            border-radius: 8px;
+            background: rgba(15, 15, 35, 0.8);
+            color: white;
+            box-sizing: border-box;
+        }
+        
+        .player-name-input:focus {
+            outline: none;
+            border-color: #4A90E2;
+            box-shadow: 0 0 10px rgba(74, 144, 226, 0.3);
+        }
+        
+        .form-hint {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 8px;
+            text-align: left;
+        }
+        
+        .btn-submit-score {
+            background: linear-gradient(135deg, #4A90E2, #2A60B0);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        
+        .btn-submit-score:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+        }
+        
+        .btn-submit-score:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .submit-status {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            min-height: 20px;
+            text-align: center;
+        }
+        
+        .submit-status.success {
+            color: #4CAF50;
+        }
+        
+        .submit-status.error {
+            color: #f44336;
+        }
+        
         .feedback-message {
             text-align: center;
             font-size: 1.2rem;
@@ -1168,6 +1259,23 @@
             </div>
             
             <div class="feedback-message" id="feedbackMessage"></div>
+            
+            <div class="leaderboard-submit-form" id="leaderboardSubmitForm" style="display: none;">
+                <h3>Submit to Leaderboard</h3>
+                <div class="form-group">
+                    <label for="playerNameInputGeo">Enter your name:</label>
+                    <input 
+                        type="text" 
+                        id="playerNameInputGeo" 
+                        class="player-name-input" 
+                        placeholder="Your name (max 30 characters)"
+                        maxlength="30"
+                    />
+                    <p class="form-hint">Your name will be filtered for inappropriate content</p>
+                </div>
+                <button class="btn-submit-score" id="submitScoreBtnGeo">Submit Score</button>
+                <div class="submit-status" id="submitStatusGeo"></div>
+            </div>
         </div>
     </div>
     
@@ -1197,13 +1305,25 @@
             // Bind leaderboard button
             const leaderboardBtn = document.getElementById('leaderboardBtnGeo');
             if (leaderboardBtn) {
-                leaderboardBtn.addEventListener('click', () => {
-                    leaderboardGeo.loadScores(10).then(() => {
+                leaderboardBtn.addEventListener('click', async () => {
+                    console.log('[Geography Game] Leaderboard button clicked');
+                    try {
+                        await leaderboardGeo.loadScores(50); // Load more scores
                         leaderboardGeo.render();
                         leaderboardGeo.show();
-                    });
+                    } catch (error) {
+                        console.error('[Geography Game] Error loading leaderboard:', error);
+                        // Still show the leaderboard even if loading fails
+                        leaderboardGeo.render();
+                        leaderboardGeo.show();
+                    }
                 });
+            } else {
+                console.warn('[Geography Game] Leaderboard button not found!');
             }
+            
+            // Make leaderboard globally available
+            window.leaderboardGeo = leaderboardGeo;
             
         });
     </script>

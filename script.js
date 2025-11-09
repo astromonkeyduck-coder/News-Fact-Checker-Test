@@ -3721,16 +3721,16 @@ class BreakingNewsGame {
         
         // Store score data for leaderboard submission
         this.pendingScoreData = {
-            gameType: 'fact-checker',
-            score: this.score,
+                    gameType: 'fact-checker',
+                    score: this.score,
             userId: userId || null, // Will be generated on backend if null
             userName: null, // Will be set by user input
-            difficulty: this.difficulty,
-            time: finalTime,
-            speedBonus: this.speedBonus,
-            avgTime: parseFloat(avgTime),
-            level: this.level,
-            streak: Math.max(...this.getBestStreak()),
+                    difficulty: this.difficulty,
+                    time: finalTime,
+                    speedBonus: this.speedBonus,
+                    avgTime: parseFloat(avgTime),
+                    level: this.level,
+                    streak: Math.max(...this.getBestStreak()),
         };
         
         // Set up submit button handler
@@ -3738,6 +3738,27 @@ class BreakingNewsGame {
         
         // Set up view leaderboard button
         this.setupViewLeaderboard();
+        
+        // Load and prepare leaderboard immediately when game ends
+        this.prepareLeaderboard();
+    }
+    
+    async prepareLeaderboard() {
+        // Ensure leaderboard exists
+        if (!window.leaderboard) {
+            console.log('[Game] Creating leaderboard instance on game end...');
+            window.leaderboard = new Leaderboard('fact-checker');
+            await window.leaderboard.init();
+        }
+        
+        // Load current scores so leaderboard is ready to show
+        try {
+            await window.leaderboard.loadScores(50);
+            window.leaderboard.render();
+            console.log('[Game] Leaderboard prepared and ready to show');
+        } catch (error) {
+            console.error('[Game] Error preparing leaderboard:', error);
+        }
     }
     
     setupLeaderboardSubmit() {
@@ -3776,8 +3797,15 @@ class BreakingNewsGame {
                     nameInput.disabled = true;
                     newSubmitBtn.disabled = true;
                     
+                    // Ensure leaderboard exists and is initialized
+                    if (!window.leaderboard) {
+                        console.log('[Game] Creating leaderboard instance...');
+                        window.leaderboard = new Leaderboard('fact-checker');
+                        await window.leaderboard.init();
+                    }
+                    
                     // Load leaderboard to show user their rank
-                    if (window.leaderboard) {
+                    try {
                         await window.leaderboard.loadScores(50); // Load more to find user's rank
                         window.leaderboard.render();
                         
@@ -3795,9 +3823,11 @@ class BreakingNewsGame {
                         
                         // Show leaderboard after a short delay
                         setTimeout(() => {
+                            console.log('[Game] Showing leaderboard...');
                             window.leaderboard.show();
-                        }, 1000);
-                    } else {
+                        }, 1500);
+                    } catch (error) {
+                        console.error('[Game] Error loading/showing leaderboard:', error);
                         this.showSubmitStatus('✓ Score submitted successfully!', 'success');
                     }
                 } else {
@@ -3822,27 +3852,45 @@ class BreakingNewsGame {
     setupViewLeaderboard() {
         // Check if view leaderboard button exists, if not create it
         let viewLeaderboardBtn = document.getElementById('viewLeaderboardBtn');
-        if (!viewLeaderboardBtn) {
-            const submitForm = document.getElementById('leaderboardSubmitForm');
-            if (submitForm) {
-                viewLeaderboardBtn = document.createElement('button');
-                viewLeaderboardBtn.id = 'viewLeaderboardBtn';
-                viewLeaderboardBtn.className = 'btn btn-view-leaderboard';
-                viewLeaderboardBtn.textContent = 'View Leaderboard 🏆';
-                viewLeaderboardBtn.style.cssText = `
-                    margin-top: 15px;
-                    width: 100%;
-                    padding: 12px;
-                    background: rgba(255, 215, 0, 0.2);
-                    border: 2px solid rgba(255, 215, 0, 0.5);
-                    color: white;
-                    border-radius: 8px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                `;
-                submitForm.appendChild(viewLeaderboardBtn);
-            }
+        const submitForm = document.getElementById('leaderboardSubmitForm');
+        const gameOver = document.getElementById('gameOver');
+        
+        if (!viewLeaderboardBtn && submitForm) {
+            // Create button and insert it BEFORE the submit form so it's visible immediately
+            viewLeaderboardBtn = document.createElement('button');
+            viewLeaderboardBtn.id = 'viewLeaderboardBtn';
+            viewLeaderboardBtn.className = 'btn btn-view-leaderboard';
+            viewLeaderboardBtn.textContent = '🏆 View Leaderboard';
+            viewLeaderboardBtn.style.cssText = `
+                margin: 20px auto;
+                width: 100%;
+                max-width: 400px;
+                padding: 15px 30px;
+                background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 193, 7, 0.3));
+                border: 2px solid rgba(255, 215, 0, 0.6);
+                color: white;
+                border-radius: 8px;
+                font-weight: 700;
+                font-size: 1.1rem;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: block;
+            `;
+            
+            // Insert before the submit form
+            submitForm.parentNode.insertBefore(viewLeaderboardBtn, submitForm);
+            
+            // Add hover effect
+            viewLeaderboardBtn.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 6px 20px rgba(255, 215, 0, 0.5)';
+                this.style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.4), rgba(255, 193, 7, 0.4))';
+            });
+            viewLeaderboardBtn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = 'none';
+                this.style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 193, 7, 0.3))';
+            });
         }
         
         if (viewLeaderboardBtn) {
@@ -3850,9 +3898,34 @@ class BreakingNewsGame {
             const newBtn = viewLeaderboardBtn.cloneNode(true);
             viewLeaderboardBtn.parentNode.replaceChild(newBtn, viewLeaderboardBtn);
             
+            // Re-add hover effects
+            newBtn.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.boxShadow = '0 6px 20px rgba(255, 215, 0, 0.5)';
+                this.style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.4), rgba(255, 193, 7, 0.4))';
+            });
+            newBtn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = 'none';
+                this.style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 193, 7, 0.3))';
+            });
+            
             newBtn.addEventListener('click', async () => {
-                if (window.leaderboard) {
+                console.log('[Game] View leaderboard button clicked');
+                // Ensure leaderboard exists
+                if (!window.leaderboard) {
+                    console.log('[Game] Creating leaderboard instance...');
+                    window.leaderboard = new Leaderboard('fact-checker');
+                    await window.leaderboard.init();
+                }
+                
+                try {
                     await window.leaderboard.loadScores(50);
+                    window.leaderboard.render();
+                    window.leaderboard.show();
+                } catch (error) {
+                    console.error('[Game] Error showing leaderboard:', error);
+                    // Still try to show it
                     window.leaderboard.render();
                     window.leaderboard.show();
                 }
@@ -6577,28 +6650,36 @@ function initNewsletterSubscription() {
             
             // Check if they're already subscribed
             if (data.alreadySubscribed) {
-                // Use personalized message - prioritize data.message, then use firstName
+                // Use personalized message - prioritize data.message, then use displayName/fullName/firstName
                 let message;
                 if (data.message) {
                     message = data.message;
+                } else if (data.displayName) {
+                    message = `${data.displayName}, don't worry you're already subscribed!`;
+                } else if (data.fullName) {
+                    message = `${data.fullName}, don't worry you're already subscribed!`;
                 } else if (data.firstName) {
                     message = `${data.firstName}, don't worry you're already subscribed!`;
                 } else {
                     message = 'You are already subscribed to our newsletter!';
                 }
-                console.log('[Newsletter] Already subscribed message:', message, 'firstName:', data.firstName);
+                console.log('[Newsletter] Already subscribed message:', message, 'displayName:', data.displayName, 'fullName:', data.fullName, 'firstName:', data.firstName);
                 showNewsletterMessage(message, 'success');
             } else {
-                // Use personalized message - prioritize data.message, then use firstName
+                // Use personalized message - prioritize data.message, then use displayName/fullName/firstName
                 let message;
                 if (data.message) {
                     message = data.message;
+                } else if (data.displayName) {
+                    message = `Thanks ${data.displayName}! Successfully subscribed! Check your email for a welcome message.`;
+                } else if (data.fullName) {
+                    message = `Thanks ${data.fullName}! Successfully subscribed! Check your email for a welcome message.`;
                 } else if (data.firstName) {
                     message = `Thanks ${data.firstName}! Successfully subscribed! Check your email for a welcome message.`;
                 } else {
                     message = 'Successfully subscribed! Check your email for a welcome message.';
                 }
-                console.log('[Newsletter] Success message:', message, 'firstName:', data.firstName, 'data.message:', data.message);
+                console.log('[Newsletter] Success message:', message, 'displayName:', data.displayName, 'fullName:', data.fullName, 'firstName:', data.firstName, 'data.message:', data.message);
                 showNewsletterMessage(message, 'success');
                 
                 // Play subscription sound effect
