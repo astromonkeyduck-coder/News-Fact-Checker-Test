@@ -264,14 +264,21 @@ exports.handler = async (event, context) => {
                            existingContact.first_name || 
                            (existingContact.name ? existingContact.name.split(' ')[0] : null);
     }
-    // Also check email mapping
+    // Always check email mapping - it may have a more complete name (e.g., "Karina Apollonia Barnett" vs just "Karina")
     const emailMapping = getEmailNameMapping();
-    if (!fullNameForMessage && emailMapping) {
+    if (emailMapping) {
       const mappedName = emailMapping.getNameFromEmail(email);
       if (mappedName) {
-        fullNameForMessage = mappedName; // Use the full mapped name
-        firstNameForMessage = mappedName.split(' ')[0] || mappedName; // Extract first name for fallback
-        console.log('Already subscribed - got name from mapping:', { mappedName, fullNameForMessage, firstNameForMessage });
+        // Use mapped name if it's more complete (has more words/spaces) than what we got from contact
+        const mappedWordCount = mappedName.split(' ').length;
+        const existingWordCount = fullNameForMessage ? fullNameForMessage.split(' ').length : 0;
+        if (!fullNameForMessage || mappedWordCount > existingWordCount) {
+          fullNameForMessage = mappedName; // Use the full mapped name
+          firstNameForMessage = mappedName.split(' ')[0] || mappedName; // Extract first name for fallback
+          console.log('Already subscribed - using name from mapping (more complete):', { mappedName, fullNameForMessage, firstNameForMessage });
+        } else {
+          console.log('Already subscribed - keeping contact name (more complete):', { contactName: fullNameForMessage, mappedName });
+        }
       }
     }
     
@@ -475,10 +482,10 @@ This is an automated notification from your website.`,
       }
     }
     
-    const displayName = getDisplayName(fullName, firstName);
-
+    const welcomeDisplayName = getDisplayName(fullName, firstName);
+    
     // Send auto-reply to the subscriber
-    console.log('Sending welcome email to subscriber:', email, 'with displayName:', displayName, 'firstName:', firstName, 'fullName:', fullName);
+    console.log('Sending welcome email to subscriber:', email, 'with displayName:', welcomeDisplayName, 'firstName:', firstName, 'fullName:', fullName);
     const autoReplyResult = await resend.emails.send({
       from: fromEmail,
       to: email,
@@ -487,7 +494,7 @@ This is an automated notification from your website.`,
       clickTracking: false, // Disable click tracking for better deliverability
       text: `Welcome to Noteworthy News!
 
-Hi ${displayName},
+Hi ${welcomeDisplayName},
 
 Thank you for subscribing to Noteworthy News! We're thrilled to have you join our community of fact-checkers and critical thinkers.
 
@@ -525,7 +532,7 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
           </tr>
           <tr>
             <td style="padding: 30px; background-color: #ffffff;">
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 15px 0;">Hi ${displayName},</p>
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 15px 0;">Hi ${welcomeDisplayName},</p>
               <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Thank you for subscribing to Noteworthy News! We're thrilled to have you join our community of fact-checkers and critical thinkers.</p>
               <p style="color: #4a90e2; font-size: 17px; font-weight: bold; margin: 0 0 15px 0;">You'll now receive:</p>
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
