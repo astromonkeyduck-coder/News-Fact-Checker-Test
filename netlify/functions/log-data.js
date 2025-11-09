@@ -246,6 +246,58 @@ async function logData(dataType, data, event = null) {
     if (data.userName && data.userName !== 'Anonymous') userName = data.userName.trim();
     if (data.firstName && !userName) userName = data.firstName.trim();
     
+    // If no email found in data, try to look it up from previous logs by IP
+    if (!userEmail && ip && ip !== "unknown" && !ip.startsWith("127.") && !ip.startsWith("192.168.")) {
+      try {
+        const store = getStore({
+          name: "analytics-data",
+          siteID: process.env.NETLIFY_SITE_ID,
+          token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+        });
+        
+        // Look up recent logs from the same IP (last 7 days)
+        const today = new Date();
+        const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+        
+        // Check recent dates
+        for (let i = 0; i < 7; i++) {
+          const checkDate = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
+          const dateKey = checkDate.toISOString().split('T')[0];
+          const logsKey = `logs-${dateKey}`;
+          
+          try {
+            const existing = await store.get(logsKey, { type: "json" });
+            if (existing && Array.isArray(existing)) {
+              // Find logs with same IP that have an email
+              const matchingLog = existing.find(log => 
+                log.ip === ip && 
+                log.userEmail && 
+                log.userEmail !== 'Unknown' &&
+                log.userEmail !== 'anonymous' &&
+                log.userEmail.includes('@')
+              );
+              
+              if (matchingLog && matchingLog.userEmail) {
+                userEmail = matchingLog.userEmail.toLowerCase().trim();
+                // Also get name if available
+                if (!userName && matchingLog.userName) {
+                  userName = matchingLog.userName.trim();
+                }
+                console.log(`[Data Log] Found email from previous log: ${userEmail} (IP: ${ip})`);
+                break; // Found email, stop searching
+              }
+            }
+          } catch (e) {
+            // Continue to next date
+            continue;
+          }
+        }
+      } catch (lookupErr) {
+        // If lookup fails, continue without email
+        console.error("[Data Log] Error looking up email from previous logs:", lookupErr);
+      }
+    }
+    
     // Get location from IP (non-blocking, don't wait if it takes too long)
     let location = null;
     if (ip && ip !== "unknown" && !ip.startsWith("127.") && !ip.startsWith("192.168.")) {
@@ -273,7 +325,10 @@ async function logData(dataType, data, event = null) {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     };
     
-    // Check for location alerts (Gainesville FL, Boca Raton, PA)
+    // Check for location alerts (Gainesville FL, Boca Raton, PA, Canada, Auburn)
+    let shouldAlert = false;
+    let alertType = null;
+    
     if (location && location.city) {
       const cityLower = location.city.toLowerCase();
       const regionLower = (location.region || '').toLowerCase();
@@ -282,8 +337,20 @@ async function logData(dataType, data, event = null) {
       const isGainesville = cityLower.includes('gainesville') && (regionLower.includes('florida') || regionLower.includes('fl'));
       const isBocaRaton = (cityLower.includes('boca') && cityLower.includes('raton')) && (regionLower.includes('florida') || regionLower.includes('fl'));
       const isPennsylvania = regionLower.includes('pennsylvania') || regionLower === 'pa' || countryLower.includes('pennsylvania');
+      const isCanada = countryLower.includes('canada') || countryLower === 'ca';
+      const isAuburn = cityLower.includes('auburn');
       
-      if (isGainesville || isBocaRaton || isPennsylvania) {
+      if (isGainesville || isBocaRaton || isPennsylvania || isCanada || isAuburn) {
+        shouldAlert = true;
+        if (isGainesville) alertType = 'Gainesville FL';
+        else if (isBocaRaton) alertType = 'Boca Raton FL';
+        else if (isPennsylvania) alertType = 'Pennsylvania';
+        else if (isCanada) alertType = 'Canada';
+        else if (isAuburn) alertType = 'Auburn';
+      }
+    }
+    
+    if (shouldAlert) {
         // Store alert
         try {
           const alertKey = `alert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -295,7 +362,7 @@ async function logData(dataType, data, event = null) {
             userEmail: userEmail,
             userName: userName,
             dataType: dataType,
-            alertType: isGainesville ? 'Gainesville FL' : isBocaRaton ? 'Boca Raton FL' : 'Pennsylvania',
+            alertType: alertType,
           };
           
           // Store alert in alerts list
