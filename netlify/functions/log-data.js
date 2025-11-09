@@ -391,6 +391,116 @@ async function logData(dataType, data, event = null) {
           });
           
           console.log(`[Data Log] 🚨 ALERT: ${alertData.alertType} - ${location.city}, ${location.region || location.country}`);
+          
+          // Send email notification for page views from these locations (non-blocking)
+          if (dataType === 'page-view') {
+            try {
+              const { Resend } = require('resend');
+              const resend = new Resend(process.env.RESEND_API_KEY);
+              
+              // Get notification emails from environment variable
+              let notificationEmails = [];
+              if (process.env.AI_NOTIFICATION_EMAILS) {
+                try {
+                  notificationEmails = JSON.parse(process.env.AI_NOTIFICATION_EMAILS);
+                  if (!Array.isArray(notificationEmails)) {
+                    throw new Error('Not an array');
+                  }
+                } catch {
+                  notificationEmails = process.env.AI_NOTIFICATION_EMAILS.split(',').map(e => e.trim()).filter(e => e);
+                }
+              }
+              
+              if (notificationEmails.length === 0) {
+                notificationEmails = [process.env.ADMIN_NOTIFICATION_EMAIL || 'richard@noteworthynews.co'];
+              }
+              
+              const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
+              
+              const locationStr = `${location.city || ''}${location.region ? ', ' + location.region : ''}${location.country ? ', ' + location.country : ''}`.trim();
+              const pageUrl = data.url || data.path || 'Unknown page';
+              const pageTitle = data.title || 'Unknown page';
+              
+              // Send to all notification emails
+              Promise.all(notificationEmails.map(email =>
+                resend.emails.send({
+                  from: fromEmail,
+                  to: email,
+                  subject: `📍 Visitor from ${alertType}`,
+                  html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, rgba(231, 76, 60, 0.1) 0%, rgba(192, 57, 43, 0.1) 100%); border-radius: 10px 10px 0 0;">
+              <h2 style="color: #e74c3c; margin: 0; font-size: 24px; font-weight: bold;">📍 Visitor Alert: ${alertType}</h2>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 30px; background-color: #ffffff;">
+              <div style="padding: 20px; background: rgba(231, 76, 60, 0.1); border-left: 4px solid #e74c3c; border-radius: 8px; margin-bottom: 20px;">
+                <p style="color: #e74c3c; font-size: 16px; font-weight: bold; margin: 0 0 10px 0;">📍 Location:</p>
+                <p style="color: #333333; font-size: 18px; line-height: 1.6; margin: 0; font-weight: 600;">${locationStr}</p>
+              </div>
+              
+              <div style="padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: 2px solid #4A90E2; border-radius: 8px; margin-bottom: 20px;">
+                <p style="color: #333333; font-size: 16px; margin: 10px 0; line-height: 1.6;"><strong style="color: #4A90E2;">📄 Page Visited:</strong><br><span style="color: #666666; font-size: 15px;">${pageTitle}</span></p>
+                <p style="color: #333333; font-size: 14px; margin: 5px 0; word-break: break-all;"><a href="${pageUrl}" style="color: #4A90E2; text-decoration: none;">${pageUrl}</a></p>
+              </div>
+              
+              ${userEmail ? `
+              <div style="padding: 15px; background: rgba(46, 204, 113, 0.1); border-left: 4px solid #2ecc71; border-radius: 6px; margin-bottom: 20px;">
+                <p style="color: #333333; font-size: 16px; margin: 0; line-height: 1.6;"><strong style="color: #2ecc71;">👤 User Email:</strong> <span style="color: #666666; font-weight: 600;">${userEmail}</span></p>
+              </div>
+              ` : ''}
+              
+              <div style="padding: 15px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: 2px solid #4A90E2; border-radius: 8px;">
+                <p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">🌐 IP Address:</strong> <span style="color: #666666;">${ip}</span></p>
+                <p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">📅 Time:</strong> <span style="color: #666666;">${new Date().toLocaleString()}</span></p>
+                ${data.referrer ? `<p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">🔙 Referrer:</strong> <span style="color: #666666;">${data.referrer.substring(0, 100)}</span></p>` : ''}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 30px 30px 30px; background-color: #ffffff; border-radius: 0 0 10px 10px;">
+              <p style="color: #999999; font-size: 13px; margin: 0; line-height: 1.5; text-align: center;">This is an automated notification from your website.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+                  text: `Visitor Alert: ${alertType}
+
+Location: ${locationStr}
+Page Visited: ${pageTitle}
+URL: ${pageUrl}
+${userEmail ? `User Email: ${userEmail}\n` : ''}
+IP Address: ${ip}
+Time: ${new Date().toLocaleString()}
+${data.referrer ? `Referrer: ${data.referrer}\n` : ''}
+
+---
+This is an automated notification from your website.`,
+                }).catch(err => {
+                  console.error(`[Data Log] Failed to send location alert email to ${email}:`, err);
+                })
+              )).catch(err => {
+                console.error("[Data Log] Error sending location alert emails:", err);
+              });
+            } catch (emailErr) {
+              console.error("[Data Log] Error setting up location alert emails:", emailErr);
+            }
+          }
         } catch (alertErr) {
           console.error("[Data Log] Error storing alert:", alertErr);
         }
