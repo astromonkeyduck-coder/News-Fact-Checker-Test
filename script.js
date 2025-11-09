@@ -6577,16 +6577,28 @@ function initNewsletterSubscription() {
             
             // Check if they're already subscribed
             if (data.alreadySubscribed) {
-                // Use personalized message if available
-                const message = data.message || (data.firstName 
-                    ? `${data.firstName}, don't worry you're already subscribed!`
-                    : 'You are already subscribed to our newsletter!');
+                // Use personalized message - prioritize data.message, then use firstName
+                let message;
+                if (data.message) {
+                    message = data.message;
+                } else if (data.firstName) {
+                    message = `${data.firstName}, don't worry you're already subscribed!`;
+                } else {
+                    message = 'You are already subscribed to our newsletter!';
+                }
+                console.log('[Newsletter] Already subscribed message:', message, 'firstName:', data.firstName);
                 showNewsletterMessage(message, 'success');
             } else {
-                // Use personalized message if available
-                const message = data.message || (data.firstName 
-                    ? `Thanks ${data.firstName}! Successfully subscribed! Check your email for a welcome message.`
-                    : 'Successfully subscribed! Check your email for a welcome message.');
+                // Use personalized message - prioritize data.message, then use firstName
+                let message;
+                if (data.message) {
+                    message = data.message;
+                } else if (data.firstName) {
+                    message = `Thanks ${data.firstName}! Successfully subscribed! Check your email for a welcome message.`;
+                } else {
+                    message = 'Successfully subscribed! Check your email for a welcome message.';
+                }
+                console.log('[Newsletter] Success message:', message, 'firstName:', data.firstName, 'data.message:', data.message);
                 showNewsletterMessage(message, 'success');
                 
                 // Play subscription sound effect
