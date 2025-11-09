@@ -487,9 +487,10 @@ Time: ${new Date().toLocaleString()}
 
 ---
 This is an automated notification from your website.`,
-      }).catch(err => {
-        console.error("[Noteworthy Chat] Failed to send email notification:", err);
-      });
+        }).catch(err => {
+          console.error(`[Noteworthy Chat] Failed to send email notification to ${email}:`, err);
+        })
+      ));
     } catch (emailErr) {
       console.error("[Noteworthy Chat] Error sending email notification:", emailErr);
       // Don't fail the request if email fails

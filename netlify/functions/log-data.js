@@ -351,83 +351,83 @@ async function logData(dataType, data, event = null) {
     }
     
     if (shouldAlert) {
-        // Store alert
+      // Store alert
+      try {
+        const alertKey = `alert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const alertData = {
+          id: alertKey,
+          timestamp: new Date().toISOString(),
+          location: location,
+          ip: ip,
+          userEmail: userEmail,
+          userName: userName,
+          dataType: dataType,
+          alertType: alertType,
+        };
+        
+        // Store alert in alerts list
+        const alertsKey = 'location-alerts';
+        let alerts = [];
         try {
-          const alertKey = `alert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-          const alertData = {
-            id: alertKey,
-            timestamp: new Date().toISOString(),
-            location: location,
-            ip: ip,
-            userEmail: userEmail,
-            userName: userName,
-            dataType: dataType,
-            alertType: alertType,
-          };
-          
-          // Store alert in alerts list
-          const alertsKey = 'location-alerts';
-          let alerts = [];
+          const existing = await store.get(alertsKey, { type: "json" });
+          alerts = existing || [];
+        } catch (e) {
+          alerts = [];
+        }
+        
+        alerts.unshift(alertData); // Add to beginning
+        // Keep last 1000 alerts
+        if (alerts.length > 1000) {
+          alerts = alerts.slice(0, 1000);
+        }
+        
+        await store.set(alertsKey, JSON.stringify(alerts), {
+          contentType: "application/json",
+        });
+        
+        // Also store individual alert
+        await store.set(alertKey, JSON.stringify(alertData), {
+          contentType: "application/json",
+        });
+        
+        console.log(`[Data Log] 🚨 ALERT: ${alertData.alertType} - ${location.city}, ${location.region || location.country}`);
+        
+        // Send email notification for page views from these locations (non-blocking)
+        if (dataType === 'page-view') {
           try {
-            const existing = await store.get(alertsKey, { type: "json" });
-            alerts = existing || [];
-          } catch (e) {
-            alerts = [];
-          }
-          
-          alerts.unshift(alertData); // Add to beginning
-          // Keep last 1000 alerts
-          if (alerts.length > 1000) {
-            alerts = alerts.slice(0, 1000);
-          }
-          
-          await store.set(alertsKey, JSON.stringify(alerts), {
-            contentType: "application/json",
-          });
-          
-          // Also store individual alert
-          await store.set(alertKey, JSON.stringify(alertData), {
-            contentType: "application/json",
-          });
-          
-          console.log(`[Data Log] 🚨 ALERT: ${alertData.alertType} - ${location.city}, ${location.region || location.country}`);
-          
-          // Send email notification for page views from these locations (non-blocking)
-          if (dataType === 'page-view') {
-            try {
-              const { Resend } = require('resend');
-              const resend = new Resend(process.env.RESEND_API_KEY);
-              
-              // Get notification emails from environment variable
-              let notificationEmails = [];
-              if (process.env.AI_NOTIFICATION_EMAILS) {
-                try {
-                  notificationEmails = JSON.parse(process.env.AI_NOTIFICATION_EMAILS);
-                  if (!Array.isArray(notificationEmails)) {
-                    throw new Error('Not an array');
-                  }
-                } catch {
-                  notificationEmails = process.env.AI_NOTIFICATION_EMAILS.split(',').map(e => e.trim()).filter(e => e);
+            const { Resend } = require('resend');
+            const resend = new Resend(process.env.RESEND_API_KEY);
+            
+            // Get notification emails from environment variable
+            let notificationEmails = [];
+            if (process.env.AI_NOTIFICATION_EMAILS) {
+              try {
+                notificationEmails = JSON.parse(process.env.AI_NOTIFICATION_EMAILS);
+                if (!Array.isArray(notificationEmails)) {
+                  throw new Error('Not an array');
                 }
+              } catch {
+                notificationEmails = process.env.AI_NOTIFICATION_EMAILS.split(',').map(e => e.trim()).filter(e => e);
               }
-              
-              if (notificationEmails.length === 0) {
-                notificationEmails = [process.env.ADMIN_NOTIFICATION_EMAIL || 'richard@noteworthynews.co'];
-              }
-              
-              const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
-              
-              const locationStr = `${location.city || ''}${location.region ? ', ' + location.region : ''}${location.country ? ', ' + location.country : ''}`.trim();
-              const pageUrl = data.url || data.path || 'Unknown page';
-              const pageTitle = data.title || 'Unknown page';
-              
-              // Send to all notification emails
-              Promise.all(notificationEmails.map(email =>
-                resend.emails.send({
-                  from: fromEmail,
-                  to: email,
-                  subject: `📍 Visitor from ${alertType}`,
-                  html: `<!DOCTYPE html>
+            }
+            
+            if (notificationEmails.length === 0) {
+              notificationEmails = [process.env.ADMIN_NOTIFICATION_EMAIL || 'richard@noteworthynews.co'];
+            }
+            
+            const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
+            
+            const locationStr = `${location.city || ''}${location.region ? ', ' + location.region : ''}${location.country ? ', ' + location.country : ''}`.trim();
+            const pageUrl = data.url || data.path || 'Unknown page';
+            const pageTitle = data.title || 'Unknown page';
+            
+            // Send to all notification emails
+            Promise.all(notificationEmails.map(email =>
+              resend.emails.send({
+                from: fromEmail,
+                to: email,
+                subject: `📍 Visitor from ${alertType}`,
+                html: `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -479,7 +479,7 @@ async function logData(dataType, data, event = null) {
   </table>
 </body>
 </html>`,
-                  text: `Visitor Alert: ${alertType}
+                text: `Visitor Alert: ${alertType}
 
 Location: ${locationStr}
 Page Visited: ${pageTitle}
@@ -491,19 +491,18 @@ ${data.referrer ? `Referrer: ${data.referrer}\n` : ''}
 
 ---
 This is an automated notification from your website.`,
-                }).catch(err => {
-                  console.error(`[Data Log] Failed to send location alert email to ${email}:`, err);
-                })
-              )).catch(err => {
-                console.error("[Data Log] Error sending location alert emails:", err);
-              });
-            } catch (emailErr) {
-              console.error("[Data Log] Error setting up location alert emails:", emailErr);
-            }
+              }).catch(err => {
+                console.error(`[Data Log] Failed to send location alert email to ${email}:`, err);
+              })
+            )).catch(err => {
+              console.error("[Data Log] Error sending location alert emails:", err);
+            });
+          } catch (emailErr) {
+            console.error("[Data Log] Error setting up location alert emails:", emailErr);
           }
-        } catch (alertErr) {
-          console.error("[Data Log] Error storing alert:", alertErr);
         }
+      } catch (alertErr) {
+        console.error("[Data Log] Error storing alert:", alertErr);
       }
     }
     

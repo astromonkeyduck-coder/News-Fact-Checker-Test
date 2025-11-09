@@ -231,7 +231,7 @@ exports.handler = async (event, context) => {
         .substring(0, 500);
       
       // Send to all notification emails
-      await Promise.all(notificationEmails.map(email => 
+      await Promise.all(notificationEmails.map(email =>
         resend.emails.send({
           from: fromEmail,
           to: email,
@@ -307,9 +307,10 @@ Image URL: ${imageUrl}
 
 ---
 This is an automated notification from your website.`,
-      }).catch(err => {
-        console.error("[Generate Image] Failed to send email notification:", err);
-      });
+        }).catch(err => {
+          console.error(`[Generate Image] Failed to send email notification to ${email}:`, err);
+        })
+      ));
     } catch (emailErr) {
       console.error("[Generate Image] Error sending email notification:", emailErr);
       // Don't fail the request if email fails
