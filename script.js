@@ -6578,9 +6578,9 @@ function initNewsletterSubscription() {
             // Check if they're already subscribed
             if (data.alreadySubscribed) {
                 // Use personalized message if available
-                const message = data.message || data.firstName 
+                const message = data.message || (data.firstName 
                     ? `${data.firstName}, don't worry you're already subscribed!`
-                    : 'You are already subscribed to our newsletter!';
+                    : 'You are already subscribed to our newsletter!');
                 showNewsletterMessage(message, 'success');
             } else {
                 // Use personalized message if available
