@@ -2215,9 +2215,13 @@
                     chatGalleryDateInput.value = new Date().toISOString().split('T')[0];
                 }
                 // Auto-load chat gallery when switching to this tab
-                if (chatGalleryDateInput.value === new Date().toISOString().split('T')[0]) {
-                    loadChatGallery();
-                }
+                setTimeout(() => {
+                    if (typeof loadChatGallery === 'function') {
+                        loadChatGallery();
+                    } else {
+                        console.error('loadChatGallery function not found');
+                    }
+                }, 100);
             }
             if (tabName === 'tip-gallery') {
                 const tipGalleryDateInput = document.getElementById('tipGalleryDateInput');
@@ -2225,9 +2229,13 @@
                     tipGalleryDateInput.value = new Date().toISOString().split('T')[0];
                 }
                 // Auto-load tip gallery when switching to this tab
-                if (tipGalleryDateInput.value === new Date().toISOString().split('T')[0]) {
-                    loadTipGallery();
-                }
+                setTimeout(() => {
+                    if (typeof loadTipGallery === 'function') {
+                        loadTipGallery();
+                    } else {
+                        console.error('loadTipGallery function not found');
+                    }
+                }, 100);
             }
             if (tabName === 'chats' && !document.getElementById('chatDateInput').value) {
                 document.getElementById('chatDateInput').value = new Date().toISOString().split('T')[0];
@@ -2245,18 +2253,30 @@
         
         // Chat Gallery Functions
         async function loadChatGallery() {
-            const dateInput = document.getElementById('chatGalleryDateInput');
-            if (!dateInput.value) {
-                dateInput.value = new Date().toISOString().split('T')[0];
-            }
-            const date = dateInput.value;
-            const limit = parseInt(document.getElementById('chatGalleryLimitInput').value);
-            
-            showStatus('Loading chat gallery...', 'info');
-            
             try {
+                const dateInput = document.getElementById('chatGalleryDateInput');
+                if (!dateInput) {
+                    console.error('chatGalleryDateInput not found');
+                    return;
+                }
+                if (!dateInput.value) {
+                    dateInput.value = new Date().toISOString().split('T')[0];
+                }
+                const date = dateInput.value;
+                const limitInput = document.getElementById('chatGalleryLimitInput');
+                if (!limitInput) {
+                    console.error('chatGalleryLimitInput not found');
+                    return;
+                }
+                const limit = parseInt(limitInput.value) || 100;
+                
+                showStatus('Loading chat gallery...', 'info');
+                
                 let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}&type=ai-chat`;
                 url = addTokenToUrl(url);
+                
+                console.log('[Chat Gallery] Loading from:', url.replace(/token=[^&]+/, 'token=***'));
+                
                 const response = await fetch(url);
                 
                 if (!response.ok) {
@@ -2266,11 +2286,15 @@
                 const data = await response.json();
                 const chats = data.logs || [];
                 
-                displayChatGallery(chats);
-                document.getElementById('chatGalleryTotalCount').textContent = chats.length;
-                document.getElementById('chatGalleryLoadedCount').textContent = chats.length;
+                console.log('[Chat Gallery] Received', chats.length, 'chats');
                 
-                showStatus(`Loaded ${chats.length} conversations`, 'success');
+                displayChatGallery(chats);
+                const totalCountEl = document.getElementById('chatGalleryTotalCount');
+                const loadedCountEl = document.getElementById('chatGalleryLoadedCount');
+                if (totalCountEl) totalCountEl.textContent = chats.length;
+                if (loadedCountEl) loadedCountEl.textContent = chats.length;
+                
+                showStatus(`Loaded ${chats.length} conversations`, chats.length > 0 ? 'success' : 'info');
             } catch (error) {
                 showStatus(`Error: ${error.message}`, 'error');
                 console.error('Error loading chat gallery:', error);
@@ -2311,8 +2335,10 @@
                 allChats = allChats.slice(0, limit);
                 
                 displayChatGallery(allChats);
-                document.getElementById('chatGalleryTotalCount').textContent = allChats.length;
-                document.getElementById('chatGalleryLoadedCount').textContent = allChats.length;
+                const totalCountEl = document.getElementById('chatGalleryTotalCount');
+                const loadedCountEl = document.getElementById('chatGalleryLoadedCount');
+                if (totalCountEl) totalCountEl.textContent = allChats.length;
+                if (loadedCountEl) loadedCountEl.textContent = allChats.length;
                 
                 showStatus(`Loaded ${allChats.length} conversations from last 7 days`, 'success');
             } catch (error) {
@@ -2323,10 +2349,14 @@
         
         function displayChatGallery(chats) {
             const container = document.getElementById('chatGalleryContainer');
+            if (!container) {
+                console.error('chatGalleryContainer not found');
+                return;
+            }
             container.innerHTML = '';
             
-            if (chats.length === 0) {
-                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">No conversations found</div>';
+            if (!chats || chats.length === 0) {
+                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">No conversations found for selected date. Try selecting today\'s date or use "Load All" to see conversations from the last 7 days.</div>';
                 return;
             }
             
@@ -2378,18 +2408,30 @@
         
         // Tip Gallery Functions
         async function loadTipGallery() {
-            const dateInput = document.getElementById('tipGalleryDateInput');
-            if (!dateInput.value) {
-                dateInput.value = new Date().toISOString().split('T')[0];
-            }
-            const date = dateInput.value;
-            const limit = parseInt(document.getElementById('tipGalleryLimitInput').value);
-            
-            showStatus('Loading tip gallery...', 'info');
-            
             try {
+                const dateInput = document.getElementById('tipGalleryDateInput');
+                if (!dateInput) {
+                    console.error('tipGalleryDateInput not found');
+                    return;
+                }
+                if (!dateInput.value) {
+                    dateInput.value = new Date().toISOString().split('T')[0];
+                }
+                const date = dateInput.value;
+                const limitInput = document.getElementById('tipGalleryLimitInput');
+                if (!limitInput) {
+                    console.error('tipGalleryLimitInput not found');
+                    return;
+                }
+                const limit = parseInt(limitInput.value) || 100;
+                
+                showStatus('Loading tip gallery...', 'info');
+                
                 let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}&type=tip-submission`;
                 url = addTokenToUrl(url);
+                
+                console.log('[Tip Gallery] Loading from:', url.replace(/token=[^&]+/, 'token=***'));
+                
                 const response = await fetch(url);
                 
                 if (!response.ok) {
@@ -2399,10 +2441,12 @@
                 const data = await response.json();
                 const tips = data.logs || [];
                 
+                console.log('[Tip Gallery] Received', tips.length, 'tips');
+                
                 displayTipGallery(tips);
                 updateTipGalleryStats(tips);
                 
-                showStatus(`Loaded ${tips.length} tips`, 'success');
+                showStatus(`Loaded ${tips.length} tips`, tips.length > 0 ? 'success' : 'info');
             } catch (error) {
                 showStatus(`Error: ${error.message}`, 'error');
                 console.error('Error loading tip gallery:', error);
@@ -2453,20 +2497,33 @@
         }
         
         function updateTipGalleryStats(tips) {
-            document.getElementById('tipGalleryTotalCount').textContent = tips.length;
+            const totalCountEl = document.getElementById('tipGalleryTotalCount');
+            const anonymousCountEl = document.getElementById('tipGalleryAnonymousCount');
+            const contactCountEl = document.getElementById('tipGalleryContactCount');
+            
+            if (!tips) {
+                tips = [];
+            }
+            
+            if (totalCountEl) totalCountEl.textContent = tips.length || 0;
             
             const anonymous = tips.filter(t => t.data?.isAnonymous).length;
             const withContact = tips.length - anonymous;
-            document.getElementById('tipGalleryAnonymousCount').textContent = anonymous;
-            document.getElementById('tipGalleryContactCount').textContent = withContact;
+            
+            if (anonymousCountEl) anonymousCountEl.textContent = anonymous;
+            if (contactCountEl) contactCountEl.textContent = withContact;
         }
         
         function displayTipGallery(tips) {
             const container = document.getElementById('tipGalleryContainer');
+            if (!container) {
+                console.error('tipGalleryContainer not found');
+                return;
+            }
             container.innerHTML = '';
             
-            if (tips.length === 0) {
-                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">No tips found</div>';
+            if (!tips || tips.length === 0) {
+                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">No tips found for selected date. Try selecting today\'s date or use "Load All" to see tips from the last 7 days.</div>';
                 return;
             }
             
