@@ -159,7 +159,7 @@ exports.handler = async (event, context) => {
         to: notificationTo,
         subject: 'New Newsletter Subscription',
         clickTracking: false, // Disable click tracking for better deliverability
-      text: `New Newsletter Subscription
+        text: `New Newsletter Subscription
 
 A new subscriber has signed up for the Noteworthy News newsletter:
 
@@ -208,14 +208,15 @@ This is an automated notification from your website.`,
   </table>
 </body>
 </html>`,
-    });
-
-    // Log notification result before sending auto-reply
-    console.log('Notification email result:', {
-      success: !notificationResult.error,
-      error: notificationResult.error,
-      emailId: notificationResult.data?.id,
-    });
+      });
+      
+      // Log notification result
+      console.log('Notification email result:', {
+        success: !notificationResult.error,
+        error: notificationResult.error,
+        emailId: notificationResult.data?.id,
+      });
+    }
     
     // Generate unsubscribe link
     // Base64 encode email for security (prevents tampering)
