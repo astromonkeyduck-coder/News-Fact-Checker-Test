@@ -125,28 +125,40 @@ exports.handler = async (event, context) => {
 
     // Use verified domain email - IMPORTANT: Domain must be verified in Resend
     // If domain is not verified, Resend will bounce emails
-    // Fallback to Resend's default domain if custom domain not verified
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
-    console.log('Using from email:', fromEmail);
+    // Use your domain email by default, but allow override via environment variable
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
+    const isUsingTestDomain = fromEmail.includes('onboarding@resend.dev') || fromEmail.includes('resend.dev');
     
-    // Warn if using unverified domain (for debugging)
+    console.log('Using from email:', fromEmail);
+    console.log('Is using test domain:', isUsingTestDomain);
+    
+    // Warn if domain might not be verified
     if (fromEmail.includes('noteworthynews.co') && !process.env.RESEND_FROM_EMAIL) {
       console.warn('WARNING: Using noteworthynews.co domain. Make sure this domain is verified in Resend at https://resend.com/domains');
-      console.warn('If emails are bouncing, verify the domain in Resend or use onboarding@resend.dev for testing');
+      console.warn('If emails are bouncing, verify the domain in Resend or set RESEND_FROM_EMAIL=onboarding@resend.dev in Netlify');
     }
 
     // Send notification email to admin
     // Try to use environment variable first, fallback to default
     const notificationTo = process.env.ADMIN_NOTIFICATION_EMAIL || 'richard@noteworthynews.co';
-    console.log('Sending notification email to admin:', notificationTo);
-    console.log('Using from email:', fromEmail);
-    console.log('Subscriber email:', email);
     
-    const notificationResult = await resend.emails.send({
-      from: fromEmail,
-      to: notificationTo,
-      subject: 'New Newsletter Subscription',
-      clickTracking: false, // Disable click tracking for better deliverability
+    // If using test domain (onboarding@resend.dev), skip notification email
+    // because Resend only allows sending to account owner's email with test domain
+    let notificationResult = { data: { id: 'skipped' } };
+    
+    if (isUsingTestDomain) {
+      console.warn('Skipping notification email - using test domain which only allows sending to account owner');
+      console.warn('Notification would have been sent to:', notificationTo);
+    } else {
+      console.log('Sending notification email to admin:', notificationTo);
+      console.log('Using from email:', fromEmail);
+      console.log('Subscriber email:', email);
+      
+      notificationResult = await resend.emails.send({
+        from: fromEmail,
+        to: notificationTo,
+        subject: 'New Newsletter Subscription',
+        clickTracking: false, // Disable click tracking for better deliverability
       text: `New Newsletter Subscription
 
 A new subscriber has signed up for the Noteworthy News newsletter:
@@ -317,17 +329,71 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
     
     if (NEWSLETTER_AUDIENCE_ID) {
       try {
-        console.log('Adding subscriber to audience:', {
+        console.log('Attempting to add subscriber to audience:', {
           audienceId: NEWSLETTER_AUDIENCE_ID,
           email: email,
+          hasResendInstance: !!resend,
         });
         
-        // Try to create the contact (Resend will handle duplicates)
-        audienceResult = await resend.contacts.create({
-          audienceId: NEWSLETTER_AUDIENCE_ID,
-          email: email,
-          unsubscribed: false, // Explicitly set as subscribed
-        });
+        // Helper function to add contact with retry logic for rate limits
+        const addContactWithRetry = async (retries = 3, delay = 1000) => {
+          for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+              const result = await resend.contacts.create({
+                audienceId: NEWSLETTER_AUDIENCE_ID,
+                email: email,
+                unsubscribed: false, // Explicitly set as subscribed
+              });
+              
+              // Check if it's a rate limit error
+              if (result?.error?.name === 'rate_limit_exceeded' || 
+                  result?.error?.statusCode === 429 ||
+                  (result?.error?.message && result.error.message.includes('rate limit'))) {
+                if (attempt < retries) {
+                  const waitTime = delay * attempt; // Exponential backoff
+                  console.log(`Rate limit hit, waiting ${waitTime}ms before retry ${attempt + 1}/${retries}`);
+                  await new Promise(resolve => setTimeout(resolve, waitTime));
+                  continue; // Retry
+                } else {
+                  console.warn('Rate limit exceeded after all retries');
+                  return result; // Return the error after all retries
+                }
+              }
+              
+              return result; // Success or non-rate-limit error
+            } catch (createError) {
+              // Check if it's a rate limit exception
+              if (createError.message && createError.message.includes('rate limit') && attempt < retries) {
+                const waitTime = delay * attempt;
+                console.log(`Rate limit exception, waiting ${waitTime}ms before retry ${attempt + 1}/${retries}`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+                continue;
+              }
+              throw createError; // Re-throw if not rate limit or out of retries
+            }
+          }
+        };
+        
+        // Try to create the contact with retry logic
+        try {
+          audienceResult = await addContactWithRetry();
+          
+          console.log('Resend contacts.create response:', {
+            hasError: !!audienceResult?.error,
+            hasData: !!audienceResult?.data,
+            error: audienceResult?.error,
+            data: audienceResult?.data,
+          });
+        } catch (createError) {
+          console.error('Exception during resend.contacts.create:', {
+            error: createError,
+            message: createError.message,
+            stack: createError.stack,
+            name: createError.name,
+          });
+          audienceError = createError;
+          audienceResult = { error: { message: createError.message, name: createError.name } };
+        }
         
         // Check for errors in the response
         if (audienceResult && audienceResult.error) {
@@ -337,21 +403,34 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
             message: audienceResult.error.message,
             name: audienceResult.error.name,
             code: audienceResult.error.code,
+            statusCode: audienceResult.error.statusCode,
           });
           
           // If error is "already exists", that's actually okay
-          if (audienceResult.error.message && 
-              (audienceResult.error.message.includes('already exists') || 
-               audienceResult.error.message.includes('duplicate'))) {
+          const errorMsg = audienceResult.error.message || '';
+          const errorName = audienceResult.error.name || '';
+          
+          if (errorMsg.includes('already exists') || 
+              errorMsg.includes('duplicate') ||
+              errorMsg.includes('already in') ||
+              errorMsg.toLowerCase().includes('conflict')) {
             console.log('Contact already exists in audience (this is okay)');
             audienceError = null; // Don't treat as error
+            // Mark as success since they're already in the audience
+            audienceResult = { data: { id: 'existing', email: email } };
+          } else if (errorName === 'rate_limit_exceeded' || audienceResult.error.statusCode === 429) {
+            console.warn('Rate limit exceeded when adding to audience. Contact will be added on next subscription attempt.');
+            // Don't treat as fatal error - subscription email was sent successfully
+            audienceError = null; // Don't fail the subscription
           }
         } else if (audienceResult && audienceResult.data) {
-          console.log('Subscriber successfully added to audience:', {
+          console.log('✓ Subscriber successfully added to audience:', {
             contactId: audienceResult.data.id,
             email: audienceResult.data.email || email,
             audienceId: NEWSLETTER_AUDIENCE_ID,
           });
+        } else {
+          console.warn('Unexpected audience result format:', audienceResult);
         }
       } catch (audienceException) {
         audienceError = audienceException;
