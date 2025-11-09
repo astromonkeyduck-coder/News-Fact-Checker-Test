@@ -15,55 +15,52 @@ try {
 // Load Resend module
 const { Resend } = require('resend');
 
-// Load email name mapping (local file, not in git)
-// Also check environment variable as fallback for production
+// Load email name mapping from environment variable or local file
+// Priority: KNOWN_NAMES env var > local file > empty mapping
 let emailNameMapping = null;
-try {
-  emailNameMapping = require('./email-name-mapping.js');
-  console.log('Email name mapping loaded from file');
-} catch (e) {
-  console.warn('Email name mapping file not found, trying environment variable:', e.message);
-  // Try to load from environment variable as JSON string (for Netlify)
-  if (process.env.EMAIL_NAME_MAPPING) {
-    try {
-      emailNameMapping = JSON.parse(process.env.EMAIL_NAME_MAPPING);
-      console.log('Email name mapping loaded from environment variable');
-    } catch (parseError) {
-      console.warn('Failed to parse EMAIL_NAME_MAPPING from environment:', parseError.message);
-    }
+let knownNamesMap = {};
+
+// First, try to load from KNOWN_NAMES environment variable (for production)
+if (process.env.KNOWN_NAMES) {
+  try {
+    knownNamesMap = JSON.parse(process.env.KNOWN_NAMES);
+    console.log('Email name mapping loaded from KNOWN_NAMES environment variable');
+  } catch (parseError) {
+    console.warn('Failed to parse KNOWN_NAMES from environment:', parseError.message);
   }
 }
 
-// Inline mapping as final fallback (for production deployment)
-// This ensures names work even if file/env var isn't available
-const inlineEmailMapping = {
-  'kingsky2022@gmail.com': 'Skyler',
-  'charlie.desena2007@gmail.com': 'Charlie Desena',
-  'desenach@lhprep.org': 'Charlie Desena',
-  'weyrauchch@lhprep.org': 'Chase Weyrauch',
-  'torresma@lhprep.org': 'Mathew Torres',
-  'averyennis@icloud.com': 'Avery Ennis',
-  'reillysminecraft13@gmail.com': 'Rielly Dawson',
-  'teddipupper@icloud.com': 'Karina Barnett',
-  'barnettka@lhprep.org': 'Karina Barnett',
-  'heshso@lhprep.org': 'Sophia Hesh',
-  'mr.pangolinman@gmail.com': 'Richard',
-  'sunmanbb@gmail.com': 'Bryce Barnett',
-};
+// Second, try to load from local file (for development)
+if (Object.keys(knownNamesMap).length === 0) {
+  try {
+    emailNameMapping = require('./email-name-mapping.js');
+    console.log('Email name mapping loaded from local file');
+  } catch (e) {
+    console.warn('Email name mapping file not found:', e.message);
+  }
+}
 
 // Create a unified mapping function
 const getEmailNameMapping = () => {
+  // If we have the env var mapping, use it
+  if (Object.keys(knownNamesMap).length > 0) {
+    return {
+      getNameFromEmail: (email) => {
+        if (!email) return null;
+        const normalizedEmail = email.toLowerCase().trim();
+        return knownNamesMap[normalizedEmail] || null;
+      }
+    };
+  }
+  
+  // Otherwise, use the local file mapping if available
   if (emailNameMapping && typeof emailNameMapping.getNameFromEmail === 'function') {
     return emailNameMapping;
   }
   
-  // Fallback to inline mapping
+  // Return empty mapping if nothing is available
   return {
-    getNameFromEmail: (email) => {
-      if (!email) return null;
-      const normalizedEmail = email.toLowerCase().trim();
-      return inlineEmailMapping[normalizedEmail] || null;
-    }
+    getNameFromEmail: () => null
   };
 };
 
