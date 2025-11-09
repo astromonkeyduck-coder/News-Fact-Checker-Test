@@ -337,19 +337,9 @@ This is an automated notification from your website.`,
     let firstName = 'there';
     let fullName = null;
     
-    // First, try to get name from email mapping (local database of known emails)
-    if (emailNameMapping && typeof emailNameMapping.getNameFromEmail === 'function') {
-      const mappedName = emailNameMapping.getNameFromEmail(email);
-      if (mappedName) {
-        fullName = mappedName;
-        // Extract first name from full name
-        firstName = mappedName.split(' ')[0] || mappedName;
-        console.log('Using name from email mapping:', fullName, '-> firstName:', firstName);
-      }
-    }
-    
-    // Second, try to get name from existing contact (if they already exist in audience)
-    if ((!firstName || firstName === 'there') && existingContact) {
+    // First, try to get name from existing contact (if they already exist in audience)
+    // This prioritizes Google contact names stored in Resend
+    if (existingContact) {
       const contactName = existingContact.firstName || 
                          existingContact.first_name || 
                          (existingContact.name ? existingContact.name.split(' ')[0] : null) ||
@@ -358,6 +348,18 @@ This is an automated notification from your website.`,
         firstName = contactName;
         fullName = existingContact.name || contactName;
         console.log('Using name from existing contact:', fullName, '-> firstName:', firstName);
+      }
+    }
+    
+    // Second, try to get name from email mapping (local database of known emails)
+    // Only use mapping if we don't have a name from Resend contact
+    if ((!firstName || firstName === 'there') && emailNameMapping && typeof emailNameMapping.getNameFromEmail === 'function') {
+      const mappedName = emailNameMapping.getNameFromEmail(email);
+      if (mappedName) {
+        fullName = mappedName;
+        // Extract first name from full name
+        firstName = mappedName.split(' ')[0] || mappedName;
+        console.log('Using name from email mapping:', fullName, '-> firstName:', firstName);
       }
     }
     
