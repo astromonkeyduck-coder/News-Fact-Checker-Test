@@ -759,6 +759,29 @@ class GeographyGame {
         }
     }
     
+    resetLeaderboardForm() {
+        const submitForm = document.getElementById('leaderboardSubmitForm');
+        const nameInput = document.getElementById('playerNameInputGeo');
+        const submitBtn = document.getElementById('submitScoreBtnGeo');
+        const statusDiv = document.getElementById('submitStatusGeo');
+        
+        if (submitForm) {
+            submitForm.style.display = 'none';
+        }
+        if (nameInput) {
+            nameInput.value = '';
+            nameInput.disabled = false;
+        }
+        if (submitBtn) {
+            submitBtn.disabled = false;
+        }
+        if (statusDiv) {
+            statusDiv.textContent = '';
+            statusDiv.className = 'submit-status';
+        }
+        this.pendingScoreData = null;
+    }
+    
     startGame() {
         this.gameActive = true;
         this.score = 0;
@@ -769,6 +792,9 @@ class GeographyGame {
         this.attempts.clear();
         this.speedBonus = 0;
         this.questionTimes = [];
+        
+        // Reset leaderboard form
+        this.resetLeaderboardForm();
         
         // Reset timer
         this.elapsedTime = 0;
@@ -819,6 +845,9 @@ class GeographyGame {
         this.elapsedTime = 0;
         this.questionTimes = [];
         this.speedBonus = 0;
+        
+        // Reset leaderboard form
+        this.resetLeaderboardForm();
         
         // Stop question timer
         if (this.questionTimerInterval) {
@@ -1618,27 +1647,102 @@ class GeographyGame {
         this.feedbackEl.textContent = completionMessage;
         this.feedbackEl.className = 'feedback-message';
         
-        // Submit to leaderboard if user is signed in
-        if (userId) {
-            try {
-                const user = await window.auth0.getUser();
-                await this.submitToLeaderboard({
-                    gameType: 'geography',
-                    score: this.score,
-                    userId: user.sub,
-                    userName: user.name || user.email || 'Anonymous',
-                    correct: this.correct,
-                    wrong: this.wrong,
-                    time: finalTime,
-                    speedBonus: this.speedBonus,
-                    avgTime: parseFloat(avgTime),
-                });
-            } catch (err) {
-                console.log('[Geography Game] Could not submit to leaderboard:', err);
-            }
+        // Store score data for leaderboard submission
+        this.pendingScoreData = {
+            gameType: 'geography',
+            score: this.score,
+            userId: userId || null, // Will be generated on backend if null
+            userName: null, // Will be set by user input
+            correct: this.correct,
+            wrong: this.wrong,
+            time: finalTime,
+            speedBonus: this.speedBonus,
+            avgTime: parseFloat(avgTime),
+        };
+        
+        // Show leaderboard submit form
+        const submitForm = document.getElementById('leaderboardSubmitForm');
+        if (submitForm) {
+            submitForm.style.display = 'block';
+            submitForm.style.visibility = 'visible';
+            submitForm.style.opacity = '1';
+            console.log('[Geography Game] Leaderboard form should now be visible');
+        } else {
+            console.error('[Geography Game] Leaderboard submit form not found!');
         }
         
+        // Set up submit button handler
+        this.setupLeaderboardSubmit();
+        
         this.startBtn.disabled = false;
+    }
+    
+    setupLeaderboardSubmit() {
+        const submitBtn = document.getElementById('submitScoreBtnGeo');
+        const nameInput = document.getElementById('playerNameInputGeo');
+        const statusDiv = document.getElementById('submitStatusGeo');
+        
+        if (!submitBtn || !nameInput) return;
+        
+        // Remove existing listeners
+        const newSubmitBtn = submitBtn.cloneNode(true);
+        submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+        
+        // Add new listener
+        newSubmitBtn.addEventListener('click', async () => {
+            const userName = nameInput.value.trim() || 'Anonymous';
+            
+            if (!this.pendingScoreData) {
+                this.showSubmitStatus('No score data available', 'error');
+                return;
+            }
+            
+            // Disable button during submission
+            newSubmitBtn.disabled = true;
+            this.showSubmitStatus('Submitting...', '');
+            
+            try {
+                const scoreData = {
+                    ...this.pendingScoreData,
+                    userName: userName,
+                };
+                
+                const success = await this.submitToLeaderboard(scoreData);
+                
+                if (success) {
+                    this.showSubmitStatus('✓ Score submitted successfully!', 'success');
+                    nameInput.disabled = true;
+                    newSubmitBtn.disabled = true;
+                    // Refresh leaderboard if it's open
+                    if (window.leaderboardGeo) {
+                        await window.leaderboardGeo.loadScores();
+                        window.leaderboardGeo.render();
+                    }
+                } else {
+                    this.showSubmitStatus('Failed to submit score. Please try again.', 'error');
+                    newSubmitBtn.disabled = false;
+                }
+            } catch (error) {
+                console.error('[Geography Game] Leaderboard submission error:', error);
+                this.showSubmitStatus('Error submitting score. Please try again.', 'error');
+                newSubmitBtn.disabled = false;
+            }
+        });
+        
+        // Allow Enter key to submit
+        nameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !newSubmitBtn.disabled) {
+                newSubmitBtn.click();
+            }
+        });
+    }
+    
+    showSubmitStatus(message, type) {
+        const statusDiv = document.getElementById('submitStatusGeo');
+        if (statusDiv) {
+            statusDiv.textContent = message;
+            statusDiv.className = `submit-status ${type}`;
+        }
     }
     
     async submitToLeaderboard(scoreData) {
@@ -1653,11 +1757,15 @@ class GeographyGame {
             
             if (response.ok) {
                 console.log('[Geography Game] Score submitted to leaderboard');
+                return true;
             } else {
-                console.error('[Geography Game] Failed to submit score:', await response.text());
+                const errorText = await response.text();
+                console.error('[Geography Game] Failed to submit score:', errorText);
+                return false;
             }
         } catch (error) {
             console.error('[Geography Game] Leaderboard submission error:', error);
+            return false;
         }
     }
 }
