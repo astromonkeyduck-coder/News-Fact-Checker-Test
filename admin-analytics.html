@@ -531,12 +531,14 @@
     <!-- Main Dashboard (hidden until login) -->
     <div id="dashboardContent" style="display: none;">
         <!-- Tabs -->
-        <div class="tabs" style="display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid rgba(74, 144, 226, 0.3);">
+        <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('logs')" id="tab-logs">📊 Logs</button>
             <button class="tab-btn" onclick="switchTab('images')" id="tab-images">🖼️ Image Gallery</button>
-            <button class="tab-btn" onclick="switchTab('chats')" id="tab-chats">💬 Chat Logs</button>
+            <button class="tab-btn" onclick="switchTab('chat-gallery')" id="tab-chat-gallery">💬 Chat Gallery</button>
+            <button class="tab-btn" onclick="switchTab('tip-gallery')" id="tab-tip-gallery">💡 Tip Gallery</button>
+            <button class="tab-btn" onclick="switchTab('chats')" id="tab-chats">📝 Chat Logs</button>
             <button class="tab-btn" onclick="switchTab('clicks')" id="tab-clicks">🖱️ Click Heatmap</button>
-            <button class="tab-btn" onclick="switchTab('tips')" id="tab-tips">💡 Tips</button>
+            <button class="tab-btn" onclick="switchTab('tips')" id="tab-tips">📋 Tips List</button>
         </div>
         
         <!-- Logs Tab (existing content) -->
@@ -689,6 +691,84 @@
             0%, 100% { opacity: 0.3; }
             50% { opacity: 0.6; }
         }
+        
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 30px;
+            padding: 8px;
+            background: rgba(15, 15, 35, 0.4);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(74, 144, 226, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            flex-wrap: wrap;
+        }
+        
+        .tab-btn {
+            padding: 14px 24px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+        
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.15), rgba(46, 204, 113, 0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .tab-btn:hover::before {
+            opacity: 1;
+        }
+        
+        .tab-btn:hover {
+            color: rgba(255, 255, 255, 0.95);
+            transform: translateY(-2px);
+        }
+        
+        .tab-btn.active {
+            color: #fff;
+            background: linear-gradient(135deg, #4A90E2, #2A60B0);
+            box-shadow: 
+                0 4px 15px rgba(74, 144, 226, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+        }
+        
+        .tab-btn.active::before {
+            opacity: 0;
+        }
+        
+        .tab-btn.active:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 6px 20px rgba(74, 144, 226, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+        }
+        
+        .tab-content {
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
     
             <div class="logs-container">
@@ -784,6 +864,100 @@
             <div id="chatLogsContainer" style="display: flex; flex-direction: column; gap: 20px;">
                 <div style="text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">
                     Click "Load Chats" to view conversations
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat Gallery Tab -->
+        <div id="tab-content-chat-gallery" class="tab-content" style="display: none;">
+            <div class="controls" style="margin-bottom: 30px;">
+                <div class="control-group">
+                    <label>Date Range</label>
+                    <input type="date" id="chatGalleryDateInput" value="" onchange="loadChatGallery()">
+                </div>
+                <div class="control-group">
+                    <label>Limit</label>
+                    <input type="number" id="chatGalleryLimitInput" value="100" min="1" max="1000">
+                </div>
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadChatGallery()">Load Chats</button>
+                </div>
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadAllChatGallery()" style="background: linear-gradient(135deg, #ff9800, #f57c00);">Load All (7 days)</button>
+                </div>
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadChatGallery()" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">🔄 Refresh</button>
+                </div>
+            </div>
+            
+            <div id="chatGalleryStats" style="padding: 20px; background: rgba(15, 15, 35, 0.6); border-radius: 16px; margin-bottom: 20px; border: 1px solid rgba(74, 144, 226, 0.2);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Total Conversations</div>
+                        <div id="chatGalleryTotalCount" style="font-size: 2rem; font-weight: 700; color: #4A90E2;">0</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Loaded</div>
+                        <div id="chatGalleryLoadedCount" style="font-size: 2rem; font-weight: 700; color: #2ecc71;">0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="chatGalleryContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); gap: 20px;">
+                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">
+                    Click "Load Chats" to view conversations
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tip Gallery Tab -->
+        <div id="tab-content-tip-gallery" class="tab-content" style="display: none;">
+            <div class="controls" style="margin-bottom: 30px;">
+                <div class="control-group">
+                    <label>Date Range</label>
+                    <input type="date" id="tipGalleryDateInput" value="" onchange="loadTipGallery()">
+                </div>
+                <div class="control-group">
+                    <label>Limit</label>
+                    <input type="number" id="tipGalleryLimitInput" value="100" min="1" max="1000">
+                </div>
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadTipGallery()">Load Tips</button>
+                </div>
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadAllTipGallery()" style="background: linear-gradient(135deg, #ff9800, #f57c00);">Load All (7 days)</button>
+                </div>
+                <div class="control-group" style="justify-content: flex-end;">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadTipGallery()" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">🔄 Refresh</button>
+                </div>
+            </div>
+            
+            <div id="tipGalleryStats" style="padding: 20px; background: rgba(15, 15, 35, 0.6); border-radius: 16px; margin-bottom: 20px; border: 1px solid rgba(74, 144, 226, 0.2);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Total Tips</div>
+                        <div id="tipGalleryTotalCount" style="font-size: 2rem; font-weight: 700; color: #4A90E2;">0</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Anonymous</div>
+                        <div id="tipGalleryAnonymousCount" style="font-size: 2rem; font-weight: 700; color: #ffc107;">0</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">With Contact</div>
+                        <div id="tipGalleryContactCount" style="font-size: 2rem; font-weight: 700; color: #2ecc71;">0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="tipGalleryContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px;">
+                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">
+                    Click "Load Tips" to view submitted tips
                 </div>
             </div>
         </div>
@@ -2035,6 +2209,26 @@
                     loadImageGallery();
                 }
             }
+            if (tabName === 'chat-gallery') {
+                const chatGalleryDateInput = document.getElementById('chatGalleryDateInput');
+                if (!chatGalleryDateInput.value) {
+                    chatGalleryDateInput.value = new Date().toISOString().split('T')[0];
+                }
+                // Auto-load chat gallery when switching to this tab
+                if (chatGalleryDateInput.value === new Date().toISOString().split('T')[0]) {
+                    loadChatGallery();
+                }
+            }
+            if (tabName === 'tip-gallery') {
+                const tipGalleryDateInput = document.getElementById('tipGalleryDateInput');
+                if (!tipGalleryDateInput.value) {
+                    tipGalleryDateInput.value = new Date().toISOString().split('T')[0];
+                }
+                // Auto-load tip gallery when switching to this tab
+                if (tipGalleryDateInput.value === new Date().toISOString().split('T')[0]) {
+                    loadTipGallery();
+                }
+            }
             if (tabName === 'chats' && !document.getElementById('chatDateInput').value) {
                 document.getElementById('chatDateInput').value = new Date().toISOString().split('T')[0];
             }
@@ -2047,6 +2241,279 @@
                     loadClickHeatmap();
                 }
             }
+        }
+        
+        // Chat Gallery Functions
+        async function loadChatGallery() {
+            const dateInput = document.getElementById('chatGalleryDateInput');
+            if (!dateInput.value) {
+                dateInput.value = new Date().toISOString().split('T')[0];
+            }
+            const date = dateInput.value;
+            const limit = parseInt(document.getElementById('chatGalleryLimitInput').value);
+            
+            showStatus('Loading chat gallery...', 'info');
+            
+            try {
+                let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}&type=ai-chat`;
+                url = addTokenToUrl(url);
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const chats = data.logs || [];
+                
+                displayChatGallery(chats);
+                document.getElementById('chatGalleryTotalCount').textContent = chats.length;
+                document.getElementById('chatGalleryLoadedCount').textContent = chats.length;
+                
+                showStatus(`Loaded ${chats.length} conversations`, 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error('Error loading chat gallery:', error);
+            }
+        }
+        
+        async function loadAllChatGallery() {
+            showStatus('Loading all chats (last 7 days)...', 'info');
+            
+            try {
+                const dates = [];
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    dates.push(d.toISOString().split('T')[0]);
+                }
+                
+                let allChats = [];
+                for (const date of dates) {
+                    try {
+                        let url = `/.netlify/functions/log-data?date=${date}&limit=1000&type=ai-chat`;
+                        url = addTokenToUrl(url);
+                        const response = await fetch(url);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.logs && data.logs.length > 0) {
+                                allChats = allChats.concat(data.logs);
+                            }
+                        }
+                    } catch (e) {
+                        console.error(`Error loading chats for ${date}:`, e);
+                    }
+                }
+                
+                allChats.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                const limit = parseInt(document.getElementById('chatGalleryLimitInput').value);
+                allChats = allChats.slice(0, limit);
+                
+                displayChatGallery(allChats);
+                document.getElementById('chatGalleryTotalCount').textContent = allChats.length;
+                document.getElementById('chatGalleryLoadedCount').textContent = allChats.length;
+                
+                showStatus(`Loaded ${allChats.length} conversations from last 7 days`, 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error('Error loading all chats:', error);
+            }
+        }
+        
+        function displayChatGallery(chats) {
+            const container = document.getElementById('chatGalleryContainer');
+            container.innerHTML = '';
+            
+            if (chats.length === 0) {
+                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">No conversations found</div>';
+                return;
+            }
+            
+            chats.forEach((log, index) => {
+                const data = log.data || {};
+                const userMessage = data.userMessage || 'No message';
+                const aiResponse = data.aiResponse || 'No response';
+                const timestamp = new Date(log.timestamp).toLocaleString();
+                const userEmail = log.userEmail || 'Unknown';
+                
+                const chatCard = document.createElement('div');
+                chatCard.className = 'log-entry';
+                chatCard.style.cssText = 'background: rgba(15, 15, 35, 0.6); border-radius: 16px; padding: 20px; border: 1px solid rgba(74, 144, 226, 0.2); transition: transform 0.2s, box-shadow 0.2s;';
+                chatCard.onmouseenter = function() {
+                    this.style.transform = 'translateY(-4px)';
+                    this.style.boxShadow = '0 8px 24px rgba(74, 144, 226, 0.3)';
+                };
+                chatCard.onmouseleave = function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = 'none';
+                };
+                
+                chatCard.innerHTML = `
+                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(74, 144, 226, 0.2);">
+                        <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.6); margin-bottom: 5px;">${timestamp}</div>
+                        <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.5);">📧 ${escapeHtml(userEmail)}</div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div style="background: rgba(46, 204, 113, 0.15); border-left: 4px solid #2ecc71; padding: 15px; border-radius: 8px;">
+                            <strong style="color: #2ecc71; display: block; margin-bottom: 8px;">👤 User:</strong>
+                            <div style="font-size: 1.05rem; line-height: 1.6; color: rgba(255, 255, 255, 0.9);">${escapeHtml(userMessage)}</div>
+                        </div>
+                        <div style="background: rgba(74, 144, 226, 0.15); border-left: 4px solid #4A90E2; padding: 15px; border-radius: 8px;">
+                            <strong style="color: #4A90E2; display: block; margin-bottom: 8px;">🤖 AI:</strong>
+                            <div style="font-size: 1.05rem; line-height: 1.6; color: rgba(255, 255, 255, 0.9); white-space: pre-wrap;">${escapeHtml(aiResponse)}</div>
+                        </div>
+                        ${data.model || data.usage ? `
+                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(74, 144, 226, 0.2); font-size: 0.85rem; color: rgba(255, 255, 255, 0.6); display: flex; gap: 15px; flex-wrap: wrap;">
+                            ${data.model ? `<span>🧠 Model: ${data.model}</span>` : ''}
+                            ${data.usage ? `<span>💬 Tokens: ${data.usage.prompt_tokens || 0} + ${data.usage.completion_tokens || 0}</span>` : ''}
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                container.appendChild(chatCard);
+            });
+        }
+        
+        // Tip Gallery Functions
+        async function loadTipGallery() {
+            const dateInput = document.getElementById('tipGalleryDateInput');
+            if (!dateInput.value) {
+                dateInput.value = new Date().toISOString().split('T')[0];
+            }
+            const date = dateInput.value;
+            const limit = parseInt(document.getElementById('tipGalleryLimitInput').value);
+            
+            showStatus('Loading tip gallery...', 'info');
+            
+            try {
+                let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}&type=tip-submission`;
+                url = addTokenToUrl(url);
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const tips = data.logs || [];
+                
+                displayTipGallery(tips);
+                updateTipGalleryStats(tips);
+                
+                showStatus(`Loaded ${tips.length} tips`, 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error('Error loading tip gallery:', error);
+            }
+        }
+        
+        async function loadAllTipGallery() {
+            showStatus('Loading all tips (last 7 days)...', 'info');
+            
+            try {
+                const dates = [];
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    dates.push(d.toISOString().split('T')[0]);
+                }
+                
+                let allTips = [];
+                for (const date of dates) {
+                    try {
+                        let url = `/.netlify/functions/log-data?date=${date}&limit=1000&type=tip-submission`;
+                        url = addTokenToUrl(url);
+                        const response = await fetch(url);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.logs && data.logs.length > 0) {
+                                allTips = allTips.concat(data.logs);
+                            }
+                        }
+                    } catch (e) {
+                        console.error(`Error loading tips for ${date}:`, e);
+                    }
+                }
+                
+                allTips.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                const limit = parseInt(document.getElementById('tipGalleryLimitInput').value);
+                allTips = allTips.slice(0, limit);
+                
+                displayTipGallery(allTips);
+                updateTipGalleryStats(allTips);
+                
+                showStatus(`Loaded ${allTips.length} tips from last 7 days`, 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error('Error loading all tips:', error);
+            }
+        }
+        
+        function updateTipGalleryStats(tips) {
+            document.getElementById('tipGalleryTotalCount').textContent = tips.length;
+            
+            const anonymous = tips.filter(t => t.data?.isAnonymous).length;
+            const withContact = tips.length - anonymous;
+            document.getElementById('tipGalleryAnonymousCount').textContent = anonymous;
+            document.getElementById('tipGalleryContactCount').textContent = withContact;
+        }
+        
+        function displayTipGallery(tips) {
+            const container = document.getElementById('tipGalleryContainer');
+            container.innerHTML = '';
+            
+            if (tips.length === 0) {
+                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">No tips found</div>';
+                return;
+            }
+            
+            tips.forEach((log, index) => {
+                const data = log.data || {};
+                const tip = data.tip || 'No tip content';
+                const name = data.name || 'Unknown';
+                const email = data.email || 'No email';
+                const isAnonymous = data.isAnonymous || false;
+                const timestamp = new Date(log.timestamp).toLocaleString();
+                const location = data.location ? 
+                    `${data.location.city || ''}${data.location.city && data.location.region ? ', ' : ''}${data.location.region || ''}${(data.location.city || data.location.region) && data.location.country ? ', ' : ''}${data.location.country || ''}`.replace(/^,\s*|,\s*$/g, '') : 
+                    'Unknown';
+                
+                const tipCard = document.createElement('div');
+                tipCard.className = 'log-entry';
+                tipCard.style.cssText = 'background: rgba(15, 15, 35, 0.6); border-radius: 16px; padding: 20px; border: 1px solid rgba(74, 144, 226, 0.2); transition: transform 0.2s, box-shadow 0.2s;';
+                tipCard.onmouseenter = function() {
+                    this.style.transform = 'translateY(-4px)';
+                    this.style.boxShadow = '0 8px 24px rgba(74, 144, 226, 0.3)';
+                };
+                tipCard.onmouseleave = function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = 'none';
+                };
+                
+                tipCard.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid rgba(74, 144, 226, 0.2);">
+                        <div>
+                            <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.6); margin-bottom: 5px;">${timestamp}</div>
+                            <div style="font-size: 1.1rem; font-weight: 600; color: #4A90E2;">
+                                ${isAnonymous ? '🔒 Anonymous' : `👤 ${escapeHtml(name)}`}
+                            </div>
+                        </div>
+                        ${isAnonymous ? '' : `<div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.5);">📧 ${escapeHtml(email)}</div>`}
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-size: 1.05rem; line-height: 1.7; color: rgba(255, 255, 255, 0.9); background: rgba(74, 144, 226, 0.1); padding: 15px; border-radius: 8px; white-space: pre-wrap;">${escapeHtml(tip)}</div>
+                    </div>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; font-size: 0.85rem; color: rgba(255, 255, 255, 0.6);">
+                        ${location !== 'Unknown' ? `<span>📍 ${escapeHtml(location)}</span>` : ''}
+                        <span>📏 ${data.tipLength || tip.length} chars</span>
+                    </div>
+                `;
+                
+                container.appendChild(tipCard);
+            });
         }
         
         // Click Heatmap Functions
