@@ -166,27 +166,29 @@ export const handler: Handler = async (event) => {
         };
       }
 
-      // Check for duplicates
+      // Check for duplicates in storage
+      let postExists = false;
       try {
         const existing = await store.get(`post-${tweetId}.json`);
         if (existing) {
-          return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({ message: "Tweet already exists", id: tweetId }),
-          };
+          postExists = true;
         }
       } catch {}
+      
+      // If post doesn't exist, fetch and create it
+      if (!postExists) {
 
-      // Convert to Card format
-      const card = oEmbedToCard(oembed, tweetUrl);
+        // Convert to Card format
+        const card = oEmbedToCard(oembed, tweetUrl);
 
-      // Store post
-      await store.set(`post-${tweetId}.json`, JSON.stringify(card), {
-        contentType: "application/json",
-      });
-
-      // Update index
+        // Store post
+        await store.set(`post-${tweetId}.json`, JSON.stringify(card), {
+          contentType: "application/json",
+        });
+      }
+      
+      // Always update index (even if post already existed in storage)
+      // This ensures posts are added to index if they were missing
       let indexData: IndexData = { ids: [], urls: [] };
       try {
         const indexBlob = await store.get("index.json", { type: "json" });
@@ -220,7 +222,11 @@ export const handler: Handler = async (event) => {
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ success: true, id: tweetId }),
+        body: JSON.stringify({ 
+          success: true, 
+          id: tweetId,
+          message: postExists ? "Tweet already existed, added to index" : "Tweet added successfully"
+        }),
       };
     }
 
