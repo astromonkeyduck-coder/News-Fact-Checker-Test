@@ -3773,13 +3773,32 @@ class BreakingNewsGame {
                 const success = await this.submitToLeaderboard(scoreData);
                 
                 if (success) {
-                    this.showSubmitStatus('✓ Score submitted successfully!', 'success');
                     nameInput.disabled = true;
                     newSubmitBtn.disabled = true;
-                    // Refresh leaderboard if it's open
+                    
+                    // Load leaderboard to show user their rank
                     if (window.leaderboard) {
-                        await window.leaderboard.loadScores();
+                        await window.leaderboard.loadScores(50); // Load more to find user's rank
                         window.leaderboard.render();
+                        
+                        // Find user's rank
+                        const userScore = scoreData.score;
+                        const userRank = window.leaderboard.scores.findIndex(s => 
+                            s.userName === userName && Math.abs(s.score - userScore) < 0.01
+                        ) + 1;
+                        
+                        if (userRank > 0 && userRank <= 50) {
+                            this.showSubmitStatus(`✓ Score submitted! You're ranked #${userRank} on the leaderboard!`, 'success');
+                        } else {
+                            this.showSubmitStatus('✓ Score submitted successfully!', 'success');
+                        }
+                        
+                        // Show leaderboard after a short delay
+                        setTimeout(() => {
+                            window.leaderboard.show();
+                        }, 1000);
+                    } else {
+                        this.showSubmitStatus('✓ Score submitted successfully!', 'success');
                     }
                 } else {
                     this.showSubmitStatus('Failed to submit score. Please try again.', 'error');
@@ -6558,9 +6577,17 @@ function initNewsletterSubscription() {
             
             // Check if they're already subscribed
             if (data.alreadySubscribed) {
-                showNewsletterMessage('You are already subscribed to our newsletter!', 'success');
+                // Use personalized message if available
+                const message = data.message || data.firstName 
+                    ? `${data.firstName}, don't worry you're already subscribed!`
+                    : 'You are already subscribed to our newsletter!';
+                showNewsletterMessage(message, 'success');
             } else {
-                showNewsletterMessage('Successfully subscribed! Check your email for a welcome message.', 'success');
+                // Use personalized message if available
+                const message = data.message || (data.firstName 
+                    ? `Thanks ${data.firstName}! Successfully subscribed! Check your email for a welcome message.`
+                    : 'Successfully subscribed! Check your email for a welcome message.');
+                showNewsletterMessage(message, 'success');
                 
                 // Play subscription sound effect
                 try {

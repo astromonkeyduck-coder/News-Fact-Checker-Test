@@ -188,14 +188,32 @@ exports.handler = async (event, context) => {
     }
     
     // If already subscribed, return early without sending welcome email
+    // But first, get the name for personalized message
+    let firstNameForMessage = null;
+    if (existingContact) {
+      firstNameForMessage = existingContact.firstName || 
+                           existingContact.first_name || 
+                           (existingContact.name ? existingContact.name.split(' ')[0] : null);
+    }
+    // Also check email mapping
+    if (!firstNameForMessage && emailNameMapping && typeof emailNameMapping.getNameFromEmail === 'function') {
+      const mappedName = emailNameMapping.getNameFromEmail(email);
+      if (mappedName) {
+        firstNameForMessage = mappedName.split(' ')[0] || mappedName;
+      }
+    }
+    
     if (alreadySubscribed) {
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
           success: true,
-          message: 'You are already subscribed to the newsletter!',
+          message: firstNameForMessage 
+            ? `${firstNameForMessage}, don't worry you're already subscribed!`
+            : 'You are already subscribed to the newsletter!',
           alreadySubscribed: true,
+          firstName: firstNameForMessage,
         }),
       };
     }
