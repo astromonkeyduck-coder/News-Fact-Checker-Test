@@ -376,23 +376,35 @@ function sortPosts(posts, mode) {
       break;
     case 'likes':
       sorted.sort((a, b) => {
-        const diff = b.stats.likes - a.stats.likes;
+        const likesA = (a.stats?.likes || a.likes || 0);
+        const likesB = (b.stats?.likes || b.likes || 0);
+        const diff = likesB - likesA;
         if (diff !== 0) return diff;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        const dateA = new Date(a.createdAt || a.datePosted || 0).getTime();
+        const dateB = new Date(b.createdAt || b.datePosted || 0).getTime();
+        return dateB - dateA;
       });
       break;
     case 'comments':
       sorted.sort((a, b) => {
-        const diff = b.stats.comments - a.stats.comments;
+        const commentsA = (a.stats?.comments || a.replies || a.comments || 0);
+        const commentsB = (b.stats?.comments || b.replies || b.comments || 0);
+        const diff = commentsB - commentsA;
         if (diff !== 0) return diff;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        const dateA = new Date(a.createdAt || a.datePosted || 0).getTime();
+        const dateB = new Date(b.createdAt || b.datePosted || 0).getTime();
+        return dateB - dateA;
       });
       break;
     case 'reposts':
       sorted.sort((a, b) => {
-        const diff = b.stats.reposts - a.stats.reposts;
+        const repostsA = (a.stats?.reposts || a.reposts || 0);
+        const repostsB = (b.stats?.reposts || b.reposts || 0);
+        const diff = repostsB - repostsA;
         if (diff !== 0) return diff;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        const dateA = new Date(a.createdAt || a.datePosted || 0).getTime();
+        const dateB = new Date(b.createdAt || b.datePosted || 0).getTime();
+        return dateB - dateA;
       });
       break;
     case 'nearby':
