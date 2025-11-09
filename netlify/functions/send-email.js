@@ -16,12 +16,56 @@ try {
 const { Resend } = require('resend');
 
 // Load email name mapping (local file, not in git)
+// Also check environment variable as fallback for production
 let emailNameMapping = null;
 try {
   emailNameMapping = require('./email-name-mapping.js');
+  console.log('Email name mapping loaded from file');
 } catch (e) {
-  console.warn('Email name mapping file not found, will use fallback methods:', e.message);
+  console.warn('Email name mapping file not found, trying environment variable:', e.message);
+  // Try to load from environment variable as JSON string (for Netlify)
+  if (process.env.EMAIL_NAME_MAPPING) {
+    try {
+      emailNameMapping = JSON.parse(process.env.EMAIL_NAME_MAPPING);
+      console.log('Email name mapping loaded from environment variable');
+    } catch (parseError) {
+      console.warn('Failed to parse EMAIL_NAME_MAPPING from environment:', parseError.message);
+    }
+  }
 }
+
+// Inline mapping as final fallback (for production deployment)
+// This ensures names work even if file/env var isn't available
+const inlineEmailMapping = {
+  'kingsky2022@gmail.com': 'Skyler',
+  'charlie.desena2007@gmail.com': 'Charlie Desena',
+  'desenach@lhprep.org': 'Charlie Desena',
+  'weyrauchch@lhprep.org': 'Chase Weyrauch',
+  'torresma@lhprep.org': 'Mathew Torres',
+  'averyennis@icloud.com': 'Avery Ennis',
+  'reillysminecraft13@gmail.com': 'Rielly Dawson',
+  'teddipupper@icloud.com': 'Karina Barnett',
+  'barnettka@lhprep.org': 'Karina Barnett',
+  'heshso@lhprep.org': 'Sophia Hesh',
+  'mr.pangolinman@gmail.com': 'Richard',
+  'sunmanbb@gmail.com': 'Bryce Barnett',
+};
+
+// Create a unified mapping function
+const getEmailNameMapping = () => {
+  if (emailNameMapping && typeof emailNameMapping.getNameFromEmail === 'function') {
+    return emailNameMapping;
+  }
+  
+  // Fallback to inline mapping
+  return {
+    getNameFromEmail: (email) => {
+      if (!email) return null;
+      const normalizedEmail = email.toLowerCase().trim();
+      return inlineEmailMapping[normalizedEmail] || null;
+    }
+  };
+};
 
 // Resend Audience ID for newsletter subscribers
 // Get this from: https://resend.com/audiences
@@ -196,8 +240,9 @@ exports.handler = async (event, context) => {
                            (existingContact.name ? existingContact.name.split(' ')[0] : null);
     }
     // Also check email mapping
-    if (!firstNameForMessage && emailNameMapping && typeof emailNameMapping.getNameFromEmail === 'function') {
-      const mappedName = emailNameMapping.getNameFromEmail(email);
+    const emailMapping = getEmailNameMapping();
+    if (!firstNameForMessage && emailMapping) {
+      const mappedName = emailMapping.getNameFromEmail(email);
       if (mappedName) {
         firstNameForMessage = mappedName.split(' ')[0] || mappedName;
       }
@@ -371,13 +416,16 @@ This is an automated notification from your website.`,
     
     // Second, try to get name from email mapping (local database of known emails)
     // Only use mapping if we don't have a name from Resend contact
-    if ((!firstName || firstName === 'there') && emailNameMapping && typeof emailNameMapping.getNameFromEmail === 'function') {
-      const mappedName = emailNameMapping.getNameFromEmail(email);
-      if (mappedName) {
-        fullName = mappedName;
-        // Extract first name from full name
-        firstName = mappedName.split(' ')[0] || mappedName;
-        console.log('Using name from email mapping:', fullName, '-> firstName:', firstName);
+    if (!firstName || firstName === 'there') {
+      const emailMapping = getEmailNameMapping();
+      if (emailMapping) {
+        const mappedName = emailMapping.getNameFromEmail(email);
+        if (mappedName) {
+          fullName = mappedName;
+          // Extract first name from full name
+          firstName = mappedName.split(' ')[0] || mappedName;
+          console.log('Using name from email mapping:', fullName, '-> firstName:', firstName);
+        }
       }
     }
     
