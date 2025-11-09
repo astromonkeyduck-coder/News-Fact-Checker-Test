@@ -2839,6 +2839,23 @@ class BreakingNewsGame {
         this.hideAllScreens();
         console.log('Screens hidden');
         
+        // Reset leaderboard submit form
+        const nameInput = document.getElementById('playerNameInput');
+        const submitBtn = document.getElementById('submitScoreBtn');
+        const statusDiv = document.getElementById('submitStatus');
+        if (nameInput) {
+            nameInput.value = '';
+            nameInput.disabled = false;
+        }
+        if (submitBtn) {
+            submitBtn.disabled = false;
+        }
+        if (statusDiv) {
+            statusDiv.textContent = '';
+            statusDiv.className = 'submit-status';
+        }
+        this.pendingScoreData = null;
+        
         this.showGameArea();
         console.log('Game area shown');
         
@@ -3694,25 +3711,89 @@ class BreakingNewsGame {
 
         if (gameOver) gameOver.style.display = 'block';
         
-        // Submit to leaderboard if user is signed in
-        if (userId) {
-            try {
-                const user = await window.auth0.getUser();
-                await this.submitToLeaderboard({
-                    gameType: 'fact-checker',
-                    score: this.score,
-                    userId: user.sub,
-                    userName: user.name || user.email || 'Anonymous',
-                    difficulty: this.difficulty,
-                    time: finalTime,
-                    speedBonus: this.speedBonus,
-                    avgTime: parseFloat(avgTime),
-                    level: this.level,
-                    streak: Math.max(...this.getBestStreak()),
-                });
-            } catch (err) {
-                console.log('[Game] Could not submit to leaderboard:', err);
+        // Store score data for leaderboard submission
+        this.pendingScoreData = {
+            gameType: 'fact-checker',
+            score: this.score,
+            userId: userId || null, // Will be generated on backend if null
+            userName: null, // Will be set by user input
+            difficulty: this.difficulty,
+            time: finalTime,
+            speedBonus: this.speedBonus,
+            avgTime: parseFloat(avgTime),
+            level: this.level,
+            streak: Math.max(...this.getBestStreak()),
+        };
+        
+        // Set up submit button handler
+        this.setupLeaderboardSubmit();
+    }
+    
+    setupLeaderboardSubmit() {
+        const submitBtn = document.getElementById('submitScoreBtn');
+        const nameInput = document.getElementById('playerNameInput');
+        const statusDiv = document.getElementById('submitStatus');
+        
+        if (!submitBtn || !nameInput) return;
+        
+        // Remove existing listeners
+        const newSubmitBtn = submitBtn.cloneNode(true);
+        submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+        
+        // Add new listener
+        newSubmitBtn.addEventListener('click', async () => {
+            const userName = nameInput.value.trim() || 'Anonymous';
+            
+            if (!this.pendingScoreData) {
+                this.showSubmitStatus('No score data available', 'error');
+                return;
             }
+            
+            // Disable button during submission
+            newSubmitBtn.disabled = true;
+            this.showSubmitStatus('Submitting...', '');
+            
+            try {
+                const scoreData = {
+                    ...this.pendingScoreData,
+                    userName: userName,
+                };
+                
+                const success = await this.submitToLeaderboard(scoreData);
+                
+                if (success) {
+                    this.showSubmitStatus('✓ Score submitted successfully!', 'success');
+                    nameInput.disabled = true;
+                    newSubmitBtn.disabled = true;
+                    // Refresh leaderboard if it's open
+                    if (window.leaderboard) {
+                        await window.leaderboard.loadScores();
+                        window.leaderboard.render();
+                    }
+                } else {
+                    this.showSubmitStatus('Failed to submit score. Please try again.', 'error');
+                    newSubmitBtn.disabled = false;
+                }
+            } catch (error) {
+                console.error('[Game] Leaderboard submission error:', error);
+                this.showSubmitStatus('Error submitting score. Please try again.', 'error');
+                newSubmitBtn.disabled = false;
+            }
+        });
+        
+        // Allow Enter key to submit
+        nameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !newSubmitBtn.disabled) {
+                newSubmitBtn.click();
+            }
+        });
+    }
+    
+    showSubmitStatus(message, type) {
+        const statusDiv = document.getElementById('submitStatus');
+        if (statusDiv) {
+            statusDiv.textContent = message;
+            statusDiv.className = `submit-status ${type}`;
         }
     }
     
@@ -3728,11 +3809,15 @@ class BreakingNewsGame {
             
             if (response.ok) {
                 console.log('[Game] Score submitted to leaderboard');
+                return true;
             } else {
-                console.error('[Game] Failed to submit score:', await response.text());
+                const errorText = await response.text();
+                console.error('[Game] Failed to submit score:', errorText);
+                return false;
             }
         } catch (error) {
             console.error('[Game] Leaderboard submission error:', error);
+            return false;
         }
     }
     
@@ -6401,6 +6486,18 @@ function initNewsletterSubscription() {
                 showNewsletterMessage('You are already subscribed to our newsletter!', 'success');
             } else {
                 showNewsletterMessage('Successfully subscribed! Check your email for a welcome message.', 'success');
+                
+                // Play subscription sound effect
+                try {
+                    console.log('[Newsletter] Attempting to play subscription sound...');
+                    if (typeof playSubscriptionSound === 'function') {
+                        playSubscriptionSound();
+                    } else {
+                        console.error('[Newsletter] playSubscriptionSound function not found!');
+                    }
+                } catch (err) {
+                    console.error('[Newsletter] Error calling playSubscriptionSound:', err);
+                }
             }
             newsletterInput.value = '';
             
@@ -6434,6 +6531,189 @@ function initNewsletterSubscription() {
             newsletterBtn.disabled = false;
             newsletterBtn.textContent = originalText;
         }
+    }
+
+    // Function to play subscription sound and resume background music
+    function playSubscriptionSound() {
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        const backgroundMusicSecond = document.getElementById('backgroundMusicSecond');
+        const backgroundMusicLoop = document.getElementById('backgroundMusicLoop');
+        
+        // Save current music state
+        let wasPlaying = false;
+        let currentTrack = null;
+        let currentTime = 0;
+        
+        // Find which track is playing and save its state
+        if (backgroundMusic && !backgroundMusic.paused) {
+            wasPlaying = true;
+            currentTrack = backgroundMusic;
+            currentTime = backgroundMusic.currentTime;
+            backgroundMusic.pause();
+        } else if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
+            wasPlaying = true;
+            currentTrack = backgroundMusicSecond;
+            currentTime = backgroundMusicSecond.currentTime;
+            backgroundMusicSecond.pause();
+        } else if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+            wasPlaying = true;
+            currentTrack = backgroundMusicLoop;
+            currentTime = backgroundMusicLoop.currentTime;
+            backgroundMusicLoop.pause();
+        }
+        
+        // Create confetti container if it doesn't exist
+        let confettiContainer = document.getElementById('subscriptionConfetti');
+        if (!confettiContainer) {
+            confettiContainer = document.createElement('div');
+            confettiContainer.id = 'subscriptionConfetti';
+            confettiContainer.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                pointer-events: none;
+                z-index: 9999;
+                overflow: hidden;
+            `;
+            document.body.appendChild(confettiContainer);
+        }
+        
+        // Confetti colors
+        const colors = ['#ffe66d', '#4ecdc4', '#ff6b6b', '#95e1d3', '#aa96da', '#fcbad3', '#f38181', '#a8e6cf', '#2ecc71', '#3498db'];
+        
+        // Function to create confetti pieces
+        function createConfettiPiece() {
+            const confetti = document.createElement('div');
+            confetti.style.cssText = `
+                position: absolute;
+                width: ${Math.random() * 8 + 6}px;
+                height: ${Math.random() * 8 + 6}px;
+                background: ${colors[Math.floor(Math.random() * colors.length)]};
+                left: ${Math.random() * 100}%;
+                top: -10px;
+                opacity: 1;
+                border-radius: ${Math.random() > 0.5 ? '50%' : '0%'};
+                box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+            `;
+            
+            // Random animation duration and delay
+            const duration = Math.random() * 2 + 2;
+            const delay = Math.random() * 0.5;
+            const horizontalDrift = (Math.random() - 0.5) * 200;
+            
+            confetti.style.animation = `subscriptionConfettiFall ${duration}s linear ${delay}s forwards`;
+            confetti.style.setProperty('--drift', horizontalDrift + 'px');
+            
+            confettiContainer.appendChild(confetti);
+            
+            // Remove after animation
+            setTimeout(function() {
+                if (confetti.parentNode) {
+                    confetti.parentNode.removeChild(confetti);
+                }
+            }, (duration + delay) * 1000);
+        }
+        
+        // Add CSS animation if not already added
+        if (!document.getElementById('subscriptionConfettiStyle')) {
+            const style = document.createElement('style');
+            style.id = 'subscriptionConfettiStyle';
+            style.textContent = `
+                @keyframes subscriptionConfettiFall {
+                    0% {
+                        transform: translateY(0) translateX(0) rotate(0deg);
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateY(100vh) translateX(var(--drift, 0px)) rotate(720deg);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Start creating confetti continuously
+        console.log('[Subscription Sound] Starting confetti celebration...');
+        let confettiInterval = setInterval(function() {
+            // Create 15-25 pieces every 200ms for continuous celebration
+            const pieces = Math.floor(Math.random() * 11) + 15;
+            for (let i = 0; i < pieces; i++) {
+                createConfettiPiece();
+            }
+        }, 200);
+        
+        // Create and play subscription sound
+        console.log('[Subscription Sound] Creating audio element...');
+        const subscriptionSound = new Audio('Subscribedv1.mp3');
+        subscriptionSound.volume = 0.7;
+        
+        subscriptionSound.addEventListener('loadeddata', function() {
+            console.log('[Subscription Sound] Audio loaded and ready to play');
+        });
+        
+        subscriptionSound.addEventListener('canplay', function() {
+            console.log('[Subscription Sound] Audio can play');
+        });
+        
+        subscriptionSound.addEventListener('ended', function() {
+            console.log('[Subscription Sound] Audio finished playing');
+            // Stop confetti
+            clearInterval(confettiInterval);
+            // Clean up confetti container after a delay
+            setTimeout(function() {
+                if (confettiContainer && confettiContainer.parentNode) {
+                    confettiContainer.innerHTML = '';
+                }
+            }, 3000);
+            
+            // Resume background music when subscription sound finishes
+            if (wasPlaying && currentTrack) {
+                currentTrack.currentTime = currentTime;
+                currentTrack.play().catch(function(err) {
+                    console.log('Could not resume music:', err);
+                });
+            }
+            subscriptionSound.remove(); // Clean up
+        });
+        
+        subscriptionSound.addEventListener('error', function(err) {
+            console.error('Error playing subscription sound:', err);
+            // Stop confetti on error
+            clearInterval(confettiInterval);
+            if (confettiContainer && confettiContainer.parentNode) {
+                confettiContainer.innerHTML = '';
+            }
+            // Resume music even if subscription sound fails
+            if (wasPlaying && currentTrack) {
+                currentTrack.currentTime = currentTime;
+                currentTrack.play().catch(function(e) {
+                    console.log('Could not resume music:', e);
+                });
+            }
+        });
+        
+        // Play the subscription sound
+        console.log('[Subscription Sound] Attempting to play...');
+        subscriptionSound.play().then(function() {
+            console.log('[Subscription Sound] Successfully started playing!');
+        }).catch(function(err) {
+            console.error('[Subscription Sound] Could not play:', err);
+            // Stop confetti if sound can't play
+            clearInterval(confettiInterval);
+            if (confettiContainer && confettiContainer.parentNode) {
+                confettiContainer.innerHTML = '';
+            }
+            // Resume music if subscription sound can't play
+            if (wasPlaying && currentTrack) {
+                currentTrack.currentTime = currentTime;
+                currentTrack.play().catch(function(e) {
+                    console.log('Could not resume music:', e);
+                });
+            }
+        });
     }
 
     function showNewsletterMessage(message, type) {
