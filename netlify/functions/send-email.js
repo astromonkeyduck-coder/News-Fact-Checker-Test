@@ -826,6 +826,21 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
     
     const finalDisplayName = getDisplayName(finalFullName, finalFirstName);
 
+    // Log newsletter subscription (non-blocking - don't wait for it)
+    const { logData } = require("./log-data");
+    logData("newsletter-signup", {
+      email: email,
+      firstName: finalFirstName,
+      fullName: finalFullName,
+      displayName: finalDisplayName,
+      notificationSent: notificationSent,
+      autoReplySent: autoReplySent,
+      audienceAdded: !!(audienceResult && !audienceError && audienceResult.data?.id),
+    }, event).catch(err => {
+      console.error("[Send Email] Failed to log newsletter signup:", err);
+      // Don't fail the request if logging fails
+    });
+
     return {
       statusCode: 200,
       headers,

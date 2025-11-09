@@ -210,6 +210,24 @@ exports.handler = async (event, context) => {
         };
       }
 
+      // Log game score submission (non-blocking - don't wait for it)
+      const { logData } = require("./log-data");
+      logData("game-score", {
+        gameType: gameType,
+        score: newScore.score,
+        userName: filteredUserName,
+        userId: finalUserId,
+        difficulty: newScore.difficulty,
+        level: newScore.level,
+        streak: newScore.streak,
+        time: body.time || null,
+        speedBonus: body.speedBonus || null,
+        avgTime: body.avgTime || null,
+      }, event).catch(err => {
+        console.error("[Leaderboard] Failed to log score data:", err);
+        // Don't fail the request if logging fails
+      });
+
       return {
         statusCode: 200,
         headers,

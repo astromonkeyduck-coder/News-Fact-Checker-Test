@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - Noteworthy News</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0f0f23;
+            color: #fff;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4A90E2, #2A60B0);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(74, 144, 226, 0.3);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(74, 144, 226, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .control-group label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .control-group input,
+        .control-group select {
+            padding: 10px;
+            border: 2px solid rgba(74, 144, 226, 0.5);
+            border-radius: 6px;
+            background: rgba(15, 15, 35, 0.8);
+            color: white;
+            font-size: 1rem;
+        }
+        
+        .control-group input:focus,
+        .control-group select:focus {
+            outline: none;
+            border-color: #4A90E2;
+            box-shadow: 0 0 10px rgba(74, 144, 226, 0.3);
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #4A90E2, #2A60B0);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: rgba(74, 144, 226, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+        }
+        
+        .stat-card h3 {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4A90E2;
+        }
+        
+        .logs-container {
+            background: rgba(15, 15, 35, 0.6);
+            border-radius: 12px;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            padding: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            background: rgba(74, 144, 226, 0.05);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #4A90E2;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .log-entry .timestamp {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+        }
+        
+        .log-entry .data-type {
+            display: inline-block;
+            background: #4A90E2;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .log-entry .data {
+            color: rgba(255, 255, 255, 0.9);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
+        .streaming-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #4CAF50;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .status {
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+            color: #4CAF50;
+        }
+        
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+            color: #f44336;
+        }
+        
+        .status.info {
+            background: rgba(74, 144, 226, 0.2);
+            border: 1px solid #4A90E2;
+            color: #4A90E2;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Analytics Dashboard</h1>
+        <p>Real-time data monitoring and export for Noteworthy News</p>
+    </div>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label>Date</label>
+            <input type="date" id="dateInput" value="">
+        </div>
+        
+        <div class="control-group">
+            <label>Data Type</label>
+            <select id="typeSelect">
+                <option value="">All Types</option>
+                <option value="page-view">Page Views</option>
+                <option value="ai-chat">AI Chat</option>
+                <option value="image-generation">Image Generation</option>
+                <option value="game-score">Game Scores</option>
+                <option value="newsletter-signup">Newsletter Signups</option>
+                <option value="click-batch">Clicks</option>
+                <option value="scroll-depth">Scroll Depth</option>
+                <option value="form-submit">Form Submissions</option>
+                <option value="page-exit">Page Exits</option>
+                <option value="custom-event">Custom Events</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>Limit</label>
+            <input type="number" id="limitInput" value="100" min="1" max="10000">
+        </div>
+        
+        <div class="control-group" style="justify-content: flex-end;">
+            <label>&nbsp;</label>
+            <button class="btn" onclick="loadLogs()">Load Data</button>
+        </div>
+        
+        <div class="control-group" style="justify-content: flex-end;">
+            <label>&nbsp;</label>
+            <button class="btn" onclick="exportCSV()">Export CSV</button>
+        </div>
+        
+        <div class="control-group" style="justify-content: flex-end;">
+            <label>&nbsp;</label>
+            <button class="btn" id="streamBtn" onclick="toggleStreaming()">Start Streaming</button>
+        </div>
+    </div>
+    
+    <div id="status"></div>
+    
+    <div class="stats" id="stats">
+        <div class="stat-card">
+            <h3>Total Logs</h3>
+            <div class="value" id="totalLogs">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Page Views</h3>
+            <div class="value" id="pageViews">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>AI Interactions</h3>
+            <div class="value" id="aiInteractions">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Images Generated</h3>
+            <div class="value" id="imagesGenerated">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Game Scores</h3>
+            <div class="value" id="gameScores">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Newsletter Signups</h3>
+            <div class="value" id="newsletterSignups">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Unique IPs</h3>
+            <div class="value" id="uniqueIPs">0</div>
+        </div>
+    </div>
+    
+    <div class="logs-container">
+        <div id="logsList">
+            <p style="text-align: center; color: rgba(255, 255, 255, 0.5);">Click "Load Data" to view logs</p>
+        </div>
+    </div>
+    
+    <script>
+        let isStreaming = false;
+        let streamInterval = null;
+        let currentDate = '';
+        let currentType = '';
+        let currentLimit = 100;
+        let lastTimestamp = null;
+        
+        // Set today's date as default
+        document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
+        
+        async function loadLogs() {
+            const date = document.getElementById('dateInput').value;
+            const type = document.getElementById('typeSelect').value;
+            const limit = parseInt(document.getElementById('limitInput').value);
+            
+            currentDate = date;
+            currentType = type;
+            currentLimit = limit;
+            
+            showStatus('Loading data...', 'info');
+            
+            try {
+                const url = `/.netlify/functions/log-data?date=${date}&limit=${limit}${type ? `&type=${type}` : ''}`;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const data = await response.json();
+                displayLogs(data.logs);
+                updateStats(data.logs);
+                
+                // Store last timestamp for streaming
+                if (data.logs && data.logs.length > 0) {
+                    lastTimestamp = data.logs[0].timestamp;
+                }
+                
+                showStatus(`Loaded ${data.count} log entries`, 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+                console.error('Error loading logs:', error);
+            }
+        }
+        
+        async function exportCSV() {
+            const date = document.getElementById('dateInput').value;
+            const type = document.getElementById('typeSelect').value;
+            const limit = parseInt(document.getElementById('limitInput').value);
+            
+            showStatus('Exporting CSV...', 'info');
+            
+            try {
+                const url = `/.netlify/functions/log-data?date=${date}&limit=${limit}&format=csv${type ? `&type=${type}` : ''}`;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const csv = await response.text();
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url2 = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url2;
+                a.download = `noteworthy-data-${date}${type ? `-${type}` : ''}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url2);
+                
+                showStatus('CSV exported successfully!', 'success');
+            } catch (error) {
+                showStatus(`Export error: ${error.message}`, 'error');
+                console.error('Error exporting CSV:', error);
+            }
+        }
+        
+        function toggleStreaming() {
+            if (isStreaming) {
+                stopStreaming();
+            } else {
+                startStreaming();
+            }
+        }
+        
+        function startStreaming() {
+            isStreaming = true;
+            document.getElementById('streamBtn').textContent = 'Stop Streaming';
+            document.getElementById('streamBtn').style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
+            
+            // Load initial data
+            loadLogs();
+            
+            // Poll for new data every 5 seconds
+            streamInterval = setInterval(() => {
+                loadNewLogs();
+            }, 5000);
+            
+            showStatus('<span class="streaming-indicator"></span>Streaming active - checking for new data every 5 seconds', 'info');
+        }
+        
+        function stopStreaming() {
+            isStreaming = false;
+            if (streamInterval) {
+                clearInterval(streamInterval);
+                streamInterval = null;
+            }
+            document.getElementById('streamBtn').textContent = 'Start Streaming';
+            document.getElementById('streamBtn').style.background = 'linear-gradient(135deg, #4A90E2, #2A60B0)';
+            showStatus('Streaming stopped', 'info');
+        }
+        
+        async function loadNewLogs() {
+            if (!currentDate || !lastTimestamp) return;
+            
+            try {
+                const url = `/.netlify/functions/stream-logs?date=${currentDate}&limit=50${currentType ? `&type=${currentType}` : ''}&since=${lastTimestamp}`;
+                const response = await fetch(url);
+                
+                if (!response.ok) return;
+                
+                const text = await response.text();
+                const lines = text.split('\n\n');
+                
+                const newLogs = [];
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const log = JSON.parse(line.substring(6));
+                            newLogs.push(log);
+                            if (log.timestamp > lastTimestamp) {
+                                lastTimestamp = log.timestamp;
+                            }
+                        } catch (e) {
+                            // Skip invalid JSON
+                        }
+                    }
+                }
+                
+                if (newLogs.length > 0) {
+                    prependLogs(newLogs);
+                    updateStats(newLogs, true);
+                    showStatus(`<span class="streaming-indicator"></span>Streaming - ${newLogs.length} new entries`, 'info');
+                }
+            } catch (error) {
+                console.error('Error loading new logs:', error);
+            }
+        }
+        
+        function displayLogs(logs) {
+            const container = document.getElementById('logsList');
+            container.innerHTML = '';
+            
+            if (logs.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: rgba(255, 255, 255, 0.5);">No logs found for selected criteria</p>';
+                return;
+            }
+            
+            logs.forEach(log => {
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                entry.innerHTML = `
+                    <div class="timestamp">${new Date(log.timestamp).toLocaleString()}</div>
+                    <span class="data-type">${log.dataType}</span>
+                    <div class="data">IP: ${log.ip} | User Agent: ${log.userAgent?.substring(0, 50)}...</div>
+                    <div class="data" style="margin-top: 8px; color: rgba(255, 255, 255, 0.7);">${JSON.stringify(log.data, null, 2).substring(0, 500)}${JSON.stringify(log.data).length > 500 ? '...' : ''}</div>
+                `;
+                container.appendChild(entry);
+            });
+        }
+        
+        function prependLogs(logs) {
+            const container = document.getElementById('logsList');
+            logs.reverse().forEach(log => {
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                entry.style.animation = 'slideIn 0.3s ease';
+                entry.innerHTML = `
+                    <div class="timestamp">${new Date(log.timestamp).toLocaleString()}</div>
+                    <span class="data-type">${log.dataType}</span>
+                    <div class="data">IP: ${log.ip} | User Agent: ${log.userAgent?.substring(0, 50)}...</div>
+                    <div class="data" style="margin-top: 8px; color: rgba(255, 255, 255, 0.7);">${JSON.stringify(log.data, null, 2).substring(0, 500)}${JSON.stringify(log.data).length > 500 ? '...' : ''}</div>
+                `;
+                container.insertBefore(entry, container.firstChild);
+            });
+        }
+        
+        function updateStats(logs, isIncremental = false) {
+            const stats = {
+                total: logs.length,
+                pageViews: 0,
+                aiInteractions: 0,
+                imagesGenerated: 0,
+                gameScores: 0,
+                newsletterSignups: 0,
+                uniqueIPs: new Set(),
+            };
+            
+            logs.forEach(log => {
+                if (log.dataType === 'page-view') stats.pageViews++;
+                if (log.dataType === 'ai-chat') stats.aiInteractions++;
+                if (log.dataType === 'image-generation') stats.imagesGenerated++;
+                if (log.dataType === 'game-score') stats.gameScores++;
+                if (log.dataType === 'newsletter-signup') stats.newsletterSignups++;
+                if (log.ip && log.ip !== 'unknown') stats.uniqueIPs.add(log.ip);
+            });
+            
+            if (isIncremental) {
+                // Incremental update
+                document.getElementById('totalLogs').textContent = parseInt(document.getElementById('totalLogs').textContent) + stats.total;
+                document.getElementById('pageViews').textContent = parseInt(document.getElementById('pageViews').textContent) + stats.pageViews;
+                document.getElementById('aiInteractions').textContent = parseInt(document.getElementById('aiInteractions').textContent) + stats.aiInteractions;
+                document.getElementById('imagesGenerated').textContent = parseInt(document.getElementById('imagesGenerated').textContent) + stats.imagesGenerated;
+                document.getElementById('gameScores').textContent = parseInt(document.getElementById('gameScores').textContent) + stats.gameScores;
+                document.getElementById('newsletterSignups').textContent = parseInt(document.getElementById('newsletterSignups').textContent) + stats.newsletterSignups;
+            } else {
+                // Full update
+                document.getElementById('totalLogs').textContent = stats.total;
+                document.getElementById('pageViews').textContent = stats.pageViews;
+                document.getElementById('aiInteractions').textContent = stats.aiInteractions;
+                document.getElementById('imagesGenerated').textContent = stats.imagesGenerated;
+                document.getElementById('gameScores').textContent = stats.gameScores;
+                document.getElementById('newsletterSignups').textContent = stats.newsletterSignups;
+            }
+            
+            document.getElementById('uniqueIPs').textContent = stats.uniqueIPs.size;
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerHTML = message;
+            statusDiv.style.display = 'block';
+        }
+        
+        // Auto-load today's data on page load
+        window.addEventListener('load', () => {
+            loadLogs();
+        });
+    </script>
+</body>
+</html>
+

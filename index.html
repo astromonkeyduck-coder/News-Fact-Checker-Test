@@ -775,7 +775,6 @@
         .brand-info h1,
         .brand-info p,
         .auth-btn {
-            min-font-size: 0.6rem !important;
             text-rendering: optimizeLegibility !important;
             -webkit-font-smoothing: antialiased !important;
             -moz-osx-font-smoothing: grayscale !important;
@@ -823,13 +822,13 @@
         /* Specific fix for 670px width issue */
         @media (max-width: 700px) {
             .brand-info h1 {
-                max-width: 120px;
-                font-size: 0.55rem;
+                max-width: 140px;
+                font-size: 0.75rem;
             }
             
             .brand-info p {
-                max-width: 100px;
-                font-size: 0.35rem;
+                max-width: 120px;
+                font-size: 0.6rem;
             }
         }
         
@@ -852,11 +851,11 @@
             }
             
             .brand-info h1 {
-                font-size: 0.55rem;
+                font-size: 0.75rem;
             }
             
             .brand-info p {
-                font-size: 0.35rem;
+                font-size: 0.6rem;
             }
             
             .main-nav {
@@ -2554,11 +2553,31 @@
             position: relative;
             z-index: 1;
             /* CRITICAL: Prevent any horizontal overflow */
-            width: 100vw;
+            width: 100%;
+            max-width: 100%;
             overflow: hidden !important; /* Prevent scrollbar on container */
             overflow-x: hidden !important;
             overflow-y: hidden !important;
             box-sizing: border-box;
+        }
+        
+        /* Mobile: Ensure no horizontal overflow */
+        @media (max-width: 768px) {
+            .container {
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow-x: hidden !important;
+            }
+            
+            * {
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+            
+            img, video, iframe {
+                max-width: 100% !important;
+                height: auto !important;
+            }
         }
         
         .header {
@@ -7123,7 +7142,6 @@
         .brand-info p,
         .main-nav a,
         .auth-btn {
-            min-font-size: 0.6rem !important;
             text-rendering: optimizeLegibility !important;
             -webkit-font-smoothing: antialiased !important;
             -moz-osx-font-smoothing: grayscale !important;
@@ -9664,6 +9682,8 @@
             display: none !important;
         }
     </style>
+    <!-- Analytics Tracker - Comprehensive visitor tracking -->
+    <script src="src/utils/analytics-tracker.js"></script>
 </head>
 <body>
     <!-- Skip to content link for accessibility -->
@@ -10202,11 +10222,11 @@
         <!-- Footer -->
         <footer class="site-footer">
             <div class="footer-container">
-                <div class="footer-content">
+        <div class="footer-content">
                     <div class="footer-section">
                         <h3>Noteworthy News</h3>
                         <p>Your trusted source for fact-checked journalism and media literacy education.</p>
-                    </div>
+        </div>
                     <div class="footer-section">
                         <h4>Quick Links</h4>
                         <ul>
@@ -10215,7 +10235,7 @@
                             <li><a href="#credibility-section">Credibility</a></li>
                             <li><a href="#about-section">About</a></li>
                         </ul>
-                    </div>
+                </div>
                     <div class="footer-section">
                         <h4>Resources</h4>
                         <ul>
@@ -10241,9 +10261,9 @@
                 </div>
                 <div class="footer-bottom">
                     <p>Empowering critical thinking through trusted journalism.</p>
-                </div>
             </div>
-        </footer>
+        </div>
+    </footer>
     </div>
     
     <script src="script.js"></script>

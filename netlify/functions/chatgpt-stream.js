@@ -87,12 +87,30 @@ exports.handler = async (event, context) => {
       };
     }
 
+    const aiResponse = data.choices[0]?.message?.content || 'No response generated';
+    const usage = data.usage;
+
+    // Log AI chat interaction (non-blocking - don't wait for it)
+    const { logData } = require("./log-data");
+    logData("ai-chat", {
+      userMessage: message,
+      aiResponse: aiResponse,
+      usage: usage,
+      model: model,
+      temperature: 0.7,
+      maxTokens: 500,
+      endpoint: "chatgpt-stream",
+    }, event).catch(err => {
+      console.error("[ChatGPT Stream] Failed to log data:", err);
+      // Don't fail the request if logging fails
+    });
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         success: true,
-        message: data.choices[0]?.message?.content || 'No response generated',
+        message: aiResponse,
       }),
     };
 

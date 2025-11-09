@@ -251,13 +251,38 @@ Make your explanation detailed, educational, and comprehensive. Help the player 
       };
     }
 
+    const aiResponse = data.choices[0]?.message?.content || 'No response generated';
+    const usage = data.usage;
+
+    // Log game AI interaction (non-blocking - don't wait for it)
+    const { logData } = require("./log-data");
+    logData("ai-chat", {
+      action: action,
+      userMessage: userPrompt || message || `Game AI: ${action}`,
+      aiResponse: aiResponse,
+      usage: usage,
+      model: "gpt-4o",
+      gameContext: {
+        headline: headline,
+        source: source,
+        isFactual: isFactual,
+        userAnswer: userAnswer,
+        playerStats: playerStats,
+        accuracy: accuracy,
+      },
+      endpoint: "game-ai",
+    }, event).catch(err => {
+      console.error("[Game AI] Failed to log data:", err);
+      // Don't fail the request if logging fails
+    });
+
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        message: data.choices[0]?.message?.content || 'No response generated',
-        usage: data.usage,
+        message: aiResponse,
+        usage: usage,
       }),
     };
 

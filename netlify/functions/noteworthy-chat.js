@@ -267,6 +267,20 @@ RESPONSE STYLE:
     const reply = data?.choices?.[0]?.message?.content?.trim() || "No response generated.";
     const usage = data?.usage || null;
 
+    // Log AI interaction (non-blocking - don't wait for it)
+    const { logData } = require("./log-data");
+    logData("ai-chat", {
+      userMessage: message,
+      aiResponse: reply,
+      usage: usage,
+      model: "gpt-4o",
+      temperature: 0.4,
+      maxTokens: 450,
+    }, event).catch(err => {
+      console.error("[Noteworthy Chat] Failed to log data:", err);
+      // Don't fail the request if logging fails
+    });
+
     return {
       statusCode: 200,
       headers,
