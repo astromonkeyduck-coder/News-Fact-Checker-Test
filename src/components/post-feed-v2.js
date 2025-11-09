@@ -460,7 +460,14 @@ function renderPostCard(post) {
   
   // Format text with links and images detected
   // Pass post.media to remove redundant Twitter URLs if media is already displayed
-  const text = formatPostText(post.text, post.media);
+  // Ensure we have text - check multiple fields
+  const postText = post.text || post.story || post.title || '';
+  const text = formatPostText(postText, post.media);
+  
+  // Debug: log if text is missing
+  if (!postText) {
+    console.warn('[PostFeed] Post missing text:', post.id, post);
+  }
   
   return `
     <article 
