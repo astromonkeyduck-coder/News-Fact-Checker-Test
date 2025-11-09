@@ -23,25 +23,28 @@ exports.handler = async (event, context) => {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
 
-  // Handle OPTIONS request for CORS preflight
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: '',
-    };
-  }
-
-  // Only allow POST requests
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' }),
-    };
-  }
-
+  // Wrap everything in try-catch to ensure we always return JSON
   try {
+    // Handle OPTIONS request for CORS preflight
+    if (event.httpMethod === 'OPTIONS') {
+      return {
+        statusCode: 200,
+        headers,
+        body: '',
+      };
+    }
+
+    // Only allow POST requests
+    if (event.httpMethod !== 'POST') {
+      return {
+        statusCode: 405,
+        headers,
+        body: JSON.stringify({ error: 'Method not allowed' }),
+      };
+    }
+
+    // Main handler logic
+    try {
     // Debug: Log all environment variables (remove in production)
     console.log('Environment check:', {
       hasResendKey: !!process.env.RESEND_API_KEY,
@@ -72,7 +75,22 @@ exports.handler = async (event, context) => {
     // Initialize Resend with API key from environment variable (only after checking it exists)
     const resend = new Resend(process.env.RESEND_API_KEY);
 
-    const { email } = JSON.parse(event.body);
+    // Parse request body safely
+    let email;
+    try {
+      const body = event.body ? JSON.parse(event.body) : {};
+      email = body.email;
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Invalid request body. Expected JSON format.',
+          details: parseError.message 
+        }),
+      };
+    }
 
     // Validate email
     if (!email || !email.includes('@')) {
@@ -430,25 +448,43 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
       }),
     };
 
-  } catch (error) {
-    console.error('Email sending error:', error);
-    console.error('Error stack:', error.stack);
-    console.error('Error details:', {
-      name: error.name,
-      message: error.message,
-      code: error.code,
-    });
+    } catch (error) {
+      console.error('Email sending error:', error);
+      console.error('Error stack:', error.stack);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+      });
+      
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Internal server error',
+          message: error.message || 'An unexpected error occurred',
+          details: process.env.NETLIFY_DEV ? {
+            stack: error.stack,
+            name: error.name,
+          } : undefined,
+        }),
+      };
+    }
+  } catch (outerError) {
+    // Catch any errors that occur outside the main try block
+    console.error('Outer error handler - unexpected error:', outerError);
+    console.error('Outer error stack:', outerError.stack);
     
     return {
       statusCode: 500,
-      headers,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
         error: 'Internal server error',
-        message: error.message || 'An unexpected error occurred',
-        details: process.env.NETLIFY_DEV ? {
-          stack: error.stack,
-          name: error.name,
-        } : undefined,
+        message: outerError.message || 'An unexpected error occurred',
+        type: 'outer_error',
       }),
     };
   }
