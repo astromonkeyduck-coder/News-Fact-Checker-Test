@@ -15,6 +15,14 @@ try {
 // Load Resend module
 const { Resend } = require('resend');
 
+// Load email name mapping (local file, not in git)
+let emailNameMapping = null;
+try {
+  emailNameMapping = require('./email-name-mapping.js');
+} catch (e) {
+  console.warn('Email name mapping file not found, will use fallback methods:', e.message);
+}
+
 // Resend Audience ID for newsletter subscribers
 // Get this from: https://resend.com/audiences
 // Create an audience called "Newsletter Subscribers" and copy the Audience ID
@@ -327,19 +335,33 @@ This is an automated notification from your website.`,
     
     // Extract first name from contact data or email
     let firstName = 'there';
+    let fullName = null;
     
-    // First, try to get name from existing contact (if they already exist in audience)
-    if (existingContact) {
-      firstName = existingContact.firstName || 
-                  existingContact.first_name || 
-                  (existingContact.name ? existingContact.name.split(' ')[0] : null) ||
-                  null;
-      if (firstName) {
-        console.log('Using name from existing contact:', firstName);
+    // First, try to get name from email mapping (local database of known emails)
+    if (emailNameMapping && typeof emailNameMapping.getNameFromEmail === 'function') {
+      const mappedName = emailNameMapping.getNameFromEmail(email);
+      if (mappedName) {
+        fullName = mappedName;
+        // Extract first name from full name
+        firstName = mappedName.split(' ')[0] || mappedName;
+        console.log('Using name from email mapping:', fullName, '-> firstName:', firstName);
       }
     }
     
-    // If no name found from contact, extract from email as fallback
+    // Second, try to get name from existing contact (if they already exist in audience)
+    if ((!firstName || firstName === 'there') && existingContact) {
+      const contactName = existingContact.firstName || 
+                         existingContact.first_name || 
+                         (existingContact.name ? existingContact.name.split(' ')[0] : null) ||
+                         null;
+      if (contactName) {
+        firstName = contactName;
+        fullName = existingContact.name || contactName;
+        console.log('Using name from existing contact:', fullName, '-> firstName:', firstName);
+      }
+    }
+    
+    // If no name found from contact or mapping, extract from email as fallback
     if (!firstName || firstName === 'there') {
       const emailPrefix = email.split('@')[0];
       firstName = emailPrefix.split('.')[0] || emailPrefix.split('_')[0] || 'there';
