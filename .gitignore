@@ -34,3 +34,4 @@ logs/
 # Batch processing progress
 .batch-progress.json
 
+netlify/functions/email-name-mapping.js
