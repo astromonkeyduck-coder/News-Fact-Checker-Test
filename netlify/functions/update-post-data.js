@@ -73,8 +73,11 @@ exports.handler = async (event) => {
         }
 
         // Update post with new data
+        // Ensure ID and link are preserved (they might be missing in corrupted posts)
         const updatedPost = {
           ...post,
+          id: post.id || postId, // Ensure ID is always set
+          link: post.link || `https://x.com/newsnoteworthy/status/${postId}`, // Ensure link is always set
           ...(datePosted && { datePosted }),
           ...(views !== undefined && { views }),
           ...(likes !== undefined && { likes }),
