@@ -3711,6 +3711,14 @@ class BreakingNewsGame {
 
         if (gameOver) gameOver.style.display = 'block';
         
+        // Show leaderboard submit form
+        const submitForm = document.getElementById('leaderboardSubmitForm');
+        if (submitForm) {
+            submitForm.style.display = 'block';
+            submitForm.style.visibility = 'visible';
+            submitForm.style.opacity = '1';
+        }
+        
         // Store score data for leaderboard submission
         this.pendingScoreData = {
             gameType: 'fact-checker',
@@ -3727,6 +3735,9 @@ class BreakingNewsGame {
         
         // Set up submit button handler
         this.setupLeaderboardSubmit();
+        
+        // Set up view leaderboard button
+        this.setupViewLeaderboard();
     }
     
     setupLeaderboardSubmit() {
@@ -3789,6 +3800,47 @@ class BreakingNewsGame {
         });
     }
     
+    setupViewLeaderboard() {
+        // Check if view leaderboard button exists, if not create it
+        let viewLeaderboardBtn = document.getElementById('viewLeaderboardBtn');
+        if (!viewLeaderboardBtn) {
+            const submitForm = document.getElementById('leaderboardSubmitForm');
+            if (submitForm) {
+                viewLeaderboardBtn = document.createElement('button');
+                viewLeaderboardBtn.id = 'viewLeaderboardBtn';
+                viewLeaderboardBtn.className = 'btn btn-view-leaderboard';
+                viewLeaderboardBtn.textContent = 'View Leaderboard 🏆';
+                viewLeaderboardBtn.style.cssText = `
+                    margin-top: 15px;
+                    width: 100%;
+                    padding: 12px;
+                    background: rgba(255, 215, 0, 0.2);
+                    border: 2px solid rgba(255, 215, 0, 0.5);
+                    color: white;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                `;
+                submitForm.appendChild(viewLeaderboardBtn);
+            }
+        }
+        
+        if (viewLeaderboardBtn) {
+            // Remove existing listeners
+            const newBtn = viewLeaderboardBtn.cloneNode(true);
+            viewLeaderboardBtn.parentNode.replaceChild(newBtn, viewLeaderboardBtn);
+            
+            newBtn.addEventListener('click', async () => {
+                if (window.leaderboard) {
+                    await window.leaderboard.loadScores(50);
+                    window.leaderboard.render();
+                    window.leaderboard.show();
+                }
+            });
+        }
+    }
+
     showSubmitStatus(message, type) {
         const statusDiv = document.getElementById('submitStatus');
         if (statusDiv) {
@@ -4163,7 +4215,20 @@ class BreakingNewsGame {
     }
     
     initBackgroundMusic() {
-        // Create audio element for background music
+        // Check if global music system is available and playing
+        const globalMusicAvailable = typeof window.getGlobalMusicState === 'function';
+        let shouldUseGameMusic = false;
+        
+        if (globalMusicAvailable) {
+            const globalState = window.getGlobalMusicState();
+            // Only use game's own music if global music system isn't working
+            shouldUseGameMusic = !globalState.isPlaying && !globalState.enabled;
+        } else {
+            // No global music system, use game's own music
+            shouldUseGameMusic = true;
+        }
+        
+        // Create audio element for background music (only if needed)
         this.bgAudio = document.createElement('audio');
         this.bgAudio.style.cssText = `
             position: fixed;
@@ -4191,8 +4256,9 @@ class BreakingNewsGame {
         this.isMusicPlaying = globalMusicPlaying || localStorage.getItem('musicPlaying') === 'true';
         this.musicEnabled = globalMusicEnabled && localStorage.getItem('musicEnabled') !== 'false'; // Default to true
         
-        // If music was playing, start it automatically
-        if (this.isMusicPlaying && this.musicEnabled) {
+        // Only start game's own music if global music system isn't available or not playing
+        // This prevents double audio
+        if (shouldUseGameMusic && this.isMusicPlaying && this.musicEnabled) {
             this.bgAudio.play().catch(error => {
                 console.log('Auto-resume music failed:', error);
                 this.isMusicPlaying = false;
@@ -4246,6 +4312,15 @@ class BreakingNewsGame {
     }
     
     startBackgroundMusic() {
+        // Don't start game's own music if global music system is available and playing
+        if (typeof window.getGlobalMusicState === 'function') {
+            const globalState = window.getGlobalMusicState();
+            if (globalState.isPlaying || globalState.enabled) {
+                // Global music system is handling music, don't start game's own
+                return;
+            }
+        }
+        
         if (!this.musicEnabled || !this.bgAudio) return;
         
         // Prevent duplicate instances
