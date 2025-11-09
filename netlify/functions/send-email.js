@@ -25,9 +25,14 @@ if (process.env.KNOWN_NAMES) {
   try {
     knownNamesMap = JSON.parse(process.env.KNOWN_NAMES);
     console.log('Email name mapping loaded from KNOWN_NAMES environment variable');
+    console.log('Known names count:', Object.keys(knownNamesMap).length);
+    console.log('Sample keys:', Object.keys(knownNamesMap).slice(0, 3));
   } catch (parseError) {
-    console.warn('Failed to parse KNOWN_NAMES from environment:', parseError.message);
+    console.error('Failed to parse KNOWN_NAMES from environment:', parseError.message);
+    console.error('KNOWN_NAMES value (first 200 chars):', process.env.KNOWN_NAMES.substring(0, 200));
   }
+} else {
+  console.warn('KNOWN_NAMES environment variable not set');
 }
 
 // Second, try to load from local file (for development)
@@ -48,7 +53,13 @@ const getEmailNameMapping = () => {
       getNameFromEmail: (email) => {
         if (!email) return null;
         const normalizedEmail = email.toLowerCase().trim();
-        return knownNamesMap[normalizedEmail] || null;
+        const result = knownNamesMap[normalizedEmail] || null;
+        if (result) {
+          console.log(`Found name for ${email}: ${result}`);
+        } else {
+          console.log(`No name found for ${email} in knownNamesMap. Available keys:`, Object.keys(knownNamesMap).slice(0, 5));
+        }
+        return result;
       }
     };
   }
@@ -59,6 +70,7 @@ const getEmailNameMapping = () => {
   }
   
   // Return empty mapping if nothing is available
+  console.warn('No email name mapping available - returning empty mapping');
   return {
     getNameFromEmail: () => null
   };
