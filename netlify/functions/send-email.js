@@ -1,12 +1,12 @@
 // Load environment variables from .env file for local development
 // Netlify dev should auto-load .env, but this ensures it works
 try {
-  if (process.env.NETLIFY_DEV || !process.env.RESEND_API_KEY) {
-    try {
-      require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
-    } catch (e) {
-      // dotenv not needed in production
-    }
+if (process.env.NETLIFY_DEV || !process.env.RESEND_API_KEY) {
+  try {
+    require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
+  } catch (e) {
+    // dotenv not needed in production
+  }
   }
 } catch (e) {
   console.warn('Error loading dotenv:', e.message);
@@ -76,6 +76,20 @@ const getEmailNameMapping = () => {
   };
 };
 
+// Helper function to get display name (full name if available, otherwise first name)
+function getDisplayName(fullName, firstName) {
+  // If we have a full name and it's different from just the first name, use the full name
+  if (fullName && fullName.trim()) {
+    const trimmedFull = fullName.trim();
+    // If full name contains more than just the first name (has spaces or is longer), use it
+    if (trimmedFull.includes(' ') || trimmedFull.length > firstName.length) {
+      return trimmedFull;
+    }
+  }
+  // Otherwise use first name or fallback
+  return firstName || 'there';
+}
+
 // Resend Audience ID for newsletter subscribers
 // Get this from: https://resend.com/audiences
 // Create an audience called "Newsletter Subscribers" and copy the Audience ID
@@ -92,36 +106,36 @@ exports.handler = async (event, context) => {
 
   // Wrap everything in try-catch to ensure we always return JSON
   try {
-    // Handle OPTIONS request for CORS preflight
-    if (event.httpMethod === 'OPTIONS') {
-      return {
-        statusCode: 200,
-        headers,
-        body: '',
-      };
-    }
+  // Handle OPTIONS request for CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers,
+      body: '',
+    };
+  }
 
-    // Only allow POST requests
-    if (event.httpMethod !== 'POST') {
-      return {
-        statusCode: 405,
-        headers,
-        body: JSON.stringify({ error: 'Method not allowed' }),
-      };
-    }
-    
+  // Only allow POST requests
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ error: 'Method not allowed' }),
+    };
+  }
+
     // Log that we received the request
     console.log('Received POST request to send-email');
 
     // Main handler logic
-    try {
-      // Debug: Log all environment variables (remove in production)
-      console.log('Environment check:', {
-        hasResendKey: !!process.env.RESEND_API_KEY,
-        keyPrefix: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 10) + '...' : 'NOT SET',
-        allEnvKeys: Object.keys(process.env).filter(k => k.includes('RESEND')),
-        netlifyDev: process.env.NETLIFY_DEV
-      });
+  try {
+    // Debug: Log all environment variables (remove in production)
+    console.log('Environment check:', {
+      hasResendKey: !!process.env.RESEND_API_KEY,
+      keyPrefix: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 10) + '...' : 'NOT SET',
+      allEnvKeys: Object.keys(process.env).filter(k => k.includes('RESEND')),
+      netlifyDev: process.env.NETLIFY_DEV
+    });
 
     // Check if API key is configured BEFORE initializing Resend
     if (!process.env.RESEND_API_KEY) {
@@ -243,19 +257,24 @@ exports.handler = async (event, context) => {
     // If already subscribed, return early without sending welcome email
     // But first, get the name for personalized message
     let firstNameForMessage = null;
+    let fullNameForMessage = null;
     if (existingContact) {
+      fullNameForMessage = existingContact.name || null;
       firstNameForMessage = existingContact.firstName || 
                            existingContact.first_name || 
                            (existingContact.name ? existingContact.name.split(' ')[0] : null);
     }
     // Also check email mapping
     const emailMapping = getEmailNameMapping();
-    if (!firstNameForMessage && emailMapping) {
+    if (!fullNameForMessage && emailMapping) {
       const mappedName = emailMapping.getNameFromEmail(email);
       if (mappedName) {
+        fullNameForMessage = mappedName;
         firstNameForMessage = mappedName.split(' ')[0] || mappedName;
       }
     }
+    
+    const displayName = getDisplayName(fullNameForMessage, firstNameForMessage);
     
     if (alreadySubscribed) {
       return {
@@ -263,11 +282,13 @@ exports.handler = async (event, context) => {
         headers,
         body: JSON.stringify({
           success: true,
-          message: firstNameForMessage 
-            ? `${firstNameForMessage}, don't worry you're already subscribed!`
+          message: displayName !== 'there'
+            ? `${displayName}, don't worry you're already subscribed!`
             : 'You are already subscribed to the newsletter!',
           alreadySubscribed: true,
           firstName: firstNameForMessage,
+          fullName: fullNameForMessage,
+          displayName: displayName,
         }),
       };
     }
@@ -319,11 +340,11 @@ exports.handler = async (event, context) => {
       
       try {
         notificationResult = await resend.emails.send({
-          from: fromEmail,
-          to: notificationTo,
-          subject: 'New Newsletter Subscription',
-          clickTracking: false, // Disable click tracking for better deliverability
-        text: `New Newsletter Subscription
+      from: fromEmail,
+      to: notificationTo,
+      subject: 'New Newsletter Subscription',
+      clickTracking: false, // Disable click tracking for better deliverability
+      text: `New Newsletter Subscription
 
 A new subscriber has signed up for the Noteworthy News newsletter:
 
@@ -372,7 +393,7 @@ This is an automated notification from your website.`,
   </table>
 </body>
 </html>`,
-        });
+    });
         
         // Log notification result
         console.log('Notification email result:', {
@@ -405,20 +426,23 @@ This is an automated notification from your website.`,
     const encodedEmail = Buffer.from(email).toString('base64');
     const unsubscribeUrl = `https://noteworthynews.co/unsubscribe.html?email=${encodeURIComponent(encodedEmail)}`;
     
-    // Extract first name from contact data or email
+    // Extract name from contact data or email
     let firstName = 'there';
     let fullName = null;
     
     // First, try to get name from existing contact (if they already exist in audience)
     // This prioritizes Google contact names stored in Resend
     if (existingContact) {
-      const contactName = existingContact.firstName || 
+      fullName = existingContact.name || null;
+      const contactFirstName = existingContact.firstName || 
                          existingContact.first_name || 
                          (existingContact.name ? existingContact.name.split(' ')[0] : null) ||
                          null;
-      if (contactName) {
-        firstName = contactName;
-        fullName = existingContact.name || contactName;
+      if (contactFirstName) {
+        firstName = contactFirstName;
+        if (!fullName) {
+          fullName = contactFirstName;
+        }
         console.log('Using name from existing contact:', fullName, '-> firstName:', firstName);
       }
     }
@@ -449,8 +473,10 @@ This is an automated notification from your website.`,
       }
     }
     
+    const displayName = getDisplayName(fullName, firstName);
+
     // Send auto-reply to the subscriber
-    console.log('Sending welcome email to subscriber:', email, 'with firstName:', firstName);
+    console.log('Sending welcome email to subscriber:', email, 'with displayName:', displayName, 'firstName:', firstName, 'fullName:', fullName);
     const autoReplyResult = await resend.emails.send({
       from: fromEmail,
       to: email,
@@ -459,7 +485,7 @@ This is an automated notification from your website.`,
       clickTracking: false, // Disable click tracking for better deliverability
       text: `Welcome to Noteworthy News!
 
-Hi ${firstName},
+Hi ${displayName},
 
 Thank you for subscribing to Noteworthy News! We're thrilled to have you join our community of fact-checkers and critical thinkers.
 
@@ -497,7 +523,7 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
           </tr>
           <tr>
             <td style="padding: 30px; background-color: #ffffff;">
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 15px 0;">Hi ${firstName},</p>
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 15px 0;">Hi ${displayName},</p>
               <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Thank you for subscribing to Noteworthy News! We're thrilled to have you join our community of fact-checkers and critical thinkers.</p>
               <p style="color: #4a90e2; font-size: 17px; font-weight: bold; margin: 0 0 15px 0;">You'll now receive:</p>
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
@@ -726,7 +752,7 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
         errorMessage = 'Invalid Resend API key. Please check your RESEND_API_KEY in Netlify environment variables';
       } else if (errorMsg.includes('rate limit')) {
         errorMessage = 'Rate limit exceeded. Please try again later';
-      } else {
+        } else {
         errorMessage = errorMsg || 'Failed to send welcome email';
       }
       
@@ -773,27 +799,31 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
       autoReplyId: autoReplyResult.data?.id,
     });
 
-    // Get firstName for personalized success message
-    // We already have firstName from earlier, but let's make sure we have the best one
+    // Get name for personalized success message
+    // We already have firstName and fullName from earlier, but let's make sure we have the best one
     let finalFirstName = firstName;
+    let finalFullName = fullName;
     if (!finalFirstName || finalFirstName === 'there') {
       // Try to get from newly created contact
       if (audienceResult && audienceResult.data) {
         const contactData = audienceResult.data;
+        finalFullName = contactData.name || finalFullName;
         finalFirstName = contactData.firstName || 
                         contactData.first_name || 
                         (contactData.name ? contactData.name.split(' ')[0] : null) ||
-                        null;
+                        finalFirstName;
       }
     }
+    
+    const finalDisplayName = getDisplayName(finalFullName, finalFirstName);
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        message: finalFirstName && finalFirstName !== 'there'
-          ? `Thanks ${finalFirstName}! Successfully subscribed! Check your email for a welcome message.`
+        message: finalDisplayName !== 'there'
+          ? `Thanks ${finalDisplayName}! Successfully subscribed! Check your email for a welcome message.`
           : 'Subscription successful! Check your email for a welcome message.',
         notificationId: notificationResult.data?.id,
         autoReplyId: autoReplyResult.data?.id,
@@ -801,6 +831,8 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
         autoReplySent,
         audienceAdded: !!(audienceResult && !audienceError && audienceResult.data?.id),
         firstName: finalFirstName && finalFirstName !== 'there' ? finalFirstName : null,
+        fullName: finalFullName,
+        displayName: finalDisplayName !== 'there' ? finalDisplayName : null,
         audienceError: audienceError ? {
           message: audienceError.message || 'Unknown error',
           name: audienceError.name,
@@ -816,8 +848,8 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
       }),
     };
 
-    } catch (error) {
-      console.error('Email sending error:', error);
+  } catch (error) {
+    console.error('Email sending error:', error);
       console.error('Error stack:', error.stack);
       console.error('Error details:', {
         name: error.name,
