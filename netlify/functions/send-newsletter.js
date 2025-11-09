@@ -78,9 +78,63 @@ exports.handler = async (event, context) => {
     const subject = newsletterData.subject || 'Weekly Newsletter - Noteworthy News';
     const htmlContent = newsletterData.html || getDefaultNewsletterHTML();
     const textContent = newsletterData.text || getDefaultNewsletterText();
+    const testEmail = newsletterData.testEmail; // Optional: send to single email for testing
 
     // Use verified domain email
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+
+    // If testEmail is provided, send only to that email and STOP HERE
+    if (testEmail) {
+      console.log(`🧪 TEST MODE: Sending to ${testEmail} only - WILL NOT SEND TO AUDIENCE`);
+      
+      const unsubscribeUrl = `https://noteworthynews.co/unsubscribe.html?email=${encodeURIComponent(Buffer.from(testEmail).toString('base64'))}`;
+      const personalizedHtml = htmlContent.replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl);
+      const personalizedText = textContent.replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl);
+      
+      try {
+        const result = await resend.emails.send({
+          from: fromEmail,
+          to: testEmail,
+          replyTo: 'richard@noteworthynews.co',
+          subject: `[TEST] ${subject}`,
+          html: personalizedHtml,
+          text: personalizedText,
+          clickTracking: false,
+        });
+
+        if (result.error) {
+          throw new Error(result.error.message || 'Unknown error');
+        }
+
+        console.log(`✅ TEST MODE: Email sent successfully to ${testEmail} only`);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            success: true,
+            message: `Test email sent successfully to ${testEmail} only (not sent to audience)`,
+            emailId: result.data?.id,
+            testMode: true,
+          }),
+        };
+      } catch (error) {
+        console.error('❌ TEST MODE ERROR: Failed to send test email:', error);
+        // IMPORTANT: Return error and DO NOT continue to audience sending
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({
+            error: 'Failed to send test email',
+            message: error.message,
+            testMode: true,
+            note: 'No emails were sent to the audience',
+          }),
+        };
+      }
+    }
+    
+    // SAFETY CHECK: If we get here, testEmail was NOT provided, so we're sending to audience
+    console.log('📧 PRODUCTION MODE: Sending to full audience (testEmail was not provided)');
 
     console.log('Fetching contacts from audience:', NEWSLETTER_AUDIENCE_ID);
 
