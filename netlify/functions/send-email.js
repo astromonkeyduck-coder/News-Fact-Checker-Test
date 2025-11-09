@@ -209,23 +209,38 @@ exports.handler = async (event, context) => {
     // Try to use environment variable first, fallback to default
     const notificationTo = process.env.ADMIN_NOTIFICATION_EMAIL || 'richard@noteworthynews.co';
     
+    // Check if notification email is to the same domain as from email
+    // Resend often has delivery issues when sending to the same domain if domain isn't fully verified
+    const fromDomain = fromEmail.match(/@([^\s>]+)/)?.[1] || '';
+    const toDomain = notificationTo.match(/@([^\s>]+)/)?.[1] || '';
+    const isSameDomain = fromDomain && toDomain && fromDomain.toLowerCase() === toDomain.toLowerCase();
+    
     // If using test domain (onboarding@resend.dev), skip notification email
     // because Resend only allows sending to account owner's email with test domain
+    // Also skip if sending to same domain (common delivery issue with unverified domains)
     let notificationResult = { data: { id: 'skipped' } };
     
     if (isUsingTestDomain) {
       console.warn('Skipping notification email - using test domain which only allows sending to account owner');
       console.warn('Notification would have been sent to:', notificationTo);
+    } else if (isSameDomain && !process.env.RESEND_FROM_EMAIL) {
+      // Skip notification if same domain and using default (might not be verified)
+      console.warn('Skipping notification email - sending to same domain as from address');
+      console.warn('This is often delayed/failed if domain is not fully verified in Resend');
+      console.warn('Notification would have been sent to:', notificationTo);
+      console.warn('To fix: 1) Verify domain at https://resend.com/domains, OR 2) Set ADMIN_NOTIFICATION_EMAIL to a different email (e.g., Gmail)');
+      console.warn('You can still see new subscriptions in the Resend dashboard at https://resend.com/audiences');
     } else {
       console.log('Sending notification email to admin:', notificationTo);
       console.log('Using from email:', fromEmail);
       console.log('Subscriber email:', email);
       
-      notificationResult = await resend.emails.send({
-        from: fromEmail,
-        to: notificationTo,
-        subject: 'New Newsletter Subscription',
-        clickTracking: false, // Disable click tracking for better deliverability
+      try {
+        notificationResult = await resend.emails.send({
+          from: fromEmail,
+          to: notificationTo,
+          subject: 'New Newsletter Subscription',
+          clickTracking: false, // Disable click tracking for better deliverability
         text: `New Newsletter Subscription
 
 A new subscriber has signed up for the Noteworthy News newsletter:
@@ -275,14 +290,32 @@ This is an automated notification from your website.`,
   </table>
 </body>
 </html>`,
-      });
-      
-      // Log notification result
-      console.log('Notification email result:', {
-        success: !notificationResult.error,
-        error: notificationResult.error,
-        emailId: notificationResult.data?.id,
-      });
+        });
+        
+        // Log notification result
+        console.log('Notification email result:', {
+          success: !notificationResult.error,
+          error: notificationResult.error,
+          emailId: notificationResult.data?.id,
+        });
+        
+        if (notificationResult.error) {
+          console.error('Notification email error:', notificationResult.error);
+          // If it's a domain verification issue, log helpful message
+          if (notificationResult.error.message && (
+            notificationResult.error.message.includes('domain') ||
+            notificationResult.error.message.includes('verify') ||
+            notificationResult.error.message.includes('delayed')
+          )) {
+            console.warn('Domain verification issue detected. Verify your domain at https://resend.com/domains');
+            console.warn('Or set ADMIN_NOTIFICATION_EMAIL to a different email address (e.g., Gmail)');
+          }
+        }
+      } catch (notificationError) {
+        console.error('Exception sending notification email:', notificationError);
+        // Don't fail the subscription if notification fails
+        notificationResult = { error: { message: notificationError.message } };
+      }
     }
     
     // Generate unsubscribe link
@@ -522,8 +555,9 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
       console.warn('5. Redeploy your site after adding the environment variable');
     }
     
-    // Check if both emails were sent successfully
-    if (notificationResult.error || autoReplyResult.error) {
+    // Check if welcome email (auto-reply) was sent successfully
+    // Notification email failure is not critical - only welcome email matters
+    if (autoReplyResult.error) {
       const errorDetails = {
         notificationError: notificationResult.error,
         autoReplyError: autoReplyResult.error,
@@ -532,10 +566,15 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
       console.error('Resend errors:', JSON.stringify(errorDetails, null, 2));
       
       // Provide helpful error messages
-      let errorMessage = 'Failed to send email';
+      let errorMessage = 'Failed to send welcome email';
       let isDomainError = false;
       
+      // Only check notification error for logging, but don't fail on it
       if (notificationResult.error) {
+        console.warn('Notification email failed (non-critical):', notificationResult.error);
+      }
+      
+      if (autoReplyResult.error) {
         const errorMsg = notificationResult.error.message || '';
         if (errorMsg.includes('domain') || errorMsg.includes('not verified') || errorMsg.includes('bounce')) {
           errorMessage = 'Domain not verified in Resend. Please verify noteworthynews.co at https://resend.com/domains or use onboarding@resend.dev for testing';
@@ -547,7 +586,6 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
         } else {
           errorMessage = errorMsg || 'Failed to send notification email';
         }
-      } else if (autoReplyResult.error) {
         const errorMsg = autoReplyResult.error.message || '';
         if (errorMsg.includes('domain') || errorMsg.includes('not verified') || errorMsg.includes('bounce')) {
           errorMessage = 'Domain not verified in Resend. Please verify noteworthynews.co at https://resend.com/domains or use onboarding@resend.dev for testing';
@@ -557,7 +595,7 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
         } else if (errorMsg.includes('rate limit')) {
           errorMessage = 'Rate limit exceeded. Please try again later';
         } else {
-          errorMessage = errorMsg || 'Failed to send auto-reply email';
+          errorMessage = errorMsg || 'Failed to send welcome email';
         }
       }
       
@@ -574,14 +612,27 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
       };
     }
 
-    // Check if notification email actually succeeded (even if no error)
-    if (!notificationResult.data?.id) {
-      console.warn('WARNING: Notification email may not have been sent. No email ID returned.');
-      console.warn('Notification result:', JSON.stringify(notificationResult, null, 2));
+    // Check if welcome email actually succeeded
+    if (!autoReplyResult.data?.id) {
+      console.error('ERROR: Welcome email was not sent. No email ID returned.');
+      console.error('Auto-reply result:', JSON.stringify(autoReplyResult, null, 2));
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Failed to send welcome email. Please try again.',
+          details: { autoReplyResult },
+        }),
+      };
     }
 
-    // Return success, but log if notification failed silently
-    const notificationSent = !!notificationResult.data?.id;
+    // Log notification email status (non-critical)
+    if (!notificationResult.data?.id || notificationResult.data?.id === 'skipped') {
+      console.log('Notification email skipped or not sent (non-critical)');
+    }
+
+    // Return success - welcome email was sent successfully
+    const notificationSent = !!notificationResult.data?.id && notificationResult.data?.id !== 'skipped';
     const autoReplySent = !!autoReplyResult.data?.id;
     
     console.log('Final email status:', {
