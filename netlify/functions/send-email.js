@@ -574,29 +574,17 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
         console.warn('Notification email failed (non-critical):', notificationResult.error);
       }
       
-      if (autoReplyResult.error) {
-        const errorMsg = notificationResult.error.message || '';
-        if (errorMsg.includes('domain') || errorMsg.includes('not verified') || errorMsg.includes('bounce')) {
-          errorMessage = 'Domain not verified in Resend. Please verify noteworthynews.co at https://resend.com/domains or use onboarding@resend.dev for testing';
-          isDomainError = true;
-        } else if (errorMsg.includes('API') || errorMsg.includes('unauthorized')) {
-          errorMessage = 'Invalid Resend API key. Please check your RESEND_API_KEY in Netlify environment variables';
-        } else if (errorMsg.includes('rate limit')) {
-          errorMessage = 'Rate limit exceeded. Please try again later';
-        } else {
-          errorMessage = errorMsg || 'Failed to send notification email';
-        }
-        const errorMsg = autoReplyResult.error.message || '';
-        if (errorMsg.includes('domain') || errorMsg.includes('not verified') || errorMsg.includes('bounce')) {
-          errorMessage = 'Domain not verified in Resend. Please verify noteworthynews.co at https://resend.com/domains or use onboarding@resend.dev for testing';
-          isDomainError = true;
-        } else if (errorMsg.includes('API') || errorMsg.includes('unauthorized')) {
-          errorMessage = 'Invalid Resend API key. Please check your RESEND_API_KEY in Netlify environment variables';
-        } else if (errorMsg.includes('rate limit')) {
-          errorMessage = 'Rate limit exceeded. Please try again later';
-        } else {
-          errorMessage = errorMsg || 'Failed to send welcome email';
-        }
+      // Check welcome email error (this is critical)
+      const errorMsg = autoReplyResult.error.message || '';
+      if (errorMsg.includes('domain') || errorMsg.includes('not verified') || errorMsg.includes('bounce')) {
+        errorMessage = 'Domain not verified in Resend. Please verify noteworthynews.co at https://resend.com/domains or use onboarding@resend.dev for testing';
+        isDomainError = true;
+      } else if (errorMsg.includes('API') || errorMsg.includes('unauthorized')) {
+        errorMessage = 'Invalid Resend API key. Please check your RESEND_API_KEY in Netlify environment variables';
+      } else if (errorMsg.includes('rate limit')) {
+        errorMessage = 'Rate limit exceeded. Please try again later';
+      } else {
+        errorMessage = errorMsg || 'Failed to send welcome email';
       }
       
       return {
