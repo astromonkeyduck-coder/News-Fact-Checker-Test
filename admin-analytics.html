@@ -128,34 +128,112 @@
         
         .log-entry {
             background: rgba(74, 144, 226, 0.05);
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 12px;
             border-left: 4px solid #4A90E2;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+        }
+        
+        .log-entry .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
         }
         
         .log-entry .timestamp {
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 0.8rem;
-            margin-bottom: 5px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
         }
         
         .log-entry .data-type {
             display: inline-block;
             background: #4A90E2;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
             font-weight: 600;
-            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
-        .log-entry .data {
+        .log-entry .data-section {
+            margin-top: 12px;
+        }
+        
+        .log-entry .data-row {
+            display: flex;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: rgba(74, 144, 226, 0.05);
+            border-radius: 6px;
+        }
+        
+        .log-entry .data-label {
+            font-weight: 600;
+            color: #4A90E2;
+            min-width: 140px;
+            margin-right: 12px;
+        }
+        
+        .log-entry .data-value {
             color: rgba(255, 255, 255, 0.9);
-            white-space: pre-wrap;
+            flex: 1;
             word-break: break-word;
+        }
+        
+        .log-entry .image-preview {
+            max-width: 100%;
+            width: 100%;
+            max-height: 500px;
+            border-radius: 12px;
+            margin-top: 12px;
+            border: 3px solid rgba(74, 144, 226, 0.4);
+            box-shadow: 0 4px 20px rgba(74, 144, 226, 0.2);
+            object-fit: contain;
+            background: rgba(15, 15, 35, 0.5);
+        }
+        
+        .log-entry .image-container {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(74, 144, 226, 0.05);
+            border-radius: 12px;
+            border: 2px solid rgba(74, 144, 226, 0.2);
+        }
+        
+        .log-entry .message-bubble {
+            background: rgba(74, 144, 226, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            border-left: 3px solid #4A90E2;
+        }
+        
+        .log-entry .message-bubble.user {
+            background: rgba(46, 204, 113, 0.1);
+            border-left-color: #2ecc71;
+        }
+        
+        .log-entry .message-bubble.ai {
+            background: rgba(74, 144, 226, 0.1);
+            border-left-color: #4A90E2;
+        }
+        
+        .log-entry .compact-info {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 8px;
+        }
+        
+        .log-entry .compact-info span {
+            padding: 4px 8px;
+            background: rgba(74, 144, 226, 0.1);
+            border-radius: 4px;
         }
         
         .streaming-indicator {
@@ -527,24 +605,238 @@
             }
         }
         
+        function formatLogEntry(log) {
+            const data = log.data || {};
+            const timestamp = new Date(log.timestamp).toLocaleString();
+            let content = '';
+            
+            switch(log.dataType) {
+                case 'image-generation':
+                    content = `
+                        <div class="data-section">
+                            ${data.imageUrl ? `
+                            <div class="image-container">
+                                <img src="${data.imageUrl}" alt="AI Generated Image" class="image-preview" onerror="this.style.display='none'">
+                            </div>
+                            ` : ''}
+                            <div class="data-row">
+                                <span class="data-label">What the user requested:</span>
+                                <span class="data-value" style="font-size: 1.05rem; line-height: 1.6;">${escapeHtml(data.userPrompt || 'Not specified')}</span>
+                            </div>
+                            ${data.revisedPrompt && data.revisedPrompt !== data.userPrompt ? `
+                            <div class="data-row">
+                                <span class="data-label">How AI interpreted it:</span>
+                                <span class="data-value" style="font-size: 1.05rem; line-height: 1.6; color: rgba(255, 255, 255, 0.8);">${escapeHtml(data.revisedPrompt)}</span>
+                            </div>
+                            ` : ''}
+                            ${data.imageUrl ? `
+                            <div class="data-row">
+                                <span class="data-label">Image link:</span>
+                                <span class="data-value">
+                                    <a href="${data.imageUrl}" target="_blank" style="color: #4A90E2; text-decoration: underline; word-break: break-all;">${data.imageUrl}</a>
+                                </span>
+                            </div>
+                            ` : ''}
+                            <div class="compact-info" style="margin-top: 15px;">
+                                <span>📐 Dimensions: ${data.size || 'Standard'}</span>
+                                <span>✨ Quality: ${data.quality ? data.quality.charAt(0).toUpperCase() + data.quality.slice(1) : 'Standard'}</span>
+                                <span>🎨 Style: ${data.style ? data.style.charAt(0).toUpperCase() + data.style.slice(1) : 'Standard'}</span>
+                                <span>🤖 Model: DALL-E 3</span>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'ai-chat':
+                    content = `
+                        <div class="data-section">
+                            <div class="message-bubble user">
+                                <strong style="color: #2ecc71;">👤 User asked:</strong>
+                                <div style="margin-top: 8px; font-size: 1.05rem; line-height: 1.6;">${escapeHtml(data.userMessage || 'No message')}</div>
+                            </div>
+                            <div class="message-bubble ai">
+                                <strong style="color: #4A90E2;">🤖 AI responded:</strong>
+                                <div style="margin-top: 8px; font-size: 1.05rem; line-height: 1.6;">${escapeHtml(data.aiResponse || 'No response')}</div>
+                            </div>
+                            <div class="compact-info" style="margin-top: 15px;">
+                                <span>🧠 AI Model: ${data.model || 'GPT-4'}</span>
+                                ${data.usage ? `<span>💬 Words processed: ${Math.round((data.usage.prompt_tokens || 0) / 0.75)} input + ${Math.round((data.usage.completion_tokens || 0) / 0.75)} output</span>` : ''}
+                                ${data.endpoint ? `<span>📍 Source: ${data.endpoint.replace('chatgpt', 'Chat').replace('noteworthy', 'Main Chat').replace('game-ai', 'Game Assistant')}</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'game-score':
+                    const gameName = data.gameType === 'fact-checker' ? 'Fact Checker Game' : 
+                                   data.gameType === 'geography' ? 'Geography Game' : 
+                                   data.gameType || 'Unknown Game';
+                    content = `
+                        <div class="data-section">
+                            <div class="data-row">
+                                <span class="data-label">🎮 Game played:</span>
+                                <span class="data-value" style="font-size: 1.1rem; font-weight: 600;">${gameName}</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">👤 Player name:</span>
+                                <span class="data-value" style="font-size: 1.1rem;">${escapeHtml(data.userName || 'Anonymous player')}</span>
+                            </div>
+                            <div class="data-row" style="background: rgba(74, 144, 226, 0.15); padding: 15px;">
+                                <span class="data-label" style="font-size: 1.1rem;">🏆 Final score:</span>
+                                <span class="data-value" style="font-size: 2rem; font-weight: 700; color: #4A90E2;">${data.score || 0} points</span>
+                            </div>
+                            <div class="compact-info" style="margin-top: 15px;">
+                                ${data.difficulty ? `<span>⚡ Difficulty: ${data.difficulty.charAt(0).toUpperCase() + data.difficulty.slice(1)}</span>` : ''}
+                                ${data.level ? `<span>📊 Level reached: ${data.level}</span>` : ''}
+                                ${data.streak ? `<span>🔥 Best streak: ${data.streak} correct in a row</span>` : ''}
+                                ${data.time ? `<span>⏱️ Time taken: ${data.time} seconds</span>` : ''}
+                                ${data.speedBonus ? `<span>⚡ Speed bonus: ${data.speedBonus} points</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'newsletter-signup':
+                    content = `
+                        <div class="data-section">
+                            <div class="data-row">
+                                <span class="data-label">📧 Email address:</span>
+                                <span class="data-value" style="font-size: 1.1rem; font-weight: 600;">${escapeHtml(data.email || 'Not provided')}</span>
+                            </div>
+                            ${data.fullName ? `
+                            <div class="data-row">
+                                <span class="data-label">👤 Full name:</span>
+                                <span class="data-value" style="font-size: 1.1rem;">${escapeHtml(data.fullName)}</span>
+                            </div>
+                            ` : ''}
+                            ${data.firstName ? `
+                            <div class="data-row">
+                                <span class="data-label">👋 First name:</span>
+                                <span class="data-value">${escapeHtml(data.firstName)}</span>
+                            </div>
+                            ` : ''}
+                            <div class="compact-info" style="margin-top: 15px;">
+                                <span>📬 Admin notified: ${data.notificationSent ? '✅ Yes' : '❌ No'}</span>
+                                <span>✉️ Welcome email sent: ${data.autoReplySent ? '✅ Yes' : '❌ No'}</span>
+                                <span>📋 Added to mailing list: ${data.audienceAdded ? '✅ Yes' : '❌ No'}</span>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'page-view':
+                    const pagePath = data.path || log.pageUrl || 'Unknown page';
+                    const pageName = pagePath === '/' ? 'Homepage' : 
+                                   pagePath.includes('game.html') ? 'Fact Checker Game' :
+                                   pagePath.includes('geography') ? 'Geography Game' :
+                                   pagePath;
+                    content = `
+                        <div class="data-section">
+                            <div class="data-row">
+                                <span class="data-label">📄 Page visited:</span>
+                                <span class="data-value" style="font-size: 1.1rem; font-weight: 600;">${escapeHtml(pageName)}</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">🔗 Full URL:</span>
+                                <span class="data-value" style="word-break: break-all;">${escapeHtml(pagePath)}</span>
+                            </div>
+                            <div class="compact-info" style="margin-top: 15px;">
+                                <span>⏱️ Time on website: ${formatTime(data.timeOnSite || 0)}</span>
+                                <span>📌 Time on this page: ${formatTime(data.timeOnPage || 0)}</span>
+                                ${data.referrer && data.referrer !== 'unknown' ? `<span>🔙 Came from: ${escapeHtml(data.referrer.length > 40 ? data.referrer.substring(0, 40) + '...' : data.referrer)}</span>` : '<span>🔙 Direct visit</span>'}
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                default:
+                    // Generic display for other types
+                    const dataKeys = Object.keys(data);
+                    if (dataKeys.length > 0) {
+                        content = '<div class="data-section">';
+                        dataKeys.slice(0, 5).forEach(key => {
+                            const value = data[key];
+                            if (value !== null && value !== undefined) {
+                                content += `
+                                    <div class="data-row">
+                                        <span class="data-label">${escapeHtml(String(key))}:</span>
+                                        <span class="data-value">${escapeHtml(String(value).substring(0, 200))}</span>
+                                    </div>
+                                `;
+                            }
+                        });
+                        content += '</div>';
+                    }
+            }
+            
+            return `
+                <div class="header-row">
+                    <span class="data-type">${log.dataType}</span>
+                    <span class="timestamp">${timestamp}</span>
+                </div>
+                ${content}
+                <div class="compact-info" style="margin-top: 15px; padding-top: 15px; border-top: 2px solid rgba(74, 144, 226, 0.3); background: rgba(15, 15, 35, 0.3); padding: 12px; border-radius: 8px;">
+                    <span>🌐 IP Address: ${log.ip || 'Unknown'}</span>
+                    ${log.userAgent ? `<span>💻 Device: ${getBrowserInfo(log.userAgent)}</span>` : ''}
+                    ${log.acceptLanguage ? `<span>🌍 Language: ${log.acceptLanguage.split(',')[0]}</span>` : ''}
+                </div>
+            `;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function formatTime(ms) {
+            if (!ms) return '0 seconds';
+            const seconds = Math.floor(ms / 1000);
+            if (seconds < 60) return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            if (minutes < 60) {
+                return `${minutes} minute${minutes !== 1 ? 's' : ''}${secs > 0 ? ` and ${secs} second${secs !== 1 ? 's' : ''}` : ''}`;
+            }
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            return `${hours} hour${hours !== 1 ? 's' : ''}${mins > 0 ? ` and ${mins} minute${mins !== 1 ? 's' : ''}` : ''}`;
+        }
+        
+        function getBrowserInfo(userAgent) {
+            if (!userAgent) return 'Unknown';
+            const ua = userAgent.toLowerCase();
+            let browser = 'Unknown browser';
+            let device = '';
+            
+            // Detect browser
+            if (ua.includes('chrome') && !ua.includes('edg')) browser = 'Chrome';
+            else if (ua.includes('firefox')) browser = 'Firefox';
+            else if (ua.includes('safari') && !ua.includes('chrome')) browser = 'Safari';
+            else if (ua.includes('edg')) browser = 'Edge';
+            else if (ua.includes('opera')) browser = 'Opera';
+            
+            // Detect device
+            if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) device = 'Mobile';
+            else if (ua.includes('tablet') || ua.includes('ipad')) device = 'Tablet';
+            else device = 'Desktop';
+            
+            return `${browser} on ${device}`;
+        }
+        
         function displayLogs(logs) {
             const container = document.getElementById('logsList');
             container.innerHTML = '';
             
             if (logs.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: rgba(255, 255, 255, 0.5);">No logs found for selected criteria</p>';
+                container.innerHTML = '<p style="text-align: center; color: rgba(255, 255, 255, 0.5); padding: 40px;">No logs found for selected criteria</p>';
                 return;
             }
             
             logs.forEach(log => {
                 const entry = document.createElement('div');
                 entry.className = 'log-entry';
-                entry.innerHTML = `
-                    <div class="timestamp">${new Date(log.timestamp).toLocaleString()}</div>
-                    <span class="data-type">${log.dataType}</span>
-                    <div class="data">IP: ${log.ip} | User Agent: ${log.userAgent?.substring(0, 50)}...</div>
-                    <div class="data" style="margin-top: 8px; color: rgba(255, 255, 255, 0.7);">${JSON.stringify(log.data, null, 2).substring(0, 500)}${JSON.stringify(log.data).length > 500 ? '...' : ''}</div>
-                `;
+                entry.innerHTML = formatLogEntry(log);
                 container.appendChild(entry);
             });
         }
@@ -555,12 +847,7 @@
                 const entry = document.createElement('div');
                 entry.className = 'log-entry';
                 entry.style.animation = 'slideIn 0.3s ease';
-                entry.innerHTML = `
-                    <div class="timestamp">${new Date(log.timestamp).toLocaleString()}</div>
-                    <span class="data-type">${log.dataType}</span>
-                    <div class="data">IP: ${log.ip} | User Agent: ${log.userAgent?.substring(0, 50)}...</div>
-                    <div class="data" style="margin-top: 8px; color: rgba(255, 255, 255, 0.7);">${JSON.stringify(log.data, null, 2).substring(0, 500)}${JSON.stringify(log.data).length > 500 ? '...' : ''}</div>
-                `;
+                entry.innerHTML = formatLogEntry(log);
                 container.insertBefore(entry, container.firstChild);
             });
         }
