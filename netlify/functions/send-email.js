@@ -1,14 +1,25 @@
 // Load environment variables from .env file for local development
 // Netlify dev should auto-load .env, but this ensures it works
-if (process.env.NETLIFY_DEV || !process.env.RESEND_API_KEY) {
-  try {
-    require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
-  } catch (e) {
-    // dotenv not needed in production
+try {
+  if (process.env.NETLIFY_DEV || !process.env.RESEND_API_KEY) {
+    try {
+      require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
+    } catch (e) {
+      // dotenv not needed in production
+    }
   }
+} catch (e) {
+  console.warn('Error loading dotenv:', e.message);
 }
 
-const { Resend } = require('resend');
+// Load Resend module
+let Resend;
+try {
+  Resend = require('resend').Resend;
+} catch (e) {
+  console.error('Error loading Resend module:', e);
+  throw new Error('Failed to load Resend module: ' + e.message);
+}
 
 // Resend Audience ID for newsletter subscribers
 // Get this from: https://resend.com/audiences
@@ -45,13 +56,13 @@ exports.handler = async (event, context) => {
 
     // Main handler logic
     try {
-    // Debug: Log all environment variables (remove in production)
-    console.log('Environment check:', {
-      hasResendKey: !!process.env.RESEND_API_KEY,
-      keyPrefix: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 10) + '...' : 'NOT SET',
-      allEnvKeys: Object.keys(process.env).filter(k => k.includes('RESEND')),
-      netlifyDev: process.env.NETLIFY_DEV
-    });
+      // Debug: Log all environment variables (remove in production)
+      console.log('Environment check:', {
+        hasResendKey: !!process.env.RESEND_API_KEY,
+        keyPrefix: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 10) + '...' : 'NOT SET',
+        allEnvKeys: Object.keys(process.env).filter(k => k.includes('RESEND')),
+        netlifyDev: process.env.NETLIFY_DEV
+      });
 
     // Check if API key is configured BEFORE initializing Resend
     if (!process.env.RESEND_API_KEY) {
@@ -73,7 +84,20 @@ exports.handler = async (event, context) => {
     }
 
     // Initialize Resend with API key from environment variable (only after checking it exists)
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    let resend;
+    try {
+      resend = new Resend(process.env.RESEND_API_KEY);
+    } catch (resendError) {
+      console.error('Error initializing Resend:', resendError);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: 'Failed to initialize email service',
+          message: resendError.message || 'Unknown error',
+        }),
+      };
+    }
 
     // Parse request body safely
     let email;
