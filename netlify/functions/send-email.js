@@ -269,12 +269,14 @@ exports.handler = async (event, context) => {
     if (!fullNameForMessage && emailMapping) {
       const mappedName = emailMapping.getNameFromEmail(email);
       if (mappedName) {
-        fullNameForMessage = mappedName;
-        firstNameForMessage = mappedName.split(' ')[0] || mappedName;
+        fullNameForMessage = mappedName; // Use the full mapped name
+        firstNameForMessage = mappedName.split(' ')[0] || mappedName; // Extract first name for fallback
+        console.log('Already subscribed - got name from mapping:', { mappedName, fullNameForMessage, firstNameForMessage });
       }
     }
     
     const displayName = getDisplayName(fullNameForMessage, firstNameForMessage);
+    console.log('Already subscribed - display name calculation:', { fullNameForMessage, firstNameForMessage, displayName, email });
     
     if (alreadySubscribed) {
       return {
