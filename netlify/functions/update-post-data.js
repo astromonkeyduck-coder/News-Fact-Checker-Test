@@ -79,17 +79,30 @@ exports.handler = async (event) => {
           id: post.id || postId, // Ensure ID is always set
           link: link || url || post.link || `https://x.com/newsnoteworthy/status/${postId}`, // Ensure link is always set
           url: url || link || post.url || post.link || `https://x.com/newsnoteworthy/status/${postId}`, // Ensure url is always set
-          story: story || text || post.story || post.text || post.title || '', // Ensure story/text is always set
-          text: text || story || post.text || post.story || post.title || '', // Ensure text is always set
-          ...(datePosted && { datePosted }),
-          ...(views !== undefined && { views }),
-          ...(likes !== undefined && { likes }),
-          ...(reposts !== undefined && { reposts }),
-          ...(replies !== undefined && { replies }),
-          ...(engagements !== undefined && { engagements }),
-          ...(bookmarks !== undefined && { bookmarks }),
-          ...(shares !== undefined && { shares }),
         };
+        
+        // Update text/story fields - use provided values if available, otherwise keep existing
+        if (story !== undefined && story !== null && story !== '') {
+          updatedPost.story = story;
+          updatedPost.text = story;
+        } else if (text !== undefined && text !== null && text !== '') {
+          updatedPost.story = text;
+          updatedPost.text = text;
+        } else if (!updatedPost.story && !updatedPost.text) {
+          // Only set default if both are missing
+          updatedPost.story = post.story || post.text || post.title || '';
+          updatedPost.text = post.text || post.story || post.title || '';
+        }
+        
+        // Update other fields
+        if (datePosted) updatedPost.datePosted = datePosted;
+        if (views !== undefined) updatedPost.views = views;
+        if (likes !== undefined) updatedPost.likes = likes;
+        if (reposts !== undefined) updatedPost.reposts = reposts;
+        if (replies !== undefined) updatedPost.replies = replies;
+        if (engagements !== undefined) updatedPost.engagements = engagements;
+        if (bookmarks !== undefined) updatedPost.bookmarks = bookmarks;
+        if (shares !== undefined) updatedPost.shares = shares;
 
         // Save updated post
         await store.setJSON(postKey, updatedPost);
