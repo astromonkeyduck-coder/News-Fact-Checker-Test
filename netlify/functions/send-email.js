@@ -123,6 +123,73 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // Check if email is already in the audience (if audience is configured)
+    // Need to check all pages since contacts.list is paginated
+    let alreadySubscribed = false;
+    if (NEWSLETTER_AUDIENCE_ID) {
+      try {
+        console.log('Checking if email is already in audience:', email);
+        const normalizedEmail = email.toLowerCase().trim();
+        
+        let page = 1;
+        let hasMore = true;
+        let foundContact = null;
+        
+        // Loop through all pages to find the contact
+        while (hasMore && !foundContact) {
+          const contactsResponse = await resend.contacts.list({
+            audienceId: NEWSLETTER_AUDIENCE_ID,
+            page: page,
+          });
+          
+          const contacts = contactsResponse.data?.data || [];
+          const pagination = contactsResponse.data || {};
+          
+          // Case-insensitive email comparison
+          foundContact = contacts.find(c => c.email && c.email.toLowerCase().trim() === normalizedEmail);
+          
+          if (foundContact) {
+            // Check if they're unsubscribed
+            if (foundContact.unsubscribed === true) {
+              console.log('Contact exists but is unsubscribed, will resubscribe them');
+              alreadySubscribed = false; // Allow resubscription
+            } else {
+              console.log('Contact already exists in audience and is subscribed:', foundContact.email);
+              alreadySubscribed = true;
+            }
+            break; // Found the contact, no need to continue searching
+          }
+          
+          // Check if there are more pages
+          hasMore = pagination.has_more === true && contacts.length > 0;
+          page++;
+          
+          console.log(`Checked page ${page - 1}, found ${contacts.length} contacts, hasMore: ${hasMore}`);
+        }
+        
+        if (!foundContact) {
+          console.log('Contact not found in audience after checking all pages, proceeding with subscription');
+        }
+      } catch (checkError) {
+        console.error('Error checking existing contacts:', checkError);
+        console.warn('Could not check existing contacts, proceeding with subscription:', checkError.message);
+        // Continue with subscription if check fails
+      }
+    }
+    
+    // If already subscribed, return early without sending welcome email
+    if (alreadySubscribed) {
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          success: true,
+          message: 'You are already subscribed to the newsletter!',
+          alreadySubscribed: true,
+        }),
+      };
+    }
+
     // Use verified domain email - IMPORTANT: Domain must be verified in Resend
     // If domain is not verified, Resend will bounce emails
     // Use your domain email by default, but allow override via environment variable
