@@ -21,11 +21,12 @@ const { Resend } = require('resend');
 const NEWSLETTER_AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID || null;
 
 exports.handler = async (event, context) => {
-  // Enable CORS
+  // Enable CORS - define headers first
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json',
   };
 
   // Wrap everything in try-catch to ensure we always return JSON
@@ -47,6 +48,9 @@ exports.handler = async (event, context) => {
         body: JSON.stringify({ error: 'Method not allowed' }),
       };
     }
+    
+    // Log that we received the request
+    console.log('Received POST request to send-email');
 
     // Main handler logic
     try {
