@@ -271,7 +271,10 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
     });
     
     // Add subscriber to Resend Audience for mass emailing
+    // Wrap in try-catch to prevent failures from breaking the subscription
     let audienceResult = null;
+    let audienceError = null;
+    
     if (NEWSLETTER_AUDIENCE_ID) {
       try {
         console.log('Adding subscriber to audience:', {
@@ -279,65 +282,43 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
           email: email,
         });
         
-        // First, check if contact already exists in the audience
-        let contactExists = false;
-        try {
-          const contactsResponse = await resend.contacts.list({
-            audienceId: NEWSLETTER_AUDIENCE_ID,
-          });
-          const contacts = contactsResponse.data?.data || [];
-          contactExists = contacts.some(c => c.email === email);
-          
-          if (contactExists) {
-            console.log('Contact already exists in audience, updating subscription status');
-            // Find the contact and update it
-            const existingContact = contacts.find(c => c.email === email);
-            if (existingContact && existingContact.id) {
-              // Update contact to ensure they're subscribed
-              audienceResult = await resend.contacts.update({
-                audienceId: NEWSLETTER_AUDIENCE_ID,
-                id: existingContact.id,
-                unsubscribed: false,
-              });
-              console.log('Contact subscription status updated:', {
-                contactId: existingContact.id,
-                email: email,
-              });
-            }
-          }
-        } catch (listError) {
-          console.warn('Could not check existing contacts, proceeding with create:', listError.message);
-        }
-        
-        // If contact doesn't exist, create it
-        if (!contactExists) {
-          audienceResult = await resend.contacts.create({
-            audienceId: NEWSLETTER_AUDIENCE_ID,
-            email: email,
-            unsubscribed: false, // Explicitly set as subscribed
-          });
-        }
+        // Try to create the contact (Resend will handle duplicates)
+        audienceResult = await resend.contacts.create({
+          audienceId: NEWSLETTER_AUDIENCE_ID,
+          email: email,
+          unsubscribed: false, // Explicitly set as subscribed
+        });
         
         // Check for errors in the response
         if (audienceResult && audienceResult.error) {
+          audienceError = audienceResult.error;
           console.error('Resend API error when adding to audience:', {
             error: audienceResult.error,
             message: audienceResult.error.message,
             name: audienceResult.error.name,
             code: audienceResult.error.code,
           });
-        } else if (audienceResult) {
-          console.log('Subscriber successfully added/updated in audience:', {
-            contactId: audienceResult.data?.id,
-            email: audienceResult.data?.email || email,
+          
+          // If error is "already exists", that's actually okay
+          if (audienceResult.error.message && 
+              (audienceResult.error.message.includes('already exists') || 
+               audienceResult.error.message.includes('duplicate'))) {
+            console.log('Contact already exists in audience (this is okay)');
+            audienceError = null; // Don't treat as error
+          }
+        } else if (audienceResult && audienceResult.data) {
+          console.log('Subscriber successfully added to audience:', {
+            contactId: audienceResult.data.id,
+            email: audienceResult.data.email || email,
             audienceId: NEWSLETTER_AUDIENCE_ID,
           });
         }
-      } catch (audienceError) {
+      } catch (audienceException) {
+        audienceError = audienceException;
         console.error('Exception when adding to audience:', {
-          error: audienceError,
-          message: audienceError.message,
-          stack: audienceError.stack,
+          error: audienceException,
+          message: audienceException.message,
+          stack: audienceException.stack,
           audienceId: NEWSLETTER_AUDIENCE_ID,
           email: email,
         });
@@ -433,10 +414,10 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
         autoReplyId: autoReplyResult.data?.id,
         notificationSent,
         autoReplySent,
-        audienceAdded: !!(audienceResult && !audienceResult.error && audienceResult.data?.id),
-        audienceError: audienceResult?.error ? {
-          message: audienceResult.error.message,
-          name: audienceResult.error.name,
+        audienceAdded: !!(audienceResult && !audienceError && audienceResult.data?.id),
+        audienceError: audienceError ? {
+          message: audienceError.message || 'Unknown error',
+          name: audienceError.name,
         } : null,
         // Include warning if notification didn't send
         ...(notificationSent ? {} : { warning: 'Admin notification email may not have been sent. Check Netlify logs.' }),
@@ -451,12 +432,23 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
 
   } catch (error) {
     console.error('Email sending error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+    });
+    
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         error: 'Internal server error',
-        message: error.message,
+        message: error.message || 'An unexpected error occurred',
+        details: process.env.NETLIFY_DEV ? {
+          stack: error.stack,
+          name: error.name,
+        } : undefined,
       }),
     };
   }
