@@ -917,20 +917,8 @@
         <div id="tab-content-tip-gallery" class="tab-content" style="display: none;">
             <div class="controls" style="margin-bottom: 30px;">
                 <div class="control-group">
-                    <label>Date Range</label>
-                    <input type="date" id="tipGalleryDateInput" value="" onchange="loadTipGallery()">
-                </div>
-                <div class="control-group">
                     <label>Limit</label>
-                    <input type="number" id="tipGalleryLimitInput" value="100" min="1" max="1000">
-                </div>
-                <div class="control-group" style="justify-content: flex-end;">
-                    <label>&nbsp;</label>
-                    <button class="btn" onclick="loadTipGallery()">Load Tips</button>
-                </div>
-                <div class="control-group" style="justify-content: flex-end;">
-                    <label>&nbsp;</label>
-                    <button class="btn" onclick="loadAllTipGallery()" style="background: linear-gradient(135deg, #ff9800, #f57c00);">Load All (7 days)</button>
+                    <input type="number" id="tipGalleryLimitInput" value="500" min="1" max="5000">
                 </div>
                 <div class="control-group" style="justify-content: flex-end;">
                     <label>&nbsp;</label>
@@ -957,7 +945,7 @@
             
             <div id="tipGalleryContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px;">
                 <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">
-                    Click "Load Tips" to view submitted tips
+                    Loading tips...
                 </div>
             </div>
         </div>
@@ -1829,18 +1817,116 @@
             return `${browser} on ${device}`;
         }
         
+        // Color palette for user identification
+        const userColors = [
+            { bg: 'rgba(74, 144, 226, 0.15)', border: '#4A90E2', name: 'Blue' },
+            { bg: 'rgba(46, 204, 113, 0.15)', border: '#2ecc71', name: 'Green' },
+            { bg: 'rgba(255, 193, 7, 0.15)', border: '#ffc107', name: 'Yellow' },
+            { bg: 'rgba(155, 89, 182, 0.15)', border: '#9b59b6', name: 'Purple' },
+            { bg: 'rgba(231, 76, 60, 0.15)', border: '#e74c3c', name: 'Red' },
+            { bg: 'rgba(52, 152, 219, 0.15)', border: '#3498db', name: 'Light Blue' },
+            { bg: 'rgba(241, 196, 15, 0.15)', border: '#f1c40f', name: 'Gold' },
+            { bg: 'rgba(230, 126, 34, 0.15)', border: '#e67e22', name: 'Orange' },
+            { bg: 'rgba(26, 188, 156, 0.15)', border: '#1abc9c', name: 'Teal' },
+            { bg: 'rgba(192, 57, 43, 0.15)', border: '#c0392b', name: 'Dark Red' },
+            { bg: 'rgba(142, 68, 173, 0.15)', border: '#8e44ad', name: 'Dark Purple' },
+            { bg: 'rgba(39, 174, 96, 0.15)', border: '#27ae60', name: 'Dark Green' },
+        ];
+        
+        // Map to track user -> color assignments
+        let userColorMap = new Map();
+        let colorIndex = 0;
+        
+        // Get consistent color for a user (by email or IP)
+        function getUserColor(userIdentifier) {
+            if (!userIdentifier || userIdentifier === 'Unknown' || userIdentifier === 'unknown') {
+                return { bg: 'rgba(100, 100, 100, 0.1)', border: '#666666', name: 'Gray (Unknown)' };
+            }
+            
+            if (userColorMap.has(userIdentifier)) {
+                return userColorMap.get(userIdentifier);
+            }
+            
+            // Assign next color
+            const color = userColors[colorIndex % userColors.length];
+            userColorMap.set(userIdentifier, color);
+            colorIndex++;
+            return color;
+        }
+        
+        // Build user legend
+        function buildUserLegend() {
+            if (userColorMap.size === 0) return '';
+            
+            const legendItems = Array.from(userColorMap.entries()).map(([identifier, color]) => {
+                const displayName = identifier.includes('@') 
+                    ? identifier.split('@')[0] + '@...' 
+                    : identifier.length > 20 
+                        ? identifier.substring(0, 20) + '...' 
+                        : identifier;
+                return `
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(15, 15, 35, 0.6); border-radius: 8px; border: 1px solid ${color.border};">
+                        <div style="width: 20px; height: 20px; background: ${color.bg}; border: 2px solid ${color.border}; border-radius: 4px;"></div>
+                        <span style="color: rgba(255, 255, 255, 0.9); font-size: 0.9rem;">${escapeHtml(displayName)}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            return `
+                <div id="userLegend" style="margin-bottom: 20px; padding: 20px; background: rgba(15, 15, 35, 0.8); border-radius: 12px; border: 1px solid rgba(74, 144, 226, 0.3);">
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #4A90E2; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                        <span>🎨</span>
+                        <span>User Color Key</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;">
+                        ${legendItems}
+                    </div>
+                </div>
+            `;
+        }
+        
         function displayLogs(logs) {
             const container = document.getElementById('logsList');
             container.innerHTML = '';
+            
+            // Reset color map for new logs
+            userColorMap = new Map();
+            colorIndex = 0;
             
             if (logs.length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: rgba(255, 255, 255, 0.5); padding: 40px;">No logs found for selected criteria</p>';
                 return;
             }
             
+            // First pass: assign colors to all users
+            logs.forEach(log => {
+                const userIdentifier = log.userEmail && log.userEmail !== 'Unknown' && log.userEmail.includes('@')
+                    ? log.userEmail
+                    : (log.ip && log.ip !== 'unknown' ? log.ip : 'Unknown');
+                getUserColor(userIdentifier);
+            });
+            
+            // Add legend
+            const legend = buildUserLegend();
+            if (legend) {
+                container.innerHTML = legend;
+            }
+            
+            // Second pass: display logs with colors
             logs.forEach(log => {
                 const entry = document.createElement('div');
                 entry.className = 'log-entry';
+                
+                // Get user identifier and color
+                const userIdentifier = log.userEmail && log.userEmail !== 'Unknown' && log.userEmail.includes('@')
+                    ? log.userEmail
+                    : (log.ip && log.ip !== 'unknown' ? log.ip : 'Unknown');
+                const color = getUserColor(userIdentifier);
+                
+                // Apply color as left border
+                entry.style.borderLeft = `4px solid ${color.border}`;
+                entry.style.background = color.bg;
+                
                 entry.innerHTML = formatLogEntry(log);
                 container.appendChild(entry);
             });
@@ -1848,10 +1934,44 @@
         
         function prependLogs(logs) {
             const container = document.getElementById('logsList');
+            
+            // Assign colors for new logs
+            logs.forEach(log => {
+                const userIdentifier = log.userEmail && log.userEmail !== 'Unknown' && log.userEmail.includes('@')
+                    ? log.userEmail
+                    : (log.ip && log.ip !== 'unknown' ? log.ip : 'Unknown');
+                getUserColor(userIdentifier);
+            });
+            
+            // Update legend if it exists
+            const legendDiv = document.getElementById('userLegend');
+            if (legendDiv) {
+                const newLegend = buildUserLegend();
+                if (newLegend) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = newLegend;
+                    const newLegendElement = tempDiv.firstElementChild;
+                    if (legendDiv.parentNode) {
+                        legendDiv.parentNode.replaceChild(newLegendElement, legendDiv);
+                    }
+                }
+            }
+            
             logs.reverse().forEach(log => {
                 const entry = document.createElement('div');
                 entry.className = 'log-entry';
                 entry.style.animation = 'slideIn 0.3s ease';
+                
+                // Get user identifier and color
+                const userIdentifier = log.userEmail && log.userEmail !== 'Unknown' && log.userEmail.includes('@')
+                    ? log.userEmail
+                    : (log.ip && log.ip !== 'unknown' ? log.ip : 'Unknown');
+                const color = getUserColor(userIdentifier);
+                
+                // Apply color as left border
+                entry.style.borderLeft = `4px solid ${color.border}`;
+                entry.style.background = color.bg;
+                
                 entry.innerHTML = formatLogEntry(log);
                 container.insertBefore(entry, container.firstChild);
             });
@@ -2224,10 +2344,6 @@
                 }, 100);
             }
             if (tabName === 'tip-gallery') {
-                const tipGalleryDateInput = document.getElementById('tipGalleryDateInput');
-                if (!tipGalleryDateInput.value) {
-                    tipGalleryDateInput.value = new Date().toISOString().split('T')[0];
-                }
                 // Auto-load tip gallery when switching to this tab
                 setTimeout(() => {
                     if (typeof loadTipGallery === 'function') {
@@ -2249,6 +2365,56 @@
                     loadClickHeatmap();
                 }
             }
+        }
+        
+        // Helper function to enrich chats with emails from other logs
+        async function enrichChatsWithEmails(chats) {
+            const enrichedChats = [...chats];
+            
+            // For each chat with "Unknown" email, try to find email from other logs
+            for (let i = 0; i < enrichedChats.length; i++) {
+                const chat = enrichedChats[i];
+                if (!chat.userEmail || chat.userEmail === 'Unknown' || !chat.userEmail.includes('@')) {
+                    if (chat.ip && chat.ip !== 'unknown' && !chat.ip.startsWith('127.') && !chat.ip.startsWith('192.168.')) {
+                        // Try to find email from other logs with same IP
+                        try {
+                            const today = new Date();
+                            for (let j = 0; j < 7; j++) {
+                                const checkDate = new Date(today.getTime() - j * 24 * 60 * 60 * 1000);
+                                const dateKey = checkDate.toISOString().split('T')[0];
+                                
+                                let url = `/.netlify/functions/log-data?date=${dateKey}&limit=1000`;
+                                url = addTokenToUrl(url);
+                                
+                                const response = await fetch(url);
+                                if (response.ok) {
+                                    const data = await response.json();
+                                    const logs = data.logs || [];
+                                    
+                                    // Find a log with same IP that has an email
+                                    const matchingLog = logs.find(log => 
+                                        log.ip === chat.ip && 
+                                        log.userEmail && 
+                                        log.userEmail !== 'Unknown' &&
+                                        log.userEmail !== 'anonymous' &&
+                                        log.userEmail.includes('@')
+                                    );
+                                    
+                                    if (matchingLog && matchingLog.userEmail) {
+                                        chat.userEmail = matchingLog.userEmail;
+                                        console.log(`[Chat Gallery] Found email for chat: ${chat.userEmail} (IP: ${chat.ip})`);
+                                        break; // Found email, stop searching
+                                    }
+                                }
+                            }
+                        } catch (err) {
+                            console.error('[Chat Gallery] Error looking up email:', err);
+                        }
+                    }
+                }
+            }
+            
+            return enrichedChats;
         }
         
         // Chat Gallery Functions
@@ -2284,9 +2450,12 @@
                 }
                 
                 const data = await response.json();
-                const chats = data.logs || [];
+                let chats = data.logs || [];
                 
                 console.log('[Chat Gallery] Received', chats.length, 'chats');
+                
+                // Look up emails for chats that have "Unknown" email
+                chats = await enrichChatsWithEmails(chats);
                 
                 displayChatGallery(chats);
                 const totalCountEl = document.getElementById('chatGalleryTotalCount');
@@ -2333,6 +2502,9 @@
                 
                 const limit = parseInt(document.getElementById('chatGalleryLimitInput').value);
                 allChats = allChats.slice(0, limit);
+                
+                // Look up emails for chats that have "Unknown" email
+                allChats = await enrichChatsWithEmails(allChats);
                 
                 displayChatGallery(allChats);
                 const totalCountEl = document.getElementById('chatGalleryTotalCount');
@@ -2409,56 +2581,18 @@
         // Tip Gallery Functions
         async function loadTipGallery() {
             try {
-                const dateInput = document.getElementById('tipGalleryDateInput');
-                if (!dateInput) {
-                    console.error('tipGalleryDateInput not found');
-                    return;
-                }
-                if (!dateInput.value) {
-                    dateInput.value = new Date().toISOString().split('T')[0];
-                }
-                const date = dateInput.value;
                 const limitInput = document.getElementById('tipGalleryLimitInput');
                 if (!limitInput) {
                     console.error('tipGalleryLimitInput not found');
                     return;
                 }
-                const limit = parseInt(limitInput.value) || 100;
+                const limit = parseInt(limitInput.value) || 500;
                 
-                showStatus('Loading tip gallery...', 'info');
+                showStatus('Loading all tips...', 'info');
                 
-                let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}&type=tip-submission`;
-                url = addTokenToUrl(url);
-                
-                console.log('[Tip Gallery] Loading from:', url.replace(/token=[^&]+/, 'token=***'));
-                
-                const response = await fetch(url);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const data = await response.json();
-                const tips = data.logs || [];
-                
-                console.log('[Tip Gallery] Received', tips.length, 'tips');
-                
-                displayTipGallery(tips);
-                updateTipGalleryStats(tips);
-                
-                showStatus(`Loaded ${tips.length} tips`, tips.length > 0 ? 'success' : 'info');
-            } catch (error) {
-                showStatus(`Error: ${error.message}`, 'error');
-                console.error('Error loading tip gallery:', error);
-            }
-        }
-        
-        async function loadAllTipGallery() {
-            showStatus('Loading all tips (last 7 days)...', 'info');
-            
-            try {
+                // Load from last 30 days to get all tips
                 const dates = [];
-                for (let i = 0; i < 7; i++) {
+                for (let i = 0; i < 30; i++) {
                     const d = new Date();
                     d.setDate(d.getDate() - i);
                     dates.push(d.toISOString().split('T')[0]);
@@ -2473,7 +2607,9 @@
                         if (response.ok) {
                             const data = await response.json();
                             if (data.logs && data.logs.length > 0) {
-                                allTips = allTips.concat(data.logs);
+                                // Filter to only include tip-submission logs
+                                const tipLogs = data.logs.filter(log => log.dataType === 'tip-submission');
+                                allTips = allTips.concat(tipLogs);
                             }
                         }
                     } catch (e) {
@@ -2481,18 +2617,21 @@
                     }
                 }
                 
+                // Sort by timestamp (newest first)
                 allTips.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 
-                const limit = parseInt(document.getElementById('tipGalleryLimitInput').value);
+                // Apply limit
                 allTips = allTips.slice(0, limit);
+                
+                console.log('[Tip Gallery] Loaded', allTips.length, 'tips (sorted newest to oldest)');
                 
                 displayTipGallery(allTips);
                 updateTipGalleryStats(allTips);
                 
-                showStatus(`Loaded ${allTips.length} tips from last 7 days`, 'success');
+                showStatus(`Loaded ${allTips.length} tips (newest to oldest)`, allTips.length > 0 ? 'success' : 'info');
             } catch (error) {
                 showStatus(`Error: ${error.message}`, 'error');
-                console.error('Error loading all tips:', error);
+                console.error('Error loading tip gallery:', error);
             }
         }
         
