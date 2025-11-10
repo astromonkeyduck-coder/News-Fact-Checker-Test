@@ -1734,11 +1734,27 @@ async function renderPostFeedV2(
       ? `http://localhost:8888${endpoint}?limit=${limit}`
       : `${endpoint}?limit=${limit}`;
     
+    console.log('[PostFeed v2] Fetching posts from:', fetchEndpoint);
     const response = await fetch(fetchEndpoint);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    
+    console.log('[PostFeed v2] Response status:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error('[PostFeed v2] HTTP error:', response.status, errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 100)}`);
+    }
     
     const rawPosts = await response.json();
+    console.log('[PostFeed v2] Received', rawPosts?.length || 0, 'posts');
+    
+    if (!Array.isArray(rawPosts)) {
+      console.error('[PostFeed v2] Invalid response format - expected array, got:', typeof rawPosts);
+      throw new Error('Invalid response format: expected array');
+    }
+    
     currentPosts = rawPosts.map(mapRawPostToPost);
+    console.log('[PostFeed v2] Mapped to', currentPosts.length, 'posts');
     
     // Cache
     localStorage.setItem(CACHE_KEY, JSON.stringify({
@@ -1747,6 +1763,7 @@ async function renderPostFeedV2(
     }));
     
     await renderFeed();
+    console.log('[PostFeed v2] Feed rendered successfully');
     
     // Track
     if (typeof window !== 'undefined' && window.track) {
@@ -1754,11 +1771,16 @@ async function renderPostFeedV2(
     }
   } catch (error) {
     console.error('[PostFeed v2] Error loading posts:', error);
+    console.error('[PostFeed v2] Error stack:', error.stack);
     const container = document.getElementById(containerId);
     if (container) {
       container.innerHTML = `
         <div style="padding: 2rem; text-align: center; color: rgba(255, 0, 0, 0.7);">
-          Failed to load posts. Please refresh the page.
+          <p style="margin-bottom: 1rem; font-weight: 600;">Failed to load posts</p>
+          <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 1rem;">${error.message || 'Unknown error'}</p>
+          <button onclick="window.location.reload()" style="padding: 0.5rem 1rem; background: #4A90E2; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            Refresh Page
+          </button>
         </div>
       `;
     }
