@@ -127,6 +127,78 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // Download and store image in Netlify Blobs
+    let storedImageKey = null;
+    let storedImageUrl = null;
+    try {
+      const { getStore } = require("@netlify/blobs");
+      
+      const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
+      const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
+      
+      let store;
+      if (siteID && token) {
+        store = getStore({
+          name: "dalle-images",
+          siteID: siteID,
+          token: token,
+        });
+      } else {
+        store = getStore({ name: "dalle-images" });
+      }
+
+      // Generate unique key for the image (using timestamp + hash of prompt)
+      const timestamp = Date.now();
+      const promptHash = Buffer.from(prompt.trim()).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+      const imageKey = `image-${timestamp}-${promptHash}.png`;
+      
+      console.log("[Generate Image] Downloading image from DALL-E URL...");
+      
+      // Download the image
+      const imageResponse = await fetch(imageUrl);
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`);
+      }
+      
+      // Get image as array buffer
+      const imageBuffer = await imageResponse.arrayBuffer();
+      console.log("[Generate Image] Image downloaded, size:", imageBuffer.byteLength, "bytes");
+      
+      // Store image in Netlify Blobs
+      await store.set(imageKey, imageBuffer, {
+        contentType: "image/png",
+      });
+      
+      storedImageKey = imageKey;
+      // Generate URL to retrieve the stored image
+      storedImageUrl = `/.netlify/functions/get-dalle-image?key=${encodeURIComponent(imageKey)}`;
+      console.log("[Generate Image] ✅ Image stored in Netlify Blobs with key:", imageKey);
+      console.log("[Generate Image] ✅ Stored image URL:", storedImageUrl);
+      
+      // Store metadata about the image
+      const metadataKey = `metadata-${imageKey}.json`;
+      await store.set(metadataKey, JSON.stringify({
+        originalUrl: imageUrl,
+        prompt: prompt.trim(),
+        revisedPrompt: revisedPrompt,
+        size: size,
+        quality: quality,
+        style: style,
+        model: "dall-e-3",
+        storedAt: new Date().toISOString(),
+        imageKey: imageKey,
+      }), {
+        contentType: "application/json",
+      });
+      
+      console.log("[Generate Image] ✅ Metadata stored with key:", metadataKey);
+      
+    } catch (blobErr) {
+      console.error("[Generate Image] ❌ Error storing image in Netlify Blobs:", blobErr);
+      console.error("[Generate Image] Error details:", blobErr.message);
+      // Don't fail the request if blob storage fails - we still have the original URL
+    }
+
     // Get user email from event (if available)
     // NOTE: We don't do IP-based lookup for image generation to avoid cross-device mismatches
     // The logData function will handle email extraction from the data itself
@@ -145,6 +217,7 @@ exports.handler = async (event, context) => {
         userPrompt: prompt.trim(),
         revisedPrompt: revisedPrompt,
         imageUrl: imageUrl,
+        storedImageKey: storedImageKey,
         size: size,
         quality: quality,
         style: style,
@@ -291,7 +364,10 @@ This is an automated notification from your website.`,
       body: JSON.stringify({ 
         imageUrl,
         revisedPrompt,
-        prompt: prompt.trim()
+        prompt: prompt.trim(),
+        storedImageKey: storedImageKey,
+        storedImageUrl: storedImageUrl,
+        stored: !!storedImageKey
       }),
     };
   } catch (e) {

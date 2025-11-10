@@ -533,6 +533,7 @@
         <!-- Tabs -->
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('logs')" id="tab-logs">📊 Logs</button>
+            <button class="tab-btn" onclick="switchTab('user-profile')" id="tab-user-profile">👤 User Profiles</button>
             <button class="tab-btn" onclick="switchTab('images')" id="tab-images">🖼️ Image Gallery</button>
             <button class="tab-btn" onclick="switchTab('chat-gallery')" id="tab-chat-gallery">💬 Chat Gallery</button>
             <button class="tab-btn" onclick="switchTab('tip-gallery')" id="tab-tip-gallery">💡 Tip Gallery</button>
@@ -544,10 +545,15 @@
         <!-- Logs Tab (existing content) -->
         <div id="tab-content-logs" class="tab-content">
     <div class="header">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
             <div>
                 <h1>📊 Analytics Dashboard</h1>
-                <p>Real-time data monitoring and export for Noteworthy News</p>
+                <p style="margin-top: 8px; font-size: 1.1rem;">Real-time data monitoring and export for Noteworthy News</p>
+                <div style="margin-top: 12px; padding: 12px; background: rgba(74, 144, 226, 0.15); border-radius: 8px; border-left: 3px solid #4A90E2; font-size: 0.9rem; color: rgba(255, 255, 255, 0.9); max-width: 600px;">
+                    <strong>💡 Identity Indicators:</strong> 
+                    <span style="display: inline-block; margin-left: 8px; padding: 2px 8px; background: rgba(46, 204, 113, 0.25); border-radius: 4px; font-size: 0.85rem;">✅ Verified</span> = User provided email directly | 
+                    <span style="display: inline-block; margin-left: 8px; padding: 2px 8px; background: rgba(255, 193, 7, 0.25); border-radius: 4px; font-size: 0.85rem;">🔍 Inferred</span> = Email inferred from IP/browser (may be less accurate)
+                </div>
             </div>
             <button class="btn" onclick="logout()" style="background: linear-gradient(135deg, #f44336, #d32f2f);">Logout</button>
         </div>
@@ -555,46 +561,48 @@
     
     <div class="controls">
         <div class="control-group">
-            <label>Date</label>
-            <input type="date" id="dateInput" value="">
+            <label>📅 Date</label>
+            <input type="date" id="dateInput" value="" title="Select the date to view logs from">
+            <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem; margin-top: 4px; display: block;">View logs from a specific date</small>
         </div>
         
         <div class="control-group">
-            <label>Data Type</label>
-            <select id="typeSelect">
+            <label>📋 Data Type</label>
+            <select id="typeSelect" title="Filter logs by activity type">
                 <option value="">All Types</option>
-                <option value="page-view">Page Views</option>
-                <option value="page-exit">Page Exits (When people leave)</option>
-                <option value="scroll-depth">Scroll Depth (How far people read)</option>
-                <option value="image-generation">Image Generation</option>
-                <option value="ai-chat">AI Chat</option>
-                <option value="comment">Comments</option>
-                <option value="game-score">Game Scores</option>
-                <option value="newsletter-signup">Newsletter Signups</option>
-                <option value="click-batch">Clicks</option>
-                <option value="form-submit">Form Submissions</option>
-                <option value="custom-event">Custom Events</option>
+                <option value="page-view">📄 Page Views - When users visit pages</option>
+                <option value="page-exit">👋 Page Exits - When users leave pages</option>
+                <option value="scroll-depth">📜 Scroll Depth - How far users scroll</option>
+                <option value="image-generation">🎨 Image Generation - DALL-E images created</option>
+                <option value="ai-chat">💬 AI Chat - Conversations with AI assistant</option>
+                <option value="comment">💭 Comments - User comments on articles</option>
+                <option value="game-score">🎮 Game Scores - Fact checker & geography game results</option>
+                <option value="newsletter-signup">📧 Newsletter Signups - Email subscriptions</option>
+                <option value="click-batch">🖱️ Clicks - User click interactions</option>
+                <option value="form-submit">📝 Form Submissions - Contact forms, tips, etc.</option>
+                <option value="custom-event">⚡ Custom Events - Other tracked activities</option>
             </select>
+            <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem; margin-top: 4px; display: block;">Filter by specific activity type</small>
         </div>
         
         <div class="control-group">
-            <label>Filter by User Email</label>
-            <input type="email" id="userEmailInput" placeholder="user@example.com" style="padding: 10px; border: 2px solid rgba(74, 144, 226, 0.5); border-radius: 6px; background: rgba(15, 15, 35, 0.8); color: white; font-size: 1rem;">
-        </div>
-        
-        <div class="control-group" style="justify-content: flex-end;">
-            <label>&nbsp;</label>
-            <button class="btn" onclick="loadUsers()">View All Users</button>
+            <label>👤 Filter by User Email</label>
+            <input type="email" id="userEmailInput" placeholder="user@example.com" style="padding: 10px; border: 2px solid rgba(74, 144, 226, 0.5); border-radius: 6px; background: rgba(15, 15, 35, 0.8); color: white; font-size: 1rem;" title="Enter an email address to see all activities from that user">
+            <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem; margin-top: 4px; display: block;">View all activities from a specific user</small>
         </div>
         
         <div class="control-group">
-            <label>Limit</label>
-            <input type="number" id="limitInput" value="100" min="1" max="10000">
+            <label>🔢 Result Limit</label>
+            <input type="number" id="limitInput" value="100" min="1" max="10000" title="Maximum number of log entries to load">
+            <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem; margin-top: 4px; display: block;">Max entries to load (1-10,000)</small>
         </div>
         
-        <div class="control-group" style="justify-content: flex-end;">
+        <div class="control-group" style="justify-content: flex-end; align-items: flex-end;">
             <label>&nbsp;</label>
-            <button class="btn" onclick="loadLogs()">Load Data</button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" onclick="loadUsers()" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">👥 View All Users</button>
+                <button class="btn" onclick="loadLogs()">📊 Load Data</button>
+            </div>
         </div>
         
         <div class="control-group" style="justify-content: flex-end;">
@@ -626,45 +634,55 @@
     </div>
     
     <div class="stats" id="stats">
-        <div class="stat-card">
-            <h3>Total Logs</h3>
+        <div class="stat-card" title="Total number of logged activities">
+            <h3>📊 Total Activities</h3>
             <div class="value" id="totalLogs">0</div>
+            <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-top: 4px; display: block;">All logged events</small>
         </div>
-        <div class="stat-card">
-            <h3>Page Views</h3>
+        <div class="stat-card" title="Number of page visits">
+            <h3>📄 Page Views</h3>
             <div class="value" id="pageViews">0</div>
+            <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-top: 4px; display: block;">Pages visited</small>
         </div>
-        <div class="stat-card">
-            <h3>AI Interactions</h3>
+        <div class="stat-card" title="AI chat conversations and interactions">
+            <h3>💬 AI Interactions</h3>
             <div class="value" id="aiInteractions">0</div>
+            <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-top: 4px; display: block;">Chat conversations</small>
         </div>
-        <div class="stat-card">
-            <h3>Images Generated</h3>
+        <div class="stat-card" title="DALL-E images generated">
+            <h3>🎨 Images Generated</h3>
             <div class="value" id="imagesGenerated">0</div>
+            <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-top: 4px; display: block;">DALL-E creations</small>
         </div>
-        <div class="stat-card">
-            <h3>Game Scores</h3>
+        <div class="stat-card" title="Game scores submitted">
+            <h3>🎮 Game Scores</h3>
             <div class="value" id="gameScores">0</div>
+            <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-top: 4px; display: block;">Games completed</small>
         </div>
-        <div class="stat-card">
-            <h3>Newsletter Signups</h3>
+        <div class="stat-card" title="Newsletter email signups">
+            <h3>📧 Newsletter Signups</h3>
             <div class="value" id="newsletterSignups">0</div>
+            <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-top: 4px; display: block;">New subscribers</small>
         </div>
-        <div class="stat-card">
-            <h3>Comments</h3>
+        <div class="stat-card" title="User comments posted">
+            <h3>💭 Comments</h3>
             <div class="value" id="comments">0</div>
+            <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-top: 4px; display: block;">Comments posted</small>
         </div>
-        <div class="stat-card">
-            <h3>Unique Visitors</h3>
+        <div class="stat-card" title="Unique IP addresses">
+            <h3>🌐 Unique Visitors</h3>
             <div class="value" id="uniqueIPs">0</div>
+            <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-top: 4px; display: block;">Unique IP addresses</small>
         </div>
-        <div class="stat-card">
-            <h3>Total Active Users</h3>
+        <div class="stat-card" title="Total users with email addresses">
+            <h3>👥 Total Users</h3>
             <div class="value" id="totalUsers">0</div>
+            <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-top: 4px; display: block;">Users with emails</small>
         </div>
-        <div class="stat-card">
-            <h3>Active Today</h3>
+        <div class="stat-card" title="Users active today">
+            <h3>⚡ Active Today</h3>
             <div class="value" id="activeToday">0</div>
+            <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.75rem; margin-top: 4px; display: block;">Active today</small>
         </div>
     </div>
     
@@ -777,6 +795,36 @@
                 </div>
             </div>
         </div> <!-- End tab-content-logs -->
+        
+        <!-- User Profile Tab -->
+        <div id="tab-content-user-profile" class="tab-content" style="display: none;">
+            <div class="header">
+                <h1>👤 User Profile Database</h1>
+                <p>Comprehensive user data including navigation, identity, and behavior patterns</p>
+            </div>
+            
+            <div class="controls" style="margin-bottom: 30px;">
+                <div class="control-group" style="flex: 2;">
+                    <label>🔍 Search User by Email</label>
+                    <input type="email" id="userProfileEmailInput" placeholder="user@example.com" style="padding: 14px 16px; border: 2px solid rgba(74, 144, 226, 0.5); border-radius: 10px; background: rgba(15, 15, 35, 0.8); color: white; font-size: 1rem;" onkeypress="if(event.key==='Enter') loadUserProfile()">
+                    <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem; margin-top: 4px; display: block;">Enter email address to view comprehensive user profile</small>
+                </div>
+                <div class="control-group" style="justify-content: flex-end; align-items: flex-end;">
+                    <label>&nbsp;</label>
+                    <button class="btn" onclick="loadUserProfile()" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">🔍 Load Profile</button>
+                </div>
+            </div>
+            
+            <div id="userProfileContainer" style="display: none;">
+                <!-- Profile will be loaded here -->
+            </div>
+            
+            <div id="userProfilePlaceholder" style="text-align: center; padding: 60px; color: rgba(255, 255, 255, 0.5);">
+                <div style="font-size: 3rem; margin-bottom: 20px;">👤</div>
+                <div style="font-size: 1.2rem; margin-bottom: 10px;">Enter an email address above to view user profile</div>
+                <div style="font-size: 0.9rem; opacity: 0.7;">View comprehensive data including page navigation, identity, devices, and behavior patterns</div>
+            </div>
+        </div>
         
         <!-- Image Gallery Tab -->
         <div id="tab-content-images" class="tab-content" style="display: none;">
@@ -1726,17 +1774,51 @@
                     }
             }
             
-            // Show user info prominently if available
+            // Show user info prominently if available with identity source indicator
+            const identitySource = log.identitySource || null;
+            const isInferred = identitySource === 'inferred';
+            const isProvided = identitySource === 'provided';
+            
             const userInfo = log.userEmail ? `
-                <div style="background: rgba(46, 204, 113, 0.15); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #2ecc71;">
-                    <div style="font-weight: 700; color: #2ecc71; margin-bottom: 4px;">👤 ${escapeHtml(log.userName || 'User')}</div>
-                    <div style="color: rgba(255, 255, 255, 0.9); font-size: 0.95rem;">📧 ${escapeHtml(log.userEmail)}</div>
+                <div style="background: ${isInferred ? 'rgba(255, 193, 7, 0.15)' : 'rgba(46, 204, 113, 0.15)'}; padding: 14px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid ${isInferred ? '#ffc107' : '#2ecc71'}; position: relative;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                        <div style="font-weight: 700; color: ${isInferred ? '#ffc107' : '#2ecc71'}; font-size: 1.05rem;">👤 ${escapeHtml(log.userName || 'User')}</div>
+                        ${isInferred ? `
+                            <span style="background: rgba(255, 193, 7, 0.25); color: #ffc107; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid rgba(255, 193, 7, 0.4);" title="This email was inferred from IP address and browser fingerprint - may not be 100% accurate">🔍 Inferred</span>
+                        ` : isProvided ? `
+                            <span style="background: rgba(46, 204, 113, 0.25); color: #2ecc71; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid rgba(46, 204, 113, 0.4);" title="This email was provided directly by the user">✅ Verified</span>
+                        ` : ''}
+                    </div>
+                    <div style="color: rgba(255, 255, 255, 0.95); font-size: 0.95rem; font-weight: 500;">📧 ${escapeHtml(log.userEmail)}</div>
+                    ${isInferred ? `
+                        <div style="margin-top: 8px; padding: 8px; background: rgba(255, 193, 7, 0.1); border-radius: 6px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 193, 7, 0.2);">
+                            ⚠️ <strong>Note:</strong> This identity was inferred from IP address and browser fingerprint. Multiple users on the same network may be mixed up.
+                        </div>
+                    ` : ''}
                 </div>
             ` : '';
             
+            // Human-readable data type labels
+            const dataTypeLabels = {
+                'page-view': '📄 Page View',
+                'page-exit': '👋 Page Exit',
+                'scroll-depth': '📜 Scroll Depth',
+                'image-generation': '🎨 Image Generation',
+                'ai-chat': '💬 AI Chat',
+                'comment': '💭 Comment',
+                'game-score': '🎮 Game Score',
+                'newsletter-signup': '📧 Newsletter Signup',
+                'click-batch': '🖱️ Click Batch',
+                'form-submit': '📝 Form Submission',
+                'tip-submission': '💡 Tip Submission',
+                'custom-event': '⚡ Custom Event'
+            };
+            
+            const dataTypeLabel = dataTypeLabels[log.dataType] || log.dataType;
+            
             return `
                 <div class="header-row">
-                    <span class="data-type">${log.dataType}</span>
+                    <span class="data-type" title="${log.dataType}">${dataTypeLabel}</span>
                     <span class="timestamp">${timestamp}</span>
                 </div>
                 ${userInfo}
@@ -3513,6 +3595,447 @@
                 
                 container.appendChild(chatCard);
             });
+        }
+        
+        // Load comprehensive user profile
+        async function loadUserProfile() {
+            const email = document.getElementById('userProfileEmailInput').value.trim();
+            
+            if (!email) {
+                showStatus('Please enter an email address', 'error');
+                return;
+            }
+            
+            showStatus('Loading user profile...', 'info');
+            document.getElementById('userProfilePlaceholder').style.display = 'none';
+            document.getElementById('userProfileContainer').style.display = 'block';
+            document.getElementById('userProfileContainer').innerHTML = '<div style="text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.7);">Loading...</div>';
+            
+            try {
+                let url = `/.netlify/functions/get-user-profile?email=${encodeURIComponent(email)}`;
+                url = addTokenToUrl(url);
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const profile = data.profile;
+                const logs = data.recentLogs || [];
+                
+                // Build comprehensive profile display
+                const identityBadge = profile.identitySource === 'provided' 
+                    ? '<span style="background: rgba(46, 204, 113, 0.25); color: #2ecc71; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; border: 1px solid rgba(46, 204, 113, 0.4);">✅ Verified</span>'
+                    : profile.identitySource === 'inferred'
+                    ? '<span style="background: rgba(255, 193, 7, 0.25); color: #ffc107; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; border: 1px solid rgba(255, 193, 7, 0.4);">🔍 Inferred</span>'
+                    : '';
+                
+                const formatDate = (dateStr) => {
+                    if (!dateStr) return 'Unknown';
+                    return new Date(dateStr).toLocaleString();
+                };
+                
+                const formatDuration = (ms) => {
+                    if (!ms) return '0 seconds';
+                    const seconds = Math.floor(ms / 1000);
+                    if (seconds < 60) return `${seconds} seconds`;
+                    const minutes = Math.floor(seconds / 60);
+                    if (minutes < 60) return `${minutes} minutes`;
+                    const hours = Math.floor(minutes / 60);
+                    return `${hours} hours ${minutes % 60} minutes`;
+                };
+                
+                // Get trends data
+                const trends = profile.trends || {};
+                const tabVisibility = profile.tabVisibility || {};
+                const inputPatterns = profile.inputPatterns || {};
+                
+                // Engagement level colors
+                const engagementColors = {
+                    'very-high': '#2ecc71',
+                    'high': '#4A90E2',
+                    'medium': '#ffc107',
+                    'low': '#f44336',
+                    'unknown': '#999'
+                };
+                
+                // Activity trend colors
+                const trendColors = {
+                    'increasing': '#2ecc71',
+                    'decreasing': '#f44336',
+                    'stable': '#ffc107',
+                    'new': '#4A90E2'
+                };
+                
+                let html = `
+                    <div style="display: grid; gap: 20px;">
+                        <!-- User Summary & Trends -->
+                        <div style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.25), rgba(46, 204, 113, 0.2)); padding: 30px; border-radius: 16px; border: 1px solid rgba(74, 144, 226, 0.3);">
+                            <h2 style="color: #4A90E2; margin-bottom: 20px; font-size: 1.8rem;">📊 User Summary & Trends</h2>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                                <div style="background: rgba(15, 15, 35, 0.6); padding: 20px; border-radius: 12px; border: 2px solid ${trendColors[trends.activityTrend] || '#999'};">
+                                    <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 8px;">Activity Trend</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: ${trendColors[trends.activityTrend] || '#999'}; text-transform: capitalize;">
+                                        ${trends.activityTrend === 'increasing' ? '📈 Increasing' : trends.activityTrend === 'decreasing' ? '📉 Decreasing' : trends.activityTrend === 'new' ? '🆕 New User' : '➡️ Stable'}
+                                    </div>
+                                    ${trends.growthRate !== 0 ? `<div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.7); margin-top: 5px;">${trends.growthRate > 0 ? '+' : ''}${trends.growthRate}% change</div>` : ''}
+                                </div>
+                                <div style="background: rgba(15, 15, 35, 0.6); padding: 20px; border-radius: 12px; border: 2px solid ${engagementColors[trends.engagementLevel] || '#999'};">
+                                    <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 8px;">Engagement Level</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: ${engagementColors[trends.engagementLevel] || '#999'}; text-transform: capitalize;">
+                                        ${trends.engagementLevel === 'very-high' ? '🔥 Very High' : trends.engagementLevel === 'high' ? '⭐ High' : trends.engagementLevel === 'medium' ? '📊 Medium' : trends.engagementLevel === 'low' ? '📉 Low' : '❓ Unknown'}
+                                    </div>
+                                    <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.7); margin-top: 5px;">${profile.averageActivitiesPerDay || 0} activities/day</div>
+                                </div>
+                                <div style="background: rgba(15, 15, 35, 0.6); padding: 20px; border-radius: 12px; border: 2px solid #9b59b6;">
+                                    <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 8px;">Recent Activity</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: #9b59b6; text-transform: capitalize;">
+                                        ${trends.recentActivity === 'very-recent' ? '⚡ Very Recent' : trends.recentActivity === 'recent' ? '🟢 Recent' : trends.recentActivity === 'recent-week' ? '🟡 This Week' : trends.recentActivity === 'inactive' ? '🔴 Inactive' : '❓ Unknown'}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            ${trends.insights && trends.insights.length > 0 ? `
+                                <div style="background: rgba(15, 15, 35, 0.8); padding: 20px; border-radius: 12px; border-left: 4px solid #4A90E2;">
+                                    <h3 style="color: #4A90E2; margin-bottom: 15px; font-size: 1.2rem;">💡 Key Insights</h3>
+                                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                                        ${trends.insights.map(insight => `
+                                            <div style="padding: 12px; background: rgba(74, 144, 226, 0.1); border-radius: 8px; color: rgba(255, 255, 255, 0.9); font-size: 0.95rem;">
+                                                ${insight}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            ${trends.activityByDate && trends.activityByDate.length > 0 ? `
+                                <div style="margin-top: 20px; background: rgba(15, 15, 35, 0.8); padding: 20px; border-radius: 12px;">
+                                    <h3 style="color: #4A90E2; margin-bottom: 15px; font-size: 1.2rem;">📈 Activity Over Time</h3>
+                                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                                        ${trends.activityByDate.slice(-14).map(item => {
+                                            const maxCount = Math.max(...trends.activityByDate.map(d => d.count));
+                                            const barWidth = maxCount > 0 ? (item.count / maxCount) * 100 : 0;
+                                            return `
+                                                <div style="display: flex; align-items: center; gap: 15px;">
+                                                    <div style="min-width: 100px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.8);">${new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                                                    <div style="flex: 1; background: rgba(74, 144, 226, 0.2); border-radius: 4px; height: 24px; position: relative; overflow: hidden;">
+                                                        <div style="background: linear-gradient(90deg, #4A90E2, #2ecc71); height: 100%; width: ${barWidth}%; transition: width 0.3s ease;"></div>
+                                                        <div style="position: absolute; top: 50%; left: 8px; transform: translateY(-50%); font-size: 0.75rem; font-weight: 600; color: #fff;">${item.count}</div>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- Tab Visibility & Input Tracking -->
+                        <div style="background: rgba(15, 15, 35, 0.6); padding: 30px; border-radius: 16px; border: 1px solid rgba(255, 193, 7, 0.3);">
+                            <h2 style="color: #ffc107; margin-bottom: 20px; font-size: 1.8rem;">🪟 Tab & Input Tracking</h2>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                                <div>
+                                    <h3 style="color: #ffc107; margin-bottom: 15px; font-size: 1.2rem;">🔄 Tab Switching</h3>
+                                    <div style="background: rgba(15, 15, 35, 0.8); padding: 15px; border-radius: 10px;">
+                                        <div style="margin-bottom: 10px;">
+                                            <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">Total Tab Switches</div>
+                                            <div style="font-size: 1.5rem; font-weight: 700; color: #ffc107;">${tabVisibility.totalTabSwitches || 0}</div>
+                                        </div>
+                                        ${tabVisibility.lastTabSwitch ? `
+                                            <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.7);">
+                                                Last switch: ${formatDate(tabVisibility.lastTabSwitch)}
+                                            </div>
+                                        ` : ''}
+                                        <div style="margin-top: 15px; padding: 12px; background: rgba(255, 193, 7, 0.1); border-radius: 8px; border-left: 3px solid #ffc107; font-size: 0.85rem; color: rgba(255, 255, 255, 0.8);">
+                                            ${tabVisibility.note || '⚠️ Browser security prevents tracking other tabs. We can only see when users switch away from/back to our site.'}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 style="color: #9b59b6; margin-bottom: 15px; font-size: 1.2rem;">⌨️ Input Interactions</h3>
+                                    <div style="background: rgba(15, 15, 35, 0.8); padding: 15px; border-radius: 10px;">
+                                        <div style="margin-bottom: 10px;">
+                                            <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">Total Input Focuses</div>
+                                            <div style="font-size: 1.5rem; font-weight: 700; color: #9b59b6;">${inputPatterns.totalInputInteractions || 0}</div>
+                                        </div>
+                                        ${inputPatterns.mostFocusedInputs && inputPatterns.mostFocusedInputs.length > 0 ? `
+                                            <div style="margin-top: 15px;">
+                                                <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 8px;">Most Focused Input Types:</div>
+                                                ${inputPatterns.mostFocusedInputs.map(input => `
+                                                    <div style="padding: 8px; margin-bottom: 5px; background: rgba(155, 89, 182, 0.1); border-radius: 6px; font-size: 0.85rem;">
+                                                        <span style="font-weight: 600; color: #fff;">${input.type}</span>
+                                                        <span style="color: rgba(255, 255, 255, 0.7); margin-left: 10px;">${input.count} time${input.count !== 1 ? 's' : ''}</span>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        ` : ''}
+                                        <div style="margin-top: 15px; padding: 12px; background: rgba(155, 89, 182, 0.1); border-radius: 8px; border-left: 3px solid #9b59b6; font-size: 0.85rem; color: rgba(255, 255, 255, 0.8);">
+                                            ${inputPatterns.note || '⚠️ We can only track input focus on our site, not typing in other tabs or websites.'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- User Identity Card -->
+                        <div style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(46, 204, 113, 0.15)); padding: 30px; border-radius: 16px; border: 1px solid rgba(74, 144, 226, 0.3);">
+                            <h2 style="color: #4A90E2; margin-bottom: 20px; font-size: 1.8rem;">👤 User Identity</h2>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                                <div>
+                                    <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Name</div>
+                                    <div style="font-size: 1.3rem; font-weight: 700; color: #fff;">${escapeHtml(profile.name || 'Unknown')}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Email</div>
+                                    <div style="font-size: 1.1rem; font-weight: 600; color: #2ecc71;">${escapeHtml(profile.email)}</div>
+                                    ${identityBadge}
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">First Seen</div>
+                                    <div style="font-size: 1rem; color: #fff;">${formatDate(profile.firstSeen)}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Last Seen</div>
+                                    <div style="font-size: 1rem; color: #fff;">${formatDate(profile.lastSeen)}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Days Active</div>
+                                    <div style="font-size: 1.2rem; font-weight: 700; color: #4A90E2;">${profile.daysActive || 0}</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 5px;">Total Activities</div>
+                                    <div style="font-size: 1.2rem; font-weight: 700; color: #2ecc71;">${profile.totalActivities || 0}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Activity Stats -->
+                        <div style="background: rgba(15, 15, 35, 0.6); padding: 30px; border-radius: 16px; border: 1px solid rgba(74, 144, 226, 0.2);">
+                            <h2 style="color: #4A90E2; margin-bottom: 20px; font-size: 1.8rem;">📊 Activity Statistics</h2>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                                <div class="stat-card">
+                                    <h3>📄 Page Views</h3>
+                                    <div class="value">${profile.pageViewCount || 0}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <h3>💬 AI Chats</h3>
+                                    <div class="value">${profile.aiChatCount || 0}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <h3>🎨 Images Generated</h3>
+                                    <div class="value">${profile.imageGenerationCount || 0}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <h3>🎮 Game Scores</h3>
+                                    <div class="value">${profile.gameScoreCount || 0}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <h3>💭 Comments</h3>
+                                    <div class="value">${profile.commentCount || 0}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <h3>📧 Newsletter Signups</h3>
+                                    <div class="value">${profile.newsletterSignupCount || 0}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <h3>📝 Form Submissions</h3>
+                                    <div class="value">${profile.formSubmitCount || 0}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <h3>⏱️ Avg Time/Page</h3>
+                                    <div class="value">${Math.round((profile.averageTimeOnPage || 0) / 1000)}s</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Page Navigation -->
+                        <div style="background: rgba(15, 15, 35, 0.6); padding: 30px; border-radius: 16px; border: 1px solid rgba(74, 144, 226, 0.2);">
+                            <h2 style="color: #4A90E2; margin-bottom: 20px; font-size: 1.8rem;">🧭 Page Navigation</h2>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                                <div>
+                                    <h3 style="color: #2ecc71; margin-bottom: 15px; font-size: 1.2rem;">📍 Most Visited Pages</h3>
+                                    <div style="background: rgba(15, 15, 35, 0.8); padding: 15px; border-radius: 10px; max-height: 300px; overflow-y: auto;">
+                                        ${(profile.mostVisitedPages || []).length > 0 
+                                            ? profile.mostVisitedPages.map(p => `
+                                                <div style="padding: 10px; margin-bottom: 8px; background: rgba(74, 144, 226, 0.1); border-radius: 6px; border-left: 3px solid #4A90E2;">
+                                                    <div style="font-weight: 600; color: #fff;">${escapeHtml(p.path)}</div>
+                                                    <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.7);">${p.count} visit${p.count !== 1 ? 's' : ''}</div>
+                                                </div>
+                                            `).join('')
+                                            : '<div style="color: rgba(255, 255, 255, 0.5);">No page visits recorded</div>'
+                                        }
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 style="color: #ffc107; margin-bottom: 15px; font-size: 1.2rem;">🚪 Entry Pages</h3>
+                                    <div style="background: rgba(15, 15, 35, 0.8); padding: 15px; border-radius: 10px; max-height: 300px; overflow-y: auto;">
+                                        ${(profile.mostCommonEntryPages || []).length > 0
+                                            ? profile.mostCommonEntryPages.map(p => `
+                                                <div style="padding: 10px; margin-bottom: 8px; background: rgba(255, 193, 7, 0.1); border-radius: 6px; border-left: 3px solid #ffc107;">
+                                                    <div style="font-weight: 600; color: #fff;">${escapeHtml(p.path)}</div>
+                                                    <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.7);">${p.count} time${p.count !== 1 ? 's' : ''}</div>
+                                                </div>
+                                            `).join('')
+                                            : '<div style="color: rgba(255, 255, 255, 0.5);">No entry pages recorded</div>'
+                                        }
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 style="color: #f44336; margin-bottom: 15px; font-size: 1.2rem;">👋 Exit Pages</h3>
+                                    <div style="background: rgba(15, 15, 35, 0.8); padding: 15px; border-radius: 10px; max-height: 300px; overflow-y: auto;">
+                                        ${(profile.mostCommonExitPages || []).length > 0
+                                            ? profile.mostCommonExitPages.map(p => `
+                                                <div style="padding: 10px; margin-bottom: 8px; background: rgba(244, 67, 54, 0.1); border-radius: 6px; border-left: 3px solid #f44336;">
+                                                    <div style="font-weight: 600; color: #fff;">${escapeHtml(p.path)}</div>
+                                                    <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.7);">${p.count} time${p.count !== 1 ? 's' : ''}</div>
+                                                </div>
+                                            `).join('')
+                                            : '<div style="color: rgba(255, 255, 255, 0.5);">No exit pages recorded</div>'
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            ${(profile.referrers || []).length > 0 ? `
+                                <div style="margin-top: 20px;">
+                                    <h3 style="color: #9b59b6; margin-bottom: 15px; font-size: 1.2rem;">🔗 Traffic Sources (Referrers)</h3>
+                                    <div style="background: rgba(15, 15, 35, 0.8); padding: 15px; border-radius: 10px; max-height: 200px; overflow-y: auto;">
+                                        ${profile.referrers.map(r => `
+                                            <div style="padding: 10px; margin-bottom: 8px; background: rgba(155, 89, 182, 0.1); border-radius: 6px; border-left: 3px solid #9b59b6;">
+                                                <div style="font-weight: 600; color: #fff; word-break: break-all;">${escapeHtml(r.url.length > 60 ? r.url.substring(0, 60) + '...' : r.url)}</div>
+                                                <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.7);">${r.count} visit${r.count !== 1 ? 's' : ''} | Last: ${formatDate(r.lastSeen)}</div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- Identity & Devices -->
+                        <div style="background: rgba(15, 15, 35, 0.6); padding: 30px; border-radius: 16px; border: 1px solid rgba(74, 144, 226, 0.2);">
+                            <h2 style="color: #4A90E2; margin-bottom: 20px; font-size: 1.8rem;">🆔 Identity & Devices</h2>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                                ${(profile.locations || []).length > 0 ? `
+                                    <div>
+                                        <h3 style="color: #2ecc71; margin-bottom: 15px; font-size: 1.2rem;">📍 Locations</h3>
+                                        <div style="background: rgba(15, 15, 35, 0.8); padding: 15px; border-radius: 10px;">
+                                            ${profile.locations.map(loc => `
+                                                <div style="padding: 10px; margin-bottom: 8px; background: rgba(46, 204, 113, 0.1); border-radius: 6px;">
+                                                    <div style="font-weight: 600; color: #fff;">${escapeHtml(loc.city || 'Unknown')}${loc.region ? ', ' + escapeHtml(loc.region) : ''}${loc.country ? ', ' + escapeHtml(loc.country) : ''}</div>
+                                                    <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.7);">Last seen: ${formatDate(loc.lastSeen)}</div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${(profile.devices || []).length > 0 ? `
+                                    <div>
+                                        <h3 style="color: #ffc107; margin-bottom: 15px; font-size: 1.2rem;">💻 Devices & Browsers</h3>
+                                        <div style="background: rgba(15, 15, 35, 0.8); padding: 15px; border-radius: 10px; max-height: 300px; overflow-y: auto;">
+                                            ${profile.devices.map(dev => `
+                                                <div style="padding: 10px; margin-bottom: 8px; background: rgba(255, 193, 7, 0.1); border-radius: 6px;">
+                                                    <div style="font-weight: 600; color: #fff;">${escapeHtml(dev.browser)} on ${escapeHtml(dev.os)}</div>
+                                                    <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.7);">
+                                                        ${dev.mobile ? '📱 Mobile' : '🖥️ Desktop'} | Last: ${formatDate(dev.lastSeen)}
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${(profile.ipAddresses || []).length > 0 ? `
+                                    <div>
+                                        <h3 style="color: #4A90E2; margin-bottom: 15px; font-size: 1.2rem;">🌐 IP Addresses</h3>
+                                        <div style="background: rgba(15, 15, 35, 0.8); padding: 15px; border-radius: 10px;">
+                                            ${profile.ipAddresses.map(ip => `
+                                                <div style="padding: 8px; margin-bottom: 5px; background: rgba(74, 144, 226, 0.1); border-radius: 6px; font-family: monospace; color: #fff;">
+                                                    ${escapeHtml(ip)}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        <!-- Behavior Patterns -->
+                        ${(profile.peakHours && profile.peakHours.length > 0) || (profile.peakDays && profile.peakDays.length > 0) ? `
+                            <div style="background: rgba(15, 15, 35, 0.6); padding: 30px; border-radius: 16px; border: 1px solid rgba(74, 144, 226, 0.2);">
+                                <h2 style="color: #4A90E2; margin-bottom: 20px; font-size: 1.8rem;">📈 Behavior Patterns</h2>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                                    ${profile.peakHours && profile.peakHours.length > 0 ? `
+                                        <div>
+                                            <h3 style="color: #2ecc71; margin-bottom: 15px; font-size: 1.2rem;">🕐 Peak Activity Hours</h3>
+                                            <div style="background: rgba(15, 15, 35, 0.8); padding: 15px; border-radius: 10px;">
+                                                ${profile.peakHours.map(h => `
+                                                    <div style="padding: 10px; margin-bottom: 8px; background: rgba(46, 204, 113, 0.1); border-radius: 6px;">
+                                                        <div style="font-weight: 600; color: #fff;">${h.hour}:00 - ${h.hour + 1}:00</div>
+                                                        <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.7);">${h.count} activit${h.count !== 1 ? 'ies' : 'y'}</div>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                    
+                                    ${profile.peakDays && profile.peakDays.length > 0 ? `
+                                        <div>
+                                            <h3 style="color: #ffc107; margin-bottom: 15px; font-size: 1.2rem;">📅 Peak Activity Days</h3>
+                                            <div style="background: rgba(15, 15, 35, 0.8); padding: 15px; border-radius: 10px;">
+                                                ${profile.peakDays.map(d => `
+                                                    <div style="padding: 10px; margin-bottom: 8px; background: rgba(255, 193, 7, 0.1); border-radius: 6px;">
+                                                        <div style="font-weight: 600; color: #fff;">${d.dayName}</div>
+                                                        <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.7);">${d.count} activit${d.count !== 1 ? 'ies' : 'y'}</div>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Recent Activity -->
+                        ${logs.length > 0 ? `
+                            <div style="background: rgba(15, 15, 35, 0.6); padding: 30px; border-radius: 16px; border: 1px solid rgba(74, 144, 226, 0.2);">
+                                <h2 style="color: #4A90E2; margin-bottom: 20px; font-size: 1.8rem;">📋 Recent Activity (Last ${logs.length} entries)</h2>
+                                <div style="max-height: 600px; overflow-y: auto;">
+                                    ${logs.slice(0, 50).map(log => `
+                                        <div style="padding: 15px; margin-bottom: 10px; background: rgba(15, 15, 35, 0.8); border-radius: 8px; border-left: 3px solid #4A90E2;">
+                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                                <span style="font-weight: 600; color: #4A90E2;">${log.dataType || 'Unknown'}</span>
+                                                <span style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.7);">${formatDate(log.timestamp)}</span>
+                                            </div>
+                                            ${log.data && Object.keys(log.data).length > 0 ? `
+                                                <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.8);">
+                                                    ${JSON.stringify(log.data).substring(0, 200)}${JSON.stringify(log.data).length > 200 ? '...' : ''}
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                document.getElementById('userProfileContainer').innerHTML = html;
+                showStatus(`✅ Loaded profile for ${email}`, 'success');
+            } catch (error) {
+                console.error('Error loading user profile:', error);
+                document.getElementById('userProfileContainer').innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #f44336;">
+                        <div style="font-size: 2rem; margin-bottom: 15px;">❌</div>
+                        <div style="font-size: 1.2rem; margin-bottom: 10px;">Error loading user profile</div>
+                        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">${escapeHtml(error.message)}</div>
+                    </div>
+                `;
+                showStatus(`❌ Error: ${error.message}`, 'error');
+            }
         }
         
         // Logout function

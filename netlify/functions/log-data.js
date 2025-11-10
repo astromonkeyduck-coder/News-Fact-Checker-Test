@@ -246,9 +246,15 @@ async function logData(dataType, data, event = null) {
     if (data.userName && data.userName !== 'Anonymous') userName = data.userName.trim();
     if (data.firstName && !userName) userName = data.firstName.trim();
     
-    // If no email found in data, try to look it up from previous logs by IP
-    // BUT: Only for certain data types and only if very recent (last 2 hours) to avoid cross-device mismatches
+    // Track if email was provided directly or inferred
+    let identitySource = userEmail ? 'provided' : null;
+    
+    // If no email found in data, try to look it up from previous logs by IP + User Agent
+    // BUT: Only for certain data types and only if very recent (last 1 hour) to avoid cross-device mismatches
+    // Use BOTH IP and User Agent to reduce false matches (multiple users on same network)
     const allowIPLookup = ['ai-chat', 'tip-submission'].includes(dataType); // Only for chat and tips, not image generation
+    const userAgent = metadata?.userAgent || "unknown";
+    
     if (!userEmail && allowIPLookup && ip && ip !== "unknown" && !ip.startsWith("127.") && !ip.startsWith("192.168.")) {
       try {
         const store = getStore({
@@ -257,57 +263,76 @@ async function logData(dataType, data, event = null) {
           token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
         });
         
-        // Only look in the last 2 hours to avoid cross-device/user mismatches
+        // Only look in the last 1 hour (stricter than before) to avoid cross-device/user mismatches
         const now = new Date();
-        const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+        const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
         
-        // Check today and yesterday (in case of timezone issues)
-        const datesToCheck = [
-          now.toISOString().split('T')[0],
-          new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-        ];
+        // Check today only (more recent = more accurate)
+        const dateKey = now.toISOString().split('T')[0];
+        const logsKey = `logs-${dateKey}`;
         
-        let foundEmails = new Map(); // Track how many times each email appears
+        let foundEmails = new Map(); // Track how many times each email appears with matching fingerprint
         
-        for (const dateKey of datesToCheck) {
-          const logsKey = `logs-${dateKey}`;
-          
-          try {
-            const existing = await store.get(logsKey, { type: "json" });
-            if (existing && Array.isArray(existing)) {
-              // Find logs with same IP that have an email AND are within last 2 hours
-              existing.forEach(log => {
-                const logTime = new Date(log.timestamp);
-                if (
-                  log.ip === ip && 
-                  log.userEmail && 
-                  log.userEmail !== 'Unknown' &&
-                  log.userEmail !== 'anonymous' &&
-                  log.userEmail.includes('@') &&
-                  logTime >= twoHoursAgo
-                ) {
-                  const email = log.userEmail.toLowerCase().trim();
-                  foundEmails.set(email, (foundEmails.get(email) || 0) + 1);
-                }
-              });
-            }
-          } catch (e) {
-            // Continue to next date
-            continue;
+        try {
+          const existing = await store.get(logsKey, { type: "json" });
+          if (existing && Array.isArray(existing)) {
+            // Find logs with same IP AND similar user agent that have an email AND are within last 1 hour
+            existing.forEach(log => {
+              const logTime = new Date(log.timestamp);
+              const logUserAgent = log.metadata?.userAgent || "unknown";
+              
+              // Check if IP matches
+              const ipMatches = log.ip === ip;
+              
+              // Check if user agent matches (exact match or very similar - same browser/OS)
+              // Extract browser/OS signature from user agent (first 50 chars usually enough)
+              const logUASig = logUserAgent.substring(0, 50).toLowerCase();
+              const currentUASig = userAgent.substring(0, 50).toLowerCase();
+              const userAgentMatches = logUASig === currentUASig || 
+                (logUASig.includes('chrome') && currentUASig.includes('chrome')) ||
+                (logUASig.includes('firefox') && currentUASig.includes('firefox')) ||
+                (logUASig.includes('safari') && currentUASig.includes('safari') && !logUASig.includes('chrome') && !currentUASig.includes('chrome'));
+              
+              if (
+                ipMatches && 
+                userAgentMatches && // Require BOTH IP and User Agent match
+                log.userEmail && 
+                log.userEmail !== 'Unknown' &&
+                log.userEmail !== 'anonymous' &&
+                log.userEmail.includes('@') &&
+                logTime >= oneHourAgo &&
+                (log.identitySource === 'provided' || !log.identitySource) // Only trust emails that were provided, not inferred
+              ) {
+                const email = log.userEmail.toLowerCase().trim();
+                foundEmails.set(email, (foundEmails.get(email) || 0) + 1);
+              }
+            });
           }
+        } catch (e) {
+          // Continue without email
+          console.error("[Data Log] Error reading logs for lookup:", e);
         }
         
-        // Only use email if it appears at least 2 times (more confidence it's the same user)
+        // Only use email if it appears at least 3 times (more confidence it's the same user)
+        // AND if there's only one email candidate (if multiple emails match, don't guess)
         if (foundEmails.size > 0) {
           const sortedEmails = Array.from(foundEmails.entries())
             .sort((a, b) => b[1] - a[1]); // Sort by count
           
           const mostCommonEmail = sortedEmails[0];
-          if (mostCommonEmail[1] >= 2) { // Appears at least 2 times
+          
+          // Stricter requirements:
+          // 1. Must appear at least 3 times
+          // 2. Must be the ONLY email found (or at least 2x more common than second place)
+          const isConfident = mostCommonEmail[1] >= 3 && 
+            (sortedEmails.length === 1 || (sortedEmails.length > 1 && mostCommonEmail[1] >= sortedEmails[1][1] * 2));
+          
+          if (isConfident) {
             userEmail = mostCommonEmail[0];
-            console.log(`[Data Log] Found email from recent logs (${mostCommonEmail[1]} occurrences): ${userEmail} (IP: ${ip})`);
+            identitySource = 'inferred';
+            console.log(`[Data Log] Inferred email from recent logs (${mostCommonEmail[1]} occurrences, IP+UA match): ${userEmail} (IP: ${ip.substring(0, 8)}...)`);
           } else {
-            console.log(`[Data Log] Email found but only ${mostCommonEmail[1]} occurrence(s) - not confident enough to use (IP: ${ip})`);
+            console.log(`[Data Log] Email found but not confident enough (${mostCommonEmail[1]} occurrences, ${sortedEmails.length} candidates) - not using (IP: ${ip.substring(0, 8)}...)`);
           }
         }
       } catch (lookupErr) {
@@ -338,6 +363,7 @@ async function logData(dataType, data, event = null) {
       location: location,
       userEmail: userEmail,
       userName: userName,
+      identitySource: identitySource, // 'provided', 'inferred', or null
       ...metadata,
       data,
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -552,7 +578,7 @@ This is an automated notification from your website.`,
           contentType: "application/json",
         });
         
-        // Also update user profile with latest info
+        // Also update comprehensive user profile with latest info
         const userProfileKey = `${userKey}-profile`;
         let userProfile = {
           email: userEmail,
@@ -561,17 +587,230 @@ This is an automated notification from your website.`,
           lastSeen: new Date().toISOString(),
           totalActivities: userLogs.length,
           location: location,
+          // Comprehensive tracking
+          identitySource: identitySource,
+          ipAddresses: [],
+          userAgents: [],
+          locations: [],
+          pageVisits: [],
+          entryPages: [],
+          exitPages: [],
+          referrers: [],
+          activityTypes: {},
+          sessions: [],
+          devices: [],
+          languages: [],
+          timePatterns: {},
+          // Detailed stats
+          pageViewCount: 0,
+          aiChatCount: 0,
+          imageGenerationCount: 0,
+          gameScoreCount: 0,
+          commentCount: 0,
+          newsletterSignupCount: 0,
+          formSubmitCount: 0,
+          totalTimeOnSite: 0,
+          averageTimeOnPage: 0,
         };
         
-        // Try to get existing profile to preserve firstSeen
+        // Try to get existing profile to preserve data
         try {
           const existing = await store.get(userProfileKey, { type: "json" });
           if (existing) {
             userProfile.firstSeen = existing.firstSeen || userProfile.firstSeen;
             userProfile.name = userName || existing.name || 'Unknown';
+            userProfile.ipAddresses = existing.ipAddresses || [];
+            userProfile.userAgents = existing.userAgents || [];
+            userProfile.locations = existing.locations || [];
+            userProfile.pageVisits = existing.pageVisits || [];
+            userProfile.entryPages = existing.entryPages || [];
+            userProfile.exitPages = existing.exitPages || [];
+            userProfile.referrers = existing.referrers || [];
+            userProfile.activityTypes = existing.activityTypes || {};
+            userProfile.sessions = existing.sessions || [];
+            userProfile.devices = existing.devices || [];
+            userProfile.languages = existing.languages || [];
+            userProfile.timePatterns = existing.timePatterns || {};
+            userProfile.pageViewCount = existing.pageViewCount || 0;
+            userProfile.aiChatCount = existing.aiChatCount || 0;
+            userProfile.imageGenerationCount = existing.imageGenerationCount || 0;
+            userProfile.gameScoreCount = existing.gameScoreCount || 0;
+            userProfile.commentCount = existing.commentCount || 0;
+            userProfile.newsletterSignupCount = existing.newsletterSignupCount || 0;
+            userProfile.formSubmitCount = existing.formSubmitCount || 0;
+            userProfile.totalTimeOnSite = existing.totalTimeOnSite || 0;
+            userProfile.averageTimeOnPage = existing.averageTimeOnPage || 0;
           }
         } catch (e) {
           // New user
+        }
+        
+        // Update comprehensive profile data from current log entry
+        const now = new Date();
+        const hour = now.getHours();
+        const dayOfWeek = now.getDay(); // 0 = Sunday
+        
+        // Track IP addresses (unique)
+        if (ip && ip !== "unknown" && !userProfile.ipAddresses.includes(ip)) {
+          userProfile.ipAddresses.push(ip);
+        }
+        
+        // Track user agents (unique)
+        const ua = metadata?.userAgent || "unknown";
+        if (ua !== "unknown" && !userProfile.userAgents.some(u => u.agent === ua)) {
+          userProfile.userAgents.push({
+            agent: ua,
+            firstSeen: new Date().toISOString(),
+            lastSeen: new Date().toISOString(),
+          });
+        } else if (ua !== "unknown") {
+          const uaIndex = userProfile.userAgents.findIndex(u => u.agent === ua);
+          if (uaIndex >= 0) {
+            userProfile.userAgents[uaIndex].lastSeen = new Date().toISOString();
+          }
+        }
+        
+        // Track locations (unique)
+        if (location && location.city && location.city !== 'Unknown') {
+          const locKey = `${location.city}-${location.region || ''}-${location.country || ''}`;
+          if (!userProfile.locations.some(l => 
+            l.city === location.city && 
+            l.region === (location.region || '') && 
+            l.country === (location.country || '')
+          )) {
+            userProfile.locations.push({
+              ...location,
+              firstSeen: new Date().toISOString(),
+              lastSeen: new Date().toISOString(),
+            });
+          } else {
+            const locIndex = userProfile.locations.findIndex(l => 
+              l.city === location.city && 
+              l.region === (location.region || '') && 
+              l.country === (location.country || '')
+            );
+            if (locIndex >= 0) {
+              userProfile.locations[locIndex].lastSeen = new Date().toISOString();
+            }
+          }
+        }
+        
+        // Track page navigation
+        if (dataType === 'page-view' && data.path) {
+          const pagePath = data.path || '/';
+          userProfile.pageVisits.push({
+            path: pagePath,
+            timestamp: new Date().toISOString(),
+            referrer: data.referrer || metadata?.referer || 'direct',
+            timeOnPage: data.timeOnPage || 0,
+          });
+          
+          // Track entry pages (first visit to a page)
+          if (!userProfile.entryPages.some(e => e.path === pagePath)) {
+            userProfile.entryPages.push({
+              path: pagePath,
+              timestamp: new Date().toISOString(),
+              referrer: data.referrer || metadata?.referer || 'direct',
+            });
+          }
+          
+          // Track referrers
+          const referrer = data.referrer || metadata?.referer || 'direct';
+          if (referrer !== 'direct' && referrer !== 'unknown') {
+            if (!userProfile.referrers.some(r => r.url === referrer)) {
+              userProfile.referrers.push({
+                url: referrer,
+                firstSeen: new Date().toISOString(),
+                lastSeen: new Date().toISOString(),
+                count: 1,
+              });
+            } else {
+              const refIndex = userProfile.referrers.findIndex(r => r.url === referrer);
+              if (refIndex >= 0) {
+                userProfile.referrers[refIndex].lastSeen = new Date().toISOString();
+                userProfile.referrers[refIndex].count = (userProfile.referrers[refIndex].count || 0) + 1;
+              }
+            }
+          }
+          
+          userProfile.pageViewCount = (userProfile.pageViewCount || 0) + 1;
+          
+          // Track time on page
+          if (data.timeOnPage) {
+            const totalTime = (userProfile.totalTimeOnSite || 0) + (data.timeOnPage || 0);
+            userProfile.totalTimeOnSite = totalTime;
+            userProfile.averageTimeOnPage = totalTime / userProfile.pageViewCount;
+          }
+        }
+        
+        // Track exit pages
+        if (dataType === 'page-exit' && data.path) {
+          userProfile.exitPages.push({
+            path: data.path,
+            timestamp: new Date().toISOString(),
+            scrollDepth: data.maxScrollDepth || 0,
+            timeOnPage: data.timeOnPage || 0,
+          });
+        }
+        
+        // Track activity types
+        userProfile.activityTypes[dataType] = (userProfile.activityTypes[dataType] || 0) + 1;
+        
+        // Track specific activity counts
+        if (dataType === 'ai-chat') userProfile.aiChatCount = (userProfile.aiChatCount || 0) + 1;
+        if (dataType === 'image-generation') userProfile.imageGenerationCount = (userProfile.imageGenerationCount || 0) + 1;
+        if (dataType === 'game-score') userProfile.gameScoreCount = (userProfile.gameScoreCount || 0) + 1;
+        if (dataType === 'comment') userProfile.commentCount = (userProfile.commentCount || 0) + 1;
+        if (dataType === 'newsletter-signup') userProfile.newsletterSignupCount = (userProfile.newsletterSignupCount || 0) + 1;
+        if (dataType === 'form-submit' || dataType === 'tip-submission') userProfile.formSubmitCount = (userProfile.formSubmitCount || 0) + 1;
+        
+        // Track devices (from user agent)
+        if (ua !== "unknown") {
+          const deviceInfo = {
+            userAgent: ua,
+            browser: ua.includes('Chrome') ? 'Chrome' : ua.includes('Firefox') ? 'Firefox' : ua.includes('Safari') ? 'Safari' : 'Unknown',
+            os: ua.includes('Windows') ? 'Windows' : ua.includes('Mac') ? 'macOS' : ua.includes('Linux') ? 'Linux' : ua.includes('Android') ? 'Android' : ua.includes('iOS') ? 'iOS' : 'Unknown',
+            mobile: /Mobile|Android|iPhone|iPad/.test(ua),
+          };
+          
+          if (!userProfile.devices.some(d => d.userAgent === ua)) {
+            userProfile.devices.push({
+              ...deviceInfo,
+              firstSeen: new Date().toISOString(),
+              lastSeen: new Date().toISOString(),
+            });
+          } else {
+            const devIndex = userProfile.devices.findIndex(d => d.userAgent === ua);
+            if (devIndex >= 0) {
+              userProfile.devices[devIndex].lastSeen = new Date().toISOString();
+            }
+          }
+        }
+        
+        // Track languages
+        const lang = metadata?.acceptLanguage || "unknown";
+        if (lang !== "unknown") {
+          const primaryLang = lang.split(',')[0].split(';')[0].trim();
+          if (!userProfile.languages.includes(primaryLang)) {
+            userProfile.languages.push(primaryLang);
+          }
+        }
+        
+        // Track time patterns (hour of day, day of week)
+        if (!userProfile.timePatterns.hours) userProfile.timePatterns.hours = {};
+        if (!userProfile.timePatterns.days) userProfile.timePatterns.days = {};
+        userProfile.timePatterns.hours[hour] = (userProfile.timePatterns.hours[hour] || 0) + 1;
+        userProfile.timePatterns.days[dayOfWeek] = (userProfile.timePatterns.days[dayOfWeek] || 0) + 1;
+        
+        // Keep arrays from growing too large (keep last 1000 entries)
+        if (userProfile.pageVisits.length > 1000) {
+          userProfile.pageVisits = userProfile.pageVisits.slice(-1000);
+        }
+        if (userProfile.entryPages.length > 100) {
+          userProfile.entryPages = userProfile.entryPages.slice(-100);
+        }
+        if (userProfile.exitPages.length > 100) {
+          userProfile.exitPages = userProfile.exitPages.slice(-100);
         }
         
         await store.set(userProfileKey, JSON.stringify(userProfile), {
