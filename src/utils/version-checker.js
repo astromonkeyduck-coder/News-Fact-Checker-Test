@@ -203,7 +203,7 @@
       console.log('[Version Checker] Stored version:', storedVersion);
       console.log('[Version Checker] Notification shown:', notificationShown);
 
-      // If no stored version, store current and return
+      // If no stored version, store current and return (first time visitor)
       if (!storedVersion) {
         console.log('[Version Checker] No stored version, storing current version');
         localStorage.setItem(STORAGE_KEY, currentPageVersion);
@@ -215,25 +215,50 @@
       
       if (latestVersion) {
         console.log('[Version Checker] Latest version from server:', latestVersion);
+        console.log('[Version Checker] Current page version:', currentPageVersion);
         
-        // Check if server version is different from stored version
+        // First, check if the current page version matches the server version
+        // If they match, user is on the latest version - update stored version
+        if (currentPageVersion === latestVersion) {
+          console.log('[Version Checker] ✅ You are on the latest version');
+          // Update stored version to match (in case it was out of sync)
+          if (storedVersion !== latestVersion) {
+            localStorage.setItem(STORAGE_KEY, latestVersion);
+            console.log('[Version Checker] Updated stored version to match');
+          }
+          return;
+        }
+        
+        // If current page version doesn't match server, but stored version does match server,
+        // it means the page is cached but user already knows about the update
+        if (storedVersion === latestVersion && currentPageVersion !== latestVersion) {
+          console.log('[Version Checker] Page is cached but you already know about the update');
+          // Don't show notification again if user already dismissed it
+          return;
+        }
+        
+        // Only show notification if:
+        // 1. Server version is different from stored version (new update available)
+        // 2. Notification hasn't been shown yet
         if (latestVersion !== storedVersion && !notificationShown) {
           console.log('[Version Checker] ✅ New version detected on server!');
-          console.log('[Version Checker] Your version:', storedVersion);
-          console.log('[Version Checker] Latest version:', latestVersion);
+          console.log('[Version Checker] Your stored version:', storedVersion);
+          console.log('[Version Checker] Latest version on server:', latestVersion);
           createNotificationBanner();
         } else if (latestVersion === storedVersion) {
-          console.log('[Version Checker] You are on the latest version');
+          console.log('[Version Checker] Stored version matches server - you are up to date');
         } else if (notificationShown) {
           console.log('[Version Checker] Notification already shown');
         }
       } else {
-        // Fallback: compare current page version with stored
+        // Fallback: if we can't fetch from server, compare current page with stored
+        // Only show if they differ AND we haven't shown notification yet
         if (currentPageVersion !== storedVersion && !notificationShown) {
-          console.log('[Version Checker] ✅ Version mismatch detected!');
+          console.log('[Version Checker] ⚠️ Version mismatch (fallback mode)');
           console.log('[Version Checker] Stored version:', storedVersion);
           console.log('[Version Checker] Current page version:', currentPageVersion);
-          createNotificationBanner();
+          // Don't show notification in fallback mode - might be false positive
+          console.log('[Version Checker] Skipping notification in fallback mode');
         }
       }
     } catch (error) {
