@@ -311,9 +311,11 @@ The Noteworthy News Team`,
       const ip = getClientIP(event);
       const location = await getLocationFromIP(ip).catch(() => null);
       
+      // Pass email in data so it can be extracted by logData
       const logResult = await logData("tip-submission", {
         name: tipName,
         email: tipEmail,
+        userEmail: email && email.includes('@') ? email.toLowerCase().trim() : null, // Also pass as userEmail for lookup
         tip: tip,
         isAnonymous: isAnonymous,
         tipLength: tip.length,
