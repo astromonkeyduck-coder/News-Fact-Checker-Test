@@ -247,7 +247,9 @@ async function logData(dataType, data, event = null) {
     if (data.firstName && !userName) userName = data.firstName.trim();
     
     // If no email found in data, try to look it up from previous logs by IP
-    if (!userEmail && ip && ip !== "unknown" && !ip.startsWith("127.") && !ip.startsWith("192.168.")) {
+    // BUT: Only for certain data types and only if very recent (last 2 hours) to avoid cross-device mismatches
+    const allowIPLookup = ['ai-chat', 'tip-submission'].includes(dataType); // Only for chat and tips, not image generation
+    if (!userEmail && allowIPLookup && ip && ip !== "unknown" && !ip.startsWith("127.") && !ip.startsWith("192.168.")) {
       try {
         const store = getStore({
           name: "analytics-data",
@@ -255,41 +257,57 @@ async function logData(dataType, data, event = null) {
           token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
         });
         
-        // Look up recent logs from the same IP (last 7 days)
-        const today = new Date();
-        const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+        // Only look in the last 2 hours to avoid cross-device/user mismatches
+        const now = new Date();
+        const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
         
-        // Check recent dates
-        for (let i = 0; i < 7; i++) {
-          const checkDate = new Date(today.getTime() - i * 24 * 60 * 60 * 1000);
-          const dateKey = checkDate.toISOString().split('T')[0];
+        // Check today and yesterday (in case of timezone issues)
+        const datesToCheck = [
+          now.toISOString().split('T')[0],
+          new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        ];
+        
+        let foundEmails = new Map(); // Track how many times each email appears
+        
+        for (const dateKey of datesToCheck) {
           const logsKey = `logs-${dateKey}`;
           
           try {
             const existing = await store.get(logsKey, { type: "json" });
             if (existing && Array.isArray(existing)) {
-              // Find logs with same IP that have an email
-              const matchingLog = existing.find(log => 
-                log.ip === ip && 
-                log.userEmail && 
-                log.userEmail !== 'Unknown' &&
-                log.userEmail !== 'anonymous' &&
-                log.userEmail.includes('@')
-              );
-              
-              if (matchingLog && matchingLog.userEmail) {
-                userEmail = matchingLog.userEmail.toLowerCase().trim();
-                // Also get name if available
-                if (!userName && matchingLog.userName) {
-                  userName = matchingLog.userName.trim();
+              // Find logs with same IP that have an email AND are within last 2 hours
+              existing.forEach(log => {
+                const logTime = new Date(log.timestamp);
+                if (
+                  log.ip === ip && 
+                  log.userEmail && 
+                  log.userEmail !== 'Unknown' &&
+                  log.userEmail !== 'anonymous' &&
+                  log.userEmail.includes('@') &&
+                  logTime >= twoHoursAgo
+                ) {
+                  const email = log.userEmail.toLowerCase().trim();
+                  foundEmails.set(email, (foundEmails.get(email) || 0) + 1);
                 }
-                console.log(`[Data Log] Found email from previous log: ${userEmail} (IP: ${ip})`);
-                break; // Found email, stop searching
-              }
+              });
             }
           } catch (e) {
             // Continue to next date
             continue;
+          }
+        }
+        
+        // Only use email if it appears at least 2 times (more confidence it's the same user)
+        if (foundEmails.size > 0) {
+          const sortedEmails = Array.from(foundEmails.entries())
+            .sort((a, b) => b[1] - a[1]); // Sort by count
+          
+          const mostCommonEmail = sortedEmails[0];
+          if (mostCommonEmail[1] >= 2) { // Appears at least 2 times
+            userEmail = mostCommonEmail[0];
+            console.log(`[Data Log] Found email from recent logs (${mostCommonEmail[1]} occurrences): ${userEmail} (IP: ${ip})`);
+          } else {
+            console.log(`[Data Log] Email found but only ${mostCommonEmail[1]} occurrence(s) - not confident enough to use (IP: ${ip})`);
           }
         }
       } catch (lookupErr) {

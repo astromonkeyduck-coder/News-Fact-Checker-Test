@@ -128,42 +128,11 @@ exports.handler = async (event, context) => {
     }
 
     // Get user email from event (if available)
+    // NOTE: We don't do IP-based lookup for image generation to avoid cross-device mismatches
+    // The logData function will handle email extraction from the data itself
     let userEmail = null;
-    try {
-      const { logData, getClientIP } = require("./log-data");
-      const ip = getClientIP(event);
-      
-      // Try to get email from previous logs by IP
-      if (ip && ip !== "unknown" && !ip.startsWith("127.") && !ip.startsWith("192.168.")) {
-        const { getStore } = require("@netlify/blobs");
-        const store = getStore({
-          name: "analytics-data",
-          siteID: process.env.NETLIFY_SITE_ID,
-          token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
-        });
-        
-        const today = new Date().toISOString().split('T')[0];
-        const logsKey = `logs-${today}`;
-        try {
-          const existing = await store.get(logsKey, { type: "json" });
-          if (existing && Array.isArray(existing)) {
-            const matchingLog = existing.find(log => 
-              log.ip === ip && 
-              log.userEmail && 
-              log.userEmail !== 'Unknown' &&
-              log.userEmail.includes('@')
-            );
-            if (matchingLog) {
-              userEmail = matchingLog.userEmail;
-            }
-          }
-        } catch (e) {
-          // Continue without email
-        }
-      }
-    } catch (e) {
-      // Continue without email
-    }
+    // Only extract email if it's explicitly provided in the request
+    // Don't do IP-based lookup for image generation
 
     // Log image generation (non-blocking - don't wait for it)
     try {
