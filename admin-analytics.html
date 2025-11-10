@@ -2754,7 +2754,19 @@
             clicks.forEach(click => {
                 const tag = click.target?.tag || 'unknown';
                 const id = click.target?.id || '';
-                const className = click.target?.className?.split(' ')[0] || '';
+                // Handle className - it might be a string or a DOMTokenList
+                let className = '';
+                if (click.target?.className) {
+                    if (typeof click.target.className === 'string') {
+                        className = click.target.className.split(' ')[0] || '';
+                    } else if (click.target.className.baseVal) {
+                        // SVG className
+                        className = click.target.className.baseVal.split(' ')[0] || '';
+                    } else if (click.target.className.length > 0) {
+                        // DOMTokenList
+                        className = click.target.className[0] || '';
+                    }
+                }
                 const key = `${tag}${id ? '#' + id : ''}${className ? '.' + className : ''}`;
                 elementCounts[key] = (elementCounts[key] || 0) + 1;
             });
@@ -2937,7 +2949,19 @@
             clicks.forEach(click => {
                 const tag = click.target?.tag || 'unknown';
                 const id = click.target?.id || '';
-                const className = click.target?.className?.split(' ')[0] || '';
+                // Handle className - it might be a string or a DOMTokenList
+                let className = '';
+                if (click.target?.className) {
+                    if (typeof click.target.className === 'string') {
+                        className = click.target.className.split(' ')[0] || '';
+                    } else if (click.target.className.baseVal) {
+                        // SVG className
+                        className = click.target.className.baseVal.split(' ')[0] || '';
+                    } else if (click.target.className.length > 0) {
+                        // DOMTokenList
+                        className = click.target.className[0] || '';
+                    }
+                }
                 const key = `${tag}${id ? '#' + id : ''}${className ? '.' + className : ''}`;
                 elementCounts[key] = (elementCounts[key] || 0) + 1;
             });
@@ -3232,6 +3256,13 @@
                 
                 if (!imageUrl) return;
                 
+                // Log the image URL for debugging
+                console.log(`[Image Gallery] Loading image ${index + 1}/${validImages.length}:`, {
+                    url: imageUrl.substring(0, 100) + (imageUrl.length > 100 ? '...' : ''),
+                    fullUrl: imageUrl,
+                    timestamp: timestamp
+                });
+                
                 // Escape imageUrl for use in HTML attributes
                 const escapedImageUrl = imageUrl.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
                 
@@ -3249,19 +3280,81 @@
                 
                 // Use addEventListener instead of inline onclick to avoid escaping issues
                 const img = document.createElement('img');
-                img.src = imageUrl;
-                img.alt = 'AI Generated Image';
-                img.style.cssText = 'width: 100%; height: auto; border-radius: 12px; cursor: pointer;';
-                img.addEventListener('click', () => {
-                    window.open(imageUrl, '_blank');
-                });
-                img.addEventListener('error', function() {
-                    this.style.display = 'none';
-                    const errorDiv = this.nextElementSibling;
-                    if (errorDiv) {
-                        errorDiv.style.display = 'block';
-                    }
-                });
+                
+                // Try to load image with CORS proxy if it's a DALL-E URL (expires after ~1 hour)
+                // DALL-E URLs are from oaidalleapiprodscus.blob.core.windows.net
+                const isDalleUrl = imageUrl.includes('oaidalleapiprodscus.blob.core.windows.net') || 
+                                  imageUrl.includes('dalleproduseast');
+                const imageAge = Date.now() - new Date(log.timestamp).getTime();
+                const hoursOld = imageAge / (1000 * 60 * 60);
+                
+                // If image is older than 1 hour and it's a DALL-E URL, it's likely expired
+                if (isDalleUrl && hoursOld > 1) {
+                    // Show expired message immediately
+                    const expiredDiv = document.createElement('div');
+                    expiredDiv.style.cssText = 'text-align: center; padding: 40px; background: rgba(255, 193, 7, 0.1); border-radius: 12px; color: #ffc107;';
+                    expiredDiv.innerHTML = `
+                        <div style="font-size: 1.1rem; margin-bottom: 10px;">⏰ Image Expired</div>
+                        <div style="font-size: 0.85rem; opacity: 0.8;">DALL-E images expire after ~1 hour</div>
+                        <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 8px;">Generated ${Math.round(hoursOld * 10) / 10} hours ago</div>
+                        <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 5px; word-break: break-all; max-width: 100%;">URL: ${imageUrl.substring(0, 80)}...</div>
+                    `;
+                    const imageWrapper = document.createElement('div');
+                    imageWrapper.style.marginBottom = '15px';
+                    imageWrapper.appendChild(expiredDiv);
+                    imageCard.appendChild(imageWrapper);
+                } else {
+                    // Try to load the image
+                    img.src = imageUrl;
+                    img.alt = 'AI Generated Image';
+                    img.style.cssText = 'width: 100%; height: auto; border-radius: 12px; cursor: pointer;';
+                    img.crossOrigin = 'anonymous'; // Try to allow CORS
+                    img.addEventListener('click', () => {
+                        window.open(imageUrl, '_blank');
+                    });
+                    img.addEventListener('error', function() {
+                        console.error('[Image Gallery] Image failed to load:', {
+                            imageUrl: imageUrl,
+                            timestamp: timestamp,
+                            prompt: prompt.substring(0, 50),
+                            hoursOld: hoursOld.toFixed(2),
+                            isDalleUrl: isDalleUrl
+                        });
+                        this.style.display = 'none';
+                        const errorDiv = this.nextElementSibling;
+                        if (errorDiv) {
+                            errorDiv.style.display = 'block';
+                            // Update error message based on age
+                            if (isDalleUrl && hoursOld > 1) {
+                                errorDiv.innerHTML = `
+                                    <div style="font-size: 1.1rem; margin-bottom: 10px;">⏰ Image Expired</div>
+                                    <div style="font-size: 0.85rem; opacity: 0.8;">DALL-E images expire after ~1 hour</div>
+                                    <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 8px;">Generated ${Math.round(hoursOld * 10) / 10} hours ago</div>
+                                `;
+                            } else {
+                                // Add the URL to the error message for debugging
+                                const urlText = document.createElement('div');
+                                urlText.style.cssText = 'font-size: 0.75rem; color: rgba(255, 193, 7, 0.7); margin-top: 10px; word-break: break-all;';
+                                urlText.textContent = 'URL: ' + imageUrl;
+                                errorDiv.appendChild(urlText);
+                            }
+                        }
+                    });
+                    img.addEventListener('load', function() {
+                        console.log('[Image Gallery] Image loaded successfully:', imageUrl.substring(0, 50) + '...');
+                    });
+                    
+                    const imageWrapper = document.createElement('div');
+                    imageWrapper.style.marginBottom = '15px';
+                    imageWrapper.appendChild(img);
+                    
+                    const errorDiv = document.createElement('div');
+                    errorDiv.style.cssText = 'display: none; text-align: center; padding: 40px; background: rgba(255, 193, 7, 0.1); border-radius: 12px; color: #ffc107;';
+                    errorDiv.textContent = 'Image failed to load';
+                    imageWrapper.appendChild(errorDiv);
+                    
+                    imageCard.appendChild(imageWrapper);
+                }
                 
                 const imageWrapper = document.createElement('div');
                 imageWrapper.style.marginBottom = '15px';
