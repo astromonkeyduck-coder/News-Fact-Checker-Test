@@ -123,6 +123,12 @@
             if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
                 backgroundMusicLoop.pause();
             }
+            // Also pause subscription sound if it's playing
+            if (window.subscriptionSound && !window.subscriptionSound.paused) {
+                window.subscriptionSound.pause();
+                // Clean up reference
+                window.subscriptionSound = null;
+            }
         }
         
         // Function to play a specific track at a specific time
@@ -497,7 +503,8 @@
         window.toggleGlobalMusic = function() {
             const isPlaying = (!backgroundMusic.paused) || 
                              (backgroundMusicSecond && !backgroundMusicSecond.paused) || 
-                             (backgroundMusicLoop && !backgroundMusicLoop.paused);
+                             (backgroundMusicLoop && !backgroundMusicLoop.paused) ||
+                             (window.subscriptionSound && !window.subscriptionSound.paused);
             
             if (isPlaying) {
                 pauseAllTracks();
@@ -530,7 +537,8 @@
             return {
                 isPlaying: (!backgroundMusic.paused) || 
                           (backgroundMusicSecond && !backgroundMusicSecond.paused) || 
-                          (backgroundMusicLoop && !backgroundMusicLoop.paused),
+                          (backgroundMusicLoop && !backgroundMusicLoop.paused) ||
+                          (window.subscriptionSound && !window.subscriptionSound.paused),
                 enabled: localStorage.getItem('globalMusicEnabled') !== 'false'
             };
         };

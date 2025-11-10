@@ -6868,6 +6868,9 @@ function initNewsletterSubscription() {
         const subscriptionSound = new Audio('Subscribedv1.mp3');
         subscriptionSound.volume = 0.7;
         
+        // Store globally so it can be stopped by the music system
+        window.subscriptionSound = subscriptionSound;
+        
         subscriptionSound.addEventListener('loadeddata', function() {
             console.log('[Subscription Sound] Audio loaded and ready to play');
         });
@@ -6894,6 +6897,10 @@ function initNewsletterSubscription() {
                     console.log('Could not resume music:', err);
                 });
             }
+            // Clean up global reference
+            if (window.subscriptionSound === subscriptionSound) {
+                window.subscriptionSound = null;
+            }
             subscriptionSound.remove(); // Clean up
         });
         
@@ -6910,6 +6917,10 @@ function initNewsletterSubscription() {
                 currentTrack.play().catch(function(e) {
                     console.log('Could not resume music:', e);
                 });
+            }
+            // Clean up global reference
+            if (window.subscriptionSound === subscriptionSound) {
+                window.subscriptionSound = null;
             }
         });
         

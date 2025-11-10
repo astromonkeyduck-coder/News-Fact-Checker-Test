@@ -196,6 +196,12 @@ exports.handler = async (event, context) => {
     } catch (blobErr) {
       console.error("[Generate Image] ❌ Error storing image in Netlify Blobs:", blobErr);
       console.error("[Generate Image] Error details:", blobErr.message);
+      console.error("[Generate Image] Error stack:", blobErr.stack);
+      console.error("[Generate Image] Blob storage config:", {
+        hasSiteID: !!process.env.NETLIFY_SITE_ID,
+        hasToken: !!process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+        hasEventHeaders: !!(event.headers['x-nf-site-id'] && event.headers['x-nf-token'])
+      });
       // Don't fail the request if blob storage fails - we still have the original URL
     }
 
@@ -218,6 +224,7 @@ exports.handler = async (event, context) => {
         revisedPrompt: revisedPrompt,
         imageUrl: imageUrl,
         storedImageKey: storedImageKey,
+        storedImageUrl: storedImageUrl,
         size: size,
         quality: quality,
         style: style,
@@ -230,10 +237,15 @@ exports.handler = async (event, context) => {
       } else {
         console.error("[Generate Image] ❌ Logging failed:", logResult ? logResult.error : "No result returned");
         console.error("[Generate Image] Full result:", JSON.stringify(logResult, null, 2));
+        // If logging was skipped (not an error), that's okay
+        if (logResult && logResult.skipped) {
+          console.log("[Generate Image] ⚠️ Logging was skipped (this is okay):", logResult.reason);
+        }
       }
     } catch (err) {
       console.error("[Generate Image] ❌ Error logging data:", err);
       console.error("[Generate Image] Error stack:", err.stack);
+      console.error("[Generate Image] Error name:", err.name);
       // Don't fail the request if logging fails
     }
 
@@ -372,13 +384,34 @@ This is an automated notification from your website.`,
     };
   } catch (e) {
     console.error("Image generation function error:", e);
+    console.error("Error stack:", e.stack);
+    console.error("Error name:", e.name);
+    console.error("Error message:", e.message);
+    
+    // Provide more detailed error information
+    let errorDetails = {
+      error: "Internal server error",
+      message: e.message || "An unexpected error occurred",
+    };
+    
+    // Add more context if available
+    if (e.stack) {
+      errorDetails.stack = e.stack.split('\n').slice(0, 5).join('\n'); // First 5 lines of stack
+    }
+    
+    // Check for common issues
+    if (e.message && e.message.includes('fetch')) {
+      errorDetails.hint = "Network error - check internet connection or API endpoint";
+    } else if (e.message && e.message.includes('require')) {
+      errorDetails.hint = "Module loading error - check dependencies";
+    } else if (e.message && e.message.includes('Blob')) {
+      errorDetails.hint = "Blob storage error - check NETLIFY_SITE_ID and NETLIFY_BLOB_READ_WRITE_TOKEN";
+    }
+    
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ 
-        error: "Internal server error",
-        message: e.message || "An unexpected error occurred"
-      }),
+      body: JSON.stringify(errorDetails),
     };
   }
 };
