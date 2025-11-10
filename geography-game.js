@@ -1993,8 +1993,14 @@ class GeographyGame {
 document.addEventListener('DOMContentLoaded', () => {
     window.geoGame = new GeographyGame();
     
-    // The game's loadWorldMap() already calls loadSVGMap(), so we don't need to call it again here
-    // The standalone loadSVGMap() function will be called by the class method if needed
+    // Call the standalone loadSVGMap() function to load the actual SVG file
+    // This will replace any placeholder created by the class
+    // Use a small delay to ensure the game instance is fully initialized
+    setTimeout(() => {
+        if (typeof loadSVGMap === 'function') {
+            loadSVGMap();
+        }
+    }, 50);
 });
 
 function loadSVGMap() {
