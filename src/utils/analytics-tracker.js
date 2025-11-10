@@ -28,7 +28,8 @@ class AnalyticsTracker {
   }
 
   generateFingerprint() {
-    // Create a simple fingerprint from available browser data
+    // Create a comprehensive fingerprint from available browser data
+    // This is more unique than IP+UA and helps identify the same device/browser
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     ctx.textBaseline = 'top';
@@ -41,17 +42,39 @@ class AnalyticsTracker {
         height: screen.height,
         colorDepth: screen.colorDepth,
         pixelDepth: screen.pixelDepth,
+        availWidth: screen.availWidth,
+        availHeight: screen.availHeight,
       },
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      timezoneOffset: new Date().getTimezoneOffset(),
       language: navigator.language,
+      languages: navigator.languages ? navigator.languages.join(',') : navigator.language,
       platform: navigator.platform,
+      hardwareConcurrency: navigator.hardwareConcurrency || 0,
+      maxTouchPoints: navigator.maxTouchPoints || 0,
       cookieEnabled: navigator.cookieEnabled,
       doNotTrack: navigator.doNotTrack,
       canvasHash: canvas.toDataURL().substring(0, 100), // First 100 chars of canvas hash
       userAgent: navigator.userAgent,
+      vendor: navigator.vendor || '',
+      // Add viewport info for more uniqueness
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      },
     };
     
-    return btoa(JSON.stringify(fingerprint)).substring(0, 32);
+    // Create a hash from the fingerprint data
+    const fingerprintString = JSON.stringify(fingerprint);
+    // Use a simple hash function
+    let hash = 0;
+    for (let i = 0; i < fingerprintString.length; i++) {
+      const char = fingerprintString.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    // Return a base64-like string from the hash
+    return Math.abs(hash).toString(36) + btoa(fingerprintString).substring(0, 20);
   }
 
   async log(dataType, data) {
@@ -194,17 +217,18 @@ class AnalyticsTracker {
     // Mouse movement tracking DISABLED - not needed for click heatmap
     // Removed to reduce noise and focus on click data
 
-    // Track errors
-    window.addEventListener('error', (e) => {
-      this.trackError(e);
-    });
+    // Don't track JavaScript errors - they're too noisy and not useful
+    // Google ads and other third-party scripts generate lots of errors we don't care about
+    // window.addEventListener('error', (e) => {
+    //   this.trackError(e);
+    // });
 
-    // Track console errors
-    const originalConsoleError = console.error;
-    console.error = (...args) => {
-      this.trackConsoleError(args);
-      originalConsoleError.apply(console, args);
-    };
+    // Don't track console errors - they're too noisy
+    // const originalConsoleError = console.error;
+    // console.error = (...args) => {
+    //   this.trackConsoleError(args);
+    //   originalConsoleError.apply(console, args);
+    // };
   }
 
   trackPageView() {

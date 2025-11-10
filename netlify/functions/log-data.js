@@ -249,13 +249,15 @@ async function logData(dataType, data, event = null) {
     // Track if email was provided directly or inferred
     let identitySource = userEmail ? 'provided' : null;
     
-    // If no email found in data, try to look it up from previous logs by IP + User Agent
-    // BUT: Only for certain data types and only if very recent (last 1 hour) to avoid cross-device mismatches
-    // Use BOTH IP and User Agent to reduce false matches (multiple users on same network)
-    const allowIPLookup = ['ai-chat', 'tip-submission'].includes(dataType); // Only for chat and tips, not image generation
-    const userAgent = metadata?.userAgent || "unknown";
+    // Get fingerprint from data (more accurate than IP+UA for identifying same device/browser)
+    const fingerprint = data.fingerprint || data.sessionId || null;
     
-    if (!userEmail && allowIPLookup && ip && ip !== "unknown" && !ip.startsWith("127.") && !ip.startsWith("192.168.")) {
+    // If no email found in data, try to look it up from previous logs by FINGERPRINT
+    // Fingerprint is much more accurate than IP+UA because it's unique to the device/browser combination
+    // Only for certain data types and only if very recent (last 2 hours) to avoid stale matches
+    const allowFingerprintLookup = ['ai-chat', 'tip-submission'].includes(dataType); // Only for chat and tips
+    
+    if (!userEmail && allowFingerprintLookup && fingerprint) {
       try {
         const store = getStore({
           name: "analytics-data",
@@ -263,57 +265,50 @@ async function logData(dataType, data, event = null) {
           token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
         });
         
-        // Only look in the last 1 hour (stricter than before) to avoid cross-device/user mismatches
+        // Look in the last 2 hours (fingerprint is more reliable, so we can go back further)
         const now = new Date();
-        const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+        const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
         
-        // Check today only (more recent = more accurate)
-        const dateKey = now.toISOString().split('T')[0];
-        const logsKey = `logs-${dateKey}`;
+        // Check today and yesterday (in case of timezone issues)
+        const todayKey = now.toISOString().split('T')[0];
+        const yesterdayKey = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const dateKeys = [todayKey, yesterdayKey];
         
         let foundEmails = new Map(); // Track how many times each email appears with matching fingerprint
         
-        try {
-          const existing = await store.get(logsKey, { type: "json" });
-          if (existing && Array.isArray(existing)) {
-            // Find logs with same IP AND similar user agent that have an email AND are within last 1 hour
-            existing.forEach(log => {
-              const logTime = new Date(log.timestamp);
-              const logUserAgent = log.metadata?.userAgent || "unknown";
-              
-              // Check if IP matches
-              const ipMatches = log.ip === ip;
-              
-              // Check if user agent matches (exact match or very similar - same browser/OS)
-              // Extract browser/OS signature from user agent (first 50 chars usually enough)
-              const logUASig = logUserAgent.substring(0, 50).toLowerCase();
-              const currentUASig = userAgent.substring(0, 50).toLowerCase();
-              const userAgentMatches = logUASig === currentUASig || 
-                (logUASig.includes('chrome') && currentUASig.includes('chrome')) ||
-                (logUASig.includes('firefox') && currentUASig.includes('firefox')) ||
-                (logUASig.includes('safari') && currentUASig.includes('safari') && !logUASig.includes('chrome') && !currentUASig.includes('chrome'));
-              
-              if (
-                ipMatches && 
-                userAgentMatches && // Require BOTH IP and User Agent match
-                log.userEmail && 
-                log.userEmail !== 'Unknown' &&
-                log.userEmail !== 'anonymous' &&
-                log.userEmail.includes('@') &&
-                logTime >= oneHourAgo &&
-                (log.identitySource === 'provided' || !log.identitySource) // Only trust emails that were provided, not inferred
-              ) {
-                const email = log.userEmail.toLowerCase().trim();
-                foundEmails.set(email, (foundEmails.get(email) || 0) + 1);
-              }
-            });
+        for (const dateKey of dateKeys) {
+          try {
+            const logsKey = `logs-${dateKey}`;
+            const existing = await store.get(logsKey, { type: "json" });
+            if (existing && Array.isArray(existing)) {
+              // Find logs with EXACT fingerprint match that have an email
+              existing.forEach(log => {
+                const logTime = new Date(log.timestamp);
+                const logFingerprint = log.data?.fingerprint || log.fingerprint || null;
+                
+                // EXACT fingerprint match (much more accurate than IP+UA)
+                if (
+                  logFingerprint && 
+                  logFingerprint === fingerprint && // EXACT match required
+                  log.userEmail && 
+                  log.userEmail !== 'Unknown' &&
+                  log.userEmail !== 'anonymous' &&
+                  log.userEmail.includes('@') &&
+                  logTime >= twoHoursAgo &&
+                  (log.identitySource === 'provided' || !log.identitySource) // Only trust emails that were provided, not inferred
+                ) {
+                  const email = log.userEmail.toLowerCase().trim();
+                  foundEmails.set(email, (foundEmails.get(email) || 0) + 1);
+                }
+              });
+            }
+          } catch (e) {
+            // Continue to next date
+            console.error("[Data Log] Error reading logs for date:", dateKey, e);
           }
-        } catch (e) {
-          // Continue without email
-          console.error("[Data Log] Error reading logs for lookup:", e);
         }
         
-        // Only use email if it appears at least 3 times (more confidence it's the same user)
+        // Only use email if it appears at least 2 times with the SAME fingerprint (high confidence)
         // AND if there's only one email candidate (if multiple emails match, don't guess)
         if (foundEmails.size > 0) {
           const sortedEmails = Array.from(foundEmails.entries())
@@ -321,18 +316,18 @@ async function logData(dataType, data, event = null) {
           
           const mostCommonEmail = sortedEmails[0];
           
-          // Stricter requirements:
-          // 1. Must appear at least 3 times
-          // 2. Must be the ONLY email found (or at least 2x more common than second place)
-          const isConfident = mostCommonEmail[1] >= 3 && 
-            (sortedEmails.length === 1 || (sortedEmails.length > 1 && mostCommonEmail[1] >= sortedEmails[1][1] * 2));
+          // Stricter requirements for fingerprint matching:
+          // 1. Must appear at least 2 times (fingerprint is more reliable, so fewer occurrences needed)
+          // 2. Must be the ONLY email found (if multiple emails match same fingerprint, something is wrong)
+          const isConfident = mostCommonEmail[1] >= 2 && 
+            sortedEmails.length === 1; // Only one email should match the same fingerprint
           
           if (isConfident) {
             userEmail = mostCommonEmail[0];
             identitySource = 'inferred';
-            console.log(`[Data Log] Inferred email from recent logs (${mostCommonEmail[1]} occurrences, IP+UA match): ${userEmail} (IP: ${ip.substring(0, 8)}...)`);
+            console.log(`[Data Log] Inferred email from fingerprint match (${mostCommonEmail[1]} occurrences, exact fingerprint): ${userEmail}`);
           } else {
-            console.log(`[Data Log] Email found but not confident enough (${mostCommonEmail[1]} occurrences, ${sortedEmails.length} candidates) - not using (IP: ${ip.substring(0, 8)}...)`);
+            console.log(`[Data Log] Email found but not confident enough (${mostCommonEmail[1]} occurrences, ${sortedEmails.length} candidates) - not using. Multiple emails with same fingerprint suggests data issue.`);
           }
         }
       } catch (lookupErr) {
@@ -356,6 +351,30 @@ async function logData(dataType, data, event = null) {
       }
     }
 
+    // Skip logging JavaScript errors and Google ads - they're too noisy
+    if (dataType === 'javascript-error' || dataType === 'console-error') {
+      return { success: false, skipped: true, reason: 'JavaScript errors are not logged' };
+    }
+    
+    // Check for Google ads in the data
+    const message = (data.message || '').toLowerCase();
+    const filename = (data.filename || '').toLowerCase();
+    const error = (data.error || '').toLowerCase();
+    const isGoogleAd = 
+      (message.includes('google') && (message.includes('ad') || message.includes('ads') || message.includes('advertisement'))) ||
+      (filename.includes('google') && (filename.includes('ad') || filename.includes('ads'))) ||
+      (error.includes('google') && (error.includes('ad') || error.includes('ads'))) ||
+      message.includes('googlesyndication') ||
+      message.includes('doubleclick') ||
+      message.includes('adservice') ||
+      filename.includes('googlesyndication') ||
+      filename.includes('doubleclick') ||
+      filename.includes('adservice');
+    
+    if (isGoogleAd) {
+      return { success: false, skipped: true, reason: 'Google ads logs are not logged' };
+    }
+    
     // Create log entry
     const logEntry = {
       dataType,
@@ -364,6 +383,7 @@ async function logData(dataType, data, event = null) {
       userEmail: userEmail,
       userName: userName,
       identitySource: identitySource, // 'provided', 'inferred', or null
+      fingerprint: fingerprint, // Store fingerprint for future identity matching
       ...metadata,
       data,
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,

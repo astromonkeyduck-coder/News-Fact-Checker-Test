@@ -1313,6 +1313,21 @@
                     allLogs = allLogs.filter(log => log.dataType === type);
                 }
                 
+                // Filter out JavaScript errors and Google ads
+                allLogs = allLogs.filter(log => {
+                    if (log.dataType === 'javascript-error' || log.dataType === 'console-error') {
+                        return false;
+                    }
+                    const data = log.data || {};
+                    const message = (data.message || '').toLowerCase();
+                    const filename = (data.filename || '').toLowerCase();
+                    const isGoogleAd = 
+                        (message.includes('google') && (message.includes('ad') || message.includes('ads'))) ||
+                        (filename.includes('google') && (filename.includes('ad') || filename.includes('ads'))) ||
+                        message.includes('googlesyndication') || message.includes('doubleclick');
+                    return !isGoogleAd;
+                });
+                
                 // Sort by timestamp (newest first)
                 allLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 
@@ -1943,7 +1958,48 @@
             `;
         }
         
+        // Filter out JavaScript errors and Google ads from logs
+        function filterNoiseLogs(logs) {
+            if (!logs || !Array.isArray(logs)) return logs;
+            
+            return logs.filter(log => {
+                // Exclude JavaScript errors
+                if (log.dataType === 'javascript-error' || log.dataType === 'console-error') {
+                    return false;
+                }
+                
+                // Exclude Google ads related logs
+                const data = log.data || {};
+                const message = (data.message || '').toLowerCase();
+                const filename = (data.filename || '').toLowerCase();
+                const error = (data.error || '').toLowerCase();
+                const args = (data.args || []).join(' ').toLowerCase();
+                
+                // Check for Google ads patterns
+                const isGoogleAd = 
+                    message.includes('google') && (message.includes('ad') || message.includes('ads') || message.includes('advertisement')) ||
+                    filename.includes('google') && (filename.includes('ad') || filename.includes('ads')) ||
+                    error.includes('google') && (error.includes('ad') || error.includes('ads')) ||
+                    args.includes('google') && (args.includes('ad') || args.includes('ads')) ||
+                    message.includes('googlesyndication') ||
+                    message.includes('doubleclick') ||
+                    message.includes('adservice') ||
+                    filename.includes('googlesyndication') ||
+                    filename.includes('doubleclick') ||
+                    filename.includes('adservice');
+                
+                // Exclude if it's a Google ad related log
+                if (isGoogleAd) {
+                    return false;
+                }
+                
+                return true;
+            });
+        }
+        
         function displayLogs(logs) {
+            // Filter out noise before displaying
+            logs = filterNoiseLogs(logs);
             const container = document.getElementById('logsList');
             container.innerHTML = '';
             
@@ -3332,16 +3388,21 @@
             
             validImages.forEach((log, index) => {
                 const data = log.data || {};
-                const imageUrl = data.imageUrl;
+                const originalImageUrl = data.imageUrl;
+                const storedImageUrl = data.storedImageUrl; // Use stored image if available
+                const storedImageKey = data.storedImageKey;
                 const prompt = data.userPrompt || 'No prompt';
                 const timestamp = new Date(log.timestamp).toLocaleString();
+                
+                // Prefer stored image URL (doesn't expire) over original DALL-E URL
+                const imageUrl = storedImageUrl || originalImageUrl;
                 
                 if (!imageUrl) return;
                 
                 // Log the image URL for debugging
                 console.log(`[Image Gallery] Loading image ${index + 1}/${validImages.length}:`, {
                     url: imageUrl.substring(0, 100) + (imageUrl.length > 100 ? '...' : ''),
-                    fullUrl: imageUrl,
+                    isStored: !!storedImageUrl,
                     timestamp: timestamp
                 });
                 
@@ -3363,15 +3424,15 @@
                 // Use addEventListener instead of inline onclick to avoid escaping issues
                 const img = document.createElement('img');
                 
-                // Try to load image with CORS proxy if it's a DALL-E URL (expires after ~1 hour)
+                // Check if it's a DALL-E URL (expires after ~1 hour)
                 // DALL-E URLs are from oaidalleapiprodscus.blob.core.windows.net
-                const isDalleUrl = imageUrl.includes('oaidalleapiprodscus.blob.core.windows.net') || 
-                                  imageUrl.includes('dalleproduseast');
+                const isDalleUrl = originalImageUrl && (originalImageUrl.includes('oaidalleapiprodscus.blob.core.windows.net') || 
+                                  originalImageUrl.includes('dalleproduseast'));
                 const imageAge = Date.now() - new Date(log.timestamp).getTime();
                 const hoursOld = imageAge / (1000 * 60 * 60);
                 
-                // If image is older than 1 hour and it's a DALL-E URL, it's likely expired
-                if (isDalleUrl && hoursOld > 1) {
+                // If image is older than 1 hour and it's a DALL-E URL (and not stored), it's likely expired
+                if (isDalleUrl && hoursOld > 1 && !storedImageUrl) {
                     // Show expired message immediately
                     const expiredDiv = document.createElement('div');
                     expiredDiv.style.cssText = 'text-align: center; padding: 40px; background: rgba(255, 193, 7, 0.1); border-radius: 12px; color: #ffc107;';
@@ -3386,7 +3447,7 @@
                     imageWrapper.appendChild(expiredDiv);
                     imageCard.appendChild(imageWrapper);
                 } else {
-                    // Try to load the image
+                    // Try to load the image (either stored or original)
                     img.src = imageUrl;
                     img.alt = 'AI Generated Image';
                     img.style.cssText = 'width: 100%; height: auto; border-radius: 12px; cursor: pointer;';
@@ -3397,6 +3458,8 @@
                     img.addEventListener('error', function() {
                         console.error('[Image Gallery] Image failed to load:', {
                             imageUrl: imageUrl,
+                            storedImageUrl: storedImageUrl,
+                            originalImageUrl: originalImageUrl,
                             timestamp: timestamp,
                             prompt: prompt.substring(0, 50),
                             hoursOld: hoursOld.toFixed(2),
@@ -3406,12 +3469,19 @@
                         const errorDiv = this.nextElementSibling;
                         if (errorDiv) {
                             errorDiv.style.display = 'block';
-                            // Update error message based on age
-                            if (isDalleUrl && hoursOld > 1) {
+                            // Update error message based on age and storage status
+                            if (isDalleUrl && hoursOld > 1 && !storedImageUrl) {
                                 errorDiv.innerHTML = `
                                     <div style="font-size: 1.1rem; margin-bottom: 10px;">⏰ Image Expired</div>
                                     <div style="font-size: 0.85rem; opacity: 0.8;">DALL-E images expire after ~1 hour</div>
                                     <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 8px;">Generated ${Math.round(hoursOld * 10) / 10} hours ago</div>
+                                    ${storedImageKey ? `<div style="font-size: 0.75rem; opacity: 0.6; margin-top: 5px; color: #2ecc71;">✅ Stored version available but failed to load</div>` : ''}
+                                `;
+                            } else if (storedImageUrl) {
+                                errorDiv.innerHTML = `
+                                    <div style="font-size: 1.1rem; margin-bottom: 10px;">❌ Stored Image Failed to Load</div>
+                                    <div style="font-size: 0.85rem; opacity: 0.8;">Tried to load from Netlify Blobs storage</div>
+                                    <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 8px; word-break: break-all;">URL: ${imageUrl.substring(0, 80)}...</div>
                                 `;
                             } else {
                                 // Add the URL to the error message for debugging
@@ -3438,15 +3508,6 @@
                     imageCard.appendChild(imageWrapper);
                 }
                 
-                const imageWrapper = document.createElement('div');
-                imageWrapper.style.marginBottom = '15px';
-                imageWrapper.appendChild(img);
-                
-                const errorDiv = document.createElement('div');
-                errorDiv.style.cssText = 'display: none; text-align: center; padding: 40px; background: rgba(255, 193, 7, 0.1); border-radius: 12px; color: #ffc107;';
-                errorDiv.textContent = 'Image failed to load';
-                imageWrapper.appendChild(errorDiv);
-                
                 const contentDiv = document.createElement('div');
                 contentDiv.style.marginBottom = '10px';
                 
@@ -3460,7 +3521,6 @@
                 promptDiv.textContent = prompt;
                 contentDiv.appendChild(promptDiv);
                 
-                imageCard.appendChild(imageWrapper);
                 imageCard.appendChild(contentDiv);
                 
                 if (data.revisedPrompt && data.revisedPrompt !== prompt) {
