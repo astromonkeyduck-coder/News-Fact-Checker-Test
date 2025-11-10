@@ -56,6 +56,19 @@ try {
   if (lastUpdatePattern.test(content)) {
     content = content.replace(lastUpdatePattern, newLastUpdate);
     
+    // Also update the app-version meta tag
+    const versionMetaPattern = /<meta name="app-version" content="[^"]*">/;
+    const newVersionMeta = `<meta name="app-version" content="${getFormattedDate()}">`;
+    if (versionMetaPattern.test(content)) {
+      content = content.replace(versionMetaPattern, newVersionMeta);
+    } else {
+      // If meta tag doesn't exist, add it after viewport meta
+      const viewportMetaPattern = /(<meta name="viewport"[^>]*>)/;
+      if (viewportMetaPattern.test(content)) {
+        content = content.replace(viewportMetaPattern, `$1\n    ${newVersionMeta}`);
+      }
+    }
+    
     // Write back to file
     fs.writeFileSync(indexHtmlPath, content, 'utf8');
     console.log(`✅ Updated Last Update timestamp to: ${getFormattedDate()}`);
