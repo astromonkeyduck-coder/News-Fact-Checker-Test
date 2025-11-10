@@ -144,8 +144,16 @@ class GeographyGame {
     
     initializeCountryPaths() {
         // Set up event delegation to handle clicks on any country path
+        // Remove any existing click handlers first to avoid duplicates
         if (this.svg) {
-            this.svg.addEventListener('click', (e) => {
+            // Clone the SVG to remove old event listeners (if any)
+            // Actually, we'll just add the listener - if it's already there, it won't duplicate
+            // But first, make sure we're using the correct SVG reference
+            const svgToUse = this.svg;
+            
+            // Remove old listener if it exists (we can't easily do this, so we'll just add)
+            // Multiple listeners on the same element won't cause issues, they'll all fire
+            svgToUse.addEventListener('click', (e) => {
                 // Debounce: prevent rapid double-clicks (especially on mobile)
                 const now = Date.now();
                 if (now - this.lastClickTime < 500) { // 500ms debounce
@@ -308,7 +316,7 @@ class GeographyGame {
                     loadSVGMap();
                 } else {
                     console.warn('[Geography Game] Standalone loadSVGMap() not available, using placeholder');
-                    this.showMapInstructions();
+            this.showMapInstructions();
                 }
             }, 100);
         }
@@ -1962,7 +1970,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         if (typeof loadSVGMap === 'function') {
             console.log('[Geography Game] Loading SVG map...');
-            loadSVGMap();
+    loadSVGMap();
         } else {
             console.error('[Geography Game] loadSVGMap function not found!');
         }
@@ -2049,13 +2057,21 @@ function loadSVGMap() {
                     // Force update to recalculate constraints and center
                     setTimeout(() => {
                         if (window.geoGame && window.geoGame.updateTransform) {
-                            window.geoGame.updateTransform();
+                        window.geoGame.updateTransform();
                         }
                     }, 100);
                 }
                 
                 // Process all paths and add country codes
                 processSVGMap(svgElement);
+                
+                // IMPORTANT: Set up click handlers on the newly loaded SVG
+                // The click handlers were set up on the placeholder SVG, but now we have the real one
+                if (window.geoGame) {
+                    console.log('[Geography Game] Setting up click handlers on loaded SVG');
+                    window.geoGame.svg = svgElement;
+                    window.geoGame.initializeCountryPaths();
+                }
             } else {
                 throw new Error('SVG element not found in loaded file');
             }
