@@ -2014,9 +2014,8 @@ class GeographyGame {
 document.addEventListener('DOMContentLoaded', () => {
     window.geoGame = new GeographyGame();
     
-    // Try to load an SVG world map
-    // Option 1: Load from CDN or local file
-    loadSVGMap();
+    // The game's loadWorldMap() already calls loadSVGMap(), so we don't need to call it again here
+    // The standalone loadSVGMap() function will be called by the class method if needed
 });
 
 function loadSVGMap() {
@@ -2040,6 +2039,11 @@ function loadSVGMap() {
             
             if (svgElement) {
                 const mapContainer = document.getElementById('worldMap');
+                if (!mapContainer) {
+                    console.error('worldMap container not found');
+                    throw new Error('Map container element not found');
+                }
+                
                 mapContainer.innerHTML = '';
                 
                 // Ensure SVG is properly sized and visible
@@ -2049,7 +2053,12 @@ function loadSVGMap() {
                     svgElement.setAttribute('viewBox', `0 0 ${width} ${height}`);
                 }
                 
-                svgElement.setAttribute('preserveAspectRatio', 'none');
+                // If no viewBox, set a default one
+                if (!svgElement.getAttribute('viewBox')) {
+                    svgElement.setAttribute('viewBox', '0 0 1000 500');
+                }
+                
+                svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet');
                 svgElement.style.width = '100%';
                 svgElement.style.height = '100%';
                 svgElement.style.display = 'block';
@@ -2061,6 +2070,7 @@ function loadSVGMap() {
                 // Log success
                 console.log('✓ SVG map loaded successfully');
                 console.log('SVG dimensions:', svgElement.getBoundingClientRect());
+                console.log('SVG viewBox:', svgElement.getAttribute('viewBox'));
                 
                 // Store SVG reference in game instance if available
                 if (window.geoGame) {
@@ -2074,12 +2084,16 @@ function loadSVGMap() {
                     window.geoGame.panY = 0;
                     // Force update to recalculate constraints and center
                     setTimeout(() => {
-                        window.geoGame.updateTransform();
+                        if (window.geoGame && window.geoGame.updateTransform) {
+                            window.geoGame.updateTransform();
+                        }
                     }, 100);
                 }
                 
                 // Process all paths and add country codes
                 processSVGMap(svgElement);
+            } else {
+                throw new Error('SVG element not found in loaded file');
             }
         })
         .catch(error => {
