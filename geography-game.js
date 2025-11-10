@@ -120,59 +120,22 @@ class GeographyGame {
     }
     
     loadWorldMap() {
-        // Load SVG world map
-        // Try to load from a CDN or local file
-        // For now, we'll create an interactive structure
-        this.createInteractiveMap();
+        // Load SVG world map - create a placeholder first, then load the real map
+        // The standalone loadSVGMap() function will replace the placeholder
+        this.createSimpleMap();
     }
     
     createInteractiveMap() {
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('viewBox', '0 0 2000 1000');
-        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-        svg.setAttribute('class', 'world-map-svg');
-        svg.style.width = '100%';
-        svg.style.height = 'auto';
-        
-        // Create clickable regions for countries
-        // Note: This requires actual country SVG paths
-        // We'll create a structure that can be enhanced with real map data
-        
-        this.mapContainer.innerHTML = '';
-        this.mapContainer.appendChild(svg);
-        
-        // Load map data (you can use an external SVG file or library)
-        this.loadMapData(svg);
+        // This method is kept for backwards compatibility
+        // It now just calls createSimpleMap() which creates a placeholder
+        // The real map is loaded by the standalone loadSVGMap() function
+        this.createSimpleMap();
     }
     
     loadMapData(svg) {
-        // Try to load an SVG world map file
-        // For production, include a proper SVG world map file
-        // Here's a placeholder that creates clickable areas
-        
-        // Create a background
-        const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        bg.setAttribute('width', '2000');
-        bg.setAttribute('height', '1000');
-        bg.setAttribute('fill', '#1a4a6a');
-        svg.appendChild(bg);
-        
-        // Add text instructions
-        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', '1000');
-        text.setAttribute('y', '500');
-        text.setAttribute('text-anchor', 'middle');
-        text.setAttribute('fill', '#fff');
-        text.setAttribute('font-size', '24');
-        text.textContent = 'Loading interactive map...';
-        svg.appendChild(text);
-        
-        // For a complete solution, you would:
-        // 1. Include a full SVG world map file (like from simplemaps.com or similar)
-        // 2. Or use a library like jVectorMap, amMaps, or D3.js
-        // 3. Map country codes to SVG path IDs or classes
-        
-        // Store SVG reference
+        // This method is deprecated - the real map loading is handled by
+        // the standalone loadSVGMap() function
+        // Store SVG reference for now
         this.svg = svg;
         
         // Initialize country map structure
@@ -1995,12 +1958,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Call the standalone loadSVGMap() function to load the actual SVG file
     // This will replace any placeholder created by the class
-    // Use a small delay to ensure the game instance is fully initialized
+    // Use a delay to ensure the game instance and placeholder are fully initialized
     setTimeout(() => {
         if (typeof loadSVGMap === 'function') {
+            console.log('[Geography Game] Loading SVG map...');
             loadSVGMap();
+        } else {
+            console.error('[Geography Game] loadSVGMap function not found!');
         }
-    }, 50);
+    }, 100);
 });
 
 function loadSVGMap() {
