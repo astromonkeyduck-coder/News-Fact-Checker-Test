@@ -10,35 +10,22 @@ const path = require('path');
 
 const indexHtmlPath = path.join(__dirname, '..', 'index.html');
 
-// Get current date/time in the format: "Month Day, Year at H:MM AM/PM"
+// Get current date in the format: "Month Day, Year"
 // Uses local timezone (system timezone) - Node.js Date methods already use local time
 function getFormattedDate() {
   const now = new Date();
-  
-  // Debug: log what timezone we're using
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  console.log(`[Timestamp] Using timezone: ${timezone}`);
-  console.log(`[Timestamp] Local time: ${now.toLocaleString('en-US', {timeZone: timezone})}`);
   
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
   
-  // getMonth(), getDate(), getHours(), getMinutes() all return LOCAL time values
+  // getMonth(), getDate() return LOCAL time values
   const month = months[now.getMonth()];
   const day = now.getDate();
   const year = now.getFullYear();
   
-  // Get local hours and minutes
-  let hours = now.getHours();
-  const minutes = now.getMinutes();
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  hours = hours ? hours : 12; // the hour '0' should be '12'
-  const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
-  
-  const formatted = `${month} ${day}, ${year} at ${hours}:${minutesStr} ${ampm}`;
+  const formatted = `${month} ${day}, ${year}`;
   console.log(`[Timestamp] Formatted: ${formatted}`);
   
   return formatted;
