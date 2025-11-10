@@ -782,20 +782,8 @@
         <div id="tab-content-images" class="tab-content" style="display: none;">
             <div class="controls" style="margin-bottom: 30px;">
                 <div class="control-group">
-                    <label>Date Range</label>
-                    <input type="date" id="imageDateInput" value="" onchange="loadImageGallery()">
-                </div>
-                <div class="control-group">
                     <label>Limit</label>
-                    <input type="number" id="imageLimitInput" value="100" min="1" max="1000">
-                </div>
-                <div class="control-group" style="justify-content: flex-end;">
-                    <label>&nbsp;</label>
-                    <button class="btn" onclick="loadImageGallery()">Load Images</button>
-                </div>
-                <div class="control-group" style="justify-content: flex-end;">
-                    <label>&nbsp;</label>
-                    <button class="btn" onclick="loadAllImages()" style="background: linear-gradient(135deg, #ff9800, #f57c00);">Load All Images</button>
+                    <input type="number" id="imageLimitInput" value="500" min="1" max="5000">
                 </div>
                 <div class="control-group" style="justify-content: flex-end;">
                     <label>&nbsp;</label>
@@ -818,7 +806,7 @@
             
             <div id="imageGalleryContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
                 <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">
-                    Click "Load Images" to view the gallery
+                    Loading images...
                 </div>
             </div>
         </div>
@@ -872,20 +860,8 @@
         <div id="tab-content-chat-gallery" class="tab-content" style="display: none;">
             <div class="controls" style="margin-bottom: 30px;">
                 <div class="control-group">
-                    <label>Date Range</label>
-                    <input type="date" id="chatGalleryDateInput" value="" onchange="loadChatGallery()">
-                </div>
-                <div class="control-group">
                     <label>Limit</label>
-                    <input type="number" id="chatGalleryLimitInput" value="100" min="1" max="1000">
-                </div>
-                <div class="control-group" style="justify-content: flex-end;">
-                    <label>&nbsp;</label>
-                    <button class="btn" onclick="loadChatGallery()">Load Chats</button>
-                </div>
-                <div class="control-group" style="justify-content: flex-end;">
-                    <label>&nbsp;</label>
-                    <button class="btn" onclick="loadAllChatGallery()" style="background: linear-gradient(135deg, #ff9800, #f57c00);">Load All (7 days)</button>
+                    <input type="number" id="chatGalleryLimitInput" value="500" min="1" max="5000">
                 </div>
                 <div class="control-group" style="justify-content: flex-end;">
                     <label>&nbsp;</label>
@@ -908,7 +884,7 @@
             
             <div id="chatGalleryContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); gap: 20px;">
                 <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">
-                    Click "Load Chats" to view conversations
+                    Loading chats...
                 </div>
             </div>
         </div>
@@ -2320,20 +2296,16 @@
             
             // Set default dates when switching tabs
             if (tabName === 'images') {
-                const imageDateInput = document.getElementById('imageDateInput');
-                if (!imageDateInput.value) {
-                    imageDateInput.value = new Date().toISOString().split('T')[0];
-                }
                 // Auto-load images when switching to this tab
-                if (imageDateInput.value === new Date().toISOString().split('T')[0]) {
-                    loadImageGallery();
-                }
+                setTimeout(() => {
+                    if (typeof loadImageGallery === 'function') {
+                        loadImageGallery();
+                    } else {
+                        console.error('loadImageGallery function not found');
+                    }
+                }, 100);
             }
             if (tabName === 'chat-gallery') {
-                const chatGalleryDateInput = document.getElementById('chatGalleryDateInput');
-                if (!chatGalleryDateInput.value) {
-                    chatGalleryDateInput.value = new Date().toISOString().split('T')[0];
-                }
                 // Auto-load chat gallery when switching to this tab
                 setTimeout(() => {
                     if (typeof loadChatGallery === 'function') {
@@ -2420,62 +2392,18 @@
         // Chat Gallery Functions
         async function loadChatGallery() {
             try {
-                const dateInput = document.getElementById('chatGalleryDateInput');
-                if (!dateInput) {
-                    console.error('chatGalleryDateInput not found');
-                    return;
-                }
-                if (!dateInput.value) {
-                    dateInput.value = new Date().toISOString().split('T')[0];
-                }
-                const date = dateInput.value;
                 const limitInput = document.getElementById('chatGalleryLimitInput');
                 if (!limitInput) {
                     console.error('chatGalleryLimitInput not found');
                     return;
                 }
-                const limit = parseInt(limitInput.value) || 100;
+                const limit = parseInt(limitInput.value) || 500;
                 
-                showStatus('Loading chat gallery...', 'info');
+                showStatus('Loading all chats...', 'info');
                 
-                let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}&type=ai-chat`;
-                url = addTokenToUrl(url);
-                
-                console.log('[Chat Gallery] Loading from:', url.replace(/token=[^&]+/, 'token=***'));
-                
-                const response = await fetch(url);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const data = await response.json();
-                let chats = data.logs || [];
-                
-                console.log('[Chat Gallery] Received', chats.length, 'chats');
-                
-                // Look up emails for chats that have "Unknown" email
-                chats = await enrichChatsWithEmails(chats);
-                
-                displayChatGallery(chats);
-                const totalCountEl = document.getElementById('chatGalleryTotalCount');
-                const loadedCountEl = document.getElementById('chatGalleryLoadedCount');
-                if (totalCountEl) totalCountEl.textContent = chats.length;
-                if (loadedCountEl) loadedCountEl.textContent = chats.length;
-                
-                showStatus(`Loaded ${chats.length} conversations`, chats.length > 0 ? 'success' : 'info');
-            } catch (error) {
-                showStatus(`Error: ${error.message}`, 'error');
-                console.error('Error loading chat gallery:', error);
-            }
-        }
-        
-        async function loadAllChatGallery() {
-            showStatus('Loading all chats (last 7 days)...', 'info');
-            
-            try {
+                // Load from last 30 days to get all chats
                 const dates = [];
-                for (let i = 0; i < 7; i++) {
+                for (let i = 0; i < 30; i++) {
                     const d = new Date();
                     d.setDate(d.getDate() - i);
                     dates.push(d.toISOString().split('T')[0]);
@@ -2490,7 +2418,9 @@
                         if (response.ok) {
                             const data = await response.json();
                             if (data.logs && data.logs.length > 0) {
-                                allChats = allChats.concat(data.logs);
+                                // Filter to only include ai-chat logs
+                                const chatLogs = data.logs.filter(log => log.dataType === 'ai-chat');
+                                allChats = allChats.concat(chatLogs);
                             }
                         }
                     } catch (e) {
@@ -2498,13 +2428,16 @@
                     }
                 }
                 
+                // Sort by timestamp (newest first)
                 allChats.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 
-                const limit = parseInt(document.getElementById('chatGalleryLimitInput').value);
+                // Apply limit
                 allChats = allChats.slice(0, limit);
                 
                 // Look up emails for chats that have "Unknown" email
                 allChats = await enrichChatsWithEmails(allChats);
+                
+                console.log('[Chat Gallery] Loaded', allChats.length, 'chats (sorted newest to oldest)');
                 
                 displayChatGallery(allChats);
                 const totalCountEl = document.getElementById('chatGalleryTotalCount');
@@ -2512,10 +2445,10 @@
                 if (totalCountEl) totalCountEl.textContent = allChats.length;
                 if (loadedCountEl) loadedCountEl.textContent = allChats.length;
                 
-                showStatus(`Loaded ${allChats.length} conversations from last 7 days`, 'success');
+                showStatus(`Loaded ${allChats.length} conversations (newest to oldest)`, allChats.length > 0 ? 'success' : 'info');
             } catch (error) {
                 showStatus(`Error: ${error.message}`, 'error');
-                console.error('Error loading all chats:', error);
+                console.error('Error loading chat gallery:', error);
             }
         }
         
@@ -2528,7 +2461,7 @@
             container.innerHTML = '';
             
             if (!chats || chats.length === 0) {
-                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">No conversations found for selected date. Try selecting today\'s date or use "Load All" to see conversations from the last 7 days.</div>';
+                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">No conversations found.</div>';
                 return;
             }
             
@@ -3198,57 +3131,19 @@
         
         // Image Gallery Functions
         async function loadImageGallery() {
-            const dateInput = document.getElementById('imageDateInput');
-            // If no date set, default to today
-            if (!dateInput.value) {
-                dateInput.value = new Date().toISOString().split('T')[0];
-            }
-            const date = dateInput.value;
-            const limit = parseInt(document.getElementById('imageLimitInput').value);
-            
-            showStatus('Loading images...', 'info');
-            
             try {
-                let url = `/.netlify/functions/log-data?date=${date}&limit=${limit}&type=image-generation`;
-                url = addTokenToUrl(url);
-                
-                console.log('[Image Gallery] Loading images from:', url.replace(/token=[^&]+/, 'token=***'));
-                
-                const response = await fetch(url);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+                const limitInput = document.getElementById('imageLimitInput');
+                if (!limitInput) {
+                    console.error('imageLimitInput not found');
+                    return;
                 }
+                const limit = parseInt(limitInput.value) || 500;
                 
-                const data = await response.json();
-                const images = data.logs || [];
+                showStatus('Loading all images...', 'info');
                 
-                console.log('[Image Gallery] Received', images.length, 'image-generation logs for date:', date);
-                if (images.length > 0) {
-                    console.log('[Image Gallery] Sample image log:', images[0]);
-                    console.log('[Image Gallery] Sample image URL:', images[0].data?.imageUrl);
-                } else {
-                    const availableTypes = [...new Set((data.logs || []).map(log => log.dataType))];
-                    console.warn('[Image Gallery] No image-generation logs found. Available log types:', availableTypes);
-                }
-                
-                displayImageGallery(images);
-                document.getElementById('totalImagesCount').textContent = images.length;
-                document.getElementById('loadedImagesCount').textContent = images.length;
-                
-                showStatus(`Loaded ${images.length} images`, images.length > 0 ? 'success' : 'info');
-            } catch (error) {
-                showStatus(`Error: ${error.message}`, 'error');
-                console.error('Error loading images:', error);
-            }
-        }
-        
-        async function loadAllImages() {
-            showStatus('Loading all images (last 7 days)...', 'info');
-            
-            try {
+                // Load from last 30 days to get all images
                 const dates = [];
-                for (let i = 0; i < 7; i++) {
+                for (let i = 0; i < 30; i++) {
                     const d = new Date();
                     d.setDate(d.getDate() - i);
                     dates.push(d.toISOString().split('T')[0]);
@@ -3263,7 +3158,9 @@
                         if (response.ok) {
                             const data = await response.json();
                             if (data.logs && data.logs.length > 0) {
-                                allImages = allImages.concat(data.logs);
+                                // Filter to only include image-generation logs
+                                const imageLogs = data.logs.filter(log => log.dataType === 'image-generation');
+                                allImages = allImages.concat(imageLogs);
                             }
                         }
                     } catch (e) {
@@ -3274,18 +3171,19 @@
                 // Sort by timestamp (newest first)
                 allImages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 
-                // Limit
-                const limit = parseInt(document.getElementById('imageLimitInput').value);
+                // Apply limit
                 allImages = allImages.slice(0, limit);
+                
+                console.log('[Image Gallery] Loaded', allImages.length, 'images (sorted newest to oldest)');
                 
                 displayImageGallery(allImages);
                 document.getElementById('totalImagesCount').textContent = allImages.length;
                 document.getElementById('loadedImagesCount').textContent = allImages.length;
                 
-                showStatus(`Loaded ${allImages.length} images from last 7 days`, 'success');
+                showStatus(`Loaded ${allImages.length} images (newest to oldest)`, allImages.length > 0 ? 'success' : 'info');
             } catch (error) {
                 showStatus(`Error: ${error.message}`, 'error');
-                console.error('Error loading all images:', error);
+                console.error('Error loading image gallery:', error);
             }
         }
         
@@ -3294,7 +3192,7 @@
             container.innerHTML = '';
             
             if (images.length === 0) {
-                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">No images found for selected date. Try selecting today\'s date or use "Load All Images" to see images from the last 7 days.</div>';
+                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">No images found.</div>';
                 return;
             }
             
