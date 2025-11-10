@@ -10,7 +10,9 @@
   function getCurrentVersion() {
     const metaVersion = document.querySelector('meta[name="app-version"]');
     if (metaVersion) {
-      return metaVersion.getAttribute('content');
+      const version = metaVersion.getAttribute('content');
+      console.log('[Version Checker] Current version from meta tag:', version);
+      return version;
     }
     // Fallback: use last update timestamp from header
     const lastUpdateEl = document.querySelector('.last-update');
@@ -18,11 +20,15 @@
       const text = lastUpdateEl.textContent || '';
       const match = text.match(/Last Update:\s*(.+)/);
       if (match) {
-        return match[1].trim();
+        const version = match[1].trim();
+        console.log('[Version Checker] Current version from last-update:', version);
+        return version;
       }
     }
     // Final fallback: use page load time
-    return new Date().toISOString();
+    const fallback = new Date().toISOString();
+    console.log('[Version Checker] Using fallback version:', fallback);
+    return fallback;
   }
 
   // Store version in localStorage
@@ -146,46 +152,47 @@
   // Check for version updates
   async function checkForUpdates() {
     try {
-      // Fetch the current page to check its version
-      const response = await fetch(VERSION_CHECK_URL, {
-        method: 'HEAD',
-        cache: 'no-cache',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-
-      // If we can't check, use the current page's version
       const currentVersion = getCurrentVersion();
       const storedVersion = localStorage.getItem(STORAGE_KEY);
 
+      console.log('[Version Checker] Checking for updates...');
+      console.log('[Version Checker] Stored version:', storedVersion);
+      console.log('[Version Checker] Current version:', currentVersion);
+      console.log('[Version Checker] Notification shown:', notificationShown);
+
       // If no stored version, store current and return
       if (!storedVersion) {
+        console.log('[Version Checker] No stored version, storing current version');
         localStorage.setItem(STORAGE_KEY, currentVersion);
         return;
       }
 
       // Check if version has changed
       if (storedVersion !== currentVersion && !notificationShown) {
-        console.log('[Version Checker] New version detected!');
-        console.log('[Version Checker] Old:', storedVersion);
-        console.log('[Version Checker] New:', currentVersion);
+        console.log('[Version Checker] ✅ New version detected!');
+        console.log('[Version Checker] Old version:', storedVersion);
+        console.log('[Version Checker] New version:', currentVersion);
         createNotificationBanner();
+      } else if (storedVersion === currentVersion) {
+        console.log('[Version Checker] Versions match, no update needed');
+      } else if (notificationShown) {
+        console.log('[Version Checker] Notification already shown');
       }
     } catch (error) {
-      // Silently fail - don't interrupt user experience
-      console.debug('[Version Checker] Update check failed:', error);
+      console.error('[Version Checker] Update check failed:', error);
     }
   }
 
   // Start checking for updates
   function startVersionChecker() {
-    // Initial check after page load
-    setTimeout(checkForUpdates, 5000); // Wait 5 seconds after page load
-
+    console.log('[Version Checker] Starting version checker...');
+    
+    // Initial check immediately (don't wait)
+    checkForUpdates();
+    
     // Then check periodically
     checkInterval = setInterval(checkForUpdates, CHECK_INTERVAL);
+    console.log('[Version Checker] Will check every', CHECK_INTERVAL / 1000, 'seconds');
   }
 
   // Stop checking (useful if needed)
