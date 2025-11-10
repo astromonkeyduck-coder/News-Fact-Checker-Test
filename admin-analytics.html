@@ -543,7 +543,7 @@
         
         <!-- Logs Tab (existing content) -->
         <div id="tab-content-logs" class="tab-content">
-            <div class="header">
+    <div class="header">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <h1>📊 Analytics Dashboard</h1>
@@ -771,9 +771,9 @@
         }
     </style>
     
-            <div class="logs-container">
-                <div id="logsList">
-                    <p style="text-align: center; color: rgba(255, 255, 255, 0.5);">Click "Load Data" to view logs</p>
+    <div class="logs-container">
+        <div id="logsList">
+            <p style="text-align: center; color: rgba(255, 255, 255, 0.5);">Click "Load Data" to view logs</p>
                 </div>
             </div>
         </div> <!-- End tab-content-logs -->
@@ -1055,8 +1055,8 @@
                 <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">
                     Click "Load Tips" to view submitted tips
                 </div>
-            </div>
         </div>
+    </div>
     </div> <!-- End dashboardContent -->
     
     <script>
@@ -1320,7 +1320,7 @@
                 
                 // Only log URL in debug mode (set window.debugLogs = true to enable)
                 if (window.debugLogs) {
-                    console.log('[Dashboard] Loading logs from:', url.replace(/token=[^&]+/, 'token=***'));
+                console.log('[Dashboard] Loading logs from:', url.replace(/token=[^&]+/, 'token=***'));
                 }
                 
                 const response = await fetch(url);
@@ -1335,12 +1335,12 @@
                 
                 // Only log detailed data in debug mode
                 if (window.debugLogs) {
-                    console.log('[Dashboard] Received data:', {
-                        count: data.count,
-                        logsLength: data.logs ? data.logs.length : 0,
-                        type: type || 'all types',
-                        date: date
-                    });
+                console.log('[Dashboard] Received data:', {
+                    count: data.count,
+                    logsLength: data.logs ? data.logs.length : 0,
+                    type: type || 'all types',
+                    date: date
+                });
                 }
                 
                 // Log how many image-generation entries we got (only if specifically filtering for it)
@@ -3141,9 +3141,9 @@
                 
                 showStatus('Loading all images...', 'info');
                 
-                // Load from last 30 days to get all images
+                // Load from last 90 days to get all images (increased from 30)
                 const dates = [];
-                for (let i = 0; i < 30; i++) {
+                for (let i = 0; i < 90; i++) {
                     const d = new Date();
                     d.setDate(d.getDate() - i);
                     dates.push(d.toISOString().split('T')[0]);
@@ -3175,6 +3175,11 @@
                 allImages = allImages.slice(0, limit);
                 
                 console.log('[Image Gallery] Loaded', allImages.length, 'images (sorted newest to oldest)');
+                console.log('[Image Gallery] Date range checked:', dates[0], 'to', dates[dates.length - 1]);
+                if (allImages.length > 0) {
+                    console.log('[Image Gallery] First image timestamp:', allImages[0].timestamp);
+                    console.log('[Image Gallery] Last image timestamp:', allImages[allImages.length - 1].timestamp);
+                }
                 
                 displayImageGallery(allImages);
                 document.getElementById('totalImagesCount').textContent = allImages.length;
@@ -3199,13 +3204,25 @@
             // Filter out logs that don't have imageUrl
             const validImages = images.filter(log => {
                 const data = log.data || {};
-                return data.imageUrl && data.imageUrl.trim() !== '';
+                const hasUrl = data.imageUrl && data.imageUrl.trim() !== '';
+                if (!hasUrl) {
+                    console.warn('[Image Gallery] Image log missing URL:', {
+                        timestamp: log.timestamp,
+                        dataType: log.dataType,
+                        hasData: !!data,
+                        imageUrl: data.imageUrl
+                    });
+                }
+                return hasUrl;
             });
             
             if (validImages.length === 0) {
-                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">Found ' + images.length + ' image-generation logs but none have valid image URLs.</div>';
+                container.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">Found ' + images.length + ' image-generation logs but none have valid image URLs. Check console for details.</div>';
+                console.error('[Image Gallery] All images filtered out. Sample log:', images[0]);
                 return;
             }
+            
+            console.log('[Image Gallery] Displaying', validImages.length, 'valid images out of', images.length, 'total');
             
             validImages.forEach((log, index) => {
                 const data = log.data || {};
@@ -3214,6 +3231,9 @@
                 const timestamp = new Date(log.timestamp).toLocaleString();
                 
                 if (!imageUrl) return;
+                
+                // Escape imageUrl for use in HTML attributes
+                const escapedImageUrl = imageUrl.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
                 
                 const imageCard = document.createElement('div');
                 imageCard.className = 'log-entry';
@@ -3227,28 +3247,53 @@
                     this.style.boxShadow = 'none';
                 };
                 
-                imageCard.innerHTML = `
-                    <div style="margin-bottom: 15px;">
-                        <img src="${imageUrl}" alt="AI Generated Image" 
-                             style="width: 100%; height: auto; border-radius: 12px; cursor: pointer;"
-                             onclick="window.open('${imageUrl}', '_blank')"
-                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div style="display: none; text-align: center; padding: 40px; background: rgba(255, 193, 7, 0.1); border-radius: 12px; color: #ffc107;">
-                            Image failed to load
-                        </div>
-                    </div>
-                    <div style="margin-bottom: 10px;">
-                        <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.6); margin-bottom: 8px;">${timestamp}</div>
-                        <div style="font-size: 1rem; line-height: 1.6; color: rgba(255, 255, 255, 0.9); background: rgba(74, 144, 226, 0.1); padding: 12px; border-radius: 8px;">
-                            ${escapeHtml(prompt)}
-                        </div>
-                    </div>
-                    ${data.revisedPrompt && data.revisedPrompt !== prompt ? `
-                    <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.5); font-style: italic;">
-                        Revised: ${escapeHtml(data.revisedPrompt.substring(0, 100))}${data.revisedPrompt.length > 100 ? '...' : ''}
-                    </div>
-                    ` : ''}
-                `;
+                // Use addEventListener instead of inline onclick to avoid escaping issues
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.alt = 'AI Generated Image';
+                img.style.cssText = 'width: 100%; height: auto; border-radius: 12px; cursor: pointer;';
+                img.addEventListener('click', () => {
+                    window.open(imageUrl, '_blank');
+                });
+                img.addEventListener('error', function() {
+                    this.style.display = 'none';
+                    const errorDiv = this.nextElementSibling;
+                    if (errorDiv) {
+                        errorDiv.style.display = 'block';
+                    }
+                });
+                
+                const imageWrapper = document.createElement('div');
+                imageWrapper.style.marginBottom = '15px';
+                imageWrapper.appendChild(img);
+                
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = 'display: none; text-align: center; padding: 40px; background: rgba(255, 193, 7, 0.1); border-radius: 12px; color: #ffc107;';
+                errorDiv.textContent = 'Image failed to load';
+                imageWrapper.appendChild(errorDiv);
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.style.marginBottom = '10px';
+                
+                const timestampDiv = document.createElement('div');
+                timestampDiv.style.cssText = 'font-size: 0.85rem; color: rgba(255, 255, 255, 0.6); margin-bottom: 8px;';
+                timestampDiv.textContent = timestamp;
+                contentDiv.appendChild(timestampDiv);
+                
+                const promptDiv = document.createElement('div');
+                promptDiv.style.cssText = 'font-size: 1rem; line-height: 1.6; color: rgba(255, 255, 255, 0.9); background: rgba(74, 144, 226, 0.1); padding: 12px; border-radius: 8px;';
+                promptDiv.textContent = prompt;
+                contentDiv.appendChild(promptDiv);
+                
+                imageCard.appendChild(imageWrapper);
+                imageCard.appendChild(contentDiv);
+                
+                if (data.revisedPrompt && data.revisedPrompt !== prompt) {
+                    const revisedDiv = document.createElement('div');
+                    revisedDiv.style.cssText = 'font-size: 0.85rem; color: rgba(255, 255, 255, 0.5); font-style: italic;';
+                    revisedDiv.textContent = 'Revised: ' + data.revisedPrompt.substring(0, 100) + (data.revisedPrompt.length > 100 ? '...' : '');
+                    imageCard.appendChild(revisedDiv);
+                }
                 
                 container.appendChild(imageCard);
             });
