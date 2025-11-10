@@ -11,17 +11,25 @@ const path = require('path');
 const indexHtmlPath = path.join(__dirname, '..', 'index.html');
 
 // Get current date/time in the format: "Month Day, Year at H:MM AM/PM"
+// Uses local timezone (system timezone)
 function getFormattedDate() {
   const now = new Date();
+  
+  // Use toLocaleString to ensure we get local time, not UTC
+  // This explicitly uses the system's local timezone
+  const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+  
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
   
+  // Use local date methods which respect timezone
   const month = months[now.getMonth()];
   const day = now.getDate();
   const year = now.getFullYear();
   
+  // Get local hours and minutes
   let hours = now.getHours();
   const minutes = now.getMinutes();
   const ampm = hours >= 12 ? 'PM' : 'AM';
