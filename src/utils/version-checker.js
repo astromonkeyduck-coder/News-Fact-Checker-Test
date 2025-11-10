@@ -56,8 +56,8 @@
       right: 0;
       background: linear-gradient(135deg, #4A90E2 0%, #2A60B0 100%);
       color: white;
-      padding: 1rem 1.5rem;
-      z-index: 10000;
+      padding: 0.875rem 1.5rem;
+      z-index: 9999;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       display: flex;
       align-items: center;
@@ -129,6 +129,16 @@
     refreshBtn.addEventListener('click', () => {
       // Store that user is refreshing
       localStorage.setItem(STORAGE_KEY, getCurrentVersion());
+      
+      // Restore header position before reload
+      const header = document.querySelector('header') || document.querySelector('.header') || document.querySelector('[class*="header"]');
+      if (header) {
+        const headerStyle = window.getComputedStyle(header);
+        if (headerStyle.position === 'fixed' || headerStyle.position === 'sticky') {
+          header.style.top = '';
+        }
+      }
+      
       window.location.reload();
     });
 
@@ -136,15 +146,42 @@
       // Store current version so we don't show again until it changes
       localStorage.setItem(STORAGE_KEY, getCurrentVersion());
       banner.style.animation = 'slideDown 0.3s ease reverse';
+      
+      // Restore header position
+      const header = document.querySelector('header') || document.querySelector('.header') || document.querySelector('[class*="header"]');
+      if (header) {
+        const headerStyle = window.getComputedStyle(header);
+        if (headerStyle.position === 'fixed' || headerStyle.position === 'sticky') {
+          header.style.top = '';
+          header.style.transition = 'top 0.3s ease';
+        }
+      }
+      
       setTimeout(() => banner.remove(), 300);
       notificationShown = false;
     });
 
-    // Add to page
-    document.body.insertBefore(banner, document.body.firstChild);
+    // Add to page - insert after body starts, but before header
+    const header = document.querySelector('header') || document.querySelector('.header') || document.querySelector('[class*="header"]');
+    if (header && header.parentNode) {
+      header.parentNode.insertBefore(banner, header);
+    } else {
+      document.body.insertBefore(banner, document.body.firstChild);
+    }
 
-    // Adjust body padding to account for banner
-    document.body.style.paddingTop = banner.offsetHeight + 'px';
+    // Adjust header position to account for banner (if header is fixed/sticky)
+    const bannerHeight = banner.offsetHeight;
+    if (header) {
+      const headerStyle = window.getComputedStyle(header);
+      if (headerStyle.position === 'fixed' || headerStyle.position === 'sticky') {
+        const currentTop = parseInt(headerStyle.top) || 0;
+        header.style.top = (currentTop + bannerHeight) + 'px';
+        header.style.transition = 'top 0.3s ease';
+      }
+    }
+
+    // Store banner height for cleanup
+    banner.dataset.height = bannerHeight;
 
     notificationShown = true;
   }
