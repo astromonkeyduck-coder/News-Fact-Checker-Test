@@ -328,47 +328,26 @@ class GeographyGame {
     }
     
     loadSVGMap() {
-        // Using a simple approach: load an SVG world map from a CDN or local file
-        // For now, we'll create interactive paths based on country codes
-        // In production, you'd include a full SVG world map file
+        // This method is called by createSimpleMap() as a fallback
+        // The actual SVG loading is handled by the standalone loadSVGMap() function
+        // which is called from the DOMContentLoaded handler
+        // This method is kept for backwards compatibility but shouldn't be used
+        // The real loading happens in the standalone function below
+        console.log('[Geography Game] Class loadSVGMap() called - using standalone function instead');
         
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('viewBox', '0 0 1000 500');
-        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-        svg.setAttribute('class', 'world-map-svg');
-        
-        // Create clickable regions for each country
-        // This is a simplified version - you'd need the actual SVG paths for each country
-        POPULOUS_COUNTRIES.forEach(country => {
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('class', 'country-path');
-            path.setAttribute('data-country-code', country.code);
-            path.setAttribute('data-country-name', country.name.toLowerCase());
-            path.setAttribute('fill', '#2ECC71'); // Start green
-            path.style.cursor = 'pointer';
-            
-            // Note: You need actual SVG path data for each country
-            // This is a placeholder - you'd need to include the full SVG map
-            // For now, we'll use a workaround with clickable areas
-            
-            path.addEventListener('click', (e) => {
-                if (this.gameActive && !this.answered.has(country.code)) {
-                    this.handleCountryClick(country.code, country.name);
+        // If the standalone function exists, use it
+        if (typeof window.loadSVGMap === 'function') {
+            window.loadSVGMap();
+        } else {
+            // Fallback: wait a bit for the function to be defined
+            setTimeout(() => {
+                if (typeof loadSVGMap === 'function') {
+                    loadSVGMap();
+                } else {
+                    console.warn('[Geography Game] Standalone loadSVGMap() not available, using placeholder');
+                    this.showMapInstructions();
                 }
-            });
-            
-            // Store reference
-            this.countryMap[country.code.toLowerCase()] = path;
-            
-            svg.appendChild(path);
-        });
-        
-        this.mapContainer.innerHTML = '';
-        this.mapContainer.appendChild(svg);
-        
-        // If we can't load the real map, show instructions
-        if (this.mapContainer.querySelector('path').getAttribute('d') === null) {
-            this.showMapInstructions();
+            }, 100);
         }
     }
     
