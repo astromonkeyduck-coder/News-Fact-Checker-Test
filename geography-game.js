@@ -1976,12 +1976,15 @@ function loadSVGMap() {
     // - https://www.amcharts.com/svg-maps/
     // - Or use D3.js with topojson
     
+    console.log('[Geography Game] Attempting to fetch world-map.svg...');
+    
     fetch('world-map.svg')
         .then(response => {
+            console.log('[Geography Game] Fetch response status:', response.status, response.statusText);
             if (response.ok) {
                 return response.text();
             }
-            throw new Error('Map file not found');
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         })
         .then(svgText => {
             const parser = new DOMParser();
@@ -2048,12 +2051,29 @@ function loadSVGMap() {
             }
         })
         .catch(error => {
-            console.error('Error loading SVG map:', error);
-            console.log('SVG map file not found or failed to load.');
-            console.log('Error details:', error.message);
+            console.error('[Geography Game] Error loading SVG map:', error);
+            console.error('[Geography Game] Error stack:', error.stack);
+            console.log('[Geography Game] SVG map file not found or failed to load.');
+            console.log('[Geography Game] Error details:', error.message);
             
             // Create a helpful placeholder
-            createMapPlaceholder();
+            const mapContainer = document.getElementById('worldMap');
+            if (mapContainer) {
+                mapContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #fff; background: rgba(26, 74, 106, 0.3); border-radius: 8px;">
+                        <h3 style="color: #FFD700; margin-bottom: 15px;">⚠️ Map Loading Error</h3>
+                        <p style="margin-bottom: 10px;">Unable to load world-map.svg file.</p>
+                        <p style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">
+                            Please ensure world-map.svg exists in the root directory.
+                        </p>
+                        <p style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.6); margin-top: 10px;">
+                            Error: ${error.message}
+                        </p>
+                    </div>
+                `;
+            } else {
+                console.error('[Geography Game] Map container not found for error display!');
+            }
         });
 }
 
