@@ -1987,9 +1987,19 @@ function loadSVGMap() {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         })
         .then(svgText => {
+            console.log('[Geography Game] SVG file loaded, length:', svgText.length);
             const parser = new DOMParser();
             const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
+            
+            // Check for parsing errors
+            const parserError = svgDoc.querySelector('parsererror');
+            if (parserError) {
+                console.error('[Geography Game] SVG parsing error:', parserError.textContent);
+                throw new Error('SVG parsing error: ' + parserError.textContent);
+            }
+            
             const svgElement = svgDoc.querySelector('svg');
+            console.log('[Geography Game] SVG element found:', !!svgElement);
             
             if (svgElement) {
                 const mapContainer = document.getElementById('worldMap');
