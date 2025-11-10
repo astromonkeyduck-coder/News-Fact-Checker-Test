@@ -149,34 +149,92 @@
     notificationShown = true;
   }
 
+  // Fetch the latest version from the server
+  async function fetchLatestVersion() {
+    try {
+      const response = await fetch(VERSION_CHECK_URL, {
+        method: 'GET',
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const html = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      // Try to get version from meta tag
+      const metaVersion = doc.querySelector('meta[name="app-version"]');
+      if (metaVersion) {
+        return metaVersion.getAttribute('content');
+      }
+      
+      // Fallback: try to get from last-update element
+      const lastUpdateEl = doc.querySelector('.last-update');
+      if (lastUpdateEl) {
+        const text = lastUpdateEl.textContent || '';
+        const match = text.match(/Last Update:\s*(.+)/);
+        if (match) {
+          return match[1].trim();
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('[Version Checker] Failed to fetch latest version:', error);
+      return null;
+    }
+  }
+
   // Check for version updates
   async function checkForUpdates() {
     try {
-      const currentVersion = getCurrentVersion();
+      const currentPageVersion = getCurrentVersion();
       const storedVersion = localStorage.getItem(STORAGE_KEY);
 
       console.log('[Version Checker] Checking for updates...');
+      console.log('[Version Checker] Current page version:', currentPageVersion);
       console.log('[Version Checker] Stored version:', storedVersion);
-      console.log('[Version Checker] Current version:', currentVersion);
       console.log('[Version Checker] Notification shown:', notificationShown);
 
       // If no stored version, store current and return
       if (!storedVersion) {
         console.log('[Version Checker] No stored version, storing current version');
-        localStorage.setItem(STORAGE_KEY, currentVersion);
+        localStorage.setItem(STORAGE_KEY, currentPageVersion);
         return;
       }
 
-      // Check if version has changed
-      if (storedVersion !== currentVersion && !notificationShown) {
-        console.log('[Version Checker] ✅ New version detected!');
-        console.log('[Version Checker] Old version:', storedVersion);
-        console.log('[Version Checker] New version:', currentVersion);
-        createNotificationBanner();
-      } else if (storedVersion === currentVersion) {
-        console.log('[Version Checker] Versions match, no update needed');
-      } else if (notificationShown) {
-        console.log('[Version Checker] Notification already shown');
+      // Fetch the latest version from the server (bypasses cache)
+      const latestVersion = await fetchLatestVersion();
+      
+      if (latestVersion) {
+        console.log('[Version Checker] Latest version from server:', latestVersion);
+        
+        // Check if server version is different from stored version
+        if (latestVersion !== storedVersion && !notificationShown) {
+          console.log('[Version Checker] ✅ New version detected on server!');
+          console.log('[Version Checker] Your version:', storedVersion);
+          console.log('[Version Checker] Latest version:', latestVersion);
+          createNotificationBanner();
+        } else if (latestVersion === storedVersion) {
+          console.log('[Version Checker] You are on the latest version');
+        } else if (notificationShown) {
+          console.log('[Version Checker] Notification already shown');
+        }
+      } else {
+        // Fallback: compare current page version with stored
+        if (currentPageVersion !== storedVersion && !notificationShown) {
+          console.log('[Version Checker] ✅ Version mismatch detected!');
+          console.log('[Version Checker] Stored version:', storedVersion);
+          console.log('[Version Checker] Current page version:', currentPageVersion);
+          createNotificationBanner();
+        }
       }
     } catch (error) {
       console.error('[Version Checker] Update check failed:', error);
