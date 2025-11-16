@@ -815,10 +815,22 @@ RESPONSE STYLE:
     });
 
     // Check if this is a spotlight request (should not send emails)
+    // Spotlight requests include:
+    // 1. Text requests: "tell me about [country]" with "culture" and "fun facts"
+    // 2. Image requests: "generate an image of the flag of [country]" or "culture of [country]"
+    const lowerMessage = message ? message.toLowerCase() : '';
     const isSpotlightRequest = message && (
-      message.toLowerCase().includes('tell me about') && 
-      message.toLowerCase().includes('culture') &&
-      message.toLowerCase().includes('fun facts')
+      // Text request pattern
+      (lowerMessage.includes('tell me about') && 
+       lowerMessage.includes('culture') &&
+       lowerMessage.includes('fun facts')) ||
+      // Image request patterns for spotlight
+      (lowerMessage.includes('generate an image') && (
+        lowerMessage.includes('flag of') ||
+        (lowerMessage.includes('culture of') && (lowerMessage.includes('traditional') || lowerMessage.includes('customs'))) ||
+        (lowerMessage.includes('cultural aspects') && (lowerMessage.includes('festivals') || lowerMessage.includes('food') || lowerMessage.includes('art'))) ||
+        (lowerMessage.includes('showing the culture') && lowerMessage.includes('traditional'))
+      ))
     );
     
     // Send email notification (non-blocking - don't wait for it)

@@ -7870,6 +7870,179 @@ function initNewsletterSubscription() {
     if (!spotlightContainer) return; // Exit if section doesn't exist
     
     let currentCountry = null;
+    let spotlightMusic = null;
+    let savedBackgroundMusicState = null;
+    let isSpotlightVisible = false;
+    
+    // Map country names to audio file names
+    const countryMusicMap = {
+        'Japan': 'Japan.wav',
+        'Brazil': 'Brazil.wav',
+        'India': 'India.wav',
+        'Germany': 'German.wav', // Note: file is "German.wav"
+        'France': 'France.wav',
+        'Italy': 'Italy.wav',
+        'Spain': 'Spain.wav',
+        'United Kingdom': 'UK.wav',
+        'Canada': 'Canada.wav',
+        'Australia': 'Australia.wav',
+        'Mexico': 'Mexico.wav',
+        'South Korea': 'SouthKorea.wav',
+        'China': 'China.wav',
+        'Russia': 'Russia.wav',
+        'Turkey': 'Turkey.wav',
+        'Argentina': 'Argentina.wav',
+        'South Africa': 'SouthAfrica.wav',
+        'Egypt': 'Egypt.wav'
+    };
+    
+    // Get background music elements
+    function getBackgroundMusicElements() {
+        return {
+            track1: document.getElementById('backgroundMusic'),
+            track2: document.getElementById('backgroundMusicSecond'),
+            loop: document.getElementById('backgroundMusicLoop')
+        };
+    }
+    
+    // Save current background music state
+    function saveBackgroundMusicState() {
+        const music = getBackgroundMusicElements();
+        let currentTrack = null;
+        let currentTime = 0;
+        
+        if (music.track1 && !music.track1.paused) {
+            currentTrack = music.track1;
+            currentTime = music.track1.currentTime;
+        } else if (music.track2 && !music.track2.paused) {
+            currentTrack = music.track2;
+            currentTime = music.track2.currentTime;
+        } else if (music.loop && !music.loop.paused) {
+            currentTrack = music.loop;
+            currentTime = music.loop.currentTime;
+        } else {
+            // Get from paused track
+            if (music.track1 && music.track1.currentTime > 0) {
+                currentTrack = music.track1;
+                currentTime = music.track1.currentTime;
+            } else if (music.track2 && music.track2.currentTime > 0) {
+                currentTrack = music.track2;
+                currentTime = music.track2.currentTime;
+            } else if (music.loop && music.loop.currentTime > 0) {
+                currentTrack = music.loop;
+                currentTime = music.loop.currentTime;
+            }
+        }
+        
+        savedBackgroundMusicState = currentTrack ? {
+            element: currentTrack,
+            time: currentTime
+        } : null;
+    }
+    
+    // Pause all background music
+    function pauseBackgroundMusic() {
+        const music = getBackgroundMusicElements();
+        if (music.track1 && !music.track1.paused) music.track1.pause();
+        if (music.track2 && !music.track2.paused) music.track2.pause();
+        if (music.loop && !music.loop.paused) music.loop.pause();
+    }
+    
+    // Resume background music from saved state
+    function resumeBackgroundMusic() {
+        if (!savedBackgroundMusicState || !savedBackgroundMusicState.element) return;
+        
+        const musicElement = savedBackgroundMusicState.element;
+        musicElement.currentTime = savedBackgroundMusicState.time;
+        musicElement.play().catch(err => {
+            console.log('Could not resume background music:', err);
+        });
+    }
+    
+    // Load and play country music
+    function playCountryMusic(countryName) {
+        const audioFile = countryMusicMap[countryName];
+        if (!audioFile) {
+            console.log(`No music file found for ${countryName}`);
+            return;
+        }
+        
+        // Stop any existing spotlight music
+        if (spotlightMusic) {
+            spotlightMusic.pause();
+            spotlightMusic = null;
+        }
+        
+        // Create new audio element
+        spotlightMusic = new Audio(`/SpotlightSongs/${audioFile}`);
+        spotlightMusic.volume = 0.5;
+        spotlightMusic.loop = true;
+        
+        spotlightMusic.addEventListener('loadeddata', () => {
+            if (isSpotlightVisible) {
+                spotlightMusic.play().catch(err => {
+                    console.log('Could not play spotlight music:', err);
+                });
+            }
+        });
+        
+        spotlightMusic.addEventListener('error', (err) => {
+            console.error(`Error loading spotlight music for ${countryName}:`, err);
+        });
+        
+        // Load the audio
+        spotlightMusic.load();
+    }
+    
+    // Stop country music
+    function stopCountryMusic() {
+        if (spotlightMusic) {
+            spotlightMusic.pause();
+            spotlightMusic.currentTime = 0;
+        }
+    }
+    
+    // Setup Intersection Observer to detect when spotlight is visible
+    function setupSpotlightVisibilityObserver() {
+        const spotlightSection = document.getElementById('country-spotlight-section');
+        if (!spotlightSection) return;
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const wasVisible = isSpotlightVisible;
+                isSpotlightVisible = entry.isIntersecting && entry.intersectionRatio > 0.3;
+                
+                // Only act if visibility state actually changed
+                if (wasVisible !== isSpotlightVisible) {
+                    if (isSpotlightVisible) {
+                        // Spotlight is now visible - pause background, play country music
+                        if (currentCountry && countryMusicMap[currentCountry.name]) {
+                            saveBackgroundMusicState();
+                            pauseBackgroundMusic();
+                            playCountryMusic(currentCountry.name);
+                        }
+                    } else {
+                        // Spotlight is not visible - stop country music, resume background
+                        stopCountryMusic();
+                        resumeBackgroundMusic();
+                    }
+                } else if (isSpotlightVisible && currentCountry && countryMusicMap[currentCountry.name]) {
+                    // Spotlight is visible and country changed - update music
+                    // Check if we need to switch music (country changed while visible)
+                    if (!spotlightMusic || spotlightMusic.paused) {
+                        saveBackgroundMusicState();
+                        pauseBackgroundMusic();
+                        playCountryMusic(currentCountry.name);
+                    }
+                }
+            });
+        }, {
+            threshold: [0, 0.3, 0.5, 0.7, 1.0],
+            rootMargin: '0px'
+        });
+        
+        observer.observe(spotlightSection);
+    }
     
     // Get a random country
     function getRandomCountry() {
@@ -8076,6 +8249,12 @@ function initNewsletterSubscription() {
             countryFlag.textContent = currentCountry.flag;
             countryName.textContent = currentCountry.name;
             
+            // If spotlight is visible, switch to new country's music
+            if (isSpotlightVisible && currentCountry && countryMusicMap[currentCountry.name]) {
+                stopCountryMusic();
+                playCountryMusic(currentCountry.name);
+            }
+            
             // Show content area
             spotlightLoading.style.display = 'none';
             spotlightContent.style.display = 'block';
@@ -8166,10 +8345,14 @@ IMPORTANT REQUIREMENTS:
         retryBtn.addEventListener('click', loadSpotlight);
     }
     
-    // Load on page load
+    // Setup visibility observer
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', loadSpotlight);
+        document.addEventListener('DOMContentLoaded', () => {
+            setupSpotlightVisibilityObserver();
+            loadSpotlight();
+        });
     } else {
+        setupSpotlightVisibilityObserver();
         loadSpotlight();
     }
 })();
