@@ -1648,7 +1648,13 @@ window.feedSubmitComment = async function(postId, form) {
     });
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: await response.text() }));
+      let errorData = null;
+      try {
+        errorData = await response.json();
+      } catch (parseError) {
+        const errorText = await response.text();
+        errorData = { error: errorText };
+      }
       const errorMessage = errorData.error || 'Failed to post comment. Please try again.';
       
       // If it's an author name validation error, show it to the user
