@@ -869,7 +869,6 @@
                 
                 saveMusicState(true);
             }
-            // Play ComeBack sound
         });
         
         window.addEventListener('focus', () => {
