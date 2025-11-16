@@ -9,8 +9,9 @@
     "dev": "npx netlify dev",
     "serve": "npx netlify dev",
     "test:webhook": "ts-node scripts/simulate-webhook.ts",
-    "build": "node scripts/update-last-modified.js && node scripts/inject-auth0.js",
+    "build": "node scripts/update-last-modified.js && node scripts/inject-auth0.js && npm run minify",
     "prebuild": "node scripts/update-last-modified.js && node scripts/inject-auth0.js",
+    "minify": "webpack --config webpack.config.js",
     "update-timestamp": "node scripts/update-last-modified.js",
     "test:games": "jest --testPathPattern=GamesGallery.test.js",
     "validate:games": "node scripts/validate-game-embeds.js",
@@ -41,7 +42,10 @@
     "node-fetch": "^2.7.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "terser": "^5.44.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "webpack": "^5.102.1",
+    "webpack-cli": "^6.0.1"
   }
 }
