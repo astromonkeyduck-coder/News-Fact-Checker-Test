@@ -1841,7 +1841,7 @@ class NoteworthyChat extends HTMLElement {
       
       // Clear uploaded files after displaying
       uploadedFiles = [];
-      const previewContainer = this.root.querySelector('.file-preview-container');
+      const previewContainer = rootRef.querySelector('.file-preview-container');
       if (previewContainer) {
         previewContainer.remove();
       }
@@ -2258,10 +2258,10 @@ class NoteworthyChat extends HTMLElement {
         preview.appendChild(removeBtn);
         
         // Insert preview before input area
-        const inputContainer = this.root.querySelector('.input');
+        const inputContainer = rootRef.querySelector('.input');
         if (inputContainer) {
           // Check if file preview container exists
-          let previewContainer = this.root.querySelector('.file-preview-container');
+          let previewContainer = rootRef.querySelector('.file-preview-container');
           if (!previewContainer) {
             previewContainer = document.createElement('div');
             previewContainer.className = 'file-preview-container';
@@ -2339,7 +2339,7 @@ class NoteworthyChat extends HTMLElement {
     }
     
     function updateFilePreviewContainer() {
-      const previewContainer = this.root.querySelector('.file-preview-container');
+      const previewContainer = rootRef.querySelector('.file-preview-container');
       if (previewContainer && uploadedFiles.length === 0) {
         previewContainer.remove();
       }
