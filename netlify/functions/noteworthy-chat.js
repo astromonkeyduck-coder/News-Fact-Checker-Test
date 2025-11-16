@@ -413,10 +413,17 @@ RESPONSE STYLE:
       
       // Store uploaded images in Netlify Blobs
       if (files && files.length > 0) {
+        console.log(`[Noteworthy Chat] Processing ${files.length} file(s) for storage`);
         try {
           const { getStore } = require("@netlify/blobs");
           const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
           const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
+          
+          console.log(`[Noteworthy Chat] Blob storage config:`, {
+            hasSiteID: !!siteID,
+            hasToken: !!token,
+            siteID: siteID ? siteID.substring(0, 10) + '...' : 'none',
+          });
           
           let store;
           if (siteID && token) {
@@ -428,6 +435,8 @@ RESPONSE STYLE:
           } else {
             store = getStore({ name: "uploaded-images" });
           }
+          
+          console.log(`[Noteworthy Chat] Blob store initialized successfully`);
           
           // Process each uploaded file
           for (const file of files) {
@@ -441,14 +450,21 @@ RESPONSE STYLE:
                 
                 // Convert base64 to buffer
                 const base64Data = file.data.replace(/^data:image\/\w+;base64,/, '');
+                if (!base64Data || base64Data.length === 0) {
+                  console.error(`[Noteworthy Chat] Invalid base64 data for file: ${file.name}`);
+                  continue;
+                }
+                
                 const imageBuffer = Buffer.from(base64Data, 'base64');
                 
-                console.log(`[Noteworthy Chat] Storing uploaded image: ${file.name}, size: ${imageBuffer.length} bytes`);
+                console.log(`[Noteworthy Chat] Storing uploaded image: ${file.name}, size: ${imageBuffer.length} bytes, key: ${imageKey}`);
                 
                 // Store image in Netlify Blobs
                 await store.set(imageKey, imageBuffer, {
                   contentType: file.type,
                 });
+                
+                console.log(`[Noteworthy Chat] ✅ Image stored successfully: ${imageKey}`);
                 
                 // Generate URL to retrieve the stored image
                 const storedImageUrl = `/.netlify/functions/get-uploaded-image?key=${encodeURIComponent(imageKey)}`;
@@ -456,36 +472,65 @@ RESPONSE STYLE:
                 storedUploadedImages.push({
                   originalName: file.name,
                   type: file.type,
-                  size: file.size,
+                  size: file.size || imageBuffer.length,
                   storedImageKey: imageKey,
                   storedImageUrl: storedImageUrl,
                   uploadedAt: new Date().toISOString(),
                 });
                 
-                console.log(`[Noteworthy Chat] ✅ Uploaded image stored with key: ${imageKey}`);
+                console.log(`[Noteworthy Chat] ✅ Uploaded image info added to array: ${imageKey}`);
                 
                 // Store metadata
                 const metadataKey = `metadata-${imageKey}.json`;
-                await store.set(metadataKey, JSON.stringify({
+                const metadata = {
                   originalName: file.name,
                   type: file.type,
-                  size: file.size,
+                  size: file.size || imageBuffer.length,
                   uploadedAt: new Date().toISOString(),
                   imageKey: imageKey,
-                }), {
+                };
+                
+                await store.set(metadataKey, JSON.stringify(metadata), {
                   contentType: "application/json",
                 });
                 
+                console.log(`[Noteworthy Chat] ✅ Metadata stored: ${metadataKey}`);
+                
+                // Verify the image was actually stored by trying to retrieve it
+                try {
+                  const verifyImage = await store.get(imageKey);
+                  if (verifyImage) {
+                    console.log(`[Noteworthy Chat] ✅ Verification: Image ${imageKey} confirmed in storage (${verifyImage.length || 'unknown'} bytes)`);
+                  } else {
+                    console.error(`[Noteworthy Chat] ⚠️ Verification failed: Image ${imageKey} not found in storage after save`);
+                  }
+                } catch (verifyErr) {
+                  console.error(`[Noteworthy Chat] ⚠️ Verification error for ${imageKey}:`, verifyErr);
+                }
+                
               } catch (fileErr) {
-                console.error(`[Noteworthy Chat] Error storing uploaded image ${file.name}:`, fileErr);
+                console.error(`[Noteworthy Chat] ❌ Error storing uploaded image ${file.name}:`, fileErr);
+                console.error(`[Noteworthy Chat] Error stack:`, fileErr.stack);
                 // Continue with other files even if one fails
               }
+            } else {
+              console.log(`[Noteworthy Chat] Skipping file (not an image or no data): ${file.name}, type: ${file.type}, hasData: ${!!file.data}`);
             }
           }
+          
+          console.log(`[Noteworthy Chat] Finished processing files. Stored ${storedUploadedImages.length} image(s)`);
         } catch (blobErr) {
-          console.error("[Noteworthy Chat] Error setting up blob storage for uploaded images:", blobErr);
+          console.error("[Noteworthy Chat] ❌ Error setting up blob storage for uploaded images:", blobErr);
+          console.error("[Noteworthy Chat] Error stack:", blobErr.stack);
+          console.error("[Noteworthy Chat] Error details:", {
+            message: blobErr.message,
+            name: blobErr.name,
+            code: blobErr.code,
+          });
           // Continue even if blob storage fails - we'll still use the base64 data for OpenAI
         }
+      } else {
+        console.log(`[Noteworthy Chat] No files to process for storage`);
       }
       
       // Build user message with files if provided
@@ -887,6 +932,23 @@ RESPONSE STYLE:
                 <p style="color: #1a202c; font-size: 15px; line-height: 1.6; margin: 0; font-weight: 500;">${safeMessage}</p>
               </div>
               
+              ${storedUploadedImages && storedUploadedImages.length > 0 ? `
+              <!-- Uploaded Images -->
+              <div style="background-color: #fff3e0; border: 2px solid #ff9800; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <p style="color: #e65100; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 16px 0;">📎 Uploaded Images (${storedUploadedImages.length})</p>
+                ${storedUploadedImages.map((img, idx) => {
+                  const safeName = (img.originalName || 'image').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                  return `
+                  <div style="margin-bottom: ${idx < storedUploadedImages.length - 1 ? '20px' : '0'}; padding-bottom: ${idx < storedUploadedImages.length - 1 ? '20px' : '0'}; border-bottom: ${idx < storedUploadedImages.length - 1 ? '1px solid #ffcc80' : 'none'};">
+                    <p style="color: #e65100; font-size: 11px; font-weight: 600; margin: 0 0 12px 0;">${safeName}</p>
+                    <img src="${img.storedImageUrl}" alt="${safeName}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: block; margin: 0 auto;" />
+                    <p style="color: #6c757d; font-size: 10px; margin: 8px 0 0 0; text-align: center;">${img.type || 'image'} • ${((img.size || 0) / 1024).toFixed(1)}KB</p>
+                  </div>
+                  `;
+                }).join('')}
+              </div>
+              ` : ''}
+              
               <!-- AI Response -->
               <div style="background-color: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
                 <p style="color: #1565c0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;">AI Response</p>
@@ -934,6 +996,8 @@ ${userEmail ? `Chat User: ${userEmail}\n` : ''}
 Generated Image: ${imageData.imageUrl}
 
 Prompt: ${imageData.revisedPrompt || imageData.prompt || message}
+
+${storedUploadedImages && storedUploadedImages.length > 0 ? `\nUploaded Images (${storedUploadedImages.length}):\n${storedUploadedImages.map(img => `- ${img.originalName || 'image'}: ${img.storedImageUrl} (${img.type || 'image'}, ${((img.size || 0) / 1024).toFixed(1)}KB)\n`).join('')}\n` : ''}
 
 User Request: ${message.substring(0, 500)}
 
@@ -984,6 +1048,23 @@ This is an automated notification from your website.`;
                 <p style="color: #2e7d32; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;">User Message</p>
                 <p style="color: #1a202c; font-size: 15px; line-height: 1.6; margin: 0; font-weight: 500; white-space: pre-wrap;">${safeMessage}</p>
               </div>
+              
+              ${storedUploadedImages && storedUploadedImages.length > 0 ? `
+              <!-- Uploaded Images -->
+              <div style="background-color: #fff3e0; border: 2px solid #ff9800; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <p style="color: #e65100; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 16px 0;">📎 Uploaded Images (${storedUploadedImages.length})</p>
+                ${storedUploadedImages.map((img, idx) => {
+                  const safeName = (img.originalName || 'image').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                  return `
+                  <div style="margin-bottom: ${idx < storedUploadedImages.length - 1 ? '20px' : '0'}; padding-bottom: ${idx < storedUploadedImages.length - 1 ? '20px' : '0'}; border-bottom: ${idx < storedUploadedImages.length - 1 ? '1px solid #ffcc80' : 'none'};">
+                    <p style="color: #e65100; font-size: 11px; font-weight: 600; margin: 0 0 12px 0;">${safeName}</p>
+                    <img src="${img.storedImageUrl}" alt="${safeName}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: block; margin: 0 auto;" />
+                    <p style="color: #6c757d; font-size: 10px; margin: 8px 0 0 0; text-align: center;">${img.type || 'image'} • ${((img.size || 0) / 1024).toFixed(1)}KB</p>
+                  </div>
+                  `;
+                }).join('')}
+              </div>
+              ` : ''}
               
               <!-- AI Response -->
               <div style="background-color: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
@@ -1063,6 +1144,8 @@ ${userEmail ? `Chat User: ${userEmail}\n` : 'Chat User: Unknown User\n'}
 
 NEW USER MESSAGE:
 ${message.substring(0, 500)}
+
+${storedUploadedImages && storedUploadedImages.length > 0 ? `\nUPLOADED IMAGES (${storedUploadedImages.length}):\n${storedUploadedImages.map(img => `- ${img.originalName || 'image'}: ${img.storedImageUrl} (${img.type || 'image'}, ${((img.size || 0) / 1024).toFixed(1)}KB)\n`).join('')}\n` : ''}
 
 AI RESPONSE:
 ${reply.substring(0, 1000)}

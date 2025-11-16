@@ -7798,3 +7798,349 @@ function initNewsletterSubscription() {
     // Initialize
     init();
 })();
+
+// Country Spotlight Functionality
+(function initCountrySpotlight() {
+    // List of countries with their flag emojis
+    const countries = [
+        { name: 'Japan', flag: '🇯🇵' },
+        { name: 'Brazil', flag: '🇧🇷' },
+        { name: 'India', flag: '🇮🇳' },
+        { name: 'Germany', flag: '🇩🇪' },
+        { name: 'France', flag: '🇫🇷' },
+        { name: 'Italy', flag: '🇮🇹' },
+        { name: 'Spain', flag: '🇪🇸' },
+        { name: 'United Kingdom', flag: '🇬🇧' },
+        { name: 'Canada', flag: '🇨🇦' },
+        { name: 'Australia', flag: '🇦🇺' },
+        { name: 'Mexico', flag: '🇲🇽' },
+        { name: 'South Korea', flag: '🇰🇷' },
+        { name: 'China', flag: '🇨🇳' },
+        { name: 'Russia', flag: '🇷🇺' },
+        { name: 'Turkey', flag: '🇹🇷' },
+        { name: 'Argentina', flag: '🇦🇷' },
+        { name: 'South Africa', flag: '🇿🇦' },
+        { name: 'Egypt', flag: '🇪🇬' },
+        { name: 'Nigeria', flag: '🇳🇬' },
+        { name: 'Thailand', flag: '🇹🇭' },
+        { name: 'Indonesia', flag: '🇮🇩' },
+        { name: 'Philippines', flag: '🇵🇭' },
+        { name: 'Vietnam', flag: '🇻🇳' },
+        { name: 'Poland', flag: '🇵🇱' },
+        { name: 'Netherlands', flag: '🇳🇱' },
+        { name: 'Sweden', flag: '🇸🇪' },
+        { name: 'Norway', flag: '🇳🇴' },
+        { name: 'Denmark', flag: '🇩🇰' },
+        { name: 'Finland', flag: '🇫🇮' },
+        { name: 'Greece', flag: '🇬🇷' },
+        { name: 'Portugal', flag: '🇵🇹' },
+        { name: 'Ireland', flag: '🇮🇪' },
+        { name: 'New Zealand', flag: '🇳🇿' },
+        { name: 'Chile', flag: '🇨🇱' },
+        { name: 'Colombia', flag: '🇨🇴' },
+        { name: 'Peru', flag: '🇵🇪' },
+        { name: 'Morocco', flag: '🇲🇦' },
+        { name: 'Kenya', flag: '🇰🇪' },
+        { name: 'Israel', flag: '🇮🇱' },
+        { name: 'Saudi Arabia', flag: '🇸🇦' },
+        { name: 'United Arab Emirates', flag: '🇦🇪' },
+        { name: 'Singapore', flag: '🇸🇬' },
+        { name: 'Malaysia', flag: '🇲🇾' },
+        { name: 'Bangladesh', flag: '🇧🇩' },
+        { name: 'Pakistan', flag: '🇵🇰' },
+        { name: 'Ukraine', flag: '🇺🇦' },
+        { name: 'Romania', flag: '🇷🇴' },
+        { name: 'Czech Republic', flag: '🇨🇿' },
+        { name: 'Hungary', flag: '🇭🇺' },
+        { name: 'Belgium', flag: '🇧🇪' },
+        { name: 'Switzerland', flag: '🇨🇭' }
+    ];
+    
+    const spotlightContainer = document.getElementById('spotlight-container');
+    const spotlightLoading = document.getElementById('spotlight-loading');
+    const spotlightContent = document.getElementById('spotlight-content');
+    const spotlightError = document.getElementById('spotlight-error');
+    const countryFlag = document.getElementById('country-flag');
+    const countryName = document.getElementById('country-name');
+    const aiResponse = document.getElementById('ai-response');
+    const aiThinking = document.getElementById('ai-thinking');
+    const refreshBtn = document.getElementById('refresh-spotlight-btn');
+    const retryBtn = document.getElementById('retry-spotlight-btn');
+    
+    if (!spotlightContainer) return; // Exit if section doesn't exist
+    
+    let currentCountry = null;
+    
+    // Get a random country
+    function getRandomCountry() {
+        return countries[Math.floor(Math.random() * countries.length)];
+    }
+    
+    // Format AI response text
+    function formatAIResponse(text) {
+        // Split by common section headers
+        const sections = text.split(/(?=\*\*|##|###|Culture|Fun Facts|Breaking News|Recent News|Important News)/i);
+        let formatted = '';
+        
+        sections.forEach(section => {
+            section = section.trim();
+            if (!section) return;
+            
+            // Check if it's a header
+            if (section.match(/^\*\*.*\*\*/) || section.match(/^##?\s+/) || section.match(/^###\s+/)) {
+                const headerText = section.replace(/^\*\*|\*\*$/g, '').replace(/^##?\s+/, '').replace(/^###\s+/, '');
+                formatted += `<h4>${headerText}</h4>`;
+            } else if (section.match(/^(Culture|Fun Facts|Breaking News|Recent News|Important News)/i)) {
+                const headerText = section.match(/^(Culture|Fun Facts|Breaking News|Recent News|Important News)/i)[0];
+                formatted += `<h4>${headerText}</h4>`;
+                const content = section.replace(/^(Culture|Fun Facts|Breaking News|Recent News|Important News)[:\-]?\s*/i, '');
+                if (content) {
+                    formatted += `<p>${content}</p>`;
+                }
+            } else {
+                // Regular paragraph
+                formatted += `<p>${section}</p>`;
+            }
+        });
+        
+        // If no formatting worked, just return as paragraphs
+        if (!formatted) {
+            const paragraphs = text.split(/\n\n+/);
+            formatted = paragraphs.map(p => `<p>${p.trim()}</p>`).join('');
+        }
+        
+        return formatted;
+    }
+    
+    // Generate an image using the AI API
+    async function generateImage(prompt) {
+        try {
+            const response = await fetch('/.netlify/functions/noteworthy-chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: prompt,
+                    chatHistory: []
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            return data.image ? data.image.imageUrl : null;
+        } catch (error) {
+            console.error('Image generation error:', error);
+            return null;
+        }
+    }
+    
+    // Load image into a wrapper element
+    function loadImageIntoWrapper(wrapperId, imageUrl) {
+        const wrapper = document.getElementById(wrapperId);
+        if (!wrapper) return;
+        
+        if (imageUrl) {
+            wrapper.innerHTML = `<img src="${imageUrl}" alt="Generated image" loading="lazy" />`;
+        } else {
+            wrapper.innerHTML = '<div class="image-loading-placeholder"><p>Failed to generate image</p></div>';
+        }
+    }
+    
+    // Rate limiting: 10 countries per hour
+    const RATE_LIMIT_KEY = 'spotlight_rate_limit';
+    const RATE_LIMIT_COUNT = 10;
+    const RATE_LIMIT_HOUR_MS = 60 * 60 * 1000; // 1 hour in milliseconds
+    
+    function checkRateLimit() {
+        const now = Date.now();
+        const stored = localStorage.getItem(RATE_LIMIT_KEY);
+        
+        if (!stored) {
+            // First time - initialize
+            localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({
+                hourStart: now,
+                count: 0
+            }));
+            return { allowed: true, remaining: RATE_LIMIT_COUNT };
+        }
+        
+        const data = JSON.parse(stored);
+        const timeSinceHourStart = now - data.hourStart;
+        
+        // If more than an hour has passed, reset
+        if (timeSinceHourStart >= RATE_LIMIT_HOUR_MS) {
+            localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({
+                hourStart: now,
+                count: 0
+            }));
+            return { allowed: true, remaining: RATE_LIMIT_COUNT };
+        }
+        
+        // Check if limit reached
+        if (data.count >= RATE_LIMIT_COUNT) {
+            const timeRemaining = RATE_LIMIT_HOUR_MS - timeSinceHourStart;
+            const minutesRemaining = Math.ceil(timeRemaining / (60 * 1000));
+            return { 
+                allowed: false, 
+                remaining: 0, 
+                minutesRemaining: minutesRemaining 
+            };
+        }
+        
+        return { 
+            allowed: true, 
+            remaining: RATE_LIMIT_COUNT - data.count - 1 
+        };
+    }
+    
+    function incrementRateLimit() {
+        const stored = localStorage.getItem(RATE_LIMIT_KEY);
+        if (!stored) {
+            localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({
+                hourStart: Date.now(),
+                count: 1
+            }));
+            return;
+        }
+        
+        const data = JSON.parse(stored);
+        data.count = (data.count || 0) + 1;
+        localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(data));
+    }
+    
+    // Load spotlight country and AI content
+    async function loadSpotlight() {
+        try {
+            // Check rate limit
+            const rateLimit = checkRateLimit();
+            
+            if (!rateLimit.allowed) {
+                // Show rate limit message
+                spotlightLoading.style.display = 'none';
+                spotlightContent.style.display = 'none';
+                spotlightError.style.display = 'block';
+                
+                const errorMsg = spotlightError.querySelector('p');
+                const retryBtn = document.getElementById('retry-spotlight-btn');
+                
+                if (errorMsg) {
+                    errorMsg.textContent = `⚠️ Rate limit reached! You've generated ${RATE_LIMIT_COUNT} countries this hour. Please try again in ${rateLimit.minutesRemaining} minute${rateLimit.minutesRemaining !== 1 ? 's' : ''}.`;
+                }
+                
+                if (retryBtn) {
+                    retryBtn.style.display = 'none';
+                }
+                
+                return;
+            }
+            
+            // Show loading state
+            spotlightLoading.style.display = 'block';
+            spotlightContent.style.display = 'none';
+            spotlightError.style.display = 'none';
+            
+            // Get random country
+            currentCountry = getRandomCountry();
+            
+            // Update country display
+            countryFlag.textContent = currentCountry.flag;
+            countryName.textContent = currentCountry.name;
+            
+            // Show content area
+            spotlightLoading.style.display = 'none';
+            spotlightContent.style.display = 'block';
+            aiThinking.style.display = 'block';
+            aiResponse.innerHTML = '';
+            
+            // Reset image placeholders
+            const imageWrappers = ['flag-image-wrapper', 'culture1-image-wrapper', 'culture2-image-wrapper', 'map-image-wrapper'];
+            imageWrappers.forEach(wrapperId => {
+                const wrapper = document.getElementById(wrapperId);
+                if (wrapper) {
+                    wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                }
+            });
+            
+            // Generate images in parallel
+            const imagePromises = [
+                generateImage(`generate an image of the flag of ${currentCountry.name}, official flag design, high quality`).then(url => {
+                    loadImageIntoWrapper('flag-image-wrapper', url);
+                }),
+                generateImage(`generate an image showing the culture of ${currentCountry.name}, traditional customs, people, architecture, vibrant and colorful`).then(url => {
+                    loadImageIntoWrapper('culture1-image-wrapper', url);
+                }),
+                generateImage(`generate an image of cultural aspects of ${currentCountry.name}, festivals, food, art, traditional scenes`).then(url => {
+                    loadImageIntoWrapper('culture2-image-wrapper', url);
+                }),
+                generateImage(`generate an image of a world map highlighting ${currentCountry.name} location, geographic map, clear borders`).then(url => {
+                    loadImageIntoWrapper('map-image-wrapper', url);
+                })
+            ];
+            
+            // Call AI API for text content
+            const textPrompt = `Tell me about ${currentCountry.name}. Please include:
+1. **Culture** - Interesting cultural aspects, traditions, or customs
+2. **Fun Facts** - Surprising or fascinating facts about the country
+3. **Breaking News** - Recent important news or events from ${currentCountry.name} (if any significant developments)
+
+Keep it engaging and informative, around 300-400 words total. Format with clear sections.`;
+            
+            const textResponse = fetch('/.netlify/functions/noteworthy-chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: textPrompt,
+                    chatHistory: []
+                })
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                return response.json();
+            }).then(data => {
+                if (data.reply) {
+                    aiThinking.style.display = 'none';
+                    aiResponse.innerHTML = formatAIResponse(data.reply);
+                } else {
+                    throw new Error('No reply from AI');
+                }
+            });
+            
+            // Wait for all images and text to complete
+            await Promise.all([...imagePromises, textResponse]);
+            
+            // Increment rate limit counter after successful generation
+            incrementRateLimit();
+            
+        } catch (error) {
+            console.error('Spotlight error:', error);
+            aiThinking.style.display = 'none';
+            // Don't hide content on error, just show error message
+            if (aiResponse) {
+                aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Unable to load all content. Some images may be missing.</p>';
+            }
+        }
+    }
+    
+    // Event listeners
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', loadSpotlight);
+    }
+    
+    if (retryBtn) {
+        retryBtn.addEventListener('click', loadSpotlight);
+    }
+    
+    // Load on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadSpotlight);
+    } else {
+        loadSpotlight();
+    }
+})();

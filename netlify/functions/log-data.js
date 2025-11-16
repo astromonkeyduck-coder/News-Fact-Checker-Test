@@ -21,12 +21,18 @@ function getClientIP(event) {
 
 // Get user agent and other request metadata
 function getRequestMetadata(event) {
+  const timestamp = new Date();
   return {
     userAgent: event.headers["user-agent"] || "unknown",
     referer: event.headers["referer"] || event.headers["referrer"] || "unknown",
     acceptLanguage: event.headers["accept-language"] || "unknown",
     acceptEncoding: event.headers["accept-encoding"] || "unknown",
-    timestamp: new Date().toISOString(),
+    timestamp: timestamp.toISOString(),
+    date: timestamp.toISOString().split("T")[0], // YYYY-MM-DD
+    time: timestamp.toISOString().split("T")[1].split(".")[0], // HH:MM:SS
+    dayOfWeek: timestamp.toLocaleDateString('en-US', { weekday: 'long' }),
+    hour: timestamp.getHours(),
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   };
 }
 
@@ -39,11 +45,19 @@ function logsToCSV(logs) {
   // Define column order and friendly names
   const baseColumns = [
     { key: 'timestamp', name: 'Date & Time' },
+    { key: 'date', name: 'Date' },
+    { key: 'time', name: 'Time' },
+    { key: 'dayOfWeek', name: 'Day of Week' },
+    { key: 'hour', name: 'Hour' },
     { key: 'dataType', name: 'Activity Type' },
     { key: 'userEmail', name: 'User Email' },
     { key: 'userName', name: 'User Name' },
+    { key: 'identitySource', name: 'Identity Source' },
     { key: 'ip', name: 'IP Address' },
     { key: 'location', name: 'Location' },
+    { key: 'userAgent', name: 'User Agent' },
+    { key: 'referer', name: 'Referer' },
+    { key: 'dataSize', name: 'Data Size (bytes)' },
   ];
 
   // Type-specific columns with friendly names
@@ -236,7 +250,19 @@ function logsToCSV(logs) {
  * @param {object} event - Netlify function event (for IP and metadata)
  */
 async function logData(dataType, data, event = null) {
+  const startTime = Date.now();
   try {
+    // Validate inputs
+    if (!dataType || typeof dataType !== 'string') {
+      console.error("[Data Log] Invalid dataType:", dataType);
+      return { success: false, error: "Invalid dataType" };
+    }
+    
+    if (!data || typeof data !== 'object') {
+      console.error("[Data Log] Invalid data object:", typeof data);
+      return { success: false, error: "Invalid data object" };
+    }
+    
     // Check if store is configured
     if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_BLOB_READ_WRITE_TOKEN) {
       console.error("[Data Log] Missing environment variables:", {
@@ -248,7 +274,7 @@ async function logData(dataType, data, event = null) {
       if (process.env.NETLIFY_DEV) {
         console.log("[Data Log] Local dev mode - logging to console:", {
           dataType,
-          data,
+          data: JSON.stringify(data).substring(0, 500),
           timestamp: new Date().toISOString()
         });
       }
@@ -409,7 +435,58 @@ async function logData(dataType, data, event = null) {
       return { success: false, skipped: true, reason: 'Google ads logs are not logged' };
     }
 
-    // Create log entry
+    // Helper function to sanitize data
+    function sanitizeData(obj) {
+      if (!obj || typeof obj !== 'object') return obj;
+      
+      const sanitized = Array.isArray(obj) ? [] : {};
+      
+      for (const [key, value] of Object.entries(obj)) {
+        // Skip null/undefined
+        if (value === null || value === undefined) continue;
+        
+        // Handle different types
+        if (typeof value === 'string') {
+          // Limit string length
+          if (value.length > 10000) {
+            sanitized[key] = value.substring(0, 10000) + '... [truncated]';
+          } else {
+            sanitized[key] = value;
+          }
+        } else if (typeof value === 'object') {
+          // Recursively sanitize nested objects
+          if (Array.isArray(value)) {
+            sanitized[key] = value.slice(0, 100).map(item => 
+              typeof item === 'object' ? sanitizeData(item) : item
+            );
+          } else {
+            sanitized[key] = sanitizeData(value);
+          }
+        } else {
+          sanitized[key] = value;
+        }
+      }
+      
+      return sanitized;
+    }
+
+    // Sanitize and validate data before storing
+    const sanitizedData = sanitizeData(data);
+    
+    // Calculate data size for monitoring
+    const dataSize = JSON.stringify(sanitizedData).length;
+    if (dataSize > 100000) { // 100KB limit
+      console.warn(`[Data Log] Large data object detected: ${dataSize} bytes for ${dataType}`);
+      // Truncate large fields
+      if (sanitizedData.userMessage && sanitizedData.userMessage.length > 5000) {
+        sanitizedData.userMessage = sanitizedData.userMessage.substring(0, 5000) + '... [truncated]';
+      }
+      if (sanitizedData.aiResponse && sanitizedData.aiResponse.length > 5000) {
+        sanitizedData.aiResponse = sanitizedData.aiResponse.substring(0, 5000) + '... [truncated]';
+      }
+    }
+    
+    // Create log entry with enhanced metadata
     const logEntry = {
       dataType,
       ip,
@@ -419,8 +496,10 @@ async function logData(dataType, data, event = null) {
       identitySource: identitySource, // 'provided', 'inferred', or null
       fingerprint: fingerprint, // Store fingerprint for future identity matching
       ...metadata,
-      data,
+      data: sanitizedData,
+      dataSize: dataSize, // Track size for monitoring
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      version: '2.0', // Version for future migrations
     };
     
     // Check if IP should be excluded from alerts (e.g., your own IP, friends, etc.)
@@ -664,6 +743,200 @@ This is an automated notification from your website.`,
         }
       } catch (alertErr) {
         console.error("[Data Log] Error storing alert:", alertErr);
+      }
+    }
+    
+    // Check for visitors outside Florida and send email notification
+    if (dataType === 'page-view' && location && !shouldExcludeIP) {
+      const regionLower = (location.region || '').toLowerCase();
+      const countryLower = (location.country || '').toLowerCase();
+      const isFlorida = regionLower.includes('florida') || regionLower === 'fl' || regionLower === 'florida';
+      
+      // Check if visitor is NOT from Florida
+      if (!isFlorida && location.city && location.city !== 'Unknown' && location.city !== 'Local') {
+        try {
+          // Check if Resend API key is configured
+          if (!process.env.RESEND_API_KEY) {
+            console.warn('[Data Log] RESEND_API_KEY not configured. Skipping non-Florida visitor email notification.');
+          } else {
+            const { Resend } = require('resend');
+            const resend = new Resend(process.env.RESEND_API_KEY);
+            
+            // Get notification emails from environment variable
+            let notificationEmails = [];
+            if (process.env.AI_NOTIFICATION_EMAILS) {
+              try {
+                notificationEmails = JSON.parse(process.env.AI_NOTIFICATION_EMAILS);
+                if (!Array.isArray(notificationEmails)) {
+                  throw new Error('Not an array');
+                }
+              } catch {
+                notificationEmails = process.env.AI_NOTIFICATION_EMAILS.split(',').map(e => e.trim()).filter(e => e);
+              }
+            }
+            
+            // Filter out mr.pangolinman@example.com
+            notificationEmails = notificationEmails.filter(email => 
+              email.toLowerCase() !== 'mr.pangolinman@example.com' && 
+              email.toLowerCase() !== 'pangolinman@example.com'
+            );
+            
+            if (notificationEmails.length === 0) {
+              console.log('[Data Log] No notification emails configured for non-Florida visitor alerts');
+            } else {
+              const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
+              
+              // Build exact location string
+              const locationParts = [];
+              if (location.city) locationParts.push(location.city);
+              if (location.region) locationParts.push(location.region);
+              if (location.country) locationParts.push(location.country);
+              const exactLocation = locationParts.join(', ');
+              
+              const pageUrl = data.url || data.path || 'Unknown page';
+              const pageTitle = data.title || 'Unknown page';
+              
+              // Additional location details
+              const locationDetails = [];
+              if (location.timezone) locationDetails.push(`Timezone: ${location.timezone}`);
+              if (location.isp) locationDetails.push(`ISP: ${location.isp}`);
+              if (location.countryCode) locationDetails.push(`Country Code: ${location.countryCode}`);
+              
+              // Send to all notification emails
+              Promise.all(notificationEmails.map(email =>
+                resend.emails.send({
+                  from: fromEmail,
+                  to: email,
+                  subject: `🌍 Visitor from Outside Florida: ${exactLocation}`,
+                  html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); overflow: hidden;">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 0; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+              <div style="padding: 40px 30px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 16px;">🌍</div>
+                <h1 style="color: #ffffff; margin: 0 0 8px 0; font-size: 28px; font-weight: 800; text-shadow: 0 2px 8px rgba(0,0,0,0.2);">Visitor from Outside Florida</h1>
+                <p style="color: rgba(255,255,255,0.95); margin: 0; font-size: 15px; font-weight: 500;">Location Alert</p>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 30px;">
+              <!-- Exact Location -->
+              <div style="background-color: #fff3e0; border: 3px solid #ff9800; border-radius: 16px; padding: 24px; margin-bottom: 24px; text-align: center; box-shadow: 0 4px 16px rgba(255, 152, 0, 0.2);">
+                <p style="color: #e65100; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin: 0 0 16px 0;">📍 Exact Location</p>
+                <p style="color: #1a202c; font-size: 24px; font-weight: 800; margin: 0; line-height: 1.4;">${exactLocation}</p>
+                ${locationDetails.length > 0 ? `
+                <div style="margin-top: 16px; padding-top: 16px; border-top: 2px solid #ffcc80;">
+                  ${locationDetails.map(detail => `<p style="color: #6c757d; font-size: 12px; margin: 4px 0; font-weight: 500;">${detail}</p>`).join('')}
+                </div>
+                ` : ''}
+              </div>
+              
+              <!-- Page Information -->
+              <div style="background-color: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+                <p style="color: #1565c0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;">📄 Page Visited</p>
+                <p style="color: #1a202c; font-size: 16px; font-weight: 600; margin: 0 0 8px 0;">${pageTitle}</p>
+                <p style="color: #666666; font-size: 13px; margin: 0; word-break: break-all;"><a href="${pageUrl}" style="color: #2196f3; text-decoration: none;">${pageUrl}</a></p>
+              </div>
+              
+              ${userEmail ? `
+              <!-- User Email -->
+              <div style="background-color: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+                <p style="color: #2e7d32; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">👤 User Email</p>
+                <p style="color: #1a202c; font-size: 16px; font-weight: 600; margin: 0;">${userEmail}</p>
+              </div>
+              ` : ''}
+              
+              <!-- Additional Details -->
+              <div style="background-color: #f8f9fa; border: 2px solid #dee2e6; border-radius: 12px; padding: 20px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                  <tr>
+                    <td style="padding: 8px 0;">
+                      <p style="color: #667eea; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">🌐 IP Address</p>
+                      <p style="color: #1a202c; font-size: 14px; font-weight: 600; margin: 0;">${ip}</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0;">
+                      <p style="color: #667eea; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">📅 Time</p>
+                      <p style="color: #1a202c; font-size: 14px; font-weight: 600; margin: 0;">${new Date().toLocaleString()}</p>
+                    </td>
+                  </tr>
+                  ${metadata.referer && metadata.referer !== 'unknown' ? `
+                  <tr>
+                    <td style="padding: 8px 0;">
+                      <p style="color: #667eea; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">🔙 Referrer</p>
+                      <p style="color: #1a202c; font-size: 13px; margin: 0; word-break: break-all;">${metadata.referer.substring(0, 150)}</p>
+                    </td>
+                  </tr>
+                  ` : ''}
+                  ${metadata.userAgent && metadata.userAgent !== 'unknown' ? `
+                  <tr>
+                    <td style="padding: 8px 0;">
+                      <p style="color: #667eea; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">💻 User Agent</p>
+                      <p style="color: #1a202c; font-size: 12px; margin: 0; word-break: break-all;">${metadata.userAgent.substring(0, 200)}</p>
+                    </td>
+                  </tr>
+                  ` : ''}
+                </table>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 30px; background-color: #f8f9fa; border-top: 1px solid #dee2e6;">
+              <p style="color: #6c757d; font-size: 12px; margin: 0; text-align: center; line-height: 1.6;">
+                <span style="color: #667eea; font-weight: 600;">Noteworthy News</span> • Automated Notification
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+                  text: `Visitor from Outside Florida
+
+EXACT LOCATION: ${exactLocation}
+${locationDetails.length > 0 ? locationDetails.join('\n') + '\n' : ''}
+
+Page Visited: ${pageTitle}
+URL: ${pageUrl}
+${userEmail ? `User Email: ${userEmail}\n` : ''}
+IP Address: ${ip}
+Time: ${new Date().toLocaleString()}
+${metadata.referer && metadata.referer !== 'unknown' ? `Referrer: ${metadata.referer}\n` : ''}
+${metadata.userAgent && metadata.userAgent !== 'unknown' ? `User Agent: ${metadata.userAgent}\n` : ''}
+
+---
+This is an automated notification from your website.`,
+                }).catch(err => {
+                  console.error(`[Data Log] Failed to send non-Florida visitor email to ${email}:`, err);
+                })
+              )).catch(err => {
+                console.error("[Data Log] Error sending non-Florida visitor emails:", err);
+              });
+              
+              console.log(`[Data Log] 🌍 Non-Florida visitor alert sent: ${exactLocation}`);
+            }
+          }
+        } catch (emailErr) {
+          console.error("[Data Log] Error setting up non-Florida visitor email notification:", emailErr);
+        }
       }
     }
     
@@ -1064,61 +1337,134 @@ This is an automated notification from your website.`,
     }
 
     // Store by date for easy querying
-    const date = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    const date = metadata.date || new Date().toISOString().split("T")[0]; // YYYY-MM-DD
     const dateKey = `logs-${date}`;
     const typeKey = `${dataType}-${date}`;
+    const hourKey = `${dataType}-${date}-${metadata.hour || new Date().getHours()}`; // Hourly index for faster queries
 
-    // Get existing logs for today
+    // Get existing logs for today (with timeout to prevent hanging)
     let dailyLogs = [];
     try {
-      const existing = await store.get(dateKey, { type: "json" });
+      const existing = await Promise.race([
+        store.get(dateKey, { type: "json" }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
+      ]);
       dailyLogs = existing || [];
     } catch (e) {
-      // First log of the day
+      if (e.message === 'Timeout') {
+        console.warn(`[Data Log] Timeout reading daily logs for ${dateKey}`);
+      }
+      // First log of the day or error - start fresh
       dailyLogs = [];
     }
 
     // Get existing logs for this type today
     let typeLogs = [];
     try {
-      const existing = await store.get(typeKey, { type: "json" });
+      const existing = await Promise.race([
+        store.get(typeKey, { type: "json" }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
+      ]);
       typeLogs = existing || [];
     } catch (e) {
+      if (e.message === 'Timeout') {
+        console.warn(`[Data Log] Timeout reading type logs for ${typeKey}`);
+      }
       typeLogs = [];
+    }
+
+    // Get hourly logs for faster time-based queries
+    let hourlyLogs = [];
+    try {
+      const existing = await Promise.race([
+        store.get(hourKey, { type: "json" }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
+      ]);
+      hourlyLogs = existing || [];
+    } catch (e) {
+      hourlyLogs = [];
     }
 
     // Add new log entry
     dailyLogs.push(logEntry);
     typeLogs.push(logEntry);
+    hourlyLogs.push(logEntry);
 
     // Keep only last 50000 entries per day (to prevent storage bloat)
-    if (dailyLogs.length > 50000) {
-      dailyLogs = dailyLogs.slice(-50000);
+    const MAX_LOGS_PER_DAY = 50000;
+    const MAX_LOGS_PER_HOUR = 5000;
+    
+    if (dailyLogs.length > MAX_LOGS_PER_DAY) {
+      dailyLogs = dailyLogs.slice(-MAX_LOGS_PER_DAY);
+      console.warn(`[Data Log] Truncated daily logs to ${MAX_LOGS_PER_DAY} entries`);
     }
-    if (typeLogs.length > 50000) {
-      typeLogs = typeLogs.slice(-50000);
+    if (typeLogs.length > MAX_LOGS_PER_DAY) {
+      typeLogs = typeLogs.slice(-MAX_LOGS_PER_DAY);
+      console.warn(`[Data Log] Truncated type logs to ${MAX_LOGS_PER_DAY} entries`);
+    }
+    if (hourlyLogs.length > MAX_LOGS_PER_HOUR) {
+      hourlyLogs = hourlyLogs.slice(-MAX_LOGS_PER_HOUR);
     }
 
-    // Save logs
-    await store.set(dateKey, JSON.stringify(dailyLogs), {
-      contentType: "application/json",
-    });
+    // Save logs with error handling and retries
+    const saveWithRetry = async (key, data, retries = 2) => {
+      for (let i = 0; i <= retries; i++) {
+        try {
+          await store.set(key, JSON.stringify(data), {
+            contentType: "application/json",
+          });
+          return true;
+        } catch (err) {
+          if (i === retries) {
+            console.error(`[Data Log] Failed to save ${key} after ${retries + 1} attempts:`, err);
+            throw err;
+          }
+          console.warn(`[Data Log] Retry ${i + 1} saving ${key}`);
+          await new Promise(resolve => setTimeout(resolve, 100 * (i + 1))); // Exponential backoff
+        }
+      }
+    };
 
-    await store.set(typeKey, JSON.stringify(typeLogs), {
-      contentType: "application/json",
-    });
+    // Save all logs in parallel for better performance
+    const savePromises = [
+      saveWithRetry(dateKey, dailyLogs),
+      saveWithRetry(typeKey, typeLogs),
+      saveWithRetry(hourKey, hourlyLogs),
+    ];
 
-    // Also save individual entry for detailed queries (optional, can be disabled if too much storage)
+    // Also save individual entry for detailed queries (with timeout)
     const entryKey = `entry-${logEntry.id}`;
-    await store.set(entryKey, JSON.stringify(logEntry), {
-      contentType: "application/json",
-    });
+    savePromises.push(
+      Promise.race([
+        store.set(entryKey, JSON.stringify(logEntry), {
+          contentType: "application/json",
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
+      ]).catch(err => {
+        if (err.message !== 'Timeout') {
+          console.warn(`[Data Log] Failed to save individual entry ${entryKey}:`, err.message);
+        }
+      })
+    );
 
-    console.log(`[Data Log] Logged ${dataType} entry:`, logEntry.id);
-    return { success: true, id: logEntry.id, entry: logEntry };
+    await Promise.allSettled(savePromises);
+
+    const duration = Date.now() - startTime;
+    console.log(`[Data Log] ✅ Logged ${dataType} entry: ${logEntry.id} (${duration}ms, ${dataSize} bytes)`);
+    return { success: true, id: logEntry.id, entry: logEntry, duration, dataSize };
   } catch (error) {
-    console.error(`[Data Log] Error logging ${dataType}:`, error);
-    return { success: false, error: error.message };
+    const duration = Date.now() - startTime;
+    console.error(`[Data Log] ❌ Error logging ${dataType} (${duration}ms):`, error);
+    console.error(`[Data Log] Error stack:`, error.stack);
+    console.error(`[Data Log] Error details:`, {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      dataType: dataType,
+      hasData: !!data,
+      dataKeys: data ? Object.keys(data).slice(0, 10) : [],
+    });
+    return { success: false, error: error.message, duration };
   }
 }
 
