@@ -549,7 +549,21 @@
                 const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
                 const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
                 
-                if (musicEnabled && musicWasPlaying) {
+                // Check if country spotlight is currently visible - if so, don't resume background music
+                const spotlightSection = document.getElementById('country-spotlight-section');
+                let isSpotlightVisible = false;
+                if (spotlightSection) {
+                    const rect = spotlightSection.getBoundingClientRect();
+                    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+                    // Check if at least 30% of the section is visible (same threshold as IntersectionObserver)
+                    const visibleHeight = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
+                    isSpotlightVisible = visibleHeight > 0 && (visibleHeight / rect.height) >= 0.3;
+                }
+                
+                // Also check if spotlight music is playing (another indicator)
+                const spotlightMusicPlaying = window.spotlightMusic && !window.spotlightMusic.paused;
+                
+                if (musicEnabled && musicWasPlaying && !isSpotlightVisible && !spotlightMusicPlaying) {
                     // Check if all tracks are paused when music should be playing
                     const allPaused = (!audio || audio.paused) && 
                                      (!secondAudio || secondAudio.paused) && 
@@ -11907,6 +11921,22 @@
     <!-- X Posts Feed v2 - Refactored X-style feed -->
     <script src="/src/components/post-feed-v2.js?v=1.0"></script>
     <script>
+        // Wait for script to load and function to be available
+        function waitForRenderFunction(callback, maxAttempts = 20) {
+            let attempts = 0;
+            const checkInterval = setInterval(function() {
+                attempts++;
+                if (window.renderPostFeedV2) {
+                    clearInterval(checkInterval);
+                    callback();
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(checkInterval);
+                    console.warn('[X Posts] renderPostFeedV2 not available after', maxAttempts * 100, 'ms, trying fallback');
+                    callback();
+                }
+            }, 100);
+        }
+        
         // Load X posts when page is ready
         document.addEventListener('DOMContentLoaded', function() {
             // Wait a bit for page to fully load
@@ -11981,15 +12011,23 @@
                     .finally(() => {
                         // Step 2: Always display posts from storage (works even if profile fetch fails)
                         console.log('[X Posts] Loading posts from storage...');
-                        // Use new v2 feed
-                        if (window.renderPostFeedV2) {
-                            window.renderPostFeedV2('articlesTrack', '/.netlify/functions/posts-read', 200);
-                        } else {
-                            // Fallback to old feed if v2 not loaded
-                            if (typeof renderPostFeed !== 'undefined') {
-                                renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 200);
+                        // Wait for renderPostFeedV2 to be available
+                        waitForRenderFunction(function() {
+                            if (window.renderPostFeedV2) {
+                                window.renderPostFeedV2('articlesTrack', '/.netlify/functions/posts-read', 200);
+                            } else {
+                                // Fallback to old feed if v2 not loaded
+                                if (typeof renderPostFeed !== 'undefined') {
+                                    renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 200);
+                                } else {
+                                    console.error('[X Posts] Neither renderPostFeedV2 nor renderPostFeed is available');
+                                    const container = document.getElementById('articlesTrack');
+                                    if (container) {
+                                        container.innerHTML = '<div style="padding: 2rem; text-align: center; color: rgba(255,255,255,0.7);">Failed to load posts. Please refresh the page.</div>';
+                                    }
+                                }
                             }
-                        }
+                        });
                     });
             }, 1000); // Wait 1 second after DOM load
         });
@@ -12011,20 +12049,24 @@
                 })
                 .then(() => {
                     // Force refresh to show new posts immediately (bypass cache)
-                    if (window.renderPostFeedV2) {
-                        window.renderPostFeedV2('articlesTrack', '/.netlify/functions/posts-read', 200, true);
-                    } else {
-                        renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 200, true);
-                    }
+                    waitForRenderFunction(function() {
+                        if (window.renderPostFeedV2) {
+                            window.renderPostFeedV2('articlesTrack', '/.netlify/functions/posts-read', 200, true);
+                        } else if (typeof renderPostFeed !== 'undefined') {
+                            renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 200, true);
+                        }
+                    });
                 })
                 .catch(err => {
                     console.error('[X Posts] Auto-refresh failed:', err);
                     // Still try to refresh display even if fetch fails (maybe there are new posts in storage)
-                    if (window.renderPostFeedV2) {
-                        window.renderPostFeedV2('articlesTrack', '/.netlify/functions/posts-read', 200, true);
-                    } else {
-                        renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 200, true);
-                    }
+                    waitForRenderFunction(function() {
+                        if (window.renderPostFeedV2) {
+                            window.renderPostFeedV2('articlesTrack', '/.netlify/functions/posts-read', 200, true);
+                        } else if (typeof renderPostFeed !== 'undefined') {
+                            renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 200, true);
+                        }
+                    });
                 });
         }, 5 * 60 * 1000); // 5 minutes
         

@@ -8090,12 +8090,16 @@ function initNewsletterSubscription() {
             }
             spotlightMusic.pause();
             spotlightMusic = null;
+            window.spotlightMusic = null; // Clear window reference
         }
         
         // Create new audio element
         spotlightMusic = new Audio(`/SpotlightSongs/${audioFile}`);
         spotlightMusic.volume = 0.5;
         spotlightMusic.loop = true;
+        
+        // Expose on window for external checks (e.g., music monitor in index.html)
+        window.spotlightMusic = spotlightMusic;
         
         // When spotlight music starts playing, pause background and start monitoring
         spotlightMusic.addEventListener('play', () => {
@@ -8151,6 +8155,8 @@ function initNewsletterSubscription() {
             };
             spotlightMusic.pause();
             // Don't reset currentTime - keep it for resume
+            // Note: Don't clear window.spotlightMusic here - it's still valid, just paused
+            // It will be cleared when a new country music starts or when spotlightMusic is set to null
         }
     }
     
@@ -8608,6 +8614,7 @@ function initNewsletterSubscription() {
                     spotlightMusic.pause();
                     spotlightMusic.currentTime = 0;
                     spotlightMusic = null;
+                    window.spotlightMusic = null; // Clear window reference
                 }
                 playCountryMusic(currentCountry.name, false); // New country, start fresh
             }
