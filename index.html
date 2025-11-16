@@ -11162,11 +11162,131 @@
             }
         });
         
+        // Number counting animation for stats
+        function parseStatNumber(value) {
+            if (!value) return 0;
+            const str = value.toString().trim();
+            const hasPlus = str.includes('+');
+            const numStr = str.replace(/[^0-9.]/g, '');
+            const num = parseFloat(numStr) || 0;
+            
+            if (str.includes('M') || str.includes('m')) {
+                return num * 1000000;
+            } else if (str.includes('K') || str.includes('k')) {
+                return num * 1000;
+            }
+            return num;
+        }
+        
+        function formatStatNumber(value, originalFormat) {
+            const str = originalFormat.toString().trim();
+            const hasPlus = str.includes('+');
+            const hasM = str.includes('M') || str.includes('m');
+            const hasK = str.includes('K') || str.includes('k');
+            
+            if (hasM) {
+                const millions = value / 1000000;
+                return millions.toFixed(1) + 'M' + (hasPlus ? '+' : '');
+            } else if (hasK) {
+                const thousands = value / 1000;
+                return thousands.toFixed(1) + 'K' + (hasPlus ? '+' : '');
+            }
+            return Math.round(value).toString() + (hasPlus ? '+' : '');
+        }
+        
+        function animateStatNumber(element, targetValue, originalFormat, duration = 2000) {
+            const startValue = 0;
+            const startTime = performance.now();
+            const hasDecimal = originalFormat.includes('.');
+            
+            function update(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Easing function for smooth animation
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+                const currentValue = startValue + (targetValue - startValue) * easeOutQuart;
+                
+                element.textContent = formatStatNumber(currentValue, originalFormat);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    // Ensure final value is exact
+                    element.textContent = originalFormat;
+                }
+            }
+            
+            requestAnimationFrame(update);
+        }
+        
+        function initStatsAnimation() {
+            // Track which stats have been animated
+            const animatedStats = new Set();
+            
+            // Function to animate a stat element
+            function animateStat(statElement) {
+                const numberElement = statElement.querySelector('.hero-stat-number-small, .hero-stat-number, .stat-number');
+                if (!numberElement) return;
+                
+                const statId = statElement.getAttribute('data-number') || statElement.textContent;
+                if (animatedStats.has(statId)) return;
+                
+                const targetValue = statElement.getAttribute('data-number');
+                if (!targetValue) return;
+                
+                const numericValue = parseStatNumber(targetValue);
+                if (numericValue === 0) return;
+                
+                animatedStats.add(statId);
+                animateStatNumber(numberElement, numericValue, targetValue, 2000);
+            }
+            
+            // Use Intersection Observer to trigger animation when stats come into view
+            const observerOptions = {
+                threshold: 0.3,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const statElement = entry.target;
+                        animateStat(statElement);
+                        // Unobserve after animation starts
+                        observer.unobserve(statElement);
+                    }
+                });
+            }, observerOptions);
+            
+            // Observe all stat elements
+            const heroStatCards = document.querySelectorAll('.hero-stat-card[data-number]');
+            const credibilityStats = document.querySelectorAll('.hero-stat-main[data-number], .stat-card.surrounding[data-number]');
+            const allStats = [...heroStatCards, ...credibilityStats];
+            
+            allStats.forEach(stat => {
+                observer.observe(stat);
+                
+                // Also check if stat is already visible on page load
+                const rect = stat.getBoundingClientRect();
+                const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+                if (isVisible) {
+                    // Small delay to ensure DOM is ready
+                    setTimeout(() => {
+                        animateStat(stat);
+                    }, 100);
+                }
+            });
+        }
+        
         // Initialize functions when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof initCredibilityStats === 'function') initCredibilityStats();
             if (typeof initMobileMenu === 'function') initMobileMenu();
             if (typeof initNavigation === 'function') initNavigation();
+            
+            // Initialize stats animation
+            initStatsAnimation();
             
             // Initialize tip submission
             initTipSubmission();
