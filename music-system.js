@@ -43,9 +43,6 @@
             document.body.appendChild(endingSong);
         }
         
-        // ComeBack sound system - alternate between ComeBack1.wav and ComeBack2.wav
-        let comeBackSoundIndex = 0; // 0 = ComeBack1, 1 = ComeBack2
-        let comeBackAudio = null;
         let musicStateBeforeLeave = null; // Save music state when leaving
         
         // Optimize audio loading - only preload metadata, not entire files
@@ -711,8 +708,6 @@
                     
                     saveMusicState(true);
                 }
-                // Play ComeBack sound
-                playComeBackSound();
             } else {
                 // Page visible - restore if needed
                 if (musicStateBeforeLeave && musicEnabled) {
@@ -744,64 +739,6 @@
                 }
             }
         });
-        
-        function playComeBackSound() {
-            // Determine which sound to play
-            const soundFile = comeBackSoundIndex === 0 ? 'ComeBack1.wav' : 'ComeBack2.wav';
-            
-            // Stop any existing ComeBack sound
-            if (comeBackAudio) {
-                comeBackAudio.pause();
-                comeBackAudio.currentTime = 0;
-                comeBackAudio = null;
-            }
-            
-            // Create and play the sound
-            try {
-                comeBackAudio = new Audio(soundFile);
-                comeBackAudio.volume = 0.7;
-                comeBackAudio.preload = 'auto';
-                
-                // Try to play immediately
-                const playPromise = comeBackAudio.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        console.log('ComeBack sound playing:', soundFile);
-                    }).catch(err => {
-                        console.log('Could not play ComeBack sound (autoplay blocked):', err);
-                        // Try again on next user interaction
-                        const playOnInteraction = () => {
-                            if (comeBackAudio) {
-                                comeBackAudio.play().catch(() => {});
-                            }
-                            document.removeEventListener('click', playOnInteraction);
-                            document.removeEventListener('touchstart', playOnInteraction);
-                            document.removeEventListener('keydown', playOnInteraction);
-                        };
-                        document.addEventListener('click', playOnInteraction, { once: true });
-                        document.addEventListener('touchstart', playOnInteraction, { once: true });
-                        document.addEventListener('keydown', playOnInteraction, { once: true });
-                    });
-                }
-                
-                // Alternate for next time
-                comeBackSoundIndex = (comeBackSoundIndex + 1) % 2;
-                
-                // Clean up when sound finishes
-                comeBackAudio.addEventListener('ended', () => {
-                    comeBackAudio = null;
-                }, { once: true });
-                
-                // Also handle errors
-                comeBackAudio.addEventListener('error', (e) => {
-                    console.error('Error playing ComeBack sound:', e);
-                    comeBackAudio = null;
-                }, { once: true });
-            } catch (err) {
-                console.error('Error creating ComeBack audio:', err);
-                comeBackAudio = null;
-            }
-        }
         
         // Track if mouse is currently in the window
         let mouseInWindow = true;
@@ -855,8 +792,6 @@
                             
                             saveMusicState(true);
                         }
-                        // Play ComeBack sound
-                        playComeBackSound();
                     }, 100); // Small delay to confirm mouse actually left
                 }
             }
@@ -935,7 +870,6 @@
                 saveMusicState(true);
             }
             // Play ComeBack sound
-            playComeBackSound();
         });
         
         window.addEventListener('focus', () => {

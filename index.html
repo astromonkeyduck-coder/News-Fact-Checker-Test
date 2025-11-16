@@ -11184,11 +11184,16 @@
             const hasM = str.includes('M') || str.includes('m');
             const hasK = str.includes('K') || str.includes('k');
             
+            // Ensure we don't show negative values
+            if (value < 0) value = 0;
+            
             if (hasM) {
                 const millions = value / 1000000;
+                // Use toFixed(1) to always show one decimal place for smooth animation
                 return millions.toFixed(1) + 'M' + (hasPlus ? '+' : '');
             } else if (hasK) {
                 const thousands = value / 1000;
+                // Use toFixed(1) to always show one decimal place for smooth animation
                 return thousands.toFixed(1) + 'K' + (hasPlus ? '+' : '');
             }
             return Math.round(value).toString() + (hasPlus ? '+' : '');
@@ -11196,18 +11201,24 @@
         
         function animateStatNumber(element, targetValue, originalFormat, duration = 2000) {
             const startValue = 0;
-            const startTime = performance.now();
-            const hasDecimal = originalFormat.includes('.');
+            let lastUpdateTime = performance.now();
+            const startTime = lastUpdateTime;
             
             function update(currentTime) {
                 const elapsed = currentTime - startTime;
                 const progress = Math.min(elapsed / duration, 1);
                 
-                // Easing function for smooth animation
-                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-                const currentValue = startValue + (targetValue - startValue) * easeOutQuart;
+                // Smoother easing function - easeOutExpo for very smooth deceleration
+                // Using easeOutExpo: 1 - Math.pow(2, -10 * progress)
+                const easeOutExpo = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+                const currentValue = startValue + (targetValue - startValue) * easeOutExpo;
                 
-                element.textContent = formatStatNumber(currentValue, originalFormat);
+                // Only update DOM if enough time has passed (throttle to ~60fps)
+                const timeSinceLastUpdate = currentTime - lastUpdateTime;
+                if (timeSinceLastUpdate >= 16 || progress >= 1) { // ~60fps
+                    element.textContent = formatStatNumber(currentValue, originalFormat);
+                    lastUpdateTime = currentTime;
+                }
                 
                 if (progress < 1) {
                     requestAnimationFrame(update);
@@ -11239,7 +11250,12 @@
                 if (numericValue === 0) return;
                 
                 animatedStats.add(statId);
-                animateStatNumber(numberElement, numericValue, targetValue, 2000);
+                
+                // Stagger animations slightly for each stat to avoid all animating at once
+                const delay = Array.from(animatedStats).indexOf(statId) * 50;
+                setTimeout(() => {
+                    animateStatNumber(numberElement, numericValue, targetValue, 2000);
+                }, delay);
             }
             
             // Use Intersection Observer to trigger animation when stats come into view
@@ -11263,6 +11279,27 @@
             const heroStatCards = document.querySelectorAll('.hero-stat-card[data-number]');
             const credibilityStats = document.querySelectorAll('.hero-stat-main[data-number], .stat-card.surrounding[data-number]');
             const allStats = [...heroStatCards, ...credibilityStats];
+            
+            // Also observe the credibility section container to trigger animations when it comes into view
+            const credibilitySection = document.getElementById('credibility-section');
+            if (credibilitySection) {
+                const sectionObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            // When credibility section comes into view, animate all its stats
+                            credibilityStats.forEach(stat => {
+                                const statId = stat.getAttribute('data-number') || stat.textContent;
+                                if (!animatedStats.has(statId)) {
+                                    animateStat(stat);
+                                }
+                            });
+                            sectionObserver.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.2, rootMargin: '0px 0px -100px 0px' });
+                
+                sectionObserver.observe(credibilitySection);
+            }
             
             allStats.forEach(stat => {
                 observer.observe(stat);
