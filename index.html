@@ -1456,6 +1456,21 @@
             flex-shrink: 0;
         }
         
+        .header-logo a,
+        .logo-link {
+            text-decoration: none !important;
+            border-bottom: none !important;
+            border: none !important;
+        }
+        
+        .header-logo a::after,
+        .header-logo a::before,
+        .logo-link::after,
+        .logo-link::before {
+            display: none !important;
+            content: none !important;
+        }
+        
         .brand-info {
             display: flex;
             flex-direction: column;
@@ -11199,7 +11214,7 @@
             return Math.round(value).toString() + (hasPlus ? '+' : '');
         }
         
-        function animateStatNumber(element, targetValue, originalFormat, duration = 2000) {
+        function animateStatNumber(element, targetValue, originalFormat, duration = 4000) {
             const startValue = 0;
             let lastUpdateTime = performance.now();
             const startTime = lastUpdateTime;
@@ -11254,7 +11269,7 @@
                 // Stagger animations slightly for each stat to avoid all animating at once
                 const delay = Array.from(animatedStats).indexOf(statId) * 50;
                 setTimeout(() => {
-                    animateStatNumber(numberElement, numericValue, targetValue, 2000);
+                    animateStatNumber(numberElement, numericValue, targetValue, 4000);
                 }, delay);
             }
             
