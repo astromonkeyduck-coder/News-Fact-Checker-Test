@@ -7872,10 +7872,15 @@ function initNewsletterSubscription() {
     let currentCountry = null;
     let spotlightMusic = null;
     let savedBackgroundMusicState = null;
+    let savedSpotlightMusicState = null; // Save spotlight music position
     let isSpotlightVisible = false;
+    let isRestoring = false; // Flag to prevent multiple restore attempts
     
     // Storage keys
     const STORAGE_KEY = 'spotlight_data';
+    const RATE_LIMIT_KEY = 'spotlight_rate_limit';
+    const RATE_LIMIT_COUNT = 3; // 3 spotlights per day
+    const RATE_LIMIT_DAY_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
     
     // Map country names to audio file names
     const countryMusicMap = {
@@ -7946,9 +7951,27 @@ function initNewsletterSubscription() {
     // Pause all background music
     function pauseBackgroundMusic() {
         const music = getBackgroundMusicElements();
-        if (music.track1 && !music.track1.paused) music.track1.pause();
-        if (music.track2 && !music.track2.paused) music.track2.pause();
-        if (music.loop && !music.loop.paused) music.loop.pause();
+        if (music.track1 && !music.track1.paused) {
+            music.track1.pause();
+        }
+        if (music.track2 && !music.track2.paused) {
+            music.track2.pause();
+        }
+        if (music.loop && !music.loop.paused) {
+            music.loop.pause();
+        }
+        // Also check for any other background music elements
+        const allAudio = document.querySelectorAll('audio');
+        allAudio.forEach(audio => {
+            // Don't pause spotlight music
+            if (audio !== spotlightMusic && 
+                audio.id && 
+                (audio.id.includes('backgroundMusic') || audio.id.includes('background'))) {
+                if (!audio.paused) {
+                    audio.pause();
+                }
+            }
+        });
     }
     
     // Resume background music from saved state
@@ -7963,15 +7986,48 @@ function initNewsletterSubscription() {
     }
     
     // Load and play country music
-    function playCountryMusic(countryName) {
+    function playCountryMusic(countryName, resumeFromSaved = false) {
         const audioFile = countryMusicMap[countryName];
         if (!audioFile) {
             console.log(`No music file found for ${countryName}`);
             return;
         }
         
-        // Stop any existing spotlight music
+        // First, ensure background music is paused
+        pauseBackgroundMusic();
+        
+        // Check if we have saved state for this country's music
+        const savedState = savedSpotlightMusicState && 
+                          savedSpotlightMusicState.country === countryName ? 
+                          savedSpotlightMusicState : null;
+        
+        // If we have existing music for the same country and want to resume, try to resume it
+        if (spotlightMusic && savedState && resumeFromSaved) {
+            // Check if the audio source matches
+            const currentSrc = spotlightMusic.src;
+            const expectedSrc = `${window.location.origin}/SpotlightSongs/${audioFile}`;
+            if (currentSrc.includes(audioFile)) {
+                // Same audio file - resume from saved position
+                spotlightMusic.currentTime = savedState.time || 0;
+                if (isSpotlightVisible) {
+                    spotlightMusic.play().catch(err => {
+                        console.log('Could not resume spotlight music:', err);
+                    });
+                }
+                return;
+            }
+        }
+        
+        // Stop any existing spotlight music and save its state
         if (spotlightMusic) {
+            // Save current state before stopping
+            if (currentCountry) {
+                savedSpotlightMusicState = {
+                    country: currentCountry.name,
+                    time: spotlightMusic.currentTime,
+                    audioFile: audioFile
+                };
+            }
             spotlightMusic.pause();
             spotlightMusic = null;
         }
@@ -7981,11 +8037,38 @@ function initNewsletterSubscription() {
         spotlightMusic.volume = 0.5;
         spotlightMusic.loop = true;
         
+        // When spotlight music starts playing, pause background and start monitoring
+        spotlightMusic.addEventListener('play', () => {
+            pauseBackgroundMusic(); // Double-check background is paused
+            startMusicMonitor();
+        });
+        
         spotlightMusic.addEventListener('loadeddata', () => {
             if (isSpotlightVisible) {
+                // Make sure background is paused before playing
+                pauseBackgroundMusic();
+                
+                // Resume from saved time if available
+                if (savedState && savedState.time > 0) {
+                    spotlightMusic.currentTime = savedState.time;
+                }
+                
                 spotlightMusic.play().catch(err => {
                     console.log('Could not play spotlight music:', err);
                 });
+            }
+        });
+        
+        // When spotlight music stops, stop monitoring
+        spotlightMusic.addEventListener('pause', () => {
+            stopMusicMonitor();
+            // Save current position when pausing
+            if (currentCountry && spotlightMusic) {
+                savedSpotlightMusicState = {
+                    country: currentCountry.name,
+                    time: spotlightMusic.currentTime,
+                    audioFile: audioFile
+                };
             }
         });
         
@@ -7997,11 +8080,37 @@ function initNewsletterSubscription() {
         spotlightMusic.load();
     }
     
-    // Stop country music
+    // Stop country music (but save position for resume)
     function stopCountryMusic() {
-        if (spotlightMusic) {
+        if (spotlightMusic && currentCountry) {
+            // Save current position before pausing
+            savedSpotlightMusicState = {
+                country: currentCountry.name,
+                time: spotlightMusic.currentTime,
+                audioFile: countryMusicMap[currentCountry.name]
+            };
             spotlightMusic.pause();
-            spotlightMusic.currentTime = 0;
+            // Don't reset currentTime - keep it for resume
+        }
+    }
+    
+    // Monitor to ensure background music stays paused while spotlight music plays
+    let musicMonitorInterval = null;
+    function startMusicMonitor() {
+        if (musicMonitorInterval) return; // Already monitoring
+        
+        musicMonitorInterval = setInterval(() => {
+            if (spotlightMusic && !spotlightMusic.paused && isSpotlightVisible) {
+                // Spotlight music is playing - ensure background is paused
+                pauseBackgroundMusic();
+            }
+        }, 500); // Check every 500ms
+    }
+    
+    function stopMusicMonitor() {
+        if (musicMonitorInterval) {
+            clearInterval(musicMonitorInterval);
+            musicMonitorInterval = null;
         }
     }
     
@@ -8018,15 +8127,17 @@ function initNewsletterSubscription() {
                 // Only act if visibility state actually changed
                 if (wasVisible !== isSpotlightVisible) {
                     if (isSpotlightVisible) {
-                        // Spotlight is now visible - pause background, play country music
+                        // Spotlight is now visible - pause background, play/resume country music
                         if (currentCountry && countryMusicMap[currentCountry.name]) {
                             saveBackgroundMusicState();
                             pauseBackgroundMusic();
-                            playCountryMusic(currentCountry.name);
+                            // Try to resume from saved state, otherwise start fresh
+                            playCountryMusic(currentCountry.name, true);
                         }
                     } else {
-                        // Spotlight is not visible - stop country music, resume background
+                        // Spotlight is not visible - stop country music (save position), resume background
                         stopCountryMusic();
+                        stopMusicMonitor(); // Stop monitoring
                         resumeBackgroundMusic();
                     }
                 } else if (isSpotlightVisible && currentCountry && countryMusicMap[currentCountry.name]) {
@@ -8035,7 +8146,7 @@ function initNewsletterSubscription() {
                     if (!spotlightMusic || spotlightMusic.paused) {
                         saveBackgroundMusicState();
                         pauseBackgroundMusic();
-                        playCountryMusic(currentCountry.name);
+                        playCountryMusic(currentCountry.name, false); // New country, start fresh
                     }
                 }
             });
@@ -8152,31 +8263,31 @@ function initNewsletterSubscription() {
         }
     }
     
-    // Rate limiting: 10 countries per hour
-    const RATE_LIMIT_KEY = 'spotlight_rate_limit';
-    const RATE_LIMIT_COUNT = 10;
-    const RATE_LIMIT_HOUR_MS = 60 * 60 * 1000; // 1 hour in milliseconds
-    
+    // Check rate limit (3 per day)
     function checkRateLimit() {
         const now = Date.now();
         const stored = localStorage.getItem(RATE_LIMIT_KEY);
         
         if (!stored) {
             // First time - initialize
+            const dayStart = new Date(now);
+            dayStart.setHours(0, 0, 0, 0); // Start of today
             localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({
-                hourStart: now,
+                dayStart: dayStart.getTime(),
                 count: 0
             }));
             return { allowed: true, remaining: RATE_LIMIT_COUNT };
         }
         
         const data = JSON.parse(stored);
-        const timeSinceHourStart = now - data.hourStart;
+        const dayStart = new Date(data.dayStart);
+        const todayStart = new Date(now);
+        todayStart.setHours(0, 0, 0, 0);
         
-        // If more than an hour has passed, reset
-        if (timeSinceHourStart >= RATE_LIMIT_HOUR_MS) {
+        // If it's a new day, reset
+        if (todayStart.getTime() > dayStart.getTime()) {
             localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({
-                hourStart: now,
+                dayStart: todayStart.getTime(),
                 count: 0
             }));
             return { allowed: true, remaining: RATE_LIMIT_COUNT };
@@ -8184,34 +8295,81 @@ function initNewsletterSubscription() {
         
         // Check if limit reached
         if (data.count >= RATE_LIMIT_COUNT) {
-            const timeRemaining = RATE_LIMIT_HOUR_MS - timeSinceHourStart;
-            const minutesRemaining = Math.ceil(timeRemaining / (60 * 1000));
+            const nextDayStart = new Date(todayStart);
+            nextDayStart.setDate(nextDayStart.getDate() + 1);
+            const timeRemaining = nextDayStart.getTime() - now;
+            const hoursRemaining = Math.ceil(timeRemaining / (60 * 60 * 1000));
             return { 
                 allowed: false, 
-                remaining: 0, 
-                minutesRemaining: minutesRemaining 
+                remaining: 0,
+                hoursRemaining: hoursRemaining
             };
         }
         
         return { 
             allowed: true, 
-            remaining: RATE_LIMIT_COUNT - data.count - 1 
+            remaining: RATE_LIMIT_COUNT - data.count 
         };
     }
     
+    // Increment rate limit counter
     function incrementRateLimit() {
+        const now = Date.now();
         const stored = localStorage.getItem(RATE_LIMIT_KEY);
+        
         if (!stored) {
+            const dayStart = new Date(now);
+            dayStart.setHours(0, 0, 0, 0);
             localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({
-                hourStart: Date.now(),
+                dayStart: dayStart.getTime(),
                 count: 1
             }));
             return;
         }
         
         const data = JSON.parse(stored);
+        const dayStart = new Date(data.dayStart);
+        const todayStart = new Date(now);
+        todayStart.setHours(0, 0, 0, 0);
+        
+        // If it's a new day, reset
+        if (todayStart.getTime() > dayStart.getTime()) {
+            localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({
+                dayStart: todayStart.getTime(),
+                count: 1
+            }));
+            return;
+        }
+        
         data.count = (data.count || 0) + 1;
         localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(data));
+    }
+    
+    // Hide spotlight section when limit is reached
+    function hideSpotlightSection() {
+        const spotlightSection = document.getElementById('country-spotlight-section');
+        if (spotlightSection) {
+            spotlightSection.style.display = 'none';
+            console.log('Spotlight section hidden - daily limit reached');
+        }
+    }
+    
+    // Show spotlight section
+    function showSpotlightSection() {
+        const spotlightSection = document.getElementById('country-spotlight-section');
+        if (spotlightSection) {
+            spotlightSection.style.display = 'block';
+        }
+    }
+    
+    // Check and display rate limit status
+    function checkAndDisplayRateLimit() {
+        const rateLimit = checkRateLimit();
+        if (!rateLimit.allowed) {
+            hideSpotlightSection();
+            return false;
+        }
+        return true;
     }
     
     // Save spotlight data to localStorage
@@ -8236,13 +8394,30 @@ function initNewsletterSubscription() {
     
     // Restore spotlight from saved data
     function restoreSpotlight(savedData) {
-        if (!savedData || !savedData.country) return false;
+        // First check rate limit - don't restore if limit reached
+        const rateLimit = checkRateLimit();
+        if (!rateLimit.allowed) {
+            console.log('Rate limit reached - cannot restore spotlight');
+            hideSpotlightSection();
+            return false;
+        }
+        
+        if (!savedData || !savedData.country) {
+            console.log('No saved data or country found');
+            return false;
+        }
+        
+        // Validate required elements exist
+        if (!countryFlag || !countryName || !aiResponse) {
+            console.log('Required elements not found, cannot restore');
+            return false;
+        }
         
         currentCountry = savedData.country;
         
         // Update country display
-        countryFlag.textContent = currentCountry.flag;
-        countryName.textContent = currentCountry.name;
+        if (countryFlag) countryFlag.textContent = currentCountry.flag;
+        if (countryName) countryName.textContent = currentCountry.name;
         
         // Restore images
         if (savedData.images) {
@@ -8258,22 +8433,24 @@ function initNewsletterSubscription() {
         }
         
         // Restore AI response
-        if (savedData.aiResponse) {
+        if (savedData.aiResponse && aiResponse) {
             aiResponse.innerHTML = savedData.aiResponse;
         }
         
         // Show content
-        spotlightLoading.style.display = 'none';
-        spotlightContent.style.display = 'block';
-        aiThinking.style.display = 'none';
+        if (spotlightLoading) spotlightLoading.style.display = 'none';
+        if (spotlightContent) spotlightContent.style.display = 'block';
+        if (aiThinking) aiThinking.style.display = 'none';
+        if (spotlightError) spotlightError.style.display = 'none';
         
-        // If spotlight is visible, play country music
+        // If spotlight is visible, play/resume country music
         if (isSpotlightVisible && currentCountry && countryMusicMap[currentCountry.name]) {
             saveBackgroundMusicState();
             pauseBackgroundMusic();
-            playCountryMusic(currentCountry.name);
+            playCountryMusic(currentCountry.name, true); // Try to resume from saved state
         }
         
+        console.log('Successfully restored spotlight for:', currentCountry.name);
         return true;
     }
     
@@ -8281,32 +8458,48 @@ function initNewsletterSubscription() {
     async function loadSpotlight(forceNew = false) {
         try {
             // If not forcing new, try to restore from saved data
-            if (!forceNew) {
+            if (!forceNew && !isRestoring) {
+                isRestoring = true; // Set flag to prevent multiple restore attempts
                 const savedData = loadSpotlightData();
-                if (savedData && restoreSpotlight(savedData)) {
-                    console.log('Restored spotlight from saved data');
-                    return;
+                console.log('Attempting to restore spotlight, savedData:', savedData ? 'exists' : 'none');
+                if (savedData && savedData.country && savedData.aiResponse) {
+                    const restored = restoreSpotlight(savedData);
+                    if (restored) {
+                        console.log('✅ Restored spotlight from saved data - skipping API calls');
+                        isRestoring = false;
+                        return; // Exit early - don't generate new content
+                    } else {
+                        console.log('⚠️ Failed to restore spotlight, will generate new');
+                    }
+                } else {
+                    console.log('No saved data found or incomplete, will generate new');
                 }
+                isRestoring = false;
+            } else if (forceNew) {
+                console.log('Force new country requested');
+                isRestoring = false;
             }
             
-            // Check rate limit
+            // Check rate limit BEFORE attempting to generate
             const rateLimit = checkRateLimit();
             
             if (!rateLimit.allowed) {
-                // Show rate limit message
-                spotlightLoading.style.display = 'none';
-                spotlightContent.style.display = 'none';
-                spotlightError.style.display = 'block';
+                // Hide the entire spotlight section after 3 uses
+                hideSpotlightSection();
                 
-                const errorMsg = spotlightError.querySelector('p');
-                const retryBtn = document.getElementById('retry-spotlight-btn');
-                
-                if (errorMsg) {
-                    errorMsg.textContent = `⚠️ Rate limit reached! You've generated ${RATE_LIMIT_COUNT} countries this hour. Please try again in ${rateLimit.minutesRemaining} minute${rateLimit.minutesRemaining !== 1 ? 's' : ''}.`;
-                }
-                
-                if (retryBtn) {
-                    retryBtn.style.display = 'none';
+                // Show a message briefly before hiding (if elements exist)
+                if (spotlightError) {
+                    spotlightLoading.style.display = 'none';
+                    spotlightContent.style.display = 'none';
+                    spotlightError.style.display = 'block';
+                    const errorMsg = spotlightError.querySelector('p');
+                    if (errorMsg) {
+                        errorMsg.textContent = `⚠️ You've reached your daily limit of ${RATE_LIMIT_COUNT} spotlights. Come back tomorrow for more!`;
+                    }
+                    const retryBtn = document.getElementById('retry-spotlight-btn');
+                    if (retryBtn) {
+                        retryBtn.style.display = 'none';
+                    }
                 }
                 
                 return;
@@ -8326,8 +8519,8 @@ function initNewsletterSubscription() {
             
             // If spotlight is visible, switch to new country's music
             if (isSpotlightVisible && currentCountry && countryMusicMap[currentCountry.name]) {
-                stopCountryMusic();
-                playCountryMusic(currentCountry.name);
+                stopCountryMusic(); // Save old country's position
+                playCountryMusic(currentCountry.name, false); // New country, start fresh
             }
             
             // Show content area
@@ -8411,17 +8604,37 @@ IMPORTANT REQUIREMENTS:
                 }
             });
             
+            // Get AI response HTML (last result should be the formatted response)
+            const aiResponseHtml = typeof results[results.length - 1] === 'string' ? results[results.length - 1] : aiResponse.innerHTML;
+            
             // Save to localStorage
-            const aiResponseHtml = typeof results[results.length - 1] === 'string' ? results[results.length - 1] : '';
-            saveSpotlightData({
+            const dataToSave = {
                 country: currentCountry,
                 images: images,
                 aiResponse: aiResponseHtml,
                 timestamp: Date.now()
+            };
+            
+            console.log('Saving spotlight data:', {
+                country: currentCountry.name,
+                hasImages: Object.keys(images).length > 0,
+                hasAiResponse: !!aiResponseHtml,
+                aiResponseLength: aiResponseHtml ? aiResponseHtml.length : 0
             });
             
-            // Increment rate limit counter after successful generation
-            incrementRateLimit();
+            saveSpotlightData(dataToSave);
+            
+                   // Increment rate limit counter after successful generation
+                   incrementRateLimit();
+                   
+                   // Check if we've reached the limit and hide section
+                   const newRateLimit = checkRateLimit();
+                   if (!newRateLimit.allowed) {
+                       // Hide section after 3rd generation
+                       setTimeout(() => {
+                           hideSpotlightSection();
+                       }, 1000); // Small delay to show the content briefly
+                   }
             
         } catch (error) {
             console.error('Spotlight error:', error);
@@ -8435,21 +8648,50 @@ IMPORTANT REQUIREMENTS:
     
     // Event listeners
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => loadSpotlight(true)); // Force new country
+        refreshBtn.addEventListener('click', () => {
+            // Check rate limit before allowing new country
+            const rateLimit = checkRateLimit();
+            if (!rateLimit.allowed) {
+                hideSpotlightSection();
+                alert(`You've reached your daily limit of ${RATE_LIMIT_COUNT} spotlights. Come back tomorrow for more!`);
+                return;
+            }
+            loadSpotlight(true); // Force new country
+        });
     }
     
     if (retryBtn) {
-        retryBtn.addEventListener('click', () => loadSpotlight(true)); // Force new country
+        retryBtn.addEventListener('click', () => {
+            // Check rate limit before allowing new country
+            const rateLimit = checkRateLimit();
+            if (!rateLimit.allowed) {
+                hideSpotlightSection();
+                alert(`You've reached your daily limit of ${RATE_LIMIT_COUNT} spotlights. Come back tomorrow for more!`);
+                return;
+            }
+            loadSpotlight(true); // Force new country
+        });
     }
     
     // Setup visibility observer and load spotlight (restore or generate new)
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
+    function initSpotlight() {
+        // Wait a bit to ensure all DOM elements are ready
+        setTimeout(() => {
+            // Check rate limit first - hide section if limit reached
+            // This persists across page refreshes and browser sessions via localStorage
+            if (!checkAndDisplayRateLimit()) {
+                console.log('Daily spotlight limit reached - section hidden');
+                return;
+            }
+            
             setupSpotlightVisibilityObserver();
             loadSpotlight(false); // Try to restore, generate new if needed
-        });
+        }, 100);
+    }
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSpotlight);
     } else {
-        setupSpotlightVisibilityObserver();
-        loadSpotlight(false); // Try to restore, generate new if needed
+        initSpotlight();
     }
 })();
