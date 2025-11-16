@@ -29,6 +29,11 @@
             return;
         }
         
+        // ComeBack sound system - alternate between ComeBack1.wav and ComeBack2.wav
+        let comeBackSoundIndex = 0; // 0 = ComeBack1, 1 = ComeBack2
+        let comeBackAudio = null;
+        let musicStateBeforeLeave = null; // Save music state when leaving
+        
         // Optimize audio loading - only preload metadata, not entire files
         backgroundMusic.preload = 'metadata';
         if (backgroundMusicSecond) backgroundMusicSecond.preload = 'metadata';
@@ -602,16 +607,212 @@
         // Handle page visibility changes to pause/resume
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
-                // Page hidden - save state but keep playing in background
-                saveMusicState(true);
+                // Page hidden - pause music and save state
+                const wasPlaying = window.getGlobalMusicState().isPlaying;
+                if (wasPlaying) {
+                    // Save current music state
+                    musicStateBeforeLeave = {
+                        track: null,
+                        time: 0
+                    };
+                    
+                    if (backgroundMusic && !backgroundMusic.paused) {
+                        musicStateBeforeLeave.track = 'track1';
+                        musicStateBeforeLeave.time = backgroundMusic.currentTime;
+                        backgroundMusic.pause();
+                    } else if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
+                        musicStateBeforeLeave.track = 'track2';
+                        musicStateBeforeLeave.time = backgroundMusicSecond.currentTime;
+                        backgroundMusicSecond.pause();
+                    } else if (backgroundMusicThird && !backgroundMusicThird.paused) {
+                        musicStateBeforeLeave.track = 'track3';
+                        musicStateBeforeLeave.time = backgroundMusicThird.currentTime;
+                        backgroundMusicThird.pause();
+                    } else if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+                        musicStateBeforeLeave.track = 'loop';
+                        musicStateBeforeLeave.time = backgroundMusicLoop.currentTime;
+                        backgroundMusicLoop.pause();
+                    }
+                    
+                    saveMusicState(true);
+                }
+                // Play ComeBack sound
+                playComeBackSound();
             } else {
                 // Page visible - restore if needed
-                if (musicEnabled && musicWasPlaying) {
+                if (musicStateBeforeLeave && musicEnabled) {
+                    // Use in-memory state if available (more recent)
+                    const trackToResume = musicStateBeforeLeave.track;
+                    const timeToResume = musicStateBeforeLeave.time;
+                    
+                    if (trackToResume === 'track1' && backgroundMusic) {
+                        backgroundMusic.currentTime = timeToResume;
+                        backgroundMusic.play().catch(() => {});
+                    } else if (trackToResume === 'track2' && backgroundMusicSecond) {
+                        backgroundMusicSecond.currentTime = timeToResume;
+                        backgroundMusicSecond.play().catch(() => {});
+                    } else if (trackToResume === 'track3' && backgroundMusicThird) {
+                        backgroundMusicThird.currentTime = timeToResume;
+                        backgroundMusicThird.play().catch(() => {});
+                    } else if (trackToResume === 'loop' && backgroundMusicLoop) {
+                        backgroundMusicLoop.currentTime = timeToResume;
+                        backgroundMusicLoop.play().catch(() => {});
+                    }
+                    
+                    musicStateBeforeLeave = null;
+                } else if (musicEnabled && musicWasPlaying) {
+                    // Fall back to localStorage state
                     const currentState = window.getGlobalMusicState();
                     if (!currentState.isPlaying) {
                         restoreMusicState();
                     }
                 }
+            }
+        });
+        
+        function playComeBackSound() {
+            // Determine which sound to play
+            const soundFile = comeBackSoundIndex === 0 ? 'ComeBack1.wav' : 'ComeBack2.wav';
+            
+            // Stop any existing ComeBack sound
+            if (comeBackAudio) {
+                comeBackAudio.pause();
+                comeBackAudio = null;
+            }
+            
+            // Create and play the sound
+            comeBackAudio = new Audio(soundFile);
+            comeBackAudio.volume = 0.7;
+            comeBackAudio.play().catch(err => {
+                console.log('Could not play ComeBack sound:', err);
+            });
+            
+            // Alternate for next time
+            comeBackSoundIndex = (comeBackSoundIndex + 1) % 2;
+            
+            // Clean up when sound finishes
+            comeBackAudio.addEventListener('ended', () => {
+                comeBackAudio = null;
+            }, { once: true });
+        }
+        
+        // Handle mouse leaving the window
+        document.addEventListener('mouseleave', (e) => {
+            // Only trigger if mouse actually left the window (not just moving between elements)
+            if (e.clientY <= 0) {
+                const wasPlaying = window.getGlobalMusicState().isPlaying;
+                if (wasPlaying) {
+                    // Save current music state
+                    musicStateBeforeLeave = {
+                        track: null,
+                        time: 0
+                    };
+                    
+                    if (backgroundMusic && !backgroundMusic.paused) {
+                        musicStateBeforeLeave.track = 'track1';
+                        musicStateBeforeLeave.time = backgroundMusic.currentTime;
+                        backgroundMusic.pause();
+                    } else if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
+                        musicStateBeforeLeave.track = 'track2';
+                        musicStateBeforeLeave.time = backgroundMusicSecond.currentTime;
+                        backgroundMusicSecond.pause();
+                    } else if (backgroundMusicThird && !backgroundMusicThird.paused) {
+                        musicStateBeforeLeave.track = 'track3';
+                        musicStateBeforeLeave.time = backgroundMusicThird.currentTime;
+                        backgroundMusicThird.pause();
+                    } else if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+                        musicStateBeforeLeave.track = 'loop';
+                        musicStateBeforeLeave.time = backgroundMusicLoop.currentTime;
+                        backgroundMusicLoop.pause();
+                    }
+                    
+                    saveMusicState(true);
+                }
+                // Play ComeBack sound
+                playComeBackSound();
+            }
+        });
+        
+        // Handle mouse returning to the window
+        document.addEventListener('mouseenter', () => {
+            // Resume music if it was playing before
+            if (musicStateBeforeLeave && musicEnabled) {
+                const trackToResume = musicStateBeforeLeave.track;
+                const timeToResume = musicStateBeforeLeave.time;
+                
+                if (trackToResume === 'track1' && backgroundMusic) {
+                    backgroundMusic.currentTime = timeToResume;
+                    backgroundMusic.play().catch(() => {});
+                } else if (trackToResume === 'track2' && backgroundMusicSecond) {
+                    backgroundMusicSecond.currentTime = timeToResume;
+                    backgroundMusicSecond.play().catch(() => {});
+                } else if (trackToResume === 'track3' && backgroundMusicThird) {
+                    backgroundMusicThird.currentTime = timeToResume;
+                    backgroundMusicThird.play().catch(() => {});
+                } else if (trackToResume === 'loop' && backgroundMusicLoop) {
+                    backgroundMusicLoop.currentTime = timeToResume;
+                    backgroundMusicLoop.play().catch(() => {});
+                }
+                
+                musicStateBeforeLeave = null;
+            }
+        });
+        
+        // Also handle window blur/focus for tab changes
+        window.addEventListener('blur', () => {
+            const wasPlaying = window.getGlobalMusicState().isPlaying;
+            if (wasPlaying) {
+                // Save current music state
+                musicStateBeforeLeave = {
+                    track: null,
+                    time: 0
+                };
+                
+                if (backgroundMusic && !backgroundMusic.paused) {
+                    musicStateBeforeLeave.track = 'track1';
+                    musicStateBeforeLeave.time = backgroundMusic.currentTime;
+                    backgroundMusic.pause();
+                } else if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
+                    musicStateBeforeLeave.track = 'track2';
+                    musicStateBeforeLeave.time = backgroundMusicSecond.currentTime;
+                    backgroundMusicSecond.pause();
+                } else if (backgroundMusicThird && !backgroundMusicThird.paused) {
+                    musicStateBeforeLeave.track = 'track3';
+                    musicStateBeforeLeave.time = backgroundMusicThird.currentTime;
+                    backgroundMusicThird.pause();
+                } else if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+                    musicStateBeforeLeave.track = 'loop';
+                    musicStateBeforeLeave.time = backgroundMusicLoop.currentTime;
+                    backgroundMusicLoop.pause();
+                }
+                
+                saveMusicState(true);
+            }
+            // Play ComeBack sound
+            playComeBackSound();
+        });
+        
+        window.addEventListener('focus', () => {
+            // Resume music if it was playing before
+            if (musicStateBeforeLeave && musicEnabled) {
+                const trackToResume = musicStateBeforeLeave.track;
+                const timeToResume = musicStateBeforeLeave.time;
+                
+                if (trackToResume === 'track1' && backgroundMusic) {
+                    backgroundMusic.currentTime = timeToResume;
+                    backgroundMusic.play().catch(() => {});
+                } else if (trackToResume === 'track2' && backgroundMusicSecond) {
+                    backgroundMusicSecond.currentTime = timeToResume;
+                    backgroundMusicSecond.play().catch(() => {});
+                } else if (trackToResume === 'track3' && backgroundMusicThird) {
+                    backgroundMusicThird.currentTime = timeToResume;
+                    backgroundMusicThird.play().catch(() => {});
+                } else if (trackToResume === 'loop' && backgroundMusicLoop) {
+                    backgroundMusicLoop.currentTime = timeToResume;
+                    backgroundMusicLoop.play().catch(() => {});
+                }
+                
+                musicStateBeforeLeave = null;
             }
         });
     }

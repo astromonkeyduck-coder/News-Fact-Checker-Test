@@ -371,6 +371,7 @@ class BreakingNewsGame {
     }
     
     createAndShuffleQuestions() {
+        // First, create all questions
         const allQuestions = [
             // LEVEL 1: Basic Factual News
             {
@@ -2053,8 +2054,33 @@ class BreakingNewsGame {
             }
         ];
         
-        // Shuffle the questions array using Fisher-Yates algorithm
-        return this.shuffleArray(allQuestions);
+        // Filter questions based on difficulty level
+        // Easy: levels 1-2 (beginner-friendly questions)
+        // Medium: levels 2-3 (moderate difficulty)
+        // Hard: levels 3-5 (challenging questions)
+        let filteredQuestions;
+        switch(this.difficulty) {
+            case 'easy':
+                filteredQuestions = allQuestions.filter(q => q.level <= 2);
+                break;
+            case 'medium':
+                filteredQuestions = allQuestions.filter(q => q.level >= 2 && q.level <= 3);
+                break;
+            case 'hard':
+                filteredQuestions = allQuestions.filter(q => q.level >= 3);
+                break;
+            default:
+                filteredQuestions = allQuestions;
+        }
+        
+        // If filtered list is too small, fall back to all questions
+        if (filteredQuestions.length < 10) {
+            console.warn(`Only ${filteredQuestions.length} questions for difficulty ${this.difficulty}, using all questions`);
+            filteredQuestions = allQuestions;
+        }
+        
+        // Shuffle the filtered questions array using Fisher-Yates algorithm
+        return this.shuffleArray(filteredQuestions);
     }
     
     shuffleArray(array) {
@@ -2467,6 +2493,9 @@ class BreakingNewsGame {
                 e.target.classList.add('active');
                 this.difficulty = e.target.dataset.difficulty;
                 this.setTimeLimit();
+                // Recreate questions with new difficulty filter
+                this.questions = this.createAndShuffleQuestions();
+                this.currentQuestion = 0; // Reset to first question
             };
             btn.addEventListener('click', difficultyHandler);
             btn.addEventListener('touchstart', (e) => {
@@ -2710,6 +2739,9 @@ class BreakingNewsGame {
                 this.playSound('button');
                 this.difficulty = e.target.dataset.difficulty;
                 this.setTimeLimit();
+                // Recreate questions with new difficulty filter
+                this.questions = this.createAndShuffleQuestions();
+                this.currentQuestion = 0; // Reset to first question
                 this.updateDifficultyDisplay();
                 document.body.removeChild(modal);
             });
@@ -4337,7 +4369,8 @@ class BreakingNewsGame {
         this.bgAudio.loop = true;
         this.bgAudio.autoplay = false; // Don't autoplay to prevent multiple instances
         this.bgAudio.preload = 'metadata';
-        this.bgAudio.src = './copy_A8F29838-31C4-4D71-B2BE-5A0CACDB005B.m4a';
+        // Background music removed - using global music system instead
+        // this.bgAudio.src = './copy_A8F29838-31C4-4D71-B2BE-5A0CACDB005B.m4a';
         
         // Add audio to document
         document.body.appendChild(this.bgAudio);
