@@ -8224,9 +8224,27 @@ function initNewsletterSubscription() {
         observer.observe(spotlightSection);
     }
     
-    // Get a random country
-    function getRandomCountry() {
-        return countries[Math.floor(Math.random() * countries.length)];
+    // Get a random country, excluding the last generated one
+    function getRandomCountry(excludeCountry = null) {
+        // If no country to exclude, just pick random
+        if (!excludeCountry) {
+            return countries[Math.floor(Math.random() * countries.length)];
+        }
+        
+        // Filter out the excluded country
+        const availableCountries = countries.filter(c => {
+            // Exclude by name (case-insensitive)
+            return c.name.toLowerCase() !== excludeCountry.name.toLowerCase();
+        });
+        
+        // If all countries were excluded (shouldn't happen), fall back to all countries
+        if (availableCountries.length === 0) {
+            console.warn('All countries excluded, falling back to full list');
+            return countries[Math.floor(Math.random() * countries.length)];
+        }
+        
+        // Pick random from available countries
+        return availableCountries[Math.floor(Math.random() * availableCountries.length)];
     }
     
     // Format AI response text
@@ -8599,9 +8617,12 @@ function initNewsletterSubscription() {
             // Stop any existing country music before generating new country
             stopCountryMusic();
             
-            // Get random country
+            // Get random country, excluding the previous one
             const previousCountry = currentCountry;
-            currentCountry = getRandomCountry();
+            // Also check saved data to exclude the last generated country
+            const savedData = loadSpotlightData();
+            const lastGeneratedCountry = savedData && savedData.country ? savedData.country : previousCountry;
+            currentCountry = getRandomCountry(lastGeneratedCountry);
             
             // Update country display
             countryFlag.textContent = currentCountry.flag;
