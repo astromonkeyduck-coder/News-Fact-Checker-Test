@@ -7964,6 +7964,10 @@ function initNewsletterSubscription() {
         'Egypt': 'Egypt.wav'
     };
     
+    // TEMPORARY: Filter to only countries with music files
+    // TODO: Remove this filter on next push to allow all countries
+    const countriesWithMusic = countries.filter(country => countryMusicMap.hasOwnProperty(country.name));
+    
     // Get background music elements
     function getBackgroundMusicElements() {
         return {
@@ -8226,21 +8230,25 @@ function initNewsletterSubscription() {
     
     // Get a random country, excluding the last generated one
     function getRandomCountry(excludeCountry = null) {
+        // TEMPORARY: Use only countries with music
+        // TODO: Change back to full countries array on next push
+        const availableCountriesList = countriesWithMusic;
+        
         // If no country to exclude, just pick random
         if (!excludeCountry) {
-            return countries[Math.floor(Math.random() * countries.length)];
+            return availableCountriesList[Math.floor(Math.random() * availableCountriesList.length)];
         }
         
         // Filter out the excluded country
-        const availableCountries = countries.filter(c => {
+        const availableCountries = availableCountriesList.filter(c => {
             // Exclude by name (case-insensitive)
             return c.name.toLowerCase() !== excludeCountry.name.toLowerCase();
         });
         
-        // If all countries were excluded (shouldn't happen), fall back to all countries
+        // If all countries were excluded (shouldn't happen), fall back to all countries with music
         if (availableCountries.length === 0) {
             console.warn('All countries excluded, falling back to full list');
-            return countries[Math.floor(Math.random() * countries.length)];
+            return availableCountriesList[Math.floor(Math.random() * availableCountriesList.length)];
         }
         
         // Pick random from available countries
