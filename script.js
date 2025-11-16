@@ -3992,7 +3992,13 @@ class BreakingNewsGame {
                 console.log('[Game] Score submitted to leaderboard');
                 return true;
             } else {
-                const errorData = await response.json().catch(() => ({ error: await response.text() }));
+                let errorData = null;
+                try {
+                    errorData = await response.json();
+                } catch (parseError) {
+                    const errorText = await response.text();
+                    errorData = { error: errorText };
+                }
                 const errorMessage = errorData.error || 'Failed to submit score. Please try again.';
                 console.error('[Game] Failed to submit score:', errorMessage);
                 
