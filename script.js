@@ -7874,6 +7874,9 @@ function initNewsletterSubscription() {
     let savedBackgroundMusicState = null;
     let isSpotlightVisible = false;
     
+    // Storage keys
+    const STORAGE_KEY = 'spotlight_data';
+    
     // Map country names to audio file names
     const countryMusicMap = {
         'Japan': 'Japan.wav',
@@ -8211,9 +8214,81 @@ function initNewsletterSubscription() {
         localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(data));
     }
     
-    // Load spotlight country and AI content
-    async function loadSpotlight() {
+    // Save spotlight data to localStorage
+    function saveSpotlightData(data) {
         try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (err) {
+            console.error('Failed to save spotlight data:', err);
+        }
+    }
+    
+    // Load spotlight data from localStorage
+    function loadSpotlightData() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : null;
+        } catch (err) {
+            console.error('Failed to load spotlight data:', err);
+            return null;
+        }
+    }
+    
+    // Restore spotlight from saved data
+    function restoreSpotlight(savedData) {
+        if (!savedData || !savedData.country) return false;
+        
+        currentCountry = savedData.country;
+        
+        // Update country display
+        countryFlag.textContent = currentCountry.flag;
+        countryName.textContent = currentCountry.name;
+        
+        // Restore images
+        if (savedData.images) {
+            if (savedData.images.flag) {
+                loadImageIntoWrapper('flag-image-wrapper', savedData.images.flag);
+            }
+            if (savedData.images.culture1) {
+                loadImageIntoWrapper('culture1-image-wrapper', savedData.images.culture1);
+            }
+            if (savedData.images.culture2) {
+                loadImageIntoWrapper('culture2-image-wrapper', savedData.images.culture2);
+            }
+        }
+        
+        // Restore AI response
+        if (savedData.aiResponse) {
+            aiResponse.innerHTML = savedData.aiResponse;
+        }
+        
+        // Show content
+        spotlightLoading.style.display = 'none';
+        spotlightContent.style.display = 'block';
+        aiThinking.style.display = 'none';
+        
+        // If spotlight is visible, play country music
+        if (isSpotlightVisible && currentCountry && countryMusicMap[currentCountry.name]) {
+            saveBackgroundMusicState();
+            pauseBackgroundMusic();
+            playCountryMusic(currentCountry.name);
+        }
+        
+        return true;
+    }
+    
+    // Load spotlight country and AI content
+    async function loadSpotlight(forceNew = false) {
+        try {
+            // If not forcing new, try to restore from saved data
+            if (!forceNew) {
+                const savedData = loadSpotlightData();
+                if (savedData && restoreSpotlight(savedData)) {
+                    console.log('Restored spotlight from saved data');
+                    return;
+                }
+            }
+            
             // Check rate limit
             const rateLimit = checkRateLimit();
             
@@ -8274,12 +8349,15 @@ function initNewsletterSubscription() {
             const imagePromises = [
                 generateImage(`generate an image of the flag of ${currentCountry.name}, official flag design, high quality`).then(url => {
                     loadImageIntoWrapper('flag-image-wrapper', url);
+                    return { type: 'flag', url };
                 }),
                 generateImage(`generate an image showing the culture of ${currentCountry.name}, traditional customs, people, architecture, vibrant and colorful`).then(url => {
                     loadImageIntoWrapper('culture1-image-wrapper', url);
+                    return { type: 'culture1', url };
                 }),
                 generateImage(`generate an image of cultural aspects of ${currentCountry.name}, festivals, food, art, traditional scenes`).then(url => {
                     loadImageIntoWrapper('culture2-image-wrapper', url);
+                    return { type: 'culture2', url };
                 })
             ];
             
@@ -8314,14 +8392,33 @@ IMPORTANT REQUIREMENTS:
             }).then(data => {
                 if (data.reply) {
                     aiThinking.style.display = 'none';
-                    aiResponse.innerHTML = formatAIResponse(data.reply);
+                    const formattedResponse = formatAIResponse(data.reply);
+                    aiResponse.innerHTML = formattedResponse;
+                    return formattedResponse;
                 } else {
                     throw new Error('No reply from AI');
                 }
             });
             
             // Wait for all images and text to complete
-            await Promise.all([...imagePromises, textResponse]);
+            const results = await Promise.all([...imagePromises, textResponse]);
+            
+            // Collect image URLs
+            const images = {};
+            results.forEach(result => {
+                if (result && result.type && result.url) {
+                    images[result.type] = result.url;
+                }
+            });
+            
+            // Save to localStorage
+            const aiResponseHtml = typeof results[results.length - 1] === 'string' ? results[results.length - 1] : '';
+            saveSpotlightData({
+                country: currentCountry,
+                images: images,
+                aiResponse: aiResponseHtml,
+                timestamp: Date.now()
+            });
             
             // Increment rate limit counter after successful generation
             incrementRateLimit();
@@ -8338,21 +8435,21 @@ IMPORTANT REQUIREMENTS:
     
     // Event listeners
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', loadSpotlight);
+        refreshBtn.addEventListener('click', () => loadSpotlight(true)); // Force new country
     }
     
     if (retryBtn) {
-        retryBtn.addEventListener('click', loadSpotlight);
+        retryBtn.addEventListener('click', () => loadSpotlight(true)); // Force new country
     }
     
-    // Setup visibility observer
+    // Setup visibility observer and load spotlight (restore or generate new)
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             setupSpotlightVisibilityObserver();
-            loadSpotlight();
+            loadSpotlight(false); // Try to restore, generate new if needed
         });
     } else {
         setupSpotlightVisibilityObserver();
-        loadSpotlight();
+        loadSpotlight(false); // Try to restore, generate new if needed
     }
 })();
