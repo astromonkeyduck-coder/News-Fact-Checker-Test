@@ -716,23 +716,23 @@ class GeographyGame {
             document.removeEventListener('mousemove', this._dragMouseMove);
             document.removeEventListener('mouseup', this._dragMouseUp);
             
-            if (this.mapContainer) {
+        if (this.mapContainer) {
                 this.mapContainer.style.cursor = 'grab';
             }
         };
         
         const onMouseDown = (e) => {
             // Don't drag if clicking on a country path
-            const path = e.target.closest('path');
+                const path = e.target.closest('path');
             if (path && (path.hasAttribute('data-country-code') || path.classList.contains('country-path'))) {
                 return; // Let click handler process it
             }
             
             // Don't drag if clicking on buttons or controls
             if (e.target.closest('button') || e.target.closest('.zoom-controls')) {
-                return;
-            }
-            
+                    return;
+                }
+                
             // Start dragging - set initial values
             dragStartX = e.clientX;
             dragStartY = e.clientY;
@@ -749,8 +749,8 @@ class GeographyGame {
                     hasMoved = true;
                     isDragging = true;
                     if (this.mapContainer) {
-                        this.mapContainer.style.cursor = 'grabbing';
-                    }
+                    this.mapContainer.style.cursor = 'grabbing';
+                }
                     document.removeEventListener('mousemove', this._checkMove);
                     this._checkMove = null;
                 }
@@ -778,23 +778,23 @@ class GeographyGame {
         }
         
         // Set initial cursor
-        this.mapContainer.style.cursor = 'grab';
-        
-        // Pan with touch - improved for mobile
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let touchStartTime = 0;
-        let touchMoved = false;
-        let touchTarget = null;
-        
-        // Pinch to zoom on mobile
-        let initialDistance = 0;
-        let initialZoom = 1;
-        let pinchCenterX = 0;
-        let pinchCenterY = 0;
-        
-        // Unified touch handler for pan, tap, and pinch zoom
-        this.mapContainer.addEventListener('touchstart', (e) => {
+                this.mapContainer.style.cursor = 'grab';
+            
+            // Pan with touch - improved for mobile
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchStartTime = 0;
+            let touchMoved = false;
+            let touchTarget = null;
+            
+            // Pinch to zoom on mobile
+            let initialDistance = 0;
+            let initialZoom = 1;
+            let pinchCenterX = 0;
+            let pinchCenterY = 0;
+            
+            // Unified touch handler for pan, tap, and pinch zoom
+            this.mapContainer.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 2) {
                     // Two finger touch - prepare for pinch zoom
                     const touch1 = e.touches[0];
@@ -900,17 +900,17 @@ class GeographyGame {
                     touchTarget = null;
                     initialDistance = 0;
                 }
-        }, { passive: false });
-        
-        // Zoom with mouse wheel
-        this.mapContainer.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const rect = this.mapContainer.getBoundingClientRect();
-            const centerX = e.clientX - rect.left;
-            const centerY = e.clientY - rect.top;
-            const delta = e.deltaY > 0 ? 0.9 : 1.1;
-            this.zoom(delta, centerX, centerY);
-        });
+            }, { passive: false });
+            
+            // Zoom with mouse wheel
+            this.mapContainer.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const rect = this.mapContainer.getBoundingClientRect();
+                const centerX = e.clientX - rect.left;
+                const centerY = e.clientY - rect.top;
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                this.zoom(delta, centerX, centerY);
+            });
     }
     
     setupZoomControls() {
@@ -3324,19 +3324,19 @@ class GeographyGame {
             'CN': { 
                 population: 'about one billion four hundred million people',
                 fact: 'China operates the world\'s largest high-speed rail system.',
-                source: 'https://www.scmp.com/economy/china-economy/article/3047451',
+                source: 'https://www.britannica.com/place/China',
                 continent: 'Asia'
             },
             'IN': { 
                 population: 'about one billion five hundred million people',
                 fact: 'India produces more films yearly than any other country.',
-                source: 'https://www.guinnessworldrecords.com/world-records/largest-annual-film-output',
+                source: 'https://www.britannica.com/place/India',
                 continent: 'Asia'
             },
             'US': { 
                 population: 'about three hundred fifty million people',
                 fact: 'The U.S. National Park Service records hundreds of millions of visits each year.',
-                source: 'https://www.nps.gov/subjects/socialscience/visitor-use-statistics.htm',
+                source: 'https://www.nps.gov',
                 continent: 'North America'
             },
             'ID': { 
@@ -3348,19 +3348,19 @@ class GeographyGame {
             'PK': { 
                 population: 'about two hundred sixty million people',
                 fact: 'The Karakoram Highway is the highest paved international road on Earth.',
-                source: 'https://www.nationalgeographic.com/travel/article/pakistan-karakoram-highway',
+                source: 'https://www.britannica.com/place/Pakistan',
                 continent: 'Asia'
             },
             'BR': { 
                 population: 'about two hundred fifteen million people',
                 fact: 'Brazil contains about sixty percent of the Amazon rainforest.',
-                source: 'https://www.worldwildlife.org/places/amazon',
+                source: 'https://www.britannica.com/place/Brazil',
                 continent: 'South America'
             },
             'BD': { 
                 population: 'about one hundred eighty million people',
                 fact: 'The Sundarbans is the world\'s largest mangrove forest.',
-                source: 'https://whc.unesco.org/en/list/798/',
+                source: 'https://www.britannica.com/place/Bangladesh',
                 continent: 'Asia'
             },
             'RU': { 
@@ -3372,49 +3372,49 @@ class GeographyGame {
             'MX': { 
                 population: 'about one hundred thirty million people',
                 fact: 'Chocolate drinks were first made by ancient cultures in what is now Mexico.',
-                source: 'https://www.smithsonianmag.com/history/where-did-chocolate-come-from-180954243/',
+                source: 'https://www.britannica.com/place/Mexico',
                 continent: 'North America'
             },
             'JP': { 
                 population: 'about one hundred twenty million people',
                 fact: 'Japan has millions of vending machines selling almost everything.',
-                source: 'https://www.bbc.com/worklife/article/20200220-why-japan-has-so-many-vending-machines',
+                source: 'https://www.britannica.com/place/Japan',
                 continent: 'Asia'
             },
             'PH': { 
                 population: 'about one hundred twenty million people',
                 fact: 'The Philippines consists of more than seven thousand islands.',
-                source: 'https://www.cia.gov/the-world-factbook/countries/philippines/',
+                source: 'https://www.britannica.com/place/Philippines',
                 continent: 'Asia'
             },
             'EG': { 
                 population: 'about one hundred fifteen million people',
                 fact: 'The Great Pyramid of Giza is the last surviving Wonder of the Ancient World.',
-                source: 'https://www.nationalgeographic.com/history/article/great-pyramid-giza',
+                source: 'https://www.britannica.com/topic/Pyramids-of-Giza',
                 continent: 'Africa'
             },
             'ET': { 
                 population: 'about one hundred thirty million people',
                 fact: 'Ethiopia uses its own calendar that is seven to eight years behind the Gregorian one.',
-                source: 'https://www.bbc.com/news/world-africa-64136576',
+                source: 'https://www.britannica.com/place/Ethiopia',
                 continent: 'Africa'
             },
             'VN': { 
                 population: 'about one hundred million people',
                 fact: 'Vietnam is the world\'s largest exporter of black pepper.',
-                source: 'https://www.statista.com/topics/8641/pepper-industry/',
+                source: 'https://www.britannica.com/place/Vietnam',
                 continent: 'Asia'
             },
             'CD': { 
                 population: 'about one hundred ten million people',
                 fact: 'The Congo Basin holds the world\'s second-largest tropical rainforest.',
-                source: 'https://www.worldwildlife.org/places/congo-basin',
+                source: 'https://www.britannica.com/place/Democratic-Republic-of-the-Congo',
                 continent: 'Africa'
             },
             'IR': { 
                 population: 'about ninety million people',
                 fact: 'Nashtifan in Iran has some of the oldest functioning windmills in the world.',
-                source: 'https://www.bbc.com/travel/article/20181216-irans-ancient-windmills-may-be-the-oldest-in-the-world',
+                source: 'https://www.britannica.com/place/Iran',
                 continent: 'Asia'
             },
             'TR': { 
@@ -3426,31 +3426,31 @@ class GeographyGame {
             'DE': { 
                 population: 'about eighty five million people',
                 fact: 'Some parts of the German Autobahn have no posted speed limit.',
-                source: 'https://www.britannica.com/topic/Autobahn',
+                source: 'https://www.britannica.com/place/Germany',
                 continent: 'Europe'
             },
             'TH': { 
                 population: 'about seventy million people',
                 fact: 'Bangkok\'s ceremonial name is one of the longest city names on Earth.',
-                source: 'https://www.guinnessworldrecords.com/world-records/longest-place-name',
+                source: 'https://www.britannica.com/place/Thailand',
                 continent: 'Asia'
             },
             'GB': { 
                 population: 'about seventy million people',
                 fact: 'The National Health Service is one of the largest publicly funded health systems in the world.',
-                source: 'https://www.commonwealthfund.org/publications/fund-reports/2021/aug/mirror-mirror-2021',
+                source: 'https://www.britannica.com/place/United-Kingdom',
                 continent: 'Europe'
             },
             'FR': { 
                 population: 'about sixty seven million people',
                 fact: 'France consistently ranks as the world\'s most visited country.',
-                source: 'https://www.unwto.org/statistics',
+                source: 'https://www.britannica.com/place/France',
                 continent: 'Europe'
             },
             'IT': { 
                 population: 'about sixty million people',
                 fact: 'Italy has more UNESCO World Heritage Sites than any other country.',
-                source: 'https://whc.unesco.org/en/statesparties/it',
+                source: 'https://www.britannica.com/place/Italy',
                 continent: 'Europe'
             },
             'ZA': { 
@@ -3462,25 +3462,25 @@ class GeographyGame {
             'TZ': { 
                 population: 'about sixty eight million people',
                 fact: 'Mount Kilimanjaro is the tallest free-standing mountain in the world.',
-                source: 'https://www.britannica.com/place/Kilimanjaro',
+                source: 'https://www.britannica.com/place/Tanzania',
                 continent: 'Africa'
             },
             'MM': { 
                 population: 'about fifty five million people',
                 fact: 'Bagan in Myanmar contains thousands of ancient temples and pagodas.',
-                source: 'https://whc.unesco.org/en/list/1588/',
+                source: 'https://www.britannica.com/place/Myanmar',
                 continent: 'Asia'
             },
             'KE': { 
                 population: 'about fifty six million people',
                 fact: 'The Great Rift Valley cuts through Kenya and is visible from space.',
-                source: 'https://www.nationalgeographic.com/science/article/great-rift-valley',
+                source: 'https://www.britannica.com/place/Kenya',
                 continent: 'Africa'
             },
             'KR': { 
                 population: 'about fifty two million people',
                 fact: 'South Korea is known for having some of the fastest average internet speeds in the world.',
-                source: 'https://www.speedtest.net/global-index',
+                source: 'https://www.britannica.com/place/South-Korea',
                 continent: 'Asia'
             },
             'CO': { 
@@ -3492,19 +3492,19 @@ class GeographyGame {
             'ES': { 
                 population: 'about forty eight million people',
                 fact: 'Madrid\'s Sobrino de Botín is recognized as the world\'s oldest continuously operating restaurant.',
-                source: 'https://www.guinnessworldrecords.com/world-records/oldest-restaurant',
+                source: 'https://www.britannica.com/place/Spain',
                 continent: 'Europe'
             },
             'UG': { 
                 population: 'about fifty million people',
                 fact: 'A large share of the world\'s remaining mountain gorillas live in Uganda.',
-                source: 'https://www.worldwildlife.org/species/mountain-gorilla',
+                source: 'https://www.britannica.com/place/Uganda',
                 continent: 'Africa'
             },
             'AR': { 
                 population: 'about forty six million people',
                 fact: 'Ushuaia in Argentina is widely known as the world\'s southernmost city.',
-                source: 'https://www.britannica.com/place/Ushuaia',
+                source: 'https://www.britannica.com/place/Argentina',
                 continent: 'South America'
             },
             'DZ': { 
@@ -3516,79 +3516,79 @@ class GeographyGame {
             'SD': { 
                 population: 'about fifty million people',
                 fact: 'Sudan has more recorded ancient pyramids than Egypt.',
-                source: 'https://www.smithsonianmag.com/history/sudan-pyramids-nubia-archaeology-180970221/',
+                source: 'https://www.britannica.com/place/Sudan',
                 continent: 'Africa'
             },
             'UA': { 
                 population: 'about thirty five million people',
                 fact: 'Arsenalna station in Kyiv is the deepest metro station in the world.',
-                source: 'https://www.guinnessworldrecords.com/world-records/deepest-metro-station',
+                source: 'https://www.britannica.com/place/Ukraine',
                 continent: 'Europe'
             },
             'IQ': { 
                 population: 'about forty five million people',
                 fact: 'Ancient Mesopotamia, largely in present-day Iraq, created the earliest known writing system, cuneiform.',
-                source: 'https://www.britannica.com/topic/cuneiform',
+                source: 'https://www.britannica.com/place/Iraq',
                 continent: 'Asia'
             },
             'AF': { 
                 population: 'about forty two million people',
                 fact: 'Afghanistan was home to the giant Bamiyan Buddhas carved into cliffs.',
-                source: 'https://whc.unesco.org/en/list/208/',
+                source: 'https://www.britannica.com/place/Afghanistan',
                 continent: 'Asia'
             },
             'PL': { 
                 population: 'about thirty eight million people',
                 fact: 'Malbork Castle in Poland is the largest brick castle in the world.',
-                source: 'https://whc.unesco.org/en/list/847/',
+                source: 'https://www.britannica.com/place/Poland',
                 continent: 'Europe'
             },
             'CA': { 
                 population: 'about forty million people',
                 fact: 'Canada has more lakes than any other country.',
-                source: 'https://www.worldatlas.com/articles/does-canada-have-more-lakes-than-the-rest-of-the-world.html',
+                source: 'https://www.britannica.com/place/Canada',
                 continent: 'North America'
             },
             'MA': { 
                 population: 'about thirty eight million people',
                 fact: 'The University of al-Qarawiyyin in Fez is considered the oldest continually operating university.',
-                source: 'https://www.britannica.com/topic/al-Qarawiyin-University',
+                source: 'https://www.britannica.com/place/Morocco',
                 continent: 'Africa'
             },
             'SA': { 
                 population: 'about thirty seven million people',
                 fact: 'Saudi Arabia contains most of the Rub\' al Khali, the world\'s largest continuous sand desert.',
-                source: 'https://www.britannica.com/place/Rub-al-Khali',
+                source: 'https://www.britannica.com/place/Saudi-Arabia',
                 continent: 'Asia'
             },
             'UZ': { 
                 population: 'about thirty six million people',
                 fact: 'Uzbekistan is one of only two double-landlocked countries in the world.',
-                source: 'https://www.worldatlas.com/articles/what-is-a-double-landlocked-country.html',
+                source: 'https://www.britannica.com/place/Uzbekistan',
                 continent: 'Asia'
             },
             'PE': { 
                 population: 'about thirty five million people',
                 fact: 'The potato was first domesticated in the Andean regions of Peru.',
-                source: 'https://www.cipotato.org/press-room/',
+                source: 'https://www.britannica.com/place/Peru',
                 continent: 'South America'
             },
             'AO': { 
                 population: 'about thirty seven million people',
                 fact: 'Angola has one of the youngest populations in the world by median age.',
-                source: 'https://data.worldbank.org/indicator/SP.POP.MEDI?locations=AO',
+                source: 'https://www.britannica.com/place/Angola',
                 continent: 'Africa'
             },
             'MY': { 
                 population: 'about thirty four million people',
                 fact: 'Kuala Lumpur\'s Petronas Towers are the tallest twin towers on Earth.',
-                source: 'https://www.britannica.com/topic/Petronas-Twin-Towers',
+                source: 'https://www.britannica.com/place/Malaysia',
                 continent: 'Asia'
             },
             'MZ': { 
                 population: 'about thirty four million people',
                 fact: 'Mozambique\'s Quirimbas region hosts some of the richest coral reef ecosystems.',
-                source: 'https://www.worldwildlife.org/places/quirimbas',
+                source: 'https://www.britannica.com/place/Mozambique',
                 continent: 'Africa'
             },
             'GH': { 
@@ -3600,25 +3600,25 @@ class GeographyGame {
             'YE': { 
                 population: 'about thirty four million people',
                 fact: 'Socotra Island in Yemen is famous for its unique dragon blood trees.',
-                source: 'https://www.nationalgeographic.com/environment/article/dragon-blood-trees-socotra-yemen',
+                source: 'https://www.britannica.com/place/Yemen',
                 continent: 'Asia'
             },
             'NP': { 
                 population: 'about thirty one million people',
                 fact: 'Nepal contains eight of the world\'s fourteen tallest mountains, including Everest.',
-                source: 'https://www.britannica.com/place/Himalayas',
+                source: 'https://www.britannica.com/place/Nepal',
                 continent: 'Asia'
             },
             'NG': { 
                 population: 'about two hundred thirty million people',
                 fact: 'Nigeria\'s Nollywood is one of the largest film industries in the world by number of movies produced.',
-                source: 'https://www.unesco.org/en/articles/nollywood-nigerias-booming-film-industry',
+                source: 'https://www.britannica.com/place/Nigeria',
                 continent: 'Africa'
             },
             'VE': { 
                 population: 'about thirty million people',
                 fact: 'Angel Falls in Venezuela is the tallest uninterrupted waterfall on Earth.',
-                source: 'https://www.britannica.com/place/Angel-Falls',
+                source: 'https://www.britannica.com/place/Venezuela',
                 continent: 'South America'
             }
         };
@@ -3708,6 +3708,177 @@ class GeographyGame {
         }, 2000);
     }
     
+    // Helper function to get country flag emoji from ISO code
+    getCountryFlag(code) {
+        // Convert ISO country code to flag emoji
+        // Each flag is represented by two regional indicator symbols
+        const codePoints = code
+            .toUpperCase()
+            .split('')
+            .map(char => 127397 + char.charCodeAt(0));
+        return String.fromCodePoint(...codePoints);
+    }
+    
+    // Helper function to get flag colors for country
+    getFlagColors(code) {
+        // Flag color mappings - using dominant colors from each country's flag
+        const flagColors = {
+            'CN': { primary: '#DE2910', secondary: '#FFDE00', textColor: '#fff' }, // China - Red and Yellow
+            'IN': { primary: '#FF9933', secondary: '#FFFFFF', textColor: '#000' }, // India - Saffron, White, Green
+            'US': { primary: '#B22234', secondary: '#3C3B6E', textColor: '#fff' }, // USA - Red and Blue
+            'ID': { primary: '#CE1126', secondary: '#FFFFFF', textColor: '#000' }, // Indonesia - Red and White
+            'PK': { primary: '#01411C', secondary: '#FFFFFF', textColor: '#fff' }, // Pakistan - Green and White
+            'BR': { primary: '#009739', secondary: '#FEDD00', textColor: '#000' }, // Brazil - Green and Yellow
+            'BD': { primary: '#006A4E', secondary: '#F42A41', textColor: '#fff' }, // Bangladesh - Green and Red
+            'RU': { primary: '#FFFFFF', secondary: '#0039A6', textColor: '#000' }, // Russia - White, Blue, Red
+            'MX': { primary: '#006847', secondary: '#CE1126', textColor: '#fff' }, // Mexico - Green, White, Red
+            'JP': { primary: '#FFFFFF', secondary: '#BC002D', textColor: '#000' }, // Japan - White and Red
+            'PH': { primary: '#0038A8', secondary: '#CE1126', textColor: '#fff' }, // Philippines - Blue and Red
+            'EG': { primary: '#CE1126', secondary: '#FFFFFF', textColor: '#000' }, // Egypt - Red, White, Black
+            'ET': { primary: '#078930', secondary: '#FCDD09', textColor: '#000' }, // Ethiopia - Green, Yellow, Red
+            'VN': { primary: '#DA020E', secondary: '#FFFF00', textColor: '#000' }, // Vietnam - Red and Yellow
+            'CD': { primary: '#007FFF', secondary: '#FCD116', textColor: '#000' }, // DRC - Blue and Yellow
+            'IR': { primary: '#239F40', secondary: '#FFFFFF', textColor: '#000' }, // Iran - Green, White, Red
+            'TR': { primary: '#E30A17', secondary: '#FFFFFF', textColor: '#000' }, // Turkey - Red and White
+            'DE': { primary: '#000000', secondary: '#DD0000', textColor: '#fff' }, // Germany - Black, Red, Gold
+            'TH': { primary: '#ED1C24', secondary: '#241D4F', textColor: '#fff' }, // Thailand - Red, White, Blue
+            'GB': { primary: '#012169', secondary: '#C8102E', textColor: '#fff' }, // UK - Blue and Red
+            'FR': { primary: '#002654', secondary: '#ED2939', textColor: '#fff' }, // France - Blue, White, Red
+            'IT': { primary: '#009246', secondary: '#CE2B37', textColor: '#fff' }, // Italy - Green, White, Red
+            'ZA': { primary: '#007A4D', secondary: '#FFB612', textColor: '#000' }, // South Africa - Green, Yellow, Red
+            'TZ': { primary: '#1EB53A', secondary: '#00A3DD', textColor: '#fff' }, // Tanzania - Green, Yellow, Blue
+            'MM': { primary: '#FECB00', secondary: '#EA2839', textColor: '#000' }, // Myanmar - Yellow, Green, Red
+            'KE': { primary: '#000000', secondary: '#006600', textColor: '#fff' }, // Kenya - Black, Red, Green
+            'KR': { primary: '#FFFFFF', secondary: '#CE1126', textColor: '#000' }, // South Korea - White, Red, Blue
+            'CO': { primary: '#FCD116', secondary: '#003893', textColor: '#000' }, // Colombia - Yellow, Blue, Red
+            'ES': { primary: '#AA151B', secondary: '#F1BF00', textColor: '#fff' }, // Spain - Red and Yellow
+            'UG': { primary: '#FCDD09', secondary: '#000000', textColor: '#000' }, // Uganda - Black, Yellow, Red
+            'AR': { primary: '#75AADB', secondary: '#FFFFFF', textColor: '#000' }, // Argentina - Light Blue and White
+            'DZ': { primary: '#FFFFFF', secondary: '#006233', textColor: '#000' }, // Algeria - White, Green, Red
+            'SD': { primary: '#000000', secondary: '#D21034', textColor: '#fff' }, // Sudan - Red, White, Black
+            'UA': { primary: '#0057B7', secondary: '#FFD700', textColor: '#000' }, // Ukraine - Blue and Yellow
+            'IQ': { primary: '#CE1126', secondary: '#000000', textColor: '#fff' }, // Iraq - Red, White, Black
+            'AF': { primary: '#000000', secondary: '#D32011', textColor: '#fff' }, // Afghanistan - Black, Red, Green
+            'PL': { primary: '#FFFFFF', secondary: '#DC143C', textColor: '#000' }, // Poland - White and Red
+            'CA': { primary: '#FF0000', secondary: '#FFFFFF', textColor: '#000' }, // Canada - Red and White
+            'MA': { primary: '#C1272D', secondary: '#006233', textColor: '#fff' }, // Morocco - Red and Green
+            'SA': { primary: '#006C35', secondary: '#FFFFFF', textColor: '#000' }, // Saudi Arabia - Green and White
+            'UZ': { primary: '#1EB53A', secondary: '#0099B5', textColor: '#fff' }, // Uzbekistan - Blue, White, Green
+            'PE': { primary: '#D91023', secondary: '#FFFFFF', textColor: '#000' }, // Peru - Red and White
+            'AO': { primary: '#CC092F', secondary: '#000000', textColor: '#fff' }, // Angola - Red, Black, Yellow
+            'MY': { primary: '#C8102E', secondary: '#0066B3', textColor: '#fff' }, // Malaysia - Red, White, Blue
+            'MZ': { primary: '#007168', secondary: '#FCD116', textColor: '#000' }, // Mozambique - Green, Yellow, Red
+            'GH': { primary: '#CE1126', secondary: '#FCD116', textColor: '#000' }, // Ghana - Red, Yellow, Green
+            'YE': { primary: '#CE1126', secondary: '#FFFFFF', textColor: '#000' }, // Yemen - Red, White, Black
+            'NP': { primary: '#DC143C', secondary: '#003893', textColor: '#fff' }, // Nepal - Red and Blue
+            'NG': { primary: '#008751', secondary: '#FFFFFF', textColor: '#000' }, // Nigeria - Green and White
+            'VE': { primary: '#FFCC02', secondary: '#CF142B', textColor: '#000' }  // Venezuela - Yellow, Blue, Red
+        };
+        
+        // Return flag colors or default
+        return flagColors[code] || { primary: '#4A90E2', secondary: '#FFFFFF', textColor: '#000' };
+    }
+    
+    // Helper function to format population from words to numbers
+    formatPopulation(populationText) {
+        // Convert word-based population to formatted number
+        const wordToNumber = {
+            'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+            'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
+            'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14, 'fifteen': 15,
+            'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19, 'twenty': 20,
+            'thirty': 30, 'forty': 40, 'fifty': 50, 'sixty': 60, 'seventy': 70,
+            'eighty': 80, 'ninety': 90, 'hundred': 100, 'thousand': 1000, 'million': 1000000,
+            'billion': 1000000000
+        };
+        
+        // Clean text: remove punctuation, convert to lowercase, ignore words like "about", "people"
+        const text = populationText.toLowerCase()
+            .replace(/[^a-z\s]/g, '')
+            .replace(/\b(about|approximately|around|over|people|persons|inhabitants)\b/g, '')
+            .trim();
+        
+        const words = text.split(/\s+/).filter(w => w.length > 0);
+        
+        let total = 0;
+        let current = 0;
+        let lastMultiplier = 1;
+        
+        for (let i = 0; i < words.length; i++) {
+            const word = words[i];
+            const num = wordToNumber[word];
+            
+            if (num === undefined) continue;
+            
+            if (num === 100) {
+                current = (current || 1) * 100;
+            } else if (num === 1000) {
+                if (current === 0) current = 1;
+                total += current * 1000;
+                current = 0;
+                lastMultiplier = 1000;
+            } else if (num === 1000000) {
+                if (current === 0) current = 1;
+                total += current * 1000000;
+                current = 0;
+                lastMultiplier = 1000000;
+            } else if (num === 1000000000) {
+                if (current === 0) current = 1;
+                total += current * 1000000000;
+                current = 0;
+                lastMultiplier = 1000000000;
+            } else {
+                // Regular number (1-99)
+                current += num;
+            }
+        }
+        
+        // Add any remaining current value
+        if (current > 0) {
+            // If we had a multiplier, apply it; otherwise just add
+            if (lastMultiplier > 1) {
+                total += current * lastMultiplier;
+            } else {
+                total += current;
+            }
+        }
+        
+        // Format with commas and add tilde
+        if (total > 0) {
+            return `~${total.toLocaleString()}`;
+        }
+        
+        // Fallback: return original text with ~ prefix if conversion fails
+        return `~${populationText}`;
+    }
+    
+    // Helper function to extract domain from URL
+    extractDomain(url) {
+        if (!url || typeof url !== 'string') {
+            return 'Source not available';
+        }
+        
+        try {
+            // Ensure URL has a protocol
+            let urlToParse = url.trim();
+            if (!urlToParse.match(/^https?:\/\//)) {
+                urlToParse = 'https://' + urlToParse;
+            }
+            
+            const urlObj = new URL(urlToParse);
+            const hostname = urlObj.hostname.replace(/^www\./, '');
+            return hostname || 'Source not available';
+        } catch (e) {
+            // If URL parsing fails, try to extract domain manually
+            const match = url.match(/https?:\/\/(?:www\.)?([^\/\s]+)/);
+            if (match && match[1]) {
+                return match[1].replace(/^www\./, '');
+            }
+            // Last resort: return a cleaned version of the input
+            return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] || 'Source not available';
+        }
+    }
+    
     showCountryFact(country) {
         if (!country || !this.countryFacts[country.code]) return;
         
@@ -3719,24 +3890,88 @@ class GeographyGame {
             existingFact.remove();
         }
         
+        // Get country flag emoji
+        const flag = this.getCountryFlag(country.code);
+        
+        // Get flag colors
+        const flagColors = this.getFlagColors(country.code);
+        
+        // Format population
+        const formattedPopulation = this.formatPopulation(fact.population);
+        
+        // Extract domain from source URL - handle missing or invalid sources
+        let sourceDomain = 'Source not available';
+        let sourceUrl = '#';
+        if (fact.source && typeof fact.source === 'string' && fact.source.trim()) {
+            try {
+                sourceDomain = this.extractDomain(fact.source);
+                sourceUrl = fact.source;
+            } catch (e) {
+                console.warn('Failed to extract domain from source:', fact.source, e);
+                sourceDomain = 'Source not available';
+                sourceUrl = '#';
+            }
+        } else {
+            console.warn('Missing or invalid source for country:', country.code, fact);
+        }
+        
+        // Determine if we should use light or dark text based on background brightness
+        const getBrightness = (hex) => {
+            const rgb = hex.match(/[A-Za-z0-9]{2}/g).map(v => parseInt(v, 16));
+            return (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000;
+        };
+        const primaryBrightness = getBrightness(flagColors.primary);
+        const secondaryBrightness = getBrightness(flagColors.secondary);
+        const avgBrightness = (primaryBrightness + secondaryBrightness) / 2;
+        const useLightText = avgBrightness < 140;
+        
+        // Set text colors based on background
+        const textColor = useLightText ? 'rgba(255, 255, 255, 0.95)' : 'rgba(26, 26, 26, 0.95)';
+        const labelColor = useLightText ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.7)';
+        const linkColor = useLightText ? 'rgba(255, 255, 255, 0.9)' : 'rgba(74, 144, 226, 1)';
+        
         const factDisplay = document.createElement('div');
         factDisplay.className = 'country-fact-display';
+        
+        // Convert hex to rgba with transparency
+        const hexToRgba = (hex, alpha) => {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        };
+        
+        // Apply flag-based background gradient with slight transparency for better readability
+        factDisplay.style.background = `linear-gradient(135deg, ${hexToRgba(flagColors.primary, 0.9)} 0%, ${hexToRgba(flagColors.secondary, 0.9)} 100%)`;
+        factDisplay.style.color = textColor;
+        
         factDisplay.innerHTML = `
-            <div class="country-fact-header">${country.name}</div>
-            <div class="country-fact-continent">📍 ${fact.continent}</div>
+            <div class="country-fact-header" style="color: ${textColor};">
+                <span class="country-flag">${flag}</span>
+                ${country.name}
+            </div>
+            <div class="country-fact-continent" style="color: ${labelColor};">
+                <span class="region-icon">📍</span>
+                ${fact.continent}
+            </div>
+            <div class="fact-divider"></div>
             <div class="country-fact-population">
-                <span class="fact-label">Population:</span>
-                <span class="fact-value">${fact.population}</span>
+                <span class="population-label" style="color: ${labelColor};">Population</span>
+                <div class="population-value" style="color: ${textColor};">${formattedPopulation}</div>
             </div>
             <div class="country-fact-fun-fact">
-                <span class="fact-label">Fun Fact:</span>
-                <span class="fact-value">${fact.fact}</span>
+                <span class="fun-fact-label" style="color: ${labelColor};">
+                    <span class="fun-fact-icon">💡</span>
+                    Fun Fact
+                </span>
+                <div class="fun-fact-value" style="color: ${textColor};">${fact.fact}</div>
             </div>
             <div class="country-fact-source">
-                <span class="fact-label">Source:</span>
-                <span class="fact-value">
-                    <a href="${fact.source}" target="_blank" rel="noopener noreferrer" class="source-link">${fact.source}</a>
-                </span>
+                <span class="source-label" style="color: ${labelColor};">Source</span>
+                ${sourceUrl !== '#' ? 
+                    `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" class="source-link" style="color: ${linkColor};">${sourceDomain}</a>` :
+                    `<span class="source-link" style="color: ${labelColor}; opacity: 0.7;">${sourceDomain}</span>`
+                }
             </div>
         `;
         
@@ -3764,7 +3999,7 @@ class GeographyGame {
                     factDisplay.remove();
                 }
             }, 500);
-        }, 3000);
+        }, 8000); // Display for 8 seconds (increased from 3)
     }
     
     checkAchievements() {

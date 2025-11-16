@@ -1164,6 +1164,21 @@ exports.handler = async (event, context) => {
         };
       }
       
+      // Check environment variables and initialize store first
+      if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_BLOB_READ_WRITE_TOKEN) {
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ error: "Data logging not configured" }),
+        };
+      }
+
+      const store = getStore({
+        name: "analytics-data",
+        siteID: process.env.NETLIFY_SITE_ID,
+        token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+      });
+      
       // Check for alerts endpoint
       if (event.queryStringParameters?.alerts === 'true') {
         try {
@@ -1189,20 +1204,6 @@ exports.handler = async (event, context) => {
       const dataType = event.queryStringParameters?.type;
       const userEmail = event.queryStringParameters?.userEmail; // Filter by user email
       const limit = parseInt(event.queryStringParameters?.limit || "10000");
-
-      if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_BLOB_READ_WRITE_TOKEN) {
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({ error: "Data logging not configured" }),
-        };
-      }
-
-      const store = getStore({
-        name: "analytics-data",
-        siteID: process.env.NETLIFY_SITE_ID,
-        token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
-      });
 
       let logs = [];
 

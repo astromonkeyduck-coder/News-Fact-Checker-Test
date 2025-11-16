@@ -148,6 +148,7 @@ exports.handler = async (event, context) => {
     let requestBody;
     let message = "";
     let files = [];
+    let chatHistory = [];
     
     // Parse request body as JSON (files are sent as base64 in JSON)
     try {
@@ -161,6 +162,20 @@ exports.handler = async (event, context) => {
       requestBody = JSON.parse(bodyStr);
       message = requestBody.message || "";
       files = requestBody.files || [];
+      chatHistory = requestBody.chatHistory || [];
+      
+      // Validate chat history format
+      if (Array.isArray(chatHistory)) {
+        // Filter out invalid entries and ensure proper format
+        chatHistory = chatHistory.filter(msg => 
+          msg && 
+          typeof msg === 'object' && 
+          (msg.role === 'user' || msg.role === 'assistant') &&
+          typeof msg.content === 'string'
+        );
+      } else {
+        chatHistory = [];
+      }
     } catch (parseError) {
       console.error("Error parsing request body:", parseError);
       return {
@@ -293,7 +308,7 @@ exports.handler = async (event, context) => {
       }
     }
 
-    // Build messages array with file content if files are provided
+    // Build messages array with chat history and current message
     const messages = [
       {
         role: "system",
@@ -442,12 +457,22 @@ RESPONSE STYLE:
         }
       });
       
+      // Add chat history before current message
+      if (chatHistory && chatHistory.length > 0) {
+        messages.push(...chatHistory);
+      }
+      
       messages.push({
         role: "user",
         content: userContent.length > 0 ? userContent : [{ type: "text", text: message || "Please analyze the uploaded files." }],
       });
     } else {
       // Regular text message
+      // Add chat history before current message
+      if (chatHistory && chatHistory.length > 0) {
+        messages.push(...chatHistory);
+      }
+      
       messages.push({ role: "user", content: message });
     }
 
@@ -588,49 +613,55 @@ RESPONSE STYLE:
 
     // Send email notification (non-blocking - don't wait for it)
     try {
-      const { Resend } = require('resend');
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      
-      // Get notification emails from environment variable (comma-separated or JSON array)
-      let notificationEmails = [];
-      if (process.env.AI_NOTIFICATION_EMAILS) {
-        try {
-          // Try parsing as JSON array first
-          notificationEmails = JSON.parse(process.env.AI_NOTIFICATION_EMAILS);
-          if (!Array.isArray(notificationEmails)) {
-            throw new Error('Not an array');
+      // Validate API key exists
+      if (!process.env.RESEND_API_KEY) {
+        console.warn("[Noteworthy Chat] RESEND_API_KEY not configured. Skipping email notifications.");
+      } else {
+        const { Resend } = require('resend');
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        
+        // Get notification emails from environment variable (comma-separated or JSON array)
+        let notificationEmails = [];
+        if (process.env.AI_NOTIFICATION_EMAILS) {
+          try {
+            // Try parsing as JSON array first
+            notificationEmails = JSON.parse(process.env.AI_NOTIFICATION_EMAILS);
+            if (!Array.isArray(notificationEmails)) {
+              throw new Error('Not an array');
+            }
+          } catch {
+            // If not JSON, treat as comma-separated string
+            notificationEmails = process.env.AI_NOTIFICATION_EMAILS.split(',').map(e => e.trim()).filter(e => e);
           }
-        } catch {
-          // If not JSON, treat as comma-separated string
-          notificationEmails = process.env.AI_NOTIFICATION_EMAILS.split(',').map(e => e.trim()).filter(e => e);
         }
-      }
-      
-      // Fallback to default if no emails configured
-      if (notificationEmails.length === 0) {
-        notificationEmails = [process.env.ADMIN_NOTIFICATION_EMAIL || 'richard@noteworthynews.co'];
-      }
-      
-      const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
-      
-      const safeMessage = String(message)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-        .substring(0, 500);
-      
-      const safeReply = String(reply)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-        .substring(0, 1000);
-      
-      // Send to all notification emails
-      await Promise.all(notificationEmails.map(email => 
+        
+        // Fallback to default if no emails configured
+        if (notificationEmails.length === 0) {
+          notificationEmails = [process.env.ADMIN_NOTIFICATION_EMAIL || 'richard@noteworthynews.co'];
+        }
+        
+        console.log(`[Noteworthy Chat] Sending email notification to: ${notificationEmails.join(', ')}`);
+        
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
+        
+        const safeMessage = String(message)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;')
+          .substring(0, 500);
+        
+        const safeReply = String(reply)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;')
+          .substring(0, 1000);
+        
+        // Send to all notification emails
+        const emailResults = await Promise.allSettled(notificationEmails.map(email => 
         resend.emails.send({
           from: fromEmail,
           to: email,
@@ -734,12 +765,51 @@ Time: ${new Date().toLocaleString()}
 
 ---
 This is an automated notification from your website.`,
-        }).catch(err => {
-          console.error(`[Noteworthy Chat] Failed to send email notification to ${email}:`, err);
         })
-      ));
+        ));
+        
+        // Log results and handle 403 errors specifically
+        emailResults.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            if (result.value.error) {
+              const error = result.value.error;
+              console.error(`[Noteworthy Chat] Email API error for ${notificationEmails[index]}:`, error);
+              
+              // Check for 403 Forbidden errors
+              if (error.statusCode === 403 || error.message?.includes('403') || error.message?.toLowerCase().includes('forbidden')) {
+                console.error(`[Noteworthy Chat] 403 Forbidden error detected for ${notificationEmails[index]}`);
+                console.error(`[Noteworthy Chat] Possible causes:`);
+                console.error(`  - Invalid or expired RESEND_API_KEY`);
+                console.error(`  - Domain not verified in Resend (verify at https://resend.com/domains)`);
+                console.error(`  - API key doesn't have permission to send to this email`);
+                console.error(`  - Rate limit exceeded`);
+                console.error(`[Noteworthy Chat] Error details:`, JSON.stringify(error, null, 2));
+              }
+            } else {
+              console.log(`[Noteworthy Chat] Email sent successfully to ${notificationEmails[index]}:`, result.value.data?.id);
+            }
+          } else {
+            const error = result.reason;
+            console.error(`[Noteworthy Chat] Failed to send email to ${notificationEmails[index]}:`, error);
+            
+            // Check for 403 in rejected promises
+            if (error?.statusCode === 403 || error?.message?.includes('403') || error?.message?.toLowerCase().includes('forbidden')) {
+              console.error(`[Noteworthy Chat] 403 Forbidden error in rejected promise for ${notificationEmails[index]}`);
+              console.error(`[Noteworthy Chat] Error details:`, JSON.stringify(error, null, 2));
+            }
+          }
+        });
+      }
     } catch (emailErr) {
       console.error("[Noteworthy Chat] Error sending email notification:", emailErr);
+      console.error("[Noteworthy Chat] Error stack:", emailErr.stack);
+      
+      // Check for 403 in exception
+      if (emailErr?.statusCode === 403 || emailErr?.message?.includes('403') || emailErr?.message?.toLowerCase().includes('forbidden')) {
+        console.error(`[Noteworthy Chat] 403 Forbidden error in exception handler`);
+        console.error(`[Noteworthy Chat] Check RESEND_API_KEY and domain verification at https://resend.com/domains`);
+      }
+      
       // Don't fail the request if email fails
     }
 

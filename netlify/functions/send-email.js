@@ -412,12 +412,25 @@ This is an automated notification from your website.`,
         });
         
         if (notificationResult.error) {
-          console.error('Notification email error:', notificationResult.error);
+          const error = notificationResult.error;
+          console.error('Notification email error:', error);
+          
+          // Check for 403 Forbidden errors
+          if (error.statusCode === 403 || error.message?.includes('403') || error.message?.toLowerCase().includes('forbidden')) {
+            console.error('403 Forbidden error detected for notification email');
+            console.error('Possible causes:');
+            console.error('  - Invalid or expired RESEND_API_KEY');
+            console.error('  - Domain not verified in Resend (verify at https://resend.com/domains)');
+            console.error('  - API key doesn\'t have permission to send to this email');
+            console.error('  - Rate limit exceeded');
+            console.error('Error details:', JSON.stringify(error, null, 2));
+          }
+          
           // If it's a domain verification issue, log helpful message
-          if (notificationResult.error.message && (
-            notificationResult.error.message.includes('domain') ||
-            notificationResult.error.message.includes('verify') ||
-            notificationResult.error.message.includes('delayed')
+          if (error.message && (
+            error.message.includes('domain') ||
+            error.message.includes('verify') ||
+            error.message.includes('delayed')
           )) {
             console.warn('Domain verification issue detected. Verify your domain at https://resend.com/domains');
             console.warn('Or set ADMIN_NOTIFICATION_EMAIL to a different email address (e.g., Gmail)');
@@ -425,6 +438,14 @@ This is an automated notification from your website.`,
         }
       } catch (notificationError) {
         console.error('Exception sending notification email:', notificationError);
+        console.error('Exception stack:', notificationError.stack);
+        
+        // Check for 403 in exception
+        if (notificationError?.statusCode === 403 || notificationError?.message?.includes('403') || notificationError?.message?.toLowerCase().includes('forbidden')) {
+          console.error('403 Forbidden error in notification email exception handler');
+          console.error('Check RESEND_API_KEY and domain verification at https://resend.com/domains');
+        }
+        
         // Don't fail the subscription if notification fails
         notificationResult = { error: { message: notificationError.message } };
       }

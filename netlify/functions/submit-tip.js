@@ -219,7 +219,8 @@ This is an automated notification from your website.`,
         ? '\n\nNote: Your submission was marked as anonymous. Your identity remains protected.\n'
         : '';
       
-      autoReplyResult = await resend.emails.send({
+      try {
+        autoReplyResult = await resend.emails.send({
         from: fromEmail,
         to: email,
         replyTo: 'richard@noteworthynews.co',
@@ -272,7 +273,41 @@ Our team will review your tip and get back to you if we need additional informat
 We appreciate your trust in our platform!
 
 The Noteworthy News Team`,
-      });
+        });
+        
+        // Log confirmation email result
+        if (autoReplyResult.error) {
+          console.error('========================================');
+          console.error('Failed to send confirmation email to submitter');
+          console.error('========================================');
+          console.error('Submitter Email:', email);
+          console.error('From Email:', fromEmail);
+          console.error('Error:', JSON.stringify(autoReplyResult.error, null, 2));
+          console.error('========================================');
+          
+          // Check for 403 Forbidden errors
+          if (autoReplyResult.error.statusCode === 403 || 
+              autoReplyResult.error.message?.includes('403') || 
+              autoReplyResult.error.message?.toLowerCase().includes('forbidden')) {
+            console.error('403 Forbidden error detected for confirmation email');
+            console.error('Possible causes: Invalid API key, domain not verified, or rate limit');
+          }
+        } else {
+          console.log('========================================');
+          console.log('✓ SUCCESS: Confirmation email sent successfully!');
+          console.log('✓ Email ID:', autoReplyResult.data?.id);
+          console.log('✓ Sent to:', email);
+          console.log('========================================');
+        }
+      } catch (emailError) {
+        console.error('========================================');
+        console.error('Exception sending confirmation email:', emailError);
+        console.error('Error stack:', emailError.stack);
+        console.error('========================================');
+        
+        // Create a result object with error for logging purposes
+        autoReplyResult = { error: { message: emailError.message } };
+      }
     }
 
     // Check if notification email was sent successfully
@@ -335,22 +370,34 @@ The Noteworthy News Team`,
     
     // Send email notification to AI_NOTIFICATION_EMAILS (non-blocking)
     try {
-      // Get notification emails from environment variable
-      let notificationEmails = [];
-      if (process.env.AI_NOTIFICATION_EMAILS) {
-        try {
-          notificationEmails = JSON.parse(process.env.AI_NOTIFICATION_EMAILS);
-          if (!Array.isArray(notificationEmails)) {
-            throw new Error('Not an array');
+      // Check if API key is configured
+      if (!process.env.RESEND_API_KEY) {
+        console.warn('[Submit Tip] RESEND_API_KEY not configured. Skipping AI notification emails.');
+      } else {
+        // Get notification emails from environment variable
+        let notificationEmails = [];
+        if (process.env.AI_NOTIFICATION_EMAILS) {
+          try {
+            // Try parsing as JSON array first
+            notificationEmails = JSON.parse(process.env.AI_NOTIFICATION_EMAILS);
+            if (!Array.isArray(notificationEmails)) {
+              throw new Error('Not an array');
+            }
+          } catch {
+            // If not JSON, treat as comma-separated string
+            notificationEmails = process.env.AI_NOTIFICATION_EMAILS.split(',').map(e => e.trim()).filter(e => e);
           }
-        } catch {
-          notificationEmails = process.env.AI_NOTIFICATION_EMAILS.split(',').map(e => e.trim()).filter(e => e);
         }
-      }
-      
-      if (notificationEmails.length > 0) {
+        
+        // Fallback to default if no emails configured
+        if (notificationEmails.length === 0) {
+          notificationEmails = [process.env.ADMIN_NOTIFICATION_EMAIL || 'richard@noteworthynews.co'];
+        }
+        
+        console.log(`[Submit Tip] Sending AI notification emails to: ${notificationEmails.join(', ')}`);
+        
         // Send to all notification emails
-        Promise.all(notificationEmails.map(email =>
+        const emailResults = await Promise.allSettled(notificationEmails.map(email =>
           resend.emails.send({
             from: fromEmail,
             to: email,
@@ -412,22 +459,56 @@ ${tip}
 
 ---
 This is an automated notification from your website.`,
-          }).catch(err => {
-            console.error(`[Submit Tip] Failed to send notification email to ${email}:`, err);
           })
-        )).catch(err => {
-          console.error("[Submit Tip] Error sending notification emails:", err);
+        ));
+        
+        // Log results and handle 403 errors specifically
+        emailResults.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            if (result.value.error) {
+              const error = result.value.error;
+              console.error(`[Submit Tip] Email API error for ${notificationEmails[index]}:`, error);
+              
+              // Check for 403 Forbidden errors
+              if (error.statusCode === 403 || error.message?.includes('403') || error.message?.toLowerCase().includes('forbidden')) {
+                console.error(`[Submit Tip] 403 Forbidden error detected for ${notificationEmails[index]}`);
+                console.error(`[Submit Tip] Possible causes:`);
+                console.error(`  - Invalid or expired RESEND_API_KEY`);
+                console.error(`  - Domain not verified in Resend (verify at https://resend.com/domains)`);
+                console.error(`  - API key doesn't have permission to send to this email`);
+                console.error(`  - Rate limit exceeded`);
+                console.error(`[Submit Tip] Error details:`, JSON.stringify(error, null, 2));
+              }
+            } else {
+              console.log(`[Submit Tip] Email sent successfully to ${notificationEmails[index]}:`, result.value.data?.id);
+            }
+          } else {
+            const error = result.reason;
+            console.error(`[Submit Tip] Failed to send email to ${notificationEmails[index]}:`, error);
+            
+            // Check for 403 in rejected promises
+            if (error?.statusCode === 403 || error?.message?.includes('403') || error?.message?.toLowerCase().includes('forbidden')) {
+              console.error(`[Submit Tip] 403 Forbidden error in rejected promise for ${notificationEmails[index]}`);
+              console.error(`[Submit Tip] Error details:`, JSON.stringify(error, null, 2));
+            }
+          }
         });
       }
     } catch (emailErr) {
-      console.error("[Submit Tip] Error setting up notification emails:", emailErr);
+      console.error("[Submit Tip] Error sending AI notification emails:", emailErr);
+      console.error("[Submit Tip] Error stack:", emailErr.stack);
+      
+      // Check for 403 in exception
+      if (emailErr?.statusCode === 403 || emailErr?.message?.includes('403') || emailErr?.message?.toLowerCase().includes('forbidden')) {
+        console.error(`[Submit Tip] 403 Forbidden error in exception handler`);
+        console.error(`[Submit Tip] Check RESEND_API_KEY and domain verification at https://resend.com/domains`);
+      }
     }
     
-    const successMessage = confirmationSent
+    // Always show success message - never disclose email sending issues to user
+    const successMessage = (email && email.includes('@'))
       ? 'Tip submitted successfully! Check your email for a confirmation.'
-      : (email && email.includes('@'))
-        ? 'Tip submitted successfully! Thank you for your contribution. (Note: Confirmation email could not be sent)'
-        : 'Tip submitted successfully! Thank you for your contribution.';
+      : 'Tip submitted successfully! Thank you for your contribution.';
     
     return {
       statusCode: 200,

@@ -262,7 +262,7 @@ class NoteworthyChat extends HTMLElement {
           pointer-events: none;
         }
         
-        .body.drag-over .drag-drop-overlay {
+        .wrap.drag-over .drag-drop-overlay {
           display: flex;
         }
         
@@ -1165,12 +1165,13 @@ class NoteworthyChat extends HTMLElement {
           </div>
         </div>
         
+        <div class="drag-drop-overlay">
+          <div class="drag-drop-overlay-icon">📎</div>
+          <div class="drag-drop-overlay-text">Drag and Drop</div>
+          <div class="drag-drop-overlay-subtext">Drop your files here to upload</div>
+        </div>
+        
         <div class="body">
-          <div class="drag-drop-overlay">
-            <div class="drag-drop-overlay-icon">📎</div>
-            <div class="drag-drop-overlay-text">Drag and Drop</div>
-            <div class="drag-drop-overlay-subtext">Drop your files here to upload</div>
-          </div>
           <p class="tip">Ask about headlines, context, or fact-checks. Upload images or documents for analysis. I'm here to help you stay informed!</p>
         </div>
         
@@ -1260,6 +1261,9 @@ class NoteworthyChat extends HTMLElement {
     
     // Track uploaded files
     let uploadedFiles = [];
+    
+    // Track chat history for context
+    let chatHistory = [];
     
     // Debug: Log if elements are found
     console.log('Noteworthy Chat initialized:', {
@@ -1935,11 +1939,15 @@ class NoteworthyChat extends HTMLElement {
           const fileData = await Promise.all(filePromises);
           requestBody = JSON.stringify({ 
             message: message || '',
-            files: fileData
+            files: fileData,
+            chatHistory: chatHistory
           });
         } else {
-          // Regular JSON request
-          requestBody = JSON.stringify({ message });
+          // Regular JSON request with chat history
+          requestBody = JSON.stringify({ 
+            message: message,
+            chatHistory: chatHistory
+          });
         }
         
         // Try primary endpoint
@@ -2113,12 +2121,29 @@ class NoteworthyChat extends HTMLElement {
 
         body.scrollTop = body.scrollHeight;
         
+        // Update chat history with user message and AI response (only on success)
+        chatHistory.push({
+          role: 'user',
+          content: message || (filesToSend.length > 0 ? `[Uploaded ${filesToSend.length} file(s)]` : '')
+        });
+        chatHistory.push({
+          role: 'assistant',
+          content: text
+        });
+        
+        // Keep only last 20 messages (10 exchanges) to avoid token limits
+        if (chatHistory.length > 20) {
+          chatHistory = chatHistory.slice(-20);
+        }
+        
         // Text-to-speech for AI response
         if (audioEnabled) {
           speakText(text);
         }
       } catch (e) {
         console.error('Ask function error:', e);
+        
+        // Don't add to chat history on error
         thinking.remove();
         
         // Restore header subtitle on error
@@ -2287,27 +2312,59 @@ class NoteworthyChat extends HTMLElement {
       });
     }
     
-    // Drag and drop handling on the main chat body
-    if (body) {
+    // Drag and drop handling on the main chat body and wrap
+    if (body && wrap) {
       // Prevent default drag behaviors
       ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         body.addEventListener(eventName, (e) => {
           e.preventDefault();
           e.stopPropagation();
         }, false);
+        wrap.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }, false);
       });
       
       // Highlight drop zone when item is dragged over it
-      body.addEventListener('dragenter', (e) => {
+      const addDragOver = (e) => {
         if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
           body.classList.add('drag-over');
+        }
+      };
+      
+      const removeDragOver = () => {
+        wrap.classList.remove('drag-over');
+        body.classList.remove('drag-over');
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
         }
       });
       
       body.addEventListener('dragover', (e) => {
         if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
           body.classList.add('drag-over');
           e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
         }
       });
       
@@ -2317,12 +2374,24 @@ class NoteworthyChat extends HTMLElement {
         const x = e.clientX;
         const y = e.clientY;
         if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          body.classList.remove('drag-over');
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
         }
       });
       
       body.addEventListener('drop', (e) => {
-        body.classList.remove('drag-over');
+        removeDragOver();
         const files = e.dataTransfer.files;
         if (files && files.length > 0) {
           handleFiles(files);

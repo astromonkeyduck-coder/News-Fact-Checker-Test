@@ -7153,6 +7153,7 @@ function initNewsletterSubscription() {
     const playSubscriptionSound = function() {
         const backgroundMusic = document.getElementById('backgroundMusic');
         const backgroundMusicSecond = document.getElementById('backgroundMusicSecond');
+        const backgroundMusicThird = document.getElementById('backgroundMusicThird');
         const backgroundMusicLoop = document.getElementById('backgroundMusicLoop');
         
         // Save current music state
@@ -7160,22 +7161,42 @@ function initNewsletterSubscription() {
         let currentTrack = null;
         let currentTime = 0;
         
-        // Find which track is playing and save its state
-        if (backgroundMusic && !backgroundMusic.paused) {
-            wasPlaying = true;
-            currentTrack = backgroundMusic;
-            currentTime = backgroundMusic.currentTime;
-            backgroundMusic.pause();
-        } else if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
-            wasPlaying = true;
-            currentTrack = backgroundMusicSecond;
-            currentTime = backgroundMusicSecond.currentTime;
-            backgroundMusicSecond.pause();
-        } else if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
-            wasPlaying = true;
-            currentTrack = backgroundMusicLoop;
-            currentTime = backgroundMusicLoop.currentTime;
-            backgroundMusicLoop.pause();
+        // Use music system's pause function if available, otherwise pause manually
+        if (typeof window.pauseAllMusicTracks === 'function') {
+            // Use the music system's pause function
+            const state = window.pauseAllMusicTracks();
+            wasPlaying = state.wasPlaying;
+            currentTrack = state.currentTrack;
+            currentTime = state.currentTime;
+        } else {
+            // Fallback: manually pause all tracks and find which one was playing
+            if (backgroundMusic && !backgroundMusic.paused) {
+                wasPlaying = true;
+                currentTrack = backgroundMusic;
+                currentTime = backgroundMusic.currentTime;
+                backgroundMusic.pause();
+            } else if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
+                wasPlaying = true;
+                currentTrack = backgroundMusicSecond;
+                currentTime = backgroundMusicSecond.currentTime;
+                backgroundMusicSecond.pause();
+            } else if (backgroundMusicThird && !backgroundMusicThird.paused) {
+                wasPlaying = true;
+                currentTrack = backgroundMusicThird;
+                currentTime = backgroundMusicThird.currentTime;
+                backgroundMusicThird.pause();
+            } else if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+                wasPlaying = true;
+                currentTrack = backgroundMusicLoop;
+                currentTime = backgroundMusicLoop.currentTime;
+                backgroundMusicLoop.pause();
+            }
+            
+            // Ensure ALL tracks are paused (in case multiple were playing)
+            if (backgroundMusic && !backgroundMusic.paused) backgroundMusic.pause();
+            if (backgroundMusicSecond && !backgroundMusicSecond.paused) backgroundMusicSecond.pause();
+            if (backgroundMusicThird && !backgroundMusicThird.paused) backgroundMusicThird.pause();
+            if (backgroundMusicLoop && !backgroundMusicLoop.paused) backgroundMusicLoop.pause();
         }
         
         // Create confetti container if it doesn't exist

@@ -372,21 +372,47 @@ This is an automated notification from your website.`,
         })
       )));
       
-      // Log results
+      // Log results and handle 403 errors specifically
       emailResults.forEach((result, index) => {
         if (result.status === 'fulfilled') {
           if (result.value.error) {
-            console.error(`[Generate Image] Email API error for ${notificationEmails[index]}:`, result.value.error);
+            const error = result.value.error;
+            console.error(`[Generate Image] Email API error for ${notificationEmails[index]}:`, error);
+            
+            // Check for 403 Forbidden errors
+            if (error.statusCode === 403 || error.message?.includes('403') || error.message?.toLowerCase().includes('forbidden')) {
+              console.error(`[Generate Image] 403 Forbidden error detected for ${notificationEmails[index]}`);
+              console.error(`[Generate Image] Possible causes:`);
+              console.error(`  - Invalid or expired RESEND_API_KEY`);
+              console.error(`  - Domain not verified in Resend (verify at https://resend.com/domains)`);
+              console.error(`  - API key doesn't have permission to send to this email`);
+              console.error(`  - Rate limit exceeded`);
+              console.error(`[Generate Image] Error details:`, JSON.stringify(error, null, 2));
+            }
           } else {
             console.log(`[Generate Image] Email sent successfully to ${notificationEmails[index]}:`, result.value.data?.id);
           }
         } else {
-          console.error(`[Generate Image] Failed to send email to ${notificationEmails[index]}:`, result.reason);
+          const error = result.reason;
+          console.error(`[Generate Image] Failed to send email to ${notificationEmails[index]}:`, error);
+          
+          // Check for 403 in rejected promises
+          if (error?.statusCode === 403 || error?.message?.includes('403') || error?.message?.toLowerCase().includes('forbidden')) {
+            console.error(`[Generate Image] 403 Forbidden error in rejected promise for ${notificationEmails[index]}`);
+            console.error(`[Generate Image] Error details:`, JSON.stringify(error, null, 2));
+          }
         }
       });
     } catch (emailErr) {
       console.error("[Generate Image] Error sending email notification:", emailErr);
       console.error("[Generate Image] Error stack:", emailErr.stack);
+      
+      // Check for 403 in exception
+      if (emailErr?.statusCode === 403 || emailErr?.message?.includes('403') || emailErr?.message?.toLowerCase().includes('forbidden')) {
+        console.error(`[Generate Image] 403 Forbidden error in exception handler`);
+        console.error(`[Generate Image] Check RESEND_API_KEY and domain verification at https://resend.com/domains`);
+      }
+      
       // Don't fail the request if email fails
     }
 

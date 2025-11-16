@@ -21,6 +21,7 @@
     function initMusic() {
         const backgroundMusic = document.getElementById('backgroundMusic');
         const backgroundMusicSecond = document.getElementById('backgroundMusicSecond');
+        const backgroundMusicThird = document.getElementById('backgroundMusicThird');
         const backgroundMusicLoop = document.getElementById('backgroundMusicLoop');
         
         if (!backgroundMusic) {
@@ -31,11 +32,13 @@
         // Optimize audio loading - only preload metadata, not entire files
         backgroundMusic.preload = 'metadata';
         if (backgroundMusicSecond) backgroundMusicSecond.preload = 'metadata';
+        if (backgroundMusicThird) backgroundMusicThird.preload = 'metadata';
         if (backgroundMusicLoop) backgroundMusicLoop.preload = 'metadata';
         
         // Set audio quality settings
         backgroundMusic.volume = 0.5;
         if (backgroundMusicSecond) backgroundMusicSecond.volume = 0.5;
+        if (backgroundMusicThird) backgroundMusicThird.volume = 0.5;
         if (backgroundMusicLoop) backgroundMusicLoop.volume = 0.5;
         
         // Explicitly load audio metadata for all tracks
@@ -45,6 +48,9 @@
         }
         if (backgroundMusicSecond && backgroundMusicSecond.readyState === 0) {
             backgroundMusicSecond.load();
+        }
+        if (backgroundMusicThird && backgroundMusicThird.readyState === 0) {
+            backgroundMusicThird.load();
         }
         if (backgroundMusicLoop && backgroundMusicLoop.readyState === 0) {
             backgroundMusicLoop.load();
@@ -120,6 +126,9 @@
             if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
                 backgroundMusicSecond.pause();
             }
+            if (backgroundMusicThird && !backgroundMusicThird.paused) {
+                backgroundMusicThird.pause();
+            }
             if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
                 backgroundMusicLoop.pause();
             }
@@ -130,6 +139,41 @@
                 window.subscriptionSound = null;
             }
         }
+        
+        // Expose function to pause all tracks and return current state (for subscription sound)
+        window.pauseAllMusicTracks = function() {
+            let wasPlaying = false;
+            let currentTrack = null;
+            let currentTime = 0;
+            
+            // Find which track is playing and save its state
+            if (backgroundMusic && !backgroundMusic.paused) {
+                wasPlaying = true;
+                currentTrack = backgroundMusic;
+                currentTime = backgroundMusic.currentTime;
+            } else if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
+                wasPlaying = true;
+                currentTrack = backgroundMusicSecond;
+                currentTime = backgroundMusicSecond.currentTime;
+            } else if (backgroundMusicThird && !backgroundMusicThird.paused) {
+                wasPlaying = true;
+                currentTrack = backgroundMusicThird;
+                currentTime = backgroundMusicThird.currentTime;
+            } else if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+                wasPlaying = true;
+                currentTrack = backgroundMusicLoop;
+                currentTime = backgroundMusicLoop.currentTime;
+            }
+            
+            // Pause all tracks
+            pauseAllTracks();
+            
+            return {
+                wasPlaying: wasPlaying,
+                currentTrack: currentTrack,
+                currentTime: currentTime
+            };
+        };
         
         // Function to play a specific track at a specific time
         function playTrackAtTime(trackName, time) {
