@@ -826,22 +826,8 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
     
     const finalDisplayName = getDisplayName(finalFullName, finalFirstName);
 
-    // Log newsletter subscription (non-blocking - don't wait for it)
-    const { logData } = require("./log-data");
-    logData("newsletter-signup", {
-      email: email,
-      firstName: finalFirstName,
-      fullName: finalFullName,
-      displayName: finalDisplayName,
-      notificationSent: notificationSent,
-      autoReplySent: autoReplySent,
-      audienceAdded: !!(audienceResult && !audienceError && audienceResult.data?.id),
-    }, event).catch(err => {
-      console.error("[Send Email] Failed to log newsletter signup:", err);
-      // Don't fail the request if logging fails
-    });
-
-    return {
+    // Prepare success response FIRST (before any async logging)
+    const successResponse = {
       statusCode: 200,
       headers,
       body: JSON.stringify({
@@ -871,6 +857,30 @@ To unsubscribe from future emails, visit: ${unsubscribeUrl}`,
         } : {}),
       }),
     };
+
+    // Log newsletter subscription AFTER preparing response (non-blocking - don't wait for it)
+    // This ensures the response is sent even if logging fails
+    try {
+      const { logData } = require("./log-data");
+      logData("newsletter-signup", {
+        email: email,
+        firstName: finalFirstName,
+        fullName: finalFullName,
+        displayName: finalDisplayName,
+        notificationSent: notificationSent,
+        autoReplySent: autoReplySent,
+        audienceAdded: !!(audienceResult && !audienceError && audienceResult.data?.id),
+      }, event).catch(err => {
+        console.error("[Send Email] Failed to log newsletter signup:", err);
+        // Don't fail the request if logging fails - response already prepared
+      });
+    } catch (logError) {
+      console.error("[Send Email] Error setting up data logging:", logError);
+      // Don't fail the request if logging setup fails - response already prepared
+    }
+
+    // Return success response (this happens regardless of logging success/failure)
+    return successResponse;
 
     } catch (error) {
       console.error('Email sending error:', error);

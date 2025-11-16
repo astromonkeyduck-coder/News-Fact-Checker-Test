@@ -146,9 +146,23 @@ exports.handler = async (event, context) => {
     }
 
     let requestBody;
+    let message = "";
+    let files = [];
+    
+    // Parse request body as JSON (files are sent as base64 in JSON)
     try {
-      requestBody = JSON.parse(event.body || "{}");
+      let bodyStr = event.body || "{}";
+      
+      // Handle base64 encoded body
+      if (event.isBase64Encoded) {
+        bodyStr = Buffer.from(bodyStr, 'base64').toString('utf-8');
+      }
+      
+      requestBody = JSON.parse(bodyStr);
+      message = requestBody.message || "";
+      files = requestBody.files || [];
     } catch (parseError) {
+      console.error("Error parsing request body:", parseError);
       return {
         statusCode: 400,
         headers,
@@ -156,13 +170,12 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const { message } = requestBody;
-
-    if (!message || !message.trim()) {
+    // Allow empty message if files are provided
+    if ((!message || !message.trim()) && (!files || files.length === 0)) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: "Missing message" }),
+        body: JSON.stringify({ error: "Missing message or files" }),
       };
     }
 
@@ -193,20 +206,98 @@ exports.handler = async (event, context) => {
     
     console.log("API key found:", apiKey.substring(0, 7) + "...");
 
-    const r = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        temperature: 0.4,
-        max_tokens: 450,
-        messages: [
-          {
-            role: "system",
-            content: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You are designed to help users with fact-checking, media literacy, and staying informed with verified news.
+    // Auto-detect if message is requesting image generation
+    function isImageRequest(msg) {
+      const lowerMsg = msg.toLowerCase().trim();
+      const imagePatterns = [
+        /^(generate|create|make|draw)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing)(\s+of)?\s+/i,
+        /^(show\s+me|i\s+want)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing)(\s+of)?\s+/i,
+        /^(can\s+you\s+)?(generate|create|make|draw)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing)(\s+of)?\s+/i,
+        /^(an?|the)\s+(image|picture|photo|visual|illustration|drawing)\s+of\s+/i,
+        /\b(picture|image|photo|visual|illustration|drawing)\s+of\s+/i,
+        /^(generate|create|make|draw)\s+/i
+      ];
+      
+      for (const pattern of imagePatterns) {
+        if (pattern.test(lowerMsg)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    
+    // Extract the actual prompt from an image request
+    function extractImagePrompt(msg) {
+      let prompt = msg.trim();
+      const prefixes = [
+        /^(generate|create|make|draw)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing)(\s+of)?\s+/i,
+        /^(show\s+me|i\s+want)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing)(\s+of)?\s+/i,
+        /^(can\s+you\s+)?(generate|create|make|draw)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing)(\s+of)?\s+/i,
+        /^(an?|the)\s+(image|picture|photo|visual|illustration|drawing)\s+of\s+/i,
+        /\b(picture|image|photo|visual|illustration|drawing)\s+of\s+/i,
+        /^(generate|create|make|draw)\s+/i
+      ];
+      
+      for (const prefix of prefixes) {
+        const match = prompt.match(prefix);
+        if (match) {
+          prompt = prompt.substring(match[0].length).trim();
+          break;
+        }
+      }
+      
+      return prompt || msg;
+    }
+
+    // Check if this is an image request
+    const needsImage = isImageRequest(message);
+    let imageData = null;
+    
+    // Generate image if needed (before GPT call so GPT can reference it)
+    if (needsImage) {
+      try {
+        const imagePrompt = extractImagePrompt(message);
+        console.log("Generating image with prompt:", imagePrompt.substring(0, 100) + "...");
+        
+        const imageResponse = await fetch("https://api.openai.com/v1/images/generations", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "dall-e-3",
+            prompt: imagePrompt.trim(),
+            size: "1024x1024",
+            quality: "standard",
+            style: "vivid",
+            n: 1,
+          }),
+        });
+
+        if (imageResponse.ok) {
+          const imageResult = await imageResponse.json();
+          imageData = {
+            imageUrl: imageResult?.data?.[0]?.url || null,
+            revisedPrompt: imageResult?.data?.[0]?.revised_prompt || imagePrompt,
+            prompt: imagePrompt
+          };
+          console.log("Image generated successfully");
+        } else {
+          console.error("Image generation failed:", imageResponse.status);
+          // Continue with chat response even if image generation fails
+        }
+      } catch (imageError) {
+        console.error("Error generating image:", imageError);
+        // Continue with chat response even if image generation fails
+      }
+    }
+
+    // Build messages array with file content if files are provided
+    const messages = [
+      {
+        role: "system",
+        content: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You are designed to help users with fact-checking, media literacy, and staying informed with verified news.
 
 ABOUT NOTEWORTHY NEWS:
 - Noteworthy News is committed to delivering accurate, fact-checked journalism in an era of information overload
@@ -229,18 +320,148 @@ YOUR ROLE:
 - Provide fact-checking assistance and verification tips
 - Answer questions about media literacy and critical thinking
 - Explain Noteworthy News' mission and services
+- Generate images when users request them (you have access to DALL-E image generation)
+- Analyze images and documents when users upload them
        - Be concise, neutral, and always Truth-Seeking
 - When discussing news, emphasize the importance of multiple sources and verification
 - If you don't know something, say so rather than speculate
+- When an image has been generated for the user, acknowledge it naturally in your response
+- When analyzing uploaded images or documents, provide detailed observations and insights
 
 RESPONSE STYLE:
 - Keep responses concise but informative (target: 2-4 sentences per point)
 - Use clear, accessible language
 - Cite principles of fact-checking when relevant
-- Maintain a professional but approachable tone`,
-          },
-          { role: "user", content: message },
-        ],
+- Maintain a professional but approachable tone
+- Do NOT include any attribution text like "generated by Noteworthy AI" or similar disclaimers in your responses
+- Do NOT add footers, signatures, or attribution statements to your answers`,
+      },
+    ];
+    
+    // Store uploaded images in Netlify Blobs
+    const storedUploadedImages = [];
+    if (files && files.length > 0) {
+      try {
+        const { getStore } = require("@netlify/blobs");
+        const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
+        const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
+        
+        let store;
+        if (siteID && token) {
+          store = getStore({
+            name: "uploaded-images",
+            siteID: siteID,
+            token: token,
+          });
+        } else {
+          store = getStore({ name: "uploaded-images" });
+        }
+        
+        // Process each uploaded file
+        for (const file of files) {
+          if (file.type && file.type.startsWith("image/") && file.data) {
+            try {
+              // Generate unique key for the image
+              const timestamp = Date.now();
+              const fileHash = Buffer.from(file.name || 'upload').toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+              const fileExtension = file.name ? file.name.split('.').pop() : 'png';
+              const imageKey = `upload-${timestamp}-${fileHash}.${fileExtension}`;
+              
+              // Convert base64 to buffer
+              const base64Data = file.data.replace(/^data:image\/\w+;base64,/, '');
+              const imageBuffer = Buffer.from(base64Data, 'base64');
+              
+              console.log(`[Noteworthy Chat] Storing uploaded image: ${file.name}, size: ${imageBuffer.length} bytes`);
+              
+              // Store image in Netlify Blobs
+              await store.set(imageKey, imageBuffer, {
+                contentType: file.type,
+              });
+              
+              // Generate URL to retrieve the stored image
+              const storedImageUrl = `/.netlify/functions/get-uploaded-image?key=${encodeURIComponent(imageKey)}`;
+              
+              storedUploadedImages.push({
+                originalName: file.name,
+                type: file.type,
+                size: file.size,
+                storedImageKey: imageKey,
+                storedImageUrl: storedImageUrl,
+                uploadedAt: new Date().toISOString(),
+              });
+              
+              console.log(`[Noteworthy Chat] ✅ Uploaded image stored with key: ${imageKey}`);
+              
+              // Store metadata
+              const metadataKey = `metadata-${imageKey}.json`;
+              await store.set(metadataKey, JSON.stringify({
+                originalName: file.name,
+                type: file.type,
+                size: file.size,
+                uploadedAt: new Date().toISOString(),
+                imageKey: imageKey,
+              }), {
+                contentType: "application/json",
+              });
+              
+            } catch (fileErr) {
+              console.error(`[Noteworthy Chat] Error storing uploaded image ${file.name}:`, fileErr);
+              // Continue with other files even if one fails
+            }
+          }
+        }
+      } catch (blobErr) {
+        console.error("[Noteworthy Chat] Error setting up blob storage for uploaded images:", blobErr);
+        // Continue even if blob storage fails - we'll still use the base64 data for OpenAI
+      }
+    }
+    
+    // Build user message with files if provided
+    if (files && files.length > 0) {
+      const userContent = [];
+      
+      // Add text message if provided
+      if (message && message.trim()) {
+        userContent.push({
+          type: "text",
+          text: message,
+        });
+      }
+      
+      // Add image files - always use base64 for OpenAI (they can't access our internal URLs)
+      // Images are stored separately in Blobs for our records
+      files.forEach((file) => {
+        if (file.type && file.type.startsWith("image/") && file.data) {
+          // Always use base64 data URL for OpenAI API
+          userContent.push({
+            type: "image_url",
+            image_url: {
+              url: `data:${file.type};base64,${file.data}`,
+            },
+          });
+        }
+      });
+      
+      messages.push({
+        role: "user",
+        content: userContent.length > 0 ? userContent : [{ type: "text", text: message || "Please analyze the uploaded files." }],
+      });
+    } else {
+      // Regular text message
+      messages.push({ role: "user", content: message });
+    }
+
+    const r = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        temperature: 0.4,
+        max_tokens: 450,
+        messages: messages,
       }),
     });
 
@@ -264,8 +485,13 @@ RESPONSE STYLE:
     }
 
     const data = await r.json();
-    const reply = data?.choices?.[0]?.message?.content?.trim() || "No response generated.";
+    let reply = data?.choices?.[0]?.message?.content?.trim() || "No response generated.";
     const usage = data?.usage || null;
+    
+    // If an image was generated, include it in the response
+    if (imageData && imageData.imageUrl) {
+      // The reply already mentions the image, so we just need to return both
+    }
 
     // Get user email and chat history from event (if available)
     let userEmail = null;
@@ -327,6 +553,23 @@ RESPONSE STYLE:
 
     // Log AI interaction (non-blocking - don't wait for it)
     const { logData } = require("./log-data");
+    
+    // Extract file information for logging (include stored image info)
+    let storedImageIndex = 0;
+    const uploadedFilesInfo = files && files.length > 0 ? files.map((file) => {
+      const isImage = file.type && file.type.startsWith('image/');
+      const storedImage = isImage ? storedUploadedImages[storedImageIndex++] : null;
+      return {
+        name: file.name || 'unknown',
+        type: file.type || 'unknown',
+        size: file.size || 0,
+        isImage: isImage,
+        storedImageKey: storedImage?.storedImageKey || null,
+        storedImageUrl: storedImage?.storedImageUrl || null,
+        uploadedAt: storedImage?.uploadedAt || null,
+      };
+    }) : [];
+    
     logData("ai-chat", {
       userMessage: message,
       aiResponse: reply,
@@ -334,6 +577,10 @@ RESPONSE STYLE:
       model: "gpt-4o",
       temperature: 0.4,
       maxTokens: 450,
+      uploadedFiles: uploadedFilesInfo.length > 0 ? uploadedFilesInfo : undefined,
+      fileCount: uploadedFilesInfo.length,
+      imageCount: uploadedFilesInfo.filter(f => f.isImage).length,
+      storedImages: storedUploadedImages.length > 0 ? storedUploadedImages : undefined,
     }, event).catch(err => {
       console.error("[Noteworthy Chat] Failed to log data:", err);
       // Don't fail the request if logging fails
@@ -499,7 +746,11 @@ This is an automated notification from your website.`,
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ reply, usage }),
+      body: JSON.stringify({ 
+        reply, 
+        usage,
+        image: imageData // Include image data if generated
+      }),
     };
   } catch (e) {
     console.error("Noteworthy chat function error:", e);

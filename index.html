@@ -116,6 +116,7 @@
         window.addEventListener('load', function() {
             const audio = document.getElementById('backgroundMusic');
             const secondAudio = document.getElementById('backgroundMusicSecond');
+            const thirdAudio = document.getElementById('backgroundMusicThird');
             const loopAudio = document.getElementById('backgroundMusicLoop');
             
             // Function to ensure only one track plays at a time
@@ -125,6 +126,9 @@
                 }
                 if (secondAudio && !secondAudio.paused) {
                     secondAudio.pause();
+                }
+                if (thirdAudio && !thirdAudio.paused) {
+                    thirdAudio.pause();
                 }
                 if (loopAudio && !loopAudio.paused) {
                     loopAudio.pause();
@@ -150,6 +154,9 @@
                 } else if (secondAudio && !secondAudio.paused) {
                     currentTrack = 'track2';
                     currentTime = secondAudio.currentTime;
+                } else if (thirdAudio && !thirdAudio.paused) {
+                    currentTrack = 'track3';
+                    currentTime = thirdAudio.currentTime;
                 } else if (loopAudio && !loopAudio.paused) {
                     currentTrack = 'loop';
                     currentTime = loopAudio.currentTime;
@@ -161,6 +168,9 @@
                     } else if (secondAudio && secondAudio.currentTime > 0 && secondAudio.currentTime < (secondAudio.duration || Infinity)) {
                         currentTrack = 'track2';
                         currentTime = secondAudio.currentTime;
+                    } else if (thirdAudio && thirdAudio.currentTime > 0 && thirdAudio.currentTime < (thirdAudio.duration || Infinity)) {
+                        currentTrack = 'track3';
+                        currentTime = thirdAudio.currentTime;
                     } else if (loopAudio && loopAudio.currentTime > 0) {
                         currentTrack = 'loop';
                         currentTime = loopAudio.currentTime;
@@ -197,6 +207,8 @@
                     track = audio;
                 } else if (savedTrack === 'track2') {
                     track = secondAudio;
+                } else if (savedTrack === 'track3') {
+                    track = thirdAudio;
                 } else if (savedTrack === 'loop') {
                     track = loopAudio;
                 }
@@ -274,7 +286,7 @@
                 
                 audio.addEventListener('pause', function() {
                     // Check if any other track is playing
-                    const isPlaying = (secondAudio && !secondAudio.paused) || (loopAudio && !loopAudio.paused);
+                    const isPlaying = (secondAudio && !secondAudio.paused) || (thirdAudio && !thirdAudio.paused) || (loopAudio && !loopAudio.paused);
                     if (!isPlaying) {
                         localStorage.setItem('globalMusicPlaying', 'false');
                     }
@@ -282,7 +294,46 @@
                     updateMusicButtonState(isPlaying);
                 });
                 
-                // When first track (TheMoneyMaker) ends, start the second track (YEAHHHHHH)
+                // Handle audio errors - attempt to resume if music should be playing
+                audio.addEventListener('error', function(e) {
+                    console.error('Audio error on main track:', e);
+                    const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+                    const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
+                    if (musicEnabled && musicWasPlaying) {
+                        // Try to resume after a short delay
+                        setTimeout(() => {
+                            if (audio && audio.paused && musicEnabled) {
+                                audio.load(); // Reload the audio
+                                audio.play().catch(err => console.error('Failed to resume after error:', err));
+                            }
+                        }, 1000);
+                    }
+                });
+                
+                // Handle stalled/aborted events - attempt to resume
+                audio.addEventListener('stalled', function() {
+                    console.warn('Audio stalled, attempting to resume...');
+                    const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+                    const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
+                    if (musicEnabled && musicWasPlaying && audio.paused) {
+                        setTimeout(() => {
+                            audio.play().catch(err => console.error('Failed to resume after stall:', err));
+                        }, 500);
+                    }
+                });
+                
+                audio.addEventListener('suspend', function() {
+                    console.warn('Audio suspended, attempting to resume...');
+                    const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+                    const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
+                    if (musicEnabled && musicWasPlaying && audio.paused) {
+                        setTimeout(() => {
+                            audio.play().catch(err => console.error('Failed to resume after suspend:', err));
+                        }, 500);
+                    }
+                });
+                
+                // When first track (WOAHFireeee) ends, start the second track (YEAHHHHHH)
                 audio.addEventListener('ended', function() {
                     saveMusicState();
                     if (secondAudio) {
@@ -304,6 +355,9 @@
                     if (audio && !audio.paused) {
                         audio.pause();
                     }
+                    if (thirdAudio && !thirdAudio.paused) {
+                        thirdAudio.pause();
+                    }
                     if (loopAudio && !loopAudio.paused) {
                         loopAudio.pause();
                     }
@@ -315,7 +369,7 @@
                 
                 secondAudio.addEventListener('pause', function() {
                     // Check if any other track is playing
-                    const isPlaying = (audio && !audio.paused) || (loopAudio && !loopAudio.paused);
+                    const isPlaying = (audio && !audio.paused) || (thirdAudio && !thirdAudio.paused) || (loopAudio && !loopAudio.paused);
                     saveMusicState();
                     updateMusicButtonState(isPlaying);
                 });
@@ -324,13 +378,108 @@
                     saveMusicState();
                 });
                 
-                // When second track (YEAHHHHHH) ends, start the looping track
+                // Handle audio errors - attempt to resume if music should be playing
+                secondAudio.addEventListener('error', function(e) {
+                    console.error('Audio error on second track:', e);
+                    const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+                    const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
+                    if (musicEnabled && musicWasPlaying) {
+                        setTimeout(() => {
+                            if (secondAudio && secondAudio.paused && musicEnabled) {
+                                secondAudio.load();
+                                secondAudio.play().catch(err => console.error('Failed to resume after error:', err));
+                            }
+                        }, 1000);
+                    }
+                });
+                
+                secondAudio.addEventListener('stalled', function() {
+                    const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+                    const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
+                    if (musicEnabled && musicWasPlaying && secondAudio.paused) {
+                        setTimeout(() => {
+                            secondAudio.play().catch(err => console.error('Failed to resume after stall:', err));
+                        }, 500);
+                    }
+                });
+                
+                // When second track (YEAHHHHHH) ends, start the third track (TheMoneyMaker)
                 secondAudio.addEventListener('ended', function() {
                     saveMusicState();
-                    if (loopAudio) {
+                    if (thirdAudio) {
                         // Pause second track (should already be paused, but ensure it)
                         secondAudio.pause();
-                        loopAudio.volume = secondAudio.volume;
+                        thirdAudio.volume = secondAudio.volume;
+                        thirdAudio.currentTime = 0;
+                        playTrackOnly(thirdAudio);
+                        updateMusicButtonState(true);
+                    }
+                });
+            }
+            
+            // Handle third track events
+            if (thirdAudio) {
+                thirdAudio.volume = 0.5;
+                thirdAudio.addEventListener('play', function() {
+                    // Ensure other tracks are paused when third track plays
+                    if (audio && !audio.paused) {
+                        audio.pause();
+                    }
+                    if (secondAudio && !secondAudio.paused) {
+                        secondAudio.pause();
+                    }
+                    if (loopAudio && !loopAudio.paused) {
+                        loopAudio.pause();
+                    }
+                    localStorage.setItem('globalMusicPlaying', 'true');
+                    localStorage.setItem('globalMusicEnabled', 'true');
+                    saveMusicState();
+                    updateMusicButtonState(true);
+                });
+                
+                thirdAudio.addEventListener('pause', function() {
+                    // Check if any other track is playing
+                    const isPlaying = (audio && !audio.paused) || (secondAudio && !secondAudio.paused) || (loopAudio && !loopAudio.paused);
+                    saveMusicState();
+                    updateMusicButtonState(isPlaying);
+                });
+                
+                thirdAudio.addEventListener('timeupdate', function() {
+                    saveMusicState();
+                });
+                
+                // Handle audio errors - attempt to resume if music should be playing
+                thirdAudio.addEventListener('error', function(e) {
+                    console.error('Audio error on third track:', e);
+                    const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+                    const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
+                    if (musicEnabled && musicWasPlaying) {
+                        setTimeout(() => {
+                            if (thirdAudio && thirdAudio.paused && musicEnabled) {
+                                thirdAudio.load();
+                                thirdAudio.play().catch(err => console.error('Failed to resume after error:', err));
+                            }
+                        }, 1000);
+                    }
+                });
+                
+                thirdAudio.addEventListener('stalled', function() {
+                    const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+                    const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
+                    if (musicEnabled && musicWasPlaying && thirdAudio.paused) {
+                        setTimeout(() => {
+                            thirdAudio.play().catch(err => console.error('Failed to resume after stall:', err));
+                        }, 500);
+                    }
+                });
+                
+                // When third track (TheMoneyMaker) ends, start the looping track
+                thirdAudio.addEventListener('ended', function() {
+                    saveMusicState();
+                    if (loopAudio) {
+                        // Pause third track (should already be paused, but ensure it)
+                        thirdAudio.pause();
+                        loopAudio.volume = thirdAudio.volume;
                         loopAudio.currentTime = 0;
                         playTrackOnly(loopAudio);
                         updateMusicButtonState(true);
@@ -349,6 +498,9 @@
                     if (secondAudio && !secondAudio.paused) {
                         secondAudio.pause();
                     }
+                    if (thirdAudio && !thirdAudio.paused) {
+                        thirdAudio.pause();
+                    }
                     localStorage.setItem('globalMusicPlaying', 'true');
                     localStorage.setItem('globalMusicEnabled', 'true');
                     saveMusicState();
@@ -357,7 +509,7 @@
                 
                 loopAudio.addEventListener('pause', function() {
                     // Check if any other track is playing
-                    const isPlaying = (audio && !audio.paused) || (secondAudio && !secondAudio.paused);
+                    const isPlaying = (audio && !audio.paused) || (secondAudio && !secondAudio.paused) || (thirdAudio && !thirdAudio.paused);
                     saveMusicState();
                     updateMusicButtonState(isPlaying);
                 });
@@ -365,7 +517,77 @@
                 loopAudio.addEventListener('timeupdate', function() {
                     saveMusicState();
                 });
+                
+                // Handle audio errors - attempt to resume if music should be playing
+                loopAudio.addEventListener('error', function(e) {
+                    console.error('Audio error on loop track:', e);
+                    const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+                    const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
+                    if (musicEnabled && musicWasPlaying) {
+                        setTimeout(() => {
+                            if (loopAudio && loopAudio.paused && musicEnabled) {
+                                loopAudio.load();
+                                loopAudio.play().catch(err => console.error('Failed to resume after error:', err));
+                            }
+                        }, 1000);
+                    }
+                });
+                
+                loopAudio.addEventListener('stalled', function() {
+                    const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+                    const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
+                    if (musicEnabled && musicWasPlaying && loopAudio.paused) {
+                        setTimeout(() => {
+                            loopAudio.play().catch(err => console.error('Failed to resume after stall:', err));
+                        }, 500);
+                    }
+                });
             }
+            
+            // Periodic check to ensure music is still playing if it should be
+            setInterval(function() {
+                const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+                const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
+                
+                if (musicEnabled && musicWasPlaying) {
+                    // Check if all tracks are paused when music should be playing
+                    const allPaused = (!audio || audio.paused) && 
+                                     (!secondAudio || secondAudio.paused) && 
+                                     (!thirdAudio || thirdAudio.paused) && 
+                                     (!loopAudio || loopAudio.paused);
+                    
+                    if (allPaused) {
+                        console.log('Music unexpectedly stopped, attempting to resume...');
+                        // Try to resume from saved state
+                        const savedMusicState = JSON.parse(localStorage.getItem('globalMusicState') || '{}');
+                        const savedTrack = savedMusicState.track || 'track1';
+                        const savedTime = savedMusicState.time || 0;
+                        
+                        let trackToResume = null;
+                        if (savedTrack === 'track1' && audio) {
+                            trackToResume = audio;
+                        } else if (savedTrack === 'track2' && secondAudio) {
+                            trackToResume = secondAudio;
+                        } else if (savedTrack === 'track3' && thirdAudio) {
+                            trackToResume = thirdAudio;
+                        } else if (savedTrack === 'loop' && loopAudio) {
+                            trackToResume = loopAudio;
+                        } else if (audio) {
+                            // Default to first track
+                            trackToResume = audio;
+                        }
+                        
+                        if (trackToResume) {
+                            if (savedTime > 0 && trackToResume.duration) {
+                                trackToResume.currentTime = Math.min(savedTime, trackToResume.duration - 0.5);
+                            }
+                            trackToResume.play().catch(err => {
+                                console.error('Failed to auto-resume music:', err);
+                            });
+                        }
+                    }
+                }
+            }, 5000); // Check every 5 seconds
             
             // Music control button - ensure mutual exclusivity
             const musicBtn = document.getElementById('musicControlBtn');
@@ -380,11 +602,13 @@
                     
                     const audio = document.getElementById('backgroundMusic');
                     const secondAudio = document.getElementById('backgroundMusicSecond');
+                    const thirdAudio = document.getElementById('backgroundMusicThird');
                     const loopAudio = document.getElementById('backgroundMusicLoop');
                     const mainPlaying = audio && !audio.paused;
                     const secondPlaying = secondAudio && !secondAudio.paused;
+                    const thirdPlaying = thirdAudio && !thirdAudio.paused;
                     const loopPlaying = loopAudio && !loopAudio.paused;
-                    const isPlaying = mainPlaying || secondPlaying || loopPlaying;
+                    const isPlaying = mainPlaying || secondPlaying || thirdPlaying || loopPlaying;
                     
                     console.log('Music button clicked. Currently playing:', isPlaying);
                     
@@ -397,6 +621,10 @@
                         if (secondAudio && !secondAudio.paused) {
                             secondAudio.pause();
                             console.log('Paused second audio track');
+                        }
+                        if (thirdAudio && !thirdAudio.paused) {
+                            thirdAudio.pause();
+                            console.log('Paused third audio track');
                         }
                         if (loopAudio && !loopAudio.paused) {
                             loopAudio.pause();
@@ -422,6 +650,12 @@
                             }
                             secondAudio.play().catch(err => console.error('Failed to play second track:', err));
                             console.log('Playing second audio track');
+                        } else if (thirdAudio && thirdAudio.currentTime < (thirdAudio.duration || Infinity)) {
+                            if (savedTime > 0 && savedTrack === 'track3') {
+                                thirdAudio.currentTime = Math.max(0, Math.min(savedTime, thirdAudio.duration || Infinity));
+                            }
+                            thirdAudio.play().catch(err => console.error('Failed to play third track:', err));
+                            console.log('Playing third audio track');
                         } else if (loopAudio) {
                             if (savedTime > 0 && savedTrack === 'loop') {
                                 loopAudio.currentTime = Math.max(0, savedTime % (loopAudio.duration || 1));
@@ -454,7 +688,7 @@
         }
     </script>
     <audio id="backgroundMusic" preload="metadata">
-                        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+                        <source src="WOAHFireeee(Cover).mp4" type="video/mp4">
         Your browser does not support the audio element.
     </audio>
     
@@ -464,7 +698,13 @@
         Your browser does not support the audio element.
     </audio>
     
-    <!-- Third track (loops after second) -->
+    <!-- Third track (plays after second) -->
+    <audio id="backgroundMusicThird" preload="metadata">
+                        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Fourth track (loops after third) -->
     <audio id="backgroundMusicLoop" preload="metadata" loop>
                         <source src="Audiolandingpage.m4a" type="audio/mp4">
         Your browser does not support the audio element.
@@ -1772,217 +2012,6 @@
         .tip-form-group input::placeholder,
         .tip-form-group textarea::placeholder {
             color: rgba(255, 255, 255, 0.4);
-        }
-        
-        /* Airport-Style News Ticker Banner */
-        .celebration-banner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 50px;
-            background: linear-gradient(135deg, #4A90E2 0%, #2ECC71 100%);
-            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-            z-index: 10001;
-            overflow: hidden;
-            display: none;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        }
-        
-        .celebration-banner.active {
-            display: block;
-            animation: slideDownBanner 0.3s ease-out;
-        }
-        
-        .ticker-container {
-            display: flex;
-            align-items: center;
-            height: 100%;
-            white-space: nowrap;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .ticker-content {
-            display: inline-flex;
-            align-items: center;
-            gap: 80px;
-            padding: 0 50px;
-            color: white;
-            font-weight: 600;
-            font-size: 1.05rem;
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
-            animation: scroll-ticker 20s linear infinite;
-            will-change: transform;
-            transform: translateX(0);
-            letter-spacing: 0.3px;
-        }
-        
-        .ticker-emoji {
-            display: inline-flex;
-            align-items: center;
-            margin: 0;
-            padding: 0;
-            height: 50px;
-            vertical-align: top;
-        }
-        
-        .ticker-emoji img {
-            width: auto;
-            height: 60px;
-            object-fit: contain;
-            display: block;
-            max-width: 170px;
-            margin: 0;
-            padding: 0;
-        }
-        
-        .ticker-text {
-            display: inline-flex;
-            align-items: center;
-            gap: 15px;
-            white-space: nowrap;
-            padding: 0 10px;
-        }
-        
-        .ticker-highlight {
-            padding: 4px 12px;
-            border-radius: 6px;
-            font-weight: 800;
-            margin: 0 5px;
-            white-space: nowrap;
-        }
-        
-        .ticker-highlight-breaking {
-            background: rgba(74, 144, 226, 0.4);
-            border: 1px solid rgba(74, 144, 226, 0.6);
-        }
-        
-        .ticker-highlight-impressions {
-            background: rgba(46, 204, 113, 0.4);
-            border: 1px solid rgba(46, 204, 113, 0.6);
-        }
-        
-        @keyframes slideDownBanner {
-            from {
-                transform: translateY(-100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-        
-        @keyframes scroll-ticker {
-            0% {
-                transform: translateX(0);
-            }
-            100% {
-                transform: translateX(-33.33%);
-            }
-        }
-        
-        @keyframes bounce-emoji {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-5px);
-            }
-        }
-        
-        /* Header Confetti - Enhanced for visibility */
-        .header-confetti {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 100px;
-            pointer-events: none;
-            z-index: 10000;
-            overflow: visible;
-        }
-        
-        .header-confetti-piece {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            background: #ffe66d;
-            top: -10px;
-            opacity: 1;
-            animation: header-confetti-fall linear forwards;
-            box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
-        }
-        
-        .header-confetti-piece:nth-child(1n) { background: #ffe66d; }
-        .header-confetti-piece:nth-child(2n) { background: #4ecdc4; }
-        .header-confetti-piece:nth-child(3n) { background: #ff6b6b; }
-        .header-confetti-piece:nth-child(4n) { background: #95e1d3; }
-        .header-confetti-piece:nth-child(5n) { background: #aa96da; }
-        .header-confetti-piece:nth-child(6n) { background: #fcbad3; }
-        .header-confetti-piece:nth-child(7n) { background: #f38181; }
-        .header-confetti-piece:nth-child(8n) { background: #a8e6cf; }
-        
-        @keyframes header-confetti-fall {
-            0% {
-                transform: translateY(0) rotate(0deg);
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(100px) rotate(360deg);
-                opacity: 0;
-            }
-        }
-        
-        /* Adjust header position when banner is active */
-        body.banner-active .main-header {
-            top: 50px;
-        }
-        
-        body.banner-active #news-section,
-        body.banner-active #fact-checker-section,
-        body.banner-active #geography-game-section,
-        body.banner-active #sudan-section,
-        body.banner-active #credibility-section,
-        body.banner-active #about-section,
-        body.banner-active #ai-assistant-section {
-            scroll-margin-top: 140px;
-        }
-        
-        @media (max-width: 768px) {
-            .celebration-banner {
-                height: 45px;
-            }
-            
-            .ticker-content {
-                font-size: 0.95rem;
-                gap: 20px;
-                padding: 0 30px;
-            }
-            
-            .ticker-emoji {
-                font-size: 1.3rem;
-            }
-            
-            .ticker-highlight {
-                padding: 3px 10px;
-                font-size: 0.9rem;
-            }
-            
-            body.banner-active .main-header {
-                top: 45px;
-            }
-            
-            body.banner-active #news-section,
-            body.banner-active #fact-checker-section,
-            body.banner-active #geography-game-section,
-            body.banner-active #sudan-section,
-            body.banner-active #credibility-section,
-            body.banner-active #about-section,
-            body.banner-active #ai-assistant-section {
-                scroll-margin-top: 115px;
-            }
         }
         
         /* Comment Section Styles */
@@ -9696,6 +9725,31 @@
     <script src="src/utils/analytics-tracker.js"></script>
 </head>
 <body>
+<!--
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║   ███╗   ██╗ ██████╗ ████████╗███████╗██╗    ██╗ ██████╗      ║
+║   ████╗  ██║██╔═══██╗╚══██╔══╝██╔════╝██║    ██║██╔═══██╗     ║
+║   ██╔██╗ ██║██║   ██║   ██║   █████╗  ██║ █╗ ██║██║   ██║     ║
+║   ██║╚██╗██║██║   ██║   ██║   ██╔══╝  ██║███╗██║██║   ██║     ║
+║   ██║ ╚████║╚██████╔╝   ██║   ███████╗╚███╔███╔╝╚██████╔╝     ║
+║   ╚═╝  ╚═══╝ ╚═════╝    ╚═╝   ╚══════╝ ╚══╝╚══╝  ╚═════╝      ║
+║                                                               ║
+║   ███╗   ██╗███████╗██╗    ██╗███████╗                        ║
+║   ████╗  ██║██╔════╝██║    ██║██╔════╝                        ║
+║   ██╔██╗ ██║█████╗  ██║ █╗ ██║███████╗                        ║
+║   ██║╚██╗██║██╔══╝  ██║███╗██║╚════██║                        ║
+║   ██║ ╚████║███████╗╚███╔███╔╝███████║                        ║
+║   ╚═╝  ╚═══╝╚══════╝ ╚══╝╚══╝ ╚══════╝                        ║
+║                                                               ║
+║   ✨ Made with a ton of love and months of hardwork ✨        ║
+║   Thanks for checking out the code! 👨‍💻                      ║
+║   If you have any tips to improve my code,                    ║
+║   please DM me on X @newsnoteworthy 💬                        ║
+║   🔗 https://x.com/newsnoteworthy                             ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+-->
     <!-- Skip to content link for accessibility -->
     <a href="#main-content" class="skip-link">Skip to main content</a>
     
@@ -9726,7 +9780,7 @@
             </nav>
             
             <div class="header-right">
-                <div class="last-update">Last Update: November 10, 2025</div>
+                <div class="last-update">Scheduled Maintenance: November 21, 2025</div>
                 <button class="music-control-btn" id="musicControlBtn" title="Toggle Background Music">
                     <span class="btn-icon">🎵</span>
                 </button>
@@ -9901,8 +9955,8 @@
                 <div class="hero-stat-label-small">Likes</div>
             </div>
             
-            <div class="hero-stat-card" data-number="29.3M+">
-                <div class="hero-stat-number-small">29.3M+</div>
+            <div class="hero-stat-card" data-number="23.4M+">
+                <div class="hero-stat-number-small">23.4M+</div>
                 <div class="hero-stat-label-small">Total Impressions</div>
             </div>
             
@@ -10152,9 +10206,9 @@
             <p class="credibility-subtitle">Trusted by millions across the globe</p>
             
             <div class="stats-hero-container">
-                <div class="hero-stat-main" data-emoji="📊" data-number="29.3M+">
+                <div class="hero-stat-main" data-emoji="📊" data-number="23.4M+">
                     <div class="hero-stat-icon">📊</div>
-                    <div class="hero-stat-number">29.3M+</div>
+                    <div class="hero-stat-number">23.4M+</div>
                     <div class="hero-stat-label">Total Impressions</div>
                     <div class="hero-stat-description">Reaching millions with fact-checked news every day</div>
                 </div>
@@ -11417,144 +11471,9 @@
         }
     </script>
     
-    <!-- 29 Million Impressions Celebration Banner -->
-    <div class="celebration-banner" id="celebrationBanner">
-        <div class="ticker-container">
-            <div class="ticker-content">
-                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
-                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
-                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
-                <span class="ticker-text">
-                    <span class="ticker-highlight ticker-highlight-breaking">BREAKING NEWS:</span>
-                    Noteworthy News has JUST reached <span class="ticker-highlight ticker-highlight-impressions">29 MILLION IMPRESSIONS ON X/TWITTER!</span>
-                    Thank you for being part of our incredible journey!
-                </span>
-                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
-                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
-                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
-                <span class="ticker-text">
-                    <span class="ticker-highlight ticker-highlight-breaking">BREAKING NEWS:</span>
-                    Noteworthy News has JUST reached <span class="ticker-highlight ticker-highlight-impressions">29 MILLION IMPRESSIONS ON X/TWITTER!</span>
-                    Thank you for being part of our incredible journey!
-                </span>
-                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
-                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
-                <span class="ticker-emoji"><img src="nw-logo.GIF" alt="🎉"></span>
-                <span class="ticker-text">
-                    <span class="ticker-highlight ticker-highlight-breaking">BREAKING NEWS:</span>
-                    Noteworthy News has JUST reached <span class="ticker-highlight ticker-highlight-impressions">29 MILLION IMPRESSIONS ON X/TWITTER!</span>
-                    Thank you for being part of our incredible journey!
-                </span>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Header Confetti Container -->
-    <div class="header-confetti" id="headerConfetti"></div>
-    
     <!-- X Widgets Script - Load after page content -->
     <!-- Twitter Widgets Script Removed - Using custom post feed instead -->
     <!-- This was causing 429 rate limit errors from Twitter -->
     <!-- <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script> -->
-    
-    <script>
-        // 29 Million Impressions Celebration - Airport-Style Ticker Banner!
-        (function() {
-            // Set to true to disable celebration temporarily
-            const CELEBRATION_ENABLED = true;
-            
-            if (!CELEBRATION_ENABLED) {
-                return; // Skip celebration if disabled
-            }
-            
-            const banner = document.getElementById('celebrationBanner');
-            const confettiContainer = document.getElementById('headerConfetti');
-            
-            if (!banner || !confettiContainer) {
-                return;
-            }
-            
-            // Create continuous confetti that falls continuously
-            function createHeaderConfetti() {
-                const confettiCount = 150; // Much more confetti!
-                const colors = ['#ffe66d', '#4ecdc4', '#ff6b6b', '#95e1d3', '#aa96da', '#fcbad3', '#f38181', '#a8e6cf'];
-                
-                for (let i = 0; i < confettiCount; i++) {
-                    const confetti = document.createElement('div');
-                    confetti.className = 'header-confetti-piece';
-                    confetti.style.left = Math.random() * 100 + '%';
-                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-                    confetti.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
-                    confetti.style.animationDelay = Math.random() * 2 + 's';
-                    confetti.style.width = (Math.random() * 6 + 5) + 'px';
-                    confetti.style.height = (Math.random() * 6 + 5) + 'px';
-                    confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0%';
-                    confettiContainer.appendChild(confetti);
-                }
-            }
-            
-            // Function to continuously add more confetti
-            function addMoreConfetti() {
-                const colors = ['#ffe66d', '#4ecdc4', '#ff6b6b', '#95e1d3', '#aa96da', '#fcbad3', '#f38181', '#a8e6cf'];
-                
-                // Add 20-30 new pieces every 0.3 seconds for more confetti!
-                const newPieces = Math.floor(Math.random() * 11) + 20;
-                for (let i = 0; i < newPieces; i++) {
-                    const confetti = document.createElement('div');
-                    confetti.className = 'header-confetti-piece';
-                    confetti.style.left = Math.random() * 100 + '%';
-                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-                    confetti.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
-                    confetti.style.animationDelay = '0s';
-                    confetti.style.width = (Math.random() * 6 + 5) + 'px';
-                    confetti.style.height = (Math.random() * 6 + 5) + 'px';
-                    confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0%';
-                    confettiContainer.appendChild(confetti);
-                    
-                    // Remove after animation completes
-                    setTimeout(function() {
-                        if (confetti.parentNode) {
-                            confetti.parentNode.removeChild(confetti);
-                        }
-                    }, 3500);
-                }
-            }
-            
-            // Trigger celebration immediately on page load
-            // Show banner and add body class to adjust header position
-            banner.classList.add('active');
-            document.body.classList.add('banner-active');
-            
-            // Create initial confetti
-            createHeaderConfetti();
-            
-            // Continuously add more confetti while banner is visible
-            const confettiInterval = setInterval(addMoreConfetti, 300);
-            
-            // Remove banner after 5 seconds and restore page to normal
-            setTimeout(function() {
-                clearInterval(confettiInterval);
-                
-                // Hide banner smoothly
-                banner.style.transition = 'transform 0.4s ease-out, opacity 0.4s ease-out';
-                banner.style.transform = 'translateY(-100%)';
-                banner.style.opacity = '0';
-                document.body.classList.remove('banner-active');
-                
-                // Clear confetti and reset banner after animation
-                setTimeout(function() {
-                    if (confettiContainer.parentNode) {
-                        confettiContainer.innerHTML = '';
-                    }
-                    if (banner.parentNode) {
-                        banner.classList.remove('active');
-                        banner.style.transition = '';
-                        banner.style.transform = '';
-                        banner.style.opacity = '';
-                    }
-                }, 400);
-            }, 10000); // Hide after 10 seconds
-        })();
-    </script>
 </body>
 </html>

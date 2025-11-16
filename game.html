@@ -1571,25 +1571,189 @@
         });
     </script>
     
-    <!-- Background Music - Shared across all pages -->
-    <audio id="backgroundMusic" preload="metadata">
-        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+    <!-- Background Music - Interactive Fact Checker Game Specific (separate from music system) -->
+    <audio id="interactiveGameBackgroundMusic" preload="auto" loop>
+        <source src="InteractiveGame.wav" type="audio/wav">
         Your browser does not support the audio element.
     </audio>
     
-    <!-- Second track (plays after first) -->
-    <audio id="backgroundMusicSecond" preload="metadata">
+    <!-- Dummy elements for music system (to prevent errors) -->
+    <audio id="backgroundMusic" preload="metadata" style="display: none;">
+        <source src="InteractiveGame.wav" type="audio/wav">
+    </audio>
+    <audio id="backgroundMusicSecond" preload="metadata" style="display: none;">
         <source src="YEAHHHHHH.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
     </audio>
-    
-    <!-- Third track (loops after second) -->
-    <audio id="backgroundMusicLoop" preload="metadata" loop>
+    <audio id="backgroundMusicThird" preload="metadata" style="display: none;">
+        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="backgroundMusicLoop" preload="metadata" loop style="display: none;">
         <source src="Audiolandingpage.m4a" type="audio/mp4">
-        Your browser does not support the audio element.
     </audio>
     
     <!-- Shared Music Manager Script -->
     <script src="music-system.js"></script>
+    <script>
+        // Explicitly start InteractiveGame.wav for interactive fact checker game - independent of music system
+        (function() {
+            const MUSIC_TIME_KEY = 'interactiveGameMusicPlaybackTime';
+            const MUSIC_LAST_UPDATE_KEY = 'interactiveGameMusicLastUpdate';
+            const MAX_TIME_DIFF = 30000; // 30 seconds - if more time passed, restart from beginning
+            
+            const startInteractiveGameMusic = () => {
+                const interactiveGameMusic = document.getElementById('interactiveGameBackgroundMusic');
+                if (!interactiveGameMusic) {
+                    console.warn('InteractiveGame.wav audio element not found');
+                    return;
+                }
+                
+                // Force settings for InteractiveGame.wav
+                interactiveGameMusic.volume = 0.5;
+                interactiveGameMusic.muted = false;
+                interactiveGameMusic.loop = true;
+                
+                // Restore playback position from localStorage
+                const restorePlaybackPosition = () => {
+                    try {
+                        const savedTime = parseFloat(localStorage.getItem(MUSIC_TIME_KEY) || '0');
+                        const lastUpdate = parseInt(localStorage.getItem(MUSIC_LAST_UPDATE_KEY) || '0');
+                        const now = Date.now();
+                        const timeDiff = now - lastUpdate;
+                        
+                        if (savedTime > 0 && timeDiff < MAX_TIME_DIFF && interactiveGameMusic.duration) {
+                            const timeToRestore = Math.min(savedTime, interactiveGameMusic.duration - 0.5);
+                            interactiveGameMusic.currentTime = timeToRestore;
+                            console.log(`🎵 Restored InteractiveGame.wav playback position: ${timeToRestore.toFixed(2)}s`);
+                        } else {
+                            interactiveGameMusic.currentTime = 0;
+                            console.log('🎵 Too much time passed, starting InteractiveGame.wav from beginning');
+                        }
+                    } catch (e) {
+                        console.warn('Error restoring playback position:', e);
+                        interactiveGameMusic.currentTime = 0;
+                    }
+                };
+                
+                // Save playback position to localStorage
+                const savePlaybackPosition = () => {
+                    try {
+                        if (!interactiveGameMusic.paused && interactiveGameMusic.currentTime > 0) {
+                            localStorage.setItem(MUSIC_TIME_KEY, interactiveGameMusic.currentTime.toString());
+                            localStorage.setItem(MUSIC_LAST_UPDATE_KEY, Date.now().toString());
+                        }
+                    } catch (e) {
+                        console.warn('Error saving playback position:', e);
+                    }
+                };
+                
+                // Save position periodically while playing
+                const saveInterval = setInterval(() => {
+                    if (!interactiveGameMusic.paused) {
+                        savePlaybackPosition();
+                    }
+                }, 1000);
+                
+                // Save on pause
+                interactiveGameMusic.addEventListener('pause', savePlaybackPosition);
+                
+                // Save on page unload
+                window.addEventListener('beforeunload', () => {
+                    savePlaybackPosition();
+                    clearInterval(saveInterval);
+                });
+                
+                // Also save on pagehide (more reliable than beforeunload on mobile)
+                window.addEventListener('pagehide', () => {
+                    savePlaybackPosition();
+                    clearInterval(saveInterval);
+                });
+                
+                // Function to actually play
+                const playInteractiveGame = () => {
+                    if (interactiveGameMusic.paused) {
+                        // Restore position before playing
+                        restorePlaybackPosition();
+                        
+                        const playPromise = interactiveGameMusic.play();
+                        if (playPromise !== undefined) {
+                            playPromise.then(() => {
+                                console.log('🎵 InteractiveGame.wav started playing');
+                                localStorage.setItem('globalMusicPlaying', 'true');
+                                localStorage.setItem('globalMusicEnabled', 'true');
+                            }).catch(err => {
+                                console.log('⚠️ InteractiveGame.wav autoplay blocked:', err.message);
+                            });
+                        }
+                    } else {
+                        console.log('🎵 InteractiveGame.wav already playing');
+                    }
+                };
+                
+                // Try multiple strategies to start playback
+                const tryPlay = () => {
+                    
+                    if (interactiveGameMusic.readyState >= 2) {
+                        restorePlaybackPosition();
+                        playInteractiveGame();
+                        return;
+                    }
+                    
+                    // Strategy 2: Wait for canplay, then restore and play
+                    interactiveGameMusic.addEventListener('canplay', () => {
+                        restorePlaybackPosition();
+                        playInteractiveGame();
+                    }, { once: true });
+                    
+                    // Strategy 3: Wait for loadedmetadata to restore position
+                    interactiveGameMusic.addEventListener('loadedmetadata', () => {
+                        restorePlaybackPosition();
+                    }, { once: true });
+                    
+                    // Strategy 4: Force load
+                    interactiveGameMusic.load();
+                    
+                    // Strategy 5: Try after delay
+                    setTimeout(() => {
+                        if (interactiveGameMusic.paused) {
+                            restorePlaybackPosition();
+                            playInteractiveGame();
+                        }
+                    }, 300);
+                };
+                
+                // Start trying to play
+                tryPlay();
+                
+                // Also set up interaction listeners as backup
+                const playOnInteraction = () => {
+                    restorePlaybackPosition();
+                    playInteractiveGame();
+                    document.removeEventListener('click', playOnInteraction);
+                    document.removeEventListener('touchstart', playOnInteraction);
+                    document.removeEventListener('keydown', playOnInteraction);
+                    document.removeEventListener('mousemove', playOnInteraction);
+                };
+                
+                // Listen for any user interaction
+                document.addEventListener('click', playOnInteraction, { once: true });
+                document.addEventListener('touchstart', playOnInteraction, { once: true });
+                document.addEventListener('keydown', playOnInteraction, { once: true });
+                document.addEventListener('mousemove', playOnInteraction, { once: true });
+                
+                // Note: We don't monitor pause events to avoid conflicts with the music system
+                // The music system will handle pause/play state through its toggle button
+            };
+            
+            // Wait for DOM and music system to initialize
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    // Wait a bit for music system to initialize
+                    setTimeout(startInteractiveGameMusic, 200);
+                });
+            } else {
+                setTimeout(startInteractiveGameMusic, 200);
+            }
+        })();
+    </script>
 </body>
 </html>

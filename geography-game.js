@@ -1,56 +1,63 @@
-// 50 Most Populous Countries with their ISO codes and common names
+// 50 Most Populous Countries with their ISO codes, common names, and coordinates (center point)
 const POPULOUS_COUNTRIES = [
-    { name: 'China', code: 'CN', alt: ['china'] },
-    { name: 'India', code: 'IN', alt: ['india'] },
-    { name: 'United States', code: 'US', alt: ['usa', 'united states', 'america'] },
-    { name: 'Indonesia', code: 'ID', alt: ['indonesia'] },
-    { name: 'Pakistan', code: 'PK', alt: ['pakistan'] },
-    { name: 'Brazil', code: 'BR', alt: ['brazil'] },
-    { name: 'Bangladesh', code: 'BD', alt: ['bangladesh'] },
-    { name: 'Russia', code: 'RU', alt: ['russia', 'russian federation'] },
-    { name: 'Mexico', code: 'MX', alt: ['mexico'] },
-    { name: 'Japan', code: 'JP', alt: ['japan'] },
-    { name: 'Philippines', code: 'PH', alt: ['philippines'] },
-    { name: 'Egypt', code: 'EG', alt: ['egypt'] },
-    { name: 'Ethiopia', code: 'ET', alt: ['ethiopia'] },
-    { name: 'Vietnam', code: 'VN', alt: ['vietnam'] },
-    { name: 'Democratic Republic of the Congo', code: 'CD', alt: ['democratic republic of congo', 'drc', 'congo', 'dr congo'] },
-    { name: 'Iran', code: 'IR', alt: ['iran'] },
-    { name: 'Türkiye', code: 'TR', alt: ['turkey', 'türkiye'] },
-    { name: 'Germany', code: 'DE', alt: ['germany'] },
-    { name: 'Thailand', code: 'TH', alt: ['thailand'] },
-    { name: 'United Kingdom', code: 'GB', alt: ['uk', 'united kingdom', 'britain', 'great britain'] },
-    { name: 'France', code: 'FR', alt: ['france'] },
-    { name: 'Italy', code: 'IT', alt: ['italy'] },
-    { name: 'South Africa', code: 'ZA', alt: ['south africa'] },
-    { name: 'Tanzania', code: 'TZ', alt: ['tanzania'] },
-    { name: 'Myanmar', code: 'MM', alt: ['myanmar', 'burma'] },
-    { name: 'Kenya', code: 'KE', alt: ['kenya'] },
-    { name: 'South Korea', code: 'KR', alt: ['south korea', 'korea'] },
-    { name: 'Colombia', code: 'CO', alt: ['colombia'] },
-    { name: 'Spain', code: 'ES', alt: ['spain'] },
-    { name: 'Uganda', code: 'UG', alt: ['uganda'] },
-    { name: 'Argentina', code: 'AR', alt: ['argentina'] },
-    { name: 'Algeria', code: 'DZ', alt: ['algeria'] },
-    { name: 'Sudan', code: 'SD', alt: ['sudan'] },
-    { name: 'Ukraine', code: 'UA', alt: ['ukraine'] },
-    { name: 'Iraq', code: 'IQ', alt: ['iraq'] },
-    { name: 'Afghanistan', code: 'AF', alt: ['afghanistan'] },
-    { name: 'Poland', code: 'PL', alt: ['poland'] },
-    { name: 'Canada', code: 'CA', alt: ['canada'] },
-    { name: 'Morocco', code: 'MA', alt: ['morocco'] },
-    { name: 'Saudi Arabia', code: 'SA', alt: ['saudi arabia', 'saudi'] },
-    { name: 'Uzbekistan', code: 'UZ', alt: ['uzbekistan'] },
-    { name: 'Peru', code: 'PE', alt: ['peru'] },
-    { name: 'Angola', code: 'AO', alt: ['angola'] },
-    { name: 'Malaysia', code: 'MY', alt: ['malaysia'] },
-    { name: 'Mozambique', code: 'MZ', alt: ['mozambique'] },
-    { name: 'Ghana', code: 'GH', alt: ['ghana'] },
-    { name: 'Yemen', code: 'YE', alt: ['yemen'] },
-    { name: 'Nepal', code: 'NP', alt: ['nepal'] },
-    { name: 'Nigeria', code: 'NG', alt: ['nigeria'] },
-    { name: 'Venezuela', code: 'VE', alt: ['venezuela'] }
+    { name: 'China', code: 'CN', alt: ['china'], lat: 35.8617, lng: 104.1954 },
+    { name: 'India', code: 'IN', alt: ['india'], lat: 20.5937, lng: 78.9629 },
+    { name: 'United States', code: 'US', alt: ['usa', 'united states', 'america'], lat: 37.0902, lng: -95.7129 },
+    { name: 'Indonesia', code: 'ID', alt: ['indonesia'], lat: -0.7893, lng: 113.9213 },
+    { name: 'Pakistan', code: 'PK', alt: ['pakistan'], lat: 30.3753, lng: 69.3451 },
+    { name: 'Brazil', code: 'BR', alt: ['brazil'], lat: -14.2350, lng: -51.9253 },
+    { name: 'Bangladesh', code: 'BD', alt: ['bangladesh'], lat: 23.6850, lng: 90.3563 },
+    { name: 'Russia', code: 'RU', alt: ['russia', 'russian federation'], lat: 61.5240, lng: 105.3188 },
+    { name: 'Mexico', code: 'MX', alt: ['mexico'], lat: 23.6345, lng: -102.5528 },
+    { name: 'Japan', code: 'JP', alt: ['japan'], lat: 36.2048, lng: 138.2529 },
+    { name: 'Philippines', code: 'PH', alt: ['philippines'], lat: 12.8797, lng: 121.7740 },
+    { name: 'Egypt', code: 'EG', alt: ['egypt'], lat: 26.8206, lng: 30.8025 },
+    { name: 'Ethiopia', code: 'ET', alt: ['ethiopia'], lat: 9.1450, lng: 38.7667 },
+    { name: 'Vietnam', code: 'VN', alt: ['vietnam'], lat: 14.0583, lng: 108.2772 },
+    { name: 'Democratic Republic of the Congo', code: 'CD', alt: ['democratic republic of congo', 'drc', 'congo', 'dr congo'], lat: -4.0383, lng: 21.7587 },
+    { name: 'Iran', code: 'IR', alt: ['iran'], lat: 32.4279, lng: 53.6880 },
+    { name: 'Türkiye', code: 'TR', alt: ['turkey', 'türkiye'], lat: 38.9637, lng: 35.2433 },
+    { name: 'Germany', code: 'DE', alt: ['germany'], lat: 51.1657, lng: 10.4515 },
+    { name: 'Thailand', code: 'TH', alt: ['thailand'], lat: 15.8700, lng: 100.9925 },
+    { name: 'United Kingdom', code: 'GB', alt: ['uk', 'united kingdom', 'britain', 'great britain'], lat: 55.3781, lng: -3.4360 },
+    { name: 'France', code: 'FR', alt: ['france'], lat: 46.2276, lng: 2.2137 },
+    { name: 'Italy', code: 'IT', alt: ['italy'], lat: 41.8719, lng: 12.5674 },
+    { name: 'South Africa', code: 'ZA', alt: ['south africa'], lat: -30.5595, lng: 22.9375 },
+    { name: 'Tanzania', code: 'TZ', alt: ['tanzania'], lat: -6.3690, lng: 34.8888 },
+    { name: 'Myanmar', code: 'MM', alt: ['myanmar', 'burma'], lat: 21.9162, lng: 95.9560 },
+    { name: 'Kenya', code: 'KE', alt: ['kenya'], lat: -0.0236, lng: 37.9062 },
+    { name: 'South Korea', code: 'KR', alt: ['south korea', 'korea'], lat: 35.9078, lng: 127.7669 },
+    { name: 'Colombia', code: 'CO', alt: ['colombia'], lat: 4.5709, lng: -74.2973 },
+    { name: 'Spain', code: 'ES', alt: ['spain'], lat: 40.4637, lng: -3.7492 },
+    { name: 'Uganda', code: 'UG', alt: ['uganda'], lat: 1.3733, lng: 32.2903 },
+    { name: 'Argentina', code: 'AR', alt: ['argentina'], lat: -38.4161, lng: -63.6167 },
+    { name: 'Algeria', code: 'DZ', alt: ['algeria'], lat: 28.0339, lng: 1.6596 },
+    { name: 'Sudan', code: 'SD', alt: ['sudan'], lat: 12.8628, lng: 30.2176 },
+    { name: 'Ukraine', code: 'UA', alt: ['ukraine'], lat: 48.3794, lng: 31.1656 },
+    { name: 'Iraq', code: 'IQ', alt: ['iraq'], lat: 33.2232, lng: 43.6793 },
+    { name: 'Afghanistan', code: 'AF', alt: ['afghanistan'], lat: 33.9391, lng: 67.7100 },
+    { name: 'Poland', code: 'PL', alt: ['poland'], lat: 51.9194, lng: 19.1451 },
+    { name: 'Canada', code: 'CA', alt: ['canada'], lat: 56.1304, lng: -106.3468 },
+    { name: 'Morocco', code: 'MA', alt: ['morocco'], lat: 31.7917, lng: -7.0926 },
+    { name: 'Saudi Arabia', code: 'SA', alt: ['saudi arabia', 'saudi'], lat: 23.8859, lng: 45.0792 },
+    { name: 'Uzbekistan', code: 'UZ', alt: ['uzbekistan'], lat: 41.3775, lng: 64.5853 },
+    { name: 'Peru', code: 'PE', alt: ['peru'], lat: -9.1900, lng: -75.0152 },
+    { name: 'Angola', code: 'AO', alt: ['angola'], lat: -11.2027, lng: 17.8739 },
+    { name: 'Malaysia', code: 'MY', alt: ['malaysia'], lat: 4.2105, lng: 101.9758 },
+    { name: 'Mozambique', code: 'MZ', alt: ['mozambique'], lat: -18.6657, lng: 35.5296 },
+    { name: 'Ghana', code: 'GH', alt: ['ghana'], lat: 7.9465, lng: -1.0232 },
+    { name: 'Yemen', code: 'YE', alt: ['yemen'], lat: 15.5527, lng: 48.5164 },
+    { name: 'Nepal', code: 'NP', alt: ['nepal'], lat: 28.3949, lng: 84.1240 },
+    { name: 'Nigeria', code: 'NG', alt: ['nigeria'], lat: 9.0820, lng: 8.6753 },
+    { name: 'Venezuela', code: 'VE', alt: ['venezuela'], lat: 6.4238, lng: -66.5897 }
 ];
+
+// Game Modes
+const GAME_MODES = {
+    CLASSIC: 'classic',           // Click the country when prompted (original)
+    HARD: 'hard',                 // No country outlines - harder to see borders
+    TYPING: 'typing'              // Country flashes, then type the name
+};
 
 class GeographyGame {
     constructor() {
@@ -62,6 +69,7 @@ class GeographyGame {
         this.wrong = 0;
         this.answered = new Set();
         this.wrongCountries = new Set(); // Track which countries were answered wrong (to avoid double counting)
+        this.clickedThisQuestion = new Set(); // Track countries clicked for current question (to disable them)
         this.gameActive = false;
         this.countryMap = {}; // Maps country codes to SVG paths
         this.attempts = new Map(); // Track attempts per country: countryCode -> attemptCount
@@ -72,11 +80,28 @@ class GeographyGame {
         this.panY = 0;
         // Will be calculated when SVG loads to ensure horizontal scrolling is possible
         this.isPanning = false;
+        this.wasDragging = false; // Track if we just finished dragging (to prevent click after drag)
         this.startX = 0;
         this.startY = 0;
         this.svgNaturalWidth = 0;
         this.svgNaturalHeight = 0;
         this.minZoomLevel = 1; // Minimum zoom - will be calculated based on SVG fit
+        
+        // Game mode
+        this.gameMode = GAME_MODES.CLASSIC;
+        this.guessMarker = null; // Marker for map click guesses
+        
+        // Typing mode properties
+        this.typingInput = null;
+        this.flashedCountry = null;
+        this.flashTimeout = null;
+        this.flashInterval = null; // For continuous flashing
+        
+        // Enhancement features
+        this.combo = 0; // Combo multiplier for consecutive correct answers
+        this.maxCombo = 0; // Track highest combo
+        this.achievements = new Set(); // Track unlocked achievements
+        this.countryFacts = this.loadCountryFacts(); // Country information
         
         // Timer and competitive features
         this.startTime = null;
@@ -100,6 +125,7 @@ class GeographyGame {
         this.loadWorldMap();
         this.setupEventListeners();
         this.setupZoomControls();
+        this.setupGameModeSelector();
     }
     
     initializeElements() {
@@ -110,6 +136,8 @@ class GeographyGame {
         this.promptEl = document.getElementById('countryPrompt');
         this.mapContainer = document.getElementById('worldMap');
         this.feedbackEl = document.getElementById('feedbackMessage');
+        this.flashLeft = document.getElementById('viewportFlashLeft');
+        this.flashRight = document.getElementById('viewportFlashRight');
         this.startBtn = document.getElementById('startBtn');
         this.resetBtn = document.getElementById('resetBtn');
         this.directionsCountEl = document.getElementById('directionsCount');
@@ -117,6 +145,10 @@ class GeographyGame {
         this.speedEl = document.getElementById('geoSpeed');
         this.questionTimerEl = document.getElementById('questionTimer');
         this.questionTimerValueEl = document.getElementById('questionTimerValue');
+        this.comboEl = document.getElementById('geoCombo');
+        this.comboStat = document.getElementById('comboStat');
+        this.progressBarFill = document.getElementById('progressBarFill');
+        this.progressText = document.getElementById('progressText');
     }
     
     loadWorldMap() {
@@ -151,9 +183,21 @@ class GeographyGame {
             // But first, make sure we're using the correct SVG reference
             const svgToUse = this.svg;
             
+            // Ensure SVG allows pointer events
+            svgToUse.style.pointerEvents = 'auto';
+            
             // Remove old listener if it exists (we can't easily do this, so we'll just add)
             // Multiple listeners on the same element won't cause issues, they'll all fire
-            svgToUse.addEventListener('click', (e) => {
+            // Use capture phase to ensure we catch clicks even if something else is trying to block them
+            // Also add to the map container as a fallback
+            const clickHandler = (e) => {
+                // If we just finished dragging, don't process this click
+                if (this.wasDragging) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+                
                 // Debounce: prevent rapid double-clicks (especially on mobile)
                 const now = Date.now();
                 if (now - this.lastClickTime < 500) { // 500ms debounce
@@ -235,10 +279,15 @@ class GeographyGame {
                 if (!this.gameActive) {
                     this.feedbackEl.textContent = 'Click "Start Game" to begin!';
                     this.feedbackEl.className = 'feedback-message incorrect';
+                    
+                    // Show message on map and highlight start button
+                    this.showStartGamePrompt();
+                    
                     setTimeout(() => {
                         this.feedbackEl.textContent = '';
                         this.feedbackEl.className = 'feedback-message';
-                    }, 2000);
+                        this.hideStartGamePrompt();
+                    }, 3000);
                     this.isProcessingClick = false;
                     return;
                 }
@@ -270,9 +319,248 @@ class GeographyGame {
                 setTimeout(() => {
                     this.isProcessingClick = false;
                 }, 100);
-            });
+            };
+            
+            // Add click handler to SVG
+            // Use capture phase but check if we just dragged
+            const wrappedClickHandler = (e) => {
+                // If we just finished dragging, don't process this click
+                if (this.wasDragging) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+                clickHandler(e);
+            };
+            svgToUse.addEventListener('click', wrappedClickHandler, true); // Use capture phase
+            
+            // Also add to map container as fallback (in case SVG click doesn't fire)
+            // IMPORTANT: Use capture phase and make sure clicks on paths work
+            if (this.mapContainer) {
+                this.mapContainer.addEventListener('click', (e) => {
+                    // If we just finished dragging, don't process this click
+                    if (this.wasDragging) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                    }
+                    
+                    // Always check for path clicks first (for Classic and Streak modes)
+                    const path = e.target.closest('path');
+                    
+                    if (path && (path.hasAttribute('data-country-code') || path.classList.contains('country-path'))) {
+                        // Path click - use the path handler
+                        clickHandler(e);
+                        return;
+                    }
+                    
+                    // Handle map click mode - click anywhere on map to guess
+                    if (!this.gameActive) {
+                        // Game not started - show prompt
+                        this.showStartGamePrompt();
+                        setTimeout(() => {
+                            this.hideStartGamePrompt();
+                        }, 3000);
+                    }
+                }, true); // Use capture phase to catch clicks early
+            }
+            
+            console.log('[Geography Game] Click handlers attached to SVG and container');
             
             // Hover effects removed to prevent any movement or disappearing countries
+        } else {
+            console.warn('[Geography Game] SVG not found when trying to initialize click handlers');
+        }
+    }
+    
+    // Add direct click handlers to each path for maximum reliability
+    addDirectClickHandlers() {
+        if (!this.svg) return;
+        
+        const paths = this.svg.querySelectorAll('path[data-country-code]');
+        console.log(`[Geography Game] Adding direct click handlers to ${paths.length} country paths`);
+        
+        paths.forEach((path, index) => {
+            // Ensure path is clickable - CRITICAL
+            path.style.pointerEvents = 'auto';
+            path.style.cursor = 'pointer';
+            path.style.position = 'relative';
+            path.style.zIndex = '10';
+            path.classList.add('country-path');
+            
+            // Remove ALL existing event listeners by cloning (but keep attributes)
+            const newPath = path.cloneNode(true);
+            if (path.parentNode) {
+                path.parentNode.replaceChild(newPath, path);
+            }
+            
+            // Add multiple event handlers for maximum compatibility
+            const clickHandler = (e) => {
+                console.log('[Geography Game] PATH CLICKED!', e);
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                // Check if game is active
+                if (!this.gameActive) {
+                    console.log('[Geography Game] Game not active');
+                    // Show start game prompt
+                    this.showStartGamePrompt();
+                    setTimeout(() => {
+                        this.hideStartGamePrompt();
+                    }, 3000);
+                    return;
+                }
+                
+                if (!this.currentCountry) {
+                    console.log('[Geography Game] No current country');
+                    return;
+                }
+                
+                const countryCode = newPath.getAttribute('data-country-code');
+                const countryName = newPath.getAttribute('data-country-name');
+                
+                console.log('[Geography Game] Clicked country:', countryCode, countryName);
+                
+                if (countryCode) {
+                    const country = POPULOUS_COUNTRIES.find(c => 
+                        c.code.toLowerCase() === countryCode.toLowerCase()
+                    );
+                    
+                    if (country) {
+                        console.log('[Geography Game] Handling click for:', country.name);
+                        // Use setTimeout to ensure this runs after any other handlers
+                        setTimeout(() => {
+                            this.handleCountryClick(country.code, country.name);
+                        }, 0);
+                    } else {
+                        console.log('[Geography Game] Country not found in list');
+                    }
+                } else {
+                    console.log('[Geography Game] No country code on path');
+                }
+            };
+            
+            // Add click handler with capture phase
+            newPath.addEventListener('click', clickHandler, true);
+            // Also add without capture as backup
+            newPath.addEventListener('click', clickHandler, false);
+            // Add mousedown as backup
+            newPath.addEventListener('mousedown', (e) => {
+                if (e.button === 0) { // Left click only
+                    console.log('[Geography Game] Mouse down on path');
+                    clickHandler(e);
+                }
+            }, true);
+            
+            // Update country map reference
+            const countryCode = newPath.getAttribute('data-country-code');
+            if (countryCode) {
+                this.countryMap[countryCode.toLowerCase()] = newPath;
+                this.countryMap[countryCode.toUpperCase()] = newPath;
+            }
+            
+            // Log first few paths for debugging
+            if (index < 3) {
+                console.log(`[Geography Game] Path ${index} setup:`, {
+                    code: countryCode,
+                    pointerEvents: newPath.style.pointerEvents,
+                    cursor: newPath.style.cursor,
+                    zIndex: newPath.style.zIndex
+                });
+            }
+        });
+        
+        console.log('[Geography Game] Direct click handlers added successfully');
+    }
+    
+    // Show start game prompt on map
+    showStartGamePrompt() {
+        if (!this.mapContainer) return;
+        
+        // Remove existing prompt if any
+        this.hideStartGamePrompt();
+        
+        // Create overlay message
+        const overlay = document.createElement('div');
+        overlay.id = 'startGamePrompt';
+        overlay.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            pointer-events: none;
+            animation: fadeIn 0.3s ease;
+        `;
+        
+        const message = document.createElement('div');
+        message.style.cssText = `
+            background: rgba(15, 15, 35, 0.95);
+            border: 2px solid rgba(74, 144, 226, 0.5);
+            border-radius: 12px;
+            padding: 25px 35px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.3rem;
+            font-weight: 600;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+            max-width: 400px;
+        `;
+        message.textContent = 'Click "Start Game" to begin!';
+        
+        // Create arrow pointing UP to start button
+        const arrow = document.createElement('div');
+        arrow.style.cssText = `
+            margin-bottom: 20px;
+            font-size: 3rem;
+            animation: bounce 1s ease-in-out infinite;
+        `;
+        arrow.textContent = '👆';
+        
+        overlay.appendChild(arrow);
+        overlay.appendChild(message);
+        this.mapContainer.appendChild(overlay);
+        
+        // Add aura effect to start button
+        if (this.startBtn) {
+            this.startBtn.classList.add('start-button-aura');
+            this.startBtn.style.animation = 'buttonAura 1.5s ease-in-out infinite';
+        }
+    }
+    
+    // Hide start game prompt
+    hideStartGamePrompt() {
+        const existing = document.getElementById('startGamePrompt');
+        if (existing) {
+            existing.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => {
+                if (existing.parentNode) {
+                    existing.parentNode.removeChild(existing);
+                }
+            }, 50); // Faster removal
+        }
+        
+        // Also check if it's in the map container (direct removal)
+        if (this.mapContainer) {
+            const overlayInMap = this.mapContainer.querySelector('#startGamePrompt');
+            if (overlayInMap) {
+                overlayInMap.remove();
+            }
+        }
+        
+        // Remove aura from start button
+        if (this.startBtn) {
+            this.startBtn.classList.remove('start-button-aura');
+            this.startBtn.style.animation = '';
         }
     }
     
@@ -345,63 +633,168 @@ class GeographyGame {
     }
     
     setupEventListeners() {
-        this.startBtn.addEventListener('click', () => this.startGame());
-        this.resetBtn.addEventListener('click', () => this.resetGame());
+        if (this.startBtn) {
+            this.startBtn.addEventListener('click', () => {
+                try {
+                    this.startGame();
+                } catch (e) {
+                    console.error('Error starting game:', e);
+                }
+            });
+        }
         
-        // Pan functionality with mouse
-        if (this.mapContainer) {
-            this.mapContainer.addEventListener('mousedown', (e) => {
-                // Only pan if not clicking on a path element
-                const path = e.target.closest('path');
-                if (path) {
-                    // Let the path click handler deal with it
-                    return;
-                }
-                
-                if (e.button === 0) { // Left mouse button
-                    this.isPanning = true;
-                    // Note: panY controls horizontal (X), panX controls vertical (Y) due to transform swap
-                    this.startX = e.clientX - this.panY; // clientX -> panY (horizontal)
-                    this.startY = e.clientY - this.panX; // clientY -> panX (vertical)
-                    this.mapContainer.style.cursor = 'grabbing';
+        if (this.resetBtn) {
+            this.resetBtn.addEventListener('click', () => {
+                try {
+                    this.resetGame();
+                } catch (e) {
+                    console.error('Error resetting game:', e);
+                    // Force reset even on error
+                    this.gameActive = false;
+                    if (this.startBtn) this.startBtn.disabled = false;
+                    if (this.resetBtn) this.resetBtn.disabled = true;
                 }
             });
+        }
+        
+        if (this.hintBtn) {
+            this.hintBtn.addEventListener('click', () => this.showHint());
+        }
+        
+        // Setup drag handlers - can be called multiple times
+        this.setupDragHandlers();
+    }
+    
+    setupDragHandlers() {
+        // Pan functionality with mouse - enable dragging
+        if (!this.mapContainer) return;
+        
+        // Remove old handlers if they exist
+        if (this._dragMouseMove) {
+            document.removeEventListener('mousemove', this._dragMouseMove);
+            document.removeEventListener('mouseup', this._dragMouseUp);
+        }
+        
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let dragStartPanX = 0;
+        let dragStartPanY = 0;
+        let isDragging = false;
+        
+        this._dragMouseMove = (e) => {
+            // Only process if we've actually started dragging (mouse moved enough)
+            if (!isDragging) return;
             
-            this.mapContainer.addEventListener('mousemove', (e) => {
-                if (this.isPanning) {
-                    // Horizontal mouse movement (clientX) controls horizontal scrolling (panY)
-                    // Vertical mouse movement (clientY) controls vertical scrolling (panX)
-                    this.panY = e.clientX - this.startX; // Horizontal
-                    this.panX = e.clientY - this.startY; // Vertical
-                    this.updateTransform();
-                }
-            });
+            const deltaX = e.clientX - dragStartX;
+            const deltaY = e.clientY - dragStartY;
             
-            this.mapContainer.addEventListener('mouseup', () => {
-                this.isPanning = false;
+            this.panX = dragStartPanX + deltaY; // Vertical movement
+            this.panY = dragStartPanY + deltaX; // Horizontal movement
+            this.updateTransform();
+            
+            e.preventDefault();
+            e.stopPropagation();
+        };
+        
+        this._dragMouseUp = (e) => {
+            // Clean up the checkMove listener if it exists
+            if (this._checkMove) {
+                document.removeEventListener('mousemove', this._checkMove);
+                this._checkMove = null;
+            }
+            
+            if (isDragging) {
+                this.wasDragging = true;
+                setTimeout(() => {
+                    this.wasDragging = false;
+                }, 100);
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            isDragging = false;
+            document.removeEventListener('mousemove', this._dragMouseMove);
+            document.removeEventListener('mouseup', this._dragMouseUp);
+            
+            if (this.mapContainer) {
                 this.mapContainer.style.cursor = 'grab';
-            });
+            }
+        };
+        
+        const onMouseDown = (e) => {
+            // Don't drag if clicking on a country path
+            const path = e.target.closest('path');
+            if (path && (path.hasAttribute('data-country-code') || path.classList.contains('country-path'))) {
+                return; // Let click handler process it
+            }
             
-            this.mapContainer.addEventListener('mouseleave', () => {
-                this.isPanning = false;
-                this.mapContainer.style.cursor = 'grab';
-            });
+            // Don't drag if clicking on buttons or controls
+            if (e.target.closest('button') || e.target.closest('.zoom-controls')) {
+                return;
+            }
             
-            // Pan with touch - improved for mobile
-            let touchStartX = 0;
-            let touchStartY = 0;
-            let touchStartTime = 0;
-            let touchMoved = false;
-            let touchTarget = null;
+            // Start dragging - set initial values
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            dragStartPanX = this.panX;
+            dragStartPanY = this.panY;
+            isDragging = false; // Will be set to true on first mousemove
             
-            // Pinch to zoom on mobile
-            let initialDistance = 0;
-            let initialZoom = 1;
-            let pinchCenterX = 0;
-            let pinchCenterY = 0;
+            // Track if mouse moves (to distinguish drag from click)
+            let hasMoved = false;
+            this._checkMove = (moveE) => {
+                const moveDeltaX = Math.abs(moveE.clientX - dragStartX);
+                const moveDeltaY = Math.abs(moveE.clientY - dragStartY);
+                if (moveDeltaX > 5 || moveDeltaY > 5) {
+                    hasMoved = true;
+                    isDragging = true;
+                    if (this.mapContainer) {
+                        this.mapContainer.style.cursor = 'grabbing';
+                    }
+                    document.removeEventListener('mousemove', this._checkMove);
+                    this._checkMove = null;
+                }
+            };
             
-            // Unified touch handler for pan, tap, and pinch zoom
-            this.mapContainer.addEventListener('touchstart', (e) => {
+            document.addEventListener('mousemove', this._checkMove, { passive: false });
+            document.addEventListener('mousemove', this._dragMouseMove, { passive: false });
+            document.addEventListener('mouseup', this._dragMouseUp, { passive: false });
+            
+            // Prevent default to allow dragging
+            e.preventDefault();
+            e.stopPropagation();
+        };
+        
+        // Remove old mousedown listener if exists
+        if (this._dragMouseDown) {
+            this.mapContainer.removeEventListener('mousedown', this._dragMouseDown, true);
+        }
+        this._dragMouseDown = onMouseDown;
+        
+        // Attach to both container and SVG if available
+        this.mapContainer.addEventListener('mousedown', onMouseDown, true);
+        if (this.svg) {
+            this.svg.addEventListener('mousedown', onMouseDown, true);
+        }
+        
+        // Set initial cursor
+        this.mapContainer.style.cursor = 'grab';
+        
+        // Pan with touch - improved for mobile
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchStartTime = 0;
+        let touchMoved = false;
+        let touchTarget = null;
+        
+        // Pinch to zoom on mobile
+        let initialDistance = 0;
+        let initialZoom = 1;
+        let pinchCenterX = 0;
+        let pinchCenterY = 0;
+        
+        // Unified touch handler for pan, tap, and pinch zoom
+        this.mapContainer.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 2) {
                     // Two finger touch - prepare for pinch zoom
                     const touch1 = e.touches[0];
@@ -418,18 +811,24 @@ class GeographyGame {
                     e.preventDefault();
                 } else if (e.touches.length === 1) {
                     // Single touch - prepare for pan or tap
+                    touchTarget = e.target;
+                    const path = touchTarget.closest('path');
+                    
+                    // If touching a country path, don't start panning - allow click
+                    if (path && (path.hasAttribute('data-country-code') || path.classList.contains('country-path'))) {
+                        // This is a country click, don't pan
+                        this.isPanning = false;
+                        touchMoved = false;
+                        // Don't prevent default - let the click handler work
+                        return;
+                    }
+                    
                     // Note: panY controls horizontal (X), panX controls vertical (Y) due to transform swap
                     this.isPanning = true;
                     touchStartX = e.touches[0].clientX - this.panY; // clientX -> panY (horizontal)
                     touchStartY = e.touches[0].clientY - this.panX; // clientY -> panX (vertical)
                     touchStartTime = Date.now();
                     touchMoved = false;
-                    touchTarget = e.target;
-                    // Don't prevent default here - let click through if it's a country path
-                    if (touchTarget.tagName === 'path' && touchTarget.hasAttribute('data-country-code')) {
-                        // This is a country click, allow it
-                        return;
-                    }
                     e.preventDefault();
                 }
             }, { passive: false });
@@ -501,18 +900,17 @@ class GeographyGame {
                     touchTarget = null;
                     initialDistance = 0;
                 }
-            }, { passive: false });
-            
-            // Zoom with mouse wheel
-            this.mapContainer.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                const rect = this.mapContainer.getBoundingClientRect();
-                const centerX = e.clientX - rect.left;
-                const centerY = e.clientY - rect.top;
-                const delta = e.deltaY > 0 ? 0.9 : 1.1;
-                this.zoom(delta, centerX, centerY);
-            });
-        }
+        }, { passive: false });
+        
+        // Zoom with mouse wheel
+        this.mapContainer.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const rect = this.mapContainer.getBoundingClientRect();
+            const centerX = e.clientX - rect.left;
+            const centerY = e.clientY - rect.top;
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            this.zoom(delta, centerX, centerY);
+        });
     }
     
     setupZoomControls() {
@@ -773,12 +1171,22 @@ class GeographyGame {
     }
     
     startGame() {
+        // Hide any start game prompts
+        this.hideStartGamePrompt();
+        
+        // Prevent starting game in typing mode
+        if (this.gameMode === GAME_MODES.TYPING) {
+            this.showComingSoonMessage();
+            return;
+        }
+        
         this.gameActive = true;
         this.score = 0;
         this.correct = 0;
         this.wrong = 0;
         this.answered.clear();
         this.wrongCountries.clear();
+        this.clickedThisQuestion.clear(); // Clear clicked countries when starting new game
         this.attempts.clear();
         this.speedBonus = 0;
         this.questionTimes = [];
@@ -791,16 +1199,23 @@ class GeographyGame {
         this.startTime = Date.now();
         this.startTimer();
         
-        // Shuffle countries
+        // Initialize countries for all modes
         this.shuffledCountries = [...this.countries].sort(() => Math.random() - 0.5);
         
-        // Reset all country colors to green
+        // Reset all country colors to green (when starting a NEW game, reset everything)
+        // Note: This is only called when starting a fresh game, so we reset incorrect countries too
+        const strokeColor = this.gameMode === GAME_MODES.HARD ? 'none' : 'rgba(0, 0, 0, 0.8)';
+        const strokeWidth = this.gameMode === GAME_MODES.HARD ? '0' : '1';
+        
         Object.values(this.countryMap).forEach(path => {
             if (path) {
+                // Reset all countries when starting a new game (fresh start)
                 path.setAttribute('fill', '#2ECC71');
-                path.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
-                path.setAttribute('stroke-width', '1');
-                path.classList.remove('correct', 'incorrect', 'disabled');
+                path.style.removeProperty('fill'); // Remove any !important styles
+                path.setAttribute('stroke', strokeColor);
+                path.setAttribute('stroke-width', strokeWidth);
+                path.classList.remove('correct', 'incorrect', 'disabled', 'wrong-answered');
+                path.style.pointerEvents = 'auto';
             }
         });
         
@@ -808,40 +1223,127 @@ class GeographyGame {
         if (this.svg) {
             const allPaths = this.svg.querySelectorAll('path[data-country-code]');
             allPaths.forEach(path => {
+                // Reset all countries when starting a new game (fresh start)
                 path.setAttribute('fill', '#2ECC71');
-                path.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
-                path.setAttribute('stroke-width', '1');
-                path.classList.remove('correct', 'incorrect', 'disabled');
+                path.style.removeProperty('fill'); // Remove any !important styles
+                path.setAttribute('stroke', strokeColor);
+                path.setAttribute('stroke-width', strokeWidth);
+                path.classList.remove('correct', 'incorrect', 'disabled', 'wrong-answered');
+                path.style.pointerEvents = 'auto';
             });
         }
         
-        // Get first country
+        // Setup typing mode input if needed
+        if (this.gameMode === GAME_MODES.TYPING) {
+            this.setupTypingInput();
+        } else {
+            this.removeTypingInput();
+        }
+        
+        // Remove any existing guess markers
+        this.removeGuessMarker();
+        
+        // Get first country (this will update the prompt)
         this.getNextCountry();
         
         this.startBtn.disabled = true;
         this.resetBtn.disabled = false;
+        if (this.hintBtn) {
+            this.hintBtn.disabled = false;
+            this.hintBtn.style.display = 'inline-flex';
+        }
         this.feedbackEl.textContent = '';
         this.feedbackEl.className = 'feedback-message';
         
         this.updateStats();
+        
+        // Ensure prompt is visible and updated (don't call updatePromptForMode as it only works when game is inactive)
+        if (this.promptEl && this.currentCountry) {
+            // Prompt should already be set by getNextCountry(), but ensure it's visible
+            this.promptEl.style.display = 'block';
+        }
+    }
+    
+    showHint() {
+        if (!this.gameActive || !this.currentCountry) return;
+        
+        const fact = this.countryFacts[this.currentCountry.code];
+        if (!fact) return;
+        
+        // Show continent hint
+        const hintDisplay = document.createElement('div');
+        hintDisplay.className = 'hint-display';
+        hintDisplay.innerHTML = `
+            <div class="hint-icon">💡</div>
+            <div class="hint-content">
+                <div class="hint-label">Hint:</div>
+                <div class="hint-text">This country is in <strong>${fact.continent}</strong></div>
+            </div>
+        `;
+        
+        // Insert after prompt
+        if (this.promptEl && this.promptEl.parentNode) {
+            this.promptEl.parentNode.insertBefore(hintDisplay, this.promptEl.nextSibling);
+        }
+        
+        setTimeout(() => {
+            hintDisplay.classList.add('show');
+        }, 10);
+        
+        setTimeout(() => {
+            hintDisplay.classList.remove('show');
+            setTimeout(() => hintDisplay.remove(), 500);
+        }, 4000);
+        
+        // Disable hint button after use
+        if (this.hintBtn) {
+            this.hintBtn.disabled = true;
+        }
     }
     
     resetGame() {
+        // Stop any ongoing game activity
         this.gameActive = false;
+        this.isProcessingClick = false;
+        this.lastClickTime = 0;
+        
+        // Clear flash timeout if exists (typing mode)
+        if (this.flashTimeout) {
+            clearTimeout(this.flashTimeout);
+            this.flashTimeout = null;
+        }
+        
+        // Clear flash interval if exists (typing mode)
+        if (this.flashInterval) {
+            clearInterval(this.flashInterval);
+            this.flashInterval = null;
+        }
+        
+        // Remove typing input if exists
+        this.removeTypingInput();
+        this.flashedCountry = null;
+        
+        // Reset game state
         this.answered.clear();
         this.wrongCountries.clear();
         this.attempts.clear();
-        this.stopTimer();
+        this.shuffledCountries = [];
+        this.currentCountry = null;
+        this.combo = 0;
+        this.maxCombo = 0;
+        this.achievements.clear();
+        
+        // Reset score and stats
+        this.score = 0;
+        this.correct = 0;
+        this.wrong = 0;
         this.elapsedTime = 0;
         this.questionTimes = [];
         this.speedBonus = 0;
-        this.lastClickTime = 0;
-        this.isProcessingClick = false;
+        this.startTime = null;
         
-        // Reset leaderboard form
-        this.resetLeaderboardForm();
-        
-        // Stop question timer
+        // Stop all timers
+        this.stopTimer();
         if (this.questionTimerInterval) {
             clearInterval(this.questionTimerInterval);
             this.questionTimerInterval = null;
@@ -852,13 +1354,30 @@ class GeographyGame {
             this.questionTimerEl.style.display = 'none';
         }
         
-        // Reset all country colors to green
+        // Reset leaderboard form
+        this.resetLeaderboardForm();
+        
+        // Remove any guess markers
+        this.removeGuessMarker();
+        
+        // Reset map position and zoom
+        this.resetZoomPan();
+        
+        // Reset all country colors to green (respecting HARD mode)
+        const strokeColor = this.gameMode === GAME_MODES.HARD ? 'none' : 'rgba(0, 0, 0, 0.8)';
+        const strokeWidth = this.gameMode === GAME_MODES.HARD ? '0' : '1';
+        
         Object.values(this.countryMap).forEach(path => {
             if (path) {
                 path.setAttribute('fill', '#2ECC71');
-                path.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
-                path.setAttribute('stroke-width', '1');
-                path.classList.remove('correct', 'incorrect', 'disabled');
+                path.style.setProperty('fill', '#2ECC71', 'important');
+                path.setAttribute('stroke', strokeColor);
+                path.style.setProperty('stroke', strokeColor, 'important');
+                path.setAttribute('stroke-width', strokeWidth);
+                path.style.setProperty('stroke-width', strokeWidth, 'important');
+                path.style.filter = '';
+                path.classList.remove('correct', 'incorrect', 'disabled', 'wrong-answered');
+                path.removeAttribute('data-attempt');
             }
         });
         
@@ -867,44 +1386,828 @@ class GeographyGame {
             const allPaths = this.svg.querySelectorAll('path[data-country-code]');
             allPaths.forEach(path => {
                 path.setAttribute('fill', '#2ECC71');
-                path.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
-                path.setAttribute('stroke-width', '1');
-                path.classList.remove('correct', 'incorrect', 'disabled');
+                path.style.setProperty('fill', '#2ECC71', 'important');
+                path.setAttribute('stroke', strokeColor);
+                path.style.setProperty('stroke', strokeColor, 'important');
+                path.setAttribute('stroke-width', strokeWidth);
+                path.style.setProperty('stroke-width', strokeWidth, 'important');
+                path.style.filter = '';
+                path.classList.remove('correct', 'incorrect', 'disabled', 'wrong-answered');
+                path.removeAttribute('data-attempt');
             });
         }
         
+        // Remove any existing country fact displays
+        const existingFact = document.querySelector('.country-fact-display');
+        if (existingFact) {
+            existingFact.remove();
+        }
+        
+        // Reset UI elements
+        if (this.promptEl) {
         this.promptEl.textContent = 'Click "Start Game" to begin!';
+            this.promptEl.style.display = 'block';
+            this.promptEl.style.visibility = 'visible';
+        }
+        
+        if (this.feedbackEl) {
         this.feedbackEl.textContent = '';
         this.feedbackEl.className = 'feedback-message';
+        }
         
+        // Reset buttons
+        if (this.startBtn) {
         this.startBtn.disabled = false;
+        }
+        if (this.resetBtn) {
         this.resetBtn.disabled = true;
+        }
+        if (this.hintBtn) {
+            this.hintBtn.disabled = true;
+            this.hintBtn.style.display = 'none';
+        }
         
+        // Update stats display
         this.updateStats();
     }
     
-    getNextCountry() {
-        // Get next unasked country
-        const remaining = this.shuffledCountries.filter(
-            c => !this.answered.has(c.code)
+    // Handle map click for GeoGuessr-style modes
+    handleMapClick(e) {
+        if (!this.gameActive || !this.currentCountry || !this.svg) return;
+        
+        const rect = this.mapContainer.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        // Account for pan and zoom
+        const svgRect = this.svg.getBoundingClientRect();
+        const svgX = (x - this.panY) / this.zoomLevel;
+        const svgY = (y - this.panX) / this.zoomLevel;
+        
+        // Convert to lat/lng
+        const guessCoords = this.svgToLatLng(svgX, svgY, this.svg);
+        if (!guessCoords) return;
+        
+        // Get correct country coordinates
+        const correctCoords = {
+            lat: this.currentCountry.lat,
+            lng: this.currentCountry.lng
+        };
+        
+        // Calculate distance
+        const distance = this.calculateDistance(
+            guessCoords.lat, guessCoords.lng,
+            correctCoords.lat, correctCoords.lng
         );
         
-        if (remaining.length === 0) {
+        // Place marker on map
+        this.placeGuessMarker(svgX, svgY);
+        
+        // Calculate score based on distance (like GeoGuessr)
+        const score = this.calculateDistanceScore(distance);
+        
+        // Find which country was closest to the guess
+        let closestCountry = null;
+        let closestDistance = Infinity;
+        this.countries.forEach(country => {
+            const dist = this.calculateDistance(
+                guessCoords.lat, guessCoords.lng,
+                country.lat, country.lng
+            );
+            if (dist < closestDistance) {
+                closestDistance = dist;
+                closestCountry = country;
+            }
+        });
+        
+        // Show result
+        this.showMapClickResult(distance, score, closestCountry);
+        
+        // Store round result
+        if (this.gameMode === GAME_MODES.CHALLENGE) {
+            this.rounds.push({
+                country: this.currentCountry,
+                guess: guessCoords,
+                distance: distance,
+                score: score,
+                closestCountry: closestCountry
+            });
+        }
+        
+        // Update score
+        this.score += score;
+        this.updateStats();
+        
+        // Move to next round/country
+        setTimeout(() => {
+            if (this.gameMode === GAME_MODES.CHALLENGE) {
+                this.currentRound++;
+                if (this.currentRound > this.maxRounds) {
+                    this.endChallenge();
+                } else {
+                    this.getNextCountry();
+                }
+            } else {
+                this.getNextCountry();
+            }
+            this.removeGuessMarker();
+        }, 3000);
+    }
+    
+    calculateDistanceScore(distance) {
+        // GeoGuessr-style scoring: closer = more points
+        // Max score: 5000 points for perfect guess
+        // Score decreases with distance
+        if (distance < 1) return 5000; // Within 1km = perfect
+        if (distance < 10) return 5000 - (distance * 50); // 1-10km
+        if (distance < 50) return 4500 - ((distance - 10) * 30); // 10-50km
+        if (distance < 100) return 3300 - ((distance - 50) * 20); // 50-100km
+        if (distance < 500) return 2300 - ((distance - 100) * 3); // 100-500km
+        if (distance < 1000) return 800 - ((distance - 500) * 1); // 500-1000km
+        if (distance < 2500) return 300 - ((distance - 1000) * 0.1); // 1000-2500km
+        return Math.max(0, 150 - ((distance - 2500) * 0.05)); // 2500km+
+    }
+    
+    placeGuessMarker(x, y) {
+        this.removeGuessMarker();
+        
+        if (!this.svg) return;
+        
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        marker.setAttribute('cx', x);
+        marker.setAttribute('cy', y);
+        marker.setAttribute('r', '8');
+        marker.setAttribute('fill', '#FFD700');
+        marker.setAttribute('stroke', '#FF6B00');
+        marker.setAttribute('stroke-width', '3');
+        marker.style.pointerEvents = 'none';
+        marker.id = 'guess-marker';
+        this.svg.appendChild(marker);
+        this.guessMarker = marker;
+        
+        // Add pulse animation
+        marker.style.animation = 'pulse-marker 1s ease-in-out infinite';
+    }
+    
+    removeGuessMarker() {
+        if (this.guessMarker && this.guessMarker.parentNode) {
+            this.guessMarker.parentNode.removeChild(this.guessMarker);
+        }
+        this.guessMarker = null;
+    }
+    
+    showMapClickResult(distance, score, closestCountry) {
+        // Flash viewport: green for close guesses (< 500km), red for far guesses
+        const isClose = distance < 500;
+        this.flashViewport(isClose);
+        
+        // Show correct location
+        setTimeout(() => {
+            this.highlightCorrectCountry();
+        }, 1000);
+    }
+    
+    highlightCorrectCountry() {
+        if (!this.currentCountry) return;
+        
+        const allPaths = this.findAllPathsForCountry(this.currentCountry.code);
+        allPaths.forEach(path => {
+            path.style.transition = 'all 0.5s ease';
+            path.setAttribute('fill', '#FFFFFF');
+            path.setAttribute('stroke', '#E0E0E0');
+            path.setAttribute('stroke-width', '3');
+            path.classList.add('correct');
+        });
+    }
+    
+    endChallenge() {
+        this.gameActive = false;
+        this.stopTimer();
+        
+        const totalScore = this.rounds.reduce((sum, round) => sum + round.score, 0);
+        const avgDistance = this.rounds.reduce((sum, round) => sum + round.distance, 0) / this.rounds.length;
+        
+        this.feedbackEl.innerHTML = `
+            <div style="font-size: 1.5rem; margin-bottom: 10px;">🏆 Challenge Complete!</div>
+            <div>Total Score: ${Math.round(totalScore)}</div>
+            <div>Average Distance: ${avgDistance.toFixed(1)}km</div>
+            <div style="margin-top: 15px; font-size: 0.9rem; opacity: 0.8;">Click Reset to play again!</div>
+        `;
+        this.feedbackEl.className = 'feedback-message correct';
+    }
+    
+    getNextCountry() {
+        // Clear clicked countries for the new question - re-enable all countries
+        this.clickedThisQuestion.clear();
+        
+        // Re-enable pointer events on all countries for the new question
+        // BUT don't re-enable countries that are marked as incorrect (wrong 3 times)
+        // AND don't re-enable countries that have been correctly answered (white/yellow/orange)
+        if (this.svg) {
+            const allPaths = this.svg.querySelectorAll('path');
+            allPaths.forEach(path => {
+                // Don't re-enable countries that are permanently marked as incorrect
+                if (path.classList.contains('incorrect')) {
+                    return; // Keep disabled
+                }
+                
+                // Don't re-enable countries that have been correctly answered (white/yellow/orange)
+                // These should stay disabled and colored for the entire game
+                if (path.classList.contains('correct')) {
+                    return; // Keep disabled and colored
+                }
+                
+                // Re-enable all countries that aren't permanently incorrect or correctly answered
+                // Wrong countries (red) are reset to green and re-enabled after the flash
+                path.style.pointerEvents = 'auto';
+                path.classList.remove('disabled', 'wrong-answered');
+            });
+        }
+        if (this.shuffledCountries.length === 0) {
+            // Game complete
             this.endGame();
             return;
         }
         
-        this.currentCountry = remaining[0];
-        // Reset attempts for new country
-        this.attempts.set(this.currentCountry.code, 0);
-        this.promptEl.textContent = `Find: ${this.currentCountry.name}`;
+        this.currentCountry = this.shuffledCountries.shift();
         
-        // Start question timer
+        // Reset question timer
         this.questionStartTime = Date.now();
+        this.updateQuestionTimer();
         if (this.questionTimerEl) {
             this.questionTimerEl.style.display = 'flex';
         }
-        this.updateQuestionTimer();
+        
+        // Handle typing mode - flash country first
+        if (this.gameMode === GAME_MODES.TYPING) {
+            console.log('[Geography Game] TYPING MODE - Calling flashCountryForTyping');
+            this.flashCountryForTyping();
+            return;
+        }
+        
+        // Update prompt based on mode
+        if (!this.promptEl) {
+            console.error('[Geography Game] Prompt element not found!');
+            return;
+        }
+        
+        this.promptEl.textContent = `Find: ${this.currentCountry.name}`;
+        
+        // Ensure prompt is visible
+        this.promptEl.style.display = 'block';
+        this.promptEl.style.visibility = 'visible';
+        
+        // Reset attempts for this country
+        this.attempts.set(this.currentCountry.code, 0);
+        
+        // Re-enable hint button for new country
+        if (this.hintBtn) {
+            this.hintBtn.disabled = false;
+        }
+        
+        // Remove any previous markers
+        this.removeGuessMarker();
+    }
+    
+    flashCountryForTyping() {
+        console.log('[Geography Game] flashCountryForTyping CALLED');
+        if (!this.currentCountry) {
+            console.log('[Geography Game] No current country for flash');
+            return;
+        }
+        
+        console.log(`[Geography Game] Starting flash for ${this.currentCountry.name} (${this.currentCountry.code})`);
+        
+        // Find all paths for the country
+        const countryPaths = this.findAllPathsForCountry(this.currentCountry.code);
+        console.log(`[Geography Game] Flash: Found ${countryPaths.length} paths for ${this.currentCountry.name} (${this.currentCountry.code})`);
+        
+        if (countryPaths.length === 0) {
+            console.warn(`[Geography Game] NO PATHS FOUND! Country: ${this.currentCountry.name} (${this.currentCountry.code})`);
+            // Still show input even if paths not found
+            setTimeout(() => {
+                this.showTypingInput();
+            }, 500);
+            return;
+        }
+        
+        console.log('[Geography Game] PATHS FOUND - Starting flash animation');
+        
+        // Log the paths we found for debugging
+        console.log(`[Geography Game] Paths to flash:`, countryPaths.map(p => ({
+            id: p.id,
+            dataCode: p.getAttribute('data-country-code'),
+            fill: p.getAttribute('fill'),
+            styleFill: p.style.fill
+        })));
+        
+        // Store reference for later
+        this.flashedCountry = this.currentCountry;
+        
+        // Pan/zoom to show the country if it has coordinates
+        if (this.currentCountry.lat && this.currentCountry.lng && this.mapContainer) {
+            try {
+                // Calculate approximate position on map (this is a rough estimate)
+                // World map SVG typically has viewBox like "0 0 1000 500" or similar
+                const svgElement = this.mapContainer.querySelector('svg');
+                if (svgElement) {
+                    const viewBox = svgElement.getAttribute('viewBox');
+                    if (viewBox) {
+                        const [x, y, width, height] = viewBox.split(' ').map(Number);
+                        // Convert lat/lng to SVG coordinates (rough approximation)
+                        // Longitude: -180 to 180 maps to 0 to width
+                        // Latitude: 90 to -90 maps to 0 to height
+                        const svgX = ((this.currentCountry.lng + 180) / 360) * width;
+                        const svgY = ((90 - this.currentCountry.lat) / 180) * height;
+                        
+                        // Get container dimensions
+                        const containerRect = this.mapContainer.getBoundingClientRect();
+                        const containerWidth = containerRect.width;
+                        const containerHeight = containerRect.height;
+                        
+                        // Calculate pan to center the country
+                        // Account for current zoom level
+                        const scaledWidth = width * this.zoomLevel;
+                        const scaledHeight = height * this.zoomLevel;
+                        
+                        // Center the country in the viewport
+                        this.panY = containerWidth / 2 - (svgX * this.zoomLevel);
+                        this.panX = containerHeight / 2 - (svgY * this.zoomLevel);
+                        this.updateTransform();
+                    }
+                }
+            } catch (e) {
+                console.log('[Geography Game] Error panning to country:', e);
+            }
+        }
+        
+        // Clear any existing flash interval
+        if (this.flashInterval) {
+            clearInterval(this.flashInterval);
+            this.flashInterval = null;
+        }
+        
+        // Flash the country white with high visibility - CONTINUOUS PULSING
+        // Store paths reference for the interval
+        this.flashingPaths = countryPaths;
+        let flashState = true; // true = white, false = slightly dimmed
+        
+        console.log('[Geography Game] Creating flash interval');
+        
+        const flashInterval = setInterval(() => {
+            if (!this.flashingPaths || this.flashingPaths.length === 0) {
+                console.log('[Geography Game] No flashing paths, clearing interval');
+                clearInterval(flashInterval);
+                this.flashInterval = null;
+                return;
+            }
+            
+            console.log(`[Geography Game] Flash pulse - state: ${flashState}, paths: ${this.flashingPaths.length}`);
+            
+            this.flashingPaths.forEach((path, idx) => {
+                // Don't reset countries that are permanently marked as incorrect
+                if (path.classList.contains('incorrect')) {
+                    return; // Skip this path - it should stay red
+                }
+                
+                // Remove any classes that might interfere
+                path.classList.remove('correct', 'disabled');
+                
+                // Clear all existing styles first
+                path.style.cssText = '';
+                
+                if (flashState) {
+                    // Bright white flash - VERY VISIBLE
+                    path.setAttribute('fill', '#FFFFFF');
+                    path.setAttribute('stroke', '#FF0000');
+                    path.setAttribute('stroke-width', '5');
+                    path.style.setProperty('fill', '#FFFFFF', 'important');
+                    path.style.setProperty('stroke', '#FF0000', 'important');
+                    path.style.setProperty('stroke-width', '5px', 'important');
+                    path.style.setProperty('opacity', '1', 'important');
+                    path.style.setProperty('filter', 'drop-shadow(0 0 20px rgba(255, 255, 255, 1)) drop-shadow(0 0 30px rgba(255, 0, 0, 0.8))', 'important');
+                } else {
+                    // Slightly dimmed but still VERY visible
+                    path.setAttribute('fill', '#FFE5E5');
+                    path.setAttribute('stroke', '#FF0000');
+                    path.setAttribute('stroke-width', '5');
+                    path.style.setProperty('fill', '#FFE5E5', 'important');
+                    path.style.setProperty('stroke', '#FF0000', 'important');
+                    path.style.setProperty('stroke-width', '5px', 'important');
+                    path.style.setProperty('opacity', '1', 'important');
+                    path.style.setProperty('filter', 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 25px rgba(255, 0, 0, 0.6))', 'important');
+                }
+                
+                // Ensure pointer events are enabled
+                path.style.setProperty('pointer-events', 'auto', 'important');
+            });
+            flashState = !flashState;
+        }, 400); // Flash every 400ms (faster pulse)
+        
+        this.flashInterval = flashInterval;
+        console.log('[Geography Game] Flash interval created and stored');
+        
+        // Initial flash
+        countryPaths.forEach((path, index) => {
+            console.log(`[Geography Game] Flashing path ${index + 1}/${countryPaths.length}:`, {
+                id: path.id,
+                currentFill: path.getAttribute('fill'),
+                currentStyleFill: path.style.fill
+            });
+            
+            // Remove any existing classes that might interfere
+            path.classList.remove('correct', 'disabled');
+            
+            // Use both setAttribute and style.setProperty with important to ensure it shows
+            path.setAttribute('fill', '#FFFFFF');
+            path.style.setProperty('fill', '#FFFFFF', 'important');
+            path.setAttribute('stroke', '#4A90E2');
+            path.style.setProperty('stroke', '#4A90E2', 'important');
+            path.setAttribute('stroke-width', '4');
+            path.style.setProperty('stroke-width', '4', 'important');
+            
+            // Remove any existing filters or transitions that might interfere
+            path.style.removeProperty('filter');
+            path.style.removeProperty('transition');
+            
+            // Add glow effect to make it more visible
+            path.style.setProperty('filter', 'drop-shadow(0 0 15px rgba(255, 255, 255, 1)) drop-shadow(0 0 25px rgba(74, 144, 226, 0.8))', 'important');
+            path.style.setProperty('transition', 'all 0.3s ease', 'important'); // Smooth transition for pulsing
+            
+            // Ensure pointer events are enabled so it's visible
+            path.style.setProperty('pointer-events', 'auto', 'important');
+            path.style.setProperty('opacity', '1', 'important');
+            
+            // Force a repaint to ensure the style is applied
+            path.offsetHeight; // Trigger reflow
+            
+            console.log(`[Geography Game] After flash - path ${index + 1}:`, {
+                fill: path.getAttribute('fill'),
+                styleFill: path.style.getPropertyValue('fill'),
+                styleFillPriority: path.style.getPropertyPriority('fill')
+            });
+        });
+        
+        // Force a repaint of the SVG to ensure changes are visible
+        if (this.svg) {
+            this.svg.style.display = 'none';
+            this.svg.offsetHeight; // Trigger reflow
+            this.svg.style.display = '';
+        }
+        
+        console.log(`[Geography Game] Continuous flash started for ${countryPaths.length} paths`);
+        
+        // Hide prompt during flash
+        if (this.promptEl) {
+            this.promptEl.textContent = 'Watch the country flash...';
+            this.promptEl.style.display = 'block';
+        }
+        
+        // After 2 seconds, show input but KEEP FLASHING CONTINUOUSLY
+        this.flashTimeout = setTimeout(() => {
+            console.log('[Geography Game] 2 seconds passed - showing input (flash continues)');
+            // DON'T stop the continuous flashing - keep it going!
+            // Just show the typing input
+            this.showTypingInput();
+        }, 2000);
+        
+        console.log('[Geography Game] Flash setup complete - interval running, timeout set');
+    }
+    
+    setupTypingInput() {
+        console.log('[Geography Game] setupTypingInput CALLED');
+        if (this.typingInput) {
+            console.log('[Geography Game] Typing input already exists, returning');
+            return; // Already exists
+        }
+        
+        console.log('[Geography Game] Creating typing input container');
+        // Create input container
+        const inputContainer = document.createElement('div');
+        inputContainer.id = 'typingInputContainer';
+        inputContainer.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10001;
+            background: rgba(15, 15, 35, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px 30px;
+            border-radius: 15px;
+            border: 2px solid rgba(74, 144, 226, 0.6);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            display: none;
+            cursor: move;
+            user-select: none;
+        `;
+        
+        // Create drag handle indicator FIRST (before using it in drag handlers)
+        const dragHandle = document.createElement('div');
+        dragHandle.textContent = '⋮⋮';
+        dragHandle.style.cssText = `
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            color: rgba(74, 144, 226, 0.6);
+            font-size: 1.2rem;
+            cursor: move;
+            user-select: none;
+            padding: 5px;
+            line-height: 1;
+        `;
+        dragHandle.title = 'Drag to move';
+        
+        // Create input field FIRST (before drag handlers)
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = 'typingInput';
+        input.placeholder = 'Type the country name...';
+        input.style.cssText = `
+            padding: 12px 20px;
+            font-size: 1.2rem;
+            border: 2px solid rgba(74, 144, 226, 0.4);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            width: 300px;
+            outline: none;
+            cursor: text;
+        `;
+        
+        // Create submit button FIRST (before drag handlers)
+        const submitBtn = document.createElement('button');
+        submitBtn.textContent = 'Submit';
+        submitBtn.style.cssText = `
+            margin-left: 10px;
+            padding: 12px 24px;
+            font-size: 1.2rem;
+            background: rgba(74, 144, 226, 0.8);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s;
+        `;
+        submitBtn.onmouseover = () => submitBtn.style.background = 'rgba(74, 144, 226, 1)';
+        submitBtn.onmouseout = () => submitBtn.style.background = 'rgba(74, 144, 226, 0.8)';
+        
+        // SIMPLE DRAG - Make container draggable
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let initialX = 0;
+        let initialY = 0;
+        
+        const makeDraggable = (e) => {
+            // Only drag if clicking on container background or drag handle, NOT input/button
+            const target = e.target;
+            console.log('[Geography Game] Drag start attempt, target:', target.tagName, target.id);
+            if (target === input || target === submitBtn || target.closest('input') || target.closest('button')) {
+                console.log('[Geography Game] Drag blocked - clicked on input/button');
+                return;
+            }
+            
+            console.log('[Geography Game] Starting drag');
+            isDragging = true;
+            startX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+            startY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+            
+            const rect = inputContainer.getBoundingClientRect();
+            initialX = rect.left + rect.width / 2;
+            initialY = rect.top + rect.height / 2;
+            
+            inputContainer.style.cursor = 'grabbing';
+            e.stopPropagation();
+            e.preventDefault();
+        };
+        
+        const onDragMove = (e) => {
+            if (!isDragging) return;
+            
+            const currentX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+            const currentY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+            
+            const deltaX = currentX - startX;
+            const deltaY = currentY - startY;
+            
+            const newX = initialX + deltaX;
+            const newY = initialY + deltaY;
+            
+            console.log('[Geography Game] Dragging - new position:', newX, newY);
+            inputContainer.style.left = `${newX}px`;
+            inputContainer.style.top = `${newY}px`;
+            inputContainer.style.transform = 'translate(-50%, -50%)';
+            
+            e.stopPropagation();
+            e.preventDefault();
+        };
+        
+        const stopDrag = () => {
+            if (isDragging) {
+                isDragging = false;
+                inputContainer.style.cursor = 'move';
+            }
+        };
+        
+        // Attach event listeners
+        console.log('[Geography Game] Attaching drag event listeners');
+        inputContainer.addEventListener('mousedown', makeDraggable);
+        dragHandle.addEventListener('mousedown', makeDraggable);
+        inputContainer.addEventListener('touchstart', makeDraggable, { passive: false });
+        dragHandle.addEventListener('touchstart', makeDraggable, { passive: false });
+        
+        document.addEventListener('mousemove', onDragMove);
+        document.addEventListener('touchmove', onDragMove, { passive: false });
+        document.addEventListener('mouseup', stopDrag);
+        document.addEventListener('touchend', stopDrag);
+        console.log('[Geography Game] Drag event listeners attached');
+        
+        // Handle input
+        const handleSubmit = () => {
+            const guess = input.value.trim();
+            if (guess) {
+                this.handleTypingInput(guess);
+            }
+        };
+        
+        submitBtn.onclick = handleSubmit;
+        input.onkeypress = (e) => {
+            if (e.key === 'Enter') {
+                handleSubmit();
+            }
+        };
+        
+        inputContainer.appendChild(dragHandle);
+        inputContainer.appendChild(input);
+        inputContainer.appendChild(submitBtn);
+        
+        const mapContainer = document.querySelector('.world-map-container');
+        if (mapContainer) {
+            mapContainer.appendChild(inputContainer);
+            this.typingInput = input;
+            console.log('[Geography Game] Typing input container added to map container');
+        } else {
+            console.error('[Geography Game] Map container not found! Cannot add typing input');
+        }
+    }
+    
+    removeTypingInput() {
+        const container = document.getElementById('typingInputContainer');
+        if (container) {
+            container.remove();
+        }
+        this.typingInput = null;
+    }
+    
+    showTypingInput() {
+        const container = document.getElementById('typingInputContainer');
+        if (container && this.typingInput) {
+            container.style.display = 'block';
+            this.typingInput.value = '';
+            this.typingInput.focus();
+            
+            // Update prompt
+            if (this.promptEl) {
+                this.promptEl.textContent = 'Type the country name you saw:';
+            }
+        }
+    }
+    
+    handleTypingInput(guess) {
+        if (!this.flashedCountry || !this.gameActive) return;
+        
+        // Stop the continuous flashing
+        if (this.flashInterval) {
+            clearInterval(this.flashInterval);
+            this.flashInterval = null;
+        }
+        
+        // Reset flashing paths to green
+        if (this.flashingPaths) {
+            this.flashingPaths.forEach(path => {
+                // Don't reset countries that are permanently marked as incorrect
+                if (path.classList.contains('incorrect')) {
+                    return;
+                }
+                path.setAttribute('fill', '#2ECC71');
+                path.style.removeProperty('fill');
+                path.setAttribute('stroke', this.gameMode === GAME_MODES.HARD ? 'none' : 'rgba(0, 0, 0, 0.8)');
+                path.style.removeProperty('stroke');
+                path.setAttribute('stroke-width', this.gameMode === GAME_MODES.HARD ? '0' : '1');
+                path.style.removeProperty('stroke-width');
+                path.style.filter = 'none';
+            });
+            this.flashingPaths = null;
+        }
+        
+        // Normalize guess and country name for comparison
+        const normalizedGuess = guess.toLowerCase().trim();
+        const normalizedName = this.flashedCountry.name.toLowerCase().trim();
+        const normalizedAlt = this.flashedCountry.alt.map(a => a.toLowerCase());
+        
+        // Check if correct
+        const isCorrect = normalizedGuess === normalizedName || 
+                         normalizedAlt.includes(normalizedGuess);
+        
+        if (isCorrect) {
+            // Correct answer
+            this.handleCorrectAnswer();
+        } else {
+            // Wrong answer
+            this.handleWrongAnswer();
+        }
+        
+        // Hide input
+        const container = document.getElementById('typingInputContainer');
+        if (container) {
+            container.style.display = 'none';
+        }
+        
+        this.flashedCountry = null;
+    }
+    
+    handleCorrectAnswer() {
+        if (!this.currentCountry) return;
+        
+        const countryPaths = this.findAllPathsForCountry(this.currentCountry.code);
+        const currentAttempts = this.attempts.get(this.currentCountry.code) || 0;
+        
+        // Mark as correct
+        countryPaths.forEach(path => {
+            let fillColor, strokeColor;
+            if (currentAttempts === 0) {
+                fillColor = '#FFFFFF';
+                strokeColor = '#E0E0E0';
+            } else if (currentAttempts === 1) {
+                fillColor = '#FFD700';
+                strokeColor = '#FFA500';
+            } else {
+                fillColor = '#FFB6C1';
+                strokeColor = '#FF6B6B';
+            }
+            
+            path.setAttribute('fill', fillColor);
+            path.setAttribute('stroke', strokeColor);
+            path.setAttribute('stroke-width', '3');
+            path.setAttribute('data-attempt', currentAttempts.toString());
+            path.style.filter = 'none';
+        });
+        
+        // Flash viewport green
+        this.flashViewport(true);
+        
+        // Update score and stats
+        const questionTime = (Date.now() - this.questionStartTime) / 1000;
+        let speedBonus = 0;
+        if (questionTime < 2) speedBonus = 50;
+        else if (questionTime < 5) speedBonus = 30;
+        else if (questionTime < 10) speedBonus = 15;
+        
+        this.score += 100 + speedBonus;
+        this.correct++;
+        this.combo++;
+        this.answered.add(this.currentCountry.code);
+        
+        // Show country fact
+        try {
+            this.showCountryFact(this.currentCountry);
+        } catch (e) {
+            console.log('Error showing country fact:', e);
+        }
+        
+        // Move to next country
+        setTimeout(() => {
+            this.getNextCountry();
+            this.isProcessingClick = false;
+        }, 1500);
+    }
+    
+    handleWrongAnswer() {
+        if (!this.currentCountry) return;
+        
+        const newAttempts = (this.attempts.get(this.currentCountry.code) || 0) + 1;
+        this.attempts.set(this.currentCountry.code, newAttempts);
+        
+        // Flash viewport red
+        this.flashViewport(false);
+        
+        if (newAttempts >= 3) {
+            // Out of attempts
+            this.wrong++;
+            this.answered.add(this.currentCountry.code);
+            this.updateStats();
+            
+            setTimeout(() => {
+                this.getNextCountry();
+                this.isProcessingClick = false;
+            }, 2000);
+        } else {
+            // Still have attempts - show input again
+            setTimeout(() => {
+                this.showTypingInput();
+            }, 1000);
+        }
     }
     
     findAllPathsForCountry(countryCode) {
@@ -1148,6 +2451,40 @@ class GeographyGame {
         
         const isCorrect = clickedCode.toLowerCase() === this.currentCountry.code.toLowerCase();
         
+        // Check if this country has already been clicked for this question
+        if (this.clickedThisQuestion.has(clickedCode.toLowerCase())) {
+            this.isProcessingClick = false;
+            return; // Already clicked, ignore
+        }
+        
+        // Also check if this country is currently colored and disabled
+        // Only block if it's currently showing white/yellow/orange (correct) or permanently red (incorrect)
+        // Wrong countries (red) become clickable again after the flash
+        const allPathsForClicked = this.findAllPathsForCountry(clickedCode);
+        const isCurrentlyColored = allPathsForClicked.some(path => {
+            // Check if it has the 'correct' class (white/yellow/orange) - these stay disabled
+            if (path.classList.contains('correct')) {
+                return true;
+            }
+            // Check if it has the 'incorrect' class (permanently red) - these stay disabled
+            if (path.classList.contains('incorrect')) {
+                return true;
+            }
+            // Check if it's currently disabled with pointer-events: none AND has a colored fill
+            const fill = path.getAttribute('fill') || '';
+            const isDisabled = path.style.pointerEvents === 'none';
+            const isColored = fill && fill !== '#2ECC71' && fill !== '';
+            return isDisabled && isColored;
+        });
+        
+        if (isCurrentlyColored) {
+            this.isProcessingClick = false;
+            return; // Currently colored and disabled, ignore
+        }
+        
+        // Mark this country as clicked for this question
+        this.clickedThisQuestion.add(clickedCode.toLowerCase());
+        
         // Get current attempt count
         const currentAttempts = this.attempts.get(this.currentCountry.code) || 0;
         
@@ -1200,16 +2537,56 @@ class GeographyGame {
                     this.questionTimerEl.style.display = 'none';
                 }
                 
-                // Correct answer - mark all paths as correct
+                // Correct answer - color based on attempt number
+                // First try (attempt 0): White
+                // Second try (attempt 1): Yellow
+                // Third try (attempt 2): Orange
+                let fillColor, strokeColor;
+                if (currentAttempts === 0) {
+                    // First try - white
+                    fillColor = '#FFFFFF';
+                    strokeColor = '#E0E0E0';
+                } else if (currentAttempts === 1) {
+                    // Second try - yellow
+                    fillColor = '#FFD700';
+                    strokeColor = '#FFA500';
+                } else {
+                    // Third try - orange/amber (warning color)
+                    fillColor = '#FFA500';
+                    strokeColor = '#FF8C00';
+                }
+                
+                // Correct answer - mark all paths with attempt-based color
+                // In HARD mode, don't add strokes
+                const finalStrokeColor = this.gameMode === GAME_MODES.HARD ? 'none' : strokeColor;
+                const finalStrokeWidth = this.gameMode === GAME_MODES.HARD ? '0' : '3';
+                
                 allPathsForClickedCountry.forEach(path => {
+                    // Remove any transitions to prevent color flashing
                     path.style.transition = 'none';
                     path.style.transform = 'none';
                     path.style.position = 'static';
-                    path.setAttribute('fill', '#FFFFFF');
-                    path.setAttribute('stroke', '#E0E0E0');
-                    path.setAttribute('stroke-width', '3');
+                    
+                    // Immediately set correct color - no delay, no flash
+                    path.setAttribute('fill', fillColor);
+                    path.style.setProperty('fill', fillColor, 'important');
+                    path.setAttribute('stroke', finalStrokeColor);
+                    path.style.setProperty('stroke', finalStrokeColor, 'important');
+                    path.setAttribute('stroke-width', finalStrokeWidth);
+                    path.style.setProperty('stroke-width', finalStrokeWidth, 'important');
+                    path.style.setProperty('opacity', '1', 'important'); // Ensure it's visible
+                    
+                    // Add data attribute for CSS targeting
+                    path.setAttribute('data-attempt', currentAttempts.toString());
                     path.classList.add('correct');
                     path.classList.remove('incorrect');
+                    
+                    // Disable pointer events immediately - country has been answered
+                    path.style.setProperty('pointer-events', 'none', 'important');
+                    path.classList.add('disabled');
+                    
+                    // Log for debugging
+                    console.log(`[Geography Game] Applied color to path: attempts=${currentAttempts}, fill=${fillColor}, stroke=${strokeColor}`);
                 });
                 
                 // Add glow effect to all paths
@@ -1246,38 +2623,100 @@ class GeographyGame {
                 this.score += totalScore;
                 this.correct++;
                 
-                // Show feedback with speed bonus if applicable
-                if (speedBonus > 0) {
-                    this.feedbackEl.textContent = `✓ Correct! ${speedMessage}`;
-                    this.feedbackEl.className = 'feedback-message correct';
-                    // Flash speed indicator
-                    if (this.speedEl) {
+                // Flash viewport green for correct answer
+                try {
+                    this.flashViewport(true);
+                } catch (e) {
+                    console.log('Error flashing viewport:', e);
+                }
+                
+                // Create particle effects
+                try {
+                    this.createParticleEffect(clickedCountryPaths[0]);
+                } catch (e) {
+                    console.log('Error creating particle effect:', e);
+                }
+                
+                // Update combo
+                this.combo++;
+                if (this.combo > this.maxCombo) {
+                    this.maxCombo = this.combo;
+                }
+                
+                // Apply combo multiplier to score
+                const comboMultiplier = Math.min(1 + (this.combo - 1) * 0.1, 2.0); // Max 2x multiplier
+                const comboBonus = Math.floor(totalScore * (comboMultiplier - 1));
+                if (comboBonus > 0) {
+                    this.score += comboBonus;
+                    try {
+                        this.showComboNotification(this.combo, comboBonus);
+                    } catch (e) {
+                        console.log('Error showing combo notification:', e);
+                    }
+                }
+                
+                // Flash speed indicator if applicable
+                if (speedBonus > 0 && this.speedEl) {
+                    try {
                         this.speedEl.classList.add('speed-bonus');
                         setTimeout(() => {
                             this.speedEl.classList.remove('speed-bonus');
                         }, 500);
+                    } catch (e) {
+                        console.log('Error flashing speed indicator:', e);
                     }
-                } else {
-                    this.feedbackEl.textContent = '✓ Correct!';
-                    this.feedbackEl.className = 'feedback-message correct';
+                }
+                
+                // Show country fact
+                try {
+                    this.showCountryFact(this.currentCountry);
+                } catch (e) {
+                    console.log('Error showing country fact:', e);
+                }
+                
+                // Check for achievements
+                try {
+                    this.checkAchievements();
+                } catch (e) {
+                    console.log('Error checking achievements:', e);
                 }
                 
                 // Play success sound
+                try {
                 this.playSuccessSound();
+                } catch (e) {
+                    console.log('Error playing success sound:', e);
+                }
                 
                 // Mark as answered and move to next country
                 this.answered.add(this.currentCountry.code);
                 this.updateStats();
                 
+                // Always move to next country after delay, even if other functions fail
                 setTimeout(() => {
+                    try {
                     this.getNextCountry();
-                    if (this.gameActive) {
-                        this.feedbackEl.textContent = '';
-                        this.feedbackEl.className = 'feedback-message';
+                        // Re-enable hint button for next country
+                        if (this.hintBtn) {
+                            this.hintBtn.disabled = false;
                     }
                     this.isProcessingClick = false;
-                }, 2000);
+                    } catch (e) {
+                        console.error('Error moving to next country:', e);
+                        // Force reset even on error
+                        this.isProcessingClick = false;
+                        // Try to get next country again
+                        try {
+                            this.getNextCountry();
+                        } catch (e2) {
+                            console.error('Critical error in getNextCountry:', e2);
+                        }
+                    }
+                }, 1500);
             } else {
+                // Wrong answer - reset combo
+                this.combo = 0;
+                
                 // Wrong answer - increment attempts
                 const newAttempts = currentAttempts + 1;
                 this.attempts.set(this.currentCountry.code, newAttempts);
@@ -1285,20 +2724,35 @@ class GeographyGame {
                 // Store reference to clicked country for resetting later
                 const clickedCountryPaths = allPathsForClickedCountry;
                 
-                // Temporarily mark clicked country as incorrect (visual feedback)
+                // Temporarily mark clicked country as incorrect (visual feedback - solid red flash)
+                // In HARD mode, don't add strokes
+                const wrongStrokeColor = this.gameMode === GAME_MODES.HARD ? 'none' : '#C0392B';
+                const wrongStrokeWidth = this.gameMode === GAME_MODES.HARD ? '0' : '3';
+                
                 clickedCountryPaths.forEach(path => {
+                    // Remove any transitions to prevent color flashing
                     path.style.transition = 'none';
                     path.style.transform = 'none';
                     path.style.position = 'static';
+                    
+                    // Immediately set red color - no delay, no flash
                     path.setAttribute('fill', '#E74C3C');
-                    path.setAttribute('stroke', '#C0392B');
-                    path.setAttribute('stroke-width', '3');
-                    // Don't add 'incorrect' class to wrong countries - only add it temporarily
-                });
-                
-                // Add glow effect
-                clickedCountryPaths.forEach(path => {
-                    path.style.filter = 'drop-shadow(0 0 12px rgba(231, 76, 60, 1)) drop-shadow(0 0 6px rgba(231, 76, 60, 0.8))';
+                    path.style.setProperty('fill', '#E74C3C', 'important');
+                    path.setAttribute('stroke', wrongStrokeColor);
+                    path.style.setProperty('stroke', wrongStrokeColor, 'important');
+                    path.setAttribute('stroke-width', wrongStrokeWidth);
+                    path.style.setProperty('stroke-width', wrongStrokeWidth, 'important');
+                    path.style.setProperty('filter', 'none', 'important'); // No glow, just solid red
+                    path.style.setProperty('opacity', '1', 'important'); // Ensure it's visible
+                    
+                    // Disable pointer events immediately - country has been clicked (wrong answer)
+                    // This country stays disabled for the ENTIRE GAME (not just the round)
+                    path.style.setProperty('pointer-events', 'none', 'important');
+                    path.classList.add('disabled');
+                    path.classList.add('wrong-answered'); // Mark as wrong for the game
+                    
+                    // Remove any classes that might cause color conflicts
+                    path.classList.remove('correct');
                 });
                 
                 if (newAttempts >= 3) {
@@ -1308,8 +2762,9 @@ class GeographyGame {
                         this.wrong++;
                         this.wrongCountries.add(this.currentCountry.code);
                     }
-                    this.feedbackEl.textContent = `✗ Incorrect! No attempts remaining.`;
-                    this.feedbackEl.className = 'feedback-message incorrect';
+                    
+                    // Flash viewport red for wrong answer
+                    this.flashViewport(false);
                     
                     // Play sad failure sound for third attempt
                     this.playFailureSound();
@@ -1318,15 +2773,26 @@ class GeographyGame {
                     const allPathsForCorrectCountry = this.findAllPathsForCountry(this.currentCountry.code);
                     
                     // Mark the CORRECT country as incorrect (red)
+                    // In HARD mode, don't add strokes
+                    const correctWrongStrokeColor = this.gameMode === GAME_MODES.HARD ? 'none' : '#C0392B';
+                    const correctWrongStrokeWidth = this.gameMode === GAME_MODES.HARD ? '0' : '3';
+                    
                     allPathsForCorrectCountry.forEach(path => {
                         path.style.transition = 'none';
                         path.style.transform = 'none';
                         path.style.position = 'static';
+                        // Use both setAttribute and style.setProperty with important to ensure red stays
                         path.setAttribute('fill', '#E74C3C');
-                        path.setAttribute('stroke', '#C0392B');
-                        path.setAttribute('stroke-width', '3');
+                        path.style.setProperty('fill', '#E74C3C', 'important');
+                        path.setAttribute('stroke', correctWrongStrokeColor);
+                        path.style.setProperty('stroke', correctWrongStrokeColor, 'important');
+                        path.setAttribute('stroke-width', correctWrongStrokeWidth);
+                        path.style.setProperty('stroke-width', correctWrongStrokeWidth, 'important');
                         path.classList.add('incorrect');
                         path.classList.remove('correct');
+                        // Disable pointer events - country is wrong and should stay red
+                        path.style.setProperty('pointer-events', 'none', 'important');
+                        path.classList.add('disabled');
                     });
                     
                     // Mark as answered
@@ -1335,44 +2801,63 @@ class GeographyGame {
                     
                     setTimeout(() => {
                         // Reset the incorrectly clicked country back to green (so it can be clicked later)
+                        // BUT don't reset if it's marked as permanently incorrect
+                        const resetStrokeColor = this.gameMode === GAME_MODES.HARD ? 'none' : 'rgba(0, 0, 0, 0.8)';
+                        const resetStrokeWidth = this.gameMode === GAME_MODES.HARD ? '0' : '1';
+                        
                         clickedCountryPaths.forEach(path => {
+                            // Don't reset countries that are permanently marked as incorrect
+                            if (path.classList.contains('incorrect')) {
+                                return; // Skip this path - it should stay red
+                            }
+                            // Reset wrong country back to green
                             path.setAttribute('fill', '#2ECC71');
-                            path.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
-                            path.setAttribute('stroke-width', '1');
-                            path.classList.remove('incorrect');
-                            path.style.filter = '';
+                            path.style.removeProperty('fill');
+                            path.setAttribute('stroke', resetStrokeColor);
+                            path.style.removeProperty('stroke');
+                            path.setAttribute('stroke-width', resetStrokeWidth);
+                            path.style.removeProperty('stroke-width');
+                            path.style.filter = 'none';
+                            
+                            // Re-enable pointer events - country can be clicked again
+                            path.style.removeProperty('pointer-events');
+                            path.classList.remove('incorrect', 'disabled', 'wrong-answered');
                         });
                         
                         this.getNextCountry();
-                        if (this.gameActive) {
-                            this.feedbackEl.textContent = '';
-                            this.feedbackEl.className = 'feedback-message';
-                        }
                         this.isProcessingClick = false;
                     }, 2000);
                 } else {
                     // Still have attempts remaining
-                    const remainingAttempts = 3 - newAttempts;
-                    this.feedbackEl.textContent = `✗ Incorrect! ${remainingAttempts} attempt${remainingAttempts === 1 ? '' : 's'} remaining.`;
-                    this.feedbackEl.className = 'feedback-message incorrect';
+                    // Flash viewport red for wrong answer
+                    this.flashViewport(false);
                     
                     // Play error sound
                     this.playErrorSound();
                     
-                    // Reset the clicked country back to green after showing error (so it can be clicked if it becomes correct)
+                    // After the red flash, reset the wrong country back to green and make it clickable again
                     setTimeout(() => {
+                        const resetStrokeColor = this.gameMode === GAME_MODES.HARD ? 'none' : 'rgba(0, 0, 0, 0.8)';
+                        const resetStrokeWidth = this.gameMode === GAME_MODES.HARD ? '0' : '1';
+                        
                         clickedCountryPaths.forEach(path => {
+                            // Reset wrong country back to green
                             path.setAttribute('fill', '#2ECC71');
-                            path.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
-                            path.setAttribute('stroke-width', '1');
-                            path.classList.remove('incorrect');
-                            path.style.filter = '';
-                            // Ensure the country can be clicked again even if it becomes the correct answer
-                            path.style.pointerEvents = 'auto';
+                            path.style.removeProperty('fill');
+                            path.setAttribute('stroke', resetStrokeColor);
+                            path.style.removeProperty('stroke');
+                            path.setAttribute('stroke-width', resetStrokeWidth);
+                            path.style.removeProperty('stroke-width');
+                            path.style.filter = 'none';
+                            
+                            // Re-enable pointer events - country can be clicked again
+                            path.style.removeProperty('pointer-events');
+                            path.classList.remove('disabled', 'wrong-answered');
                         });
                         
-                        this.feedbackEl.textContent = '';
-                        this.feedbackEl.className = 'feedback-message';
+                        // Remove from clicked set so it can be clicked again
+                        this.clickedThisQuestion.delete(clickedCode.toLowerCase());
+                        
                         this.updateStats();
                     }, 2000);
                 }
@@ -1380,11 +2865,55 @@ class GeographyGame {
         }
     }
     
+    flashViewport(isCorrect) {
+        if (!this.flashLeft || !this.flashRight) return;
+        
+        // Remove any existing classes
+        this.flashLeft.classList.remove('correct', 'active');
+        this.flashRight.classList.remove('correct', 'active');
+        
+        // Add correct class if it's a correct answer
+        if (isCorrect) {
+            this.flashLeft.classList.add('correct');
+            this.flashRight.classList.add('correct');
+        }
+        
+        // Trigger the flash animation
+        this.flashLeft.classList.add('active');
+        this.flashRight.classList.add('active');
+        
+        // Remove active class after animation completes
+        setTimeout(() => {
+            this.flashLeft.classList.remove('active');
+            this.flashRight.classList.remove('active');
+        }, 400);
+    }
+    
     updateStats() {
         this.scoreEl.textContent = this.score;
+        
+        // Update combo display
+        if (this.comboEl && this.comboStat) {
+            if (this.combo > 0) {
+                this.comboEl.textContent = `${this.combo}x`;
+                this.comboStat.style.display = 'flex';
+            } else {
+                this.comboStat.style.display = 'none';
+            }
+        }
+        
+        // Update progress bar
+        if (this.progressBarFill && this.progressText) {
+            const progress = (this.correct / 50) * 100;
+            this.progressBarFill.style.width = `${progress}%`;
+            this.progressText.textContent = `${Math.round(progress)}%`;
+        }
+        
+        // Update stats for all modes
         this.correctEl.textContent = `${this.correct} / 50`;
-        this.wrongEl.textContent = this.wrong;
         this.remainingEl.textContent = this.countries.length - this.answered.size;
+        
+        this.wrongEl.textContent = this.wrong;
         
         // Update timer display
         if (this.timerEl) {
@@ -1404,6 +2933,262 @@ class GeographyGame {
         // Update directions count
         if (this.directionsCountEl) {
             this.directionsCountEl.textContent = `${this.correct} / 50`;
+        }
+    }
+    
+    // Calculate distance between two coordinates (Haversine formula)
+    calculateDistance(lat1, lng1, lat2, lng2) {
+        const R = 6371; // Earth's radius in kilometers
+        const dLat = this.toRad(lat2 - lat1);
+        const dLng = this.toRad(lng2 - lng1);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
+                  Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c; // Distance in kilometers
+    }
+    
+    toRad(degrees) {
+        return degrees * (Math.PI / 180);
+    }
+    
+    // Convert SVG coordinates to lat/lng (approximate)
+    svgToLatLng(x, y, svg) {
+        if (!svg) return null;
+        const viewBox = svg.getAttribute('viewBox') || svg.getAttribute('viewbox');
+        if (!viewBox) return null;
+        
+        const [minX, minY, width, height] = viewBox.split(' ').map(Number);
+        // Approximate world map: -180 to 180 longitude, -90 to 90 latitude
+        const lng = ((x - minX) / width) * 360 - 180;
+        const lat = 90 - ((y - minY) / height) * 180;
+        return { lat, lng };
+    }
+    
+    // Convert lat/lng to SVG coordinates
+    latLngToSvg(lat, lng, svg) {
+        if (!svg) return null;
+        const viewBox = svg.getAttribute('viewBox') || svg.getAttribute('viewbox');
+        if (!viewBox) return null;
+        
+        const [minX, minY, width, height] = viewBox.split(' ').map(Number);
+        const x = ((lng + 180) / 360) * width + minX;
+        const y = ((90 - lat) / 180) * height + minY;
+        return { x, y };
+    }
+    
+    // Setup game mode selector
+    setupGameModeSelector() {
+        // Create the game mode selector UI
+        if (!document.getElementById('gameModeSelector')) {
+            // Wait a bit for DOM to be ready
+            setTimeout(() => {
+                this.createGameModeSelector();
+                this.updatePromptForMode();
+            }, 100);
+        }
+    }
+    
+    createGameModeSelector() {
+        const gameHeader = document.querySelector('.game-header');
+        if (!gameHeader || document.getElementById('gameModeSelector')) return;
+        
+        const modeSelector = document.createElement('div');
+        modeSelector.id = 'gameModeSelector';
+        modeSelector.style.cssText = 'display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap;';
+        
+        Object.entries(GAME_MODES).forEach(([key, value]) => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-mode';
+            btn.dataset.mode = value;
+            
+            // Special handling for typing mode - show as "Coming Soon"
+            if (value === GAME_MODES.TYPING) {
+                btn.innerHTML = '⌨️ Typing<br><span style="font-size: 0.7em; color: #FFD700;">🚧 Coming Soon</span>';
+                btn.style.cssText = `
+                    padding: 10px 20px;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    background: rgba(100, 100, 100, 0.3);
+                    border: 2px dashed rgba(255, 215, 0, 0.6);
+                    border-radius: 8px;
+                    color: rgba(255, 255, 255, 0.5);
+                    cursor: not-allowed;
+                    transition: all 0.3s ease;
+                    position: relative;
+                    opacity: 0.6;
+                    text-decoration: line-through;
+                `;
+                btn.disabled = true;
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.showComingSoonMessage();
+                });
+            } else {
+                btn.textContent = this.getModeName(value);
+                btn.style.cssText = `
+                    padding: 10px 20px;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    background: ${this.gameMode === value ? 'rgba(74, 144, 226, 0.8)' : 'rgba(74, 144, 226, 0.2)'};
+                    border: 2px solid ${this.gameMode === value ? '#4A90E2' : 'rgba(74, 144, 226, 0.4)'};
+                    border-radius: 8px;
+                    color: white;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                `;
+                btn.addEventListener('click', () => this.setGameMode(value));
+            }
+            modeSelector.appendChild(btn);
+        });
+        
+        gameHeader.appendChild(modeSelector);
+    }
+    
+    getModeName(mode) {
+        const names = {
+            [GAME_MODES.CLASSIC]: '🎯 Classic',
+            [GAME_MODES.HARD]: '💀 Hard',
+            [GAME_MODES.TYPING]: '⌨️ Typing'
+        };
+        return names[mode] || mode;
+    }
+    
+    showComingSoonMessage() {
+        // Remove existing message if any
+        const existing = document.getElementById('typingModeComingSoon');
+        if (existing) {
+            existing.remove();
+        }
+        
+        // Create construction tape message
+        const message = document.createElement('div');
+        message.id = 'typingModeComingSoon';
+        message.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 10000;
+                background: linear-gradient(45deg, #FFD700 25%, #FFA500 25%, #FFA500 50%, #FFD700 50%, #FFD700 75%, #FFA500 75%, #FFA500);
+                background-size: 40px 40px;
+                padding: 30px 50px;
+                border: 4px solid #FF0000;
+                border-radius: 10px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+                text-align: center;
+                font-family: 'Arial Black', sans-serif;
+                animation: shake 0.5s infinite;
+            ">
+                <div style="
+                    background: rgba(0, 0, 0, 0.8);
+                    padding: 20px;
+                    border-radius: 5px;
+                    color: white;
+                ">
+                    <div style="font-size: 3rem; margin-bottom: 10px;">🚧</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #FFD700; margin-bottom: 10px;">
+                        TYPING MODE
+                    </div>
+                    <div style="font-size: 1.2rem; color: #FFD700;">
+                        COMING SOON
+                    </div>
+                    <div style="font-size: 0.9rem; color: #ccc; margin-top: 10px;">
+                        This feature is under construction
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add shake animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+                25% { transform: translate(-50%, -50%) rotate(-2deg); }
+                75% { transform: translate(-50%, -50%) rotate(2deg); }
+            }
+        `;
+        if (!document.getElementById('typingModeAnimationStyle')) {
+            style.id = 'typingModeAnimationStyle';
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(message);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            if (message && message.parentNode) {
+                message.remove();
+            }
+        }, 3000);
+    }
+    
+    setGameMode(mode) {
+        // Prevent typing mode from being set
+        if (mode === GAME_MODES.TYPING) {
+            this.showComingSoonMessage();
+            return;
+        }
+        
+        // Always reset game when switching modes (even if not active)
+        this.resetGame();
+        
+        this.gameMode = mode;
+        this.updateModeSelector();
+        this.updatePromptForMode();
+        
+        // Update country colors for HARD mode
+        if (this.svg) {
+            const strokeColor = this.gameMode === GAME_MODES.HARD ? 'none' : 'rgba(0, 0, 0, 0.8)';
+            const strokeWidth = this.gameMode === GAME_MODES.HARD ? '0' : '1';
+            
+            // Update all paths to reflect new mode
+            Object.values(this.countryMap).forEach(path => {
+                if (path) {
+                    path.setAttribute('stroke', strokeColor);
+                    path.style.setProperty('stroke', strokeColor, 'important');
+                    path.setAttribute('stroke-width', strokeWidth);
+                    path.style.setProperty('stroke-width', strokeWidth, 'important');
+                }
+            });
+            
+            if (this.svg) {
+                const allPaths = this.svg.querySelectorAll('path[data-country-code]');
+                allPaths.forEach(path => {
+                    path.setAttribute('stroke', strokeColor);
+                    path.style.setProperty('stroke', strokeColor, 'important');
+                    path.setAttribute('stroke-width', strokeWidth);
+                    path.style.setProperty('stroke-width', strokeWidth, 'important');
+                });
+            }
+        }
+    }
+    
+    updateModeSelector() {
+        const selector = document.getElementById('gameModeSelector');
+        if (!selector) return;
+        
+        selector.querySelectorAll('.btn-mode').forEach(btn => {
+            const mode = btn.dataset.mode;
+            btn.style.background = this.gameMode === mode ? 'rgba(74, 144, 226, 0.8)' : 'rgba(74, 144, 226, 0.2)';
+            btn.style.borderColor = this.gameMode === mode ? '#4A90E2' : 'rgba(74, 144, 226, 0.4)';
+        });
+    }
+    
+    updatePromptForMode() {
+        if (!this.promptEl) return;
+        
+        const prompts = {
+            [GAME_MODES.CLASSIC]: 'Click on the country that\'s prompted. Green = not answered, White = correct, Red = incorrect',
+            [GAME_MODES.HARD]: 'Click on the country that\'s prompted - but with no borders! Much harder.',
+            [GAME_MODES.TYPING]: 'Watch the country flash, then type its name when prompted!'
+        };
+        
+        if (!this.gameActive) {
+            this.promptEl.innerHTML = prompts[this.gameMode] || 'Click "Start Game" to begin!';
         }
     }
     
@@ -1531,6 +3316,523 @@ class GeographyGame {
         } catch (e) {
             console.log('Could not play error sound:', e);
         }
+    }
+    
+    loadCountryFacts() {
+        // Country facts database with population, fun fact, and source
+        const facts = {
+            'CN': { 
+                population: 'about one billion four hundred million people',
+                fact: 'China operates the world\'s largest high-speed rail system.',
+                source: 'https://www.scmp.com/economy/china-economy/article/3047451',
+                continent: 'Asia'
+            },
+            'IN': { 
+                population: 'about one billion five hundred million people',
+                fact: 'India produces more films yearly than any other country.',
+                source: 'https://www.guinnessworldrecords.com/world-records/largest-annual-film-output',
+                continent: 'Asia'
+            },
+            'US': { 
+                population: 'about three hundred fifty million people',
+                fact: 'The U.S. National Park Service records hundreds of millions of visits each year.',
+                source: 'https://www.nps.gov/subjects/socialscience/visitor-use-statistics.htm',
+                continent: 'North America'
+            },
+            'ID': { 
+                population: 'about two hundred eighty million people',
+                fact: 'Indonesia has more than seventeen thousand islands.',
+                source: 'https://www.britannica.com/place/Indonesia',
+                continent: 'Asia'
+            },
+            'PK': { 
+                population: 'about two hundred sixty million people',
+                fact: 'The Karakoram Highway is the highest paved international road on Earth.',
+                source: 'https://www.nationalgeographic.com/travel/article/pakistan-karakoram-highway',
+                continent: 'Asia'
+            },
+            'BR': { 
+                population: 'about two hundred fifteen million people',
+                fact: 'Brazil contains about sixty percent of the Amazon rainforest.',
+                source: 'https://www.worldwildlife.org/places/amazon',
+                continent: 'South America'
+            },
+            'BD': { 
+                population: 'about one hundred eighty million people',
+                fact: 'The Sundarbans is the world\'s largest mangrove forest.',
+                source: 'https://whc.unesco.org/en/list/798/',
+                continent: 'Asia'
+            },
+            'RU': { 
+                population: 'about one hundred forty million people',
+                fact: 'Russia spans eleven time zones.',
+                source: 'https://www.britannica.com/place/Russia',
+                continent: 'Europe/Asia'
+            },
+            'MX': { 
+                population: 'about one hundred thirty million people',
+                fact: 'Chocolate drinks were first made by ancient cultures in what is now Mexico.',
+                source: 'https://www.smithsonianmag.com/history/where-did-chocolate-come-from-180954243/',
+                continent: 'North America'
+            },
+            'JP': { 
+                population: 'about one hundred twenty million people',
+                fact: 'Japan has millions of vending machines selling almost everything.',
+                source: 'https://www.bbc.com/worklife/article/20200220-why-japan-has-so-many-vending-machines',
+                continent: 'Asia'
+            },
+            'PH': { 
+                population: 'about one hundred twenty million people',
+                fact: 'The Philippines consists of more than seven thousand islands.',
+                source: 'https://www.cia.gov/the-world-factbook/countries/philippines/',
+                continent: 'Asia'
+            },
+            'EG': { 
+                population: 'about one hundred fifteen million people',
+                fact: 'The Great Pyramid of Giza is the last surviving Wonder of the Ancient World.',
+                source: 'https://www.nationalgeographic.com/history/article/great-pyramid-giza',
+                continent: 'Africa'
+            },
+            'ET': { 
+                population: 'about one hundred thirty million people',
+                fact: 'Ethiopia uses its own calendar that is seven to eight years behind the Gregorian one.',
+                source: 'https://www.bbc.com/news/world-africa-64136576',
+                continent: 'Africa'
+            },
+            'VN': { 
+                population: 'about one hundred million people',
+                fact: 'Vietnam is the world\'s largest exporter of black pepper.',
+                source: 'https://www.statista.com/topics/8641/pepper-industry/',
+                continent: 'Asia'
+            },
+            'CD': { 
+                population: 'about one hundred ten million people',
+                fact: 'The Congo Basin holds the world\'s second-largest tropical rainforest.',
+                source: 'https://www.worldwildlife.org/places/congo-basin',
+                continent: 'Africa'
+            },
+            'IR': { 
+                population: 'about ninety million people',
+                fact: 'Nashtifan in Iran has some of the oldest functioning windmills in the world.',
+                source: 'https://www.bbc.com/travel/article/20181216-irans-ancient-windmills-may-be-the-oldest-in-the-world',
+                continent: 'Asia'
+            },
+            'TR': { 
+                population: 'about eighty five million people',
+                fact: 'Istanbul is the only major city that lies on two continents.',
+                source: 'https://www.britannica.com/place/Istanbul',
+                continent: 'Europe/Asia'
+            },
+            'DE': { 
+                population: 'about eighty five million people',
+                fact: 'Some parts of the German Autobahn have no posted speed limit.',
+                source: 'https://www.britannica.com/topic/Autobahn',
+                continent: 'Europe'
+            },
+            'TH': { 
+                population: 'about seventy million people',
+                fact: 'Bangkok\'s ceremonial name is one of the longest city names on Earth.',
+                source: 'https://www.guinnessworldrecords.com/world-records/longest-place-name',
+                continent: 'Asia'
+            },
+            'GB': { 
+                population: 'about seventy million people',
+                fact: 'The National Health Service is one of the largest publicly funded health systems in the world.',
+                source: 'https://www.commonwealthfund.org/publications/fund-reports/2021/aug/mirror-mirror-2021',
+                continent: 'Europe'
+            },
+            'FR': { 
+                population: 'about sixty seven million people',
+                fact: 'France consistently ranks as the world\'s most visited country.',
+                source: 'https://www.unwto.org/statistics',
+                continent: 'Europe'
+            },
+            'IT': { 
+                population: 'about sixty million people',
+                fact: 'Italy has more UNESCO World Heritage Sites than any other country.',
+                source: 'https://whc.unesco.org/en/statesparties/it',
+                continent: 'Europe'
+            },
+            'ZA': { 
+                population: 'about sixty two million people',
+                fact: 'South Africa has three capital cities.',
+                source: 'https://www.britannica.com/place/South-Africa',
+                continent: 'Africa'
+            },
+            'TZ': { 
+                population: 'about sixty eight million people',
+                fact: 'Mount Kilimanjaro is the tallest free-standing mountain in the world.',
+                source: 'https://www.britannica.com/place/Kilimanjaro',
+                continent: 'Africa'
+            },
+            'MM': { 
+                population: 'about fifty five million people',
+                fact: 'Bagan in Myanmar contains thousands of ancient temples and pagodas.',
+                source: 'https://whc.unesco.org/en/list/1588/',
+                continent: 'Asia'
+            },
+            'KE': { 
+                population: 'about fifty six million people',
+                fact: 'The Great Rift Valley cuts through Kenya and is visible from space.',
+                source: 'https://www.nationalgeographic.com/science/article/great-rift-valley',
+                continent: 'Africa'
+            },
+            'KR': { 
+                population: 'about fifty two million people',
+                fact: 'South Korea is known for having some of the fastest average internet speeds in the world.',
+                source: 'https://www.speedtest.net/global-index',
+                continent: 'Asia'
+            },
+            'CO': { 
+                population: 'about fifty two million people',
+                fact: 'Colombia is the only South American country with coasts on both the Pacific and Atlantic Oceans.',
+                source: 'https://www.britannica.com/place/Colombia',
+                continent: 'South America'
+            },
+            'ES': { 
+                population: 'about forty eight million people',
+                fact: 'Madrid\'s Sobrino de Botín is recognized as the world\'s oldest continuously operating restaurant.',
+                source: 'https://www.guinnessworldrecords.com/world-records/oldest-restaurant',
+                continent: 'Europe'
+            },
+            'UG': { 
+                population: 'about fifty million people',
+                fact: 'A large share of the world\'s remaining mountain gorillas live in Uganda.',
+                source: 'https://www.worldwildlife.org/species/mountain-gorilla',
+                continent: 'Africa'
+            },
+            'AR': { 
+                population: 'about forty six million people',
+                fact: 'Ushuaia in Argentina is widely known as the world\'s southernmost city.',
+                source: 'https://www.britannica.com/place/Ushuaia',
+                continent: 'South America'
+            },
+            'DZ': { 
+                population: 'about forty six million people',
+                fact: 'Algeria is the largest country in Africa by land area.',
+                source: 'https://www.britannica.com/place/Algeria',
+                continent: 'Africa'
+            },
+            'SD': { 
+                population: 'about fifty million people',
+                fact: 'Sudan has more recorded ancient pyramids than Egypt.',
+                source: 'https://www.smithsonianmag.com/history/sudan-pyramids-nubia-archaeology-180970221/',
+                continent: 'Africa'
+            },
+            'UA': { 
+                population: 'about thirty five million people',
+                fact: 'Arsenalna station in Kyiv is the deepest metro station in the world.',
+                source: 'https://www.guinnessworldrecords.com/world-records/deepest-metro-station',
+                continent: 'Europe'
+            },
+            'IQ': { 
+                population: 'about forty five million people',
+                fact: 'Ancient Mesopotamia, largely in present-day Iraq, created the earliest known writing system, cuneiform.',
+                source: 'https://www.britannica.com/topic/cuneiform',
+                continent: 'Asia'
+            },
+            'AF': { 
+                population: 'about forty two million people',
+                fact: 'Afghanistan was home to the giant Bamiyan Buddhas carved into cliffs.',
+                source: 'https://whc.unesco.org/en/list/208/',
+                continent: 'Asia'
+            },
+            'PL': { 
+                population: 'about thirty eight million people',
+                fact: 'Malbork Castle in Poland is the largest brick castle in the world.',
+                source: 'https://whc.unesco.org/en/list/847/',
+                continent: 'Europe'
+            },
+            'CA': { 
+                population: 'about forty million people',
+                fact: 'Canada has more lakes than any other country.',
+                source: 'https://www.worldatlas.com/articles/does-canada-have-more-lakes-than-the-rest-of-the-world.html',
+                continent: 'North America'
+            },
+            'MA': { 
+                population: 'about thirty eight million people',
+                fact: 'The University of al-Qarawiyyin in Fez is considered the oldest continually operating university.',
+                source: 'https://www.britannica.com/topic/al-Qarawiyin-University',
+                continent: 'Africa'
+            },
+            'SA': { 
+                population: 'about thirty seven million people',
+                fact: 'Saudi Arabia contains most of the Rub\' al Khali, the world\'s largest continuous sand desert.',
+                source: 'https://www.britannica.com/place/Rub-al-Khali',
+                continent: 'Asia'
+            },
+            'UZ': { 
+                population: 'about thirty six million people',
+                fact: 'Uzbekistan is one of only two double-landlocked countries in the world.',
+                source: 'https://www.worldatlas.com/articles/what-is-a-double-landlocked-country.html',
+                continent: 'Asia'
+            },
+            'PE': { 
+                population: 'about thirty five million people',
+                fact: 'The potato was first domesticated in the Andean regions of Peru.',
+                source: 'https://www.cipotato.org/press-room/',
+                continent: 'South America'
+            },
+            'AO': { 
+                population: 'about thirty seven million people',
+                fact: 'Angola has one of the youngest populations in the world by median age.',
+                source: 'https://data.worldbank.org/indicator/SP.POP.MEDI?locations=AO',
+                continent: 'Africa'
+            },
+            'MY': { 
+                population: 'about thirty four million people',
+                fact: 'Kuala Lumpur\'s Petronas Towers are the tallest twin towers on Earth.',
+                source: 'https://www.britannica.com/topic/Petronas-Twin-Towers',
+                continent: 'Asia'
+            },
+            'MZ': { 
+                population: 'about thirty four million people',
+                fact: 'Mozambique\'s Quirimbas region hosts some of the richest coral reef ecosystems.',
+                source: 'https://www.worldwildlife.org/places/quirimbas',
+                continent: 'Africa'
+            },
+            'GH': { 
+                population: 'about thirty four million people',
+                fact: 'Ghana was the first sub-Saharan African country to gain independence in the twentieth century.',
+                source: 'https://www.britannica.com/place/Ghana',
+                continent: 'Africa'
+            },
+            'YE': { 
+                population: 'about thirty four million people',
+                fact: 'Socotra Island in Yemen is famous for its unique dragon blood trees.',
+                source: 'https://www.nationalgeographic.com/environment/article/dragon-blood-trees-socotra-yemen',
+                continent: 'Asia'
+            },
+            'NP': { 
+                population: 'about thirty one million people',
+                fact: 'Nepal contains eight of the world\'s fourteen tallest mountains, including Everest.',
+                source: 'https://www.britannica.com/place/Himalayas',
+                continent: 'Asia'
+            },
+            'NG': { 
+                population: 'about two hundred thirty million people',
+                fact: 'Nigeria\'s Nollywood is one of the largest film industries in the world by number of movies produced.',
+                source: 'https://www.unesco.org/en/articles/nollywood-nigerias-booming-film-industry',
+                continent: 'Africa'
+            },
+            'VE': { 
+                population: 'about thirty million people',
+                fact: 'Angel Falls in Venezuela is the tallest uninterrupted waterfall on Earth.',
+                source: 'https://www.britannica.com/place/Angel-Falls',
+                continent: 'South America'
+            }
+        };
+        return facts;
+    }
+    
+    createParticleEffect(pathElement) {
+        if (!pathElement || !this.mapContainer) return;
+        
+        try {
+            const bbox = pathElement.getBBox();
+            const centerX = bbox.x + bbox.width / 2;
+            const centerY = bbox.y + bbox.height / 2;
+            
+            // Get SVG coordinates
+            const svg = pathElement.ownerSVGElement;
+            if (!svg) return;
+            
+            const svgPoint = svg.createSVGPoint();
+            svgPoint.x = centerX;
+            svgPoint.y = centerY;
+            const screenPoint = svgPoint.matrixTransform(svg.getScreenCTM());
+            
+            // Create particle container
+            const particleContainer = document.createElement('div');
+            particleContainer.style.cssText = `
+                position: fixed;
+                left: ${screenPoint.x}px;
+                top: ${screenPoint.y}px;
+                pointer-events: none;
+                z-index: 10001;
+            `;
+            document.body.appendChild(particleContainer);
+            
+            // Create particles
+            const particleCount = 20;
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                const angle = (Math.PI * 2 * i) / particleCount;
+                const velocity = 50 + Math.random() * 50;
+                const size = 4 + Math.random() * 4;
+                const endX = Math.cos(angle) * velocity;
+                const endY = Math.sin(angle) * velocity;
+                
+                particle.style.cssText = `
+                    position: absolute;
+                    width: ${size}px;
+                    height: ${size}px;
+                    background: ${i % 3 === 0 ? '#FFD700' : i % 3 === 1 ? '#4CAF50' : '#2196F3'};
+                    border-radius: 50%;
+                    box-shadow: 0 0 ${size * 2}px currentColor;
+                    animation: particleFloat 1s ease-out forwards;
+                    --end-x: ${endX}px;
+                    --end-y: ${endY}px;
+                `;
+                
+                particleContainer.appendChild(particle);
+            }
+            
+            // Remove after animation
+            setTimeout(() => {
+                particleContainer.remove();
+            }, 1000);
+        } catch (e) {
+            console.log('Could not create particle effect:', e);
+        }
+    }
+    
+    showComboNotification(combo, bonus) {
+        if (combo < 3) return; // Only show for combos of 3+
+        
+        const notification = document.createElement('div');
+        notification.className = 'combo-notification';
+        notification.innerHTML = `
+            <div class="combo-text">🔥 ${combo}x COMBO!</div>
+            <div class="combo-bonus">+${bonus} bonus</div>
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 2000);
+    }
+    
+    showCountryFact(country) {
+        if (!country || !this.countryFacts[country.code]) return;
+        
+        const fact = this.countryFacts[country.code];
+        
+        // Remove any existing fact display first
+        const existingFact = document.querySelector('.country-fact-display');
+        if (existingFact) {
+            existingFact.remove();
+        }
+        
+        const factDisplay = document.createElement('div');
+        factDisplay.className = 'country-fact-display';
+        factDisplay.innerHTML = `
+            <div class="country-fact-header">${country.name}</div>
+            <div class="country-fact-continent">📍 ${fact.continent}</div>
+            <div class="country-fact-population">
+                <span class="fact-label">Population:</span>
+                <span class="fact-value">${fact.population}</span>
+            </div>
+            <div class="country-fact-fun-fact">
+                <span class="fact-label">Fun Fact:</span>
+                <span class="fact-value">${fact.fact}</span>
+            </div>
+            <div class="country-fact-source">
+                <span class="fact-label">Source:</span>
+                <span class="fact-value">
+                    <a href="${fact.source}" target="_blank" rel="noopener noreferrer" class="source-link">${fact.source}</a>
+                </span>
+            </div>
+        `;
+        
+        // Append to world-map-container (bottom left of SVG game area)
+        const mapContainer = document.querySelector('.world-map-container');
+        if (mapContainer) {
+            // Make sure container has relative positioning
+            if (getComputedStyle(mapContainer).position === 'static') {
+                mapContainer.style.position = 'relative';
+            }
+            mapContainer.appendChild(factDisplay);
+        } else {
+            // Fallback to body if container not found
+            document.body.appendChild(factDisplay);
+        }
+        
+        setTimeout(() => {
+            factDisplay.classList.add('show');
+        }, 10);
+        
+        setTimeout(() => {
+            factDisplay.classList.remove('show');
+            setTimeout(() => {
+                if (factDisplay.parentNode) {
+                    factDisplay.remove();
+                }
+            }, 500);
+        }, 3000);
+    }
+    
+    checkAchievements() {
+        const newAchievements = [];
+        
+        // First correct answer
+        if (this.correct === 1 && !this.achievements.has('first_correct')) {
+            this.achievements.add('first_correct');
+            newAchievements.push({ id: 'first_correct', name: 'First Steps', desc: 'Got your first correct answer!' });
+        }
+        
+        // 10 correct answers
+        if (this.correct === 10 && !this.achievements.has('ten_correct')) {
+            this.achievements.add('ten_correct');
+            newAchievements.push({ id: 'ten_correct', name: 'Getting Started', desc: 'Answered 10 countries correctly!' });
+        }
+        
+        // 25 correct answers
+        if (this.correct === 25 && !this.achievements.has('twenty_five_correct')) {
+            this.achievements.add('twenty_five_correct');
+            newAchievements.push({ id: 'twenty_five_correct', name: 'Halfway There', desc: 'Answered 25 countries correctly!' });
+        }
+        
+        // Perfect game (50/50)
+        if (this.correct === 50 && this.wrong === 0 && !this.achievements.has('perfect_game')) {
+            this.achievements.add('perfect_game');
+            newAchievements.push({ id: 'perfect_game', name: 'Perfect Game!', desc: 'Completed all 50 countries with no mistakes!' });
+        }
+        
+        // Combo achievements
+        if (this.combo === 5 && !this.achievements.has('combo_5')) {
+            this.achievements.add('combo_5');
+            newAchievements.push({ id: 'combo_5', name: 'On Fire!', desc: '5 correct answers in a row!' });
+        }
+        
+        if (this.combo === 10 && !this.achievements.has('combo_10')) {
+            this.achievements.add('combo_10');
+            newAchievements.push({ id: 'combo_10', name: 'Unstoppable!', desc: '10 correct answers in a row!' });
+        }
+        
+        // Show achievement notifications
+        newAchievements.forEach((achievement, index) => {
+            setTimeout(() => {
+                this.showAchievement(achievement);
+            }, index * 500);
+        });
+    }
+    
+    showAchievement(achievement) {
+        const notification = document.createElement('div');
+        notification.className = 'achievement-notification';
+        notification.innerHTML = `
+            <div class="achievement-icon">🏆</div>
+            <div class="achievement-content">
+                <div class="achievement-name">${achievement.name}</div>
+                <div class="achievement-desc">${achievement.desc}</div>
+            </div>
+        `;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 500);
+        }, 3000);
     }
     
     playFailureSound() {
@@ -2054,6 +4356,10 @@ function loadSVGMap() {
                     // Reset pan to allow auto-centering
                     window.geoGame.panX = 0;
                     window.geoGame.panY = 0;
+                    // Re-setup drag handlers after SVG loads
+                    if (window.geoGame.setupDragHandlers) {
+                        window.geoGame.setupDragHandlers();
+                    }
                     // Force update to recalculate constraints and center
                     setTimeout(() => {
                         if (window.geoGame && window.geoGame.updateTransform) {
@@ -2062,15 +4368,25 @@ function loadSVGMap() {
                     }, 100);
                 }
                 
-                // Process all paths and add country codes
-                processSVGMap(svgElement);
-                
                 // IMPORTANT: Set up click handlers on the newly loaded SVG
                 // The click handlers were set up on the placeholder SVG, but now we have the real one
                 if (window.geoGame) {
                     console.log('[Geography Game] Setting up click handlers on loaded SVG');
                     window.geoGame.svg = svgElement;
+                    // Ensure SVG itself allows pointer events
+                    svgElement.style.pointerEvents = 'auto';
+                    svgElement.style.cursor = 'default';
+                    
+                    // Process the SVG first to add country attributes
+                    processSVGMap(svgElement);
+                    
+                    // THEN set up click handlers after processing
+                    setTimeout(() => {
                     window.geoGame.initializeCountryPaths();
+                        // Also add direct click handlers to each path for reliability
+                        window.geoGame.addDirectClickHandlers();
+                        console.log('[Geography Game] Click handlers set up, SVG ready for clicks');
+                    }, 200);
                 }
             } else {
                 throw new Error('SVG element not found in loaded file');
@@ -2130,6 +4446,27 @@ function processSVGMap(svg) {
         // Match to our country list
         let country = null;
         
+        // FIRST: Check if this is North Korea (KP) - explicitly exclude it BEFORE any other matching
+        const isNorthKorea = id && (id.toUpperCase() === 'KP' || id.toUpperCase() === 'PRK') ||
+                             /\bnorth\s+korea\b/i.test(nameAttr) ||
+                             /\bnorth\s+korea\b/i.test(className) ||
+                             /\bnorth\s+korea\b/i.test(title) ||
+                             /\bkp\b/i.test(id) ||
+                             /\bprk\b/i.test(id);
+        
+        // If it's North Korea, mark it as non-populous and skip
+        if (isNorthKorea) {
+            path.setAttribute('fill', '#0d5a2a'); // Dark green
+            path.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
+            path.setAttribute('stroke-width', '1');
+            path.style.cursor = 'default';
+            path.style.pointerEvents = 'auto';
+            path.style.opacity = '0.7';
+            path.classList.add('non-populous');
+            console.log(`⚠ Marked North Korea path as non-populous: id="${id}", name="${nameAttr}"`);
+            return; // Skip processing this path
+        }
+        
         // First try exact code match from ID (most reliable)
         if (id && id.length === 2) {
             country = POPULOUS_COUNTRIES.find(c => 
@@ -2138,8 +4475,13 @@ function processSVGMap(svg) {
         }
         
         // Also check if ID contains country code (for paths like "PH-1", "PH-2" for archipelagos)
+        // BUT exclude KP (North Korea) codes
         if (!country && id) {
             for (const c of POPULOUS_COUNTRIES) {
+                // Skip if this would match KP (North Korea)
+                if (id.toUpperCase().includes('KP') || id.toUpperCase().includes('PRK')) {
+                    continue;
+                }
                 const codeRegex = new RegExp(`^${c.code}\\b|\\b${c.code}\\b`, 'i');
                 if (codeRegex.test(id)) {
                     country = c;
@@ -2244,9 +4586,26 @@ function processSVGMap(svg) {
             
             // Check for combined North/South Korea
             const hasKorea = /\bkorea\b/i.test(searchText);
-            const hasNorthKorea = /\bnorth\s+korea\b/i.test(searchText) || /\bkorea.*north\b/i.test(searchText);
+            const hasNorthKorea = /\bnorth\s+korea\b/i.test(searchText) || 
+                                 /\bkorea.*north\b/i.test(searchText) ||
+                                 /\bnorth.*korea\b/i.test(searchText) ||
+                                 /\bkp\b/i.test(searchText) ||
+                                 /\bprk\b/i.test(searchText);
             const hasSouthKorea = /\bsouth\s+korea\b/i.test(searchText) || /\bkorea.*south\b/i.test(searchText);
             const hasBothKoreas = hasNorthKorea && hasSouthKorea;
+            
+            // If it's ONLY North Korea (not combined), mark as non-populous
+            if (hasNorthKorea && !hasSouthKorea && !hasBothKoreas) {
+                path.setAttribute('fill', '#0d5a2a'); // Dark green
+                path.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
+                path.setAttribute('stroke-width', '1');
+                path.style.cursor = 'default';
+                path.style.pointerEvents = 'auto';
+                path.style.opacity = '0.7';
+                path.classList.add('non-populous');
+                console.log(`⚠ Marked North Korea path as non-populous: id="${id}", name="${nameAttr}"`);
+                return; // Skip processing this path
+            }
             
             // Check for combined Congo paths (DRC and Republic of the Congo)
             const hasCongo = /\bcongo\b/i.test(searchText);
@@ -2283,6 +4642,21 @@ function processSVGMap(svg) {
                 for (const c of sortedCountries) {
                     const normalizedCountryName = normalizeName(c.name);
                     const normalizedAltNames = c.alt.map(a => normalizeName(a));
+                    
+                    // Special handling for South Korea - explicitly exclude North Korea
+                    if (c.code === 'KR') {
+                        // For South Korea, explicitly exclude North Korea paths
+                        if (/\bnorth\s+korea\b/i.test(searchText) || 
+                            /\bkorea.*north\b/i.test(searchText) ||
+                            /\bnorth.*korea\b/i.test(searchText) ||
+                            /\bkp\b/i.test(searchText) ||
+                            /\bprk\b/i.test(searchText) ||
+                            id.toUpperCase() === 'KP' ||
+                            id.toUpperCase() === 'PRK') {
+                            // This is North Korea, skip it
+                            continue;
+                        }
+                    }
                     
                     // Special handling for archipelagos - be more lenient with matching
                     if (c.code === 'PH' || c.code === 'ID' || c.code === 'JP') {
@@ -2378,6 +4752,9 @@ function processSVGMap(svg) {
             path.setAttribute('stroke-width', '1'); // Border width
             path.style.cursor = 'pointer';
             path.style.pointerEvents = 'auto';
+            path.style.userSelect = 'none';
+            // Ensure path is clickable
+            path.classList.add('country-path');
             
             // Ensure path ID matches country code for easy lookup
             if (!path.id || path.id !== country.code) {

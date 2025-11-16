@@ -5063,7 +5063,318 @@ document.addEventListener("DOMContentLoaded", function() {
     
     // Initialize newsletter subscription
     initNewsletterSubscription();
+    
+    // Initialize DevTools detection easter egg
+    initDevToolsSurprise();
+    
+    // Show console welcome message on page load (will appear when console is opened)
+    // Also set up to show when console opens
+    let consoleWelcomeShown = false;
+    const showWelcomeWhenConsoleOpens = () => {
+        if (consoleWelcomeShown) return;
+        const start = performance.now();
+        console.log('%c ', 'font-size: 1px;');
+        const end = performance.now();
+        if (end - start > 1) {
+            consoleWelcomeShown = true;
+            showConsoleWelcome();
+        }
+    };
+    
+    // Check immediately and periodically
+    showWelcomeWhenConsoleOpens();
+    setInterval(showWelcomeWhenConsoleOpens, 500);
 });
+
+// Cool console welcome message with ASCII art
+function showConsoleWelcome() {
+    const asciiArt = `
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║   ███╗   ██╗ ██████╗ ████████╗███████╗██╗    ██╗ ██████╗      ║
+║   ████╗  ██║██╔═══██╗╚══██╔══╝██╔════╝██║    ██║██╔═══██╗     ║
+║   ██╔██╗ ██║██║   ██║   ██║   █████╗  ██║ █╗ ██║██║   ██║     ║
+║   ██║╚██╗██║██║   ██║   ██║   ██╔══╝  ██║███╗██║██║   ██║     ║
+║   ██║ ╚████║╚██████╔╝   ██║   ███████╗╚███╔███╔╝╚██████╔╝     ║
+║   ╚═╝  ╚═══╝ ╚═════╝    ╚═╝   ╚══════╝ ╚══╝╚══╝  ╚═════╝      ║
+║                                                               ║
+║   ███╗   ██╗███████╗██╗    ██╗███████╗                        ║
+║   ████╗  ██║██╔════╝██║    ██║██╔════╝                        ║
+║   ██╔██╗ ██║█████╗  ██║ █╗ ██║███████╗                        ║
+║   ██║╚██╗██║██╔══╝  ██║███╗██║╚════██║                        ║
+║   ██║ ╚████║███████╗╚███╔███╔╝███████║                        ║
+║   ╚═╝  ╚═══╝╚══════╝ ╚══╝╚══╝ ╚══════╝                        ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+    `;
+    
+    console.log('%c' + asciiArt, 'font-family: monospace; font-size: 10px; line-height: 1.2; color: #667eea; font-weight: bold;');
+    console.log('%c✨ Made with a ton of love and months of hardwork ✨', 'font-size: 16px; font-weight: bold; color: #764ba2; padding: 10px 0;');
+    console.log('%cThanks for checking out the code! 👨‍💻', 'font-size: 14px; color: #333; margin-top: 10px;');
+    console.log('%cIf you have any tips to improve my code, please DM me on X @newsnoteworthy 💬', 'font-size: 13px; color: #667eea; margin-top: 5px;');
+    console.log('%c🔗 https://x.com/newsnoteworthy', 'font-size: 12px; color: #999; margin-top: 5px;');
+    console.log('%c' + '═'.repeat(60), 'font-size: 1px; color: #ddd;');
+}
+
+// DevTools Detection Easter Egg - Leave a surprise for curious developers!
+function initDevToolsSurprise() {
+    let surpriseShown = false;
+    
+    // Immediate detection on keyboard shortcuts (most common way to open DevTools)
+    document.addEventListener('keydown', function(e) {
+        // F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U
+        if (e.key === 'F12' || 
+            (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+            (e.ctrlKey && e.key === 'U')) {
+            // Show immediately, no delay
+            if (!surpriseShown) {
+                showDevToolsSurprise();
+            }
+        }
+    });
+    
+    // Immediate detection via right-click context menu (Inspect Element)
+    // When user right-clicks, we'll check for DevTools opening shortly after
+    let rightClickTime = 0;
+    let rightClickElement = null;
+    
+    document.addEventListener('contextmenu', function(e) {
+        rightClickTime = Date.now();
+        rightClickElement = e.target;
+        
+        // Also trigger a check immediately after context menu appears
+        // (user might click "Inspect Element" from the menu)
+        // Check multiple times rapidly to catch it instantly
+        const checkInterval = setInterval(() => {
+            if (surpriseShown) {
+                clearInterval(checkInterval);
+                return;
+            }
+            const widthDiff = window.outerWidth - window.innerWidth;
+            const heightDiff = window.outerHeight - window.innerHeight;
+            if (widthDiff > 160 || heightDiff > 160) {
+                showDevToolsSurprise();
+                clearInterval(checkInterval);
+            }
+        }, 50); // Check every 50ms
+        
+        // Stop checking after 2 seconds
+        setTimeout(() => clearInterval(checkInterval), 2000);
+    });
+    
+    // Also detect when focus leaves the page (often happens when DevTools opens)
+    let blurTime = 0;
+    window.addEventListener('blur', function() {
+        blurTime = Date.now();
+    });
+    
+    window.addEventListener('focus', function() {
+        // If page was blurred and refocused quickly, might be DevTools
+        const timeSinceBlur = Date.now() - blurTime;
+        if (timeSinceBlur < 500 && blurTime > 0 && !surpriseShown) {
+            setTimeout(() => {
+                const widthDiff = window.outerWidth - window.innerWidth;
+                const heightDiff = window.outerHeight - window.innerHeight;
+                if (widthDiff > 160 || heightDiff > 160) {
+                    showDevToolsSurprise();
+                }
+            }, 100);
+        }
+    });
+    
+    // Fast polling for window size changes (catches DevTools opening)
+    let lastWidth = window.outerWidth - window.innerWidth;
+    let lastHeight = window.outerHeight - window.innerHeight;
+    
+    function checkDevTools() {
+        const currentWidth = window.outerWidth - window.innerWidth;
+        const currentHeight = window.outerHeight - window.innerHeight;
+        
+        // If window dimensions changed significantly, DevTools likely opened
+        if ((Math.abs(currentWidth - lastWidth) > 160 || Math.abs(currentHeight - lastHeight) > 160)) {
+            if (!surpriseShown) {
+                showDevToolsSurprise();
+            }
+        }
+        
+        lastWidth = currentWidth;
+        lastHeight = currentHeight;
+    }
+    
+    // Ultra-fast polling (every 50ms for instant detection)
+    setInterval(checkDevTools, 50);
+    
+    // Also check on resize
+    window.addEventListener('resize', checkDevTools);
+    
+    // Console detection - check immediately and continuously
+    let consoleDetected = false;
+    function detectConsole() {
+        if (consoleDetected || surpriseShown) return;
+        
+        const start = performance.now();
+        console.log('%c ', 'font-size: 1px;');
+        const end = performance.now();
+        const timeTaken = end - start;
+        
+        // If console is open, logging takes significantly longer
+        if (timeTaken > 1) {
+            consoleDetected = true;
+            showDevToolsSurprise();
+        }
+    }
+    
+    // Check console immediately and very frequently
+    detectConsole();
+    setInterval(detectConsole, 100);
+    
+    function showDevToolsSurprise() {
+        if (surpriseShown) return;
+        surpriseShown = true;
+        
+        // Log DevTools detection to analytics
+        try {
+            if (window.analyticsTracker && typeof window.analyticsTracker.log === 'function') {
+                window.analyticsTracker.log('devtools-opened', {
+                    detectionMethod: 'automatic',
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    pageUrl: window.location.href,
+                    pageTitle: document.title
+                });
+            } else {
+                // Fallback: direct fetch if analytics tracker not available
+                fetch('/.netlify/functions/log-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        dataType: 'devtools-opened',
+                        data: {
+                            detectionMethod: 'automatic',
+                            timestamp: new Date().toISOString(),
+                            userAgent: navigator.userAgent,
+                            pageUrl: window.location.href,
+                            pageTitle: document.title,
+                            referrer: document.referrer
+                        }
+                    })
+                }).catch(err => console.error('Failed to log DevTools detection:', err));
+            }
+        } catch (err) {
+            console.error('Error logging DevTools detection:', err);
+        }
+        
+        // Create surprise message overlay
+        const surprise = document.createElement('div');
+        surprise.id = 'devtools-surprise';
+        surprise.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                z-index: 999999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                animation: surpriseFadeIn 0.5s ease-out;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            ">
+                <div style="
+                    text-align: center;
+                    color: white;
+                    padding: 40px;
+                    max-width: 600px;
+                ">
+                    <h1 style="
+                        font-size: 48px;
+                        margin: 0 0 20px 0;
+                        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                        animation: bounce 1s ease-in-out;
+                    ">🎉</h1>
+                    <h2 style="
+                        font-size: 36px;
+                        margin: 0 0 20px 0;
+                        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                    ">Hey there, curious developer! 👋</h2>
+                    <p style="
+                        font-size: 24px;
+                        line-height: 1.6;
+                        margin: 0 0 20px 0;
+                        opacity: 0.95;
+                        font-weight: 600;
+                    ">Thanks for being curious!! 🎉</p>
+                    <p style="
+                        font-size: 18px;
+                        line-height: 1.6;
+                        margin: 0 0 20px 0;
+                        opacity: 0.9;
+                    ">You found the secret! 🕵️‍♂️ We love developers who dig into the code and explore how things work.</p>
+                    <p style="
+                        font-size: 18px;
+                        line-height: 1.6;
+                        margin: 0 0 30px 0;
+                        opacity: 0.9;
+                    ">If you have any tips to improve my code, please DM me on X <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="color: #fff; text-decoration: underline; font-weight: 600; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8';" onmouseout="this.style.opacity='1';">@newsnoteworthy</a> - I'd love to hear from you! 💬</p>
+                    <button onclick="document.getElementById('devtools-surprise').remove();" style="
+                        background: white;
+                        color: #667eea;
+                        border: none;
+                        padding: 15px 40px;
+                        font-size: 18px;
+                        font-weight: 600;
+                        border-radius: 50px;
+                        cursor: pointer;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                        transition: transform 0.2s, box-shadow 0.2s;
+                    " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';">
+                        Continue Exploring 🚀
+                    </button>
+                </div>
+            </div>
+            <style>
+                @keyframes surpriseFadeIn {
+                    from {
+                        opacity: 0;
+                        transform: scale(0.9);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                }
+                @keyframes bounce {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-20px); }
+                }
+            </style>
+        `;
+        
+        document.body.appendChild(surprise);
+        
+            // Show cool welcome message in console
+        showConsoleWelcome();
+        
+        // Also log a fun message to console
+        console.log('%c🎉 Surprise! You found the easter egg!', 'font-size: 20px; font-weight: bold; color: #667eea; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);');
+        console.log('%cThanks for being curious!! 👨‍💻', 'font-size: 18px; font-weight: bold; color: #764ba2;');
+        console.log('%cIf you have any tips to improve my code, please DM me on X @newsnoteworthy - I\'d love to hear from you! 💬', 'font-size: 14px; color: #333; line-height: 1.6;');
+        console.log('%c🔗 https://x.com/newsnoteworthy', 'font-size: 14px; color: #667eea; text-decoration: underline;');
+        
+        // Allow closing after 3 seconds
+        setTimeout(() => {
+            surprise.style.cursor = 'pointer';
+            surprise.addEventListener('click', function() {
+                surprise.remove();
+            });
+        }, 3000);
+    }
+}
 
 // Welcome text cycling functionality
 function initWelcomeTextCycling() {
@@ -5980,7 +6291,7 @@ function initBackgroundMusic() {
         updateMusicButtonState();
         // When first track ends, play second track
         if (backgroundMusicSecond) {
-            pauseAllTracks();
+            pauseAllTracks(false); // Don't save state when transitioning automatically
             backgroundMusicSecond.volume = backgroundMusic.volume;
             backgroundMusicSecond.play().catch(err => console.log('Failed to play second track:', err));
         }
@@ -5993,7 +6304,7 @@ function initBackgroundMusic() {
             updateMusicButtonState();
             // When second track ends, play loop track
             if (backgroundMusicLoop) {
-                pauseAllTracks();
+                pauseAllTracks(false); // Don't save state when transitioning automatically
                 backgroundMusicLoop.volume = backgroundMusicSecond.volume;
                 backgroundMusicLoop.play().catch(err => console.log('Failed to play loop track:', err));
             }
@@ -6005,8 +6316,53 @@ function initBackgroundMusic() {
         backgroundMusicLoop.addEventListener('pause', updateMusicButtonState);
     }
     
+    // Function to save current music state before pausing
+    function saveMusicState() {
+        let currentTrack = 'none';
+        let currentTime = 0;
+        
+        // Check which track is currently playing
+        if (backgroundMusic && !backgroundMusic.paused) {
+            currentTrack = 'track1';
+            currentTime = backgroundMusic.currentTime;
+        } else if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
+            currentTrack = 'track2';
+            currentTime = backgroundMusicSecond.currentTime;
+        } else if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+            currentTrack = 'loop';
+            currentTime = backgroundMusicLoop.currentTime;
+        } else {
+            // No track is playing - check which track has progress (was playing before)
+            if (backgroundMusic && backgroundMusic.currentTime > 0 && backgroundMusic.currentTime < (backgroundMusic.duration || Infinity)) {
+                currentTrack = 'track1';
+                currentTime = backgroundMusic.currentTime;
+            } else if (backgroundMusicSecond && backgroundMusicSecond.currentTime > 0 && backgroundMusicSecond.currentTime < (backgroundMusicSecond.duration || Infinity)) {
+                currentTrack = 'track2';
+                currentTime = backgroundMusicSecond.currentTime;
+            } else if (backgroundMusicLoop && backgroundMusicLoop.currentTime > 0) {
+                currentTrack = 'loop';
+                currentTime = backgroundMusicLoop.currentTime;
+            }
+        }
+        
+        // Save to localStorage if we found a track
+        if (currentTrack !== 'none') {
+            localStorage.setItem('globalMusicState', JSON.stringify({
+                track: currentTrack,
+                time: currentTime,
+                timestamp: Date.now()
+            }));
+            console.log('Music state saved:', currentTrack, 'at', currentTime.toFixed(2), 'seconds');
+        }
+    }
+    
     // Function to ensure only one track plays at a time
-    function pauseAllTracks() {
+    function pauseAllTracks(saveState = true) {
+        // Save state before pausing (unless we're resuming)
+        if (saveState) {
+            saveMusicState();
+        }
+        
         if (backgroundMusic && !backgroundMusic.paused) {
             backgroundMusic.pause();
         }
@@ -6018,8 +6374,8 @@ function initBackgroundMusic() {
         }
     }
     
-    function playTrackOnly(track) {
-        pauseAllTracks();
+    function playTrackOnly(track, skipSaveState = false) {
+        pauseAllTracks(!skipSaveState);
         if (track && track.paused) {
             track.play().catch(err => console.log('Failed to start music:', err));
         }
@@ -6032,20 +6388,48 @@ function initBackgroundMusic() {
                              (backgroundMusicSecond && !backgroundMusicSecond.paused) || 
                              (backgroundMusicLoop && !backgroundMusicLoop.paused);
             if (isPlaying) {
-                // Pause all tracks
+                // Muting - save state and pause all tracks
+                saveMusicState();
                 pauseAllTracks();
                 console.log('Background music paused');
             } else {
-                // Play - start with appropriate track based on what has finished
-                if (backgroundMusic.currentTime < (backgroundMusic.duration || Infinity)) {
-                    playTrackOnly(backgroundMusic);
-                    console.log('Background music started');
-                } else if (backgroundMusicSecond && backgroundMusicSecond.currentTime < (backgroundMusicSecond.duration || Infinity)) {
-                    playTrackOnly(backgroundMusicSecond);
-                    console.log('Background second music started');
-                } else if (backgroundMusicLoop) {
-                    playTrackOnly(backgroundMusicLoop);
-                    console.log('Background loop music started');
+                // Unmuting - restore from saved state
+                const savedState = JSON.parse(localStorage.getItem('globalMusicState') || '{}');
+                const trackToResume = savedState.track;
+                const timeToResume = savedState.time || 0;
+                
+                console.log('Attempting to resume:', trackToResume, 'at', timeToResume, 'seconds');
+                
+                // If we have a saved track, resume from that position
+                if (trackToResume === 'track1' && backgroundMusic) {
+                    backgroundMusic.currentTime = timeToResume;
+                    playTrackOnly(backgroundMusic, true); // Skip saving state when resuming
+                    console.log('Background music resumed at', timeToResume.toFixed(2), 'seconds');
+                } else if (trackToResume === 'track2' && backgroundMusicSecond) {
+                    backgroundMusicSecond.currentTime = timeToResume;
+                    playTrackOnly(backgroundMusicSecond, true); // Skip saving state when resuming
+                    console.log('Background second music resumed at', timeToResume.toFixed(2), 'seconds');
+                } else if (trackToResume === 'loop' && backgroundMusicLoop) {
+                    backgroundMusicLoop.currentTime = timeToResume;
+                    playTrackOnly(backgroundMusicLoop, true); // Skip saving state when resuming
+                    console.log('Background loop music resumed at', timeToResume.toFixed(2), 'seconds');
+                } else {
+                    // No saved state - determine which track to play based on current progress
+                    if (backgroundMusic && backgroundMusic.currentTime > 0 && backgroundMusic.currentTime < (backgroundMusic.duration || Infinity)) {
+                        playTrackOnly(backgroundMusic);
+                        console.log('Background music started from current position');
+                    } else if (backgroundMusicSecond && backgroundMusicSecond.currentTime > 0 && backgroundMusicSecond.currentTime < (backgroundMusicSecond.duration || Infinity)) {
+                        playTrackOnly(backgroundMusicSecond);
+                        console.log('Background second music started from current position');
+                    } else if (backgroundMusicLoop && backgroundMusicLoop.currentTime > 0) {
+                        playTrackOnly(backgroundMusicLoop);
+                        console.log('Background loop music started from current position');
+                    } else if (backgroundMusic) {
+                        // All tracks finished - start from beginning
+                        backgroundMusic.currentTime = 0;
+                        playTrackOnly(backgroundMusic);
+                        console.log('Background music started from beginning');
+                    }
                 }
             }
         });
@@ -6615,6 +6999,20 @@ function initNewsletterSubscription() {
 
             // If we got here and response is not ok, all endpoints failed
             if (!response || !response.ok) {
+                // Check if the error message indicates "already subscribed" - treat as success
+                if (data && data.message && (
+                    data.message.toLowerCase().includes('already subscribed') ||
+                    data.message.toLowerCase().includes("you're already subscribed") ||
+                    data.message.toLowerCase().includes('already in') ||
+                    data.alreadySubscribed === true
+                )) {
+                    // User is already subscribed - this is actually success!
+                    clearTimeout(timeoutId);
+                    showNewsletterMessage(data.message || 'You are already subscribed!', 'success');
+                    newsletterInput.value = '';
+                    return; // Exit early, treat as success
+                }
+                
                 // Show detailed error message to help debug
                 let errorMessage = 'Failed to subscribe';
                 
@@ -6643,6 +7041,18 @@ function initNewsletterSubscription() {
                 }
                 
                 throw new Error(errorMessage);
+            }
+            
+            // Check if response indicates "already subscribed" even with 200 status
+            if (data && (data.alreadySubscribed === true || 
+                (data.message && (
+                    data.message.toLowerCase().includes('already subscribed') ||
+                    data.message.toLowerCase().includes("you're already subscribed")
+                )))) {
+                clearTimeout(timeoutId);
+                showNewsletterMessage(data.message || 'You are already subscribed!', 'success');
+                newsletterInput.value = '';
+                return; // Exit early, treat as success
             }
 
             // Success!

@@ -507,23 +507,35 @@
                              (window.subscriptionSound && !window.subscriptionSound.paused);
             
             if (isPlaying) {
-                pauseAllTracks();
+                // Muting - save current state before pausing
                 saveMusicState(true);
+                pauseAllTracks();
                 localStorage.setItem('globalMusicEnabled', 'false');
                 localStorage.setItem('globalMusicPlaying', 'false');
                 return false;
             } else {
-                // Restore from saved state or determine which track to play
-                if (savedTrack !== 'none' && musicWasPlaying) {
-                    playTrackAtTime(savedTrack, savedTime);
+                // Unmuting - restore from saved state
+                const currentState = JSON.parse(localStorage.getItem('globalMusicState') || '{}');
+                const trackToResume = currentState.track || savedTrack;
+                const timeToResume = currentState.time !== undefined ? currentState.time : savedTime;
+                
+                // If we have a saved track and time, resume from there
+                if (trackToResume !== 'none' && trackToResume) {
+                    playTrackAtTime(trackToResume, timeToResume);
                 } else {
-                    // Determine which track to play based on progress
-                    if (backgroundMusic && backgroundMusic.currentTime < (backgroundMusic.duration || Infinity)) {
-                        playTrackOnly(backgroundMusic);
-                    } else if (backgroundMusicSecond && backgroundMusicSecond.currentTime < (backgroundMusicSecond.duration || Infinity)) {
-                        playTrackOnly(backgroundMusicSecond);
-                    } else if (backgroundMusicLoop) {
-                        playTrackOnly(backgroundMusicLoop);
+                    // No saved state - determine which track to play based on current progress
+                    // Check which track has progress (not finished)
+                    if (backgroundMusic && backgroundMusic.currentTime > 0 && backgroundMusic.currentTime < (backgroundMusic.duration || Infinity)) {
+                        playTrackAtTime('track1', backgroundMusic.currentTime);
+                    } else if (backgroundMusicSecond && backgroundMusicSecond.currentTime > 0 && backgroundMusicSecond.currentTime < (backgroundMusicSecond.duration || Infinity)) {
+                        playTrackAtTime('track2', backgroundMusicSecond.currentTime);
+                    } else if (backgroundMusicLoop && backgroundMusicLoop.currentTime > 0) {
+                        playTrackAtTime('loop', backgroundMusicLoop.currentTime);
+                    } else {
+                        // All tracks finished or at start - start from beginning
+                        if (backgroundMusic) {
+                            playTrackAtTime('track1', 0);
+                        }
                     }
                 }
                 localStorage.setItem('globalMusicEnabled', 'true');

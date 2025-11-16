@@ -392,7 +392,7 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
             margin-bottom: 20px;
             position: relative;
-            overflow: hidden;
+            overflow: visible;
             min-height: 600px;
             max-height: 85vh;
         }
@@ -402,15 +402,16 @@
             height: 600px;
             min-height: 400px;
             overflow: hidden;
-            cursor: grab;
+            cursor: default;
             position: relative;
             touch-action: pan-x pan-y !important;
             -webkit-overflow-scrolling: touch;
             background: rgba(26, 74, 138, 0.1);
+            pointer-events: auto;
         }
         
         .world-map:active {
-            cursor: grabbing;
+            cursor: default;
         }
         
         .world-map svg {
@@ -425,9 +426,15 @@
             visibility: visible !important;
             opacity: 1 !important;
             overflow: visible;
+            pointer-events: auto !important;
             /* Allow SVG to be larger than container for panning */
             min-width: 100%;
             min-height: 100%;
+        }
+        
+        .world-map svg path {
+            pointer-events: auto !important;
+            cursor: pointer !important;
         }
         
         .zoom-controls {
@@ -487,11 +494,26 @@
         
         .country-path.correct,
         path.correct {
-            fill: #FFFFFF !important;
-            stroke: #E0E0E0 !important;
+            /* Colors are set dynamically based on attempts - don't force white */
             stroke-width: 3px !important;
             filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.3));
             transition: none !important;
+        }
+        
+        /* Specific attempt-based colors */
+        path.correct[data-attempt="0"] {
+            fill: #FFFFFF !important;
+            stroke: #E0E0E0 !important;
+        }
+        
+        path.correct[data-attempt="1"] {
+            fill: #FFD700 !important;
+            stroke: #FFA500 !important;
+        }
+        
+        path.correct[data-attempt="2"] {
+            fill: #FFB6C1 !important;
+            stroke: #FF6B6B !important;
         }
         
         .country-path.incorrect,
@@ -499,7 +521,7 @@
             fill: #E74C3C !important;
             stroke: #C0392B !important;
             stroke-width: 3px !important;
-            filter: drop-shadow(0 0 8px rgba(231, 76, 60, 0.8)) drop-shadow(0 0 4px rgba(231, 76, 60, 0.6));
+            filter: none !important; /* No glow, just solid red */
             transition: none !important;
         }
         
@@ -518,9 +540,98 @@
             pointer-events: auto;
         }
         
+        /* Game mode selector styles */
+        .btn-mode {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-mode:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+        }
+        
+        /* Guess marker animation */
+        @keyframes pulse-marker {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(1.2);
+            }
+        }
+        
+        #guess-marker {
+            filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.8));
+        }
+        
         path.non-populous:hover {
             fill: #0d5a2a !important;
             opacity: 0.8;
+        }
+        
+        /* Start game button aura effect */
+        .start-button-aura {
+            position: relative;
+            box-shadow: 
+                0 0 20px rgba(74, 144, 226, 0.8),
+                0 0 40px rgba(74, 144, 226, 0.6),
+                0 0 60px rgba(74, 144, 226, 0.4),
+                0 8px 25px rgba(74, 144, 226, 0.5) !important;
+        }
+        
+        @keyframes buttonAura {
+            0%, 100% {
+                box-shadow: 
+                    0 0 20px rgba(74, 144, 226, 0.8),
+                    0 0 40px rgba(74, 144, 226, 0.6),
+                    0 0 60px rgba(74, 144, 226, 0.4),
+                    0 8px 25px rgba(74, 144, 226, 0.5);
+            }
+            50% {
+                box-shadow: 
+                    0 0 30px rgba(74, 144, 226, 1),
+                    0 0 60px rgba(74, 144, 226, 0.8),
+                    0 0 90px rgba(74, 144, 226, 0.6),
+                    0 8px 25px rgba(74, 144, 226, 0.5);
+            }
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
         }
         
         .game-controls {
@@ -866,38 +977,349 @@
         }
         
         .feedback-message {
+            display: none; /* Hide the text notification */
+        }
+        
+        /* Viewport-side flash effects */
+        .viewport-flash {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            width: 100px;
+            z-index: 10000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.1s ease-out;
+        }
+        
+        .viewport-flash.left {
+            left: 0;
+            background: linear-gradient(90deg, 
+                rgba(231, 76, 60, 0.8) 0%,
+                rgba(231, 76, 60, 0.6) 50%,
+                transparent 100%);
+            box-shadow: 0 0 50px rgba(231, 76, 60, 0.6);
+        }
+        
+        .viewport-flash.right {
+            right: 0;
+            background: linear-gradient(270deg, 
+                rgba(231, 76, 60, 0.8) 0%,
+                rgba(231, 76, 60, 0.6) 50%,
+                transparent 100%);
+            box-shadow: 0 0 50px rgba(231, 76, 60, 0.6);
+        }
+        
+        .viewport-flash.left.correct {
+            background: linear-gradient(90deg, 
+                rgba(46, 204, 113, 0.8) 0%,
+                rgba(46, 204, 113, 0.6) 50%,
+                transparent 100%);
+            box-shadow: 0 0 50px rgba(46, 204, 113, 0.6);
+        }
+        
+        .viewport-flash.right.correct {
+            background: linear-gradient(270deg, 
+                rgba(46, 204, 113, 0.8) 0%,
+                rgba(46, 204, 113, 0.6) 50%,
+                transparent 100%);
+            box-shadow: 0 0 50px rgba(46, 204, 113, 0.6);
+        }
+        
+        .viewport-flash.active {
+            opacity: 1;
+            animation: flashPulse 0.4s ease-out;
+        }
+        
+        @keyframes flashPulse {
+            0% {
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .viewport-flash {
+                width: 60px;
+            }
+        }
+        
+        /* Progress Bar */
+        .progress-bar-container {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(74, 144, 226, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+        }
+        
+        .progress-bar-label {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #2ECC71, #27AE60);
+            width: 0%;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+        
+        /* Combo Stat */
+        .stat-combo {
+            border: 2px solid rgba(255, 193, 7, 0.5) !important;
+            background: rgba(255, 193, 7, 0.1) !important;
+        }
+        
+        #geoCombo {
+            color: #FFC107;
+            text-shadow: 0 2px 6px rgba(255, 193, 7, 0.6);
+        }
+        
+        /* Particle Effects */
+        @keyframes particleFloat {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--end-x), var(--end-y)) scale(0);
+                opacity: 0;
+            }
+        }
+        
+        /* Combo Notification */
+        .combo-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.95), rgba(255, 152, 0, 0.95));
+            color: #000;
+            padding: 25px 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(255, 193, 7, 0.6);
+            z-index: 10002;
             text-align: center;
-            font-size: 1.2rem;
-            margin-top: 15px;
+            font-weight: 900;
+            transition: transform 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .combo-notification.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+        
+        .combo-text {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+            line-height: 1.2;
+        }
+        
+        .combo-bonus {
+            font-size: 1.5rem;
+            opacity: 0.9;
+            white-space: nowrap;
+            line-height: 1.3;
+        }
+        
+        /* Country Fact Display */
+        .country-fact-display {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            padding: 22px 28px;
+            background: rgba(15, 15, 35, 0.95);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(74, 144, 226, 0.6);
+            border-radius: 15px;
+            max-width: 480px;
+            width: auto;
+            min-width: 350px;
+            max-height: 380px;
+            overflow-y: auto;
+            opacity: 0;
+            z-index: 10002;
+            pointer-events: auto; /* Allow clicking on source links */
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(74, 144, 226, 0.3);
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .country-fact-display.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .country-fact-header {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #4A90E2;
+            margin-bottom: 10px;
+            line-height: 1.3;
+            word-wrap: break-word;
+        }
+        
+        .country-fact-continent {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 14px;
+            line-height: 1.5;
+        }
+        
+        .country-fact-population,
+        .country-fact-fun-fact,
+        .country-fact-source {
+            margin-bottom: 14px;
+            line-height: 1.7;
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        
+        .fact-label {
+            font-weight: 600;
+            color: rgba(74, 144, 226, 0.9);
+            flex-shrink: 0;
+            white-space: nowrap;
+            min-width: 95px;
+        }
+        
+        .fact-value {
+            color: rgba(255, 255, 255, 0.95);
+            flex: 1;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .country-fact-source {
+            font-size: 0.9rem;
+        }
+        
+        .country-fact-source .fact-value {
+            display: block;
+            width: 100%;
+        }
+        
+        .source-link {
+            color: rgba(74, 144, 226, 1);
+            text-decoration: none;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            transition: color 0.2s ease;
+            display: inline-block;
+            max-width: 100%;
+        }
+        
+        .source-link:hover {
+            color: rgba(74, 144, 226, 0.8);
+            text-decoration: underline;
+        }
+        
+        /* Achievement Notification */
+        .achievement-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.95), rgba(255, 193, 7, 0.95));
+            color: #000;
             padding: 20px;
-            border-radius: 10px;
-            min-height: 50px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(255, 215, 0, 0.5);
+            z-index: 10002;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-width: 300px;
+            transform: translateX(400px);
+            transition: transform 0.5s ease;
+            pointer-events: none;
         }
         
-        .feedback-message.correct {
-            background: linear-gradient(135deg, rgba(46, 204, 113, 0.95), rgba(39, 174, 96, 0.9));
-            color: #FFFFFF;
-            border: 4px solid #27AE60;
-            box-shadow: 0 0 25px rgba(46, 204, 113, 0.7), inset 0 0 15px rgba(46, 204, 113, 0.3);
-            font-weight: 900;
-            font-size: 2rem;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-            letter-spacing: 2px;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+        .achievement-notification.show {
+            transform: translateX(0);
         }
         
-        .feedback-message.incorrect {
-            background: linear-gradient(135deg, rgba(231, 76, 60, 0.95), rgba(192, 57, 43, 0.9));
-            color: #FFFFFF;
-            border: 4px solid #C0392B;
-            box-shadow: 0 0 25px rgba(231, 76, 60, 0.7), inset 0 0 15px rgba(231, 76, 60, 0.3);
+        .achievement-icon {
+            font-size: 3rem;
+        }
+        
+        .achievement-content {
+            flex: 1;
+        }
+        
+        .achievement-name {
+            font-size: 1.3rem;
             font-weight: 900;
+            margin-bottom: 5px;
+        }
+        
+        .achievement-desc {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        /* Hint Display */
+        .hint-display {
+            margin: 15px auto;
+            padding: 15px 20px;
+            background: rgba(255, 193, 7, 0.15);
+            border: 2px solid rgba(255, 193, 7, 0.4);
+            border-radius: 12px;
+            max-width: 600px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.5s ease;
+        }
+        
+        .hint-display.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .hint-icon {
             font-size: 2rem;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-            letter-spacing: 2px;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .hint-content {
+            flex: 1;
+        }
+        
+        .hint-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 5px;
+        }
+        
+        .hint-text {
+            font-size: 1.1rem;
+            color: #FFC107;
+            font-weight: 600;
         }
         
         @media (max-width: 768px) {
@@ -1205,6 +1627,14 @@
                 <p>Click on the country that's prompted. Green = not answered, White = correct, Red = incorrect | <span id="directionsCount">0 / 50</span> correct | ⚡ Speed bonuses for fast answers!</p>
             </div>
             
+            <!-- Progress Bar -->
+            <div class="progress-bar-container">
+                <div class="progress-bar-label">Progress: <span id="progressText">0%</span></div>
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" id="progressBarFill"></div>
+                </div>
+            </div>
+            
             <div class="game-stats-geo">
                 <div class="stat-item-geo stat-timer">
                     <div class="stat-label-geo">⏱️ Time</div>
@@ -1213,6 +1643,10 @@
                 <div class="stat-item-geo">
                     <div class="stat-label-geo">Score</div>
                     <div class="stat-value-geo" id="geoScore">0</div>
+                </div>
+                <div class="stat-item-geo stat-combo" id="comboStat" style="display: none;">
+                    <div class="stat-label-geo">🔥 Combo</div>
+                    <div class="stat-value-geo" id="geoCombo">0x</div>
                 </div>
                 <div class="stat-item-geo">
                     <div class="stat-label-geo">Correct</div>
@@ -1246,6 +1680,10 @@
                     <span class="btn-text">Leaderboard</span>
                 </button>
                 <button class="btn-geo" id="startBtn">Start Game</button>
+                <button class="btn-geo" id="hintBtn" disabled style="display: none;">
+                    <span class="btn-icon">💡</span>
+                    <span class="btn-text">Hint</span>
+                </button>
                 <button class="btn-geo" id="resetBtn" disabled>Reset Game</button>
             </div>
             
@@ -1261,6 +1699,10 @@
             </div>
             
             <div class="feedback-message" id="feedbackMessage"></div>
+            
+            <!-- Viewport flash effects -->
+            <div class="viewport-flash left" id="viewportFlashLeft"></div>
+            <div class="viewport-flash right" id="viewportFlashRight"></div>
             
             <div class="leaderboard-submit-form" id="leaderboardSubmitForm" style="display: none;">
                 <h3>Submit to Leaderboard</h3>
@@ -1408,26 +1850,219 @@
         })();
     </script>
     
-    <!-- Background Music - Shared across all pages -->
-    <audio id="backgroundMusic" preload="metadata">
-        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+    <!-- Background Music - Geography Game Specific (separate from music system) -->
+    <audio id="geoBackgroundMusic" preload="auto" loop>
+        <source src="GEO.wav" type="audio/wav">
         Your browser does not support the audio element.
     </audio>
     
-    <!-- Second track (plays after first) -->
-    <audio id="backgroundMusicSecond" preload="metadata">
+    <!-- Dummy elements for music system (to prevent errors) -->
+    <audio id="backgroundMusic" preload="metadata" style="display: none;">
+        <source src="GEO.wav" type="audio/wav">
+    </audio>
+    <audio id="backgroundMusicSecond" preload="metadata" style="display: none;">
         <source src="YEAHHHHHH.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
     </audio>
-    
-    <!-- Third track (loops after second) -->
-    <audio id="backgroundMusicLoop" preload="metadata" loop>
+    <audio id="backgroundMusicLoop" preload="metadata" loop style="display: none;">
         <source src="Audiolandingpage.m4a" type="audio/mp4">
-        Your browser does not support the audio element.
     </audio>
     
     <!-- Shared Music Manager Script -->
     <script src="music-system.js"></script>
+    <script>
+        // Explicitly start GEO.wav for geography game - independent of music system
+        (function() {
+            const MUSIC_TIME_KEY = 'geoMusicPlaybackTime';
+            const MUSIC_LAST_UPDATE_KEY = 'geoMusicLastUpdate';
+            // No time limit - always restore position to continue seamlessly
+            
+            const startGeoMusic = () => {
+                const geoMusic = document.getElementById('geoBackgroundMusic');
+                if (!geoMusic) {
+                    console.warn('GEO.wav audio element not found');
+                    return;
+                }
+                
+                // Force settings for GEO.wav
+                geoMusic.volume = 0.5;
+                geoMusic.muted = false;
+                geoMusic.loop = true;
+                
+                // Restore playback position from localStorage
+                const restorePlaybackPosition = () => {
+                    try {
+                        const savedTime = localStorage.getItem(MUSIC_TIME_KEY);
+                        
+                        if (savedTime && geoMusic.duration) {
+                            const timeToRestore = parseFloat(savedTime);
+                            // Make sure we don't go beyond the duration
+                            // If the saved time is beyond duration, it means the track looped - use modulo
+                            const actualTime = timeToRestore % geoMusic.duration;
+                            geoMusic.currentTime = actualTime;
+                            console.log(`🎵 Restored GEO.wav playback position: ${actualTime.toFixed(2)}s (from saved: ${timeToRestore.toFixed(2)}s)`);
+                        } else if (savedTime) {
+                            // Duration not loaded yet, save for later restoration
+                            geoMusic.addEventListener('loadedmetadata', () => {
+                                const timeToRestore = parseFloat(savedTime);
+                                const actualTime = timeToRestore % geoMusic.duration;
+                                geoMusic.currentTime = actualTime;
+                                console.log(`🎵 Restored GEO.wav playback position (after metadata load): ${actualTime.toFixed(2)}s`);
+                            }, { once: true });
+                        }
+                    } catch (e) {
+                        console.log('Could not restore playback position:', e);
+                    }
+                };
+                
+                // Save playback position periodically
+                let lastSaveTime = 0;
+                const savePlaybackPosition = () => {
+                    try {
+                        // Save position even when paused, so it can be restored later
+                        // For looping tracks, save the actual currentTime (which resets to 0 on loop)
+                        // This way we always restore to the correct position in the current loop
+                        if (geoMusic.duration) {
+                            // Get the actual position within the current loop
+                            const currentPosition = geoMusic.currentTime % geoMusic.duration;
+                            localStorage.setItem(MUSIC_TIME_KEY, currentPosition.toString());
+                            localStorage.setItem(MUSIC_LAST_UPDATE_KEY, Date.now().toString());
+                            lastSaveTime = Date.now();
+                        } else if (geoMusic.currentTime > 0) {
+                            // Duration not loaded yet, save raw time
+                            localStorage.setItem(MUSIC_TIME_KEY, geoMusic.currentTime.toString());
+                            localStorage.setItem(MUSIC_LAST_UPDATE_KEY, Date.now().toString());
+                            lastSaveTime = Date.now();
+                        }
+                    } catch (e) {
+                        console.log('Could not save playback position:', e);
+                    }
+                };
+                
+                // Handle loop event to ensure seamless looping
+                geoMusic.addEventListener('ended', () => {
+                    // When track ends, it will loop automatically, but we want to save position
+                    // The loop attribute handles the actual looping, this is just for logging
+                    console.log('🎵 GEO.wav looped - continuing playback');
+                });
+                
+                // Set up timeupdate listener to save position every second
+                geoMusic.addEventListener('timeupdate', () => {
+                    // Save every second (timeupdate fires frequently, but we only save every ~1s)
+                    const now = Date.now();
+                    if (now - lastSaveTime >= 1000) {
+                        savePlaybackPosition();
+                    }
+                });
+                
+                // Save position when pausing
+                geoMusic.addEventListener('pause', () => {
+                    savePlaybackPosition();
+                });
+                
+                // Save position when page visibility changes (user switches tabs)
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        savePlaybackPosition();
+                    }
+                });
+                
+                // Save position when page is about to unload
+                window.addEventListener('beforeunload', () => {
+                    savePlaybackPosition();
+                });
+                
+                // Also save on pagehide (more reliable than beforeunload on mobile)
+                window.addEventListener('pagehide', () => {
+                    savePlaybackPosition();
+                });
+                
+                // Function to actually play
+                const playGeo = () => {
+                    if (geoMusic.paused) {
+                        // Restore position before playing
+                        restorePlaybackPosition();
+                        
+                        const playPromise = geoMusic.play();
+                        if (playPromise !== undefined) {
+                            playPromise.then(() => {
+                                console.log('🎵 GEO.wav started playing');
+                                localStorage.setItem('globalMusicPlaying', 'true');
+                                localStorage.setItem('globalMusicEnabled', 'true');
+                            }).catch(err => {
+                                console.log('⚠️ GEO.wav autoplay blocked:', err.message);
+                            });
+                        }
+                    } else {
+                        console.log('🎵 GEO.wav already playing');
+                    }
+                };
+                
+                // Try multiple strategies to start playback
+                const tryPlay = () => {
+                    // Strategy 1: If ready, restore position and play immediately
+                    if (geoMusic.readyState >= 2) {
+                        restorePlaybackPosition();
+                        playGeo();
+                        return;
+                    }
+                    
+                    // Strategy 2: Wait for canplay, then restore and play
+                    geoMusic.addEventListener('canplay', () => {
+                        restorePlaybackPosition();
+                        playGeo();
+                    }, { once: true });
+                    
+                    // Strategy 3: Wait for loadedmetadata to restore position
+                    geoMusic.addEventListener('loadedmetadata', () => {
+                        restorePlaybackPosition();
+                    }, { once: true });
+                    
+                    // Strategy 4: Force load
+                    geoMusic.load();
+                    
+                    // Strategy 5: Try after delay
+                    setTimeout(() => {
+                        if (geoMusic.paused) {
+                            restorePlaybackPosition();
+                            playGeo();
+                        }
+                    }, 300);
+                };
+                
+                // Start trying to play
+                tryPlay();
+                
+                // Also set up interaction listeners as backup
+                const playOnInteraction = () => {
+                    restorePlaybackPosition();
+                    playGeo();
+                    document.removeEventListener('click', playOnInteraction);
+                    document.removeEventListener('touchstart', playOnInteraction);
+                    document.removeEventListener('keydown', playOnInteraction);
+                    document.removeEventListener('mousemove', playOnInteraction);
+                };
+                
+                // Listen for any user interaction
+                document.addEventListener('click', playOnInteraction, { once: true });
+                document.addEventListener('touchstart', playOnInteraction, { once: true });
+                document.addEventListener('keydown', playOnInteraction, { once: true });
+                document.addEventListener('mousemove', playOnInteraction, { once: true });
+                
+                // Note: We don't monitor pause events to avoid conflicts with the music system
+                // The music system will handle pause/play state through its toggle button
+            };
+            
+            // Wait for DOM and music system to initialize
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    // Wait a bit for music system to initialize
+                    setTimeout(startGeoMusic, 200);
+                });
+            } else {
+                setTimeout(startGeoMusic, 200);
+            }
+        })();
+    </script>
 </body>
 </html>
 

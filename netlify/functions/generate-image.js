@@ -251,6 +251,12 @@ exports.handler = async (event, context) => {
 
     // Send email notification (non-blocking - don't wait for it)
     try {
+      // Validate API key exists
+      if (!process.env.RESEND_API_KEY) {
+        console.error("[Generate Image] RESEND_API_KEY environment variable is missing!");
+        throw new Error("RESEND_API_KEY is not configured");
+      }
+      
       const { Resend } = require('resend');
       const resend = new Resend(process.env.RESEND_API_KEY);
       
@@ -274,6 +280,8 @@ exports.handler = async (event, context) => {
         notificationEmails = [process.env.ADMIN_NOTIFICATION_EMAIL || 'richard@noteworthynews.co'];
       }
       
+      console.log(`[Generate Image] Sending email notification to: ${notificationEmails.join(', ')}`);
+      
       const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
       
       const safePrompt = String(prompt.trim())
@@ -285,7 +293,7 @@ exports.handler = async (event, context) => {
         .substring(0, 500);
       
       // Send to all notification emails
-      await Promise.all(notificationEmails.map(email =>
+      const emailResults = await Promise.allSettled(notificationEmails.map(email =>
         resend.emails.send({
           from: fromEmail,
           to: email,
@@ -361,12 +369,24 @@ Image URL: ${imageUrl}
 
 ---
 This is an automated notification from your website.`,
-        }).catch(err => {
-          console.error(`[Generate Image] Failed to send email notification to ${email}:`, err);
         })
-      ));
+      )));
+      
+      // Log results
+      emailResults.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          if (result.value.error) {
+            console.error(`[Generate Image] Email API error for ${notificationEmails[index]}:`, result.value.error);
+          } else {
+            console.log(`[Generate Image] Email sent successfully to ${notificationEmails[index]}:`, result.value.data?.id);
+          }
+        } else {
+          console.error(`[Generate Image] Failed to send email to ${notificationEmails[index]}:`, result.reason);
+        }
+      });
     } catch (emailErr) {
       console.error("[Generate Image] Error sending email notification:", emailErr);
+      console.error("[Generate Image] Error stack:", emailErr.stack);
       // Don't fail the request if email fails
     }
 

@@ -191,6 +191,8 @@ class NoteworthyChat extends HTMLElement {
           line-height: 1.4;
           margin: 0;
           color: rgba(255, 255, 255, 0.7);
+          pointer-events: none;
+          user-select: none;
           letter-spacing: 0.2px;
           text-transform: uppercase;
           font-weight: 600;
@@ -234,6 +236,57 @@ class NoteworthyChat extends HTMLElement {
           line-height: 1.65; 
           background: transparent;
           scroll-behavior: smooth;
+          position: relative;
+        }
+        
+        .body.drag-over {
+          background: rgba(74, 144, 226, 0.1);
+        }
+        
+        .drag-drop-overlay {
+          display: none;
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(74, 144, 226, 0.15);
+          backdrop-filter: blur(4px);
+          border: 3px dashed rgba(74, 144, 226, 0.6);
+          border-radius: 12px;
+          z-index: 1000;
+          align-items: center;
+          justify-content: center;
+          flex-direction: column;
+          gap: 16px;
+          pointer-events: none;
+        }
+        
+        .body.drag-over .drag-drop-overlay {
+          display: flex;
+        }
+        
+        .drag-drop-overlay-icon {
+          font-size: 64px;
+          animation: bounce 1s ease-in-out infinite;
+        }
+        
+        .drag-drop-overlay-text {
+          font-size: 24px;
+          font-weight: 700;
+          color: rgba(255, 255, 255, 0.95);
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .drag-drop-overlay-subtext {
+          font-size: 16px;
+          color: rgba(255, 255, 255, 0.8);
+          font-weight: 500;
+        }
+        
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
         }
         .body::-webkit-scrollbar {
           width: 6px;
@@ -347,38 +400,6 @@ class NoteworthyChat extends HTMLElement {
           display: block;
         }
         
-        .mode-toggle {
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          color: #fff;
-          width: 40px;
-          height: 40px;
-          border-radius: 10px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 18px;
-          transition: all 0.2s;
-          padding: 0;
-          line-height: 1;
-          flex-shrink: 0;
-        }
-        
-        .mode-toggle:hover {
-          background: rgba(255, 255, 255, 0.2);
-          transform: scale(1.1);
-        }
-        
-        .mode-toggle.active {
-          background: rgba(74, 144, 226, 0.3);
-          border-color: #4A90E2;
-        }
-        
-        .mode-toggle #modeIcon {
-          display: block;
-        }
-        
         .input { 
           padding: 16px 20px; 
           border-top: 1px solid rgba(74, 144, 226, 0.1); 
@@ -389,9 +410,12 @@ class NoteworthyChat extends HTMLElement {
           display: flex; 
           gap: 12px; 
           box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
+          position: relative;
+          transition: all 0.3s ease;
         }
         
-        .input input { 
+        
+        .input input[type="text"] { 
           flex: 1; 
           padding: 12px 16px; 
           border: 1.5px solid rgba(74, 144, 226, 0.2); 
@@ -403,7 +427,7 @@ class NoteworthyChat extends HTMLElement {
           color: rgba(255, 255, 255, 0.9);
           transition: all 0.2s;
         }
-        .input input:focus {
+        .input input[type="text"]:focus {
           border-color: rgba(74, 144, 226, 0.5);
           background: rgba(30, 41, 59, 0.8);
           box-shadow: 
@@ -411,8 +435,40 @@ class NoteworthyChat extends HTMLElement {
             0 0 12px rgba(74, 144, 226, 0.2);
           color: #fff;
         }
-        .input input::placeholder {
+        .input input[type="text"]::placeholder {
           color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .input input[type="file"] {
+          display: none;
+        }
+        
+        .file-upload-btn {
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: rgba(255, 255, 255, 0.9);
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+          transition: all 0.2s;
+          padding: 0;
+          line-height: 1;
+          flex-shrink: 0;
+        }
+        
+        .file-upload-btn:hover {
+          background: rgba(255, 255, 255, 0.2);
+          transform: scale(1.1);
+          border-color: rgba(74, 144, 226, 0.4);
+        }
+        
+        .file-upload-btn:active {
+          transform: scale(0.95);
         }
         
         .input button { 
@@ -449,6 +505,75 @@ class NoteworthyChat extends HTMLElement {
         .input button:focus {
           outline: 2px solid rgba(74, 144, 226, 0.5);
           outline-offset: 2px;
+        }
+        
+        .file-preview {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 12px;
+          background: rgba(74, 144, 226, 0.1);
+          border: 1px solid rgba(74, 144, 226, 0.3);
+          border-radius: 8px;
+          margin-bottom: 8px;
+          font-size: 13px;
+          color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .file-preview img {
+          width: 40px;
+          height: 40px;
+          object-fit: cover;
+          border-radius: 6px;
+          border: 1px solid rgba(74, 144, 226, 0.3);
+        }
+        
+        .file-preview .file-info {
+          flex: 1;
+          min-width: 0;
+        }
+        
+        .file-preview .file-name {
+          font-weight: 600;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        
+        .file-preview .file-size {
+          font-size: 11px;
+          opacity: 0.7;
+        }
+        
+        .file-preview .remove-file {
+          background: rgba(255, 107, 107, 0.2);
+          border: 1px solid rgba(255, 107, 107, 0.4);
+          color: #ff6b6b;
+          width: 24px;
+          height: 24px;
+          border-radius: 6px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          transition: all 0.2s;
+          padding: 0;
+          line-height: 1;
+        }
+        
+        .file-preview .remove-file:hover {
+          background: rgba(255, 107, 107, 0.3);
+          transform: scale(1.1);
+        }
+        
+        .user-msg .uploaded-image {
+          max-width: 100%;
+          max-height: 300px;
+          border-radius: 8px;
+          margin: 8px 0;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          display: block;
         }
         
         .resize-handle {
@@ -579,6 +704,9 @@ class NoteworthyChat extends HTMLElement {
         .thinking-icon {
           font-size: 18px;
           flex-shrink: 0;
+          pointer-events: none;
+          user-select: none;
+          cursor: default;
         }
         
         .error {
@@ -1038,14 +1166,18 @@ class NoteworthyChat extends HTMLElement {
         </div>
         
         <div class="body">
-          <p class="tip">Ask about headlines, context, or fact-checks. I'm here to help you stay informed!</p>
+          <div class="drag-drop-overlay">
+            <div class="drag-drop-overlay-icon">📎</div>
+            <div class="drag-drop-overlay-text">Drag and Drop</div>
+            <div class="drag-drop-overlay-subtext">Drop your files here to upload</div>
+          </div>
+          <p class="tip">Ask about headlines, context, or fact-checks. Upload images or documents for analysis. I'm here to help you stay informed!</p>
         </div>
         
         <div class="input">
-          <button type="button" class="mode-toggle" id="modeToggle" aria-label="Toggle between chat and image generation" title="Click to switch between chat and image generation">
-            <span id="modeIcon">💬</span>
-          </button>
-          <input type="text" placeholder="Ask about a story or topic…" aria-label="Your question" id="chatInput" />
+          <input type="file" id="fileInput" accept="image/*,application/pdf,.txt,.doc,.docx" multiple aria-label="Upload file" />
+          <button type="button" class="file-upload-btn" id="fileUploadBtn" aria-label="Upload file" title="Upload file">📎</button>
+          <input type="text" placeholder="Ask a question or describe an image to generate…" aria-label="Your question" id="chatInput" />
           <button type="button" id="sendButton">Send</button>
         </div>
         
@@ -1062,8 +1194,8 @@ class NoteworthyChat extends HTMLElement {
           <div class="tutorial-content">
             <div class="tutorial-step">
               <div class="tutorial-icon">💬</div>
-              <h3>Chat Mode</h3>
-              <p>Ask questions about news, headlines, or get fact-checks. Click the chat icon (💬) to stay in chat mode.</p>
+              <h3>Chat & Questions</h3>
+              <p>Ask questions about news, headlines, or get fact-checks. The AI will automatically respond to your questions.</p>
               <div class="tutorial-example">
                 <strong>Try:</strong> "What's the latest on the breaking news about..."
               </div>
@@ -1072,9 +1204,18 @@ class NoteworthyChat extends HTMLElement {
             <div class="tutorial-step">
               <div class="tutorial-icon">🎨</div>
               <h3>Image Generation</h3>
-              <p>Click the image icon (🎨) to switch to image mode. Describe what you want to see, and AI will create it!</p>
+              <p>Just describe what you want to see! The AI automatically detects when you want an image and generates it for you.</p>
               <div class="tutorial-example">
-                <strong>Try:</strong> "A futuristic cityscape at sunset"
+                <strong>Try:</strong> "Generate an image of a futuristic cityscape at sunset" or "Create a picture of..."
+              </div>
+            </div>
+            
+            <div class="tutorial-step">
+              <div class="tutorial-icon">📎</div>
+              <h3>File Upload & Analysis</h3>
+              <p>Upload images or documents for AI analysis! Click the paperclip (📎) button or drag and drop files into the chat. The AI can analyze images, PDFs, and text documents to help you understand content, verify information, or answer questions about what you've uploaded.</p>
+              <div class="tutorial-example">
+                <strong>Try:</strong> Upload a news screenshot and ask "Is this headline accurate?" or upload a document and ask "What are the key points?"
               </div>
             </div>
             
@@ -1108,14 +1249,17 @@ class NoteworthyChat extends HTMLElement {
     const wrap = this.root.querySelector('.wrap');
     const launcher = this.root.querySelector('.launcher');
     const closeBtn = this.root.querySelector('.close');
-    const input = this.root.querySelector('.input input');
+    const input = this.root.querySelector('#chatInput');
+    const fileInput = this.root.querySelector('#fileInput');
+    const fileUploadBtn = this.root.querySelector('#fileUploadBtn');
     const send = this.root.querySelector('#sendButton');
     const body = this.root.querySelector('.body');
     const head = this.root.querySelector('.head');
     const resizeHandle = this.root.querySelector('.resize-handle');
     const tip = this.root.querySelector('.tip');
-    const modeToggle = this.root.querySelector('#modeToggle');
-    const modeIcon = this.root.querySelector('#modeIcon');
+    
+    // Track uploaded files
+    let uploadedFiles = [];
     
     // Debug: Log if elements are found
     console.log('Noteworthy Chat initialized:', {
@@ -1140,8 +1284,6 @@ class NoteworthyChat extends HTMLElement {
     // Store reference to root for use in nested functions
     const rootRef = this.root;
     
-    // Track current mode: 'chat' or 'image'
-    let currentMode = 'chat';
     const audioToggle = this.root.querySelector('#audioToggle');
     const voiceInputToggle = this.root.querySelector('#voiceInputToggle');
     
@@ -1337,26 +1479,9 @@ class NoteworthyChat extends HTMLElement {
       }, { once: true });
     }
     
-    // Toggle between chat and image generation modes
-    if (modeToggle && modeIcon) {
-      modeToggle.addEventListener('click', () => {
-        currentMode = currentMode === 'chat' ? 'image' : 'chat';
-        
-        if (currentMode === 'image') {
-          modeIcon.textContent = '🎨';
-          modeToggle.classList.add('active');
-          input.placeholder = 'Describe the image you want to generate…';
-          modeToggle.setAttribute('title', 'Click to switch to chat mode');
-        } else {
-          modeIcon.textContent = '💬';
-          modeToggle.classList.remove('active');
-          input.placeholder = 'Ask about a story or topic…';
-          modeToggle.setAttribute('title', 'Click to switch to image generation mode');
-        }
-        
-        input.focus();
-      });
-    }
+    // Image generation is now fully handled by the backend
+    // The backend auto-detects image requests and generates images alongside GPT responses
+    // All messages go through the unified ask() function
 
     const setPos = (x, y) => {
       this.pos = { x, y };
@@ -1647,220 +1772,20 @@ class NoteworthyChat extends HTMLElement {
       launcher.setAttribute('aria-expanded', 'false');
     };
 
-    // Generate image function
-    async function generateImage(prompt) {
-      if (!prompt || !prompt.trim()) {
-        send.disabled = false;
-        return;
-      }
-
-      // Remove tip
-      if (tip && tip.parentNode) {
-        tip.style.display = 'none';
-      }
-
-      // Show user message with avatar
-      const userGroup = document.createElement('div');
-      userGroup.className = 'message-group user-msg-group';
-      userGroup.innerHTML = `
-        <div class="message-avatar">You</div>
-        <div class="message-content">
-          <div class="user-msg">🎨 Generate image: ${prompt.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-        </div>
-      `;
-      body.appendChild(userGroup);
-      body.scrollTop = body.scrollHeight;
-
-      // Update header to show image generation mode
-      const subText = rootRef.querySelector('.sub');
-      let originalSub = null;
-      if (subText) {
-        originalSub = subText.textContent;
-        subText.textContent = '🎨 Generating Image…';
-        subText.style.color = 'rgba(74, 144, 226, 0.9)';
-        subText.style.fontWeight = '700';
-      }
-      
-      // Show thinking indicator with distinctive styling for image generation
-      const thinking = document.createElement('div');
-      
-      // Store original subtitle for restoration
-      if (originalSub) {
-        thinking._originalSub = originalSub;
-      }
-      thinking.className = 'message-group ai-msg-group';
-      thinking.innerHTML = `
-          <div class="message-avatar">
-          <img src="/IMG_5794.PNG" alt="Noteworthy News" />
-        </div>
-        <div class="message-content">
-          <div class="thinking generating-image">
-            <span class="thinking-icon">🎨</span>
-            <span class="spinner"></span>
-            <span><strong>Generating Image…</strong> Creating your image with AI</span>
-          </div>
-        </div>
-      `;
-      body.appendChild(thinking);
-      body.scrollTop = body.scrollHeight;
-
-      try {
-        // Generate image using DALL-E
-        let imageEndpoint = '/.netlify/functions/generate-image';
-        // Handle local development
-        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        if (isLocalhost) {
-          imageEndpoint = 'http://localhost:8888/.netlify/functions/generate-image';
-        }
-        
-        const imageRes = await fetch(imageEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            prompt: prompt,
-            size: "1024x1024",
-            quality: "standard",
-            style: "vivid"
-          }),
-        });
-
-        if (!imageRes.ok) {
-          const errorData = await imageRes.json().catch(() => ({}));
-          throw new Error(errorData.error || errorData.message || `Server error (${imageRes.status})`);
-        }
-
-        const data = await imageRes.json();
-        thinking.remove();
-        
-        // Restore header subtitle
-        const subText = rootRef.querySelector('.sub');
-        if (subText && thinking._originalSub) {
-          subText.textContent = thinking._originalSub;
-          subText.style.color = '';
-          subText.style.fontWeight = '';
-        }
-
-        // Show image with NW logo
-        const aiGroup = document.createElement('div');
-        aiGroup.className = 'message-group ai-msg-group';
-        const replyContent = document.createElement('div');
-        replyContent.className = 'reply';
-        
-        // Create image container with watermark
-        const imageContainer = document.createElement('div');
-        imageContainer.style.cssText = 'position: relative; display: inline-block; max-width: 100%;';
-        
-        const imageEl = document.createElement('img');
-        imageEl.src = data.imageUrl;
-        imageEl.alt = data.revisedPrompt || prompt;
-        imageEl.loading = 'lazy';
-        imageEl.style.cssText = 'max-width: 100%; height: auto; display: block; border-radius: 8px;';
-        imageEl.onerror = function() {
-          this.style.display = 'none';
-          const errorMsg = document.createElement('p');
-          errorMsg.textContent = 'Failed to load image. Please try again.';
-          replyContent.appendChild(errorMsg);
-        };
-        
-        // Create watermark overlay
-        const watermark = document.createElement('div');
-        watermark.style.cssText = `
-          position: absolute;
-          bottom: 12px;
-          right: 12px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: rgba(0, 0, 0, 0.75);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          padding: 6px 10px;
-          border-radius: 20px;
-          font-size: 11px;
-          color: #ffffff;
-          font-weight: 500;
-          z-index: 10;
-          pointer-events: none;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-          line-height: 1.2;
-        `;
-        
-        // Add logo image
-        const logoImg = document.createElement('img');
-        logoImg.src = '/7680cb96-729f-4344-b08a-4f9a2aa314f8.png';
-        logoImg.alt = 'Noteworthy News';
-        logoImg.style.cssText = 'width: 18px; height: 18px; object-fit: contain; flex-shrink: 0;';
-        logoImg.onerror = function() {
-          // If logo fails to load, just hide it
-          this.style.display = 'none';
-        };
-        
-        // Add text
-        const watermarkText = document.createElement('span');
-        watermarkText.textContent = 'generated by Noteworthy AI';
-        watermarkText.style.cssText = 'white-space: nowrap; font-size: 11px;';
-        
-        watermark.appendChild(logoImg);
-        watermark.appendChild(watermarkText);
-        
-        imageContainer.appendChild(imageEl);
-        imageContainer.appendChild(watermark);
-        
-        const promptText = document.createElement('p');
-        promptText.innerHTML = `<strong>Prompt:</strong> ${(data.revisedPrompt || data.prompt || prompt).replace(/</g, '&lt;').replace(/>/g, '&gt;')}`;
-        
-        replyContent.appendChild(imageContainer);
-        replyContent.appendChild(promptText);
-
-        aiGroup.innerHTML = `
-          <div class="message-avatar">
-            <img src="/IMG_5794.PNG" alt="Noteworthy News" />
-          </div>
-          <div class="message-content"></div>
-        `;
-        aiGroup.querySelector('.message-content').appendChild(replyContent);
-        body.appendChild(aiGroup);
-
-        body.scrollTop = body.scrollHeight;
-      } catch (e) {
-        thinking.remove();
-        
-        // Restore header subtitle on error
-        const subText = rootRef.querySelector('.sub');
-        if (subText && thinking && thinking._originalSub) {
-          subText.textContent = thinking._originalSub;
-          subText.style.color = '';
-          subText.style.fontWeight = '';
-        }
-        
-        const aiGroup = document.createElement('div');
-        aiGroup.className = 'message-group ai-msg-group';
-        const err = document.createElement('div');
-        err.className = 'error';
-        err.textContent = e?.message || 'Network error. Please try again.';
-        
-        aiGroup.innerHTML = `
-          <div class="message-avatar">
-            <img src="/IMG_5794.PNG" alt="Noteworthy News" />
-          </div>
-          <div class="message-content"></div>
-        `;
-        aiGroup.querySelector('.message-content').appendChild(err);
-        body.appendChild(aiGroup);
-        body.scrollTop = body.scrollHeight;
-      } finally {
-        send.disabled = false;
-      }
-    }
+    // Image generation is now fully handled by the backend
+    // The generateImage() function has been removed - all messages go through ask()
 
     async function ask() {
       console.log('ask() function called');
       const message = input.value.trim();
-      if (!message) {
-        console.log('Empty message, returning');
+      const hasFiles = uploadedFiles.length > 0;
+      
+      // Allow sending if there's a message OR files
+      if (!message && !hasFiles) {
+        console.log('Empty message and no files, returning');
         return;
       }
-      console.log('Processing message:', message.substring(0, 50));
+      console.log('Processing message:', message ? message.substring(0, 50) : '(no text)', 'Files:', uploadedFiles.length);
       input.value = '';
       send.disabled = true;
 
@@ -1869,23 +1794,57 @@ class NoteworthyChat extends HTMLElement {
         tip.style.display = 'none';
       }
 
-      // Check if we're in image generation mode
-      if (currentMode === 'image') {
-        await generateImage(message);
-        return;
-      }
+      // Note: Image generation is now handled by the backend GPT chat function
+      // The backend auto-detects image requests and generates images alongside GPT responses
+      // So we just send all messages to the unified chat endpoint
 
       // Show user message with avatar
       const userGroup = document.createElement('div');
       userGroup.className = 'message-group user-msg-group';
+      const userMsgContent = document.createElement('div');
+      userMsgContent.className = 'user-msg';
+      
+      // Add uploaded images/files to message
+      if (uploadedFiles.length > 0) {
+        uploadedFiles.forEach(file => {
+          if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const img = document.createElement('img');
+              img.src = e.target.result;
+              img.className = 'uploaded-image';
+              img.alt = file.name;
+              userMsgContent.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      }
+      
+      // Add text message
+      if (message) {
+        const textNode = document.createElement('div');
+        textNode.textContent = message;
+        userMsgContent.appendChild(textNode);
+      }
+      
       userGroup.innerHTML = `
         <div class="message-avatar">You</div>
-        <div class="message-content">
-          <div class="user-msg">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-        </div>
+        <div class="message-content"></div>
       `;
+      userGroup.querySelector('.message-content').appendChild(userMsgContent);
       body.appendChild(userGroup);
       body.scrollTop = body.scrollHeight;
+      
+      // Store files for sending
+      const filesToSend = [...uploadedFiles];
+      
+      // Clear uploaded files after displaying
+      uploadedFiles = [];
+      const previewContainer = this.root.querySelector('.file-preview-container');
+      if (previewContainer) {
+        previewContainer.remove();
+      }
 
       // Update header to show thinking mode
       const subText = rootRef.querySelector('.sub');
@@ -1948,15 +1907,47 @@ class NoteworthyChat extends HTMLElement {
         let res;
         let lastError = null;
         
+        // Prepare request body with files
+        let requestBody;
+        let headers = { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        };
+        
+        if (filesToSend.length > 0) {
+          // Convert files to base64 for JSON
+          const filePromises = filesToSend.map(file => {
+            return new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const base64 = e.target.result.split(',')[1];
+                resolve({
+                  name: file.name,
+                  type: file.type,
+                  size: file.size,
+                  data: base64
+                });
+              };
+              reader.readAsDataURL(file);
+            });
+          });
+          
+          const fileData = await Promise.all(filePromises);
+          requestBody = JSON.stringify({ 
+            message: message || '',
+            files: fileData
+          });
+        } else {
+          // Regular JSON request
+          requestBody = JSON.stringify({ message });
+        }
+        
         // Try primary endpoint
         try {
           res = await fetch(apiEndpoint, {
             method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            body: JSON.stringify({ message }),
+            headers: headers,
+            body: requestBody,
           });
           console.log('Fetch response:', { ok: res.ok, status: res.status, statusText: res.statusText });
         } catch (fetchError) {
@@ -1970,11 +1961,8 @@ class NoteworthyChat extends HTMLElement {
             try {
               res = await fetch(apiEndpoint, {
                 method: 'POST',
-                headers: { 
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json'
-                },
-                body: JSON.stringify({ message }),
+                headers: headers,
+                body: requestBody,
               });
               console.log('Redirect path response:', { ok: res.ok, status: res.status });
             } catch (redirectError) {
@@ -1988,11 +1976,8 @@ class NoteworthyChat extends HTMLElement {
             try {
               res = await fetch(apiEndpoint, {
                 method: 'POST',
-                headers: { 
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json'
-                },
-                body: JSON.stringify({ message }),
+                headers: headers,
+                body: requestBody,
               });
               console.log('Redirect path response:', { ok: res.ok, status: res.status });
             } catch (redirectError) {
@@ -2089,6 +2074,33 @@ class NoteworthyChat extends HTMLElement {
         const replyContent = document.createElement('div');
         replyContent.className = 'reply';
         replyContent.innerHTML = text.split('\n').filter(l => l.trim()).map(l => `<p>${l}</p>`).join('');
+
+        // If image was generated, add it to the response
+        if (data.image && data.image.imageUrl) {
+          const imageEl = document.createElement('img');
+          imageEl.src = data.image.imageUrl;
+          imageEl.alt = data.image.revisedPrompt || data.image.prompt || 'Generated image';
+          imageEl.loading = 'lazy';
+          imageEl.style.cssText = 'max-width: 100%; border-radius: 8px; margin: 12px 0; box-shadow: 0 4px 12px rgba(0,0,0,.3); display: block;';
+          imageEl.onerror = function() {
+            this.style.display = 'none';
+            const errorMsg = document.createElement('p');
+            errorMsg.textContent = 'Failed to load image. Please try again.';
+            errorMsg.style.color = 'rgba(255, 100, 100, 0.9)';
+            replyContent.appendChild(errorMsg);
+          };
+          
+          // Insert image before the text
+          replyContent.insertBefore(imageEl, replyContent.firstChild);
+          
+          // Add prompt info below image
+          if (data.image.revisedPrompt || data.image.prompt) {
+            const promptText = document.createElement('p');
+            promptText.style.cssText = 'font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 8px; font-style: italic;';
+            promptText.innerHTML = `<strong>Prompt:</strong> ${(data.image.revisedPrompt || data.image.prompt).replace(/</g, '&lt;').replace(/>/g, '&gt;')}`;
+            replyContent.insertBefore(promptText, replyContent.children[1] || null);
+          }
+        }
 
         aiGroup.innerHTML = `
           <div class="message-avatar">
@@ -2189,6 +2201,150 @@ class NoteworthyChat extends HTMLElement {
       }
     }
 
+    // Function to handle file processing (used by both file input and drag & drop)
+    const handleFiles = (files) => {
+      if (!files || files.length === 0) return;
+      
+      Array.from(files).forEach(file => {
+        // Check file size (max 20MB)
+        if (file.size > 20 * 1024 * 1024) {
+          alert(`File "${file.name}" is too large. Maximum size is 20MB.`);
+          return;
+        }
+        
+        uploadedFiles.push(file);
+        
+        // Create file preview
+        const preview = document.createElement('div');
+        preview.className = 'file-preview';
+        preview.dataset.fileName = file.name;
+        
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            preview.appendChild(img);
+          };
+          reader.readAsDataURL(file);
+        } else {
+          const icon = document.createElement('span');
+          icon.textContent = '📄';
+          icon.style.fontSize = '24px';
+          preview.appendChild(icon);
+        }
+        
+        const fileInfo = document.createElement('div');
+        fileInfo.className = 'file-info';
+        const fileName = document.createElement('div');
+        fileName.className = 'file-name';
+        fileName.textContent = file.name;
+        const fileSize = document.createElement('div');
+        fileSize.className = 'file-size';
+        fileSize.textContent = formatFileSize(file.size);
+        fileInfo.appendChild(fileName);
+        fileInfo.appendChild(fileSize);
+        preview.appendChild(fileInfo);
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-file';
+        removeBtn.textContent = '×';
+        removeBtn.setAttribute('aria-label', 'Remove file');
+        removeBtn.onclick = () => {
+          uploadedFiles = uploadedFiles.filter(f => f !== file);
+          preview.remove();
+          updateFilePreviewContainer();
+        };
+        preview.appendChild(removeBtn);
+        
+        // Insert preview before input area
+        const inputContainer = this.root.querySelector('.input');
+        if (inputContainer) {
+          // Check if file preview container exists
+          let previewContainer = this.root.querySelector('.file-preview-container');
+          if (!previewContainer) {
+            previewContainer = document.createElement('div');
+            previewContainer.className = 'file-preview-container';
+            previewContainer.style.cssText = 'padding: 0 20px 8px 20px; max-height: 200px; overflow-y: auto;';
+            inputContainer.parentNode.insertBefore(previewContainer, inputContainer);
+          }
+          previewContainer.appendChild(preview);
+          updateFilePreviewContainer();
+        }
+      });
+    };
+    
+    // File upload handling
+    if (fileUploadBtn && fileInput) {
+      fileUploadBtn.addEventListener('click', () => {
+        fileInput.click();
+      });
+      
+      fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+        // Reset file input
+        fileInput.value = '';
+      });
+    }
+    
+    // Drag and drop handling on the main chat body
+    if (body) {
+      // Prevent default drag behaviors
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        body.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }, false);
+      });
+      
+      // Highlight drop zone when item is dragged over it
+      body.addEventListener('dragenter', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          body.classList.add('drag-over');
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          body.classList.remove('drag-over');
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        body.classList.remove('drag-over');
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = this.root.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
     // Attach event handlers with error checking
     if (send) {
       send.onclick = (e) => {

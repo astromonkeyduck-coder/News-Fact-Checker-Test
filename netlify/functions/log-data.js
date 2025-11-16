@@ -61,6 +61,20 @@ function logsToCSV(logs) {
       { key: 'data.aiResponse', name: 'AI Response' },
       { key: 'data.model', name: 'AI Model' },
       { key: 'data.endpoint', name: 'Chat Endpoint' },
+      { key: 'data.fileCount', name: 'Files Uploaded' },
+      { key: 'data.imageCount', name: 'Images Uploaded' },
+      { key: 'data.uploadedFiles', name: 'File Details', transform: (val) => {
+        if (!val || !Array.isArray(val)) return '';
+        return val.map(f => {
+          const details = `${f.name} (${f.type}, ${(f.size / 1024).toFixed(1)}KB)`;
+          const stored = f.storedImageUrl ? ` [Stored: ${f.storedImageUrl}]` : '';
+          return details + stored;
+        }).join('; ');
+      }},
+      { key: 'data.storedImages', name: 'Stored Images', transform: (val) => {
+        if (!val || !Array.isArray(val)) return '';
+        return val.map(img => `${img.originalName} -> ${img.storedImageUrl}`).join('; ');
+      }},
       { key: 'data.usage.prompt_tokens', name: 'Input Tokens' },
       { key: 'data.usage.completion_tokens', name: 'Output Tokens' },
       { key: 'data.usage.total_tokens', name: 'Total Tokens' },
@@ -96,6 +110,13 @@ function logsToCSV(logs) {
       { key: 'data.tipLength', name: 'Tip Length' },
       { key: 'data.notificationSent', name: 'Notification Sent' },
       { key: 'data.confirmationSent', name: 'Confirmation Sent' },
+    ],
+    'devtools-opened': [
+      { key: 'data.pageUrl', name: 'Page URL' },
+      { key: 'data.pageTitle', name: 'Page Title' },
+      { key: 'data.detectionMethod', name: 'Detection Method' },
+      { key: 'data.userAgent', name: 'User Agent' },
+      { key: 'data.referrer', name: 'Referrer' },
     ],
   };
 
@@ -184,6 +205,11 @@ function logsToCSV(logs) {
       } else {
         // Get from log root
         value = log[col.key];
+      }
+      
+      // Apply transform function if provided
+      if (col.transform && typeof col.transform === 'function') {
+        value = col.transform(value);
       }
       
       return `"${formatValue(value)}"`;
@@ -278,7 +304,7 @@ async function logData(dataType, data, event = null) {
         
         for (const dateKey of dateKeys) {
           try {
-            const logsKey = `logs-${dateKey}`;
+          const logsKey = `logs-${dateKey}`;
             const existing = await store.get(logsKey, { type: "json" });
             if (existing && Array.isArray(existing)) {
               // Find logs with EXACT fingerprint match that have an email
@@ -374,7 +400,7 @@ async function logData(dataType, data, event = null) {
     if (isGoogleAd) {
       return { success: false, skipped: true, reason: 'Google ads logs are not logged' };
     }
-    
+
     // Create log entry
     const logEntry = {
       dataType,
@@ -389,28 +415,86 @@ async function logData(dataType, data, event = null) {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     };
     
-    // Check for location alerts (Gainesville FL, Boca Raton, PA, Canada, Auburn)
+    // Check if IP should be excluded from alerts (e.g., your own IP, friends, etc.)
+    const shouldExcludeIP = (() => {
+      if (!ip || ip === 'unknown') return false;
+      
+      // Get excluded IPs from environment variable (comma-separated or JSON array)
+      let excludedIPs = [];
+      if (process.env.EXCLUDED_ALERT_IPS) {
+        try {
+          excludedIPs = JSON.parse(process.env.EXCLUDED_ALERT_IPS);
+          if (!Array.isArray(excludedIPs)) {
+            throw new Error('Not an array');
+          }
+        } catch {
+          // If not JSON, treat as comma-separated string
+          excludedIPs = process.env.EXCLUDED_ALERT_IPS.split(',').map(ip => ip.trim()).filter(ip => ip);
+        }
+      }
+      
+      // Check if current IP matches any excluded IP (supports partial matches for dynamic IPs)
+      return excludedIPs.some(excludedIP => {
+        const excluded = excludedIP.trim();
+        // Exact match
+        if (ip === excluded) return true;
+        // Partial match (for dynamic IPs that change but stay in same range)
+        // e.g., "192.168.1" would match "192.168.1.100", "192.168.1.101", etc.
+        if (excluded.includes('.') && ip.startsWith(excluded)) return true;
+        return false;
+      });
+    })();
+    
+    // Check for location alerts (College/University locations for admissions tracking)
     let shouldAlert = false;
     let alertType = null;
     
-    if (location && location.city) {
+    // Skip alert check if IP is excluded
+    if (shouldExcludeIP) {
+      console.log(`[Data Log] IP ${ip} is excluded from location alerts`);
+    } else if (location && location.city) {
       const cityLower = location.city.toLowerCase();
       const regionLower = (location.region || '').toLowerCase();
       const countryLower = (location.country || '').toLowerCase();
       
+      // University of Florida (UF) - Gainesville, FL
       const isGainesville = cityLower.includes('gainesville') && (regionLower.includes('florida') || regionLower.includes('fl'));
+      // Florida Atlantic University (FAU) - Boca Raton, FL
       const isBocaRaton = (cityLower.includes('boca') && cityLower.includes('raton')) && (regionLower.includes('florida') || regionLower.includes('fl'));
-      const isPennsylvania = regionLower.includes('pennsylvania') || regionLower === 'pa' || countryLower.includes('pennsylvania');
-      const isCanada = countryLower.includes('canada') || countryLower === 'ca';
-      const isAuburn = cityLower.includes('auburn');
+      // Rollins College - Winter Park, FL
+      const isWinterPark = (cityLower.includes('winter') && cityLower.includes('park')) && (regionLower.includes('florida') || regionLower.includes('fl'));
+      // Clemson University - Clemson, SC
+      const isClemson = cityLower.includes('clemson') && (regionLower.includes('south carolina') || regionLower.includes('sc'));
+      // Florida State University (FSU) - Tallahassee, FL
+      const isTallahassee = cityLower.includes('tallahassee') && (regionLower.includes('florida') || regionLower.includes('fl'));
+      // University of Miami - Coral Gables, FL
+      const isCoralGables = (cityLower.includes('coral') && cityLower.includes('gables')) && (regionLower.includes('florida') || regionLower.includes('fl'));
+      // University of Virginia (UVA) - Charlottesville, VA
+      const isCharlottesville = cityLower.includes('charlottesville') && (regionLower.includes('virginia') || regionLower === 'va');
+      // Wake Forest University - Winston-Salem, NC
+      const isWinstonSalem = (cityLower.includes('winston') && cityLower.includes('salem')) && (regionLower.includes('north carolina') || regionLower.includes('nc'));
+      // Auburn University - Auburn, AL
+      const isAuburn = cityLower.includes('auburn') && (regionLower.includes('alabama') || regionLower.includes('al'));
       
-      if (isGainesville || isBocaRaton || isPennsylvania || isCanada || isAuburn) {
+      // Also check for Pennsylvania and Canada (general locations)
+      const isPennsylvania = regionLower.includes('pennsylvania') || regionLower === 'pa';
+      const isCanada = countryLower.includes('canada');
+      
+      if (isGainesville || isBocaRaton || isWinterPark || isClemson || isTallahassee || 
+          isCoralGables || isCharlottesville || isWinstonSalem || isAuburn ||
+          isPennsylvania || isCanada) {
         shouldAlert = true;
-        if (isGainesville) alertType = 'Gainesville FL';
-        else if (isBocaRaton) alertType = 'Boca Raton FL';
+        if (isGainesville) alertType = 'Gainesville FL (UF)';
+        else if (isBocaRaton) alertType = 'Boca Raton FL (FAU)';
+        else if (isWinterPark) alertType = 'Winter Park FL (Rollins College)';
+        else if (isClemson) alertType = 'Clemson SC (Clemson University)';
+        else if (isTallahassee) alertType = 'Tallahassee FL (FSU)';
+        else if (isCoralGables) alertType = 'Coral Gables FL (University of Miami)';
+        else if (isCharlottesville) alertType = 'Charlottesville VA (UVA)';
+        else if (isWinstonSalem) alertType = 'Winston-Salem NC (Wake Forest)';
+        else if (isAuburn) alertType = 'Auburn AL (Auburn University)';
         else if (isPennsylvania) alertType = 'Pennsylvania';
         else if (isCanada) alertType = 'Canada';
-        else if (isAuburn) alertType = 'Auburn';
       }
     }
     
@@ -459,8 +543,12 @@ async function logData(dataType, data, event = null) {
         // Send email notification for page views from these locations (non-blocking)
         if (dataType === 'page-view') {
           try {
-            const { Resend } = require('resend');
-            const resend = new Resend(process.env.RESEND_API_KEY);
+            // Check if Resend API key is configured before initializing
+            if (!process.env.RESEND_API_KEY) {
+              console.warn('[Data Log] RESEND_API_KEY not configured. Skipping location alert email notification.');
+            } else {
+              const { Resend } = require('resend');
+              const resend = new Resend(process.env.RESEND_API_KEY);
             
             // Get notification emails from environment variable
             let notificationEmails = [];
@@ -561,12 +649,135 @@ This is an automated notification from your website.`,
             )).catch(err => {
               console.error("[Data Log] Error sending location alert emails:", err);
             });
+            }
           } catch (emailErr) {
             console.error("[Data Log] Error setting up location alert emails:", emailErr);
           }
         }
       } catch (alertErr) {
         console.error("[Data Log] Error storing alert:", alertErr);
+      }
+    }
+    
+    // Send email notification for DevTools detection (non-blocking)
+    if (dataType === 'devtools-opened') {
+      try {
+        // Check if Resend API key is configured before initializing
+        if (!process.env.RESEND_API_KEY) {
+          console.warn('[Data Log] RESEND_API_KEY not configured. Skipping DevTools detection email notification.');
+        } else {
+          const { Resend } = require('resend');
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          
+          // Get notification emails from environment variable
+          let notificationEmails = [];
+          if (process.env.AI_NOTIFICATION_EMAILS) {
+            try {
+              notificationEmails = JSON.parse(process.env.AI_NOTIFICATION_EMAILS);
+              if (!Array.isArray(notificationEmails)) {
+                throw new Error('Not an array');
+              }
+            } catch {
+              notificationEmails = process.env.AI_NOTIFICATION_EMAILS.split(',').map(e => e.trim()).filter(e => e);
+            }
+          }
+          
+          if (notificationEmails.length === 0) {
+            notificationEmails = [process.env.ADMIN_NOTIFICATION_EMAIL || 'richard@noteworthynews.co'];
+          }
+          
+          const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
+          
+          const pageUrl = data.pageUrl || data.url || data.path || 'Unknown page';
+          const pageTitle = data.pageTitle || data.title || 'Unknown page';
+          const detectionMethod = data.detectionMethod || 'unknown';
+          
+          console.log(`[Data Log] 🔍 DevTools detected! Sending email notification...`);
+          
+          // Send to all notification emails
+          Promise.all(notificationEmails.map(email =>
+            resend.emails.send({
+              from: fromEmail,
+              to: email,
+              subject: `🔍 Someone Opened DevTools on Your Site`,
+              html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 10px 10px 0 0;">
+              <h2 style="color: #667eea; margin: 0; font-size: 24px; font-weight: bold;">🔍 DevTools Detected!</h2>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 30px; background-color: #ffffff;">
+              <div style="padding: 20px; background: rgba(102, 126, 234, 0.1); border-left: 4px solid #667eea; border-radius: 8px; margin-bottom: 20px;">
+                <p style="color: #667eea; font-size: 16px; font-weight: bold; margin: 0 0 10px 0;">👨‍💻 A curious developer opened the browser DevTools!</p>
+                <p style="color: #333333; font-size: 14px; line-height: 1.6; margin: 0;">Thanks for being curious!! 🎉 If they have any tips to improve the code, they can DM on X <a href="https://x.com/newsnoteworthy" style="color: #667eea; text-decoration: none; font-weight: 600;">@newsnoteworthy</a></p>
+              </div>
+              
+              <div style="padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: 2px solid #4A90E2; border-radius: 8px; margin-bottom: 20px;">
+                <p style="color: #333333; font-size: 16px; margin: 10px 0; line-height: 1.6;"><strong style="color: #4A90E2;">📄 Page:</strong><br><span style="color: #666666; font-size: 15px;">${pageTitle}</span></p>
+                <p style="color: #333333; font-size: 14px; margin: 5px 0; word-break: break-all;"><a href="${pageUrl}" style="color: #4A90E2; text-decoration: none;">${pageUrl}</a></p>
+              </div>
+              
+              ${userEmail ? `
+              <div style="padding: 15px; background: rgba(46, 204, 113, 0.1); border-left: 4px solid #2ecc71; border-radius: 6px; margin-bottom: 20px;">
+                <p style="color: #333333; font-size: 16px; margin: 0; line-height: 1.6;"><strong style="color: #2ecc71;">👤 User Email:</strong> <span style="color: #666666; font-weight: 600;">${userEmail}</span></p>
+              </div>
+              ` : ''}
+              
+              <div style="padding: 15px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: 2px solid #4A90E2; border-radius: 8px;">
+                <p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">🌐 IP Address:</strong> <span style="color: #666666;">${ip}</span></p>
+                <p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">📅 Time:</strong> <span style="color: #666666;">${new Date().toLocaleString()}</span></p>
+                <p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">🔍 Detection Method:</strong> <span style="color: #666666;">${detectionMethod}</span></p>
+                ${data.referrer ? `<p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">🔙 Referrer:</strong> <span style="color: #666666;">${data.referrer.substring(0, 100)}</span></p>` : ''}
+                ${location && location.city ? `<p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">📍 Location:</strong> <span style="color: #666666;">${location.city}${location.region ? ', ' + location.region : ''}${location.country ? ', ' + location.country : ''}</span></p>` : ''}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 30px 30px 30px; background-color: #ffffff; border-radius: 0 0 10px 10px;">
+              <p style="color: #999999; font-size: 13px; margin: 0; line-height: 1.5; text-align: center;">This is an automated notification from your website.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+              text: `DevTools Detected!
+
+Someone opened the browser DevTools on your site.
+
+Page: ${pageTitle}
+URL: ${pageUrl}
+${userEmail ? `User Email: ${userEmail}\n` : ''}
+IP Address: ${ip}
+Time: ${new Date().toLocaleString()}
+Detection Method: ${detectionMethod}
+${data.referrer ? `Referrer: ${data.referrer}\n` : ''}
+${location && location.city ? `Location: ${location.city}${location.region ? ', ' + location.region : ''}${location.country ? ', ' + location.country : ''}\n` : ''}
+
+---
+This is an automated notification from your website.`,
+            }).catch(err => {
+              console.error(`[Data Log] Failed to send DevTools detection email to ${email}:`, err);
+            })
+          )).catch(err => {
+            console.error("[Data Log] Error sending DevTools detection emails:", err);
+          });
+        }
+      } catch (emailErr) {
+        console.error("[Data Log] Error setting up DevTools detection emails:", emailErr);
       }
     }
     
