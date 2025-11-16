@@ -38,6 +38,7 @@ try {
   // Find and replace the Last Update line
   // Pattern: Last Update: [any date/time format]
   const lastUpdatePattern = /Last Update:\s*[^<]+/;
+  const scheduledMaintenancePattern = /Scheduled Maintenance:\s*[^<]+/;
   const newLastUpdate = `Last Update: ${getFormattedDate()}`;
   
   if (lastUpdatePattern.test(content)) {
@@ -59,9 +60,21 @@ try {
     // Write back to file
     fs.writeFileSync(indexHtmlPath, content, 'utf8');
     console.log(`✅ Updated Last Update timestamp to: ${getFormattedDate()}`);
+  } else if (scheduledMaintenancePattern.test(content)) {
+    // If Scheduled Maintenance is found, don't update it (it has a specific date)
+    // Just update the app-version meta tag
+    const versionMetaPattern = /<meta name="app-version" content="[^"]*">/;
+    const newVersionMeta = `<meta name="app-version" content="${getFormattedDate()}">`;
+    if (versionMetaPattern.test(content)) {
+      content = content.replace(versionMetaPattern, newVersionMeta);
+      fs.writeFileSync(indexHtmlPath, content, 'utf8');
+      console.log(`✅ Found Scheduled Maintenance (not updating), updated app-version to: ${getFormattedDate()}`);
+    } else {
+      console.log('ℹ️  Found Scheduled Maintenance (not updating date)');
+    }
   } else {
-    console.warn('⚠️  Could not find "Last Update" pattern in index.html');
-    process.exit(1);
+    console.warn('⚠️  Could not find "Last Update" or "Scheduled Maintenance" pattern in index.html');
+    // Don't fail the build, just warn
   }
 } catch (error) {
   console.error('❌ Error updating Last Update timestamp:', error.message);
