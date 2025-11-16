@@ -5064,9 +5064,6 @@ document.addEventListener("DOMContentLoaded", function() {
     // Initialize newsletter subscription
     initNewsletterSubscription();
     
-    // Initialize DevTools detection easter egg
-    initDevToolsSurprise();
-    
     // Show console welcome message on page load (will appear when console is opened)
     // Also set up to show when console opens
     let consoleWelcomeShown = false;
@@ -5116,7 +5113,8 @@ function showConsoleWelcome() {
     console.log('%c' + '═'.repeat(60), 'font-size: 1px; color: #ddd;');
 }
 
-// DevTools Detection Easter Egg - Leave a surprise for curious developers!
+// DevTools Detection Easter Egg - REMOVED
+/*
 function initDevToolsSurprise() {
     let surpriseShown = false;
     let pageLoaded = false;
@@ -5431,6 +5429,7 @@ function initDevToolsSurprise() {
         console.log('%c🔗 https://x.com/newsnoteworthy', 'font-size: 14px; color: #667eea; text-decoration: underline;');
     }
 }
+*/
 
 // Welcome text cycling functionality
 function initWelcomeTextCycling() {
@@ -7866,6 +7865,7 @@ function initNewsletterSubscription() {
     const aiThinking = document.getElementById('ai-thinking');
     const refreshBtn = document.getElementById('refresh-spotlight-btn');
     const retryBtn = document.getElementById('retry-spotlight-btn');
+    const remainingDisplay = document.getElementById('spotlight-remaining');
     
     if (!spotlightContainer) return; // Exit if section doesn't exist
     
@@ -7875,6 +7875,8 @@ function initNewsletterSubscription() {
     let savedSpotlightMusicState = null; // Save spotlight music position
     let isSpotlightVisible = false;
     let isRestoring = false; // Flag to prevent multiple restore attempts
+    let isGenerating = false; // Flag to prevent multiple simultaneous generations
+    let cooldownUntil = 0; // Timestamp when cooldown expires
     
     // Storage keys
     const STORAGE_KEY = 'spotlight_data';
@@ -8457,6 +8459,12 @@ function initNewsletterSubscription() {
     // Load spotlight country and AI content
     async function loadSpotlight(forceNew = false) {
         try {
+            // Prevent multiple simultaneous generations
+            if (isGenerating) {
+                console.log('Already generating, please wait...');
+                return;
+            }
+            
             // If not forcing new, try to restore from saved data
             if (!forceNew && !isRestoring) {
                 isRestoring = true; // Set flag to prevent multiple restore attempts
@@ -8467,6 +8475,7 @@ function initNewsletterSubscription() {
                     if (restored) {
                         console.log('✅ Restored spotlight from saved data - skipping API calls');
                         isRestoring = false;
+                        updateButtonStates(); // Update button states after restore
                         return; // Exit early - don't generate new content
                     } else {
                         console.log('⚠️ Failed to restore spotlight, will generate new');
@@ -8502,8 +8511,13 @@ function initNewsletterSubscription() {
                     }
                 }
                 
+                updateButtonStates();
                 return;
             }
+            
+            // Set generating flag
+            isGenerating = true;
+            updateButtonStates();
             
             // Show loading state
             spotlightLoading.style.display = 'block';
@@ -8627,6 +8641,10 @@ IMPORTANT REQUIREMENTS:
                    // Increment rate limit counter after successful generation
                    incrementRateLimit();
                    
+                   // Set 15-second cooldown
+                   cooldownUntil = Date.now() + (15 * 1000);
+                   startCooldownTimer();
+                   
                    // Check if we've reached the limit and hide section
                    const newRateLimit = checkRateLimit();
                    if (!newRateLimit.allowed) {
@@ -8643,32 +8661,158 @@ IMPORTANT REQUIREMENTS:
             if (aiResponse) {
                 aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Unable to load all content. Some images may be missing.</p>';
             }
+        } finally {
+            // Always clear generating flag and update button states
+            isGenerating = false;
+            updateButtonStates();
         }
+    }
+    
+    // Update remaining generations display
+    function updateRemainingDisplay() {
+        if (!remainingDisplay) return;
+        
+        const rateLimit = checkRateLimit();
+        const remainingText = remainingDisplay.querySelector('.remaining-text');
+        
+        if (!remainingText) return;
+        
+        if (!rateLimit.allowed) {
+            remainingText.textContent = '❌ Daily limit reached - Come back tomorrow!';
+            remainingDisplay.style.background = 'rgba(231, 76, 60, 0.2)';
+            remainingDisplay.style.borderColor = 'rgba(231, 76, 60, 0.4)';
+        } else {
+            const remaining = rateLimit.remaining;
+            if (remaining === RATE_LIMIT_COUNT) {
+                remainingText.textContent = `✨ ${remaining} generation${remaining !== 1 ? 's' : ''} available today`;
+            } else if (remaining > 0) {
+                remainingText.textContent = `✨ ${remaining} generation${remaining !== 1 ? 's' : ''} remaining today`;
+            } else {
+                remainingText.textContent = '❌ No generations remaining today';
+            }
+            remainingDisplay.style.background = 'rgba(74, 144, 226, 0.2)';
+            remainingDisplay.style.borderColor = 'rgba(74, 144, 226, 0.4)';
+        }
+    }
+    
+    // Enable/disable buttons based on state
+    function updateButtonStates() {
+        const now = Date.now();
+        const rateLimit = checkRateLimit();
+        const inCooldown = now < cooldownUntil;
+        const disabled = isGenerating || inCooldown || !rateLimit.allowed;
+        
+        // Update remaining display
+        updateRemainingDisplay();
+        
+        if (refreshBtn) {
+            refreshBtn.disabled = disabled;
+            if (disabled) {
+                refreshBtn.style.opacity = '0.5';
+                refreshBtn.style.cursor = 'not-allowed';
+                if (inCooldown) {
+                    const secondsLeft = Math.ceil((cooldownUntil - now) / 1000);
+                    refreshBtn.textContent = `⏳ Wait ${secondsLeft}s`;
+                } else if (!rateLimit.allowed) {
+                    refreshBtn.textContent = '❌ Daily Limit Reached';
+                } else if (isGenerating) {
+                    refreshBtn.textContent = '⏳ Generating...';
+                } else {
+                    refreshBtn.innerHTML = '<span>🔄</span> New Country';
+                }
+            } else {
+                refreshBtn.style.opacity = '1';
+                refreshBtn.style.cursor = 'pointer';
+                refreshBtn.innerHTML = '<span>🔄</span> New Country';
+            }
+        }
+        
+        if (retryBtn) {
+            retryBtn.disabled = disabled;
+            if (disabled) {
+                retryBtn.style.opacity = '0.5';
+                retryBtn.style.cursor = 'not-allowed';
+                if (inCooldown) {
+                    const secondsLeft = Math.ceil((cooldownUntil - now) / 1000);
+                    retryBtn.textContent = `⏳ Wait ${secondsLeft}s`;
+                } else if (!rateLimit.allowed) {
+                    retryBtn.textContent = '❌ Daily Limit Reached';
+                } else if (isGenerating) {
+                    retryBtn.textContent = '⏳ Generating...';
+                } else {
+                    retryBtn.textContent = 'Retry';
+                }
+            } else {
+                retryBtn.style.opacity = '1';
+                retryBtn.style.cursor = 'pointer';
+                retryBtn.textContent = 'Retry';
+            }
+        }
+    }
+    
+    // Update button states periodically during cooldown
+    let cooldownInterval = null;
+    function startCooldownTimer() {
+        if (cooldownInterval) clearInterval(cooldownInterval);
+        cooldownInterval = setInterval(() => {
+            const now = Date.now();
+            if (now >= cooldownUntil) {
+                clearInterval(cooldownInterval);
+                cooldownInterval = null;
+            }
+            updateButtonStates();
+        }, 1000); // Update every second
     }
     
     // Event listeners
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => {
+            // Check if already generating
+            if (isGenerating) return;
+            
+            // Check cooldown
+            const now = Date.now();
+            if (now < cooldownUntil) {
+                const secondsLeft = Math.ceil((cooldownUntil - now) / 1000);
+                alert(`Please wait ${secondsLeft} second${secondsLeft !== 1 ? 's' : ''} before generating another country.`);
+                return;
+            }
+            
             // Check rate limit before allowing new country
             const rateLimit = checkRateLimit();
             if (!rateLimit.allowed) {
                 hideSpotlightSection();
                 alert(`You've reached your daily limit of ${RATE_LIMIT_COUNT} spotlights. Come back tomorrow for more!`);
+                updateButtonStates();
                 return;
             }
+            
             loadSpotlight(true); // Force new country
         });
     }
     
     if (retryBtn) {
         retryBtn.addEventListener('click', () => {
+            // Check if already generating
+            if (isGenerating) return;
+            
+            // Check cooldown
+            const now = Date.now();
+            if (now < cooldownUntil) {
+                const secondsLeft = Math.ceil((cooldownUntil - now) / 1000);
+                alert(`Please wait ${secondsLeft} second${secondsLeft !== 1 ? 's' : ''} before generating another country.`);
+                return;
+            }
+            
             // Check rate limit before allowing new country
             const rateLimit = checkRateLimit();
             if (!rateLimit.allowed) {
                 hideSpotlightSection();
                 alert(`You've reached your daily limit of ${RATE_LIMIT_COUNT} spotlights. Come back tomorrow for more!`);
+                updateButtonStates();
                 return;
             }
+            
             loadSpotlight(true); // Force new country
         });
     }
@@ -8681,8 +8825,13 @@ IMPORTANT REQUIREMENTS:
             // This persists across page refreshes and browser sessions via localStorage
             if (!checkAndDisplayRateLimit()) {
                 console.log('Daily spotlight limit reached - section hidden');
+                updateButtonStates(); // Update button states even if hidden
                 return;
             }
+            
+            // Initialize button states and remaining display
+            updateButtonStates();
+            updateRemainingDisplay();
             
             setupSpotlightVisibilityObserver();
             loadSpotlight(false); // Try to restore, generate new if needed

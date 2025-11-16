@@ -5779,6 +5779,19 @@
             color: rgba(255, 255, 255, 0.8);
             margin: 0;
         }
+        .spotlight-remaining {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: rgba(74, 144, 226, 0.2);
+            border: 2px solid rgba(74, 144, 226, 0.4);
+            border-radius: 15px;
+            display: inline-block;
+        }
+        .spotlight-remaining .remaining-text {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+        }
         .spotlight-container {
             max-width: 900px;
             margin: 0 auto;
@@ -10491,6 +10504,9 @@
                         <span class="emoji" role="img" aria-label="Spotlight">✨</span> Country Spotlight
                     </h2>
                     <p class="spotlight-subtitle">Discover culture, fun facts, and breaking news from around the world</p>
+                    <div class="spotlight-remaining" id="spotlight-remaining">
+                        <span class="remaining-text">Loading...</span>
+                    </div>
                 </div>
                 
                 <div class="spotlight-container" id="spotlight-container">
