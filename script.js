@@ -5119,6 +5119,22 @@ function showConsoleWelcome() {
 // DevTools Detection Easter Egg - Leave a surprise for curious developers!
 function initDevToolsSurprise() {
     let surpriseShown = false;
+    let pageLoaded = false;
+    let initialWidth = 0;
+    let initialHeight = 0;
+    
+    // Wait for page to fully load before starting detection
+    if (document.readyState === 'complete') {
+        pageLoaded = true;
+        initialWidth = window.outerWidth - window.innerWidth;
+        initialHeight = window.outerHeight - window.innerHeight;
+    } else {
+        window.addEventListener('load', () => {
+            pageLoaded = true;
+            initialWidth = window.outerWidth - window.innerWidth;
+            initialHeight = window.outerHeight - window.innerHeight;
+        });
+    }
     
     // Immediate detection on keyboard shortcuts (most common way to open DevTools)
     document.addEventListener('keydown', function(e) {
@@ -5183,15 +5199,22 @@ function initDevToolsSurprise() {
     });
     
     // Fast polling for window size changes (catches DevTools opening)
-    let lastWidth = window.outerWidth - window.innerWidth;
-    let lastHeight = window.outerHeight - window.innerHeight;
+    let lastWidth = initialWidth;
+    let lastHeight = initialHeight;
     
     function checkDevTools() {
+        // Don't check until page is loaded
+        if (!pageLoaded) return;
+        
         const currentWidth = window.outerWidth - window.innerWidth;
         const currentHeight = window.outerHeight - window.innerHeight;
         
-        // If window dimensions changed significantly, DevTools likely opened
-        if ((Math.abs(currentWidth - lastWidth) > 160 || Math.abs(currentHeight - lastHeight) > 160)) {
+        // If window dimensions changed significantly from initial, DevTools likely opened
+        // Check for significant change from last check AND from initial
+        const changeFromLast = Math.abs(currentWidth - lastWidth) > 160 || Math.abs(currentHeight - lastHeight) > 160;
+        const changeFromInitial = Math.abs(currentWidth - initialWidth) > 160 || Math.abs(currentHeight - initialHeight) > 160;
+        
+        if (changeFromLast && changeFromInitial) {
             if (!surpriseShown) {
                 showDevToolsSurprise();
             }
@@ -5201,16 +5224,24 @@ function initDevToolsSurprise() {
         lastHeight = currentHeight;
     }
     
-    // Ultra-fast polling (every 50ms for instant detection)
-    setInterval(checkDevTools, 50);
+    // Start polling after page loads (every 100ms for detection)
+    setTimeout(() => {
+        if (pageLoaded) {
+            setInterval(checkDevTools, 100);
+        }
+    }, 1000); // Wait 1 second after page load
     
-    // Also check on resize
-    window.addEventListener('resize', checkDevTools);
+    // Also check on resize (but only after page loaded)
+    window.addEventListener('resize', () => {
+        if (pageLoaded) {
+            checkDevTools();
+        }
+    });
     
-    // Console detection - check immediately and continuously
+    // Console detection - check after page loads
     let consoleDetected = false;
     function detectConsole() {
-        if (consoleDetected || surpriseShown) return;
+        if (!pageLoaded || consoleDetected || surpriseShown) return;
         
         const start = performance.now();
         console.log('%c ', 'font-size: 1px;');
@@ -5224,9 +5255,13 @@ function initDevToolsSurprise() {
         }
     }
     
-    // Check console immediately and very frequently
-    detectConsole();
-    setInterval(detectConsole, 100);
+    // Check console after page loads (wait a bit to avoid false positives)
+    setTimeout(() => {
+        if (pageLoaded) {
+            detectConsole();
+            setInterval(detectConsole, 200);
+        }
+    }, 2000); // Wait 2 seconds after page load
     
     function showDevToolsSurprise() {
         if (surpriseShown) return;
@@ -5321,7 +5356,7 @@ function initDevToolsSurprise() {
                         margin: 0 0 30px 0;
                         opacity: 0.9;
                     ">If you have any tips to improve my code, please DM me on X <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="color: #fff; text-decoration: underline; font-weight: 600; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8';" onmouseout="this.style.opacity='1';">@newsnoteworthy</a> - I'd love to hear from you! 💬</p>
-                    <button onclick="document.getElementById('devtools-surprise').remove();" style="
+                    <button id="close-surprise-btn" style="
                         background: white;
                         color: #667eea;
                         border: none;
@@ -5357,7 +5392,36 @@ function initDevToolsSurprise() {
         
         document.body.appendChild(surprise);
         
-            // Show cool welcome message in console
+        // Add close button functionality
+        const closeBtn = surprise.querySelector('#close-surprise-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                surprise.remove();
+            });
+        }
+        
+        // Also allow closing by clicking outside the content (on the overlay)
+        const overlay = surprise.querySelector('div');
+        if (overlay) {
+            overlay.addEventListener('click', function(e) {
+                // Only close if clicking directly on the overlay, not on the content
+                if (e.target === overlay) {
+                    surprise.remove();
+                }
+            });
+        }
+        
+        // Allow closing with Escape key
+        const escapeHandler = function(e) {
+            if (e.key === 'Escape') {
+                surprise.remove();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+        
+        // Show cool welcome message in console
         showConsoleWelcome();
         
         // Also log a fun message to console
@@ -5365,14 +5429,6 @@ function initDevToolsSurprise() {
         console.log('%cThanks for being curious!! 👨‍💻', 'font-size: 18px; font-weight: bold; color: #764ba2;');
         console.log('%cIf you have any tips to improve my code, please DM me on X @newsnoteworthy - I\'d love to hear from you! 💬', 'font-size: 14px; color: #333; line-height: 1.6;');
         console.log('%c🔗 https://x.com/newsnoteworthy', 'font-size: 14px; color: #667eea; text-decoration: underline;');
-        
-        // Allow closing after 3 seconds
-        setTimeout(() => {
-            surprise.style.cursor = 'pointer';
-            surprise.addEventListener('click', function() {
-                surprise.remove();
-            });
-        }, 3000);
     }
 }
 
