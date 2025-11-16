@@ -767,54 +767,101 @@ RESPONSE STYLE:
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); background-attachment: fixed;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); min-height: 100vh;">
     <tr>
       <td style="padding: 40px 20px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1); overflow: hidden;">
+          <!-- Header with gradient -->
           <tr>
-            <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(46, 204, 113, 0.1) 100%); border-radius: 10px 10px 0 0;">
-              <h2 style="color: #4A90E2; margin: 0; font-size: 24px; font-weight: bold;">💬 New AI Chat Interaction</h2>
+            <td style="padding: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative;">
+              <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg width=\"100\" height=\"100\" xmlns=\"http://www.w3.org/2000/svg\"><defs><pattern id=\"grid\" width=\"20\" height=\"20\" patternUnits=\"userSpaceOnUse\"><path d=\"M 20 0 L 0 0 0 20\" fill=\"none\" stroke=\"rgba(255,255,255,0.1)\" stroke-width=\"1\"/></pattern></defs><rect width=\"100\" height=\"100\" fill=\"url(%23grid)\"/></svg>'); opacity: 0.3;"></div>
+              <div style="padding: 50px 40px; text-align: center; position: relative; z-index: 1;">
+                <div style="display: inline-block; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
+                  <div style="font-size: 48px; margin: 0;">✨</div>
+                </div>
+                <h1 style="color: #ffffff; margin: 0 0 10px 0; font-size: 32px; font-weight: 800; text-shadow: 0 2px 10px rgba(0,0,0,0.2); letter-spacing: -0.5px;">New AI Chat</h1>
+                <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 16px; font-weight: 500;">Noteworthy AI Interaction</p>
+              </div>
             </td>
           </tr>
+          
+          <!-- Main Content -->
           <tr>
-            <td style="padding: 30px; background-color: #ffffff;">
+            <td style="padding: 40px;">
+              <!-- User Info Card -->
               ${userEmail ? `
-              <div style="padding: 15px; background: rgba(74, 144, 226, 0.15); border-left: 4px solid #4A90E2; border-radius: 8px; margin-bottom: 20px;">
-                <p style="color: #333333; font-size: 16px; margin: 0; line-height: 1.6;"><strong style="color: #4A90E2;">👤 Chat User:</strong> <span style="color: #666666; font-weight: 600;">${userEmail}</span></p>
+              <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border: 2px solid rgba(102, 126, 234, 0.3); border-radius: 16px; padding: 20px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">👤</div>
+                  <div>
+                    <p style="color: #667eea; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">Chat User</p>
+                    <p style="color: #1a202c; font-size: 18px; font-weight: 600; margin: 0;">${userEmail}</p>
+                  </div>
+                </div>
               </div>
               ` : `
-              <div style="padding: 15px; background: rgba(100, 100, 100, 0.1); border-left: 4px solid #666666; border-radius: 8px; margin-bottom: 20px;">
-                <p style="color: #333333; font-size: 16px; margin: 0; line-height: 1.6;"><strong style="color: #666666;">👤 Chat User:</strong> <span style="color: #666666;">Unknown User</span></p>
+              <div style="background: linear-gradient(135deg, rgba(160, 160, 160, 0.1) 0%, rgba(140, 140, 140, 0.1) 100%); border: 2px solid rgba(160, 160, 160, 0.3); border-radius: 16px; padding: 20px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #a0a0a0 0%, #8c8c8c 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">👤</div>
+                  <div>
+                    <p style="color: #8c8c8c; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">Chat User</p>
+                    <p style="color: #1a202c; font-size: 18px; font-weight: 600; margin: 0;">Unknown User</p>
+                  </div>
+                </div>
               </div>
               `}
               
-              <div style="padding: 20px; background: rgba(46, 204, 113, 0.1); border-left: 4px solid #2ecc71; border-radius: 8px; margin-bottom: 20px;">
-                <p style="color: #2ecc71; font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">👤 NEW USER MESSAGE:</p>
-                <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${safeMessage}</p>
+              <!-- User Message Card -->
+              <div style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.08) 0%, rgba(39, 174, 96, 0.12) 100%); border-left: 5px solid #2ecc71; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(46, 204, 113, 0.15); position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: radial-gradient(circle, rgba(46, 204, 113, 0.1) 0%, transparent 70%); border-radius: 50%;"></div>
+                <div style="position: relative; z-index: 1;">
+                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                    <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);">💬</div>
+                    <p style="color: #27ae60; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin: 0;">User Message</p>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); border-radius: 12px; padding: 18px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);">
+                    <p style="color: #1a202c; font-size: 16px; line-height: 1.7; margin: 0; white-space: pre-wrap; font-weight: 500;">${safeMessage}</p>
+                  </div>
+                </div>
               </div>
-              <div style="padding: 20px; background: rgba(74, 144, 226, 0.1); border-left: 4px solid #4A90E2; border-radius: 8px; margin-bottom: 20px;">
-                <p style="color: #4A90E2; font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">🤖 AI RESPONSE:</p>
-                <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0; white-space: pre-wrap;">${safeReply}</p>
+              
+              <!-- AI Response Card -->
+              <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.12) 100%); border-left: 5px solid #667eea; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15); position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -50px; left: -50px; width: 150px; height: 150px; background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%); border-radius: 50%;"></div>
+                <div style="position: relative; z-index: 1;">
+                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+                    <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">🤖</div>
+                    <p style="color: #667eea; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin: 0;">AI Response</p>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); border-radius: 12px; padding: 18px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);">
+                    <p style="color: #1a202c; font-size: 16px; line-height: 1.7; margin: 0; white-space: pre-wrap; font-weight: 500;">${safeReply}</p>
+                  </div>
+                </div>
               </div>
               
               ${recentChatHistory.length > 0 ? `
-              <div style="padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: 2px solid #9b59b6; border-radius: 8px; margin-bottom: 20px;">
-                <p style="color: #9b59b6; font-size: 16px; font-weight: bold; margin: 0 0 15px 0;">💬 Recent Chat History (Last ${recentChatHistory.length} conversations):</p>
+              <!-- Chat History Card -->
+              <div style="background: linear-gradient(135deg, rgba(155, 89, 182, 0.08) 0%, rgba(142, 68, 173, 0.12) 100%); border: 2px solid rgba(155, 89, 182, 0.3); border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(155, 89, 182, 0.15);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                  <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);">💬</div>
+                  <p style="color: #9b59b6; font-size: 16px; font-weight: 700; margin: 0;">Recent Chat History</p>
+                  <span style="background: rgba(155, 89, 182, 0.2); color: #9b59b6; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-left: auto;">${recentChatHistory.length} conversations</span>
+                </div>
                 ${recentChatHistory.map((chat, idx) => {
                   const chatTime = new Date(chat.timestamp).toLocaleString();
                   const safeUserMsg = String(chat.userMessage || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 300);
                   const safeAiResp = String(chat.aiResponse || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 400);
                   return `
-                  <div style="margin-bottom: ${idx < recentChatHistory.length - 1 ? '20px' : '0'}; padding-bottom: ${idx < recentChatHistory.length - 1 ? '20px' : '0'}; border-bottom: ${idx < recentChatHistory.length - 1 ? '1px solid rgba(155, 89, 182, 0.2)' : 'none'};">
-                    <p style="color: #666666; font-size: 12px; margin: 0 0 8px 0;">${chatTime}</p>
-                    <div style="padding: 12px; background: rgba(46, 204, 113, 0.05); border-left: 3px solid #2ecc71; border-radius: 4px; margin-bottom: 8px;">
-                      <p style="color: #2ecc71; font-size: 12px; font-weight: bold; margin: 0 0 5px 0;">User:</p>
-                      <p style="color: #333333; font-size: 14px; line-height: 1.5; margin: 0;">${safeUserMsg}${chat.userMessage && chat.userMessage.length > 300 ? '...' : ''}</p>
+                  <div style="margin-bottom: ${idx < recentChatHistory.length - 1 ? '24px' : '0'}; padding-bottom: ${idx < recentChatHistory.length - 1 ? '24px' : '0'}; border-bottom: ${idx < recentChatHistory.length - 1 ? '2px solid rgba(155, 89, 182, 0.15)' : 'none'};">
+                    <p style="color: #9b59b6; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 16px 0; opacity: 0.7;">${chatTime}</p>
+                    <div style="background: rgba(46, 204, 113, 0.06); border-left: 4px solid #2ecc71; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(46, 204, 113, 0.1);">
+                      <p style="color: #27ae60; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">👤 User</p>
+                      <p style="color: #1a202c; font-size: 14px; line-height: 1.6; margin: 0; font-weight: 500;">${safeUserMsg}${chat.userMessage && chat.userMessage.length > 300 ? '...' : ''}</p>
                     </div>
-                    <div style="padding: 12px; background: rgba(74, 144, 226, 0.05); border-left: 3px solid #4A90E2; border-radius: 4px;">
-                      <p style="color: #4A90E2; font-size: 12px; font-weight: bold; margin: 0 0 5px 0;">AI:</p>
-                      <p style="color: #333333; font-size: 14px; line-height: 1.5; margin: 0;">${safeAiResp}${chat.aiResponse && chat.aiResponse.length > 400 ? '...' : ''}</p>
+                    <div style="background: rgba(102, 126, 234, 0.06); border-left: 4px solid #667eea; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);">
+                      <p style="color: #667eea; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">🤖 AI</p>
+                      <p style="color: #1a202c; font-size: 14px; line-height: 1.6; margin: 0; font-weight: 500;">${safeAiResp}${chat.aiResponse && chat.aiResponse.length > 400 ? '...' : ''}</p>
                     </div>
                   </div>
                   `;
@@ -822,16 +869,37 @@ RESPONSE STYLE:
               </div>
               ` : ''}
               
-              <div style="padding: 15px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: 2px solid #4A90E2; border-radius: 8px;">
-                <p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">🧠 Model:</strong> <span style="color: #666666;">gpt-4o</span></p>
-                ${usage ? `<p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">💬 Tokens:</strong> <span style="color: #666666;">${usage.prompt_tokens || 0} input + ${usage.completion_tokens || 0} output = ${usage.total_tokens || 0} total</span></p>` : ''}
-                <p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">📅 Time:</strong> <span style="color: #666666;">${new Date().toLocaleString()}</span></p>
+              <!-- Stats Card -->
+              <div style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: 2px solid rgba(102, 126, 234, 0.2); border-radius: 16px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+                  <div style="text-align: center;">
+                    <div style="font-size: 28px; margin-bottom: 8px;">🧠</div>
+                    <p style="color: #667eea; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">Model</p>
+                    <p style="color: #1a202c; font-size: 16px; font-weight: 700; margin: 0;">gpt-4o</p>
+                  </div>
+                  ${usage ? `
+                  <div style="text-align: center;">
+                    <div style="font-size: 28px; margin-bottom: 8px;">💬</div>
+                    <p style="color: #667eea; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">Tokens</p>
+                    <p style="color: #1a202c; font-size: 16px; font-weight: 700; margin: 0;">${usage.total_tokens || 0}</p>
+                  </div>
+                  ` : ''}
+                  <div style="text-align: center;">
+                    <div style="font-size: 28px; margin-bottom: 8px;">📅</div>
+                    <p style="color: #667eea; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">Time</p>
+                    <p style="color: #1a202c; font-size: 14px; font-weight: 700; margin: 0;">${new Date().toLocaleString()}</p>
+                  </div>
+                </div>
               </div>
             </td>
           </tr>
+          
+          <!-- Footer -->
           <tr>
-            <td style="padding: 0 30px 30px 30px; background-color: #ffffff; border-radius: 0 0 10px 10px;">
-              <p style="color: #999999; font-size: 13px; margin: 0; line-height: 1.5; text-align: center;">This is an automated notification from your website.</p>
+            <td style="padding: 30px 40px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-top: 1px solid rgba(0,0,0,0.05);">
+              <p style="color: #a0aec0; font-size: 12px; margin: 0; text-align: center; line-height: 1.6;">
+                <span style="color: #667eea; font-weight: 600;">Noteworthy News</span> • Automated Notification
+              </p>
             </td>
           </tr>
         </table>
@@ -894,6 +962,7 @@ This is an automated notification from your website.`,
             }
           }
         });
+        }
       }
     } catch (emailErr) {
       console.error("[Noteworthy Chat] Error sending email notification:", emailErr);
