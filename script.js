@@ -7878,35 +7878,61 @@ function initNewsletterSubscription() {
     
     // Format AI response text
     function formatAIResponse(text) {
-        // Split by common section headers
-        const sections = text.split(/(?=\*\*|##|###|Culture|Fun Facts|Breaking News|Recent News|Important News)/i);
+        // First, convert markdown links to HTML links
+        text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #4A90E2; text-decoration: underline;">$1</a>');
+        
+        // Split by section headers (## or ###)
+        const sections = text.split(/(?=^##?\s+)/m);
         let formatted = '';
         
         sections.forEach(section => {
             section = section.trim();
             if (!section) return;
             
-            // Check if it's a header
-            if (section.match(/^\*\*.*\*\*/) || section.match(/^##?\s+/) || section.match(/^###\s+/)) {
-                const headerText = section.replace(/^\*\*|\*\*$/g, '').replace(/^##?\s+/, '').replace(/^###\s+/, '');
+            // Check if it starts with a header (## or ###)
+            const headerMatch = section.match(/^(##?\s+)(.+?)(\n|$)/);
+            if (headerMatch) {
+                const headerText = headerMatch[2].trim();
+                const content = section.replace(/^##?\s+.+?\n/, '').trim();
                 formatted += `<h4>${headerText}</h4>`;
-            } else if (section.match(/^(Culture|Fun Facts|Breaking News|Recent News|Important News)/i)) {
-                const headerText = section.match(/^(Culture|Fun Facts|Breaking News|Recent News|Important News)/i)[0];
-                formatted += `<h4>${headerText}</h4>`;
-                const content = section.replace(/^(Culture|Fun Facts|Breaking News|Recent News|Important News)[:\-]?\s*/i, '');
                 if (content) {
-                    formatted += `<p>${content}</p>`;
+                    // Split content into paragraphs
+                    const paragraphs = content.split(/\n\n+/).filter(p => p.trim());
+                    paragraphs.forEach(p => {
+                        p = p.trim();
+                        // Remove any stray markdown formatting
+                        p = p.replace(/\*\*/g, '');
+                        p = p.replace(/^##?\s+/gm, '');
+                        if (p) {
+                            formatted += `<p>${p}</p>`;
+                        }
+                    });
                 }
             } else {
-                // Regular paragraph
-                formatted += `<p>${section}</p>`;
+                // Regular paragraph - clean up markdown
+                let content = section.trim();
+                // Remove markdown formatting
+                content = content.replace(/\*\*/g, '');
+                content = content.replace(/^##?\s+/gm, '');
+                // Split into paragraphs
+                const paragraphs = content.split(/\n\n+/).filter(p => p.trim());
+                paragraphs.forEach(p => {
+                    p = p.trim();
+                    if (p) {
+                        formatted += `<p>${p}</p>`;
+                    }
+                });
             }
         });
         
-        // If no formatting worked, just return as paragraphs
+        // If no formatting worked, just return as paragraphs with links converted
         if (!formatted) {
             const paragraphs = text.split(/\n\n+/);
-            formatted = paragraphs.map(p => `<p>${p.trim()}</p>`).join('');
+            formatted = paragraphs.map(p => {
+                p = p.trim();
+                p = p.replace(/\*\*/g, '');
+                return `<p>${p}</p>`;
+            }).join('');
         }
         
         return formatted;
@@ -8057,7 +8083,7 @@ function initNewsletterSubscription() {
             aiResponse.innerHTML = '';
             
             // Reset image placeholders
-            const imageWrappers = ['flag-image-wrapper', 'culture1-image-wrapper', 'culture2-image-wrapper', 'map-image-wrapper'];
+            const imageWrappers = ['flag-image-wrapper', 'culture1-image-wrapper', 'culture2-image-wrapper'];
             imageWrappers.forEach(wrapperId => {
                 const wrapper = document.getElementById(wrapperId);
                 if (wrapper) {
@@ -8075,9 +8101,6 @@ function initNewsletterSubscription() {
                 }),
                 generateImage(`generate an image of cultural aspects of ${currentCountry.name}, festivals, food, art, traditional scenes`).then(url => {
                     loadImageIntoWrapper('culture2-image-wrapper', url);
-                }),
-                generateImage(`generate an image of a world map highlighting ${currentCountry.name} location, geographic map, clear borders`).then(url => {
-                    loadImageIntoWrapper('map-image-wrapper', url);
                 })
             ];
             
@@ -8087,7 +8110,13 @@ function initNewsletterSubscription() {
 2. **Fun Facts** - Surprising or fascinating facts about the country
 3. **Breaking News** - Recent important news or events from ${currentCountry.name} (if any significant developments)
 
-Keep it engaging and informative, around 300-400 words total. Format with clear sections.`;
+IMPORTANT REQUIREMENTS:
+- You MUST include sources and links for all factual information you provide
+- Format sources as clickable links: [Source Name](URL)
+- Include at least 2-3 reliable sources (news sites, official government sites, reputable encyclopedias)
+- Use proper markdown formatting with ## for section headers
+- Keep it engaging and informative, around 300-400 words total
+- Do NOT use ## or ** in the middle of paragraphs - only for section headers`;
             
             const textResponse = fetch('/.netlify/functions/noteworthy-chat', {
                 method: 'POST',

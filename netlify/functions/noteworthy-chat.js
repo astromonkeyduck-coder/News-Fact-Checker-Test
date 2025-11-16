@@ -814,10 +814,19 @@ RESPONSE STYLE:
       // Don't fail the request if logging fails
     });
 
+    // Check if this is a spotlight request (should not send emails)
+    const isSpotlightRequest = message && (
+      message.toLowerCase().includes('tell me about') && 
+      message.toLowerCase().includes('culture') &&
+      message.toLowerCase().includes('fun facts')
+    );
+    
     // Send email notification (non-blocking - don't wait for it)
     try {
-      // Validate API key exists
-      if (!process.env.RESEND_API_KEY) {
+      // Skip emails for spotlight requests
+      if (isSpotlightRequest) {
+        console.log("[Noteworthy Chat] Spotlight request detected - skipping email notification");
+      } else if (!process.env.RESEND_API_KEY) {
         console.warn("[Noteworthy Chat] RESEND_API_KEY not configured. Skipping email notifications.");
       } else {
       const { Resend } = require('resend');
