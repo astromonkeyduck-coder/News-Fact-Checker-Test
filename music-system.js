@@ -29,6 +29,20 @@
             return;
         }
         
+        // Create ending song audio element if it doesn't exist
+        let endingSong = document.getElementById('endingSong');
+        if (!endingSong) {
+            endingSong = document.createElement('audio');
+            endingSong.id = 'endingSong';
+            endingSong.preload = 'metadata';
+            endingSong.volume = 0.5;
+            const source = document.createElement('source');
+            source.src = 'Endingsong.wav';
+            source.type = 'audio/wav';
+            endingSong.appendChild(source);
+            document.body.appendChild(endingSong);
+        }
+        
         // ComeBack sound system - alternate between ComeBack1.wav and ComeBack2.wav
         let comeBackSoundIndex = 0; // 0 = ComeBack1, 1 = ComeBack2
         let comeBackAudio = null;
@@ -95,6 +109,9 @@
             } else if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
                 currentTrack = 'loop';
                 currentTime = backgroundMusicLoop.currentTime;
+            } else if (endingSong && !endingSong.paused) {
+                currentTrack = 'ending';
+                currentTime = endingSong.currentTime;
             } else {
                 // Get time from paused track
                 if (backgroundMusic && backgroundMusic.currentTime > 0 && backgroundMusic.duration > 0 && backgroundMusic.currentTime < backgroundMusic.duration) {
@@ -106,6 +123,9 @@
                 } else if (backgroundMusicLoop && backgroundMusicLoop.currentTime > 0 && backgroundMusicLoop.duration > 0) {
                     currentTrack = 'loop';
                     currentTime = backgroundMusicLoop.currentTime;
+                } else if (endingSong && endingSong.currentTime > 0 && endingSong.duration > 0) {
+                    currentTrack = 'ending';
+                    currentTime = endingSong.currentTime;
                 }
             }
             
@@ -136,6 +156,9 @@
             }
             if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
                 backgroundMusicLoop.pause();
+            }
+            if (endingSong && !endingSong.paused) {
+                endingSong.pause();
             }
             // Also pause subscription sound if it's playing
             if (window.subscriptionSound && !window.subscriptionSound.paused) {
@@ -168,6 +191,10 @@
                 wasPlaying = true;
                 currentTrack = backgroundMusicLoop;
                 currentTime = backgroundMusicLoop.currentTime;
+            } else if (endingSong && !endingSong.paused) {
+                wasPlaying = true;
+                currentTrack = endingSong;
+                currentTime = endingSong.currentTime;
             }
             
             // Pause all tracks
@@ -191,6 +218,8 @@
                 track = backgroundMusicSecond;
             } else if (trackName === 'loop') {
                 track = backgroundMusicLoop;
+            } else if (trackName === 'ending') {
+                track = endingSong;
             }
             
             if (track) {
@@ -288,6 +317,7 @@
                 const tryRestore = () => {
                     const track = savedTrack === 'track1' ? backgroundMusic :
                                  savedTrack === 'track2' ? backgroundMusicSecond :
+                                 savedTrack === 'ending' ? endingSong :
                                  backgroundMusicLoop;
                     
                     if (track) {
@@ -360,6 +390,7 @@
                 const tryRestoreImmediately = () => {
                     const track = savedTrack === 'track1' ? backgroundMusic :
                                  savedTrack === 'track2' ? backgroundMusicSecond :
+                                 savedTrack === 'ending' ? endingSong :
                                  backgroundMusicLoop;
                     
                     if (track) {
@@ -398,7 +429,7 @@
             }
             
             // Wait for audio to load
-            const audioElements = [backgroundMusic, backgroundMusicSecond, backgroundMusicLoop].filter(Boolean);
+            const audioElements = [backgroundMusic, backgroundMusicSecond, backgroundMusicLoop, endingSong].filter(Boolean);
             let loadedCount = 0;
             
             audioElements.forEach(audio => {
@@ -513,6 +544,18 @@
         }
         
         if (backgroundMusicLoop) {
+            backgroundMusicLoop.addEventListener('ended', () => {
+                saveMusicState(true);
+                // When loop ends, play ending song
+                if (endingSong && localStorage.getItem('globalMusicEnabled') !== 'false') {
+                    if (endingSong.readyState < 2) {
+                        endingSong.load();
+                    }
+                    endingSong.currentTime = 0;
+                    playTrackOnly(endingSong);
+                }
+            });
+            
             backgroundMusicLoop.addEventListener('play', () => {
                 localStorage.setItem('globalMusicPlaying', 'true');
                 saveMusicState(true);
@@ -533,8 +576,32 @@
             });
         }
         
+        // When ending song finishes, restart the music sequence from the beginning
+        if (endingSong) {
+            endingSong.addEventListener('ended', () => {
+                saveMusicState(true);
+                // Restart the music sequence from the beginning
+                if (backgroundMusic && localStorage.getItem('globalMusicEnabled') !== 'false') {
+                    if (backgroundMusic.readyState < 2) {
+                        backgroundMusic.load();
+                    }
+                    backgroundMusic.currentTime = 0;
+                    playTrackOnly(backgroundMusic);
+                }
+            });
+            
+            endingSong.addEventListener('play', () => {
+                localStorage.setItem('globalMusicPlaying', 'true');
+                saveMusicState(true);
+            });
+            
+            endingSong.addEventListener('pause', () => {
+                saveMusicState(true);
+            });
+        }
+        
         // Ensure mutual exclusivity (optimized)
-        [backgroundMusic, backgroundMusicSecond, backgroundMusicLoop].forEach(audio => {
+        [backgroundMusic, backgroundMusicSecond, backgroundMusicLoop, endingSong].forEach(audio => {
             if (audio) {
                 audio.addEventListener('play', () => {
                     pauseAllTracks();
@@ -553,6 +620,7 @@
             const isPlaying = (!backgroundMusic.paused) || 
                              (backgroundMusicSecond && !backgroundMusicSecond.paused) || 
                              (backgroundMusicLoop && !backgroundMusicLoop.paused) ||
+                             (endingSong && !endingSong.paused) ||
                              (window.subscriptionSound && !window.subscriptionSound.paused);
             
             if (isPlaying) {
@@ -580,6 +648,8 @@
                         playTrackAtTime('track2', backgroundMusicSecond.currentTime);
                     } else if (backgroundMusicLoop && backgroundMusicLoop.currentTime > 0) {
                         playTrackAtTime('loop', backgroundMusicLoop.currentTime);
+                    } else if (endingSong && endingSong.currentTime > 0 && endingSong.currentTime < (endingSong.duration || Infinity)) {
+                        playTrackAtTime('ending', endingSong.currentTime);
                     } else {
                         // All tracks finished or at start - start from beginning
                         if (backgroundMusic) {
@@ -599,6 +669,7 @@
                 isPlaying: (!backgroundMusic.paused) || 
                           (backgroundMusicSecond && !backgroundMusicSecond.paused) || 
                           (backgroundMusicLoop && !backgroundMusicLoop.paused) ||
+                          (endingSong && !endingSong.paused) ||
                           (window.subscriptionSound && !window.subscriptionSound.paused),
                 enabled: localStorage.getItem('globalMusicEnabled') !== 'false'
             };
@@ -632,6 +703,10 @@
                         musicStateBeforeLeave.track = 'loop';
                         musicStateBeforeLeave.time = backgroundMusicLoop.currentTime;
                         backgroundMusicLoop.pause();
+                    } else if (endingSong && !endingSong.paused) {
+                        musicStateBeforeLeave.track = 'ending';
+                        musicStateBeforeLeave.time = endingSong.currentTime;
+                        endingSong.pause();
                     }
                     
                     saveMusicState(true);
@@ -677,84 +752,151 @@
             // Stop any existing ComeBack sound
             if (comeBackAudio) {
                 comeBackAudio.pause();
+                comeBackAudio.currentTime = 0;
                 comeBackAudio = null;
             }
             
             // Create and play the sound
-            comeBackAudio = new Audio(soundFile);
-            comeBackAudio.volume = 0.7;
-            comeBackAudio.play().catch(err => {
-                console.log('Could not play ComeBack sound:', err);
-            });
-            
-            // Alternate for next time
-            comeBackSoundIndex = (comeBackSoundIndex + 1) % 2;
-            
-            // Clean up when sound finishes
-            comeBackAudio.addEventListener('ended', () => {
+            try {
+                comeBackAudio = new Audio(soundFile);
+                comeBackAudio.volume = 0.7;
+                comeBackAudio.preload = 'auto';
+                
+                // Try to play immediately
+                const playPromise = comeBackAudio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log('ComeBack sound playing:', soundFile);
+                    }).catch(err => {
+                        console.log('Could not play ComeBack sound (autoplay blocked):', err);
+                        // Try again on next user interaction
+                        const playOnInteraction = () => {
+                            if (comeBackAudio) {
+                                comeBackAudio.play().catch(() => {});
+                            }
+                            document.removeEventListener('click', playOnInteraction);
+                            document.removeEventListener('touchstart', playOnInteraction);
+                            document.removeEventListener('keydown', playOnInteraction);
+                        };
+                        document.addEventListener('click', playOnInteraction, { once: true });
+                        document.addEventListener('touchstart', playOnInteraction, { once: true });
+                        document.addEventListener('keydown', playOnInteraction, { once: true });
+                    });
+                }
+                
+                // Alternate for next time
+                comeBackSoundIndex = (comeBackSoundIndex + 1) % 2;
+                
+                // Clean up when sound finishes
+                comeBackAudio.addEventListener('ended', () => {
+                    comeBackAudio = null;
+                }, { once: true });
+                
+                // Also handle errors
+                comeBackAudio.addEventListener('error', (e) => {
+                    console.error('Error playing ComeBack sound:', e);
+                    comeBackAudio = null;
+                }, { once: true });
+            } catch (err) {
+                console.error('Error creating ComeBack audio:', err);
                 comeBackAudio = null;
-            }, { once: true });
+            }
         }
         
-        // Handle mouse leaving the window
-        document.addEventListener('mouseleave', (e) => {
-            // Only trigger if mouse actually left the window (not just moving between elements)
-            if (e.clientY <= 0) {
-                const wasPlaying = window.getGlobalMusicState().isPlaying;
-                if (wasPlaying) {
-                    // Save current music state
-                    musicStateBeforeLeave = {
-                        track: null,
-                        time: 0
-                    };
+        // Track if mouse is currently in the window
+        let mouseInWindow = true;
+        let mouseLeaveTimeout = null;
+        
+        // Handle mouse leaving the window (more reliable detection)
+        document.addEventListener('mouseout', (e) => {
+            // Check if mouse left the document (not just moving between elements)
+            if (!e.relatedTarget && !e.toElement) {
+                // Mouse left the window
+                if (mouseInWindow) {
+                    mouseInWindow = false;
                     
-                    if (backgroundMusic && !backgroundMusic.paused) {
-                        musicStateBeforeLeave.track = 'track1';
-                        musicStateBeforeLeave.time = backgroundMusic.currentTime;
-                        backgroundMusic.pause();
-                    } else if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
-                        musicStateBeforeLeave.track = 'track2';
-                        musicStateBeforeLeave.time = backgroundMusicSecond.currentTime;
-                        backgroundMusicSecond.pause();
-                    } else if (backgroundMusicThird && !backgroundMusicThird.paused) {
-                        musicStateBeforeLeave.track = 'track3';
-                        musicStateBeforeLeave.time = backgroundMusicThird.currentTime;
-                        backgroundMusicThird.pause();
-                    } else if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
-                        musicStateBeforeLeave.track = 'loop';
-                        musicStateBeforeLeave.time = backgroundMusicLoop.currentTime;
-                        backgroundMusicLoop.pause();
+                    // Clear any pending timeout
+                    if (mouseLeaveTimeout) {
+                        clearTimeout(mouseLeaveTimeout);
+                        mouseLeaveTimeout = null;
                     }
                     
-                    saveMusicState(true);
+                    // Small delay to avoid false triggers
+                    mouseLeaveTimeout = setTimeout(() => {
+                        const wasPlaying = window.getGlobalMusicState().isPlaying;
+                        if (wasPlaying) {
+                            // Save current music state
+                            musicStateBeforeLeave = {
+                                track: null,
+                                time: 0
+                            };
+                            
+                            if (backgroundMusic && !backgroundMusic.paused) {
+                                musicStateBeforeLeave.track = 'track1';
+                                musicStateBeforeLeave.time = backgroundMusic.currentTime;
+                                backgroundMusic.pause();
+                            } else if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
+                                musicStateBeforeLeave.track = 'track2';
+                                musicStateBeforeLeave.time = backgroundMusicSecond.currentTime;
+                                backgroundMusicSecond.pause();
+                            } else if (backgroundMusicThird && !backgroundMusicThird.paused) {
+                                musicStateBeforeLeave.track = 'track3';
+                                musicStateBeforeLeave.time = backgroundMusicThird.currentTime;
+                                backgroundMusicThird.pause();
+                            } else if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+                                musicStateBeforeLeave.track = 'loop';
+                                musicStateBeforeLeave.time = backgroundMusicLoop.currentTime;
+                                backgroundMusicLoop.pause();
+                            } else if (endingSong && !endingSong.paused) {
+                                musicStateBeforeLeave.track = 'ending';
+                                musicStateBeforeLeave.time = endingSong.currentTime;
+                                endingSong.pause();
+                            }
+                            
+                            saveMusicState(true);
+                        }
+                        // Play ComeBack sound
+                        playComeBackSound();
+                    }, 100); // Small delay to confirm mouse actually left
                 }
-                // Play ComeBack sound
-                playComeBackSound();
             }
         });
         
-        // Handle mouse returning to the window
-        document.addEventListener('mouseenter', () => {
-            // Resume music if it was playing before
-            if (musicStateBeforeLeave && musicEnabled) {
-                const trackToResume = musicStateBeforeLeave.track;
-                const timeToResume = musicStateBeforeLeave.time;
+        // Handle mouse entering the window
+        document.addEventListener('mouseover', (e) => {
+            if (!mouseInWindow) {
+                mouseInWindow = true;
                 
-                if (trackToResume === 'track1' && backgroundMusic) {
-                    backgroundMusic.currentTime = timeToResume;
-                    backgroundMusic.play().catch(() => {});
-                } else if (trackToResume === 'track2' && backgroundMusicSecond) {
-                    backgroundMusicSecond.currentTime = timeToResume;
-                    backgroundMusicSecond.play().catch(() => {});
-                } else if (trackToResume === 'track3' && backgroundMusicThird) {
-                    backgroundMusicThird.currentTime = timeToResume;
-                    backgroundMusicThird.play().catch(() => {});
-                } else if (trackToResume === 'loop' && backgroundMusicLoop) {
-                    backgroundMusicLoop.currentTime = timeToResume;
-                    backgroundMusicLoop.play().catch(() => {});
+                // Clear any pending leave timeout
+                if (mouseLeaveTimeout) {
+                    clearTimeout(mouseLeaveTimeout);
+                    mouseLeaveTimeout = null;
                 }
                 
-                musicStateBeforeLeave = null;
+                // Resume music if it was playing before
+                if (musicStateBeforeLeave && musicEnabled) {
+                    const trackToResume = musicStateBeforeLeave.track;
+                    const timeToResume = musicStateBeforeLeave.time;
+                    
+                    if (trackToResume === 'track1' && backgroundMusic) {
+                        backgroundMusic.currentTime = timeToResume;
+                        backgroundMusic.play().catch(() => {});
+                    } else if (trackToResume === 'track2' && backgroundMusicSecond) {
+                        backgroundMusicSecond.currentTime = timeToResume;
+                        backgroundMusicSecond.play().catch(() => {});
+                    } else if (trackToResume === 'track3' && backgroundMusicThird) {
+                        backgroundMusicThird.currentTime = timeToResume;
+                        backgroundMusicThird.play().catch(() => {});
+                    } else if (trackToResume === 'loop' && backgroundMusicLoop) {
+                        backgroundMusicLoop.currentTime = timeToResume;
+                        backgroundMusicLoop.play().catch(() => {});
+                    } else if (trackToResume === 'ending' && endingSong) {
+                        endingSong.currentTime = timeToResume;
+                        endingSong.play().catch(() => {});
+                    }
+                    
+                    musicStateBeforeLeave = null;
+                }
             }
         });
         
@@ -784,6 +926,10 @@
                     musicStateBeforeLeave.track = 'loop';
                     musicStateBeforeLeave.time = backgroundMusicLoop.currentTime;
                     backgroundMusicLoop.pause();
+                } else if (endingSong && !endingSong.paused) {
+                    musicStateBeforeLeave.track = 'ending';
+                    musicStateBeforeLeave.time = endingSong.currentTime;
+                    endingSong.pause();
                 }
                 
                 saveMusicState(true);
@@ -810,6 +956,9 @@
                 } else if (trackToResume === 'loop' && backgroundMusicLoop) {
                     backgroundMusicLoop.currentTime = timeToResume;
                     backgroundMusicLoop.play().catch(() => {});
+                } else if (trackToResume === 'ending' && endingSong) {
+                    endingSong.currentTime = timeToResume;
+                    endingSong.play().catch(() => {});
                 }
                 
                 musicStateBeforeLeave = null;

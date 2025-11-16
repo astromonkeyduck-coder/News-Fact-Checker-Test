@@ -704,8 +704,8 @@
         Your browser does not support the audio element.
     </audio>
     
-    <!-- Fourth track (loops after third) -->
-    <audio id="backgroundMusicLoop" preload="metadata" loop>
+    <!-- Fourth track (plays after third, then ending song) -->
+    <audio id="backgroundMusicLoop" preload="metadata">
                         <source src="Audiolandingpage.m4a" type="audio/mp4">
         Your browser does not support the audio element.
     </audio>
@@ -10709,7 +10709,7 @@
                 </div>
                 <div class="footer-bottom">
                     <p>Empowering critical thinking through trusted journalism.</p>
-                    <p style="font-size: 0.85em; opacity: 0.7; margin-top: 0.5em;">Built with 58,207 lines of code</p>
+                    <p style="font-size: 0.85em; opacity: 0.7; margin-top: 0.5em;">Built with 71,258 lines of code</p>
             </div>
         </div>
     </footer>
@@ -11861,5 +11861,72 @@
     <!-- Twitter Widgets Script Removed - Using custom post feed instead -->
     <!-- This was causing 429 rate limit errors from Twitter -->
     <!-- <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script> -->
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('[Service Worker] Registered successfully:', registration.scope);
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New service worker available
+                                    console.log('[Service Worker] New version available');
+                                    // Optionally show update notification to user
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.error('[Service Worker] Registration failed:', error);
+                    });
+            });
+        }
+    </script>
+    
+    <!-- Image Optimization - Lazy Loading -->
+    <script>
+        // Initialize lazy loading for images
+        (function() {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initImageOptimization);
+            } else {
+                initImageOptimization();
+            }
+            
+            function initImageOptimization() {
+                const images = document.querySelectorAll('img:not([loading])');
+                images.forEach((img) => {
+                    // Skip if already has loading attribute or is above the fold
+                    if (img.hasAttribute('loading')) return;
+                    
+                    const rect = img.getBoundingClientRect();
+                    const isAboveFold = rect.top < window.innerHeight && rect.bottom > 0;
+                    
+                    if (!isAboveFold && 'loading' in HTMLImageElement.prototype) {
+                        img.loading = 'lazy';
+                    }
+                });
+            }
+        })();
+    </script>
+    
+    <!-- Keyboard Shortcuts -->
+    <script src="/src/utils/keyboard-shortcuts.js"></script>
+    <script>
+        // Initialize keyboard shortcuts
+        if (typeof initKeyboardShortcuts === 'function') {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initKeyboardShortcuts);
+            } else {
+                initKeyboardShortcuts();
+            }
+        }
+    </script>
 </body>
 </html>

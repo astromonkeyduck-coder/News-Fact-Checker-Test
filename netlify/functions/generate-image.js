@@ -1,4 +1,7 @@
-exports.handler = async (event, context) => {
+// Apply rate limiting
+const { rateLimiters } = require('./rate-limit');
+
+exports.handler = rateLimiters.imageGeneration(async (event, context) => {
   // CORS headers
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -42,12 +45,46 @@ exports.handler = async (event, context) => {
 
     const { prompt, size = "1024x1024", quality = "standard", style = "vivid" } = requestBody;
 
-    if (!prompt || !prompt.trim()) {
+    // Input validation
+    if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: "Missing prompt" }),
+        body: JSON.stringify({ error: "Missing or invalid prompt" }),
       };
+    }
+
+    // Validate prompt length and content
+    const trimmedPrompt = prompt.trim();
+    if (trimmedPrompt.length < 3) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: "Prompt must be at least 3 characters" }),
+      };
+    }
+    if (trimmedPrompt.length > 500) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: "Prompt must be no more than 500 characters" }),
+      };
+    }
+
+    // Check for potentially harmful content
+    const blockedPatterns = [
+      /<script/i,
+      /javascript:/i,
+      /on\w+\s*=/i,
+    ];
+    for (const pattern of blockedPatterns) {
+      if (pattern.test(trimmedPrompt)) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: "Invalid characters in prompt" }),
+        };
+      }
     }
 
     // Get API key

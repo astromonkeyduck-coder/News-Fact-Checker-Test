@@ -1779,17 +1779,55 @@ class NoteworthyChat extends HTMLElement {
     // Image generation is now fully handled by the backend
     // The generateImage() function has been removed - all messages go through ask()
 
+    // Helper function to show error messages
+    function showError(message) {
+      const errorGroup = document.createElement('div');
+      errorGroup.className = 'message-group ai-msg-group';
+      const err = document.createElement('div');
+      err.className = 'error';
+      err.innerHTML = `<strong>⚠️ Error</strong><p>${message}</p>`;
+      errorGroup.innerHTML = `
+        <div class="message-avatar">
+          <img src="/IMG_5794.PNG" alt="Noteworthy News" />
+        </div>
+        <div class="message-content"></div>
+      `;
+      errorGroup.querySelector('.message-content').appendChild(err);
+      body.appendChild(errorGroup);
+      body.scrollTop = body.scrollHeight;
+    }
+
     async function ask() {
-      console.log('ask() function called');
       const message = input.value.trim();
       const hasFiles = uploadedFiles.length > 0;
       
+      // Input validation
+      if (message) {
+        // Validate message length and content
+        if (message.length > 2000) {
+          showError('Message is too long. Please keep it under 2000 characters.');
+          return;
+        }
+        
+        // Check for potentially harmful content
+        const blockedPatterns = [
+          /<script/i,
+          /javascript:/i,
+          /on\w+\s*=/i,
+        ];
+        for (const pattern of blockedPatterns) {
+          if (pattern.test(message)) {
+            showError('Invalid characters in message. Please remove any script tags or event handlers.');
+            return;
+          }
+        }
+      }
+      
       // Allow sending if there's a message OR files
       if (!message && !hasFiles) {
-        console.log('Empty message and no files, returning');
         return;
       }
-      console.log('Processing message:', message ? message.substring(0, 50) : '(no text)', 'Files:', uploadedFiles.length);
+      
       input.value = '';
       send.disabled = true;
 

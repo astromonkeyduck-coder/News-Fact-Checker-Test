@@ -145,8 +145,40 @@ async function renderPostFeed(containerId, endpoint = '/.netlify/functions/posts
       console.log('[PostFeed] Found', cachedPosts.length, 'cached posts, displaying immediately');
       renderPosts(cachedPosts, container, originalContent);
     } else {
-      // Show loading state only if no cache
-      container.innerHTML = '<div class="post-feed-loading" style="padding: 2rem; text-align: center; color: rgba(255,255,255,0.8);">Loading posts...</div>';
+      // Show loading skeleton state only if no cache
+      container.innerHTML = `
+        <div class="post-feed-loading" style="padding: 2rem;">
+          <div style="background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; animation: pulse 1.5s ease-in-out infinite;">
+            <div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 255, 255, 0.1);"></div>
+              <div style="flex: 1;">
+                <div style="height: 16px; width: 40%; background: rgba(255, 255, 255, 0.1); border-radius: 4px; margin-bottom: 0.5rem;"></div>
+                <div style="height: 12px; width: 30%; background: rgba(255, 255, 255, 0.1); border-radius: 4px;"></div>
+              </div>
+            </div>
+            <div style="height: 14px; width: 100%; background: rgba(255, 255, 255, 0.1); border-radius: 4px; margin-bottom: 0.5rem;"></div>
+            <div style="height: 14px; width: 90%; background: rgba(255, 255, 255, 0.1); border-radius: 4px; margin-bottom: 0.5rem;"></div>
+            <div style="height: 200px; width: 100%; background: rgba(255, 255, 255, 0.1); border-radius: 12px; margin-bottom: 0.75rem;"></div>
+          </div>
+          <div style="background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; animation: pulse 1.5s ease-in-out infinite;">
+            <div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 255, 255, 0.1);"></div>
+              <div style="flex: 1;">
+                <div style="height: 16px; width: 40%; background: rgba(255, 255, 255, 0.1); border-radius: 4px; margin-bottom: 0.5rem;"></div>
+                <div style="height: 12px; width: 30%; background: rgba(255, 255, 255, 0.1); border-radius: 4px;"></div>
+              </div>
+            </div>
+            <div style="height: 14px; width: 100%; background: rgba(255, 255, 255, 0.1); border-radius: 4px; margin-bottom: 0.5rem;"></div>
+            <div style="height: 200px; width: 100%; background: rgba(255, 255, 255, 0.1); border-radius: 12px;"></div>
+          </div>
+        </div>
+        <style>
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+          }
+        </style>
+      `;
     }
   } else {
     // Force refresh - show loading state
@@ -945,14 +977,25 @@ function renderPosts(posts, container, originalContent = null) {
     const sortSelect = document.getElementById('postSortSelect');
     
     if (searchInput) {
-      let searchTimeout;
+      // Use debounce utility for better performance
+      let debounceTimeout;
+      const performSearch = () => {
+        currentSearch = searchInput.value;
+        const storedPosts = JSON.parse(container.dataset.originalPosts || '[]');
+        renderPosts(storedPosts, container, originalContent);
+      };
+      
       searchInput.addEventListener('input', (e) => {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-          currentSearch = e.target.value;
-          const storedPosts = JSON.parse(container.dataset.originalPosts || '[]');
-          renderPosts(storedPosts, container, originalContent);
-        }, 300); // Debounce 300ms
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(performSearch, 300); // Debounce 300ms
+      });
+      
+      // Also handle Enter key for immediate search
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          clearTimeout(debounceTimeout);
+          performSearch();
+        }
       });
     }
     
