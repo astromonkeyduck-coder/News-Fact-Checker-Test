@@ -8368,7 +8368,13 @@ function initNewsletterSubscription() {
     function checkAndDisplayRateLimit() {
         const rateLimit = checkRateLimit();
         if (!rateLimit.allowed) {
-            hideSpotlightSection();
+            // Don't hide section - just hide buttons
+            if (refreshBtn) {
+                refreshBtn.style.display = 'none';
+            }
+            if (retryBtn) {
+                retryBtn.style.display = 'none';
+            }
             return false;
         }
         return true;
@@ -8493,22 +8499,24 @@ function initNewsletterSubscription() {
             const rateLimit = checkRateLimit();
             
             if (!rateLimit.allowed) {
-                // Hide the entire spotlight section after 3 uses
-                hideSpotlightSection();
-                
-                // Show a message briefly before hiding (if elements exist)
+                // Don't hide the section - let them view their last generation
+                // Just hide the buttons and show a message
                 if (spotlightError) {
                     spotlightLoading.style.display = 'none';
-                    spotlightContent.style.display = 'none';
+                    spotlightContent.style.display = 'block'; // Keep content visible
                     spotlightError.style.display = 'block';
                     const errorMsg = spotlightError.querySelector('p');
                     if (errorMsg) {
-                        errorMsg.textContent = `⚠️ You've reached your daily limit of ${RATE_LIMIT_COUNT} spotlights. Come back tomorrow for more!`;
+                        errorMsg.textContent = `⚠️ You've reached your daily limit of ${RATE_LIMIT_COUNT} spotlights. You can still view your last generation! Come back tomorrow for more.`;
                     }
-                    const retryBtn = document.getElementById('retry-spotlight-btn');
-                    if (retryBtn) {
-                        retryBtn.style.display = 'none';
-                    }
+                }
+                
+                // Hide generation buttons
+                if (refreshBtn) {
+                    refreshBtn.style.display = 'none';
+                }
+                if (retryBtn) {
+                    retryBtn.style.display = 'none';
                 }
                 
                 updateButtonStates();
@@ -8524,7 +8532,11 @@ function initNewsletterSubscription() {
             spotlightContent.style.display = 'none';
             spotlightError.style.display = 'none';
             
+            // Stop any existing country music before generating new country
+            stopCountryMusic();
+            
             // Get random country
+            const previousCountry = currentCountry;
             currentCountry = getRandomCountry();
             
             // Update country display
@@ -8533,7 +8545,12 @@ function initNewsletterSubscription() {
             
             // If spotlight is visible, switch to new country's music
             if (isSpotlightVisible && currentCountry && countryMusicMap[currentCountry.name]) {
-                stopCountryMusic(); // Save old country's position
+                // Stop previous country's music completely
+                if (spotlightMusic) {
+                    spotlightMusic.pause();
+                    spotlightMusic.currentTime = 0;
+                    spotlightMusic = null;
+                }
                 playCountryMusic(currentCountry.name, false); // New country, start fresh
             }
             
@@ -8645,13 +8662,17 @@ IMPORTANT REQUIREMENTS:
                    cooldownUntil = Date.now() + (15 * 1000);
                    startCooldownTimer();
                    
-                   // Check if we've reached the limit and hide section
+                   // Check if we've reached the limit - hide button but keep content visible
                    const newRateLimit = checkRateLimit();
                    if (!newRateLimit.allowed) {
-                       // Hide section after 3rd generation
-                       setTimeout(() => {
-                           hideSpotlightSection();
-                       }, 1000); // Small delay to show the content briefly
+                       // Hide the generation button but keep the content visible
+                       if (refreshBtn) {
+                           refreshBtn.style.display = 'none';
+                       }
+                       if (retryBtn) {
+                           retryBtn.style.display = 'none';
+                       }
+                       // Don't hide the section - let them view their last generation
                    }
             
         } catch (error) {
@@ -8781,8 +8802,14 @@ IMPORTANT REQUIREMENTS:
             // Check rate limit before allowing new country
             const rateLimit = checkRateLimit();
             if (!rateLimit.allowed) {
-                hideSpotlightSection();
-                alert(`You've reached your daily limit of ${RATE_LIMIT_COUNT} spotlights. Come back tomorrow for more!`);
+                // Hide buttons but keep content visible
+                if (refreshBtn) {
+                    refreshBtn.style.display = 'none';
+                }
+                if (retryBtn) {
+                    retryBtn.style.display = 'none';
+                }
+                alert(`You've reached your daily limit of ${RATE_LIMIT_COUNT} spotlights. You can still view your last generation! Come back tomorrow for more.`);
                 updateButtonStates();
                 return;
             }
@@ -8807,8 +8834,14 @@ IMPORTANT REQUIREMENTS:
             // Check rate limit before allowing new country
             const rateLimit = checkRateLimit();
             if (!rateLimit.allowed) {
-                hideSpotlightSection();
-                alert(`You've reached your daily limit of ${RATE_LIMIT_COUNT} spotlights. Come back tomorrow for more!`);
+                // Hide buttons but keep content visible
+                if (refreshBtn) {
+                    refreshBtn.style.display = 'none';
+                }
+                if (retryBtn) {
+                    retryBtn.style.display = 'none';
+                }
+                alert(`You've reached your daily limit of ${RATE_LIMIT_COUNT} spotlights. You can still view your last generation! Come back tomorrow for more.`);
                 updateButtonStates();
                 return;
             }
@@ -8821,11 +8854,22 @@ IMPORTANT REQUIREMENTS:
     function initSpotlight() {
         // Wait a bit to ensure all DOM elements are ready
         setTimeout(() => {
-            // Check rate limit first - hide section if limit reached
-            // This persists across page refreshes and browser sessions via localStorage
-            if (!checkAndDisplayRateLimit()) {
-                console.log('Daily spotlight limit reached - section hidden');
-                updateButtonStates(); // Update button states even if hidden
+            // Check rate limit - hide buttons if limit reached, but keep section visible
+            const rateLimit = checkRateLimit();
+            if (!rateLimit.allowed) {
+                console.log('Daily spotlight limit reached - hiding buttons but keeping content visible');
+                // Hide generation buttons
+                if (refreshBtn) {
+                    refreshBtn.style.display = 'none';
+                }
+                if (retryBtn) {
+                    retryBtn.style.display = 'none';
+                }
+                updateButtonStates(); // Update button states
+                updateRemainingDisplay(); // Update remaining display
+                // Still load/restore the last generation so they can view it
+                setupSpotlightVisibilityObserver();
+                loadSpotlight(false); // Try to restore last generation
                 return;
             }
             
