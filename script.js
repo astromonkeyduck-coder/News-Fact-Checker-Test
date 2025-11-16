@@ -3863,7 +3863,12 @@ class BreakingNewsGame {
                         this.showSubmitStatus('✓ Score submitted successfully!', 'success');
                     }
                 } else {
-                    this.showSubmitStatus('Failed to submit score. Please try again.', 'error');
+                    // Error message is already shown by submitToLeaderboard if it's a userName validation error
+                    // For other errors, show a generic message
+                    const statusDiv = document.getElementById('submitStatus');
+                    if (statusDiv && !statusDiv.textContent.includes('inappropriate') && !statusDiv.textContent.includes('Please choose')) {
+                        this.showSubmitStatus('Failed to submit score. Please try again.', 'error');
+                    }
                     newSubmitBtn.disabled = false;
                 }
             } catch (error) {
@@ -3987,8 +3992,22 @@ class BreakingNewsGame {
                 console.log('[Game] Score submitted to leaderboard');
                 return true;
             } else {
-                const errorText = await response.text();
-                console.error('[Game] Failed to submit score:', errorText);
+                const errorData = await response.json().catch(() => ({ error: await response.text() }));
+                const errorMessage = errorData.error || 'Failed to submit score. Please try again.';
+                console.error('[Game] Failed to submit score:', errorMessage);
+                
+                // If it's a userName validation error, show it to the user
+                if (errorData.field === 'userName') {
+                    this.showSubmitStatus(errorMessage, 'error');
+                    // Re-enable the input so user can change it
+                    const nameInput = document.getElementById('playerNameInput');
+                    if (nameInput) {
+                        nameInput.disabled = false;
+                        nameInput.focus();
+                        nameInput.select();
+                    }
+                }
+                
                 return false;
             }
         } catch (error) {

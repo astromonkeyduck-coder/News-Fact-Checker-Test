@@ -1585,6 +1585,7 @@
         .header-logo-n {
             color: white;
             animation: gentleShake 3s ease-in-out infinite;
+            will-change: transform; /* Performance optimization */
         }
         
         .header-logo-w {
@@ -1592,6 +1593,7 @@
             text-shadow: 0 0 3px rgba(255, 255, 255, 0.5), 0 0 6px rgba(255, 255, 255, 0.3);
             animation: gentleShake 3s ease-in-out infinite 0.5s;
             -webkit-text-stroke: 0.5px rgba(255, 255, 255, 0.3);
+            will-change: transform; /* Performance optimization */
         }
         
         @keyframes gentleShake {
@@ -2662,6 +2664,7 @@
             text-shadow: 0 0 10px currentColor;
             filter: drop-shadow(0 0 5px currentColor);
             animation: logoGlow 3s ease-in-out infinite;
+            will-change: transform, filter; /* Performance optimization */
         }
         
         @keyframes logoGlow {
@@ -4167,6 +4170,7 @@
         
         /* Hero Stats Container - Horizontal Layout */
         .hero-stats-container {
+            contain: layout style paint; /* Performance optimization - isolate rendering */
             display: flex;
             flex-direction: row;
             align-items: center;
@@ -4419,6 +4423,12 @@
             text-transform: uppercase;
         }
         
+        /* Hero Stat Card Performance Optimization */
+        .hero-stat-card {
+            will-change: transform; /* Performance optimization */
+            contain: layout style; /* Isolate rendering */
+        }
+        
         /* Mobile Responsive for Hero Stats */
         @media (max-width: 768px) {
             .hero-stats-container {
@@ -4581,6 +4591,7 @@
         }
         
         .feature {
+            will-change: transform, opacity; /* Performance optimization for scroll animations */
             background: rgba(255, 255, 255, 0.03);
             padding: 25px;
             border-radius: 20px;
@@ -6160,6 +6171,7 @@
             margin-bottom: 10px;
             text-shadow: 0 0 30px rgba(155, 89, 182, 0.8);
             animation: pulse 2s ease-in-out infinite;
+            will-change: transform; /* Performance optimization */
         }
         .hero-stat-label {
             font-size: 1.4rem;
@@ -6212,6 +6224,7 @@
             width: 100%;
             padding: 0 20px;
             box-sizing: border-box;
+            contain: layout style; /* Performance optimization */
         }
         
         .stat-card.surrounding {
@@ -6220,7 +6233,7 @@
             border-radius: 20px;
             padding: 20px 15px;
             text-align: center;
-            transition: all 0.3s ease;
+            transition: transform 0.3s ease, opacity 0.3s ease; /* Only animate transform and opacity for better performance */
             position: relative;
             overflow: hidden;
             min-height: 140px;
@@ -6231,6 +6244,7 @@
             width: 100%;
             box-sizing: border-box;
             margin: 0 auto;
+            will-change: transform; /* Performance optimization */
         }
         
         .stat-card.surrounding::before {
@@ -11168,7 +11182,8 @@
         }
         
         // Run auto-fill when forms are visible and periodically check
-        setInterval(autoFillNewsletter, 2000);
+        // Use longer interval to reduce performance impact
+        setInterval(autoFillNewsletter, 5000); // Changed from 2000ms to 5000ms
         
         // Also run on any user interaction with newsletter form
         document.addEventListener('click', function(e) {
@@ -11219,6 +11234,9 @@
             let lastUpdateTime = performance.now();
             const startTime = lastUpdateTime;
             
+            // Optimize element for animation
+            element.style.willChange = 'contents';
+            
             function update(currentTime) {
                 const elapsed = currentTime - startTime;
                 const progress = Math.min(elapsed / duration, 1);
@@ -11240,6 +11258,8 @@
                 } else {
                     // Ensure final value is exact
                     element.textContent = originalFormat;
+                    // Remove will-change after animation completes
+                    element.style.willChange = 'auto';
                 }
             }
             
@@ -11365,8 +11385,17 @@
         });
         
         // Save page state when user scrolls or changes music
+        // Throttle scroll events for better performance
         let stateTimeout;
+        let lastScrollTime = 0;
+        const scrollThrottle = 100; // Only save state every 100ms
+        
         window.addEventListener('scroll', function() {
+            const now = Date.now();
+            if (now - lastScrollTime < scrollThrottle) {
+                return; // Skip if too soon
+            }
+            lastScrollTime = now;
             clearTimeout(stateTimeout);
             stateTimeout = setTimeout(function() {
                 savePageState();
@@ -11801,7 +11830,15 @@
                 
                 // Re-initialize on window resize
                 let resizeTimeout;
+                // Throttle resize events for better performance
+                let lastResizeTime = 0;
+                const resizeThrottle = 250;
                 window.addEventListener('resize', () => {
+                    const now = Date.now();
+                    if (now - lastResizeTime < resizeThrottle) {
+                        return; // Skip if too soon
+                    }
+                    lastResizeTime = now;
                     clearTimeout(resizeTimeout);
                     resizeTimeout = setTimeout(() => {
                         resetAllBeams();

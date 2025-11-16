@@ -2,9 +2,13 @@ const { getStore } = require("@netlify/blobs");
 const crypto = require("crypto");
 
 // Profanity and inappropriate content filter
-function filterInappropriateContent(text) {
-  if (!text || typeof text !== "string") {
-    return "Anonymous";
+// Returns { valid: boolean, error?: string, cleaned?: string }
+function validateUserName(text) {
+  if (!text || typeof text !== "string" || text.trim().length === 0) {
+    return { 
+      valid: false, 
+      error: "Name cannot be empty. Please enter a valid name." 
+    };
   }
 
   // Normalize text (lowercase, remove special characters for checking)
@@ -26,7 +30,10 @@ function filterInappropriateContent(text) {
   // Check for inappropriate words
   for (const word of inappropriateWords) {
     if (normalized.includes(word)) {
-      return "Anonymous";
+      return { 
+        valid: false, 
+        error: "Name contains inappropriate content. Please choose a different name." 
+      };
     }
   }
 
@@ -34,19 +41,29 @@ function filterInappropriateContent(text) {
   const specialCharCount = (text.match(/[^a-zA-Z0-9\s]/g) || []).length;
   const numberCount = (text.match(/[0-9]/g) || []).length;
   if (specialCharCount > text.length * 0.3 || numberCount > text.length * 0.5) {
-    return "Anonymous";
+    return { 
+      valid: false, 
+      error: "Name contains too many special characters or numbers. Please use a more appropriate name." 
+    };
   }
 
   // Trim and limit length
   let cleaned = text.trim();
   if (cleaned.length > 30) {
-    cleaned = cleaned.substring(0, 30);
+    return { 
+      valid: false, 
+      error: "Name is too long. Please use a name with 30 characters or less." 
+    };
   }
+  
   if (cleaned.length === 0) {
-    return "Anonymous";
+    return { 
+      valid: false, 
+      error: "Name cannot be empty. Please enter a valid name." 
+    };
   }
 
-  return cleaned;
+  return { valid: true, cleaned: cleaned };
 }
 
 // Generate a unique user ID for anonymous users
@@ -143,8 +160,20 @@ exports.handler = async (event, context) => {
       // Generate userId if not provided
       const finalUserId = userId || generateUserId();
       
-      // Filter inappropriate content from userName
-      const filteredUserName = filterInappropriateContent(userName);
+      // Validate userName - require user to change it if invalid
+      const userNameValidation = validateUserName(userName);
+      if (!userNameValidation.valid) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: userNameValidation.error || "Invalid name. Please choose a different name.",
+            field: "userName"
+          }),
+        };
+      }
+      
+      const filteredUserName = userNameValidation.cleaned;
 
       console.log(`[Leaderboard API] POST request - gameType: ${gameType}, score: ${score}, userName: ${userName}`);
 

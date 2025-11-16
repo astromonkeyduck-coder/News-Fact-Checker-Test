@@ -125,16 +125,29 @@ class CommentSection {
         this.render();
       } else {
         let errorMessage = 'Failed to post comment. Please try again.';
+        let errorData = null;
         try {
-          const error = await response.json();
-          errorMessage = error.error || error.message || errorMessage;
-          console.error('[Comments] API error response:', error);
+          errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+          console.error('[Comments] API error response:', errorData);
         } catch (parseErr) {
           const text = await response.text();
           console.error('[Comments] API error (non-JSON):', text, 'Status:', response.status);
           errorMessage = `Error ${response.status}: ${text || response.statusText || errorMessage}`;
         }
-        alert(errorMessage);
+        
+        // If it's an author name validation error, show specific message
+        if (errorData && errorData.field === 'author') {
+          alert(errorMessage);
+          // Focus back on the textarea so user can see the error
+          const form = document.querySelector(`#comment-section-${this.articleId} .comment-form`);
+          if (form) {
+            const textarea = form.querySelector('textarea');
+            if (textarea) textarea.focus();
+          }
+        } else {
+          alert(errorMessage);
+        }
       }
     } catch (err) {
       console.error('[Comments] Network error posting comment:', err);

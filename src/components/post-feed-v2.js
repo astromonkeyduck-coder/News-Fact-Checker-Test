@@ -1647,7 +1647,22 @@ window.feedSubmitComment = async function(postId, form) {
       body: JSON.stringify(commentData),
     });
     
-    if (!response.ok) throw new Error('Failed to post comment');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: await response.text() }));
+      const errorMessage = errorData.error || 'Failed to post comment. Please try again.';
+      
+      // If it's an author name validation error, show it to the user
+      if (errorData.field === 'author') {
+        alert(errorMessage);
+        // Focus back on the textarea so user can see the error
+        if (textarea) {
+          textarea.focus();
+        }
+        throw new Error(errorMessage);
+      }
+      
+      throw new Error(errorMessage);
+    }
     
     // Clear form
     if (textarea) textarea.value = '';

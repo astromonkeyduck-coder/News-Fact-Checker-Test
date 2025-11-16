@@ -3,6 +3,71 @@
  * Uses Netlify Blobs for persistent storage across devices
  */
 
+// User name validation function (same as leaderboard)
+// Returns { valid: boolean, error?: string, cleaned?: string }
+function validateUserName(text) {
+  if (!text || typeof text !== "string" || text.trim().length === 0) {
+    return { 
+      valid: false, 
+      error: "Name cannot be empty. Please enter a valid name." 
+    };
+  }
+
+  // Normalize text (lowercase, remove special characters for checking)
+  const normalized = text.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  // List of inappropriate words/phrases (common profanity and offensive terms)
+  const inappropriateWords = [
+    "fuck", "shit", "damn", "bitch", "asshole", "bastard", "cunt", "dick",
+    "piss", "crap", "hell", "slut", "whore", "retard", "nigger", "nigga",
+    "fag", "faggot", "kike", "spic", "chink", "gook", "towelhead", "terrorist",
+    "nazi", "hitler", "kill", "murder", "death", "suicide", "rape", "sex",
+    "porn", "xxx", "adult", "nsfw", "penis", "vagina", "boob", "tits",
+    "cock", "pussy", "cum", "jizz", "orgasm", "masturbat", "ejaculat",
+    "scam", "spam", "hack", "virus", "malware", "phishing", "fraud",
+    "admin", "moderator", "owner", "founder", "official", "noteworthy",
+    "breakingnews", "breaking", "news", "noteworthynews"
+  ];
+
+  // Check for inappropriate words
+  for (const word of inappropriateWords) {
+    if (normalized.includes(word)) {
+      return { 
+        valid: false, 
+        error: "Name contains inappropriate content. Please choose a different name." 
+      };
+    }
+  }
+
+  // Check for excessive special characters or numbers (likely spam)
+  const specialCharCount = (text.match(/[^a-zA-Z0-9\s]/g) || []).length;
+  const numberCount = (text.match(/[0-9]/g) || []).length;
+  if (specialCharCount > text.length * 0.3 || numberCount > text.length * 0.5) {
+    return { 
+      valid: false, 
+      error: "Name contains too many special characters or numbers. Please use a more appropriate name." 
+    };
+  }
+
+  // Trim and limit length
+  let cleaned = text.trim();
+  if (cleaned.length > 30) {
+    return { 
+      valid: false, 
+      error: "Name is too long. Please use a name with 30 characters or less." 
+    };
+  }
+  
+  if (cleaned.length === 0) {
+    return { 
+      valid: false, 
+      error: "Name cannot be empty. Please enter a valid name." 
+    };
+  }
+
+  return { valid: true, cleaned: cleaned };
+}
+
 let getStore;
 try {
   getStore = require("@netlify/blobs").getStore;
@@ -128,6 +193,19 @@ exports.handler = async (event, context) => {
         };
       }
 
+      // Validate author name - require user to change it if invalid
+      const userNameValidation = validateUserName(author);
+      if (!userNameValidation.valid) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: userNameValidation.error || "Invalid name. Please choose a different name.",
+            field: "author"
+          }),
+        };
+      }
+
       const commentsKey = `comments_${articleId}`;
       
       // Load existing comments
@@ -141,11 +219,11 @@ exports.handler = async (event, context) => {
         comments = [];
       }
 
-      // Create new comment
+      // Create new comment with validated/cleaned author name
       const newComment = {
         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         text: text.trim(),
-        author: author.trim(),
+        author: userNameValidation.cleaned,
         authorEmail: authorEmail || "",
         authorId: authorId,
         timestamp: Date.now(),
