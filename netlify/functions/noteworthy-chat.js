@@ -164,6 +164,20 @@ exports.handler = async (event, context) => {
       files = requestBody.files || [];
       chatHistory = requestBody.chatHistory || [];
       
+      // Log incoming files for debugging
+      if (files && files.length > 0) {
+        console.log("[Noteworthy Chat] Received files:", files.length, "files");
+        files.forEach((file, idx) => {
+          console.log(`[Noteworthy Chat] File ${idx + 1}:`, {
+            name: file.name || 'unnamed',
+            type: file.type || 'unknown',
+            size: file.size || 0,
+            hasData: !!file.data,
+            dataLength: file.data ? file.data.length : 0,
+          });
+        });
+      }
+      
       // Validate chat history format and limit size
       if (Array.isArray(chatHistory)) {
         // Filter out invalid entries and ensure proper format
@@ -251,14 +265,21 @@ exports.handler = async (event, context) => {
         /^(can\s+you\s+)?(generate|create|make|draw)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing)(\s+of)?\s+/i,
         /^(an?|the)\s+(image|picture|photo|visual|illustration|drawing)\s+of\s+/i,
         /\b(picture|image|photo|visual|illustration|drawing)\s+of\s+/i,
-        /^(generate|create|make|draw)\s+/i
+        /^(generate|create|make|draw)\s+/i,
+        // Catch simple requests like "now a dog", "a cat", "show me a dog"
+        /^(now\s+)?(an?\s+)?(dog|cat|bird|car|house|person|tree|flower|sun|moon|star|animal|object|thing)\s*$/i,
+        /^(show\s+me|give\s+me|i\s+want|i\s+need)\s+(an?\s+)?(dog|cat|bird|car|house|person|tree|flower|sun|moon|star|animal|object|thing)/i,
+        // Catch requests with "now" followed by object
+        /^now\s+(an?\s+)?[a-z]+/i
       ];
       
       for (const pattern of imagePatterns) {
         if (pattern.test(lowerMsg)) {
+          console.log(`[Image Detection] Matched pattern for: "${msg}"`);
           return true;
         }
       }
+      console.log(`[Image Detection] No pattern matched for: "${msg}"`);
       return false;
     }
     
@@ -267,11 +288,13 @@ exports.handler = async (event, context) => {
       let prompt = msg.trim();
       const prefixes = [
         /^(generate|create|make|draw)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing)(\s+of)?\s+/i,
-        /^(show\s+me|i\s+want)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing)(\s+of)?\s+/i,
+        /^(show\s+me|i\s+want|give\s+me|i\s+need)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing)(\s+of)?\s+/i,
         /^(can\s+you\s+)?(generate|create|make|draw)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing)(\s+of)?\s+/i,
         /^(an?|the)\s+(image|picture|photo|visual|illustration|drawing)\s+of\s+/i,
         /\b(picture|image|photo|visual|illustration|drawing)\s+of\s+/i,
-        /^(generate|create|make|draw)\s+/i
+        /^(generate|create|make|draw)\s+/i,
+        /^now\s+/i,
+        /^(show\s+me|give\s+me|i\s+want|i\s+need)\s+/i
       ];
       
       for (const prefix of prefixes) {
@@ -280,6 +303,11 @@ exports.handler = async (event, context) => {
           prompt = prompt.substring(match[0].length).trim();
           break;
         }
+      }
+      
+      // If prompt is very short, add "a" if missing
+      if (prompt && prompt.length < 20 && !prompt.match(/^(a|an|the)\s+/i)) {
+        prompt = `a ${prompt}`;
       }
       
       return prompt || msg;
@@ -318,9 +346,14 @@ exports.handler = async (event, context) => {
             revisedPrompt: imageResult?.data?.[0]?.revised_prompt || imagePrompt,
             prompt: imagePrompt
           };
-          console.log("Image generated successfully");
+          console.log("Image generated successfully:", {
+            hasUrl: !!imageData.imageUrl,
+            urlPreview: imageData.imageUrl ? imageData.imageUrl.substring(0, 50) + '...' : 'none',
+            revisedPrompt: imageData.revisedPrompt
+          });
         } else {
-          console.error("Image generation failed:", imageResponse.status);
+          const errorText = await imageResponse.text().catch(() => 'Unknown error');
+          console.error("Image generation failed:", imageResponse.status, errorText);
           // Continue with chat response even if image generation fails
         }
       } catch (imageError) {
@@ -335,9 +368,9 @@ exports.handler = async (event, context) => {
     
     try {
       messages = [
-        {
-          role: "system",
-          content: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You are designed to help users with fact-checking, media literacy, and staying informed with verified news.
+          {
+            role: "system",
+            content: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You are designed to help users with fact-checking, media literacy, and staying informed with verified news.
 
 ABOUT NOTEWORTHY NEWS:
 - Noteworthy News is committed to delivering accurate, fact-checked journalism in an era of information overload
@@ -375,7 +408,7 @@ RESPONSE STYLE:
 - Maintain a professional but approachable tone
 - Do NOT include any attribution text like "generated by Noteworthy AI" or similar disclaimers in your responses
 - Do NOT add footers, signatures, or attribution statements to your answers`,
-        },
+          },
       ];
       
       // Store uploaded images in Netlify Blobs
@@ -555,8 +588,8 @@ RESPONSE STYLE:
           temperature: 0.4,
           max_tokens: 450,
           messages: messages,
-        }),
-      });
+      }),
+    });
     } catch (fetchError) {
       console.error("[Noteworthy Chat] Error calling OpenAI API:", fetchError);
       console.error("[Noteworthy Chat] Error stack:", fetchError.stack);
@@ -606,61 +639,61 @@ RESPONSE STYLE:
     try {
       // Add timeout protection - don't wait more than 1.5 seconds for history
       const historyPromise = (async () => {
+    try {
+      const { logData, getClientIP } = require("./log-data");
+      const ip = getClientIP(event);
+      
+      // Try to get email and chat history from previous logs by IP
+      if (ip && ip !== "unknown" && !ip.startsWith("127.") && !ip.startsWith("192.168.")) {
+        const { getStore } = require("@netlify/blobs");
+        const store = getStore({
+          name: "analytics-data",
+          siteID: process.env.NETLIFY_SITE_ID,
+          token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+        });
+        
+        const today = new Date().toISOString().split('T')[0];
+        const logsKey = `logs-${today}`;
         try {
-          const { logData, getClientIP } = require("./log-data");
-          const ip = getClientIP(event);
-          
-          // Try to get email and chat history from previous logs by IP
-          if (ip && ip !== "unknown" && !ip.startsWith("127.") && !ip.startsWith("192.168.")) {
-            const { getStore } = require("@netlify/blobs");
-            const store = getStore({
-              name: "analytics-data",
-              siteID: process.env.NETLIFY_SITE_ID,
-              token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
-            });
+          const existing = await store.get(logsKey, { type: "json" });
+          if (existing && Array.isArray(existing)) {
+            // Find email from any log with same IP
+            const matchingLog = existing.find(log => 
+              log.ip === ip && 
+              log.userEmail && 
+              log.userEmail !== 'Unknown' &&
+              log.userEmail.includes('@')
+            );
+            if (matchingLog) {
+              userEmail = matchingLog.userEmail;
+            }
             
-            const today = new Date().toISOString().split('T')[0];
-            const logsKey = `logs-${today}`;
-            try {
-              const existing = await store.get(logsKey, { type: "json" });
-              if (existing && Array.isArray(existing)) {
-                // Find email from any log with same IP
-                const matchingLog = existing.find(log => 
-                  log.ip === ip && 
-                  log.userEmail && 
-                  log.userEmail !== 'Unknown' &&
-                  log.userEmail.includes('@')
-                );
-                if (matchingLog) {
-                  userEmail = matchingLog.userEmail;
-                }
-                
                 // Get recent chat history for this user/IP (reduced to 5 chats to prevent timeout)
-                const recentChats = existing
-                  .filter(log => 
-                    log.dataType === 'ai-chat' && 
-                    log.ip === ip &&
-                    log.data &&
-                    log.data.userMessage
-                  )
-                  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            const recentChats = existing
+              .filter(log => 
+                log.dataType === 'ai-chat' && 
+                log.ip === ip &&
+                log.data &&
+                log.data.userMessage
+              )
+              .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
                   .slice(0, 5) // Reduced from 10 to 5 to prevent timeout
-                  .map(log => ({
-                    timestamp: log.timestamp,
+              .map(log => ({
+                timestamp: log.timestamp,
                     userMessage: (log.data.userMessage || '').substring(0, 500), // Limit size
                     aiResponse: (log.data.aiResponse || '').substring(0, 500), // Limit size
-                  }));
-                
+              }));
+            
                 recentChatHistory = recentChats;
-              }
+          }
             } catch (blobError) {
               console.error("[Noteworthy Chat] Error reading from Blob storage:", blobError);
-              // Continue without email/history
-            }
-          }
-        } catch (e) {
-          console.error("[Noteworthy Chat] Error getting chat history:", e);
           // Continue without email/history
+        }
+      }
+    } catch (e) {
+          console.error("[Noteworthy Chat] Error getting chat history:", e);
+      // Continue without email/history
         }
       })();
       
@@ -677,19 +710,41 @@ RESPONSE STYLE:
     
     // Extract file information for logging (include stored image info)
     let storedImageIndex = 0;
-    const uploadedFilesInfo = files && files.length > 0 ? files.map((file) => {
+    const uploadedFilesInfo = files && files.length > 0 ? files.map((file, idx) => {
       const isImage = file.type && file.type.startsWith('image/');
       const storedImage = isImage ? storedUploadedImages[storedImageIndex++] : null;
-      return {
-        name: file.name || 'unknown',
-        type: file.type || 'unknown',
-        size: file.size || 0,
+      
+      // Calculate size from base64 data if size is not provided
+      let fileSize = file.size || 0;
+      if (!fileSize && file.data) {
+        // Approximate size: base64 is ~4/3 of original size
+        const base64Length = file.data.replace(/^data:[^;]+;base64,/, '').length;
+        fileSize = Math.round((base64Length * 3) / 4);
+      }
+      
+      const fileInfo = {
+        name: file.name || `file-${idx + 1}`,
+        type: file.type || 'application/octet-stream',
+        size: fileSize,
         isImage: isImage,
         storedImageKey: storedImage?.storedImageKey || null,
         storedImageUrl: storedImage?.storedImageUrl || null,
         uploadedAt: storedImage?.uploadedAt || null,
       };
+      
+      console.log(`[Noteworthy Chat] File info for logging ${idx + 1}:`, fileInfo);
+      return fileInfo;
     }) : [];
+    
+    // Debug logging for files and images
+    console.log("[Noteworthy Chat] File upload info:", {
+      filesCount: files ? files.length : 0,
+      uploadedFilesInfoCount: uploadedFilesInfo.length,
+      imageCount: uploadedFilesInfo.filter(f => f.isImage).length,
+      storedImagesCount: storedUploadedImages.length,
+      hasGeneratedImage: !!(imageData && imageData.imageUrl),
+      generatedImageUrl: imageData?.imageUrl ? imageData.imageUrl.substring(0, 50) + '...' : null,
+    });
     
     logData("ai-chat", {
       userMessage: message,
@@ -702,6 +757,13 @@ RESPONSE STYLE:
       fileCount: uploadedFilesInfo.length,
       imageCount: uploadedFilesInfo.filter(f => f.isImage).length,
       storedImages: storedUploadedImages.length > 0 ? storedUploadedImages : undefined,
+      // Add AI-generated image data if present
+      generatedImage: imageData && imageData.imageUrl ? {
+        imageUrl: imageData.imageUrl,
+        prompt: imageData.prompt,
+        revisedPrompt: imageData.revisedPrompt,
+      } : undefined,
+      hasGeneratedImage: !!(imageData && imageData.imageUrl),
     }, event).catch(err => {
       console.error("[Noteworthy Chat] Failed to log data:", err);
       // Don't fail the request if logging fails
@@ -713,191 +775,148 @@ RESPONSE STYLE:
       if (!process.env.RESEND_API_KEY) {
         console.warn("[Noteworthy Chat] RESEND_API_KEY not configured. Skipping email notifications.");
       } else {
-        const { Resend } = require('resend');
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        
+      const { Resend } = require('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      
         // Get notification emails from environment variable only (comma-separated or JSON array)
-        let notificationEmails = [];
-        if (process.env.AI_NOTIFICATION_EMAILS) {
-          try {
-            // Try parsing as JSON array first
-            notificationEmails = JSON.parse(process.env.AI_NOTIFICATION_EMAILS);
-            if (!Array.isArray(notificationEmails)) {
-              throw new Error('Not an array');
-            }
-          } catch {
-            // If not JSON, treat as comma-separated string
-            notificationEmails = process.env.AI_NOTIFICATION_EMAILS.split(',').map(e => e.trim()).filter(e => e);
+      let notificationEmails = [];
+      if (process.env.AI_NOTIFICATION_EMAILS) {
+        try {
+          // Try parsing as JSON array first
+          notificationEmails = JSON.parse(process.env.AI_NOTIFICATION_EMAILS);
+          if (!Array.isArray(notificationEmails)) {
+            throw new Error('Not an array');
           }
+        } catch {
+          // If not JSON, treat as comma-separated string
+          notificationEmails = process.env.AI_NOTIFICATION_EMAILS.split(',').map(e => e.trim()).filter(e => e);
         }
+      }
+      
+        // Filter out mr.pangolinman@example.com
+        notificationEmails = notificationEmails.filter(email => 
+          email.toLowerCase() !== 'mr.pangolinman@example.com' && 
+          email.toLowerCase() !== 'pangolinman@example.com'
+        );
         
-        // Only send if AI_NOTIFICATION_EMAILS is configured
-        if (notificationEmails.length === 0) {
-          console.log(`[Noteworthy Chat] AI_NOTIFICATION_EMAILS not configured, skipping email notification`);
+        // Only send if AI_NOTIFICATION_EMAILS is configured and has valid emails
+      if (notificationEmails.length === 0) {
+          console.log(`[Noteworthy Chat] AI_NOTIFICATION_EMAILS not configured or all filtered out, skipping email notification`);
         } else {
           console.log(`[Noteworthy Chat] Sending email notification to: ${notificationEmails.join(', ')}`);
+      
+      const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
         
-        const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
+        // Determine if this is an image generation request
+        const isImageGeneration = imageData && imageData.imageUrl;
+      
+      const safeMessage = String(message)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .substring(0, 500);
+      
+      const safeReply = String(reply)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .substring(0, 1000);
+      
+        // Create separate email templates for chat vs image generation
+        let emailSubject, emailHtml, emailText;
         
-        const safeMessage = String(message)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;')
-          .substring(0, 500);
-        
-        const safeReply = String(reply)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;')
-          .substring(0, 1000);
-        
-        // Send to all notification emails
-        const emailResults = await Promise.allSettled(notificationEmails.map(email => 
-        resend.emails.send({
-          from: fromEmail,
-          to: email,
-          subject: '💬 New AI Chat Interaction',
-        html: `<!DOCTYPE html>
+        if (isImageGeneration) {
+          // Image Generation Email
+          const safeImagePrompt = (imageData.revisedPrompt || imageData.prompt || message)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+          
+          emailSubject = '🎨 New AI Image Generated';
+          emailHtml = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); background-attachment: fixed;">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); min-height: 100vh;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
     <tr>
       <td style="padding: 40px 20px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1); overflow: hidden;">
-          <!-- Header with gradient -->
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); overflow: hidden;">
+          <!-- Header -->
           <tr>
-            <td style="padding: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); position: relative;">
-              <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: url('data:image/svg+xml,<svg width=\"100\" height=\"100\" xmlns=\"http://www.w3.org/2000/svg\"><defs><pattern id=\"grid\" width=\"20\" height=\"20\" patternUnits=\"userSpaceOnUse\"><path d=\"M 20 0 L 0 0 0 20\" fill=\"none\" stroke=\"rgba(255,255,255,0.1)\" stroke-width=\"1\"/></pattern></defs><rect width=\"100\" height=\"100\" fill=\"url(%23grid)\"/></svg>'); opacity: 0.3;"></div>
-              <div style="padding: 50px 40px; text-align: center; position: relative; z-index: 1;">
-                <div style="display: inline-block; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.1);">
-                  <div style="font-size: 48px; margin: 0;">✨</div>
-                </div>
-                <h1 style="color: #ffffff; margin: 0 0 10px 0; font-size: 32px; font-weight: 800; text-shadow: 0 2px 10px rgba(0,0,0,0.2); letter-spacing: -0.5px;">New AI Chat</h1>
-                <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 16px; font-weight: 500;">Noteworthy AI Interaction</p>
+            <td style="padding: 0; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+              <div style="padding: 40px 30px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 16px;">🎨</div>
+                <h1 style="color: #ffffff; margin: 0 0 8px 0; font-size: 28px; font-weight: 800; text-shadow: 0 2px 8px rgba(0,0,0,0.2);">New AI Image Generated</h1>
+                <p style="color: rgba(255,255,255,0.95); margin: 0; font-size: 15px; font-weight: 500;">Noteworthy AI Image Creation</p>
               </div>
             </td>
           </tr>
           
           <!-- Main Content -->
           <tr>
-            <td style="padding: 40px;">
-              <!-- User Info Card -->
+            <td style="padding: 30px;">
               ${userEmail ? `
-              <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border: 2px solid rgba(102, 126, 234, 0.3); border-radius: 16px; padding: 20px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                  <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">👤</div>
-                  <div>
-                    <p style="color: #667eea; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">Chat User</p>
-                    <p style="color: #1a202c; font-size: 18px; font-weight: 600; margin: 0;">${userEmail}</p>
-                  </div>
-                </div>
-              </div>
-              ` : `
-              <div style="background: linear-gradient(135deg, rgba(160, 160, 160, 0.1) 0%, rgba(140, 140, 140, 0.1) 100%); border: 2px solid rgba(160, 160, 160, 0.3); border-radius: 16px; padding: 20px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                  <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #a0a0a0 0%, #8c8c8c 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">👤</div>
-                  <div>
-                    <p style="color: #8c8c8c; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">Chat User</p>
-                    <p style="color: #1a202c; font-size: 18px; font-weight: 600; margin: 0;">Unknown User</p>
-                  </div>
-                </div>
-              </div>
-              `}
-              
-              <!-- User Message Card -->
-              <div style="background: linear-gradient(135deg, rgba(46, 204, 113, 0.08) 0%, rgba(39, 174, 96, 0.12) 100%); border-left: 5px solid #2ecc71; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(46, 204, 113, 0.15); position: relative; overflow: hidden;">
-                <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: radial-gradient(circle, rgba(46, 204, 113, 0.1) 0%, transparent 70%); border-radius: 50%;"></div>
-                <div style="position: relative; z-index: 1;">
-                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
-                    <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);">💬</div>
-                    <p style="color: #27ae60; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin: 0;">User Message</p>
-                  </div>
-                  <div style="background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); border-radius: 12px; padding: 18px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);">
-                    <p style="color: #1a202c; font-size: 16px; line-height: 1.7; margin: 0; white-space: pre-wrap; font-weight: 500;">${safeMessage}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- AI Response Card -->
-              <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.12) 100%); border-left: 5px solid #667eea; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15); position: relative; overflow: hidden;">
-                <div style="position: absolute; top: -50px; left: -50px; width: 150px; height: 150px; background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%); border-radius: 50%;"></div>
-                <div style="position: relative; z-index: 1;">
-                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
-                    <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">🤖</div>
-                    <p style="color: #667eea; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin: 0;">AI Response</p>
-                  </div>
-                  <div style="background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); border-radius: 12px; padding: 18px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);">
-                    <p style="color: #1a202c; font-size: 16px; line-height: 1.7; margin: 0; white-space: pre-wrap; font-weight: 500;">${safeReply}</p>
-                  </div>
-                </div>
-              </div>
-              
-              ${recentChatHistory.length > 0 ? `
-              <!-- Chat History Card -->
-              <div style="background: linear-gradient(135deg, rgba(155, 89, 182, 0.08) 0%, rgba(142, 68, 173, 0.12) 100%); border: 2px solid rgba(155, 89, 182, 0.3); border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 8px 24px rgba(155, 89, 182, 0.15);">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-                  <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);">💬</div>
-                  <p style="color: #9b59b6; font-size: 16px; font-weight: 700; margin: 0;">Recent Chat History</p>
-                  <span style="background: rgba(155, 89, 182, 0.2); color: #9b59b6; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-left: auto;">${recentChatHistory.length} conversations</span>
-                </div>
-                ${recentChatHistory.map((chat, idx) => {
-                  const chatTime = new Date(chat.timestamp).toLocaleString();
-                  const safeUserMsg = String(chat.userMessage || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 300);
-                  const safeAiResp = String(chat.aiResponse || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 400);
-                  return `
-                  <div style="margin-bottom: ${idx < recentChatHistory.length - 1 ? '24px' : '0'}; padding-bottom: ${idx < recentChatHistory.length - 1 ? '24px' : '0'}; border-bottom: ${idx < recentChatHistory.length - 1 ? '2px solid rgba(155, 89, 182, 0.15)' : 'none'};">
-                    <p style="color: #9b59b6; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 16px 0; opacity: 0.7;">${chatTime}</p>
-                    <div style="background: rgba(46, 204, 113, 0.06); border-left: 4px solid #2ecc71; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(46, 204, 113, 0.1);">
-                      <p style="color: #27ae60; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">👤 User</p>
-                      <p style="color: #1a202c; font-size: 14px; line-height: 1.6; margin: 0; font-weight: 500;">${safeUserMsg}${chat.userMessage && chat.userMessage.length > 300 ? '...' : ''}</p>
-                    </div>
-                    <div style="background: rgba(102, 126, 234, 0.06); border-left: 4px solid #667eea; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);">
-                      <p style="color: #667eea; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">🤖 AI</p>
-                      <p style="color: #1a202c; font-size: 14px; line-height: 1.6; margin: 0; font-weight: 500;">${safeAiResp}${chat.aiResponse && chat.aiResponse.length > 400 ? '...' : ''}</p>
-                    </div>
-                  </div>
-                  `;
-                }).join('')}
+              <div style="background-color: #f8f9fa; border: 2px solid #e9ecef; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+                <p style="color: #667eea; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 6px 0;">Chat User</p>
+                <p style="color: #1a202c; font-size: 16px; font-weight: 600; margin: 0;">${userEmail}</p>
               </div>
               ` : ''}
               
-              <!-- Stats Card -->
-              <div style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: 2px solid rgba(102, 126, 234, 0.2); border-radius: 16px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
-                  <div style="text-align: center;">
-                    <div style="font-size: 28px; margin-bottom: 8px;">🧠</div>
-                    <p style="color: #667eea; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">Model</p>
-                    <p style="color: #1a202c; font-size: 16px; font-weight: 700; margin: 0;">gpt-4o</p>
-                  </div>
-                  ${usage ? `
-                  <div style="text-align: center;">
-                    <div style="font-size: 28px; margin-bottom: 8px;">💬</div>
-                    <p style="color: #667eea; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">Tokens</p>
-                    <p style="color: #1a202c; font-size: 16px; font-weight: 700; margin: 0;">${usage.total_tokens || 0}</p>
-                  </div>
-                  ` : ''}
-                  <div style="text-align: center;">
-                    <div style="font-size: 28px; margin-bottom: 8px;">📅</div>
-                    <p style="color: #667eea; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">Time</p>
-                    <p style="color: #1a202c; font-size: 14px; font-weight: 700; margin: 0;">${new Date().toLocaleString()}</p>
-                  </div>
+              <!-- Generated Image -->
+              <div style="background-color: #ffffff; border: 3px solid #f093fb; border-radius: 16px; padding: 20px; margin-bottom: 24px; text-align: center; box-shadow: 0 4px 16px rgba(240, 147, 251, 0.2);">
+                <p style="color: #f5576c; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin: 0 0 16px 0;">Generated Image</p>
+                <img src="${imageData.imageUrl}" alt="${safeImagePrompt}" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: block; margin: 0 auto;" />
+                <div style="margin-top: 16px; padding: 12px; background-color: #f8f9fa; border-radius: 8px;">
+                  <p style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 6px 0;">Prompt</p>
+                  <p style="color: #1a202c; font-size: 14px; line-height: 1.5; margin: 0; font-weight: 500;">${safeImagePrompt}</p>
                 </div>
+              </div>
+              
+              <!-- User Request -->
+              <div style="background-color: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+                <p style="color: #2e7d32; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;">User Request</p>
+                <p style="color: #1a202c; font-size: 15px; line-height: 1.6; margin: 0; font-weight: 500;">${safeMessage}</p>
+              </div>
+              
+              <!-- AI Response -->
+              <div style="background-color: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+                <p style="color: #1565c0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;">AI Response</p>
+                <p style="color: #1a202c; font-size: 15px; line-height: 1.6; margin: 0; font-weight: 500;">${safeReply}</p>
+              </div>
+              
+              <!-- Stats -->
+              <div style="background-color: #f8f9fa; border: 2px solid #dee2e6; border-radius: 12px; padding: 20px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                  <tr>
+                    <td style="text-align: center; padding: 8px;">
+                      <div style="font-size: 24px; margin-bottom: 6px;">🧠</div>
+                      <p style="color: #667eea; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">Model</p>
+                      <p style="color: #1a202c; font-size: 14px; font-weight: 700; margin: 0;">gpt-4o</p>
+                    </td>
+                    <td style="text-align: center; padding: 8px;">
+                      <div style="font-size: 24px; margin-bottom: 6px;">📅</div>
+                      <p style="color: #667eea; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">Time</p>
+                      <p style="color: #1a202c; font-size: 12px; font-weight: 700; margin: 0;">${new Date().toLocaleString()}</p>
+                    </td>
+                  </tr>
+                </table>
               </div>
             </td>
           </tr>
           
           <!-- Footer -->
           <tr>
-            <td style="padding: 30px 40px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-top: 1px solid rgba(0,0,0,0.05);">
-              <p style="color: #a0aec0; font-size: 12px; margin: 0; text-align: center; line-height: 1.6;">
+            <td style="padding: 24px 30px; background-color: #f8f9fa; border-top: 1px solid #dee2e6;">
+              <p style="color: #6c757d; font-size: 12px; margin: 0; text-align: center; line-height: 1.6;">
                 <span style="color: #667eea; font-weight: 600;">Noteworthy News</span> • Automated Notification
               </p>
             </td>
@@ -907,8 +926,138 @@ RESPONSE STYLE:
     </tr>
   </table>
 </body>
-</html>`,
-        text: `New AI Chat Interaction
+</html>`;
+          emailText = `New AI Image Generated
+
+${userEmail ? `Chat User: ${userEmail}\n` : ''}
+
+Generated Image: ${imageData.imageUrl}
+
+Prompt: ${imageData.revisedPrompt || imageData.prompt || message}
+
+User Request: ${message.substring(0, 500)}
+
+AI Response: ${reply.substring(0, 1000)}
+
+Model: gpt-4o
+Time: ${new Date().toLocaleString()}
+
+---
+This is an automated notification from your website.`;
+        } else {
+          // Regular Chat Email
+          emailSubject = '💬 New AI Chat Interaction';
+          emailHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); overflow: hidden;">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+              <div style="padding: 40px 30px; text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
+                <h1 style="color: #ffffff; margin: 0 0 8px 0; font-size: 28px; font-weight: 800; text-shadow: 0 2px 8px rgba(0,0,0,0.2);">New AI Chat</h1>
+                <p style="color: rgba(255,255,255,0.95); margin: 0; font-size: 15px; font-weight: 500;">Noteworthy AI Interaction</p>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 30px;">
+              ${userEmail ? `
+              <div style="background-color: #f8f9fa; border: 2px solid #e9ecef; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+                <p style="color: #667eea; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 6px 0;">Chat User</p>
+                <p style="color: #1a202c; font-size: 16px; font-weight: 600; margin: 0;">${userEmail}</p>
+              </div>
+              ` : ''}
+              
+              <!-- User Message -->
+              <div style="background-color: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+                <p style="color: #2e7d32; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;">User Message</p>
+                <p style="color: #1a202c; font-size: 15px; line-height: 1.6; margin: 0; font-weight: 500; white-space: pre-wrap;">${safeMessage}</p>
+              </div>
+              
+              <!-- AI Response -->
+              <div style="background-color: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+                <p style="color: #1565c0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;">AI Response</p>
+                <p style="color: #1a202c; font-size: 15px; line-height: 1.6; margin: 0; font-weight: 500; white-space: pre-wrap;">${safeReply}</p>
+              </div>
+              
+              ${recentChatHistory.length > 0 ? `
+              <!-- Chat History -->
+              <div style="background-color: #f3e5f5; border: 2px solid #ba68c8; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <p style="color: #7b1fa2; font-size: 14px; font-weight: 700; margin: 0 0 16px 0;">💬 Recent Chat History (${recentChatHistory.length} conversations)</p>
+                ${recentChatHistory.map((chat, idx) => {
+                  const chatTime = new Date(chat.timestamp).toLocaleString();
+                  const safeUserMsg = String(chat.userMessage || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 300);
+                  const safeAiResp = String(chat.aiResponse || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 400);
+                  return `
+                  <div style="margin-bottom: ${idx < recentChatHistory.length - 1 ? '20px' : '0'}; padding-bottom: ${idx < recentChatHistory.length - 1 ? '20px' : '0'}; border-bottom: ${idx < recentChatHistory.length - 1 ? '1px solid #ce93d8' : 'none'};">
+                    <p style="color: #7b1fa2; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 12px 0; opacity: 0.8;">${chatTime}</p>
+                    <div style="background-color: #e8f5e9; border-left: 3px solid #4caf50; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                      <p style="color: #2e7d32; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 6px 0;">👤 User</p>
+                      <p style="color: #1a202c; font-size: 13px; line-height: 1.5; margin: 0; font-weight: 500;">${safeUserMsg}${chat.userMessage && chat.userMessage.length > 300 ? '...' : ''}</p>
+                    </div>
+                    <div style="background-color: #e3f2fd; border-left: 3px solid #2196f3; border-radius: 8px; padding: 12px;">
+                      <p style="color: #1565c0; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 6px 0;">🤖 AI</p>
+                      <p style="color: #1a202c; font-size: 13px; line-height: 1.5; margin: 0; font-weight: 500;">${safeAiResp}${chat.aiResponse && chat.aiResponse.length > 400 ? '...' : ''}</p>
+                    </div>
+                  </div>
+                  `;
+                }).join('')}
+              </div>
+              ` : ''}
+              
+              <!-- Stats -->
+              <div style="background-color: #f8f9fa; border: 2px solid #dee2e6; border-radius: 12px; padding: 20px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                  <tr>
+                    <td style="text-align: center; padding: 8px;">
+                      <div style="font-size: 24px; margin-bottom: 6px;">🧠</div>
+                      <p style="color: #667eea; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">Model</p>
+                      <p style="color: #1a202c; font-size: 14px; font-weight: 700; margin: 0;">gpt-4o</p>
+                    </td>
+                    ${usage ? `
+                    <td style="text-align: center; padding: 8px;">
+                      <div style="font-size: 24px; margin-bottom: 6px;">💬</div>
+                      <p style="color: #667eea; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">Tokens</p>
+                      <p style="color: #1a202c; font-size: 14px; font-weight: 700; margin: 0;">${usage.total_tokens || 0}</p>
+                    </td>
+                    ` : ''}
+                    <td style="text-align: center; padding: 8px;">
+                      <div style="font-size: 24px; margin-bottom: 6px;">📅</div>
+                      <p style="color: #667eea; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 4px 0;">Time</p>
+                      <p style="color: #1a202c; font-size: 12px; font-weight: 700; margin: 0;">${new Date().toLocaleString()}</p>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 30px; background-color: #f8f9fa; border-top: 1px solid #dee2e6;">
+              <p style="color: #6c757d; font-size: 12px; margin: 0; text-align: center; line-height: 1.6;">
+                <span style="color: #667eea; font-weight: 600;">Noteworthy News</span> • Automated Notification
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+          emailText = `New AI Chat Interaction
 
 ${userEmail ? `Chat User: ${userEmail}\n` : 'Chat User: Unknown User\n'}
 
@@ -927,9 +1076,19 @@ ${usage ? `Tokens: ${usage.prompt_tokens || 0} input + ${usage.completion_tokens
 Time: ${new Date().toLocaleString()}
 
 ---
-This is an automated notification from your website.`,
+This is an automated notification from your website.`;
+        }
+        
+      // Send to all notification emails
+        const emailResults = await Promise.allSettled(notificationEmails.map(email => 
+        resend.emails.send({
+          from: fromEmail,
+          to: email,
+          subject: emailSubject,
+          html: emailHtml,
+          text: emailText,
         })
-        ));
+      ));
         
         // Log results and handle 403 errors specifically
         emailResults.forEach((result, index) => {
@@ -977,14 +1136,26 @@ This is an automated notification from your website.`,
       // Don't fail the request if email fails
     }
 
+    const responseBody = { 
+      reply, 
+      usage,
+    };
+    
+    // Include image data if generated
+    if (imageData && imageData.imageUrl) {
+      responseBody.image = imageData;
+      console.log("[Noteworthy Chat] Including image in response:", {
+        hasUrl: true,
+        urlPreview: imageData.imageUrl.substring(0, 50) + '...'
+      });
+    } else {
+      console.log("[Noteworthy Chat] No image data to include in response");
+    }
+
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ 
-        reply, 
-        usage,
-        image: imageData // Include image data if generated
-      }),
+      body: JSON.stringify(responseBody),
     };
   } catch (e) {
     console.error("Noteworthy chat function error:", e);

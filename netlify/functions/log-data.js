@@ -63,7 +63,7 @@ function logsToCSV(logs) {
       { key: 'data.endpoint', name: 'Chat Endpoint' },
       { key: 'data.fileCount', name: 'Files Uploaded' },
       { key: 'data.imageCount', name: 'Images Uploaded' },
-      { key: 'data.uploadedFiles', name: 'File Details', transform: (val) => {
+      { key: 'data.uploadedFiles', name: 'Uploaded File Details', transform: (val) => {
         if (!val || !Array.isArray(val)) return '';
         return val.map(f => {
           const details = `${f.name} (${f.type}, ${(f.size / 1024).toFixed(1)}KB)`;
@@ -71,10 +71,18 @@ function logsToCSV(logs) {
           return details + stored;
         }).join('; ');
       }},
-      { key: 'data.storedImages', name: 'Stored Images', transform: (val) => {
+      { key: 'data.storedImages', name: 'Stored Image URLs', transform: (val) => {
         if (!val || !Array.isArray(val)) return '';
         return val.map(img => `${img.originalName} -> ${img.storedImageUrl}`).join('; ');
       }},
+      { key: 'data.hasGeneratedImage', name: 'AI Image Generated' },
+      { key: 'data.generatedImage', name: 'AI Generated Image', transform: (val) => {
+        if (!val || !val.imageUrl) return '';
+        return `URL: ${val.imageUrl} | Prompt: ${val.prompt || 'N/A'} | Revised: ${val.revisedPrompt || 'N/A'}`;
+      }},
+      { key: 'data.generatedImage.imageUrl', name: 'Generated Image URL' },
+      { key: 'data.generatedImage.prompt', name: 'Image Prompt' },
+      { key: 'data.generatedImage.revisedPrompt', name: 'Revised Image Prompt' },
       { key: 'data.usage.prompt_tokens', name: 'Input Tokens' },
       { key: 'data.usage.completion_tokens', name: 'Output Tokens' },
       { key: 'data.usage.total_tokens', name: 'Total Tokens' },

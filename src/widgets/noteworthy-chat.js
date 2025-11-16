@@ -2058,7 +2058,7 @@ class NoteworthyChat extends HTMLElement {
           throw new Error('Invalid response from server. Please try again.');
         }
         
-        console.log('API Success:', { reply: data.reply?.substring(0, 50) + '...', fullData: data });
+        console.log('API Success:', { reply: data.reply?.substring(0, 50) + '...', hasImage: !!(data.image && data.image.imageUrl), fullData: data });
         
         if (!data || !data.reply) {
           console.error('API response missing reply field:', data);
@@ -2085,6 +2085,7 @@ class NoteworthyChat extends HTMLElement {
 
         // If image was generated, add it to the response
         if (data.image && data.image.imageUrl) {
+          console.log('Adding generated image to response:', data.image.imageUrl.substring(0, 50) + '...');
           const imageEl = document.createElement('img');
           imageEl.src = data.image.imageUrl;
           imageEl.alt = data.image.revisedPrompt || data.image.prompt || 'Generated image';
