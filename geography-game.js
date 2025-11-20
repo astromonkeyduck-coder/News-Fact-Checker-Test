@@ -4314,7 +4314,7 @@ class GeographyGame {
             factDisplay.style.bottom = '20px';
             factDisplay.style.top = 'auto';
             factDisplay.style.left = '20px';
-            factDisplay.style.right = 'auto';
+            factDisplay.style.right = '20px';
             
             mapContainer.appendChild(factDisplay);
         } else {
