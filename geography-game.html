@@ -1171,15 +1171,14 @@
             position: absolute;
             bottom: 20px;
             left: 20px;
-            right: 20px;
             padding: 0;
             /* Background will be set dynamically via inline styles based on flag colors */
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.25);
             border-radius: 16px;
             max-width: calc(100% - 40px);
-            width: auto;
-            min-width: 600px;
+            width: fit-content;
+            min-width: 500px;
             max-height: 180px;
             overflow: hidden;
             opacity: 0;
@@ -1200,12 +1199,12 @@
         
         /* Main Content Section (Left) */
         .country-fact-main {
-            flex: 2;
+            flex: 0 0 auto;
             padding: 20px 24px;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            min-width: 0;
+            min-width: 200px;
             overflow: hidden;
         }
         
@@ -1275,13 +1274,14 @@
         
         /* Side Section (Right) */
         .country-fact-side {
-            flex: 1;
+            flex: 0 0 auto;
             padding: 20px 24px;
             border-left: 2px solid rgba(255, 255, 255, 0.25);
             display: flex;
             flex-direction: column;
             justify-content: center;
             min-width: 250px;
+            max-width: 350px;
             overflow: hidden;
         }
         
@@ -1425,7 +1425,7 @@
         
         @media (max-width: 900px) {
             .country-fact-display {
-                min-width: 500px;
+                min-width: 450px;
             }
         }
         
@@ -1433,6 +1433,7 @@
             .country-fact-display {
                 min-width: unset;
                 width: calc(100% - 40px);
+                max-width: calc(100% - 40px);
             }
         }
         

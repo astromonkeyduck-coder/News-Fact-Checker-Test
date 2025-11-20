@@ -4314,7 +4314,7 @@ class GeographyGame {
             factDisplay.style.bottom = '20px';
             factDisplay.style.top = 'auto';
             factDisplay.style.left = '20px';
-            factDisplay.style.right = '20px';
+            factDisplay.style.right = 'auto';
             
             mapContainer.appendChild(factDisplay);
         } else {
@@ -4747,9 +4747,11 @@ class GeographyGame {
             (this.questionTimes.reduce((a, b) => a + b, 0) / this.questionTimes.length).toFixed(1) : 
             '0.0';
         
-        // Calculate accuracy
-        const totalAnswers = this.correct + this.wrong;
-        const accuracy = totalAnswers > 0 ? Math.round((this.correct / totalAnswers) * 100) : 0;
+        // Calculate accuracy based on all 50 countries
+        // Only countries that failed after 3 attempts count as incorrect
+        // Countries eventually answered correctly (regardless of attempts) count as correct
+        const totalCountries = 50;
+        const accuracy = totalCountries > 0 ? Math.round((this.correct / totalCountries) * 100) : 0;
         
         // Check if perfect game - ALL countries must be white (first attempt only, zero mistakes)
         const allCountriesAnswered = this.answered.size === 50;

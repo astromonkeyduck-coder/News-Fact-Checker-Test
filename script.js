@@ -5591,10 +5591,28 @@ document.addEventListener("DOMContentLoaded", function() {
     // Show console welcome message on page load (will appear when console is opened)
     // Also set up to show when console opens
     let consoleWelcomeShown = false;
+    let consoleCheckCount = 0;
+    const MAX_CONSOLE_CHECKS = 10; // Limit checks to prevent spam
+    
     const showWelcomeWhenConsoleOpens = () => {
-        if (consoleWelcomeShown) return;
+        if (consoleWelcomeShown || consoleCheckCount >= MAX_CONSOLE_CHECKS) {
+            if (consoleCheckCount >= MAX_CONSOLE_CHECKS) {
+                // Stop the interval if we've checked enough times
+                return;
+            }
+            return;
+        }
+        
+        consoleCheckCount++;
         const start = performance.now();
-        console.log('%c ', 'font-size: 1px;');
+        // Use a more efficient detection method
+        try {
+            console.log('%c ', 'font-size: 1px;');
+        } catch (e) {
+            // Console might be closed, stop checking
+            consoleWelcomeShown = true;
+            return;
+        }
         const end = performance.now();
         if (end - start > 1) {
             consoleWelcomeShown = true;
@@ -5602,9 +5620,14 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     };
     
-    // Check immediately and periodically
+    // Check immediately and periodically (but with limit)
     showWelcomeWhenConsoleOpens();
-    setInterval(showWelcomeWhenConsoleOpens, 500);
+    const consoleCheckInterval = setInterval(() => {
+        showWelcomeWhenConsoleOpens();
+        if (consoleWelcomeShown || consoleCheckCount >= MAX_CONSOLE_CHECKS) {
+            clearInterval(consoleCheckInterval);
+        }
+    }, 1000); // Reduced frequency to every 1 second instead of 500ms
 });
 
 // Cool console welcome message with ASCII art
