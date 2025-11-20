@@ -146,7 +146,7 @@ exports.handler = async (event, context) => {
     if (event.httpMethod === "POST") {
       // Submit a score
       const body = JSON.parse(event.body || "{}");
-      const { gameType, score, userId, userName, difficulty, level, streak, time, timeString, accuracy, isPerfectGame, correct, wrong, speedBonus, avgTime } =
+      const { gameType, score, userId, userName, difficulty, level, streak, time, timeString, accuracy, isPerfectGame, correct, wrong, speedBonus, avgTime, gameMode } =
         body;
 
       if (!gameType || score === undefined) {
@@ -212,6 +212,7 @@ exports.handler = async (event, context) => {
         ...(wrong !== undefined && { wrong: parseInt(wrong) }),
         ...(speedBonus !== undefined && { speedBonus: parseInt(speedBonus) }),
         ...(avgTime !== undefined && { avgTime: parseFloat(avgTime) }),
+        ...(gameMode && { gameMode: gameMode }),
       };
 
       if (existingIndex >= 0) {

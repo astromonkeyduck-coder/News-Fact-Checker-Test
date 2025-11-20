@@ -4267,33 +4267,37 @@ class GeographyGame {
         factDisplay.style.color = textColor;
         
         factDisplay.innerHTML = `
-            <div class="country-fact-header" style="color: ${textColor};">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span class="country-flag">${flag}</span>
-                    <span>${country.name}</span>
+            <div class="country-fact-main">
+                <div class="country-fact-header" style="color: ${textColor};">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="country-flag">${flag}</span>
+                        <span>${country.name}</span>
+                    </div>
                 </div>
                 <div class="country-fact-continent" style="color: ${labelColor};">
                     <span class="region-icon">📍</span>
                     ${fact.continent}
                 </div>
+                <div class="country-fact-population">
+                    <span class="population-label" style="color: ${labelColor};">Population</span>
+                    <div class="population-value" style="color: ${textColor};">${formattedPopulation}</div>
+                </div>
             </div>
-            <div class="country-fact-population">
-                <span class="population-label" style="color: ${labelColor};">Population</span>
-                <div class="population-value" style="color: ${textColor};">${formattedPopulation}</div>
-            </div>
-            <div class="country-fact-fun-fact">
-                <span class="fun-fact-label" style="color: ${labelColor};">
-                    <span class="fun-fact-icon">💡</span>
-                    Fun Fact
-                </span>
-                <div class="fun-fact-value" style="color: ${textColor};">${fact.fact}</div>
-            </div>
-            <div class="country-fact-source">
-                <span class="source-label" style="color: ${labelColor};">Source</span>
-                ${sourceUrl !== '#' ? 
-                    `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" class="source-link" style="color: ${linkColor};">${sourceDomain}</a>` :
-                    `<span class="source-link" style="color: ${labelColor}; opacity: 0.7;">${sourceDomain}</span>`
-                }
+            <div class="country-fact-side">
+                <div class="country-fact-fun-fact">
+                    <span class="fun-fact-label" style="color: ${labelColor};">
+                        <span class="fun-fact-icon">💡</span>
+                        Fun Fact
+                    </span>
+                    <div class="fun-fact-value" style="color: ${textColor};">${fact.fact}</div>
+                </div>
+                <div class="country-fact-source">
+                    <span class="source-label" style="color: ${labelColor};">Source</span>
+                    ${sourceUrl !== '#' ? 
+                        `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" class="source-link" style="color: ${linkColor};">${sourceDomain}</a>` :
+                        `<span class="source-link" style="color: ${labelColor}; opacity: 0.7;">${sourceDomain}</span>`
+                    }
+                </div>
             </div>
         `;
         
@@ -4353,14 +4357,23 @@ class GeographyGame {
             newAchievements.push({ id: 'twenty_five_correct', name: 'Halfway There', desc: 'Answered 25 countries correctly!' });
         }
         
-        // Perfect game (50/50) - only trigger if ALL countries are white (all correct, none wrong)
-        // Check that: all 50 countries answered, 50 correct, 0 wrong, and no countries in wrongCountries set
+        // Perfect game (50/50) - only trigger if ALL countries are white (all correct on first attempt, zero mistakes)
+        // Check that: all 50 countries answered, 50 correct, 0 wrong, no countries in wrongCountries set, and all on first attempt
         const allCountriesAnswered = this.answered.size === 50;
         const allCorrect = this.correct === 50;
         const noWrong = this.wrong === 0;
         const noWrongCountries = this.wrongCountries.size === 0;
+        // Verify all countries were answered on first attempt (all white)
+        let allFirstAttempt = true;
+        for (const countryCode of this.answered) {
+            const attempts = this.attempts.get(countryCode) || 0;
+            if (attempts > 0) {
+                allFirstAttempt = false;
+                break;
+            }
+        }
         
-        if (allCountriesAnswered && allCorrect && noWrong && noWrongCountries && !this.achievements.has('perfect_game')) {
+        if (allCountriesAnswered && allCorrect && noWrong && noWrongCountries && allFirstAttempt && !this.achievements.has('perfect_game')) {
             this.achievements.add('perfect_game');
             newAchievements.push({ id: 'perfect_game', name: 'Perfect Game!', desc: 'Completed all 50 countries with no mistakes!' });
         }
@@ -4738,12 +4751,21 @@ class GeographyGame {
         const totalAnswers = this.correct + this.wrong;
         const accuracy = totalAnswers > 0 ? Math.round((this.correct / totalAnswers) * 100) : 0;
         
-        // Check if perfect game
+        // Check if perfect game - ALL countries must be white (first attempt only, zero mistakes)
         const allCountriesAnswered = this.answered.size === 50;
         const allCorrect = this.correct === 50;
         const noWrong = this.wrong === 0;
         const noWrongCountries = this.wrongCountries.size === 0;
-        const isPerfectGame = allCountriesAnswered && allCorrect && noWrong && noWrongCountries;
+        // Verify all countries were answered on first attempt (all white)
+        let allFirstAttempt = true;
+        for (const countryCode of this.answered) {
+            const attempts = this.attempts.get(countryCode) || 0;
+            if (attempts > 0) {
+                allFirstAttempt = false;
+                break;
+            }
+        }
+        const isPerfectGame = allCountriesAnswered && allCorrect && noWrong && noWrongCountries && allFirstAttempt;
         
         this.promptEl.textContent = 'Game Complete!';
         
@@ -4792,8 +4814,11 @@ class GeographyGame {
         }
         
         // Store score data for leaderboard submission
+        // Use gameMode-specific gameType for separate leaderboards
+        const gameTypeWithMode = `geography-${this.gameMode}`;
         this.pendingScoreData = {
-            gameType: 'geography',
+            gameType: gameTypeWithMode,
+            gameMode: this.gameMode, // Also store separately for reference
             score: this.score,
             userId: userId || null,
             userName: null,
@@ -4862,6 +4887,88 @@ class GeographyGame {
         this.startBtn.disabled = false;
     }
     
+    async prepareLeaderboard() {
+        // Use gameMode-specific leaderboard
+        const gameTypeWithMode = `geography-${this.gameMode}`;
+        const leaderboardKey = `leaderboardGeo_${this.gameMode}`;
+        
+        // Ensure leaderboard exists for this game mode
+        if (!window[leaderboardKey]) {
+            console.log(`[Geography Game] Creating leaderboard instance for ${this.gameMode} mode...`);
+            window[leaderboardKey] = new Leaderboard(gameTypeWithMode);
+            await window[leaderboardKey].init();
+        }
+        
+        // Store reference for easy access
+        window.leaderboardGeo = window[leaderboardKey];
+        
+        // Load current scores so leaderboard is ready to show
+        try {
+            await window.leaderboardGeo.loadScores(10); // Load top 10 for display
+            window.leaderboardGeo.render();
+            console.log(`[Geography Game] Leaderboard prepared for ${this.gameMode} mode`);
+            
+            // Show inline leaderboard immediately (before name submission)
+            this.showInlineLeaderboard();
+        } catch (error) {
+            console.error('[Geography Game] Error preparing leaderboard:', error);
+        }
+    }
+    
+    showInlineLeaderboard() {
+        const container = document.getElementById('inlineLeaderboardContainerGeo');
+        const list = document.getElementById('inlineLeaderboardListGeo');
+        const cardTitle = document.getElementById('leaderboardCardTitleGeo');
+        
+        if (!container || !list || !window.leaderboardGeo) {
+            console.warn('[Geography Game] Inline leaderboard elements not found');
+            return;
+        }
+        
+        // Update card title
+        if (cardTitle) {
+            cardTitle.textContent = '🏆 Leaderboard';
+        }
+        
+        // Get top 10 scores
+        const topScores = window.leaderboardGeo.scores.slice(0, 10);
+        
+        if (topScores.length === 0) {
+            list.innerHTML = '<div style="text-align: center; padding: 20px; color: rgba(255, 255, 255, 0.7);">No scores yet. Be the first!</div>';
+            container.style.display = 'block';
+            return;
+        }
+        
+        // Render scores
+        list.innerHTML = topScores.map((score, index) => {
+            const rank = index + 1;
+            const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
+            const isTopThree = rank <= 3;
+            
+            // Format metadata for geography game
+            const metaParts = [];
+            if (score.timeString) metaParts.push(`⏱️ ${score.timeString}`);
+            if (score.accuracy !== undefined) metaParts.push(`🎯 ${score.accuracy}%`);
+            const metaText = metaParts.join(' | ');
+            
+            const perfectBadge = score.isPerfectGame ? ' ✨ Perfect' : '';
+            
+            return `
+                <div class="inline-leaderboard-item ${isTopThree ? 'top-three' : ''}" data-rank="${rank}">
+                    <div class="inline-leaderboard-rank">${medal}</div>
+                    <div class="inline-leaderboard-user">
+                        <div class="inline-leaderboard-name">${this.escapeHtml(score.userName)}${perfectBadge}</div>
+                        <div class="inline-leaderboard-meta">${metaText || '—'}</div>
+                    </div>
+                    <div class="inline-leaderboard-score">${score.score.toLocaleString()}</div>
+                </div>
+            `;
+        }).join('');
+        
+        // Show container with animation
+        container.style.display = 'block';
+    }
+    
     setupViewLeaderboard() {
         // Check if view leaderboard button exists, if not create it
         let viewLeaderboardBtn = document.getElementById('viewLeaderboardBtnGeo');
@@ -4924,12 +5031,15 @@ class GeographyGame {
             
             newBtn.addEventListener('click', async () => {
                 console.log('[Geography Game] View leaderboard button clicked');
-                // Ensure leaderboard exists
-                if (!window.leaderboardGeo) {
-                    console.log('[Geography Game] Creating leaderboard instance...');
-                    window.leaderboardGeo = new Leaderboard('geography');
-                    await window.leaderboardGeo.init();
+                // Ensure leaderboard exists for this game mode
+                const gameTypeWithMode = `geography-${this.gameMode}`;
+                const leaderboardKey = `leaderboardGeo_${this.gameMode}`;
+                if (!window[leaderboardKey]) {
+                    console.log(`[Geography Game] Creating leaderboard instance for ${this.gameMode} mode...`);
+                    window[leaderboardKey] = new Leaderboard(gameTypeWithMode);
+                    await window[leaderboardKey].init();
                 }
+                window.leaderboardGeo = window[leaderboardKey];
                 
                 try {
                     await window.leaderboardGeo.loadScores(50);
@@ -4945,23 +5055,6 @@ class GeographyGame {
         }
     }
     
-    async prepareLeaderboard() {
-        // Ensure leaderboard exists
-        if (!window.leaderboardGeo) {
-            console.log('[Geography Game] Creating leaderboard instance on game end...');
-            window.leaderboardGeo = new Leaderboard('geography');
-            await window.leaderboardGeo.init();
-        }
-        
-        // Load current scores so leaderboard is ready to show
-        try {
-            await window.leaderboardGeo.loadScores(50);
-            window.leaderboardGeo.render();
-            console.log('[Geography Game] Leaderboard prepared and ready to show');
-        } catch (error) {
-            console.error('[Geography Game] Error preparing leaderboard:', error);
-        }
-    }
     
     setupLeaderboardSubmit() {
         const submitBtn = document.getElementById('submitScoreBtnGeo');
@@ -5113,13 +5206,13 @@ class GeographyGame {
             if (score.accuracy !== undefined) metaParts.push(`🎯 ${score.accuracy}%`);
             const metaText = metaParts.join(' | ');
             
-            const perfectBadge = score.isPerfectGame ? ' ✨ Perfect' : '';
+            const perfectBadge = score.isPerfectGame ? '<span class="perfect-game-badge">Perfect</span>' : '';
             
             return `
                 <div class="inline-leaderboard-item ${isTopThree ? 'top-three' : ''} ${isUserRank ? 'user-rank' : ''}" data-rank="${rank}">
                     <div class="inline-leaderboard-rank">${medal}</div>
                     <div class="inline-leaderboard-user">
-                        <div class="inline-leaderboard-name">${this.escapeHtml(score.userName)}${perfectBadge}</div>
+                        <div class="inline-leaderboard-name">${this.escapeHtml(score.userName)} ${perfectBadge}</div>
                         <div class="inline-leaderboard-meta">${metaText || '—'}</div>
                     </div>
                     <div class="inline-leaderboard-score">${score.score.toLocaleString()}</div>

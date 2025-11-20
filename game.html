@@ -671,53 +671,39 @@
         /* Feedback */
         .feedback {
             display: none;
-            max-width: 900px;
+            max-width: 600px;
             margin: 30px auto;
-            padding: 0;
+            padding: 30px;
             background: rgba(15, 15, 35, 0.8);
             border-radius: 12px;
             border: 2px solid rgba(74, 144, 226, 0.3);
-            overflow: hidden;
+            text-align: center;
         }
         
         .feedback-content {
-            display: flex;
-            flex-direction: row;
-            align-items: stretch;
-            gap: 0;
+            margin-bottom: 20px;
         }
         
-        .feedback-main {
-            flex: 1;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            text-align: left;
-        }
-        
-        .feedback-main h3 {
+        .feedback-content h3 {
             font-size: 1.75rem;
             color: #2ecc71;
-            margin: 0 0 12px 0;
+            margin: 0 0 15px 0;
         }
         
-        .feedback-main p {
+        .feedback-content p {
             font-size: 1rem;
             color: rgba(255, 255, 255, 0.9);
-            margin: 0 0 16px 0;
+            margin: 0 0 20px 0;
             line-height: 1.6;
         }
         
         .fact-check-tips {
-            flex: 1;
             background: rgba(74, 144, 226, 0.1);
-            border-left: 2px solid rgba(74, 144, 226, 0.3);
-            border-radius: 0;
-            padding: 24px;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
             text-align: left;
-            min-width: 280px;
-            max-width: 350px;
         }
         
         .fact-check-tips h4 {
@@ -739,47 +725,27 @@
         }
         
         .feedback-buttons {
+            margin-top: 20px;
             display: flex;
             gap: 12px;
             justify-content: center;
             flex-wrap: wrap;
-            padding: 20px 24px;
-            border-top: 1px solid rgba(74, 144, 226, 0.2);
-            background: rgba(15, 15, 35, 0.4);
         }
         
         #aiExplanation {
             display: none;
-            margin-top: 0;
-            padding: 20px 24px;
+            margin-top: 20px;
+            padding: 15px;
             background: rgba(74, 144, 226, 0.1);
-            border-top: 2px solid rgba(74, 144, 226, 0.3);
-            border-radius: 0;
-            border-left: none;
-            border-right: none;
-            border-bottom: none;
+            border-radius: 8px;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            text-align: left;
         }
         
         .ai-explanation-content {
             color: rgba(255, 255, 255, 0.9);
             line-height: 1.7;
             font-size: 0.95rem;
-        }
-        
-        @media (max-width: 768px) {
-            .feedback-content {
-                flex-direction: column;
-            }
-            
-            .fact-check-tips {
-                border-left: none;
-                border-top: 2px solid rgba(74, 144, 226, 0.3);
-                max-width: 100%;
-            }
-            
-            .feedback-main {
-                text-align: center;
-            }
         }
         
         /* Game Over */
@@ -791,7 +757,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #1a0a0a 0%, #2d1b0e 25%, #1a0a0a 50%, #0d0a1a 75%, #1a0a0a 100%);
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 25%, #0f0f23 50%, #0d0a1a 75%, #0f0f23 100%);
             backdrop-filter: blur(10px);
             z-index: 1500;
             overflow-y: auto;
@@ -807,9 +773,9 @@
             right: 0;
             bottom: 0;
             background: 
-                radial-gradient(circle at 20% 30%, rgba(255, 215, 0, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 70%, rgba(255, 0, 0, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 50% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+                radial-gradient(circle at 20% 30%, rgba(74, 144, 226, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(74, 144, 226, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(74, 144, 226, 0.1) 0%, transparent 70%);
             pointer-events: none;
             animation: slotMachineGlow 3s ease-in-out infinite;
         }
@@ -851,7 +817,7 @@
             width: 800px;
             height: 800px;
             background: 
-                radial-gradient(circle, rgba(255, 215, 0, 0.2) 0%, rgba(255, 0, 0, 0.15) 30%, transparent 70%);
+                radial-gradient(circle, rgba(74, 144, 226, 0.2) 0%, rgba(74, 144, 226, 0.12) 30%, transparent 70%);
             border-radius: 50%;
             pointer-events: none;
             animation: slotPulse 2s ease-in-out infinite;
@@ -891,8 +857,8 @@
         .celebration-badge {
             font-size: 5rem;
             margin-bottom: 16px;
-            animation: slotBounce 1s ease-in-out infinite, slotSpin 0.1s linear infinite;
-            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 40px rgba(255, 0, 0, 0.6));
+            animation: slotBounce 1s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px rgba(74, 144, 226, 0.8)) drop-shadow(0 0 40px rgba(74, 144, 226, 0.6));
         }
 
         @keyframes slotBounce {
@@ -903,27 +869,18 @@
                 transform: translateY(-15px) rotate(5deg);
             }
         }
-        
-        @keyframes slotSpin {
-            0% {
-                filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 40px rgba(255, 0, 0, 0.6)) hue-rotate(0deg);
-            }
-            100% {
-                filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 40px rgba(255, 0, 0, 0.6)) hue-rotate(360deg);
-            }
-        }
 
         .game-over-title {
             font-size: 3.5rem;
             font-weight: 900;
             margin: 0 0 8px 0;
-            background: linear-gradient(135deg, #FFD700 0%, #FFA500 25%, #FF6347 50%, #FFD700 75%, #FFA500 100%);
+            background: linear-gradient(135deg, #4A90E2 0%, #6BB3FF 25%, #4A90E2 50%, #6BB3FF 75%, #4A90E2 100%);
             background-size: 200% 200%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             animation: slotTitleShine 3s linear infinite;
-            text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            text-shadow: 0 0 30px rgba(74, 144, 226, 0.5);
             letter-spacing: 2px;
             text-transform: uppercase;
         }
@@ -962,19 +919,19 @@
             }
         }
 
-        /* Card Styles - Slot Machine Theme */
+        /* Card Styles - Blue Theme */
         .game-over-card {
-            background: linear-gradient(135deg, rgba(26, 10, 10, 0.95) 0%, rgba(45, 27, 14, 0.95) 50%, rgba(26, 10, 10, 0.95) 100%);
+            background: linear-gradient(135deg, rgba(15, 25, 45, 0.95) 0%, rgba(20, 30, 50, 0.95) 50%, rgba(15, 25, 45, 0.95) 100%);
             backdrop-filter: blur(20px);
             border: 3px solid;
-            border-image: linear-gradient(135deg, #FFD700, #FF6347, #FFD700) 1;
+            border-image: linear-gradient(135deg, #4A90E2, #6BB3FF, #4A90E2) 1;
             border-radius: 20px;
             padding: 32px;
             box-shadow: 
-                0 0 30px rgba(255, 215, 0, 0.3),
-                0 0 60px rgba(255, 99, 71, 0.2),
+                0 0 30px rgba(74, 144, 226, 0.3),
+                0 0 60px rgba(74, 144, 226, 0.2),
                 0 8px 32px rgba(0, 0, 0, 0.5),
-                inset 0 0 20px rgba(255, 215, 0, 0.1);
+                inset 0 0 20px rgba(74, 144, 226, 0.1);
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
@@ -987,7 +944,7 @@
             left: -50%;
             width: 200%;
             height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+            background: linear-gradient(45deg, transparent, rgba(74, 144, 226, 0.1), transparent);
             animation: slotCardShine 3s linear infinite;
         }
         
@@ -1003,11 +960,11 @@
         .game-over-card:hover {
             transform: translateY(-4px) scale(1.02);
             box-shadow: 
-                0 0 40px rgba(255, 215, 0, 0.5),
-                0 0 80px rgba(255, 99, 71, 0.3),
+                0 0 40px rgba(74, 144, 226, 0.5),
+                0 0 80px rgba(74, 144, 226, 0.3),
                 0 12px 40px rgba(0, 0, 0, 0.6),
-                inset 0 0 30px rgba(255, 215, 0, 0.15);
-            border-image: linear-gradient(135deg, #FFD700, #FF6347, #FFD700, #FF6347) 1;
+                inset 0 0 30px rgba(74, 144, 226, 0.15);
+            border-image: linear-gradient(135deg, #4A90E2, #6BB3FF, #4A90E2, #6BB3FF) 1;
         }
 
         .card-title {
@@ -1048,25 +1005,25 @@
         }
 
         .stat-item.stat-highlight {
-            background: linear-gradient(135deg, rgba(255, 215, 0, 0.25) 0%, rgba(255, 99, 71, 0.15) 50%, rgba(255, 215, 0, 0.25) 100%);
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.25) 0%, rgba(107, 179, 255, 0.15) 50%, rgba(74, 144, 226, 0.25) 100%);
             border: 2px solid;
-            border-image: linear-gradient(135deg, #FFD700, #FF6347) 1;
+            border-image: linear-gradient(135deg, #4A90E2, #6BB3FF) 1;
             box-shadow: 
-                0 0 15px rgba(255, 215, 0, 0.4),
-                inset 0 0 10px rgba(255, 215, 0, 0.1);
+                0 0 15px rgba(74, 144, 226, 0.4),
+                inset 0 0 10px rgba(74, 144, 226, 0.1);
             animation: highlightPulse 2s ease-in-out infinite;
         }
         
         @keyframes highlightPulse {
             0%, 100% {
                 box-shadow: 
-                    0 0 15px rgba(255, 215, 0, 0.4),
-                    inset 0 0 10px rgba(255, 215, 0, 0.1);
+                    0 0 15px rgba(74, 144, 226, 0.4),
+                    inset 0 0 10px rgba(74, 144, 226, 0.1);
             }
             50% {
                 box-shadow: 
-                    0 0 25px rgba(255, 215, 0, 0.6),
-                    inset 0 0 15px rgba(255, 215, 0, 0.2);
+                    0 0 25px rgba(74, 144, 226, 0.6),
+                    inset 0 0 15px rgba(74, 144, 226, 0.2);
             }
         }
 
@@ -1087,19 +1044,19 @@
         .stat-value {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #FFD700;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            color: #4A90E2;
+            text-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
         }
 
         .stat-item.stat-highlight .stat-value {
             font-size: 2.5rem;
-            background: linear-gradient(135deg, #FFD700 0%, #FFA500 25%, #FF6347 50%, #FFD700 75%, #FFA500 100%);
+            background: linear-gradient(135deg, #4A90E2 0%, #6BB3FF 25%, #4A90E2 50%, #6BB3FF 75%, #4A90E2 100%);
             background-size: 200% 200%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             animation: slotValueShine 2s linear infinite;
-            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
+            filter: drop-shadow(0 0 8px rgba(74, 144, 226, 0.8));
         }
         
         @keyframes slotValueShine {
@@ -1189,12 +1146,12 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF6347 100%);
+            background: linear-gradient(135deg, #4A90E2 0%, #6BB3FF 50%, #4A90E2 100%);
             background-size: 200% 200%;
-            color: #1a0a0a;
-            border: 2px solid #FFD700;
+            color: white;
+            border: 2px solid #4A90E2;
             box-shadow: 
-                0 0 20px rgba(255, 215, 0, 0.5),
+                0 0 20px rgba(74, 144, 226, 0.5),
                 0 4px 12px rgba(0, 0, 0, 0.3);
             font-weight: 700;
             text-transform: uppercase;
@@ -1227,8 +1184,8 @@
         .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px) scale(1.05);
             box-shadow: 
-                0 0 30px rgba(255, 215, 0, 0.7),
-                0 0 50px rgba(255, 99, 71, 0.4),
+                0 0 30px rgba(74, 144, 226, 0.7),
+                0 0 50px rgba(74, 144, 226, 0.4),
                 0 6px 16px rgba(0, 0, 0, 0.4);
             filter: brightness(1.1);
         }
@@ -1711,6 +1668,15 @@
             margin-bottom: 5px;
         }
         
+        .perfect-game-badge {
+            color: #FFD700;
+            font-weight: 700;
+            font-size: 0.85rem;
+            margin-left: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
         .leaderboard-meta {
             font-size: 0.85rem;
             color: rgba(255, 255, 255, 0.6);
@@ -1795,6 +1761,10 @@
             text-align: center;
         }
         
+        .inline-leaderboard-container {
+            border-top: 1px solid rgba(74, 144, 226, 0.3);
+        }
+        
         .inline-leaderboard-list {
             max-height: 400px;
             overflow-y: auto;
@@ -1859,16 +1829,12 @@
         }
         
         .inline-leaderboard-item.user-rank::before {
-            content: '✨';
-            position: absolute;
-            left: -30px;
-            font-size: 1.5rem;
-            animation: pulse 1.5s ease-in-out infinite;
+            content: '';
         }
         
         .inline-leaderboard-item.top-three {
-            background: rgba(255, 215, 0, 0.15);
-            border-color: rgba(255, 215, 0, 0.3);
+            background: rgba(74, 144, 226, 0.2);
+            border-color: rgba(74, 144, 226, 0.4);
         }
         
         .inline-leaderboard-rank {

@@ -4030,7 +4030,11 @@ class BreakingNewsGame {
         
         if (finalScore) finalScore.textContent = Math.floor(this.score).toLocaleString();
         if (finalLevel) finalLevel.textContent = this.level;
-        if (finalStreak) finalStreak.textContent = Math.max(...this.getBestStreak());
+        if (finalStreak) {
+            const bestStreaks = this.getBestStreak();
+            const maxStreak = bestStreaks && bestStreaks.length > 0 ? Math.max(...bestStreaks) : this.streak || 0;
+            finalStreak.textContent = maxStreak;
+        }
         
         // Show high score
         const highScoreElem = document.getElementById('finalHighScore');
@@ -4104,12 +4108,68 @@ class BreakingNewsGame {
         
         // Load current scores so leaderboard is ready to show
         try {
-            await window.leaderboard.loadScores(50);
+            await window.leaderboard.loadScores(10); // Load top 10 for display
             window.leaderboard.render();
             console.log('[Game] Leaderboard prepared and ready to show');
+            
+            // Show inline leaderboard immediately (before name submission)
+            this.showInlineLeaderboard();
         } catch (error) {
             console.error('[Game] Error preparing leaderboard:', error);
         }
+    }
+    
+    showInlineLeaderboard() {
+        const container = document.getElementById('inlineLeaderboardContainer');
+        const list = document.getElementById('inlineLeaderboardList');
+        const cardTitle = document.getElementById('leaderboardCardTitle');
+        
+        if (!container || !list || !window.leaderboard) {
+            console.warn('[Game] Inline leaderboard elements not found');
+            return;
+        }
+        
+        // Update card title
+        if (cardTitle) {
+            cardTitle.textContent = '🏆 Leaderboard';
+        }
+        
+        // Get top 10 scores
+        const topScores = window.leaderboard.scores.slice(0, 10);
+        
+        if (topScores.length === 0) {
+            list.innerHTML = '<div style="text-align: center; padding: 20px; color: rgba(255, 255, 255, 0.7);">No scores yet. Be the first!</div>';
+            container.style.display = 'block';
+            return;
+        }
+        
+        // Render scores
+        list.innerHTML = topScores.map((score, index) => {
+            const rank = index + 1;
+            const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
+            const isTopThree = rank <= 3;
+            
+            // Format metadata
+            const metaParts = [];
+            if (score.difficulty) metaParts.push(`Difficulty: ${score.difficulty}`);
+            if (score.level) metaParts.push(`Level: ${score.level}`);
+            if (score.streak) metaParts.push(`Streak: ${score.streak}`);
+            const metaText = metaParts.join(' | ');
+            
+            return `
+                <div class="inline-leaderboard-item ${isTopThree ? 'top-three' : ''}" data-rank="${rank}">
+                    <div class="inline-leaderboard-rank">${medal}</div>
+                    <div class="inline-leaderboard-user">
+                        <div class="inline-leaderboard-name">${this.escapeHtml(score.userName)}</div>
+                        <div class="inline-leaderboard-meta">${metaText || '—'}</div>
+                    </div>
+                    <div class="inline-leaderboard-score">${score.score.toLocaleString()}</div>
+                </div>
+            `;
+        }).join('');
+        
+        // Show container with animation
+        container.style.display = 'block';
     }
     
     setupLeaderboardSubmit() {

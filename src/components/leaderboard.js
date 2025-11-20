@@ -71,9 +71,21 @@ class Leaderboard {
             document.body.appendChild(container);
         }
 
-        const gameName = this.gameType === 'fact-checker' 
-            ? 'Fact Checker' 
-            : 'Geography';
+        // Determine game name based on gameType
+        let gameName = 'Game';
+        if (this.gameType === 'fact-checker') {
+            gameName = 'Fact Checker';
+        } else if (this.gameType.startsWith('geography-')) {
+            const mode = this.gameType.replace('geography-', '');
+            const modeNames = {
+                'classic': 'Classic',
+                'hard': 'Hard',
+                'typing': 'Typing'
+            };
+            gameName = `Geography - ${modeNames[mode] || mode.charAt(0).toUpperCase() + mode.slice(1)}`;
+        } else if (this.gameType === 'geography') {
+            gameName = 'Geography';
+        }
 
         container.innerHTML = `
             <div class="leaderboard-modal" id="leaderboardModal">
@@ -141,7 +153,7 @@ class Leaderboard {
             
             // Perfect game badge
             const perfectBadge = (this.gameType === 'geography' && score.isPerfectGame) 
-                ? '<span class="perfect-game-badge" title="Perfect Game - All 50 countries correct!">✨ Perfect</span>' 
+                ? '<span class="perfect-game-badge" title="Perfect Game - All 50 countries correct on first attempt!">Perfect</span>' 
                 : '';
             
             return `
