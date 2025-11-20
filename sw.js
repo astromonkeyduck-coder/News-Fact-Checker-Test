@@ -6,6 +6,19 @@
 const CACHE_VERSION = 'v1.0.0';
 const CACHE_NAME = `noteworthy-news-${CACHE_VERSION}`;
 
+// Helper function to check if a URL is cacheable
+function isCacheableUrl(url) {
+  try {
+    const urlObj = new URL(url);
+    // Only cache http:// and https:// URLs
+    // Skip chrome-extension://, file://, data:, blob:, etc.
+    return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+  } catch (e) {
+    // Invalid URL, don't cache
+    return false;
+  }
+}
+
 // Assets to cache immediately on install
 const STATIC_ASSETS = [
   '/',
@@ -89,12 +102,19 @@ self.addEventListener('fetch', (event) => {
                 if (!response || response.status !== 200 || response.type !== 'basic') {
                   return response;
                 }
-                // Clone the response
-                const responseToCache = response.clone();
-                caches.open(CACHE_NAME)
-                  .then((cache) => {
-                    cache.put(request, responseToCache);
-                  });
+                // Only cache if URL is cacheable (http/https)
+                if (isCacheableUrl(request.url)) {
+                  // Clone the response
+                  const responseToCache = response.clone();
+                  caches.open(CACHE_NAME)
+                    .then((cache) => {
+                      cache.put(request, responseToCache);
+                    })
+                    .catch((error) => {
+                      // Silently fail if caching fails (e.g., chrome-extension URLs)
+                      console.warn('[Service Worker] Failed to cache:', request.url, error);
+                    });
+                }
                 return response;
               });
           })
@@ -127,11 +147,18 @@ self.addEventListener('fetch', (event) => {
               if (!response || response.status !== 200 || response.type !== 'basic') {
                 return response;
               }
-              const responseToCache = response.clone();
-              caches.open(CACHE_NAME)
-                .then((cache) => {
-                  cache.put(request, responseToCache);
-                });
+              // Only cache if URL is cacheable (http/https)
+              if (isCacheableUrl(request.url)) {
+                const responseToCache = response.clone();
+                caches.open(CACHE_NAME)
+                  .then((cache) => {
+                    cache.put(request, responseToCache);
+                  })
+                  .catch((error) => {
+                    // Silently fail if caching fails (e.g., chrome-extension URLs)
+                    console.warn('[Service Worker] Failed to cache:', request.url, error);
+                  });
+              }
               return response;
             });
         })
@@ -151,11 +178,15 @@ self.addEventListener('fetch', (event) => {
       fetch(request)
         .then((response) => {
           // Cache successful responses
-          if (response && response.status === 200) {
+          if (response && response.status === 200 && isCacheableUrl(request.url)) {
             const responseToCache = response.clone();
             caches.open(CACHE_NAME)
               .then((cache) => {
                 cache.put(request, responseToCache);
+              })
+              .catch((error) => {
+                // Silently fail if caching fails (e.g., chrome-extension URLs)
+                console.warn('[Service Worker] Failed to cache:', request.url, error);
               });
           }
           return response;
@@ -185,11 +216,15 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(request)
       .then((response) => {
-        if (response && response.status === 200) {
+        if (response && response.status === 200 && isCacheableUrl(request.url)) {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME)
             .then((cache) => {
               cache.put(request, responseToCache);
+            })
+            .catch((error) => {
+              // Silently fail if caching fails (e.g., chrome-extension URLs)
+              console.warn('[Service Worker] Failed to cache:', request.url, error);
             });
         }
         return response;

@@ -1718,6 +1718,603 @@
                 font-size: 1.3rem;
             }
         }
+        
+        /* Game Over Screen - Slot Machine Reward Theme */
+        .game-over {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a0a0a 0%, #2d1b0e 25%, #1a0a0a 50%, #0d0a1a 75%, #1a0a0a 100%);
+            backdrop-filter: blur(10px);
+            z-index: 1500;
+            overflow-y: auto;
+            animation: fadeIn 0.3s ease-out;
+            position: relative;
+        }
+        
+        .game-over::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(255, 215, 0, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 0, 0, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+            animation: slotMachineGlow 3s ease-in-out infinite;
+        }
+        
+        @keyframes slotMachineGlow {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 0.8; }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .game-over-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            position: relative;
+        }
+        
+        .game-over-container::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.2) 0%, rgba(255, 0, 0, 0.15) 30%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: slotPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes slotPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
+        }
+        
+        .game-over-celebration {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.5s ease-out 0.1s both;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .celebration-badge {
+            font-size: 5rem;
+            margin-bottom: 16px;
+            animation: slotBounce 1s ease-in-out infinite, slotSpin 0.1s linear infinite;
+            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 40px rgba(255, 0, 0, 0.6));
+        }
+        
+        @keyframes slotBounce {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+        }
+        
+        @keyframes slotSpin {
+            0% { filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 40px rgba(255, 0, 0, 0.6)) hue-rotate(0deg); }
+            100% { filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 40px rgba(255, 0, 0, 0.6)) hue-rotate(360deg); }
+        }
+        
+        .game-over-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin: 0 0 8px 0;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 25%, #FF6347 50%, #FFD700 75%, #FFA500 100%);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: slotTitleShine 3s linear infinite;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        
+        @keyframes slotTitleShine {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        
+        .game-over-subtitle {
+            font-size: 1.125rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin: 0;
+        }
+        
+        .game-over-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            max-width: 1000px;
+            width: 100%;
+            margin-bottom: 32px;
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.5s ease-out 0.2s both;
+        }
+        
+        @media (min-width: 768px) {
+            .game-over-content {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        .game-over-card {
+            background: linear-gradient(135deg, rgba(26, 10, 10, 0.95) 0%, rgba(45, 27, 14, 0.95) 50%, rgba(26, 10, 10, 0.95) 100%);
+            backdrop-filter: blur(20px);
+            border: 3px solid;
+            border-image: linear-gradient(135deg, #FFD700, #FF6347, #FFD700) 1;
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 
+                0 0 30px rgba(255, 215, 0, 0.3),
+                0 0 60px rgba(255, 99, 71, 0.2),
+                0 8px 32px rgba(0, 0, 0, 0.5),
+                inset 0 0 20px rgba(255, 215, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .game-over-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+            animation: slotCardShine 3s linear infinite;
+        }
+        
+        @keyframes slotCardShine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        .game-over-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 
+                0 0 40px rgba(255, 215, 0, 0.5),
+                0 0 80px rgba(255, 99, 71, 0.3),
+                0 12px 40px rgba(0, 0, 0, 0.6),
+                inset 0 0 30px rgba(255, 215, 0, 0.15);
+            border-image: linear-gradient(135deg, #FFD700, #FF6347, #FFD700, #FF6347) 1;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+            margin: 0 0 24px 0;
+            text-align: left;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        
+        @media (min-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 16px;
+            background: rgba(74, 144, 226, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(74, 144, 226, 0.1);
+            transition: all 0.2s ease;
+        }
+        
+        .stat-item:hover {
+            background: rgba(74, 144, 226, 0.1);
+            border-color: rgba(74, 144, 226, 0.3);
+        }
+        
+        .stat-item.stat-highlight {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.25) 0%, rgba(255, 99, 71, 0.15) 50%, rgba(255, 215, 0, 0.25) 100%);
+            border: 2px solid;
+            border-image: linear-gradient(135deg, #FFD700, #FF6347) 1;
+            box-shadow: 
+                0 0 15px rgba(255, 215, 0, 0.4),
+                inset 0 0 10px rgba(255, 215, 0, 0.1);
+            animation: highlightPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes highlightPulse {
+            0%, 100% {
+                box-shadow: 
+                    0 0 15px rgba(255, 215, 0, 0.4),
+                    inset 0 0 10px rgba(255, 215, 0, 0.1);
+            }
+            50% {
+                box-shadow: 
+                    0 0 25px rgba(255, 215, 0, 0.6),
+                    inset 0 0 15px rgba(255, 215, 0, 0.2);
+            }
+        }
+        
+        @media (min-width: 768px) {
+            .stat-item.stat-highlight {
+                grid-column: span 2;
+            }
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #FFD700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        
+        .stat-item.stat-highlight .stat-value {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 25%, #FF6347 50%, #FFD700 75%, #FFA500 100%);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: slotValueShine 2s linear infinite;
+            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
+        }
+        
+        @keyframes slotValueShine {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        
+        .leaderboard-submit-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .form-group label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            text-align: left;
+        }
+        
+        .player-name-input {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 1rem;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 10px;
+            background: rgba(15, 25, 45, 0.6);
+            color: white;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+        
+        .player-name-input:focus {
+            outline: none;
+            border-color: #FFD700;
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
+            background: rgba(15, 25, 45, 0.8);
+        }
+        
+        .form-hint {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-align: left;
+            margin: 0;
+        }
+        
+        .form-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        @media (min-width: 480px) {
+            .form-actions {
+                flex-direction: row;
+            }
+        }
+        
+        .btn {
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+            padding: 14px 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF6347 100%);
+            background-size: 200% 200%;
+            color: #1a0a0a;
+            border: 2px solid #FFD700;
+            box-shadow: 
+                0 0 20px rgba(255, 215, 0, 0.5),
+                0 4px 12px rgba(0, 0, 0, 0.3);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            animation: buttonGradient 3s linear infinite;
+        }
+        
+        @keyframes buttonGradient {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: buttonShine 2s linear infinite;
+        }
+        
+        @keyframes buttonShine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 
+                0 0 30px rgba(255, 215, 0, 0.7),
+                0 0 50px rgba(255, 99, 71, 0.4),
+                0 6px 16px rgba(0, 0, 0, 0.4);
+            filter: brightness(1.1);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 215, 0, 0.1);
+            color: #FFD700;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: rgba(255, 215, 0, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .btn-play-again {
+            width: 100%;
+            max-width: 500px;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 25%, #FF6347 50%, #FFD700 75%, #FFA500 100%);
+            background-size: 200% 200%;
+            color: #1a0a0a;
+            border: 3px solid #FFD700;
+            font-size: 1.5rem;
+            font-weight: 900;
+            padding: 20px 40px;
+            border-radius: 12px;
+            box-shadow: 
+                0 0 30px rgba(255, 215, 0, 0.6),
+                0 0 60px rgba(255, 99, 71, 0.4),
+                0 6px 20px rgba(0, 0, 0, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+            animation: playAgainShine 3s linear infinite;
+        }
+        
+        @keyframes playAgainShine {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        
+        .btn-play-again::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: buttonShine 2s linear infinite;
+        }
+        
+        .btn-play-again:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 
+                0 0 40px rgba(255, 215, 0, 0.8),
+                0 0 80px rgba(255, 99, 71, 0.6),
+                0 8px 30px rgba(0, 0, 0, 0.5);
+            animation-duration: 1.5s;
+        }
+        
+        /* Inline Leaderboard Styles - Same as game.html */
+        .inline-leaderboard-container {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 215, 0, 0.3);
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .inline-leaderboard-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #FFD700;
+            margin: 0 0 16px 0;
+            text-align: center;
+        }
+        
+        .inline-leaderboard-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+        
+        .inline-leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: rgba(255, 215, 0, 0.08);
+            border: 1px solid rgba(255, 215, 0, 0.15);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateX(-20px);
+            animation: slideInFromLeft 0.4s ease-out forwards;
+        }
+        
+        .inline-leaderboard-item:nth-child(1) { animation-delay: 0.1s; }
+        .inline-leaderboard-item:nth-child(2) { animation-delay: 0.15s; }
+        .inline-leaderboard-item:nth-child(3) { animation-delay: 0.2s; }
+        .inline-leaderboard-item:nth-child(4) { animation-delay: 0.25s; }
+        .inline-leaderboard-item:nth-child(5) { animation-delay: 0.3s; }
+        .inline-leaderboard-item:nth-child(6) { animation-delay: 0.35s; }
+        .inline-leaderboard-item:nth-child(7) { animation-delay: 0.4s; }
+        .inline-leaderboard-item:nth-child(8) { animation-delay: 0.45s; }
+        .inline-leaderboard-item:nth-child(9) { animation-delay: 0.5s; }
+        .inline-leaderboard-item:nth-child(10) { animation-delay: 0.55s; }
+        
+        @keyframes slideInFromLeft {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .inline-leaderboard-item:hover {
+            background: rgba(255, 215, 0, 0.15);
+            transform: translateX(5px);
+        }
+        
+        .inline-leaderboard-item.user-rank {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 99, 71, 0.15));
+            border: 2px solid #FFD700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+            animation: highlightUserRank 0.8s ease-out forwards;
+            position: relative;
+        }
+        
+        @keyframes highlightUserRank {
+            0% {
+                opacity: 0;
+                transform: scale(0.95) translateX(-20px);
+                box-shadow: 0 0 0 rgba(255, 215, 0, 0);
+            }
+            50% {
+                transform: scale(1.02) translateX(0);
+                box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateX(0);
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+            }
+        }
+        
+        .inline-leaderboard-item.user-rank::before {
+            content: '✨';
+            position: absolute;
+            left: -30px;
+            font-size: 1.5rem;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        
+        .inline-leaderboard-item.top-three {
+            background: rgba(255, 215, 0, 0.15);
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+        
+        .inline-leaderboard-rank {
+            font-size: 1.2rem;
+            font-weight: 700;
+            min-width: 40px;
+            text-align: center;
+            color: #FFD700;
+        }
+        
+        .inline-leaderboard-user {
+            flex: 1;
+        }
+        
+        .inline-leaderboard-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 4px;
+        }
+        
+        .inline-leaderboard-meta {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .inline-leaderboard-score {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #FFD700;
+            min-width: 80px;
+            text-align: right;
+        }
     </style>
     <!-- Analytics Tracker - Comprehensive visitor tracking -->
     <script src="src/utils/analytics-tracker.js"></script>
@@ -1830,22 +2427,90 @@
             <!-- Viewport flash effects -->
             <div class="viewport-flash left" id="viewportFlashLeft"></div>
             <div class="viewport-flash right" id="viewportFlashRight"></div>
-            
-            <div class="leaderboard-submit-form" id="leaderboardSubmitForm" style="display: none;">
-                <h3>Submit to Leaderboard</h3>
-                <div class="form-group">
-                    <label for="playerNameInputGeo">Enter your name:</label>
-                    <input 
-                        type="text" 
-                        id="playerNameInputGeo" 
-                        class="player-name-input" 
-                        placeholder="Your name (max 30 characters)"
-                        maxlength="30"
-                    />
-                    <p class="form-hint">Your name will be filtered for inappropriate content</p>
+        </div>
+        
+        <!-- Game Complete Screen -->
+        <div class="game-over" id="gameOverGeo" style="display: none;">
+            <div class="game-over-container">
+                <!-- Celebration Section -->
+                <div class="game-over-celebration">
+                    <div class="celebration-badge">🎉</div>
+                    <h2 class="game-over-title">Game Complete!</h2>
+                    <p class="game-over-subtitle">Nice run! Here's how you did.</p>
                 </div>
-                <button class="btn-submit-score" id="submitScoreBtnGeo">Submit Score</button>
-                <div class="submit-status" id="submitStatusGeo"></div>
+
+                <!-- Main Content: Stats + Leaderboard -->
+                <div class="game-over-content">
+                    <!-- Stats Card -->
+                    <div class="game-over-card stats-card">
+                        <h3 class="card-title">Your Stats</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item stat-highlight">
+                                <span class="stat-label">Final Score</span>
+                                <span class="stat-value" id="finalScoreGeo">0</span>
+                            </div>
+                            <div class="stat-item stat-highlight">
+                                <span class="stat-label">Best Time</span>
+                                <span class="stat-value" id="finalBestTimeGeo">--</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Completion Time</span>
+                                <span class="stat-value" id="finalTimeGeo">--</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Correct</span>
+                                <span class="stat-value" id="finalCorrectGeo">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Wrong</span>
+                                <span class="stat-value" id="finalWrongGeo">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Accuracy</span>
+                                <span class="stat-value" id="finalAccuracyGeo">0%</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Speed Bonus</span>
+                                <span class="stat-value" id="finalSpeedBonusGeo">+0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Average Time</span>
+                                <span class="stat-value" id="finalAvgTimeGeo">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Leaderboard Card -->
+                    <div class="game-over-card leaderboard-card">
+                        <h3 class="card-title" id="leaderboardCardTitleGeo">Submit to Leaderboard</h3>
+                        <div class="leaderboard-submit-form" id="leaderboardSubmitFormGeo">
+                            <div class="form-group">
+                                <label for="playerNameInputGeo">Enter your name</label>
+                                <input 
+                                    type="text" 
+                                    id="playerNameInputGeo" 
+                                    class="player-name-input" 
+                                    placeholder="Your name (max 30 characters)"
+                                    maxlength="30"
+                                />
+                                <p class="form-hint">Your name will be filtered for inappropriate content</p>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-primary btn-submit-score" id="submitScoreBtnGeo">Submit Score</button>
+                                <button class="btn btn-secondary btn-view-leaderboard" id="viewLeaderboardBtnGeo">View Leaderboard</button>
+                            </div>
+                            <div class="submit-status" id="submitStatusGeo"></div>
+                        </div>
+                        <!-- Inline Leaderboard Display -->
+                        <div class="inline-leaderboard-container" id="inlineLeaderboardContainerGeo" style="display: none;">
+                            <h4 class="inline-leaderboard-title">🏆 Top Scores</h4>
+                            <div class="inline-leaderboard-list" id="inlineLeaderboardListGeo"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Play Again Button -->
+                <button class="btn btn-play-again" id="restartBtnGeo">🔄 Play Again</button>
             </div>
         </div>
     </div>
@@ -1980,6 +2645,12 @@
     <!-- Background Music - Geography Game Specific (separate from music system) -->
     <audio id="geoBackgroundMusic" preload="auto" loop>
         <source src="GEO.wav" type="audio/wav">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- End Game Music - NeonDreams.wav -->
+    <audio id="neonDreamsMusic" preload="auto">
+        <source src="NeonDreams.wav" type="audio/wav">
         Your browser does not support the audio element.
     </audio>
     

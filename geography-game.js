@@ -1324,6 +1324,30 @@ class GeographyGame {
     }
     
     resetGame() {
+        // Hide game complete screen
+        const gameOver = document.getElementById('gameOverGeo');
+        if (gameOver) {
+            gameOver.style.display = 'none';
+        }
+        
+        // Hide inline leaderboard
+        const inlineLeaderboard = document.getElementById('inlineLeaderboardContainerGeo');
+        if (inlineLeaderboard) {
+            inlineLeaderboard.style.display = 'none';
+        }
+        
+        // Reset leaderboard card title
+        const cardTitle = document.getElementById('leaderboardCardTitleGeo');
+        if (cardTitle) {
+            cardTitle.textContent = 'Submit to Leaderboard';
+        }
+        
+        // Fade out NeonDreams.wav and resume background music if playing
+        try {
+            this.fadeOutNeonDreamsAndResume();
+        } catch (e) {
+            console.log('Error fading out NeonDreams:', e);
+        }
         // Fade out NeonDreams.wav and resume background music if playing
         try {
             this.fadeOutNeonDreamsAndResume();
@@ -4568,6 +4592,7 @@ class GeographyGame {
             this._bgMusicWasPlaying = true;
             this._bgMusicCurrentTime = bgMusic.currentTime;
             bgMusic.pause();
+            console.log('🎵 Paused GEO.wav, saved time:', this._bgMusicCurrentTime);
         } else {
             this._bgMusicWasPlaying = false;
         }
@@ -4581,6 +4606,18 @@ class GeographyGame {
                 console.log('🎵 NeonDreams.wav started playing');
             }).catch(err => {
                 console.log('⚠️ NeonDreams.wav autoplay blocked:', err.message);
+                // Try to play after user interaction
+                const tryPlayOnInteraction = () => {
+                    neonDreams.play().then(() => {
+                        console.log('🎵 NeonDreams.wav started playing after interaction');
+                    }).catch(e => {
+                        console.log('⚠️ Still blocked:', e.message);
+                    });
+                    document.removeEventListener('click', tryPlayOnInteraction);
+                    document.removeEventListener('touchstart', tryPlayOnInteraction);
+                };
+                document.addEventListener('click', tryPlayOnInteraction, { once: true });
+                document.addEventListener('touchstart', tryPlayOnInteraction, { once: true });
             });
         }
     }
@@ -4607,24 +4644,45 @@ class GeographyGame {
                         if (this._bgMusicCurrentTime !== undefined) {
                             bgMusic.currentTime = this._bgMusicCurrentTime;
                         }
-                        bgMusic.volume = 0.5;
+                        // Fade in background music
+                        bgMusic.volume = 0;
                         bgMusic.play().catch(err => {
                             console.log('⚠️ Failed to resume background music:', err.message);
                         });
+                        
+                        // Fade in over ~1 second
+                        const fadeInInterval = setInterval(() => {
+                            if (bgMusic.volume < 0.5) {
+                                bgMusic.volume = Math.min(bgMusic.volume + 0.05, 0.5);
+                            } else {
+                                clearInterval(fadeInInterval);
+                            }
+                        }, 50);
+                        
                         this._bgMusicWasPlaying = false;
                     }
                 }
             }, 50); // Fade out over ~500ms
         } else {
-            // If already paused, just resume background music
+            // If already paused, just resume background music with fade in
             if (this._bgMusicWasPlaying && bgMusic) {
                 if (this._bgMusicCurrentTime !== undefined) {
                     bgMusic.currentTime = this._bgMusicCurrentTime;
                 }
-                bgMusic.volume = 0.5;
+                bgMusic.volume = 0;
                 bgMusic.play().catch(err => {
                     console.log('⚠️ Failed to resume background music:', err.message);
                 });
+                
+                // Fade in over ~1 second
+                const fadeInInterval = setInterval(() => {
+                    if (bgMusic.volume < 0.5) {
+                        bgMusic.volume = Math.min(bgMusic.volume + 0.05, 0.5);
+                    } else {
+                        clearInterval(fadeInInterval);
+                    }
+                }, 50);
+                
                 this._bgMusicWasPlaying = false;
             }
         }
@@ -4733,48 +4791,55 @@ class GeographyGame {
             localStorage.setItem('geography_progress', JSON.stringify(generalProgress));
         }
         
-        // Show completion message with time stats
-        let completionMessage = `Final Score: ${this.score} | Time: ${timeString} | Correct: ${this.correct} | Wrong: ${this.wrong}`;
-        if (this.speedBonus > 0) {
-            completionMessage += ` | Speed Bonus: +${this.speedBonus}`;
-        }
-        if (isNewBest) {
-            completionMessage += ` | 🏆 NEW BEST TIME!`;
-        } else if (this.bestTime) {
-            completionMessage += ` | Best: ${bestTimeString}`;
-        }
-        completionMessage += ` | Avg: ${avgTime}s/q`;
-        
-        this.feedbackEl.textContent = completionMessage;
-        this.feedbackEl.className = 'feedback-message';
-        
         // Store score data for leaderboard submission
         this.pendingScoreData = {
-                    gameType: 'geography',
-                    score: this.score,
-            userId: userId || null, // Will be generated on backend if null
-            userName: null, // Will be set by user input
-                    correct: this.correct,
-                    wrong: this.wrong,
-                    time: finalTime,
-                    timeString: timeString,
-                    speedBonus: this.speedBonus,
-                    avgTime: parseFloat(avgTime),
-                    accuracy: accuracy,
-                    isPerfectGame: isPerfectGame,
+            gameType: 'geography',
+            score: this.score,
+            userId: userId || null,
+            userName: null,
+            correct: this.correct,
+            wrong: this.wrong,
+            time: finalTime,
+            timeString: timeString,
+            speedBonus: this.speedBonus,
+            avgTime: parseFloat(avgTime),
+            accuracy: accuracy,
+            isPerfectGame: isPerfectGame,
         };
         
-        // Show leaderboard submit form
-        const submitForm = document.getElementById('leaderboardSubmitForm');
-        if (submitForm) {
-            submitForm.style.display = 'block';
-            submitForm.style.visibility = 'visible';
-            submitForm.style.opacity = '1';
-            // Scroll form into view
-            submitForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            console.log('[Geography Game] Leaderboard form should now be visible');
+        // Show game complete screen
+        const gameOver = document.getElementById('gameOverGeo');
+        if (gameOver) {
+            gameOver.style.display = 'block';
+            
+            // Populate stats
+            const finalScoreEl = document.getElementById('finalScoreGeo');
+            if (finalScoreEl) finalScoreEl.textContent = this.score.toLocaleString();
+            
+            const finalBestTimeEl = document.getElementById('finalBestTimeGeo');
+            if (finalBestTimeEl) finalBestTimeEl.textContent = isNewBest ? `🏆 ${bestTimeString} (NEW!)` : bestTimeString;
+            
+            const finalTimeEl = document.getElementById('finalTimeGeo');
+            if (finalTimeEl) finalTimeEl.textContent = timeString;
+            
+            const finalCorrectEl = document.getElementById('finalCorrectGeo');
+            if (finalCorrectEl) finalCorrectEl.textContent = `${this.correct} / 50`;
+            
+            const finalWrongEl = document.getElementById('finalWrongGeo');
+            if (finalWrongEl) finalWrongEl.textContent = this.wrong;
+            
+            const finalAccuracyEl = document.getElementById('finalAccuracyGeo');
+            if (finalAccuracyEl) finalAccuracyEl.textContent = `${accuracy}%`;
+            
+            const finalSpeedBonusEl = document.getElementById('finalSpeedBonusGeo');
+            if (finalSpeedBonusEl) finalSpeedBonusEl.textContent = `+${this.speedBonus}`;
+            
+            const finalAvgTimeEl = document.getElementById('finalAvgTimeGeo');
+            if (finalAvgTimeEl) finalAvgTimeEl.textContent = `${avgTime}s`;
+            
+            console.log('[Geography Game] Game complete screen displayed');
         } else {
-            console.error('[Geography Game] Leaderboard submit form not found!');
+            console.error('[Geography Game] Game over element not found!');
         }
         
         // Set up submit button handler
@@ -4782,6 +4847,14 @@ class GeographyGame {
         
         // Set up view leaderboard button
         this.setupViewLeaderboard();
+        
+        // Set up play again button
+        const restartBtn = document.getElementById('restartBtnGeo');
+        if (restartBtn) {
+            restartBtn.addEventListener('click', () => {
+                this.resetGame();
+            });
+        }
         
         // Load and prepare leaderboard immediately when game ends
         this.prepareLeaderboard();
@@ -4941,10 +5014,9 @@ class GeographyGame {
                         await window.leaderboardGeo.init();
                     }
                     
-                    // Load leaderboard to show user their rank
+                        // Load leaderboard to show user their rank
                     try {
                         await window.leaderboardGeo.loadScores(50); // Load more to find user's rank
-                        window.leaderboardGeo.render();
                         
                         // Find user's rank
                         const userScore = scoreData.score;
@@ -4953,16 +5025,13 @@ class GeographyGame {
                         ) + 1;
                         
                         if (userRank > 0 && userRank <= 50) {
-                            this.showSubmitStatus(`✓ Score submitted! You're ranked #${userRank} on the leaderboard!`, 'success');
+                            this.showSubmitStatus(`✓ Score submitted! You're ranked #${userRank}!`, 'success');
                         } else {
                             this.showSubmitStatus('✓ Score submitted successfully!', 'success');
                         }
                         
-                        // Show leaderboard after a short delay
-                        setTimeout(() => {
-                            console.log('[Geography Game] Showing leaderboard...');
-                            window.leaderboardGeo.show();
-                        }, 1500);
+                        // Render inline leaderboard with animation
+                        this.renderInlineLeaderboard(userName, userScore, userRank);
                     } catch (error) {
                         console.error('[Geography Game] Error loading/showing leaderboard:', error);
                         this.showSubmitStatus('✓ Score submitted successfully!', 'success');
@@ -5005,6 +5074,77 @@ class GeographyGame {
             statusDiv.textContent = message;
             statusDiv.className = `submit-status ${type}`;
         }
+    }
+    
+    renderInlineLeaderboard(userName, userScore, userRank) {
+        const container = document.getElementById('inlineLeaderboardContainerGeo');
+        const list = document.getElementById('inlineLeaderboardListGeo');
+        const cardTitle = document.getElementById('leaderboardCardTitleGeo');
+        
+        if (!container || !list) {
+            console.warn('[Geography Game] Inline leaderboard elements not found');
+            return;
+        }
+        
+        // Update card title
+        if (cardTitle) {
+            cardTitle.textContent = '🏆 Leaderboard';
+        }
+        
+        // Get top 10 scores
+        const topScores = window.leaderboardGeo.scores.slice(0, 10);
+        
+        if (topScores.length === 0) {
+            list.innerHTML = '<div style="text-align: center; padding: 20px; color: rgba(255, 255, 255, 0.7);">No scores yet. Be the first!</div>';
+            container.style.display = 'block';
+            return;
+        }
+        
+        // Render scores
+        list.innerHTML = topScores.map((score, index) => {
+            const rank = index + 1;
+            const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
+            const isUserRank = rank === userRank && score.userName === userName && Math.abs(score.score - userScore) < 0.01;
+            const isTopThree = rank <= 3;
+            
+            // Format metadata for geography game
+            const metaParts = [];
+            if (score.timeString) metaParts.push(`⏱️ ${score.timeString}`);
+            if (score.accuracy !== undefined) metaParts.push(`🎯 ${score.accuracy}%`);
+            const metaText = metaParts.join(' | ');
+            
+            const perfectBadge = score.isPerfectGame ? ' ✨ Perfect' : '';
+            
+            return `
+                <div class="inline-leaderboard-item ${isTopThree ? 'top-three' : ''} ${isUserRank ? 'user-rank' : ''}" data-rank="${rank}">
+                    <div class="inline-leaderboard-rank">${medal}</div>
+                    <div class="inline-leaderboard-user">
+                        <div class="inline-leaderboard-name">${this.escapeHtml(score.userName)}${perfectBadge}</div>
+                        <div class="inline-leaderboard-meta">${metaText || '—'}</div>
+                    </div>
+                    <div class="inline-leaderboard-score">${score.score.toLocaleString()}</div>
+                </div>
+            `;
+        }).join('');
+        
+        // Show container with animation
+        container.style.display = 'block';
+        
+        // Scroll to user's rank if it's in the top 10
+        if (userRank > 0 && userRank <= 10) {
+            setTimeout(() => {
+                const userItem = list.querySelector(`[data-rank="${userRank}"]`);
+                if (userItem) {
+                    userItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 600);
+        }
+    }
+    
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
     
     showPlayAgainButton() {

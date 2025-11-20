@@ -671,62 +671,119 @@
         /* Feedback */
         .feedback {
             display: none;
-            max-width: 600px;
+            max-width: 900px;
             margin: 30px auto;
-            padding: 30px;
+            padding: 0;
             background: rgba(15, 15, 35, 0.8);
             border-radius: 12px;
             border: 2px solid rgba(74, 144, 226, 0.3);
-            text-align: center;
+            overflow: hidden;
         }
         
-        .feedback-content h3 {
-            font-size: 2rem;
-            color: #2ecc71;
-            margin-bottom: 15px;
+        .feedback-content {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            gap: 0;
         }
         
-        .feedback-content p {
-            font-size: 1.1rem;
-            color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 20px;
-        }
-        
-        .fact-check-tips {
-            background: rgba(74, 144, 226, 0.1);
-            border: 1px solid rgba(74, 144, 226, 0.3);
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 20px;
+        .feedback-main {
+            flex: 1;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
             text-align: left;
         }
         
+        .feedback-main h3 {
+            font-size: 1.75rem;
+            color: #2ecc71;
+            margin: 0 0 12px 0;
+        }
+        
+        .feedback-main p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0 0 16px 0;
+            line-height: 1.6;
+        }
+        
+        .fact-check-tips {
+            flex: 1;
+            background: rgba(74, 144, 226, 0.1);
+            border-left: 2px solid rgba(74, 144, 226, 0.3);
+            border-radius: 0;
+            padding: 24px;
+            text-align: left;
+            min-width: 280px;
+            max-width: 350px;
+        }
+        
         .fact-check-tips h4 {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: #4A90E2;
-            margin-bottom: 15px;
+            margin: 0 0 12px 0;
         }
         
         .fact-check-tips ul {
             list-style: disc;
             padding-left: 20px;
             color: rgba(255, 255, 255, 0.8);
+            margin: 0;
         }
         
         .fact-check-tips li {
             margin-bottom: 8px;
+            font-size: 0.9rem;
         }
         
         .feedback-buttons {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-top: 20px;
+            padding: 20px 24px;
+            border-top: 1px solid rgba(74, 144, 226, 0.2);
+            background: rgba(15, 15, 35, 0.4);
+        }
+        
+        #aiExplanation {
+            display: none;
+            margin-top: 0;
+            padding: 20px 24px;
+            background: rgba(74, 144, 226, 0.1);
+            border-top: 2px solid rgba(74, 144, 226, 0.3);
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+            border-bottom: none;
+        }
+        
+        .ai-explanation-content {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.7;
+            font-size: 0.95rem;
+        }
+        
+        @media (max-width: 768px) {
+            .feedback-content {
+                flex-direction: column;
+            }
+            
+            .fact-check-tips {
+                border-left: none;
+                border-top: 2px solid rgba(74, 144, 226, 0.3);
+                max-width: 100%;
+            }
+            
+            .feedback-main {
+                text-align: center;
+            }
         }
         
         /* Game Over */
-        /* Game Over Screen - Modern 2025 Design */
+        /* Game Over Screen - Slot Machine Reward Theme */
         .game-over {
             display: none;
             position: fixed;
@@ -734,11 +791,36 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(7, 21, 42, 0.95);
+            background: linear-gradient(135deg, #1a0a0a 0%, #2d1b0e 25%, #1a0a0a 50%, #0d0a1a 75%, #1a0a0a 100%);
             backdrop-filter: blur(10px);
             z-index: 1500;
             overflow-y: auto;
             animation: fadeIn 0.3s ease-out;
+            position: relative;
+        }
+        
+        .game-over::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(255, 215, 0, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 0, 0, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+            animation: slotMachineGlow 3s ease-in-out infinite;
+        }
+        
+        @keyframes slotMachineGlow {
+            0%, 100% {
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 0.8;
+            }
         }
 
         @keyframes fadeIn {
@@ -766,11 +848,24 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(74, 144, 226, 0.15) 0%, transparent 70%);
+            width: 800px;
+            height: 800px;
+            background: 
+                radial-gradient(circle, rgba(255, 215, 0, 0.2) 0%, rgba(255, 0, 0, 0.15) 30%, transparent 70%);
             border-radius: 50%;
             pointer-events: none;
+            animation: slotPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes slotPulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.6;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.1);
+                opacity: 0.8;
+            }
         }
 
         /* Celebration Section */
@@ -794,28 +889,52 @@
         }
 
         .celebration-badge {
-            font-size: 4rem;
+            font-size: 5rem;
             margin-bottom: 16px;
-            animation: bounce 1s ease-in-out infinite;
+            animation: slotBounce 1s ease-in-out infinite, slotSpin 0.1s linear infinite;
+            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 40px rgba(255, 0, 0, 0.6));
         }
 
-        @keyframes bounce {
+        @keyframes slotBounce {
             0%, 100% {
-                transform: translateY(0);
+                transform: translateY(0) rotate(0deg);
             }
             50% {
-                transform: translateY(-10px);
+                transform: translateY(-15px) rotate(5deg);
+            }
+        }
+        
+        @keyframes slotSpin {
+            0% {
+                filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 40px rgba(255, 0, 0, 0.6)) hue-rotate(0deg);
+            }
+            100% {
+                filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 40px rgba(255, 0, 0, 0.6)) hue-rotate(360deg);
             }
         }
 
         .game-over-title {
-            font-size: 3rem;
-            font-weight: 700;
+            font-size: 3.5rem;
+            font-weight: 900;
             margin: 0 0 8px 0;
-            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 25%, #FF6347 50%, #FFD700 75%, #FFA500 100%);
+            background-size: 200% 200%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            animation: slotTitleShine 3s linear infinite;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        
+        @keyframes slotTitleShine {
+            0% {
+                background-position: 0% 50%;
+            }
+            100% {
+                background-position: 200% 50%;
+            }
         }
 
         .game-over-subtitle {
@@ -843,20 +962,52 @@
             }
         }
 
-        /* Card Styles */
+        /* Card Styles - Slot Machine Theme */
         .game-over-card {
-            background: rgba(15, 25, 45, 0.8);
+            background: linear-gradient(135deg, rgba(26, 10, 10, 0.95) 0%, rgba(45, 27, 14, 0.95) 50%, rgba(26, 10, 10, 0.95) 100%);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(74, 144, 226, 0.2);
+            border: 3px solid;
+            border-image: linear-gradient(135deg, #FFD700, #FF6347, #FFD700) 1;
             border-radius: 20px;
             padding: 32px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 
+                0 0 30px rgba(255, 215, 0, 0.3),
+                0 0 60px rgba(255, 99, 71, 0.2),
+                0 8px 32px rgba(0, 0, 0, 0.5),
+                inset 0 0 20px rgba(255, 215, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .game-over-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+            animation: slotCardShine 3s linear infinite;
+        }
+        
+        @keyframes slotCardShine {
+            0% {
+                transform: translateX(-100%) translateY(-100%) rotate(45deg);
+            }
+            100% {
+                transform: translateX(100%) translateY(100%) rotate(45deg);
+            }
         }
 
         .game-over-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 
+                0 0 40px rgba(255, 215, 0, 0.5),
+                0 0 80px rgba(255, 99, 71, 0.3),
+                0 12px 40px rgba(0, 0, 0, 0.6),
+                inset 0 0 30px rgba(255, 215, 0, 0.15);
+            border-image: linear-gradient(135deg, #FFD700, #FF6347, #FFD700, #FF6347) 1;
         }
 
         .card-title {
@@ -897,8 +1048,26 @@
         }
 
         .stat-item.stat-highlight {
-            background: linear-gradient(135deg, rgba(74, 144, 226, 0.15) 0%, rgba(74, 144, 226, 0.05) 100%);
-            border-color: rgba(74, 144, 226, 0.3);
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.25) 0%, rgba(255, 99, 71, 0.15) 50%, rgba(255, 215, 0, 0.25) 100%);
+            border: 2px solid;
+            border-image: linear-gradient(135deg, #FFD700, #FF6347) 1;
+            box-shadow: 
+                0 0 15px rgba(255, 215, 0, 0.4),
+                inset 0 0 10px rgba(255, 215, 0, 0.1);
+            animation: highlightPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes highlightPulse {
+            0%, 100% {
+                box-shadow: 
+                    0 0 15px rgba(255, 215, 0, 0.4),
+                    inset 0 0 10px rgba(255, 215, 0, 0.1);
+            }
+            50% {
+                box-shadow: 
+                    0 0 25px rgba(255, 215, 0, 0.6),
+                    inset 0 0 15px rgba(255, 215, 0, 0.2);
+            }
         }
 
         @media (min-width: 768px) {
@@ -918,15 +1087,28 @@
         .stat-value {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #4A90E2;
+            color: #FFD700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
         }
 
         .stat-item.stat-highlight .stat-value {
-            font-size: 2rem;
-            background: linear-gradient(135deg, #4A90E2 0%, #6BB3FF 100%);
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 25%, #FF6347 50%, #FFD700 75%, #FFA500 100%);
+            background-size: 200% 200%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            animation: slotValueShine 2s linear infinite;
+            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
+        }
+        
+        @keyframes slotValueShine {
+            0% {
+                background-position: 0% 50%;
+            }
+            100% {
+                background-position: 200% 50%;
+            }
         }
 
         /* Leaderboard Form */
@@ -1007,19 +1189,52 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #4A90E2 0%, #2A60B0 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF6347 100%);
+            background-size: 200% 200%;
+            color: #1a0a0a;
+            border: 2px solid #FFD700;
+            box-shadow: 
+                0 0 20px rgba(255, 215, 0, 0.5),
+                0 4px 12px rgba(0, 0, 0, 0.3);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            animation: buttonGradient 3s linear infinite;
+        }
+        
+        @keyframes buttonGradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            100% {
+                background-position: 200% 50%;
+            }
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: buttonShine 2s linear infinite;
         }
 
         .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(74, 144, 226, 0.4);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 
+                0 0 30px rgba(255, 215, 0, 0.7),
+                0 0 50px rgba(255, 99, 71, 0.4),
+                0 6px 16px rgba(0, 0, 0, 0.4);
             filter: brightness(1.1);
         }
 
         .btn-primary:active:not(:disabled) {
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
         }
 
         .btn-primary:disabled {
@@ -1051,12 +1266,44 @@
         .btn-play-again {
             width: 100%;
             max-width: 500px;
-            background: linear-gradient(135deg, #4A90E2 0%, #2A60B0 100%);
-            color: white;
-            font-size: 1.25rem;
-            padding: 18px 32px;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 25%, #FF6347 50%, #FFD700 75%, #FFA500 100%);
+            background-size: 200% 200%;
+            color: #1a0a0a;
+            border: 3px solid #FFD700;
+            font-size: 1.5rem;
+            font-weight: 900;
+            padding: 20px 40px;
             border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
+            box-shadow: 
+                0 0 30px rgba(255, 215, 0, 0.6),
+                0 0 60px rgba(255, 99, 71, 0.4),
+                0 6px 20px rgba(0, 0, 0, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+            animation: playAgainShine 3s linear infinite;
+        }
+        
+        @keyframes playAgainShine {
+            0% {
+                background-position: 0% 50%;
+            }
+            100% {
+                background-position: 200% 50%;
+            }
+        }
+        
+        .btn-play-again::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: buttonShine 2s linear infinite;
+        }
             position: relative;
             z-index: 1;
             animation: slideUp 0.5s ease-out 0.3s both;
@@ -1531,6 +1778,205 @@
             background: rgba(255, 215, 0, 0.3);
             transform: translateY(-2px);
         }
+        
+        /* Inline Leaderboard Styles */
+        .inline-leaderboard-container {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(74, 144, 226, 0.3);
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
+        .inline-leaderboard-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #4A90E2;
+            margin: 0 0 16px 0;
+            text-align: center;
+        }
+        
+        .inline-leaderboard-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+        
+        .inline-leaderboard-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .inline-leaderboard-list::-webkit-scrollbar-track {
+            background: rgba(74, 144, 226, 0.1);
+            border-radius: 3px;
+        }
+        
+        .inline-leaderboard-list::-webkit-scrollbar-thumb {
+            background: rgba(74, 144, 226, 0.4);
+            border-radius: 3px;
+        }
+        
+        .inline-leaderboard-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(74, 144, 226, 0.6);
+        }
+        
+        .inline-leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: rgba(74, 144, 226, 0.08);
+            border: 1px solid rgba(74, 144, 226, 0.15);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateX(-20px);
+            animation: slideInFromLeft 0.4s ease-out forwards;
+        }
+        
+        .inline-leaderboard-item:nth-child(1) { animation-delay: 0.1s; }
+        .inline-leaderboard-item:nth-child(2) { animation-delay: 0.15s; }
+        .inline-leaderboard-item:nth-child(3) { animation-delay: 0.2s; }
+        .inline-leaderboard-item:nth-child(4) { animation-delay: 0.25s; }
+        .inline-leaderboard-item:nth-child(5) { animation-delay: 0.3s; }
+        .inline-leaderboard-item:nth-child(6) { animation-delay: 0.35s; }
+        .inline-leaderboard-item:nth-child(7) { animation-delay: 0.4s; }
+        .inline-leaderboard-item:nth-child(8) { animation-delay: 0.45s; }
+        .inline-leaderboard-item:nth-child(9) { animation-delay: 0.5s; }
+        .inline-leaderboard-item:nth-child(10) { animation-delay: 0.55s; }
+        
+        .inline-leaderboard-item:hover {
+            background: rgba(74, 144, 226, 0.15);
+            transform: translateX(5px);
+        }
+        
+        .inline-leaderboard-item.user-rank {
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.3), rgba(74, 144, 226, 0.15));
+            border: 2px solid #4A90E2;
+            box-shadow: 0 0 20px rgba(74, 144, 226, 0.4);
+            animation: highlightUserRank 0.8s ease-out forwards;
+            position: relative;
+        }
+        
+        .inline-leaderboard-item.user-rank::before {
+            content: '✨';
+            position: absolute;
+            left: -30px;
+            font-size: 1.5rem;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .inline-leaderboard-item.top-three {
+            background: rgba(255, 215, 0, 0.15);
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+        
+        .inline-leaderboard-rank {
+            font-size: 1.2rem;
+            font-weight: 700;
+            min-width: 40px;
+            text-align: center;
+            color: #4A90E2;
+        }
+        
+        .inline-leaderboard-user {
+            flex: 1;
+        }
+        
+        .inline-leaderboard-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 4px;
+        }
+        
+        .inline-leaderboard-meta {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .inline-leaderboard-score {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #4A90E2;
+            min-width: 80px;
+            text-align: right;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideInFromLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes highlightUserRank {
+            0% {
+                opacity: 0;
+                transform: scale(0.95) translateX(-20px);
+                box-shadow: 0 0 0 rgba(74, 144, 226, 0);
+            }
+            50% {
+                transform: scale(1.02) translateX(0);
+                box-shadow: 0 0 30px rgba(74, 144, 226, 0.6);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateX(0);
+                box-shadow: 0 0 20px rgba(74, 144, 226, 0.4);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(1.1);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .inline-leaderboard-list {
+                max-height: 300px;
+            }
+            
+            .inline-leaderboard-item {
+                padding: 10px;
+                gap: 8px;
+            }
+            
+            .inline-leaderboard-rank {
+                font-size: 1rem;
+                min-width: 35px;
+            }
+            
+            .inline-leaderboard-name {
+                font-size: 0.9rem;
+            }
+            
+            .inline-leaderboard-score {
+                font-size: 1.1rem;
+                min-width: 70px;
+            }
+        }
     </style>
     <!-- Analytics Tracker - Comprehensive visitor tracking -->
     <script src="src/utils/analytics-tracker.js"></script>
@@ -1758,8 +2204,10 @@
 
         <div class="feedback" id="feedback">
             <div class="feedback-content">
-                <h3 id="feedbackTitle">Correct!</h3>
-                <p id="feedbackText">Great job! You identified this correctly.</p>
+                <div class="feedback-main">
+                    <h3 id="feedbackTitle">Correct!</h3>
+                    <p id="feedbackText">Great job! You identified this correctly.</p>
+                </div>
                 <div class="fact-check-tips" id="factCheckTips">
                     <h4>💡 Fact-Checking Tips:</h4>
                     <ul>
@@ -1858,7 +2306,7 @@
 
                     <!-- Leaderboard Card -->
                     <div class="game-over-card leaderboard-card">
-                        <h3 class="card-title">Submit to Leaderboard</h3>
+                        <h3 class="card-title" id="leaderboardCardTitle">Submit to Leaderboard</h3>
                         <div class="leaderboard-submit-form" id="leaderboardSubmitForm">
                             <div class="form-group">
                                 <label for="playerNameInput">Enter your name</label>
@@ -1876,6 +2324,11 @@
                                 <button class="btn btn-secondary btn-view-leaderboard" id="viewLeaderboardBtn">View Leaderboard</button>
                             </div>
                             <div class="submit-status" id="submitStatus"></div>
+                        </div>
+                        <!-- Inline Leaderboard Display -->
+                        <div class="inline-leaderboard-container" id="inlineLeaderboardContainer" style="display: none;">
+                            <h4 class="inline-leaderboard-title">🏆 Top Scores</h4>
+                            <div class="inline-leaderboard-list" id="inlineLeaderboardList"></div>
                         </div>
                     </div>
                 </div>

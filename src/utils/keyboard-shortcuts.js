@@ -1,16 +1,12 @@
 /**
  * Keyboard Shortcuts Utility
  * Provides keyboard navigation and shortcuts throughout the app
- * 
- * Usage:
- *   import { initKeyboardShortcuts } from './utils/keyboard-shortcuts';
- *   initKeyboardShortcuts();
  */
 
 /**
  * Initialize keyboard shortcuts
  */
-export function initKeyboardShortcuts() {
+function initKeyboardShortcuts() {
   document.addEventListener('keydown', handleKeyboardShortcut);
   
   // Show help modal on '?' key
@@ -274,5 +270,8 @@ if (typeof document !== 'undefined') {
   }
 }
 
-export default { initKeyboardShortcuts };
+// Export to window for global access if needed
+if (typeof window !== 'undefined') {
+  window.initKeyboardShortcuts = initKeyboardShortcuts;
+}
 

@@ -4158,7 +4158,6 @@ class BreakingNewsGame {
                     // Load leaderboard to show user their rank
                     try {
                         await window.leaderboard.loadScores(50); // Load more to find user's rank
-                        window.leaderboard.render();
                         
                         // Find user's rank
                         const userScore = scoreData.score;
@@ -4167,16 +4166,13 @@ class BreakingNewsGame {
                         ) + 1;
                         
                         if (userRank > 0 && userRank <= 50) {
-                            this.showSubmitStatus(`✓ Score submitted! You're ranked #${userRank} on the leaderboard!`, 'success');
+                            this.showSubmitStatus(`✓ Score submitted! You're ranked #${userRank}!`, 'success');
                         } else {
                             this.showSubmitStatus('✓ Score submitted successfully!', 'success');
                         }
                         
-                        // Show leaderboard after a short delay
-                        setTimeout(() => {
-                            console.log('[Game] Showing leaderboard...');
-                            window.leaderboard.show();
-                        }, 1500);
+                        // Render inline leaderboard with animation
+                        this.renderInlineLeaderboard(userName, userScore, userRank);
                     } catch (error) {
                         console.error('[Game] Error loading/showing leaderboard:', error);
                         this.showSubmitStatus('✓ Score submitted successfully!', 'success');
@@ -4297,6 +4293,76 @@ class BreakingNewsGame {
         }
     }
     
+    renderInlineLeaderboard(userName, userScore, userRank) {
+        const container = document.getElementById('inlineLeaderboardContainer');
+        const list = document.getElementById('inlineLeaderboardList');
+        const cardTitle = document.getElementById('leaderboardCardTitle');
+        
+        if (!container || !list) {
+            console.warn('[Game] Inline leaderboard elements not found');
+            return;
+        }
+        
+        // Update card title
+        if (cardTitle) {
+            cardTitle.textContent = '🏆 Leaderboard';
+        }
+        
+        // Get top 10 scores
+        const topScores = window.leaderboard.scores.slice(0, 10);
+        
+        if (topScores.length === 0) {
+            list.innerHTML = '<div style="text-align: center; padding: 20px; color: rgba(255, 255, 255, 0.7);">No scores yet. Be the first!</div>';
+            container.style.display = 'block';
+            return;
+        }
+        
+        // Render scores
+        list.innerHTML = topScores.map((score, index) => {
+            const rank = index + 1;
+            const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
+            const isUserRank = rank === userRank && score.userName === userName && Math.abs(score.score - userScore) < 0.01;
+            const isTopThree = rank <= 3;
+            
+            // Format metadata
+            const metaParts = [];
+            if (score.difficulty) metaParts.push(`Difficulty: ${score.difficulty}`);
+            if (score.level) metaParts.push(`Level: ${score.level}`);
+            if (score.streak) metaParts.push(`Streak: ${score.streak}`);
+            const metaText = metaParts.join(' | ');
+            
+            return `
+                <div class="inline-leaderboard-item ${isTopThree ? 'top-three' : ''} ${isUserRank ? 'user-rank' : ''}" data-rank="${rank}">
+                    <div class="inline-leaderboard-rank">${medal}</div>
+                    <div class="inline-leaderboard-user">
+                        <div class="inline-leaderboard-name">${this.escapeHtml(score.userName)}</div>
+                        <div class="inline-leaderboard-meta">${metaText || '—'}</div>
+                    </div>
+                    <div class="inline-leaderboard-score">${score.score.toLocaleString()}</div>
+                </div>
+            `;
+        }).join('');
+        
+        // Show container with animation
+        container.style.display = 'block';
+        
+        // Scroll to user's rank if it's in the top 10
+        if (userRank > 0 && userRank <= 10) {
+            setTimeout(() => {
+                const userItem = list.querySelector(`[data-rank="${userRank}"]`);
+                if (userItem) {
+                    userItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 600); // Wait for animations to start
+        }
+    }
+    
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
     async submitToLeaderboard(scoreData) {
         try {
             const response = await fetch('/.netlify/functions/leaderboard', {
@@ -4385,6 +4451,18 @@ class BreakingNewsGame {
     
     hideAllScreens() {
         console.log('hideAllScreens called');
+        
+        // Hide inline leaderboard
+        const inlineLeaderboard = document.getElementById('inlineLeaderboardContainer');
+        if (inlineLeaderboard) {
+            inlineLeaderboard.style.display = 'none';
+        }
+        
+        // Reset leaderboard card title
+        const cardTitle = document.getElementById('leaderboardCardTitle');
+        if (cardTitle) {
+            cardTitle.textContent = 'Submit to Leaderboard';
+        }
         const startScreen = document.getElementById('startScreen');
         const gameArea = document.querySelector('.game-area');
         const gameStats = document.querySelector('.game-stats');
@@ -9292,45 +9370,61 @@ IMPORTANT REQUIREMENTS:
             // Set up the visibility observer for music management
             setupSpotlightVisibilityObserver();
             
-            // Set up intersection observer to load spotlight only when visible
-            const loadObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    // Only load once when section becomes visible (at least 30% visible)
-                    if (entry.isIntersecting && entry.intersectionRatio >= 0.3 && !spotlightLoaded) {
-                        spotlightLoaded = true;
-                        console.log('Country spotlight section is now visible - loading spotlight');
-                        
-                        // Check rate limit - hide buttons if limit reached, but keep section visible
-                        const rateLimit = checkRateLimit();
-                        if (!rateLimit.allowed) {
-                            console.log('Daily spotlight limit reached - hiding buttons but keeping content visible');
-                            // Hide generation buttons
-                            if (refreshBtn) {
-                                refreshBtn.style.display = 'none';
-                            }
-                            if (retryBtn) {
-                                retryBtn.style.display = 'none';
-                            }
-                            updateButtonStates(); // Update button states
-                            updateRemainingDisplay(); // Update remaining display
-                            // Still load/restore the last generation so they can view it
-                            loadSpotlight(false); // Try to restore last generation
-                        } else {
-                            // Load spotlight (restore or generate new)
-                            loadSpotlight(false); // Try to restore, generate new if needed
-                        }
-                        
-                        // Disconnect observer after first load
-                        loadObserver.disconnect();
+            // Function to load spotlight
+            const triggerLoadSpotlight = () => {
+                if (spotlightLoaded) return; // Prevent multiple loads
+                spotlightLoaded = true;
+                console.log('Country spotlight section is visible - loading spotlight');
+                
+                // Check rate limit - hide buttons if limit reached, but keep section visible
+                const rateLimit = checkRateLimit();
+                if (!rateLimit.allowed) {
+                    console.log('Daily spotlight limit reached - hiding buttons but keeping content visible');
+                    // Hide generation buttons
+                    if (refreshBtn) {
+                        refreshBtn.style.display = 'none';
                     }
-                });
-            }, {
-                threshold: [0.3],
-                rootMargin: '0px'
-            });
+                    if (retryBtn) {
+                        retryBtn.style.display = 'none';
+                    }
+                    updateButtonStates(); // Update button states
+                    updateRemainingDisplay(); // Update remaining display
+                    // Still load/restore the last generation so they can view it
+                    loadSpotlight(false); // Try to restore last generation
+                } else {
+                    // Load spotlight (restore or generate new)
+                    loadSpotlight(false); // Try to restore, generate new if needed
+                }
+            };
             
-            // Start observing the spotlight section
-            loadObserver.observe(spotlightSection);
+            // Check if section is already visible on page load
+            const rect = spotlightSection.getBoundingClientRect();
+            const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+            const isSignificantlyVisible = rect.top < window.innerHeight * 0.7 && rect.bottom > window.innerHeight * 0.3;
+            
+            if (isSignificantlyVisible) {
+                // Section is already visible - load immediately
+                console.log('Spotlight section already visible on page load - loading immediately');
+                triggerLoadSpotlight();
+            } else {
+                // Set up intersection observer to load spotlight when it becomes visible
+                const loadObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        // Only load once when section becomes visible (at least 30% visible)
+                        if (entry.isIntersecting && entry.intersectionRatio >= 0.3 && !spotlightLoaded) {
+                            triggerLoadSpotlight();
+                            // Disconnect observer after first load
+                            loadObserver.disconnect();
+                        }
+                    });
+                }, {
+                    threshold: [0.3],
+                    rootMargin: '0px'
+                });
+                
+                // Start observing the spotlight section
+                loadObserver.observe(spotlightSection);
+            }
         }, 100);
     }
     
