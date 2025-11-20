@@ -263,6 +263,10 @@
             min-width: 120px;
             text-align: center;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
         
         .stat-label-geo {
@@ -279,6 +283,10 @@
             color: #4A90E2;
             text-shadow: 0 2px 6px rgba(74, 144, 226, 0.6);
             white-space: nowrap;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         #geoScore {
@@ -1093,6 +1101,11 @@
             color: #FFC107;
             text-shadow: 0 2px 6px rgba(255, 193, 7, 0.6);
             white-space: nowrap;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
         }
         
         /* Particle Effects */
@@ -1738,7 +1751,7 @@
         <div class="geography-game-container">
             <div class="game-header">
                 <h1>🌍 50 Most Populous Countries</h1>
-                <p>Click on the country that's prompted. Green = not answered, White = correct, Red = incorrect | <span id="directionsCount">0 / 50</span> correct | ⚡ Speed bonuses for fast answers!</p>
+                <p>Click on the country that's prompted. Green = not answered, White = correct, Red = incorrect | <span id="directionsCount">0 / 50</span> correct</p>
             </div>
             
             <!-- Progress Bar -->

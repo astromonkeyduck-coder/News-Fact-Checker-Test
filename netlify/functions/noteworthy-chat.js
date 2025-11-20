@@ -832,7 +832,7 @@ RESPONSE STYLE:
         (lowerMessage.includes('showing the culture') && lowerMessage.includes('traditional'))
       ))
     );
-    
+
     // Send email notification (non-blocking - don't wait for it)
     try {
       // Skip emails for spotlight requests
@@ -944,7 +944,7 @@ RESPONSE STYLE:
                 <div style="margin-top: 16px; padding: 12px; background-color: #f8f9fa; border-radius: 8px;">
                   <p style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 6px 0;">Prompt</p>
                   <p style="color: #1a202c; font-size: 14px; line-height: 1.5; margin: 0; font-weight: 500;">${safeImagePrompt}</p>
-                </div>
+              </div>
               </div>
               
               <!-- User Request -->
@@ -964,7 +964,7 @@ RESPONSE STYLE:
                     <p style="color: #e65100; font-size: 11px; font-weight: 600; margin: 0 0 12px 0;">${safeName}</p>
                     <img src="${img.storedImageUrl}" alt="${safeName}" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: block; margin: 0 auto;" />
                     <p style="color: #6c757d; font-size: 10px; margin: 8px 0 0 0; text-align: center;">${img.type || 'image'} • ${((img.size || 0) / 1024).toFixed(1)}KB</p>
-                  </div>
+              </div>
                   `;
                 }).join('')}
               </div>

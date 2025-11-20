@@ -362,12 +362,209 @@ class BreakingNewsGame {
         console.log('Questions created:', this.questions.length);
         console.log('First question:', this.questions[0]);
         
+        // NeonDreams music state
+        this._bgMusicWasPlaying = false;
+        this._bgMusicCurrentTime = 0;
+        this._bgMusicTrack = null; // Track which music was playing (interactiveGameBackgroundMusic or music system)
+        
         this.initializeGame();
         
         // Initialize AI button state after a brief delay to ensure DOM is ready
         setTimeout(() => {
             this.updateAIButtonState();
         }, 100);
+        
+        // Set up page leave handler to fade out NeonDreams
+        // Only if we're on the game page (not homepage)
+        const isGamePage = window.location.pathname.includes('game.html') || document.getElementById('gameOver');
+        if (isGamePage) {
+            window.addEventListener('beforeunload', () => {
+                this.fadeOutNeonDreamsAndResume();
+            });
+            window.addEventListener('pagehide', () => {
+                this.fadeOutNeonDreamsAndResume();
+            });
+        }
+    }
+    
+    playNeonDreams() {
+        // Get background music (InteractiveGame.wav or music system)
+        const interactiveGameMusic = document.getElementById('interactiveGameBackgroundMusic');
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        const backgroundMusicSecond = document.getElementById('backgroundMusicSecond');
+        const backgroundMusicThird = document.getElementById('backgroundMusicThird');
+        const backgroundMusicLoop = document.getElementById('backgroundMusicLoop');
+        const neonDreams = document.getElementById('neonDreamsMusic');
+        
+        if (!neonDreams) {
+            console.warn('NeonDreams.wav audio element not found');
+            return;
+        }
+        
+        // Use music system pause function if available to pause all tracks
+        if (typeof window.pauseAllMusicTracks === 'function') {
+            try {
+                const musicState = window.pauseAllMusicTracks();
+                if (musicState.wasPlaying && musicState.currentTrack) {
+                    this._bgMusicWasPlaying = true;
+                    this._bgMusicCurrentTime = musicState.currentTime;
+                    // Determine which track it was
+                    if (musicState.currentTrack === interactiveGameMusic) {
+                        this._bgMusicTrack = 'interactiveGame';
+                    } else if (musicState.currentTrack === backgroundMusic) {
+                        this._bgMusicTrack = 'track1';
+                    } else if (musicState.currentTrack === backgroundMusicSecond) {
+                        this._bgMusicTrack = 'track2';
+                    } else if (musicState.currentTrack === backgroundMusicThird) {
+                        this._bgMusicTrack = 'track3';
+                    } else if (musicState.currentTrack === backgroundMusicLoop) {
+                        this._bgMusicTrack = 'loop';
+                    }
+                    console.log('🎵 Paused music via music system, track:', this._bgMusicTrack, 'time:', this._bgMusicCurrentTime);
+                }
+            } catch (e) {
+                console.log('Error using music system pause:', e);
+            }
+        }
+        
+        // Also manually check and pause InteractiveGame.wav (specific to fact checker game)
+        // This is important because it might not be managed by the music system
+        if (interactiveGameMusic && !interactiveGameMusic.paused) {
+            if (!this._bgMusicWasPlaying) {
+                this._bgMusicWasPlaying = true;
+                this._bgMusicCurrentTime = interactiveGameMusic.currentTime;
+                this._bgMusicTrack = 'interactiveGame';
+            }
+            interactiveGameMusic.pause();
+            console.log('🎵 Paused InteractiveGame.wav, saved time:', this._bgMusicCurrentTime);
+        } else if (interactiveGameMusic && interactiveGameMusic.currentTime > 0 && !this._bgMusicWasPlaying) {
+            // Save state even if paused (might have been paused by something else)
+            this._bgMusicWasPlaying = true;
+            this._bgMusicCurrentTime = interactiveGameMusic.currentTime;
+            this._bgMusicTrack = 'interactiveGame';
+            console.log('🎵 Saved InteractiveGame.wav state (was paused), time:', this._bgMusicCurrentTime);
+        }
+        
+        // Play NeonDreams.wav
+        neonDreams.volume = 0.5;
+        neonDreams.currentTime = 0;
+        const playPromise = neonDreams.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                console.log('🎵 NeonDreams.wav started playing');
+            }).catch(err => {
+                console.log('⚠️ NeonDreams.wav autoplay blocked:', err.message);
+                // Try to play after user interaction
+                const tryPlayOnInteraction = () => {
+                    neonDreams.play().then(() => {
+                        console.log('🎵 NeonDreams.wav started playing after interaction');
+                    }).catch(e => {
+                        console.log('⚠️ Still blocked:', e.message);
+                    });
+                    document.removeEventListener('click', tryPlayOnInteraction);
+                    document.removeEventListener('touchstart', tryPlayOnInteraction);
+                };
+                document.addEventListener('click', tryPlayOnInteraction, { once: true });
+                document.addEventListener('touchstart', tryPlayOnInteraction, { once: true });
+            });
+        }
+    }
+    
+    fadeOutNeonDreamsAndResume() {
+        const neonDreams = document.getElementById('neonDreamsMusic');
+        const interactiveGameMusic = document.getElementById('interactiveGameBackgroundMusic');
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        const backgroundMusicSecond = document.getElementById('backgroundMusicSecond');
+        const backgroundMusicThird = document.getElementById('backgroundMusicThird');
+        const backgroundMusicLoop = document.getElementById('backgroundMusicLoop');
+        
+        if (!neonDreams) return;
+        
+        // Fade out NeonDreams.wav
+        if (!neonDreams.paused) {
+            const fadeOutInterval = setInterval(() => {
+                if (neonDreams.volume > 0.05) {
+                    neonDreams.volume -= 0.05;
+                } else {
+                    neonDreams.volume = 0;
+                    neonDreams.pause();
+                    neonDreams.currentTime = 0;
+                    clearInterval(fadeOutInterval);
+                    
+                    // Resume background music if it was playing
+                    this.resumeBackgroundMusic();
+                }
+            }, 50); // Fade out over ~500ms
+        } else {
+            // If already paused, just resume background music
+            this.resumeBackgroundMusic();
+        }
+    }
+    
+    resumeBackgroundMusic() {
+        const interactiveGameMusic = document.getElementById('interactiveGameBackgroundMusic');
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        const backgroundMusicSecond = document.getElementById('backgroundMusicSecond');
+        const backgroundMusicThird = document.getElementById('backgroundMusicThird');
+        const backgroundMusicLoop = document.getElementById('backgroundMusicLoop');
+        
+        if (!this._bgMusicWasPlaying) return;
+        
+        // Function to fade in music
+        const fadeInMusic = (musicElement, targetVolume = 0.5) => {
+            if (!musicElement) return;
+            
+            // Set initial volume to 0
+            musicElement.volume = 0;
+            
+            // Restore position if available
+            if (this._bgMusicCurrentTime !== undefined) {
+                musicElement.currentTime = this._bgMusicCurrentTime;
+            }
+            
+            // Start playing
+            musicElement.play().catch(err => {
+                console.log('⚠️ Failed to resume background music:', err.message);
+            });
+            
+            // Fade in over 1 second
+            const fadeInInterval = setInterval(() => {
+                if (musicElement.volume < targetVolume) {
+                    musicElement.volume = Math.min(musicElement.volume + 0.05, targetVolume);
+                } else {
+                    clearInterval(fadeInInterval);
+                    console.log('🎵 Background music faded in to volume:', targetVolume);
+                }
+            }, 50); // Update every 50ms for smooth fade
+        };
+        
+        // Handle InteractiveGame.wav separately (not part of music system)
+        if (this._bgMusicTrack === 'interactiveGame' && interactiveGameMusic) {
+            fadeInMusic(interactiveGameMusic);
+            console.log('🎵 Resuming InteractiveGame.wav with fade in at time:', this._bgMusicCurrentTime);
+            this._bgMusicWasPlaying = false;
+            this._bgMusicTrack = null;
+            return;
+        }
+        
+        // Manual resume for music system tracks
+        let musicToResume = null;
+        if (this._bgMusicTrack === 'track1' && backgroundMusic) {
+            musicToResume = backgroundMusic;
+        } else if (this._bgMusicTrack === 'track2' && backgroundMusicSecond) {
+            musicToResume = backgroundMusicSecond;
+        } else if (this._bgMusicTrack === 'track3' && backgroundMusicThird) {
+            musicToResume = backgroundMusicThird;
+        } else if (this._bgMusicTrack === 'loop' && backgroundMusicLoop) {
+            musicToResume = backgroundMusicLoop;
+        }
+        
+        if (musicToResume) {
+            fadeInMusic(musicToResume);
+            console.log('🎵 Resuming background music with fade in:', this._bgMusicTrack, 'at time:', this._bgMusicCurrentTime);
+        }
+        this._bgMusicWasPlaying = false;
+        this._bgMusicTrack = null;
     }
     
     createAndShuffleQuestions() {
@@ -3647,12 +3844,125 @@ class BreakingNewsGame {
         }
     }
     
+    createConfetti() {
+        // Create confetti container if it doesn't exist
+        let confettiContainer = document.getElementById('gameConfetti');
+        if (!confettiContainer) {
+            confettiContainer = document.createElement('div');
+            confettiContainer.id = 'gameConfetti';
+            confettiContainer.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                pointer-events: none;
+                z-index: 9999;
+                overflow: hidden;
+            `;
+            document.body.appendChild(confettiContainer);
+        }
+        
+        // Confetti colors
+        const colors = ['#ffe66d', '#4ecdc4', '#ff6b6b', '#95e1d3', '#aa96da', '#fcbad3', '#f38181', '#a8e6cf', '#2ecc71', '#3498db', '#FFD700', '#FFC107'];
+        
+        // Function to create confetti pieces
+        const createConfettiPiece = () => {
+            const confetti = document.createElement('div');
+            confetti.style.cssText = `
+                position: absolute;
+                width: ${Math.random() * 8 + 6}px;
+                height: ${Math.random() * 8 + 6}px;
+                background: ${colors[Math.floor(Math.random() * colors.length)]};
+                left: ${Math.random() * 100}%;
+                top: -10px;
+                opacity: 1;
+                border-radius: ${Math.random() > 0.5 ? '50%' : '0%'};
+                box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+            `;
+            
+            // Random animation duration and delay
+            const duration = Math.random() * 2 + 2;
+            const delay = Math.random() * 0.5;
+            const horizontalDrift = (Math.random() - 0.5) * 200;
+            
+            confetti.style.animation = `gameConfettiFall ${duration}s linear ${delay}s forwards`;
+            confetti.style.setProperty('--drift', horizontalDrift + 'px');
+            
+            confettiContainer.appendChild(confetti);
+            
+            // Remove after animation
+            setTimeout(() => {
+                if (confetti.parentNode) {
+                    confetti.parentNode.removeChild(confetti);
+                }
+            }, (duration + delay) * 1000);
+        };
+        
+        // Add CSS animation if not already added
+        if (!document.getElementById('gameConfettiStyle')) {
+            const style = document.createElement('style');
+            style.id = 'gameConfettiStyle';
+            style.textContent = `
+                @keyframes gameConfettiFall {
+                    0% {
+                        transform: translateY(0) translateX(0) rotate(0deg);
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateY(100vh) translateX(var(--drift, 0px)) rotate(720deg);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Start creating confetti continuously
+        console.log('[Fact Checker Game] Starting confetti celebration...');
+        let confettiInterval = setInterval(() => {
+            // Create 15-25 pieces every 200ms for continuous celebration
+            const pieces = Math.floor(Math.random() * 11) + 15;
+            for (let i = 0; i < pieces; i++) {
+                createConfettiPiece();
+            }
+        }, 200);
+        
+        // Stop confetti after 10 seconds
+        setTimeout(() => {
+            console.log('[Fact Checker Game] Stopping confetti after 10 seconds');
+            clearInterval(confettiInterval);
+            // Clean up confetti container after a delay to let remaining pieces fall
+            setTimeout(() => {
+                if (confettiContainer && confettiContainer.parentNode) {
+                    confettiContainer.innerHTML = '';
+                }
+            }, 3000);
+        }, 10000);
+    }
+    
     async endGame() {
         this.stopGameTimer();
         this.stopQuestionTimer();
         this.playSound('gameOver');
         this.gameState = 'gameOver';
+        
+        // Hide other screens but show game over
         this.hideAllScreens();
+        
+        // Always trigger confetti at game end
+        try {
+            this.createConfetti();
+        } catch (e) {
+            console.log('Error creating confetti:', e);
+        }
+        
+        // Play NeonDreams.wav at game end
+        try {
+            this.playNeonDreams();
+        } catch (e) {
+            console.log('Error playing NeonDreams.wav:', e);
+        }
 
         // Reset pause state when game ends
         const pauseBtn = document.getElementById('pauseToggleBtn');
@@ -3709,12 +4019,16 @@ class BreakingNewsGame {
         // Save best time
         this.saveBestTime(finalTime);
 
+        // Update game over screen with advanced stats - new structure
+        const bestTimeString = this.bestTime ? `${Math.floor(this.bestTime / 60)}:${String(Math.floor(this.bestTime % 60)).padStart(2, '0')}` : 'N/A';
+        const accuracy = this.totalAnswers > 0 ? Math.round((this.correctAnswers / this.totalAnswers) * 100) : 0;
+        
+        // Update individual stat elements
         const finalScore = document.getElementById('finalScore');
         const finalLevel = document.getElementById('finalLevel');
         const finalStreak = document.getElementById('finalStreak');
-        const gameOver = document.getElementById('gameOver');
         
-        if (finalScore) finalScore.textContent = Math.floor(this.score);
+        if (finalScore) finalScore.textContent = Math.floor(this.score).toLocaleString();
         if (finalLevel) finalLevel.textContent = this.level;
         if (finalStreak) finalStreak.textContent = Math.max(...this.getBestStreak());
         
@@ -3724,24 +4038,29 @@ class BreakingNewsGame {
             highScoreElem.textContent = highScore;
         }
         
-        // Update game over screen with advanced stats
-        const gameOverContent = document.querySelector('#gameOver .final-stats');
-        if (gameOverContent) {
-            const bestTimeString = this.bestTime ? `${Math.floor(this.bestTime / 60)}:${String(Math.floor(this.bestTime % 60)).padStart(2, '0')}` : 'N/A';
-            gameOverContent.innerHTML = `
-                <p>Final Score: <span id="finalScore">${Math.floor(this.score)}</span></p>
-                <p>Level Reached: <span id="finalLevel">${this.level}</span></p>
-                <p>Best Streak: <span id="finalStreak">${Math.max(...this.getBestStreak())}</span></p>
-                <p>Completion Time: ${timeString}</p>
-                <p>Best Time: ${bestTimeString}</p>
-                <p>Average Speed: ${avgTime}s per question</p>
-                <p>Speed Bonuses: +${this.speedBonus} points</p>
-                <p>Accuracy: ${this.totalAnswers > 0 ? Math.round((this.correctAnswers / this.totalAnswers) * 100) : 0}%</p>
-                <p>High Score: <span id="finalHighScore">${highScore}</span></p>
-            `;
-        }
+        const finalTimeEl = document.getElementById('finalTime');
+        if (finalTimeEl) finalTimeEl.textContent = timeString;
+        
+        const finalBestTimeEl = document.getElementById('finalBestTime');
+        if (finalBestTimeEl) finalBestTimeEl.textContent = bestTimeString;
+        
+        const finalAvgSpeedEl = document.getElementById('finalAvgSpeed');
+        if (finalAvgSpeedEl) finalAvgSpeedEl.textContent = `${avgTime}s`;
+        
+        const finalSpeedBonusEl = document.getElementById('finalSpeedBonus');
+        if (finalSpeedBonusEl) finalSpeedBonusEl.textContent = `+${this.speedBonus}`;
+        
+        const finalAccuracyEl = document.getElementById('finalAccuracy');
+        if (finalAccuracyEl) finalAccuracyEl.textContent = `${accuracy}%`;
 
-        if (gameOver) gameOver.style.display = 'block';
+        // Show game over screen (after hideAllScreens was called)
+        const gameOver = document.getElementById('gameOver');
+        if (gameOver) {
+            gameOver.style.display = 'block';
+            console.log('[Game] Game over screen displayed');
+        } else {
+            console.error('[Game] Game over element not found!');
+        }
         
         // Show leaderboard submit form
         const submitForm = document.getElementById('leaderboardSubmitForm');
@@ -4037,6 +4356,12 @@ class BreakingNewsGame {
     }
     
     restartGame() {
+        // Fade out NeonDreams.wav and resume background music if playing
+        try {
+            this.fadeOutNeonDreamsAndResume();
+        } catch (e) {
+            console.log('Error fading out NeonDreams:', e);
+        }
         // Stop all timers
         this.stopGameTimer();
         this.stopQuestionTimer();
@@ -4070,7 +4395,10 @@ class BreakingNewsGame {
         if (gameArea) gameArea.style.display = 'none';
         if (gameStats) gameStats.style.display = 'none';
         if (feedback) feedback.style.display = 'none';
-        if (gameOver) gameOver.style.display = 'none';
+        // Don't hide game over if we're in gameOver state (it will be shown explicitly)
+        if (gameOver && this.gameState !== 'gameOver') {
+            gameOver.style.display = 'none';
+        }
         
         console.log('All screens hidden');
     }
@@ -8944,26 +9272,16 @@ IMPORTANT REQUIREMENTS:
         });
     }
     
+    // Track if spotlight has been loaded
+    let spotlightLoaded = false;
+    
     // Setup visibility observer and load spotlight (restore or generate new)
     function initSpotlight() {
         // Wait a bit to ensure all DOM elements are ready
         setTimeout(() => {
-            // Check rate limit - hide buttons if limit reached, but keep section visible
-            const rateLimit = checkRateLimit();
-            if (!rateLimit.allowed) {
-                console.log('Daily spotlight limit reached - hiding buttons but keeping content visible');
-                // Hide generation buttons
-                if (refreshBtn) {
-                    refreshBtn.style.display = 'none';
-                }
-                if (retryBtn) {
-                    retryBtn.style.display = 'none';
-                }
-                updateButtonStates(); // Update button states
-                updateRemainingDisplay(); // Update remaining display
-                // Still load/restore the last generation so they can view it
-                setupSpotlightVisibilityObserver();
-                loadSpotlight(false); // Try to restore last generation
+            const spotlightSection = document.getElementById('country-spotlight-section');
+            if (!spotlightSection) {
+                console.warn('Country spotlight section not found');
                 return;
             }
             
@@ -8971,8 +9289,48 @@ IMPORTANT REQUIREMENTS:
             updateButtonStates();
             updateRemainingDisplay();
             
+            // Set up the visibility observer for music management
             setupSpotlightVisibilityObserver();
-            loadSpotlight(false); // Try to restore, generate new if needed
+            
+            // Set up intersection observer to load spotlight only when visible
+            const loadObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    // Only load once when section becomes visible (at least 30% visible)
+                    if (entry.isIntersecting && entry.intersectionRatio >= 0.3 && !spotlightLoaded) {
+                        spotlightLoaded = true;
+                        console.log('Country spotlight section is now visible - loading spotlight');
+                        
+                        // Check rate limit - hide buttons if limit reached, but keep section visible
+                        const rateLimit = checkRateLimit();
+                        if (!rateLimit.allowed) {
+                            console.log('Daily spotlight limit reached - hiding buttons but keeping content visible');
+                            // Hide generation buttons
+                            if (refreshBtn) {
+                                refreshBtn.style.display = 'none';
+                            }
+                            if (retryBtn) {
+                                retryBtn.style.display = 'none';
+                            }
+                            updateButtonStates(); // Update button states
+                            updateRemainingDisplay(); // Update remaining display
+                            // Still load/restore the last generation so they can view it
+                            loadSpotlight(false); // Try to restore last generation
+                        } else {
+                            // Load spotlight (restore or generate new)
+                            loadSpotlight(false); // Try to restore, generate new if needed
+                        }
+                        
+                        // Disconnect observer after first load
+                        loadObserver.disconnect();
+                    }
+                });
+            }, {
+                threshold: [0.3],
+                rootMargin: '0px'
+            });
+            
+            // Start observing the spotlight section
+            loadObserver.observe(spotlightSection);
         }, 100);
     }
     

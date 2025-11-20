@@ -1411,8 +1411,8 @@ This is an automated notification from your website.`,
       for (let i = 0; i <= retries; i++) {
         try {
           await store.set(key, JSON.stringify(data), {
-            contentType: "application/json",
-          });
+      contentType: "application/json",
+    });
           return true;
         } catch (err) {
           if (i === retries) {
@@ -1437,7 +1437,7 @@ This is an automated notification from your website.`,
     savePromises.push(
       Promise.race([
         store.set(entryKey, JSON.stringify(logEntry), {
-          contentType: "application/json",
+      contentType: "application/json",
         }),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
       ]).catch(err => {

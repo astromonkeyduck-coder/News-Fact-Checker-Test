@@ -75,6 +75,7 @@ class GeographyGame {
         this.attempts = new Map(); // Track attempts per country: countryCode -> attemptCount
         this.lastClickTime = 0; // Track last click time for debouncing
         this.isProcessingClick = false; // Prevent double-processing of clicks
+        this.isSubmittingScore = false; // Prevent duplicate leaderboard submissions
         this.zoomLevel = 1;
         this.panX = 0;
         this.panY = 0;
@@ -96,6 +97,10 @@ class GeographyGame {
         this.flashedCountry = null;
         this.flashTimeout = null;
         this.flashInterval = null; // For continuous flashing
+        this.typingRevealedLetters = 0; // Track how many letters are revealed in typing mode
+        this.typingWrongAttempts = 0; // Track wrong attempts for current country in typing mode
+        this.typingRevealedLetters = 0; // Track how many letters are revealed in typing mode
+        this.typingWrongAttempts = 0; // Track wrong attempts for current country in typing mode
         
         // Enhancement features
         this.combo = 0; // Combo multiplier for consecutive correct answers
@@ -121,11 +126,23 @@ class GeographyGame {
             console.log('Audio context not available');
         }
         
+        // NeonDreams music state
+        this._bgMusicWasPlaying = false;
+        this._bgMusicCurrentTime = 0;
+        
         this.initializeElements();
         this.loadWorldMap();
         this.setupEventListeners();
         this.setupZoomControls();
         this.setupGameModeSelector();
+        
+        // Set up page leave handler to fade out NeonDreams
+        window.addEventListener('beforeunload', () => {
+            this.fadeOutNeonDreamsAndResume();
+        });
+        window.addEventListener('pagehide', () => {
+            this.fadeOutNeonDreamsAndResume();
+        });
     }
     
     initializeElements() {
@@ -688,8 +705,11 @@ class GeographyGame {
             const deltaX = e.clientX - dragStartX;
             const deltaY = e.clientY - dragStartY;
             
-            this.panX = dragStartPanX + deltaY; // Vertical movement
-            this.panY = dragStartPanY + deltaX; // Horizontal movement
+            // Reduce sensitivity by applying a multiplier (0.7 = 70% sensitivity)
+            const sensitivity = 0.7;
+            
+            this.panX = dragStartPanX + (deltaY * sensitivity); // Vertical movement
+            this.panY = dragStartPanY + (deltaX * sensitivity); // Horizontal movement
             this.updateTransform();
             
             e.preventDefault();
@@ -745,7 +765,8 @@ class GeographyGame {
             this._checkMove = (moveE) => {
                 const moveDeltaX = Math.abs(moveE.clientX - dragStartX);
                 const moveDeltaY = Math.abs(moveE.clientY - dragStartY);
-                if (moveDeltaX > 5 || moveDeltaY > 5) {
+                // Increased threshold from 5 to 10 pixels to reduce sensitivity
+                if (moveDeltaX > 10 || moveDeltaY > 10) {
                     hasMoved = true;
                     isDragging = true;
                     if (this.mapContainer) {
@@ -835,14 +856,16 @@ class GeographyGame {
             
             this.mapContainer.addEventListener('touchmove', (e) => {
                 if (e.touches.length === 2) {
-                    // Pinch zoom
+                    // Pinch zoom - reduced sensitivity
                     const touch1 = e.touches[0];
                     const touch2 = e.touches[1];
                     const currentDistance = Math.hypot(
                         touch2.clientX - touch1.clientX,
                         touch2.clientY - touch1.clientY
                     );
-                    const scale = currentDistance / initialDistance;
+                    // Apply sensitivity reduction: scale the change by 0.7 to make it less sensitive
+                    const rawScale = currentDistance / initialDistance;
+                    const scale = 1 + (rawScale - 1) * 0.7; // Reduce sensitivity by 30%
                     const newZoom = initialZoom * scale;
                     this.zoomLevel = Math.min(3, Math.max(this.minZoomLevel || 1, newZoom));
                     this.zoom(1, pinchCenterX, pinchCenterY); // Update zoom and center
@@ -853,16 +876,18 @@ class GeographyGame {
                     const deltaX = Math.abs(e.touches[0].clientX - (touchStartX + this.panY));
                     const deltaY = Math.abs(e.touches[0].clientY - (touchStartY + this.panX));
                     
-                    // If moved more than 10px, consider it a pan
-                    if (deltaX > 10 || deltaY > 10) {
+                    // If moved more than 15px, consider it a pan (increased from 10 to reduce sensitivity)
+                    if (deltaX > 15 || deltaY > 15) {
                         touchMoved = true;
                     }
                     
                     if (touchMoved) {
                         // Horizontal touch movement (clientX) moves map horizontally (panY)
+                        // Reduce sensitivity by applying a multiplier (0.7 = 70% sensitivity)
+                        const sensitivity = 0.7;
                         // Vertical touch movement (clientY) moves map vertically (panX)
-                        this.panY = e.touches[0].clientX - touchStartX; // Horizontal
-                        this.panX = e.touches[0].clientY - touchStartY; // Vertical
+                        this.panY = (e.touches[0].clientX - touchStartX) * sensitivity; // Horizontal
+                        this.panX = (e.touches[0].clientY - touchStartY) * sensitivity; // Vertical
                         this.updateTransform();
                         e.preventDefault();
                     }
@@ -902,13 +927,14 @@ class GeographyGame {
                 }
             }, { passive: false });
             
-            // Zoom with mouse wheel
+            // Zoom with mouse wheel - reduced sensitivity
             this.mapContainer.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 const rect = this.mapContainer.getBoundingClientRect();
                 const centerX = e.clientX - rect.left;
                 const centerY = e.clientY - rect.top;
-                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                // Reduced from 0.9/1.1 (10% change) to 0.96/1.04 (4% change) for less sensitivity
+                const delta = e.deltaY > 0 ? 0.96 : 1.04;
                 this.zoom(delta, centerX, centerY);
             });
     }
@@ -919,10 +945,12 @@ class GeographyGame {
         const resetZoomBtn = document.getElementById('resetZoom');
         
         if (zoomInBtn) {
-            zoomInBtn.addEventListener('click', () => this.zoom(1.2));
+            // Reduced from 1.2 (20% change) to 1.1 (10% change) for less sensitivity
+            zoomInBtn.addEventListener('click', () => this.zoom(1.1));
         }
         if (zoomOutBtn) {
-            zoomOutBtn.addEventListener('click', () => this.zoom(0.8));
+            // Reduced from 0.8 (20% change) to 0.9 (10% change) for less sensitivity
+            zoomOutBtn.addEventListener('click', () => this.zoom(0.9));
         }
         if (resetZoomBtn) {
             resetZoomBtn.addEventListener('click', () => this.resetZoomPan());
@@ -1174,12 +1202,6 @@ class GeographyGame {
         // Hide any start game prompts
         this.hideStartGamePrompt();
         
-        // Prevent starting game in typing mode
-        if (this.gameMode === GAME_MODES.TYPING) {
-            this.showComingSoonMessage();
-            return;
-        }
-        
         this.gameActive = true;
         this.score = 0;
         this.correct = 0;
@@ -1302,10 +1324,23 @@ class GeographyGame {
     }
     
     resetGame() {
+        // Fade out NeonDreams.wav and resume background music if playing
+        try {
+            this.fadeOutNeonDreamsAndResume();
+        } catch (e) {
+            console.log('Error fading out NeonDreams:', e);
+        }
+        
         // Stop any ongoing game activity
         this.gameActive = false;
         this.isProcessingClick = false;
         this.lastClickTime = 0;
+        
+        // Remove "Play Again" button if it exists
+        const playAgainBtn = document.getElementById('playAgainBtnGeo');
+        if (playAgainBtn) {
+            playAgainBtn.remove();
+        }
         
         // Clear flash timeout if exists (typing mode)
         if (this.flashTimeout) {
@@ -1641,6 +1676,9 @@ class GeographyGame {
         // Handle typing mode - flash country first
         if (this.gameMode === GAME_MODES.TYPING) {
             console.log('[Geography Game] TYPING MODE - Calling flashCountryForTyping');
+            // Reset typing mode state for new country
+            this.typingRevealedLetters = 0;
+            this.typingWrongAttempts = 0;
             this.flashCountryForTyping();
             return;
         }
@@ -1747,10 +1785,10 @@ class GeographyGame {
             this.flashInterval = null;
         }
         
-        // Flash the country white with high visibility - CONTINUOUS PULSING
+        // Flash the country with high visibility - CONTINUOUS PULSING
         // Store paths reference for the interval
         this.flashingPaths = countryPaths;
-        let flashState = true; // true = white, false = slightly dimmed
+        let flashState = 0; // 0 = bright, 1 = medium, 2 = dim (cycle through 3 states)
         
         console.log('[Geography Game] Creating flash interval');
         
@@ -1762,9 +1800,7 @@ class GeographyGame {
                 return;
             }
             
-            console.log(`[Geography Game] Flash pulse - state: ${flashState}, paths: ${this.flashingPaths.length}`);
-            
-            this.flashingPaths.forEach((path, idx) => {
+            this.flashingPaths.forEach((path) => {
                 // Don't reset countries that are permanently marked as incorrect
                 if (path.classList.contains('incorrect')) {
                     return; // Skip this path - it should stay red
@@ -1773,79 +1809,73 @@ class GeographyGame {
                 // Remove any classes that might interfere
                 path.classList.remove('correct', 'disabled');
                 
-                // Clear all existing styles first
-                path.style.cssText = '';
+                // Clear existing styles
+                path.style.removeProperty('transition');
                 
-                if (flashState) {
-                    // Bright white flash - VERY VISIBLE
+                if (flashState === 0) {
+                    // Bright white flash - MAXIMUM VISIBILITY
                     path.setAttribute('fill', '#FFFFFF');
-                    path.setAttribute('stroke', '#FF0000');
-                    path.setAttribute('stroke-width', '5');
+                    path.setAttribute('stroke', '#FFD700');
+                    path.setAttribute('stroke-width', '6');
                     path.style.setProperty('fill', '#FFFFFF', 'important');
-                    path.style.setProperty('stroke', '#FF0000', 'important');
-                    path.style.setProperty('stroke-width', '5px', 'important');
+                    path.style.setProperty('stroke', '#FFD700', 'important');
+                    path.style.setProperty('stroke-width', '6px', 'important');
                     path.style.setProperty('opacity', '1', 'important');
-                    path.style.setProperty('filter', 'drop-shadow(0 0 20px rgba(255, 255, 255, 1)) drop-shadow(0 0 30px rgba(255, 0, 0, 0.8))', 'important');
-                } else {
-                    // Slightly dimmed but still VERY visible
+                    path.style.setProperty('filter', 'drop-shadow(0 0 25px rgba(255, 255, 255, 1)) drop-shadow(0 0 40px rgba(255, 215, 0, 1))', 'important');
+                } else if (flashState === 1) {
+                    // Medium brightness - still very visible
                     path.setAttribute('fill', '#FFE5E5');
-                    path.setAttribute('stroke', '#FF0000');
+                    path.setAttribute('stroke', '#FFA500');
                     path.setAttribute('stroke-width', '5');
                     path.style.setProperty('fill', '#FFE5E5', 'important');
-                    path.style.setProperty('stroke', '#FF0000', 'important');
+                    path.style.setProperty('stroke', '#FFA500', 'important');
                     path.style.setProperty('stroke-width', '5px', 'important');
                     path.style.setProperty('opacity', '1', 'important');
-                    path.style.setProperty('filter', 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 25px rgba(255, 0, 0, 0.6))', 'important');
+                    path.style.setProperty('filter', 'drop-shadow(0 0 20px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 35px rgba(255, 165, 0, 0.8))', 'important');
+                } else {
+                    // Dimmed but still visible
+                    path.setAttribute('fill', '#FFCCCC');
+                    path.setAttribute('stroke', '#FF6B6B');
+                    path.setAttribute('stroke-width', '4');
+                    path.style.setProperty('fill', '#FFCCCC', 'important');
+                    path.style.setProperty('stroke', '#FF6B6B', 'important');
+                    path.style.setProperty('stroke-width', '4px', 'important');
+                    path.style.setProperty('opacity', '1', 'important');
+                    path.style.setProperty('filter', 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.7)) drop-shadow(0 0 30px rgba(255, 107, 107, 0.6))', 'important');
                 }
                 
                 // Ensure pointer events are enabled
                 path.style.setProperty('pointer-events', 'auto', 'important');
             });
-            flashState = !flashState;
-        }, 400); // Flash every 400ms (faster pulse)
+            
+            flashState = (flashState + 1) % 3; // Cycle through 0, 1, 2
+        }, 350); // Flash every 350ms for smooth pulsing
         
         this.flashInterval = flashInterval;
         console.log('[Geography Game] Flash interval created and stored');
         
-        // Initial flash
-        countryPaths.forEach((path, index) => {
-            console.log(`[Geography Game] Flashing path ${index + 1}/${countryPaths.length}:`, {
-                id: path.id,
-                currentFill: path.getAttribute('fill'),
-                currentStyleFill: path.style.fill
-            });
-            
+        // Initial flash - start with maximum brightness
+        countryPaths.forEach((path) => {
             // Remove any existing classes that might interfere
             path.classList.remove('correct', 'disabled');
             
-            // Use both setAttribute and style.setProperty with important to ensure it shows
+            // Start with bright white and gold stroke for maximum visibility
             path.setAttribute('fill', '#FFFFFF');
             path.style.setProperty('fill', '#FFFFFF', 'important');
-            path.setAttribute('stroke', '#4A90E2');
-            path.style.setProperty('stroke', '#4A90E2', 'important');
-            path.setAttribute('stroke-width', '4');
-            path.style.setProperty('stroke-width', '4', 'important');
+            path.setAttribute('stroke', '#FFD700');
+            path.style.setProperty('stroke', '#FFD700', 'important');
+            path.setAttribute('stroke-width', '6');
+            path.style.setProperty('stroke-width', '6px', 'important');
             
-            // Remove any existing filters or transitions that might interfere
-            path.style.removeProperty('filter');
-            path.style.removeProperty('transition');
+            // Add strong glow effect
+            path.style.setProperty('filter', 'drop-shadow(0 0 25px rgba(255, 255, 255, 1)) drop-shadow(0 0 40px rgba(255, 215, 0, 1))', 'important');
             
-            // Add glow effect to make it more visible
-            path.style.setProperty('filter', 'drop-shadow(0 0 15px rgba(255, 255, 255, 1)) drop-shadow(0 0 25px rgba(74, 144, 226, 0.8))', 'important');
-            path.style.setProperty('transition', 'all 0.3s ease', 'important'); // Smooth transition for pulsing
-            
-            // Ensure pointer events are enabled so it's visible
+            // Ensure pointer events are enabled
             path.style.setProperty('pointer-events', 'auto', 'important');
             path.style.setProperty('opacity', '1', 'important');
             
-            // Force a repaint to ensure the style is applied
-            path.offsetHeight; // Trigger reflow
-            
-            console.log(`[Geography Game] After flash - path ${index + 1}:`, {
-                fill: path.getAttribute('fill'),
-                styleFill: path.style.getPropertyValue('fill'),
-                styleFillPriority: path.style.getPropertyPriority('fill')
-            });
+            // Force a repaint
+            path.offsetHeight;
         });
         
         // Force a repaint of the SVG to ensure changes are visible
@@ -1857,19 +1887,28 @@ class GeographyGame {
         
         console.log(`[Geography Game] Continuous flash started for ${countryPaths.length} paths`);
         
-        // Hide prompt during flash
+        // Update prompt during flash
         if (this.promptEl) {
-            this.promptEl.textContent = 'Watch the country flash...';
+            this.promptEl.textContent = '👀 Watch the country flash...';
             this.promptEl.style.display = 'block';
+            this.promptEl.style.color = '#4A90E2';
+            this.promptEl.style.fontSize = '1.3rem';
+            this.promptEl.style.fontWeight = '600';
         }
         
-        // After 2 seconds, show input but KEEP FLASHING CONTINUOUSLY
+        // After 2.5 seconds, show input but KEEP FLASHING CONTINUOUSLY
         this.flashTimeout = setTimeout(() => {
-            console.log('[Geography Game] 2 seconds passed - showing input (flash continues)');
+            console.log('[Geography Game] 2.5 seconds passed - showing input (flash continues)');
             // DON'T stop the continuous flashing - keep it going!
             // Just show the typing input
             this.showTypingInput();
-        }, 2000);
+            
+            // Update prompt
+            if (this.promptEl) {
+                this.promptEl.textContent = '⌨️ Type the country name you saw:';
+                this.promptEl.style.color = '#FFD700';
+            }
+        }, 2500);
         
         console.log('[Geography Game] Flash setup complete - interval running, timeout set');
     }
@@ -1882,102 +1921,202 @@ class GeographyGame {
         }
         
         console.log('[Geography Game] Creating typing input container');
-        // Create input container
+        // Create input container with modern design
         const inputContainer = document.createElement('div');
         inputContainer.id = 'typingInputContainer';
+        // Responsive width
+        const isMobile = window.innerWidth < 768;
+        const containerWidth = isMobile ? 'calc(100% - 40px)' : '400px';
+        const containerPadding = isMobile ? '20px 25px' : '30px 35px';
+        
+        // Get viewport center for initial positioning
+        const viewportCenterX = window.innerWidth / 2;
+        const viewportCenterY = window.innerHeight / 2;
+        
         inputContainer.style.cssText = `
-            position: absolute;
-            top: 50%;
-            left: 50%;
+            position: fixed;
+            top: ${viewportCenterY}px;
+            left: ${viewportCenterX}px;
             transform: translate(-50%, -50%);
             z-index: 10001;
-            background: rgba(15, 15, 35, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 25px 30px;
-            border-radius: 15px;
-            border: 2px solid rgba(74, 144, 226, 0.6);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(135deg, rgba(15, 25, 45, 0.98) 0%, rgba(20, 35, 60, 0.98) 100%);
+            backdrop-filter: blur(20px);
+            padding: ${containerPadding};
+            border-radius: 20px;
+            border: 2px solid rgba(74, 144, 226, 0.5);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(74, 144, 226, 0.3);
             display: none;
+            flex-direction: column;
             cursor: move;
             user-select: none;
+            width: ${containerWidth};
+            max-width: 90vw;
+            animation: typingInputFadeIn 0.3s ease-out;
         `;
         
-        // Create drag handle indicator FIRST (before using it in drag handlers)
+        // Add fade-in animation style if not exists
+        if (!document.getElementById('typingInputAnimationStyle')) {
+            const style = document.createElement('style');
+            style.id = 'typingInputAnimationStyle';
+            style.textContent = `
+                @keyframes typingInputFadeIn {
+                    from {
+                        opacity: 0;
+                        transform: translate(-50%, -50%) scale(0.9);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translate(-50%, -50%) scale(1);
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Create title/label
+        const title = document.createElement('div');
+        title.textContent = '⌨️ Type the Country Name';
+        title.style.cssText = `
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #4A90E2;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        `;
+        
+        // Create drag handle indicator
         const dragHandle = document.createElement('div');
-        dragHandle.textContent = '⋮⋮';
+        dragHandle.innerHTML = '⋮⋮';
         dragHandle.style.cssText = `
             position: absolute;
-            top: 8px;
-            right: 8px;
-            color: rgba(74, 144, 226, 0.6);
-            font-size: 1.2rem;
+            top: 10px;
+            right: 10px;
+            color: rgba(74, 144, 226, 0.5);
+            font-size: 1.4rem;
             cursor: move;
             user-select: none;
-            padding: 5px;
+            padding: 8px;
             line-height: 1;
+            transition: color 0.2s;
         `;
         dragHandle.title = 'Drag to move';
+        dragHandle.onmouseenter = () => dragHandle.style.color = 'rgba(74, 144, 226, 0.8)';
+        dragHandle.onmouseleave = () => dragHandle.style.color = 'rgba(74, 144, 226, 0.5)';
         
-        // Create input field FIRST (before drag handlers)
+        // Create input wrapper for better styling
+        const inputWrapper = document.createElement('div');
+        inputWrapper.style.cssText = `
+            display: flex;
+            gap: ${isMobile ? '8px' : '12px'};
+            align-items: center;
+            flex-direction: ${isMobile ? 'column' : 'row'};
+            width: 100%;
+        `;
+        
+        // Create input field
         const input = document.createElement('input');
         input.type = 'text';
         input.id = 'typingInput';
-        input.placeholder = 'Type the country name...';
+        input.placeholder = 'Enter country name...';
+        input.autocomplete = 'off';
+        input.spellcheck = false;
         input.style.cssText = `
-            padding: 12px 20px;
-            font-size: 1.2rem;
+            flex: 1;
+            width: 100%;
+            padding: ${isMobile ? '12px 16px' : '14px 18px'};
+            font-size: ${isMobile ? '1rem' : '1.15rem'};
             border: 2px solid rgba(74, 144, 226, 0.4);
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.12);
             color: white;
-            width: 300px;
             outline: none;
             cursor: text;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+            box-sizing: border-box;
         `;
+        input.onfocus = () => {
+            input.style.borderColor = '#4A90E2';
+            input.style.boxShadow = '0 0 0 3px rgba(74, 144, 226, 0.2)';
+            input.style.background = 'rgba(255, 255, 255, 0.15)';
+        };
+        input.onblur = () => {
+            input.style.borderColor = 'rgba(74, 144, 226, 0.4)';
+            input.style.boxShadow = 'none';
+            input.style.background = 'rgba(255, 255, 255, 0.12)';
+        };
+        input.oninput = () => {
+            // Clear any error styling on input
+            input.style.borderColor = input === document.activeElement ? '#4A90E2' : 'rgba(74, 144, 226, 0.4)';
+        };
         
-        // Create submit button FIRST (before drag handlers)
+        // Create submit button
         const submitBtn = document.createElement('button');
-        submitBtn.textContent = 'Submit';
+        submitBtn.innerHTML = '✓ Submit';
         submitBtn.style.cssText = `
-            margin-left: 10px;
-            padding: 12px 24px;
-            font-size: 1.2rem;
-            background: rgba(74, 144, 226, 0.8);
+            padding: ${isMobile ? '12px 24px' : '14px 28px'};
+            font-size: ${isMobile ? '1rem' : '1.1rem'};
+            font-weight: 600;
+            background: linear-gradient(135deg, #4A90E2 0%, #2A60B0 100%);
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             color: white;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+            white-space: nowrap;
+            width: ${isMobile ? '100%' : 'auto'};
         `;
-        submitBtn.onmouseover = () => submitBtn.style.background = 'rgba(74, 144, 226, 1)';
-        submitBtn.onmouseout = () => submitBtn.style.background = 'rgba(74, 144, 226, 0.8)';
+        submitBtn.onmouseenter = () => {
+            submitBtn.style.transform = 'translateY(-2px)';
+            submitBtn.style.boxShadow = '0 6px 16px rgba(74, 144, 226, 0.4)';
+            submitBtn.style.filter = 'brightness(1.1)';
+        };
+        submitBtn.onmouseleave = () => {
+            submitBtn.style.transform = 'translateY(0)';
+            submitBtn.style.boxShadow = '0 4px 12px rgba(74, 144, 226, 0.3)';
+            submitBtn.style.filter = 'brightness(1)';
+        };
+        submitBtn.onmousedown = () => {
+            submitBtn.style.transform = 'translateY(0) scale(0.98)';
+        };
+        submitBtn.onmouseup = () => {
+            submitBtn.style.transform = 'translateY(-2px)';
+        };
         
-        // SIMPLE DRAG - Make container draggable
+        // IMPROVED DRAG - Make container draggable with smooth movement (no jumping)
         let isDragging = false;
-        let startX = 0;
-        let startY = 0;
-        let initialX = 0;
-        let initialY = 0;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
         
         const makeDraggable = (e) => {
             // Only drag if clicking on container background or drag handle, NOT input/button
             const target = e.target;
-            console.log('[Geography Game] Drag start attempt, target:', target.tagName, target.id);
-            if (target === input || target === submitBtn || target.closest('input') || target.closest('button')) {
-                console.log('[Geography Game] Drag blocked - clicked on input/button');
+            if (target === input || target === submitBtn || target.closest('input') || target.closest('button') || target === title) {
                 return;
             }
             
-            console.log('[Geography Game] Starting drag');
             isDragging = true;
-            startX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-            startY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
             
+            // Get mouse/touch position
+            const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+            const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+            
+            // Get current container position (center point)
             const rect = inputContainer.getBoundingClientRect();
-            initialX = rect.left + rect.width / 2;
-            initialY = rect.top + rect.height / 2;
+            const containerCenterX = rect.left + rect.width / 2;
+            const containerCenterY = rect.top + rect.height / 2;
             
+            // Calculate offset from click point to container center
+            // This ensures smooth dragging without jumping
+            dragOffsetX = clientX - containerCenterX;
+            dragOffsetY = clientY - containerCenterY;
+            
+            // Remove transition during drag for smooth movement
+            inputContainer.style.transition = 'none';
             inputContainer.style.cursor = 'grabbing';
+            
             e.stopPropagation();
             e.preventDefault();
         };
@@ -1985,18 +2124,28 @@ class GeographyGame {
         const onDragMove = (e) => {
             if (!isDragging) return;
             
-            const currentX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-            const currentY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+            // Get current mouse/touch position
+            const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+            const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
             
-            const deltaX = currentX - startX;
-            const deltaY = currentY - startY;
+            // Calculate new center position based on current mouse position minus offset
+            const newX = clientX - dragOffsetX;
+            const newY = clientY - dragOffsetY;
             
-            const newX = initialX + deltaX;
-            const newY = initialY + deltaY;
+            // Clamp to viewport bounds (with padding)
+            const padding = 20;
+            const minX = padding;
+            const maxX = window.innerWidth - padding;
+            const minY = padding;
+            const maxY = window.innerHeight - padding;
             
-            console.log('[Geography Game] Dragging - new position:', newX, newY);
-            inputContainer.style.left = `${newX}px`;
-            inputContainer.style.top = `${newY}px`;
+            const clampedX = Math.max(minX, Math.min(maxX, newX));
+            const clampedY = Math.max(minY, Math.min(maxY, newY));
+            
+            // Update position smoothly (use fixed positioning for consistent behavior)
+            inputContainer.style.position = 'fixed';
+            inputContainer.style.left = `${clampedX}px`;
+            inputContainer.style.top = `${clampedY}px`;
             inputContainer.style.transform = 'translate(-50%, -50%)';
             
             e.stopPropagation();
@@ -2007,6 +2156,8 @@ class GeographyGame {
             if (isDragging) {
                 isDragging = false;
                 inputContainer.style.cursor = 'move';
+                // Restore transition after drag
+                inputContainer.style.transition = '';
             }
         };
         
@@ -2032,24 +2183,30 @@ class GeographyGame {
         };
         
         submitBtn.onclick = handleSubmit;
-        input.onkeypress = (e) => {
+        input.onkeydown = (e) => {
             if (e.key === 'Enter') {
+                e.preventDefault();
                 handleSubmit();
+            } else if (e.key === 'Escape') {
+                // Allow escape to cancel (optional)
+                const container = document.getElementById('typingInputContainer');
+                if (container) {
+                    container.style.display = 'none';
+                }
             }
         };
         
+        // Assemble container
+        inputWrapper.appendChild(input);
+        inputWrapper.appendChild(submitBtn);
+        inputContainer.appendChild(title);
         inputContainer.appendChild(dragHandle);
-        inputContainer.appendChild(input);
-        inputContainer.appendChild(submitBtn);
+        inputContainer.appendChild(inputWrapper);
         
-        const mapContainer = document.querySelector('.world-map-container');
-        if (mapContainer) {
-            mapContainer.appendChild(inputContainer);
-            this.typingInput = input;
-            console.log('[Geography Game] Typing input container added to map container');
-        } else {
-            console.error('[Geography Game] Map container not found! Cannot add typing input');
-        }
+        // Append to body for fixed positioning to work correctly
+        document.body.appendChild(inputContainer);
+        this.typingInput = input;
+        console.log('[Geography Game] Typing input container added to body');
     }
     
     removeTypingInput() {
@@ -2063,13 +2220,38 @@ class GeographyGame {
     showTypingInput() {
         const container = document.getElementById('typingInputContainer');
         if (container && this.typingInput) {
-            container.style.display = 'block';
-            this.typingInput.value = '';
-            this.typingInput.focus();
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
             
-            // Update prompt
+            // If we have revealed letters (from wrong attempts), show them
+            if (this.currentCountry && this.typingRevealedLetters > 0) {
+                const normalizedName = this.currentCountry.name.toLowerCase().trim();
+                this.typingInput.value = this.getRevealedCountryName(normalizedName);
+            } else {
+                // Reset for new country
+                this.typingInput.value = '';
+            }
+            
+            // Small delay before focus to ensure container is visible
+            setTimeout(() => {
+                this.typingInput.focus();
+                if (this.typingInput.value) {
+                    this.typingInput.select();
+                }
+            }, 100);
+            
+            // Update prompt with animation
             if (this.promptEl) {
-                this.promptEl.textContent = 'Type the country name you saw:';
+                if (this.typingRevealedLetters > 0 && this.currentCountry) {
+                    const normalizedName = this.currentCountry.name.toLowerCase().trim();
+                    this.promptEl.textContent = `⌨️ Type the country name (${this.typingRevealedLetters}/${normalizedName.length} letters revealed):`;
+                    this.promptEl.style.color = '#FFD700';
+                } else {
+                    this.promptEl.textContent = '⌨️ Type the country name you saw:';
+                    this.promptEl.style.color = '#FFD700';
+                }
+                this.promptEl.style.fontSize = '1.3rem';
+                this.promptEl.style.fontWeight = '600';
             }
         }
     }
@@ -2077,6 +2259,112 @@ class GeographyGame {
     handleTypingInput(guess) {
         if (!this.flashedCountry || !this.gameActive) return;
         
+        // Normalize guess and country name for comparison
+        const normalizedGuess = guess.toLowerCase().trim();
+        const normalizedName = this.flashedCountry.name.toLowerCase().trim();
+        const normalizedAlt = this.flashedCountry.alt.map(a => a.toLowerCase());
+        
+        // Check if correct
+        const isCorrect = normalizedGuess === normalizedName || 
+                         normalizedAlt.includes(normalizedGuess);
+        
+        // Visual feedback on input (only green for correct, no red box for wrong in typing mode)
+        const input = document.getElementById('typingInput');
+        if (input) {
+            if (isCorrect) {
+                input.style.borderColor = '#2ECC71';
+                input.style.boxShadow = '0 0 0 3px rgba(46, 204, 113, 0.3)';
+            } else {
+                // No red border/box for wrong answers in typing mode
+                input.style.borderColor = '';
+                input.style.boxShadow = '';
+            }
+        }
+        
+        // Small delay for visual feedback, then process answer
+        setTimeout(() => {
+            if (isCorrect) {
+                // Correct answer - NOW stop flashing and process
+                this.stopCountryFlash();
+                this.handleCorrectAnswer();
+                
+                // Hide input
+                const container = document.getElementById('typingInputContainer');
+                if (container) {
+                    container.style.display = 'none';
+                }
+                
+                // Reset input styling
+                if (input) {
+                    input.style.borderColor = '';
+                    input.style.boxShadow = '';
+                }
+                
+                // Reset typing mode state
+                this.typingRevealedLetters = 0;
+                this.typingWrongAttempts = 0;
+                this.flashedCountry = null;
+            } else {
+                // Wrong answer - keep flashing, reveal another letter
+                this.typingWrongAttempts++;
+                this.typingRevealedLetters = Math.min(
+                    this.typingRevealedLetters + 1, 
+                    normalizedName.length
+                );
+                
+                // Update input with revealed letters (no red border/box for typing mode)
+                if (input) {
+                    const revealed = this.getRevealedCountryName(normalizedName);
+                    input.value = revealed;
+                    // Remove red border styling - keep normal styling
+                    input.style.borderColor = '';
+                    input.style.boxShadow = '';
+                    
+                    // Keep focus and select the text for easy retyping
+                    setTimeout(() => {
+                        input.focus();
+                        input.select();
+                    }, 50);
+                }
+                
+                // Update prompt to show hint
+                if (this.promptEl) {
+                    this.promptEl.textContent = `❌ Wrong! Try again... (${this.typingRevealedLetters}/${normalizedName.length} letters revealed)`;
+                    this.promptEl.style.color = '#E74C3C';
+                }
+                
+                // Handle wrong answer (but don't stop flashing or hide input)
+                this.handleWrongAnswerTyping();
+            }
+        }, 300);
+    }
+    
+    getRevealedCountryName(countryName) {
+        // Reveal letters progressively - NO underscores, just show revealed letters
+        // Count only non-space characters for revealed letters
+        let revealed = '';
+        let letterCount = 0;
+        
+        for (let i = 0; i < countryName.length; i++) {
+            if (countryName[i] === ' ') {
+                // Always include spaces in the revealed string
+                revealed += ' ';
+            } else {
+                // Only add letter if it's within the revealed count
+                if (letterCount < this.typingRevealedLetters) {
+                    revealed += countryName[i];
+                    letterCount++;
+                } else {
+                    // Stop once we've shown all revealed letters
+                    break;
+                }
+            }
+        }
+        
+        return revealed;
+    }
+    
+    stopCountryFlash() {
         // Stop the continuous flashing
         if (this.flashInterval) {
             clearInterval(this.flashInterval);
@@ -2100,31 +2388,21 @@ class GeographyGame {
             });
             this.flashingPaths = null;
         }
+    }
+    
+    handleWrongAnswerTyping() {
+        if (!this.currentCountry) return;
         
-        // Normalize guess and country name for comparison
-        const normalizedGuess = guess.toLowerCase().trim();
-        const normalizedName = this.flashedCountry.name.toLowerCase().trim();
-        const normalizedAlt = this.flashedCountry.alt.map(a => a.toLowerCase());
+        const newAttempts = (this.attempts.get(this.currentCountry.code) || 0) + 1;
+        this.attempts.set(this.currentCountry.code, newAttempts);
         
-        // Check if correct
-        const isCorrect = normalizedGuess === normalizedName || 
-                         normalizedAlt.includes(normalizedGuess);
+        // Flash viewport red
+        this.flashViewport(false);
         
-        if (isCorrect) {
-            // Correct answer
-            this.handleCorrectAnswer();
-        } else {
-            // Wrong answer
-            this.handleWrongAnswer();
-        }
+        // Update stats but don't move to next country
+        this.updateStats();
         
-        // Hide input
-        const container = document.getElementById('typingInputContainer');
-        if (container) {
-            container.style.display = 'none';
-        }
-        
-        this.flashedCountry = null;
+        // Keep flashing and input visible - let them try again
     }
     
     handleCorrectAnswer() {
@@ -2603,19 +2881,25 @@ class GeographyGame {
                 const scoreMultiplier = 3 - currentAttempts;
                 let baseScore = 10 * scoreMultiplier;
                 
-                // Speed bonus: faster answers get more points
-                // < 2 seconds = 50 bonus, < 5 seconds = 30 bonus, < 10 seconds = 15 bonus
+                // Speed bonus: faster answers get more points (increased to reward quick playing)
+                // < 1 second = 100 bonus, < 2 seconds = 75 bonus, < 4 seconds = 50 bonus, < 7 seconds = 30 bonus, < 12 seconds = 15 bonus
                 let speedBonus = 0;
                 let speedMessage = '';
-                if (questionTime < 2) {
+                if (questionTime < 1) {
+                    speedBonus = 100;
+                    speedMessage = '⚡⚡⚡ INSTANT! +100';
+                } else if (questionTime < 2) {
+                    speedBonus = 75;
+                    speedMessage = '⚡⚡ Lightning Fast! +75';
+                } else if (questionTime < 4) {
                     speedBonus = 50;
-                    speedMessage = '⚡ Lightning Fast! +50';
-                } else if (questionTime < 5) {
+                    speedMessage = '⚡⚡ Very Fast! +50';
+                } else if (questionTime < 7) {
                     speedBonus = 30;
-                    speedMessage = '⚡ Very Fast! +30';
-                } else if (questionTime < 10) {
+                    speedMessage = '⚡ Fast! +30';
+                } else if (questionTime < 12) {
                     speedBonus = 15;
-                    speedMessage = '⚡ Fast! +15';
+                    speedMessage = '⚡ Quick! +15';
                 }
                 
                 this.speedBonus += speedBonus;
@@ -3002,53 +3286,65 @@ class GeographyGame {
             btn.className = 'btn-mode';
             btn.dataset.mode = value;
             
-            // Special handling for typing mode - show as "Coming Soon"
-            if (value === GAME_MODES.TYPING) {
-                btn.innerHTML = '⌨️ Typing<br><span style="font-size: 0.7em; color: #FFD700;">🚧 Coming Soon</span>';
-                btn.style.cssText = `
-                    padding: 10px 20px;
-                    font-size: 0.9rem;
-                    font-weight: 600;
-                    background: rgba(100, 100, 100, 0.3);
-                    border: 2px dashed rgba(255, 215, 0, 0.6);
-                    border-radius: 8px;
-                    color: rgba(255, 255, 255, 0.5);
-                    cursor: not-allowed;
-                    transition: all 0.3s ease;
-                    position: relative;
-                    opacity: 0.6;
-                    text-decoration: line-through;
-                `;
-                btn.disabled = true;
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    this.showComingSoonMessage();
-                });
-            } else {
-                btn.textContent = this.getModeName(value);
-                btn.style.cssText = `
-                    padding: 10px 20px;
-                    font-size: 0.9rem;
-                    font-weight: 600;
-                    background: ${this.gameMode === value ? 'rgba(74, 144, 226, 0.8)' : 'rgba(74, 144, 226, 0.2)'};
-                    border: 2px solid ${this.gameMode === value ? '#4A90E2' : 'rgba(74, 144, 226, 0.4)'};
-                    border-radius: 8px;
-                    color: white;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                `;
-                btn.addEventListener('click', () => this.setGameMode(value));
-            }
+            // All modes are enabled now
+            btn.textContent = this.getModeName(value);
+            btn.style.cssText = `
+                padding: 10px 20px;
+                font-size: 0.9rem;
+                font-weight: 600;
+                background: ${this.gameMode === value ? 'rgba(74, 144, 226, 0.8)' : 'rgba(74, 144, 226, 0.2)'};
+                border: 2px solid ${this.gameMode === value ? '#4A90E2' : 'rgba(74, 144, 226, 0.4)'};
+                border-radius: 8px;
+                color: white;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                pointer-events: auto;
+                z-index: 10;
+            `;
+            
+            // Add hover effects
+            btn.addEventListener('mouseenter', () => {
+                if (this.gameMode !== value) {
+                    btn.style.background = 'rgba(74, 144, 226, 0.4)';
+                    btn.style.transform = 'translateY(-2px)';
+                }
+            });
+            btn.addEventListener('mouseleave', () => {
+                if (this.gameMode !== value) {
+                    btn.style.background = 'rgba(74, 144, 226, 0.2)';
+                    btn.style.transform = 'translateY(0)';
+                }
+            });
+            
+            // Add click handler with logging
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[Geography Game] Mode button clicked:', value);
+                this.setGameMode(value);
+            });
+            
             modeSelector.appendChild(btn);
+            console.log('[Geography Game] Created mode button:', value, this.getModeName(value));
         });
         
         gameHeader.appendChild(modeSelector);
+        console.log('[Geography Game] Mode selector created and appended. Buttons:', modeSelector.children.length);
+        
+        // Verify typing mode button exists
+        const typingBtn = modeSelector.querySelector('[data-mode="typing"]');
+        if (typingBtn) {
+            console.log('[Geography Game] ✓ Typing mode button found and ready!');
+            console.log('[Geography Game] Button text:', typingBtn.textContent);
+            console.log('[Geography Game] Button disabled?', typingBtn.disabled);
+        } else {
+            console.error('[Geography Game] ✗ Typing mode button NOT found!');
+        }
     }
     
     getModeName(mode) {
         const names = {
-            [GAME_MODES.CLASSIC]: '🎯 Classic',
+            [GAME_MODES.CLASSIC]: 'Classic',
             [GAME_MODES.HARD]: '💀 Hard',
             [GAME_MODES.TYPING]: '⌨️ Typing'
         };
@@ -3127,18 +3423,19 @@ class GeographyGame {
     }
     
     setGameMode(mode) {
-        // Prevent typing mode from being set
-        if (mode === GAME_MODES.TYPING) {
-            this.showComingSoonMessage();
-            return;
-        }
+        console.log('[Geography Game] setGameMode called with:', mode);
         
         // Always reset game when switching modes (even if not active)
         this.resetGame();
         
         this.gameMode = mode;
+        console.log('[Geography Game] Game mode set to:', this.gameMode);
+        
         this.updateModeSelector();
         this.updatePromptForMode();
+        
+        // Log confirmation
+        console.log('[Geography Game] Typing mode is now:', this.gameMode === GAME_MODES.TYPING ? 'ENABLED' : 'disabled');
         
         // Update country colors for HARD mode
         if (this.svg) {
@@ -3183,7 +3480,7 @@ class GeographyGame {
         
         const prompts = {
             [GAME_MODES.CLASSIC]: 'Click on the country that\'s prompted. Green = not answered, White = correct, Red = incorrect',
-            [GAME_MODES.HARD]: 'Click on the country that\'s prompted - but with no borders! Much harder.',
+            [GAME_MODES.HARD]: 'Click on the country that\'s prompted.',
             [GAME_MODES.TYPING]: 'Watch the country flash, then type its name when prompted!'
         };
         
@@ -3947,14 +4244,15 @@ class GeographyGame {
         
         factDisplay.innerHTML = `
             <div class="country-fact-header" style="color: ${textColor};">
-                <span class="country-flag">${flag}</span>
-                ${country.name}
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="country-flag">${flag}</span>
+                    <span>${country.name}</span>
+                </div>
+                <div class="country-fact-continent" style="color: ${labelColor};">
+                    <span class="region-icon">📍</span>
+                    ${fact.continent}
+                </div>
             </div>
-            <div class="country-fact-continent" style="color: ${labelColor};">
-                <span class="region-icon">📍</span>
-                ${fact.continent}
-            </div>
-            <div class="fact-divider"></div>
             <div class="country-fact-population">
                 <span class="population-label" style="color: ${labelColor};">Population</span>
                 <div class="population-value" style="color: ${textColor};">${formattedPopulation}</div>
@@ -3975,13 +4273,21 @@ class GeographyGame {
             </div>
         `;
         
-        // Append to world-map-container (bottom left of SVG game area)
+        // Append to world-map-container - always position at bottom-left
+        // The horizontal layout prevents blocking countries
         const mapContainer = document.querySelector('.world-map-container');
         if (mapContainer) {
             // Make sure container has relative positioning
             if (getComputedStyle(mapContainer).position === 'static') {
                 mapContainer.style.position = 'relative';
             }
+            
+            // Always position at bottom-left for all countries
+            factDisplay.style.bottom = '20px';
+            factDisplay.style.top = 'auto';
+            factDisplay.style.left = '20px';
+            factDisplay.style.right = 'auto';
+            
             mapContainer.appendChild(factDisplay);
         } else {
             // Fallback to body if container not found
@@ -4023,8 +4329,14 @@ class GeographyGame {
             newAchievements.push({ id: 'twenty_five_correct', name: 'Halfway There', desc: 'Answered 25 countries correctly!' });
         }
         
-        // Perfect game (50/50)
-        if (this.correct === 50 && this.wrong === 0 && !this.achievements.has('perfect_game')) {
+        // Perfect game (50/50) - only trigger if ALL countries are white (all correct, none wrong)
+        // Check that: all 50 countries answered, 50 correct, 0 wrong, and no countries in wrongCountries set
+        const allCountriesAnswered = this.answered.size === 50;
+        const allCorrect = this.correct === 50;
+        const noWrong = this.wrong === 0;
+        const noWrongCountries = this.wrongCountries.size === 0;
+        
+        if (allCountriesAnswered && allCorrect && noWrong && noWrongCountries && !this.achievements.has('perfect_game')) {
             this.achievements.add('perfect_game');
             newAchievements.push({ id: 'perfect_game', name: 'Perfect Game!', desc: 'Completed all 50 countries with no mistakes!' });
         }
@@ -4144,9 +4456,197 @@ class GeographyGame {
         }
     }
     
+    createConfetti() {
+        // Create confetti container if it doesn't exist
+        let confettiContainer = document.getElementById('geoConfetti');
+        if (!confettiContainer) {
+            confettiContainer = document.createElement('div');
+            confettiContainer.id = 'geoConfetti';
+            confettiContainer.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                pointer-events: none;
+                z-index: 9999;
+                overflow: hidden;
+            `;
+            document.body.appendChild(confettiContainer);
+        }
+        
+        // Confetti colors
+        const colors = ['#ffe66d', '#4ecdc4', '#ff6b6b', '#95e1d3', '#aa96da', '#fcbad3', '#f38181', '#a8e6cf', '#2ecc71', '#3498db', '#FFD700', '#FFC107'];
+        
+        // Function to create confetti pieces
+        const createConfettiPiece = () => {
+            const confetti = document.createElement('div');
+            confetti.style.cssText = `
+                position: absolute;
+                width: ${Math.random() * 8 + 6}px;
+                height: ${Math.random() * 8 + 6}px;
+                background: ${colors[Math.floor(Math.random() * colors.length)]};
+                left: ${Math.random() * 100}%;
+                top: -10px;
+                opacity: 1;
+                border-radius: ${Math.random() > 0.5 ? '50%' : '0%'};
+                box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+            `;
+            
+            // Random animation duration and delay
+            const duration = Math.random() * 2 + 2;
+            const delay = Math.random() * 0.5;
+            const horizontalDrift = (Math.random() - 0.5) * 200;
+            
+            confetti.style.animation = `geoConfettiFall ${duration}s linear ${delay}s forwards`;
+            confetti.style.setProperty('--drift', horizontalDrift + 'px');
+            
+            confettiContainer.appendChild(confetti);
+            
+            // Remove after animation
+            setTimeout(() => {
+                if (confetti.parentNode) {
+                    confetti.parentNode.removeChild(confetti);
+                }
+            }, (duration + delay) * 1000);
+        };
+        
+        // Add CSS animation if not already added
+        if (!document.getElementById('geoConfettiStyle')) {
+            const style = document.createElement('style');
+            style.id = 'geoConfettiStyle';
+            style.textContent = `
+                @keyframes geoConfettiFall {
+                    0% {
+                        transform: translateY(0) translateX(0) rotate(0deg);
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateY(100vh) translateX(var(--drift, 0px)) rotate(720deg);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Start creating confetti continuously
+        console.log('[Geography Game] Starting confetti celebration...');
+        let confettiInterval = setInterval(() => {
+            // Create 15-25 pieces every 200ms for continuous celebration
+            const pieces = Math.floor(Math.random() * 11) + 15;
+            for (let i = 0; i < pieces; i++) {
+                createConfettiPiece();
+            }
+        }, 200);
+        
+        // Stop confetti after 10 seconds
+        setTimeout(() => {
+            console.log('[Geography Game] Stopping confetti after 10 seconds');
+            clearInterval(confettiInterval);
+            // Clean up confetti container after a delay to let remaining pieces fall
+            setTimeout(() => {
+                if (confettiContainer && confettiContainer.parentNode) {
+                    confettiContainer.innerHTML = '';
+                }
+            }, 3000);
+        }, 10000);
+    }
+    
+    playNeonDreams() {
+        // Get background music (GEO.wav)
+        const bgMusic = document.getElementById('geoBackgroundMusic');
+        const neonDreams = document.getElementById('neonDreamsMusic');
+        
+        if (!neonDreams) {
+            console.warn('NeonDreams.wav audio element not found');
+            return;
+        }
+        
+        // Save background music state
+        if (bgMusic && !bgMusic.paused) {
+            this._bgMusicWasPlaying = true;
+            this._bgMusicCurrentTime = bgMusic.currentTime;
+            bgMusic.pause();
+        } else {
+            this._bgMusicWasPlaying = false;
+        }
+        
+        // Play NeonDreams.wav
+        neonDreams.volume = 0.5;
+        neonDreams.currentTime = 0;
+        const playPromise = neonDreams.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                console.log('🎵 NeonDreams.wav started playing');
+            }).catch(err => {
+                console.log('⚠️ NeonDreams.wav autoplay blocked:', err.message);
+            });
+        }
+    }
+    
+    fadeOutNeonDreamsAndResume() {
+        const neonDreams = document.getElementById('neonDreamsMusic');
+        const bgMusic = document.getElementById('geoBackgroundMusic');
+        
+        if (!neonDreams) return;
+        
+        // Fade out NeonDreams.wav
+        if (!neonDreams.paused) {
+            const fadeOutInterval = setInterval(() => {
+                if (neonDreams.volume > 0.05) {
+                    neonDreams.volume -= 0.05;
+                } else {
+                    neonDreams.volume = 0;
+                    neonDreams.pause();
+                    neonDreams.currentTime = 0;
+                    clearInterval(fadeOutInterval);
+                    
+                    // Resume background music if it was playing
+                    if (this._bgMusicWasPlaying && bgMusic) {
+                        if (this._bgMusicCurrentTime !== undefined) {
+                            bgMusic.currentTime = this._bgMusicCurrentTime;
+                        }
+                        bgMusic.volume = 0.5;
+                        bgMusic.play().catch(err => {
+                            console.log('⚠️ Failed to resume background music:', err.message);
+                        });
+                        this._bgMusicWasPlaying = false;
+                    }
+                }
+            }, 50); // Fade out over ~500ms
+        } else {
+            // If already paused, just resume background music
+            if (this._bgMusicWasPlaying && bgMusic) {
+                if (this._bgMusicCurrentTime !== undefined) {
+                    bgMusic.currentTime = this._bgMusicCurrentTime;
+                }
+                bgMusic.volume = 0.5;
+                bgMusic.play().catch(err => {
+                    console.log('⚠️ Failed to resume background music:', err.message);
+                });
+                this._bgMusicWasPlaying = false;
+            }
+        }
+    }
+    
     async endGame() {
         this.gameActive = false;
         this.stopTimer();
+        
+        // Play NeonDreams.wav at game end
+        try {
+            this.playNeonDreams();
+        } catch (e) {
+            console.log('Error playing NeonDreams.wav:', e);
+        }
+        
+        // Always trigger confetti at game end
+        try {
+            this.createConfetti();
+        } catch (e) {
+            console.log('Error creating confetti:', e);
+        }
         
         // Stop question timer
         if (this.questionTimerInterval) {
@@ -4175,6 +4675,17 @@ class GeographyGame {
         const avgTime = this.questionTimes.length > 0 ? 
             (this.questionTimes.reduce((a, b) => a + b, 0) / this.questionTimes.length).toFixed(1) : 
             '0.0';
+        
+        // Calculate accuracy
+        const totalAnswers = this.correct + this.wrong;
+        const accuracy = totalAnswers > 0 ? Math.round((this.correct / totalAnswers) * 100) : 0;
+        
+        // Check if perfect game
+        const allCountriesAnswered = this.answered.size === 50;
+        const allCorrect = this.correct === 50;
+        const noWrong = this.wrong === 0;
+        const noWrongCountries = this.wrongCountries.size === 0;
+        const isPerfectGame = allCountriesAnswered && allCorrect && noWrong && noWrongCountries;
         
         this.promptEl.textContent = 'Game Complete!';
         
@@ -4246,8 +4757,11 @@ class GeographyGame {
                     correct: this.correct,
                     wrong: this.wrong,
                     time: finalTime,
+                    timeString: timeString,
                     speedBonus: this.speedBonus,
                     avgTime: parseFloat(avgTime),
+                    accuracy: accuracy,
+                    isPerfectGame: isPerfectGame,
         };
         
         // Show leaderboard submit form
@@ -4389,12 +4903,20 @@ class GeographyGame {
         
         // Add new listener
         newSubmitBtn.addEventListener('click', async () => {
+            // Prevent duplicate submissions
+            if (newSubmitBtn.disabled || this.isSubmittingScore) {
+                return;
+            }
+            
             const userName = nameInput.value.trim() || 'Anonymous';
             
             if (!this.pendingScoreData) {
                 this.showSubmitStatus('No score data available', 'error');
                 return;
             }
+            
+            // Set flag to prevent duplicate submissions
+            this.isSubmittingScore = true;
             
             // Disable button during submission
             newSubmitBtn.disabled = true;
@@ -4445,6 +4967,12 @@ class GeographyGame {
                         console.error('[Geography Game] Error loading/showing leaderboard:', error);
                         this.showSubmitStatus('✓ Score submitted successfully!', 'success');
                     }
+                    
+                    // Show "Play Again" button after successful submission
+                    this.showPlayAgainButton();
+                    
+                    // Reset flag after successful submission
+                    this.isSubmittingScore = false;
                 } else {
                     // Error message is already shown by submitToLeaderboard if it's a userName validation error
                     // For other errors, show a generic message
@@ -4453,11 +4981,13 @@ class GeographyGame {
                         this.showSubmitStatus('Failed to submit score. Please try again.', 'error');
                     }
                     newSubmitBtn.disabled = false;
+                    this.isSubmittingScore = false; // Reset flag on error
                 }
             } catch (error) {
                 console.error('[Geography Game] Leaderboard submission error:', error);
                 this.showSubmitStatus('Error submitting score. Please try again.', 'error');
                 newSubmitBtn.disabled = false;
+                this.isSubmittingScore = false; // Reset flag on error
             }
         });
         
@@ -4474,6 +5004,100 @@ class GeographyGame {
         if (statusDiv) {
             statusDiv.textContent = message;
             statusDiv.className = `submit-status ${type}`;
+        }
+    }
+    
+    showPlayAgainButton() {
+        // Remove existing button if it exists
+        const existingBtn = document.getElementById('playAgainBtnGeo');
+        if (existingBtn) {
+            existingBtn.remove();
+        }
+        
+        // Create "Play Again" button
+        const playAgainBtn = document.createElement('button');
+        playAgainBtn.id = 'playAgainBtnGeo';
+        playAgainBtn.className = 'btn-geo';
+        playAgainBtn.textContent = '🔄 Play Again';
+        playAgainBtn.style.cssText = `
+            margin: 20px auto;
+            display: block;
+            padding: 18px 40px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #2ECC71, #27AE60);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 
+                0 8px 25px rgba(46, 204, 113, 0.5),
+                0 0 20px rgba(46, 204, 113, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        `;
+        
+        // Add hover effect
+        playAgainBtn.addEventListener('mouseenter', () => {
+            playAgainBtn.style.transform = 'translateY(-3px) scale(1.05)';
+            playAgainBtn.style.boxShadow = 
+                '0 12px 35px rgba(46, 204, 113, 0.6), 0 0 30px rgba(46, 204, 113, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4)';
+            playAgainBtn.style.background = 'linear-gradient(135deg, #3DDC81, #2ECC71)';
+        });
+        
+        playAgainBtn.addEventListener('mouseleave', () => {
+            playAgainBtn.style.transform = 'translateY(0) scale(1)';
+            playAgainBtn.style.boxShadow = 
+                '0 8px 25px rgba(46, 204, 113, 0.5), 0 0 20px rgba(46, 204, 113, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+            playAgainBtn.style.background = 'linear-gradient(135deg, #2ECC71, #27AE60)';
+        });
+        
+        // Add click handler to restart game in current mode
+        playAgainBtn.addEventListener('click', () => {
+            // Fade out NeonDreams.wav and resume background music if playing
+            try {
+                this.fadeOutNeonDreamsAndResume();
+            } catch (e) {
+                console.log('Error fading out NeonDreams:', e);
+            }
+            
+            // Store current game mode
+            const currentMode = this.gameMode;
+            
+            // Reset the game
+            this.resetGame();
+            
+            // Reset leaderboard form
+            this.resetLeaderboardForm();
+            
+            // Hide the play again button
+            playAgainBtn.style.display = 'none';
+            
+            // Ensure game mode is set to current mode (in case it was changed)
+            this.gameMode = currentMode;
+            
+            // Start the game in the current mode
+            this.startGame();
+        });
+        
+        // Insert button after the submit form
+        const submitForm = document.getElementById('leaderboardSubmitForm');
+        if (submitForm && submitForm.parentNode) {
+            submitForm.parentNode.insertBefore(playAgainBtn, submitForm.nextSibling);
+        } else {
+            // Fallback: append to game controls or container
+            const gameControls = document.querySelector('.game-controls');
+            if (gameControls) {
+                gameControls.appendChild(playAgainBtn);
+            } else {
+                const container = document.querySelector('.geography-game-container');
+                if (container) {
+                    container.appendChild(playAgainBtn);
+                }
+            }
         }
     }
     

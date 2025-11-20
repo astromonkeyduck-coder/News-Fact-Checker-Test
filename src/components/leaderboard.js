@@ -119,15 +119,45 @@ class Leaderboard {
             const rank = index + 1;
             const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
             
+            // Format time for geography game
+            let timeDisplay = '';
+            if (this.gameType === 'geography' && score.time) {
+                const minutes = Math.floor(score.time / 60000);
+                const seconds = Math.floor((score.time % 60000) / 1000);
+                timeDisplay = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            } else if (this.gameType === 'geography' && score.timeString) {
+                timeDisplay = score.timeString;
+            }
+            
+            // Format accuracy for geography game
+            let accuracyDisplay = '';
+            if (this.gameType === 'geography' && score.accuracy !== undefined) {
+                accuracyDisplay = `${score.accuracy}%`;
+            } else if (this.gameType === 'geography' && score.correct !== undefined && score.wrong !== undefined) {
+                const total = score.correct + score.wrong;
+                const accuracy = total > 0 ? Math.round((score.correct / total) * 100) : 0;
+                accuracyDisplay = `${accuracy}%`;
+            }
+            
+            // Perfect game badge
+            const perfectBadge = (this.gameType === 'geography' && score.isPerfectGame) 
+                ? '<span class="perfect-game-badge" title="Perfect Game - All 50 countries correct!">✨ Perfect</span>' 
+                : '';
+            
             return `
-                <div class="leaderboard-item ${rank <= 3 ? 'top-three' : ''}">
+                <div class="leaderboard-item ${rank <= 3 ? 'top-three' : ''} ${score.isPerfectGame ? 'perfect-game' : ''}">
                     <div class="leaderboard-rank">${medal}</div>
                     <div class="leaderboard-user">
-                        <div class="leaderboard-name">${this.escapeHtml(score.userName)}</div>
+                        <div class="leaderboard-name">
+                            ${this.escapeHtml(score.userName)}
+                            ${perfectBadge}
+                        </div>
                         <div class="leaderboard-meta">
-                            ${score.difficulty ? `Difficulty: ${score.difficulty}` : ''}
-                            ${score.level ? ` | Level: ${score.level}` : ''}
-                            ${score.streak ? ` | Streak: ${score.streak}` : ''}
+                            ${this.gameType === 'geography' ? (
+                                `${timeDisplay ? `⏱️ ${timeDisplay}` : ''}${timeDisplay && accuracyDisplay ? ' | ' : ''}${accuracyDisplay ? `🎯 ${accuracyDisplay}` : ''}`
+                            ) : (
+                                `${score.difficulty ? `Difficulty: ${score.difficulty}` : ''}${score.difficulty && score.level ? ' | ' : ''}${score.level ? `Level: ${score.level}` : ''}${(score.difficulty || score.level) && score.streak ? ' | ' : ''}${score.streak ? `Streak: ${score.streak}` : ''}`
+                            )}
                         </div>
                     </div>
                     <div class="leaderboard-score">${score.score.toLocaleString()}</div>

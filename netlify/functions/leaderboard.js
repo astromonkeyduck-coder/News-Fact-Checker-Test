@@ -146,7 +146,7 @@ exports.handler = async (event, context) => {
     if (event.httpMethod === "POST") {
       // Submit a score
       const body = JSON.parse(event.body || "{}");
-      const { gameType, score, userId, userName, difficulty, level, streak } =
+      const { gameType, score, userId, userName, difficulty, level, streak, time, timeString, accuracy, isPerfectGame, correct, wrong, speedBonus, avgTime } =
         body;
 
       if (!gameType || score === undefined) {
@@ -203,6 +203,15 @@ exports.handler = async (event, context) => {
         level: level || 1,
         streak: streak || 0,
         date: new Date().toISOString(),
+        // Geography game specific fields
+        ...(time !== undefined && { time: parseInt(time) }),
+        ...(timeString && { timeString: timeString }),
+        ...(accuracy !== undefined && { accuracy: parseInt(accuracy) }),
+        ...(isPerfectGame !== undefined && { isPerfectGame: Boolean(isPerfectGame) }),
+        ...(correct !== undefined && { correct: parseInt(correct) }),
+        ...(wrong !== undefined && { wrong: parseInt(wrong) }),
+        ...(speedBonus !== undefined && { speedBonus: parseInt(speedBonus) }),
+        ...(avgTime !== undefined && { avgTime: parseFloat(avgTime) }),
       };
 
       if (existingIndex >= 0) {

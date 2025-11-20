@@ -146,7 +146,7 @@ class CommentSection {
             if (textarea) textarea.focus();
           }
         } else {
-          alert(errorMessage);
+        alert(errorMessage);
         }
       }
     } catch (err) {

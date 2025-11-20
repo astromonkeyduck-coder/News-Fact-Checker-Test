@@ -726,135 +726,407 @@
         }
         
         /* Game Over */
+        /* Game Over Screen - Modern 2025 Design */
         .game-over {
             display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(7, 21, 42, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1500;
+            overflow-y: auto;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .game-over-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            position: relative;
+        }
+
+        .game-over-container::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(74, 144, 226, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* Celebration Section */
+        .game-over-celebration {
             text-align: center;
-            padding: 60px 40px;
-            background: rgba(15, 15, 35, 0.6);
-            border-radius: 16px;
-            border: 2px solid rgba(74, 144, 226, 0.3);
-            max-width: 600px;
-            margin: 50px auto;
+            margin-bottom: 40px;
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.5s ease-out 0.1s both;
         }
-        
-        .game-over h2 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            color: white;
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        
-        .final-stats {
-            margin: 30px 0;
+
+        .celebration-badge {
+            font-size: 4rem;
+            margin-bottom: 16px;
+            animation: bounce 1s ease-in-out infinite;
         }
-        
-        .final-stats p {
-            font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.9);
-            margin: 15px 0;
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
         }
-        
-        .final-stats span {
-            color: #4A90E2;
+
+        .game-over-title {
+            font-size: 3rem;
             font-weight: 700;
+            margin: 0 0 8px 0;
+            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        
-        .btn-restart {
-            background: linear-gradient(135deg, #4A90E2, #2A60B0);
-            color: white;
-            border: none;
-            padding: 18px 50px;
-            font-size: 1.2rem;
-            margin-top: 30px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 700;
+
+        .game-over-subtitle {
+            font-size: 1.125rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin: 0;
         }
-        
-        .leaderboard-submit-form {
-            margin: 30px 0;
-            padding: 25px;
-            background: rgba(74, 144, 226, 0.1);
-            border-radius: 12px;
-            border: 1px solid rgba(74, 144, 226, 0.3);
+
+        /* Main Content Grid */
+        .game-over-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            max-width: 1000px;
+            width: 100%;
+            margin-bottom: 32px;
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.5s ease-out 0.2s both;
         }
-        
-        .leaderboard-submit-form h3 {
-            color: white;
+
+        @media (min-width: 768px) {
+            .game-over-content {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        /* Card Styles */
+        .game-over-card {
+            background: rgba(15, 25, 45, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(74, 144, 226, 0.2);
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .game-over-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-title {
             font-size: 1.5rem;
-            margin-bottom: 20px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1rem;
-            margin-bottom: 10px;
+            font-weight: 600;
+            color: white;
+            margin: 0 0 24px 0;
             text-align: left;
         }
-        
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        @media (min-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 16px;
+            background: rgba(74, 144, 226, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(74, 144, 226, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .stat-item:hover {
+            background: rgba(74, 144, 226, 0.1);
+            border-color: rgba(74, 144, 226, 0.3);
+        }
+
+        .stat-item.stat-highlight {
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.15) 0%, rgba(74, 144, 226, 0.05) 100%);
+            border-color: rgba(74, 144, 226, 0.3);
+        }
+
+        @media (min-width: 768px) {
+            .stat-item.stat-highlight {
+                grid-column: span 2;
+            }
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #4A90E2;
+        }
+
+        .stat-item.stat-highlight .stat-value {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #4A90E2 0%, #6BB3FF 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Leaderboard Form */
+        .leaderboard-submit-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            text-align: left;
+        }
+
         .player-name-input {
             width: 100%;
-            padding: 12px 15px;
+            padding: 14px 16px;
             font-size: 1rem;
-            border: 2px solid rgba(74, 144, 226, 0.5);
-            border-radius: 8px;
-            background: rgba(15, 15, 35, 0.8);
+            border: 2px solid rgba(74, 144, 226, 0.3);
+            border-radius: 10px;
+            background: rgba(15, 25, 45, 0.6);
             color: white;
+            transition: all 0.2s ease;
             box-sizing: border-box;
         }
-        
+
         .player-name-input:focus {
             outline: none;
             border-color: #4A90E2;
-            box-shadow: 0 0 10px rgba(74, 144, 226, 0.3);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+            background: rgba(15, 25, 45, 0.8);
         }
-        
+
+        .player-name-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
         .form-hint {
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.6);
-            margin-top: 8px;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
             text-align: left;
+            margin: 0;
         }
-        
-        .btn-submit-score {
-            background: linear-gradient(135deg, #4A90E2, #2A60B0);
-            color: white;
+
+        .form-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        @media (min-width: 480px) {
+            .form-actions {
+                flex-direction: row;
+            }
+        }
+
+        /* Buttons */
+        .btn {
             border: none;
-            padding: 12px 30px;
-            font-size: 1rem;
-            border-radius: 8px;
-            cursor: pointer;
+            border-radius: 10px;
             font-weight: 600;
-            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+            padding: 14px 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        
-        .btn-submit-score:hover {
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4A90E2 0%, #2A60B0 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+            box-shadow: 0 6px 16px rgba(74, 144, 226, 0.4);
+            filter: brightness(1.1);
         }
-        
-        .btn-submit-score:disabled {
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none;
         }
-        
+
+        .btn-secondary {
+            background: rgba(74, 144, 226, 0.1);
+            color: #4A90E2;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(74, 144, 226, 0.2);
+            border-color: rgba(74, 144, 226, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-submit-score {
+            flex: 1;
+        }
+
+        .btn-view-leaderboard {
+            flex: 1;
+        }
+
+        .btn-play-again {
+            width: 100%;
+            max-width: 500px;
+            background: linear-gradient(135deg, #4A90E2 0%, #2A60B0 100%);
+            color: white;
+            font-size: 1.25rem;
+            padding: 18px 32px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.5s ease-out 0.3s both;
+        }
+
+        .btn-play-again:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 24px rgba(74, 144, 226, 0.5);
+            filter: brightness(1.1);
+        }
+
+        .btn-play-again:active {
+            transform: translateY(-1px) scale(1);
+        }
+
+        /* Submit Status */
         .submit-status {
-            margin-top: 15px;
-            font-size: 0.9rem;
-            min-height: 20px;
+            min-height: 24px;
+            font-size: 0.875rem;
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 0;
         }
-        
+
+        .submit-status:empty {
+            display: none;
+        }
+
         .submit-status.success {
+            background: rgba(76, 175, 80, 0.15);
             color: #4CAF50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
         }
-        
+
         .submit-status.error {
+            background: rgba(244, 67, 54, 0.15);
             color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 767px) {
+            .game-over-title {
+                font-size: 2.25rem;
+            }
+
+            .game-over-subtitle {
+                font-size: 1rem;
+            }
+
+            .game-over-card {
+                padding: 24px;
+            }
+
+            .card-title {
+                font-size: 1.25rem;
+            }
+
+            .stat-value {
+                font-size: 1.25rem;
+            }
+
+            .stat-item.stat-highlight .stat-value {
+                font-size: 1.75rem;
+            }
+
+            .celebration-badge {
+                font-size: 3rem;
+            }
         }
         
         /* Pause Overlay */
@@ -924,30 +1196,105 @@
             margin-top: 60px;
             padding: 40px 20px;
             background: rgba(15, 15, 35, 0.5);
+            border-top: 1px solid rgba(74, 144, 226, 0.2);
             text-align: center;
         }
         
         .footer-content {
             max-width: 1200px;
             margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+        
+        .footer-logo {
+            margin-bottom: 8px;
+        }
+        
+        .footer-company {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #4A90E2;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+        
+        .footer-company:hover {
+            color: #6BB3FF;
+            transform: translateY(-2px);
         }
         
         .footer-tagline {
             color: rgba(255, 255, 255, 0.8);
-            margin: 20px 0;
+            margin: 0;
+            font-size: 1rem;
+            max-width: 600px;
+        }
+        
+        .social-links {
+            margin-top: 8px;
         }
         
         .social-links h4 {
-            color: white;
-            margin-bottom: 15px;
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0 0 12px 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
         }
         
         .social-link {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             color: #4A90E2;
             text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: rgba(74, 144, 226, 0.1);
+            border: 1px solid rgba(74, 144, 226, 0.2);
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .social-link:hover {
+            background: rgba(74, 144, 226, 0.2);
+            border-color: rgba(74, 144, 226, 0.4);
+            transform: translateY(-2px);
+            color: #6BB3FF;
+        }
+        
+        .social-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+        
+        @media (max-width: 768px) {
+            .footer {
+                padding: 32px 16px;
+            }
+            
+            .footer-content {
+                gap: 20px;
+            }
+            
+            .footer-company {
+                font-size: 1.25rem;
+            }
+            
+            .footer-tagline {
+                font-size: 0.9rem;
+            }
         }
         
         /* Difficulty Modal */
@@ -1456,30 +1803,86 @@
         </div>
 
         <div class="game-over" id="gameOver">
-            <h2>Game Complete!</h2>
-            <div class="final-stats">
-                <p>Final Score: <span id="finalScore">0</span></p>
-                <p>Level Reached: <span id="finalLevel">1</span></p>
-                <p>Best Streak: <span id="finalStreak">0</span></p>
-                <p>High Score: <span id="finalHighScore">0</span></p>
-            </div>
-            <div class="leaderboard-submit-form" id="leaderboardSubmitForm">
-                <h3>Submit to Leaderboard</h3>
-                <div class="form-group">
-                    <label for="playerNameInput">Enter your name:</label>
-                    <input 
-                        type="text" 
-                        id="playerNameInput" 
-                        class="player-name-input" 
-                        placeholder="Your name (max 30 characters)"
-                        maxlength="30"
-                    />
-                    <p class="form-hint">Your name will be filtered for inappropriate content</p>
+            <div class="game-over-container">
+                <!-- Celebration Section -->
+                <div class="game-over-celebration">
+                    <div class="celebration-badge">🎉</div>
+                    <h2 class="game-over-title">Game Complete!</h2>
+                    <p class="game-over-subtitle">Nice run! Here's how you did.</p>
                 </div>
-                <button class="btn btn-submit-score" id="submitScoreBtn">Submit Score</button>
-                <div class="submit-status" id="submitStatus"></div>
+
+                <!-- Main Content: Stats + Leaderboard -->
+                <div class="game-over-content">
+                    <!-- Stats Card -->
+                    <div class="game-over-card stats-card">
+                        <h3 class="card-title">Your Stats</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item stat-highlight">
+                                <span class="stat-label">Final Score</span>
+                                <span class="stat-value" id="finalScore">0</span>
+                            </div>
+                            <div class="stat-item stat-highlight">
+                                <span class="stat-label">High Score</span>
+                                <span class="stat-value" id="finalHighScore">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Level Reached</span>
+                                <span class="stat-value" id="finalLevel">1</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Best Streak</span>
+                                <span class="stat-value" id="finalStreak">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Completion Time</span>
+                                <span class="stat-value" id="finalTime">--</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Best Time</span>
+                                <span class="stat-value" id="finalBestTime">--</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Average Speed</span>
+                                <span class="stat-value" id="finalAvgSpeed">--</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Speed Bonuses</span>
+                                <span class="stat-value" id="finalSpeedBonus">+0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Accuracy</span>
+                                <span class="stat-value" id="finalAccuracy">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Leaderboard Card -->
+                    <div class="game-over-card leaderboard-card">
+                        <h3 class="card-title">Submit to Leaderboard</h3>
+                        <div class="leaderboard-submit-form" id="leaderboardSubmitForm">
+                            <div class="form-group">
+                                <label for="playerNameInput">Enter your name</label>
+                                <input 
+                                    type="text" 
+                                    id="playerNameInput" 
+                                    class="player-name-input" 
+                                    placeholder="Your name (max 30 characters)"
+                                    maxlength="30"
+                                />
+                                <p class="form-hint">Your name will be filtered for inappropriate content</p>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-primary btn-submit-score" id="submitScoreBtn">Submit Score</button>
+                                <button class="btn btn-secondary btn-view-leaderboard" id="viewLeaderboardBtn">View Leaderboard</button>
+                            </div>
+                            <div class="submit-status" id="submitStatus"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Play Again Button -->
+                <button class="btn btn-play-again" id="restartBtn">🔄 Play Again</button>
             </div>
-            <button class="btn btn-restart" id="restartBtn">Play Again</button>
         </div>
 
         <div class="pause-overlay" id="pauseOverlay">
@@ -1500,16 +1903,16 @@
 
     <footer class="footer">
         <div class="footer-content">
-                    <div class="footer-logo">
-            <a href="https://x.com/newsnoteworthy" target="_blank" class="footer-company">Noteworthy News</a>
-        </div>
+            <div class="footer-logo">
+                <a href="https://x.com/newsnoteworthy" target="_blank" class="footer-company">Noteworthy News</a>
+            </div>
             <p class="footer-tagline">Empowering informed decisions through media literacy education</p>
             
             <div class="social-links">
                 <h4>Follow Us</h4>
                 <div class="social-icons">
-                    <a href="https://x.com/newsnoteworthy" target="_blank" class="social-link">
-                        <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <a href="https://x.com/newsnoteworthy" target="_blank" class="social-link" rel="noopener noreferrer">
+                        <svg class="social-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                         </svg>
                         <span>@newsnoteworthy</span>
@@ -1574,6 +1977,12 @@
     <!-- Background Music - Interactive Fact Checker Game Specific (separate from music system) -->
     <audio id="interactiveGameBackgroundMusic" preload="auto" loop>
         <source src="InteractiveGame.wav" type="audio/wav">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- End Game Music - NeonDreams.wav -->
+    <audio id="neonDreamsMusic" preload="auto">
+        <source src="NeonDreams.wav" type="audio/wav">
         Your browser does not support the audio element.
     </audio>
     
