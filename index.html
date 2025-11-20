@@ -862,7 +862,7 @@
         
         /* Enhanced Leaderboard Animations */
         .homepage-leaderboard-item {
-            animation: slideInFromRight 0.5s ease-out backwards;
+            animation: slideInFromRight 0.5s ease-out forwards;
             opacity: 0;
         }
         
@@ -11307,12 +11307,6 @@
                         Test your knowledge of world geography! Find the 50 most populous countries on an interactive world map.
                         Click on countries as they're prompted - green means not answered, white is correct, and red is wrong.
                     </p>
-                    <div class="fact-checker-features">
-                        <div class="feature-item">✅ Interactive world map</div>
-                        <div class="feature-item">✅ 50 countries to find</div>
-                        <div class="feature-item">✅ Score tracking</div>
-                        <div class="feature-item">✅ Visual feedback</div>
-                </div>
             </div>
                 <div class="fact-checker-action">
                     <a href="geography-game.html" class="play-button-large">Play Geography Game</a>
@@ -11351,12 +11345,6 @@
                         Test your media literacy skills with our interactive fact-checking game. 
                         Practice identifying real news from misleading information in a fun, educational environment.
                     </p>
-                    <div class="fact-checker-features">
-                        <div class="feature-item">✅ Real-world headlines</div>
-                        <div class="feature-item">✅ Instant feedback</div>
-                        <div class="feature-item">✅ Progress tracking</div>
-                        <div class="feature-item">✅ Mobile optimized</div>
-                </div>
             </div>
                 <div class="fact-checker-action">
                                          <a href="game.html" class="play-button-large">Start Playing Now</a>
@@ -13019,15 +13007,25 @@
     <script>
         // Load and display leaderboards on homepage
         async function loadHomepageLeaderboards() {
+            console.log('[Homepage Leaderboards] Loading leaderboards...');
+            
             // Load Fact Checker leaderboard
             try {
                 const factCheckerResponse = await fetch('/.netlify/functions/leaderboard?gameType=fact-checker&limit=5');
                 if (factCheckerResponse.ok) {
                     const factCheckerData = await factCheckerResponse.json();
-                    renderHomepageLeaderboard('factCheckerLeaderboardListHome', factCheckerData.scores || []);
+                    console.log('[Homepage Leaderboards] Fact Checker full response:', factCheckerData);
+                    console.log('[Homepage Leaderboards] Fact Checker scores:', factCheckerData.scores);
+                    console.log('[Homepage Leaderboards] Fact Checker scores length:', factCheckerData.scores?.length);
+                    // Handle both possible response formats
+                    const scores = factCheckerData.scores || factCheckerData || [];
+                    renderHomepageLeaderboard('factCheckerLeaderboardListHome', Array.isArray(scores) ? scores : []);
+                } else {
+                    const errorText = await factCheckerResponse.text();
+                    console.warn('[Homepage Leaderboards] Fact Checker response not OK:', factCheckerResponse.status, errorText);
                 }
             } catch (error) {
-                console.error('Error loading fact checker leaderboard:', error);
+                console.error('[Homepage Leaderboards] Error loading fact checker leaderboard:', error);
                 const factCheckerContainer = document.getElementById('factCheckerLeaderboardListHome');
                 if (factCheckerContainer) {
                     factCheckerContainer.innerHTML = '<div class="homepage-leaderboard-empty">Unable to load leaderboard</div>';
@@ -13039,10 +13037,18 @@
                 const geoClassicResponse = await fetch('/.netlify/functions/leaderboard?gameType=geography-classic&limit=5');
                 if (geoClassicResponse.ok) {
                     const geoClassicData = await geoClassicResponse.json();
-                    renderHomepageLeaderboard('geographyLeaderboardListClassicHome', geoClassicData.scores || []);
+                    console.log('[Homepage Leaderboards] Geography Classic full response:', geoClassicData);
+                    console.log('[Homepage Leaderboards] Geography Classic scores:', geoClassicData.scores);
+                    console.log('[Homepage Leaderboards] Geography Classic scores length:', geoClassicData.scores?.length);
+                    // Handle both possible response formats
+                    const scores = geoClassicData.scores || geoClassicData || [];
+                    renderHomepageLeaderboard('geographyLeaderboardListClassicHome', Array.isArray(scores) ? scores : []);
+                } else {
+                    const errorText = await geoClassicResponse.text();
+                    console.warn('[Homepage Leaderboards] Geography Classic response not OK:', geoClassicResponse.status, errorText);
                 }
             } catch (error) {
-                console.error('Error loading geography classic leaderboard:', error);
+                console.error('[Homepage Leaderboards] Error loading geography classic leaderboard:', error);
                 const geoClassicContainer = document.getElementById('geographyLeaderboardListClassicHome');
                 if (geoClassicContainer) {
                     geoClassicContainer.innerHTML = '<div class="homepage-leaderboard-empty">Unable to load leaderboard</div>';
@@ -13054,10 +13060,18 @@
                 const geoHardResponse = await fetch('/.netlify/functions/leaderboard?gameType=geography-hard&limit=5');
                 if (geoHardResponse.ok) {
                     const geoHardData = await geoHardResponse.json();
-                    renderHomepageLeaderboard('geographyLeaderboardListHardHome', geoHardData.scores || []);
+                    console.log('[Homepage Leaderboards] Geography Hard full response:', geoHardData);
+                    console.log('[Homepage Leaderboards] Geography Hard scores:', geoHardData.scores);
+                    console.log('[Homepage Leaderboards] Geography Hard scores length:', geoHardData.scores?.length);
+                    // Handle both possible response formats
+                    const scores = geoHardData.scores || geoHardData || [];
+                    renderHomepageLeaderboard('geographyLeaderboardListHardHome', Array.isArray(scores) ? scores : []);
+                } else {
+                    const errorText = await geoHardResponse.text();
+                    console.warn('[Homepage Leaderboards] Geography Hard response not OK:', geoHardResponse.status, errorText);
                 }
             } catch (error) {
-                console.error('Error loading geography hard leaderboard:', error);
+                console.error('[Homepage Leaderboards] Error loading geography hard leaderboard:', error);
                 const geoHardContainer = document.getElementById('geographyLeaderboardListHardHome');
                 if (geoHardContainer) {
                     geoHardContainer.innerHTML = '<div class="homepage-leaderboard-empty">Unable to load leaderboard</div>';
@@ -13069,10 +13083,18 @@
                 const geoTypingResponse = await fetch('/.netlify/functions/leaderboard?gameType=geography-typing&limit=5');
                 if (geoTypingResponse.ok) {
                     const geoTypingData = await geoTypingResponse.json();
-                    renderHomepageLeaderboard('geographyLeaderboardListTypingHome', geoTypingData.scores || []);
+                    console.log('[Homepage Leaderboards] Geography Typing full response:', geoTypingData);
+                    console.log('[Homepage Leaderboards] Geography Typing scores:', geoTypingData.scores);
+                    console.log('[Homepage Leaderboards] Geography Typing scores length:', geoTypingData.scores?.length);
+                    // Handle both possible response formats
+                    const scores = geoTypingData.scores || geoTypingData || [];
+                    renderHomepageLeaderboard('geographyLeaderboardListTypingHome', Array.isArray(scores) ? scores : []);
+                } else {
+                    const errorText = await geoTypingResponse.text();
+                    console.warn('[Homepage Leaderboards] Geography Typing response not OK:', geoTypingResponse.status, errorText);
                 }
             } catch (error) {
-                console.error('Error loading geography typing leaderboard:', error);
+                console.error('[Homepage Leaderboards] Error loading geography typing leaderboard:', error);
                 const geoTypingContainer = document.getElementById('geographyLeaderboardListTypingHome');
                 if (geoTypingContainer) {
                     geoTypingContainer.innerHTML = '<div class="homepage-leaderboard-empty">Unable to load leaderboard</div>';
@@ -13080,33 +13102,6 @@
             }
         }
         
-        function renderHomepageLeaderboard(containerId, scores) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            
-            if (scores.length === 0) {
-                container.innerHTML = '<div class="homepage-leaderboard-empty">No scores yet. Be the first!</div>';
-                return;
-            }
-            
-            container.innerHTML = scores.map((score, index) => {
-                const rank = index + 1;
-                const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
-                const isTopThree = rank <= 3;
-                const perfectBadge = score.isPerfectGame ? '<span class="perfect-game-badge" style="color: #FFD700; font-size: 0.75rem; margin-left: 5px;">Perfect</span>' : '';
-                
-                // Escape HTML to prevent XSS
-                const userName = escapeHtml(score.userName || 'Anonymous');
-                
-                return `
-                    <div class="homepage-leaderboard-item ${isTopThree ? 'top-three' : ''}">
-                        <div class="homepage-leaderboard-rank">${medal}</div>
-                        <div class="homepage-leaderboard-name">${userName}${perfectBadge}</div>
-                        <div class="homepage-leaderboard-score">${score.score.toLocaleString()}</div>
-                    </div>
-                `;
-            }).join('');
-        }
         
         function escapeHtml(text) {
             const div = document.createElement('div');
@@ -13161,9 +13156,25 @@
         
         function renderHomepageLeaderboard(containerId, scores) {
             const container = document.getElementById(containerId);
-            if (!container) return;
+            if (!container) {
+                console.warn('[Homepage Leaderboards] Container not found:', containerId);
+                return;
+            }
+            
+            console.log('[Homepage Leaderboards] Rendering to', containerId);
+            console.log('[Homepage Leaderboards] Scores received:', scores);
+            console.log('[Homepage Leaderboards] Scores type:', typeof scores);
+            console.log('[Homepage Leaderboards] Is array?', Array.isArray(scores));
+            console.log('[Homepage Leaderboards] Scores length:', scores?.length);
+            
+            // Ensure scores is an array
+            if (!Array.isArray(scores)) {
+                console.warn('[Homepage Leaderboards] Scores is not an array:', scores);
+                scores = [];
+            }
             
             if (scores.length === 0) {
+                console.log('[Homepage Leaderboards] No scores to display for', containerId);
                 container.innerHTML = '<div class="homepage-leaderboard-empty">No scores yet. Be the first!</div>';
                 return;
             }
@@ -13171,8 +13182,15 @@
             // Clear loading state
             container.innerHTML = '';
             
+            console.log('[Homepage Leaderboards] Rendering', scores.length, 'scores to', containerId);
+            
             // Render with staggered animation
             scores.forEach((score, index) => {
+                if (!score) {
+                    console.warn('[Homepage Leaderboards] Invalid score at index', index, ':', score);
+                    return;
+                }
+                
                 const rank = index + 1;
                 const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
                 const isTopThree = rank <= 3;
@@ -13180,17 +13198,21 @@
                 
                 // Escape HTML to prevent XSS
                 const userName = escapeHtml(score.userName || 'Anonymous');
+                const scoreValue = score.score || 0;
                 
                 const item = document.createElement('div');
                 item.className = `homepage-leaderboard-item ${isTopThree ? 'top-three' : ''}`;
                 item.style.animationDelay = `${index * 0.1}s`;
+                item.style.opacity = '1'; // Make visible immediately
                 item.innerHTML = `
                     <div class="homepage-leaderboard-rank">${medal}</div>
                     <div class="homepage-leaderboard-name">${userName}${perfectBadge}</div>
-                    <div class="homepage-leaderboard-score">${score.score.toLocaleString()}</div>
+                    <div class="homepage-leaderboard-score">${scoreValue.toLocaleString()}</div>
                 `;
                 container.appendChild(item);
             });
+            
+            console.log('[Homepage Leaderboards] Successfully rendered', scores.length, 'items to', containerId);
         }
         
         function escapeHtml(text) {
