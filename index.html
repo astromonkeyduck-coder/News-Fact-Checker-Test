@@ -49,17 +49,25 @@
     <meta property="og:site_name" content="Noteworthy News">
     <meta property="og:title" content="Noteworthy News - Fact-Checked Journalism & Media Literacy Games">
     <meta property="og:description" content="Your trusted source for fact-checked journalism, media literacy education, and interactive fact-checking games. Learn critical thinking skills and stay informed with verified news.">
-    <meta property="og:image" content="https://noteworthynews.co/prevvvvv.jpg">
+    <meta property="og:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:locale" content="en_US">
+    <meta property="og:audio" content="https://noteworthynews.co/MSCREEN.wav">
+    <meta property="og:audio:type" content="audio/wav">
+    <meta property="og:audio:secure_url" content="https://noteworthynews.co/MSCREEN.wav">
     
     <!-- Enhanced Twitter Cards -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://noteworthynews.co/">
     <meta property="twitter:title" content="Noteworthy News - Fact-Checked Journalism & Media Literacy Games">
     <meta property="twitter:description" content="Your trusted source for fact-checked journalism, media literacy education, and interactive fact-checking games. Learn critical thinking skills and stay informed with verified news.">
-    <meta property="twitter:image" content="https://noteworthynews.co/prevvvvv.jpg">
+    <meta property="twitter:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg">
+    <meta property="twitter:card" content="player">
+    <meta property="twitter:player" content="https://noteworthynews.co/audio-player.html">
+    <meta property="twitter:player:width" content="400">
+    <meta property="twitter:player:height" content="300">
+    <meta property="twitter:player:stream" content="https://noteworthynews.co/MSCREEN.wav">
     <meta property="twitter:creator" content="@NoteworthyNews">
     <meta property="twitter:site" content="@NoteworthyNews">
     
@@ -80,6 +88,11 @@
       "sameAs": [
         "https://twitter.com/newsnoteworthy"
       ],
+      "audio": {
+        "@type": "AudioObject",
+        "contentUrl": "https://noteworthynews.co/MSCREEN.wav",
+        "encodingFormat": "audio/wav"
+      },
       "hasOfferCatalog": {
         "@type": "OfferCatalog",
         "name": "Media Literacy Games",
@@ -13785,7 +13798,7 @@
     </script>
     <div id="maintenance-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background-size: cover; background-position: center; z-index: 999999; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box; overflow: hidden;">
         <!-- Official Document -->
-        <div id="maintenance-document" style="max-width: 750px; width: 100%; height: auto; background: #faf8f3; background-image: repeating-linear-gradient(0deg, transparent, transparent 25px, rgba(0,0,0,0.04) 25px, rgba(0,0,0,0.04) 26px); padding: 40px 50px 0px 50px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0, 0, 0, 0.1); border: 1px solid rgba(0, 0, 0, 0.15); outline: 1px solid rgba(0, 0, 0, 0.08); outline-offset: 2px; position: relative; font-family: 'Times New Roman', 'Georgia', serif; color: #1a1a1a; line-height: 1.5; overflow: visible;">
+        <div id="maintenance-document" style="max-width: 650px; width: 100%; height: auto; background: #faf8f3; background-image: repeating-linear-gradient(0deg, transparent, transparent 25px, rgba(0,0,0,0.04) 25px, rgba(0,0,0,0.04) 26px); padding: 40px 50px 0px 50px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0, 0, 0, 0.1); border: 1px solid rgba(0, 0, 0, 0.15); outline: 1px solid rgba(0, 0, 0, 0.08); outline-offset: 2px; position: relative; font-family: 'Times New Roman', 'Georgia', serif; color: #1a1a1a; line-height: 1.5; overflow: visible;">
             <!-- Official Seal -->
             <div class="official-seal">
                 <img src="sealofapp.png" alt="Official Seal" style="width: 180px; height: 180px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));">
@@ -13929,6 +13942,19 @@
             z-index: 1;
         }
         
+        /* Tablet and medium screens */
+        @media (max-width: 1024px) {
+            #maintenance-document {
+                max-width: 85% !important;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            #maintenance-document {
+                max-width: 90% !important;
+            }
+        }
+        
         @media (max-width: 768px) {
             #maintenance-overlay {
                 padding: 10px !important;
@@ -13973,6 +13999,14 @@
                 right: auto !important;
                 text-align: right !important;
                 margin-top: 10px !important;
+            }
+        }
+        
+        /* Small mobile screens */
+        @media (max-width: 480px) {
+            #maintenance-document {
+                max-width: 98% !important;
+                padding: 20px 15px !important;
             }
         }
     </style>
@@ -14285,119 +14319,6 @@
             if (dateElement) {
                 dateElement.textContent = dateStr;
             }
-        })();
-    </script>
-    
-    <script>
-        // Interactive letter movement with mouse - optimized for smooth performance
-        (function() {
-            const documentElement = document.getElementById('maintenance-document');
-            const overlay = document.getElementById('maintenance-overlay');
-            
-            if (!documentElement || !overlay) return;
-            
-            let mouseX = window.innerWidth / 2;
-            let mouseY = window.innerHeight / 2;
-            let currentX = 0;
-            let currentY = 0;
-            let rafId = null;
-            let isActive = false;
-            const isShiftLeft = documentElement.classList.contains('shift-left');
-            const shiftX = isShiftLeft ? -50 : 0;
-            
-            // Throttled mouse tracking for better performance
-            let lastUpdate = 0;
-            const throttleDelay = 16; // ~60fps
-            
-            // Track mouse position with throttling
-            overlay.addEventListener('mousemove', function(e) {
-                const now = performance.now();
-                if (now - lastUpdate >= throttleDelay) {
-                    mouseX = e.clientX;
-                    mouseY = e.clientY;
-                    lastUpdate = now;
-                    
-                    if (!isActive && overlay.style.display !== 'none') {
-                        isActive = true;
-                        animateLetter();
-                    }
-                }
-            }, { passive: true });
-            
-            // Reset when mouse leaves
-            overlay.addEventListener('mouseleave', function() {
-                mouseX = window.innerWidth / 2;
-                mouseY = window.innerHeight / 2;
-            }, { passive: true });
-            
-            // Optimized animation function
-            function animateLetter() {
-                if (overlay.style.display === 'none' || overlay.style.display === '') {
-                    // Reset position when hidden
-                    currentX = 0;
-                    currentY = 0;
-                    isActive = false;
-                    if (rafId) {
-                        cancelAnimationFrame(rafId);
-                        rafId = null;
-                    }
-                    documentElement.style.transform = `scale(0.9) translate(${shiftX}px, 0px)`;
-                    return;
-                }
-                
-                // Cache rect calculation - only update when needed
-                const rect = documentElement.getBoundingClientRect();
-                const centerX = rect.left + rect.width / 2;
-                const centerY = rect.top + rect.height / 2;
-                
-                // Calculate distance from mouse to center
-                const deltaX = mouseX - centerX;
-                const deltaY = mouseY - centerY;
-                
-                // Calculate target position (letter moves away from mouse)
-                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                const maxDistance = 400;
-                const movementFactor = Math.min(distance / maxDistance, 1) * 0.03; // Reduced to 3% for less sensitivity
-                
-                // Move letter away from mouse (opposite direction)
-                // If mouse is to the right (deltaX positive), move letter left (negative X)
-                // If mouse is below (deltaY positive), move letter up (negative Y)
-                const targetX = -deltaX * movementFactor;
-                const targetY = -deltaY * movementFactor;
-                
-                // Faster, smoother interpolation
-                const easing = 0.2; // Increased for more responsive feel
-                currentX += (targetX - currentX) * easing;
-                currentY += (targetY - currentY) * easing;
-                
-                // Apply transform using transform3d for GPU acceleration
-                documentElement.style.transform = `translate3d(${currentX + shiftX}px, ${currentY}px, 0) scale(0.9)`;
-                
-                // Continue animation if still moving
-                const isMoving = Math.abs(targetX - currentX) > 0.5 || Math.abs(targetY - currentY) > 0.5;
-                if (isMoving) {
-                    rafId = requestAnimationFrame(animateLetter);
-                } else {
-                    isActive = false;
-                    rafId = null;
-                }
-            }
-            
-            // Start animation when overlay becomes visible
-            const checkVisibility = setInterval(function() {
-                if (overlay.style.display !== 'none' && overlay.style.display !== '' && !isActive) {
-                    isActive = true;
-                    animateLetter();
-                }
-            }, 200);
-            
-            // Also start animation on mouse enter
-            overlay.addEventListener('mouseenter', function() {
-                if (!isActive && overlay.style.display !== 'none') {
-                    isActive = true;
-                    animateLetter();
-                }
-            }, { passive: true });
         })();
     </script>
     
