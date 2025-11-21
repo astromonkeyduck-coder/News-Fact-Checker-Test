@@ -3,7 +3,7 @@
  * Provides offline support, caching, and faster page loads
  */
 
-const CACHE_VERSION = 'v1.0.0';
+const CACHE_VERSION = 'v1.1.0-typing-release';
 const CACHE_NAME = `noteworthy-news-${CACHE_VERSION}`;
 
 // Helper function to check if a URL is cacheable
@@ -27,10 +27,11 @@ const STATIC_ASSETS = [
   '/script.js',
   '/game.html',
   '/geography-game.html',
+  '/geography-game.js',
   '/logo.svg',
   '/site.webmanifest',
   '/IMG_5794.PNG',
-  '/noteworthy-news-preview.jpg'
+  '/PREVIEWIMAGEBRUH.jpg'
 ];
 
 // Install event - cache static assets

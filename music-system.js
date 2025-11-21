@@ -29,6 +29,73 @@
             return;
         }
         
+        // Fade in/out utility functions
+        const FADE_DURATION = 800; // milliseconds for fade transition
+        
+        function fadeOutAudio(audio, onComplete) {
+            if (!audio || audio.paused) {
+                if (onComplete) onComplete();
+                return;
+            }
+            
+            const startVolume = audio.volume;
+            const startTime = Date.now();
+            const fadeInterval = 16; // ~60fps
+            
+            const fadeTimer = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / FADE_DURATION, 1);
+                const newVolume = startVolume * (1 - progress);
+                
+                audio.volume = Math.max(0, newVolume);
+                
+                if (progress >= 1) {
+                    clearInterval(fadeTimer);
+                    audio.pause();
+                    audio.volume = startVolume; // Restore original volume
+                    if (onComplete) onComplete();
+                }
+            }, fadeInterval);
+        }
+        
+        function fadeInAudio(audio, targetVolume, onComplete) {
+            if (!audio) {
+                if (onComplete) onComplete();
+                return;
+            }
+            
+            const startVolume = 0;
+            const finalVolume = targetVolume || 0.5;
+            const startTime = Date.now();
+            const fadeInterval = 16; // ~60fps
+            
+            // Set initial volume
+            audio.volume = 0;
+            
+            // Start playing if not already
+            if (audio.paused) {
+                audio.play().catch(err => {
+                    console.log('Could not play audio during fade in:', err);
+                    if (onComplete) onComplete();
+                    return;
+                });
+            }
+            
+            const fadeTimer = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / FADE_DURATION, 1);
+                const newVolume = startVolume + (finalVolume - startVolume) * progress;
+                
+                audio.volume = Math.min(finalVolume, newVolume);
+                
+                if (progress >= 1) {
+                    clearInterval(fadeTimer);
+                    audio.volume = finalVolume;
+                    if (onComplete) onComplete();
+                }
+            }, fadeInterval);
+        }
+        
         // Create ending song audio element if it doesn't exist
         let endingSong = document.getElementById('endingSong');
         if (!endingSong) {
@@ -75,6 +142,11 @@
         // Check if music should be playing (from localStorage)
         const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
         const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+        
+        // Check for music=true URL parameter (from shared links)
+        const urlParams = new URLSearchParams(window.location.search);
+        const musicParam = urlParams.get('music');
+        const isSharedLink = musicParam === 'true';
         
         // Get saved music state
         const savedMusicState = JSON.parse(localStorage.getItem('globalMusicState') || '{}');
@@ -204,9 +276,22 @@
             };
         };
         
-        // Function to play a specific track at a specific time
+        // Function to play a specific track at a specific time with fade in
         function playTrackAtTime(trackName, time) {
-            pauseAllTracks();
+            // Fade out currently playing tracks
+            const currentlyPlaying = [];
+            if (backgroundMusic && !backgroundMusic.paused) {
+                currentlyPlaying.push(backgroundMusic);
+            }
+            if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
+                currentlyPlaying.push(backgroundMusicSecond);
+            }
+            if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+                currentlyPlaying.push(backgroundMusicLoop);
+            }
+            if (endingSong && !endingSong.paused) {
+                currentlyPlaying.push(endingSong);
+            }
             
             let track = null;
             if (trackName === 'track1') {
@@ -219,29 +304,27 @@
                 track = endingSong;
             }
             
+            // Remove the track we're about to play from fade out list
+            const tracksToFadeOut = currentlyPlaying.filter(t => t !== track);
+            
+            // Fade out other tracks
+            tracksToFadeOut.forEach(audio => {
+                fadeOutAudio(audio, () => {
+                    audio.pause();
+                });
+            });
+            
             if (track) {
                 // Ensure audio is loaded before playing
                 const attemptPlay = () => {
                     try {
                         track.currentTime = Math.max(0, Math.min(time, track.duration || Infinity));
-                        const playPromise = track.play();
-                        if (playPromise !== undefined) {
-                            playPromise.then(() => {
-                                console.log('Music playing:', trackName);
-                            }).catch(err => {
-                                console.log('Autoplay blocked, will play on interaction:', err);
-                                // Set up to play on next interaction
-                                const playOnInteraction = () => {
-                                    track.play().catch(() => {});
-                                    document.removeEventListener('click', playOnInteraction);
-                                    document.removeEventListener('touchstart', playOnInteraction);
-                                    document.removeEventListener('keydown', playOnInteraction);
-                                };
-                                document.addEventListener('click', playOnInteraction, { once: true });
-                                document.addEventListener('touchstart', playOnInteraction, { once: true });
-                                document.addEventListener('keydown', playOnInteraction, { once: true });
-                            });
-                        }
+                        const targetVolume = track.volume || 0.5;
+                        
+                        // Fade in the new track
+                        fadeInAudio(track, targetVolume, () => {
+                            console.log('Music playing:', trackName);
+                        });
                     } catch (e) {
                         console.warn('Error playing track:', e);
                     }
@@ -267,21 +350,42 @@
             }
         }
         
-        // Function to play only one track
+        // Function to play only one track with fade in
         function playTrackOnly(track) {
-            pauseAllTracks();
+            // Fade out currently playing tracks
+            const currentlyPlaying = [];
+            if (backgroundMusic && !backgroundMusic.paused) {
+                currentlyPlaying.push(backgroundMusic);
+            }
+            if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
+                currentlyPlaying.push(backgroundMusicSecond);
+            }
+            if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+                currentlyPlaying.push(backgroundMusicLoop);
+            }
+            if (endingSong && !endingSong.paused) {
+                currentlyPlaying.push(endingSong);
+            }
+            
+            // Remove the track we're about to play from fade out list
+            const tracksToFadeOut = currentlyPlaying.filter(t => t !== track);
+            
+            // Fade out other tracks
+            tracksToFadeOut.forEach(audio => {
+                fadeOutAudio(audio, () => {
+                    audio.pause();
+                });
+            });
+            
             if (track) {
                 // Ensure audio is loaded
                 const attemptPlay = () => {
-                    const playPromise = track.play();
-                    if (playPromise !== undefined) {
-                        playPromise.then(() => {
-                            console.log('Track playing');
-                        }).catch(err => {
-                            console.log('Play blocked, waiting for interaction:', err);
-                            // Will play on next user interaction
-                        });
-                    }
+                    const targetVolume = track.volume || 0.5;
+                    
+                    // Fade in the new track
+                    fadeInAudio(track, targetVolume, () => {
+                        console.log('Track playing');
+                    });
                 };
                 
                 if (track.readyState < 1) {
@@ -349,27 +453,144 @@
         // Reduced frequency interval for periodic saves (every 5 seconds instead of 1)
         setInterval(() => saveMusicState(), 5000);
         
+        // Automatically add music=true to URL when music is playing (so manual copies include it)
+        function updateURLWithMusicParam() {
+            if (window.getGlobalMusicState && window.getGlobalMusicState().isPlaying) {
+                const url = new URL(window.location.href);
+                if (url.searchParams.get('music') !== 'true') {
+                    url.searchParams.set('music', 'true');
+                    // Update URL without page reload (using replaceState to avoid adding to history)
+                    window.history.replaceState({}, '', url.toString());
+                }
+            }
+        }
+        
+        // Update URL when music starts playing
+        [backgroundMusic, backgroundMusicSecond, backgroundMusicLoop, endingSong].forEach(audio => {
+            if (audio) {
+                audio.addEventListener('play', () => {
+                    // Small delay to ensure state is updated
+                    setTimeout(updateURLWithMusicParam, 100);
+                });
+            }
+        });
+        
+        // Also check on page load if music is already playing
+        setTimeout(updateURLWithMusicParam, 1000);
+        
+        // Create a visual prompt for music if autoplay is blocked
+        function createMusicPrompt() {
+            // Check if prompt already exists
+            if (document.getElementById('music-autoplay-prompt')) {
+                return;
+            }
+            
+            const prompt = document.createElement('div');
+            prompt.id = 'music-autoplay-prompt';
+            prompt.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: rgba(0, 0, 0, 0.9);
+                color: white;
+                padding: 16px 20px;
+                border-radius: 12px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+                z-index: 10000;
+                max-width: 300px;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 14px;
+                line-height: 1.5;
+                animation: slideInUp 0.3s ease-out;
+            `;
+            
+            // Add animation keyframes if not already present
+            if (!document.getElementById('music-prompt-styles')) {
+                const style = document.createElement('style');
+                style.id = 'music-prompt-styles';
+                style.textContent = `
+                    @keyframes slideInUp {
+                        from {
+                            transform: translateY(20px);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translateY(0);
+                            opacity: 1;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            prompt.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <span style="font-size: 24px;">🎵</span>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; margin-bottom: 4px;">Music Ready!</div>
+                        <div style="font-size: 12px; opacity: 0.8;">Click to start the soundtrack</div>
+                    </div>
+                </div>
+                <button id="music-prompt-button" style="
+                    width: 100%;
+                    padding: 10px;
+                    background: #1DA1F2;
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: background 0.2s;
+                " onmouseover="this.style.background='#1a8cd8'" onmouseout="this.style.background='#1DA1F2'">
+                    Play Music
+                </button>
+            `;
+            
+            document.body.appendChild(prompt);
+            
+            // Add click handler to button
+            const button = prompt.querySelector('#music-prompt-button');
+            button.addEventListener('click', () => {
+                startMusic();
+                prompt.style.animation = 'slideInUp 0.3s ease-out reverse';
+                setTimeout(() => prompt.remove(), 300);
+            });
+            
+            // Auto-hide after 10 seconds
+            setTimeout(() => {
+                if (prompt.parentNode) {
+                    prompt.style.animation = 'slideInUp 0.3s ease-out reverse';
+                    setTimeout(() => prompt.remove(), 300);
+                }
+            }, 10000);
+        }
+        
         // Start music if it was playing or if enabled
         const startMusic = () => {
             // First try to restore previous state
             if (musicWasPlaying && savedTrack !== 'none') {
                 restoreMusicState();
             } else if (musicEnabled && localStorage.getItem('globalMusicPlaying') === null) {
-                // First time - start from beginning
+                // First time - start from beginning with fade in
                 if (backgroundMusic) {
                     if (backgroundMusic.readyState < 2) {
                         backgroundMusic.load();
                         backgroundMusic.addEventListener('loadeddata', () => {
                             backgroundMusic.currentTime = 0;
-                            backgroundMusic.play().catch(() => {});
-                            localStorage.setItem('globalMusicPlaying', 'true');
-                            localStorage.setItem('globalMusicEnabled', 'true');
+                            const targetVolume = backgroundMusic.volume || 0.5;
+                            fadeInAudio(backgroundMusic, targetVolume, () => {
+                                localStorage.setItem('globalMusicPlaying', 'true');
+                                localStorage.setItem('globalMusicEnabled', 'true');
+                            });
                         }, { once: true });
                     } else {
                         backgroundMusic.currentTime = 0;
-                        backgroundMusic.play().catch(() => {});
-                        localStorage.setItem('globalMusicPlaying', 'true');
-                        localStorage.setItem('globalMusicEnabled', 'true');
+                        const targetVolume = backgroundMusic.volume || 0.5;
+                        fadeInAudio(backgroundMusic, targetVolume, () => {
+                            localStorage.setItem('globalMusicPlaying', 'true');
+                            localStorage.setItem('globalMusicEnabled', 'true');
+                        });
                     }
                 }
             }
@@ -380,7 +601,12 @@
         };
         
         // Try to start on page load (if audio is ready)
-        if (musicEnabled) {
+        if (musicEnabled || isSharedLink) {
+            // If this is a shared link with music=true, enable music if not already enabled
+            if (isSharedLink && !musicEnabled) {
+                localStorage.setItem('globalMusicEnabled', 'true');
+            }
+            
             // If music was playing, try to restore immediately
             if (musicWasPlaying && savedTrack !== 'none') {
                 // Load audio if needed, then restore
@@ -447,7 +673,28 @@
             });
             
             if (loadedCount === audioElements.length) {
-                setTimeout(startMusic, 200);
+                setTimeout(() => {
+                    // If this is a shared link, try to start music immediately
+                    if (isSharedLink) {
+                        // Try to start music directly (may be blocked by browser)
+                        const attemptAutoplay = async () => {
+                            try {
+                                if (backgroundMusic) {
+                                    await backgroundMusic.play();
+                                    localStorage.setItem('globalMusicPlaying', 'true');
+                                    localStorage.setItem('globalMusicEnabled', 'true');
+                                }
+                            } catch (error) {
+                                // Autoplay was blocked - show prompt
+                                console.log('Autoplay blocked, showing prompt');
+                                createMusicPrompt();
+                            }
+                        };
+                        attemptAutoplay();
+                    } else {
+                        startMusic();
+                    }
+                }, 200);
             }
             
             // Also listen for user interaction (required by browsers) - but make it more accessible
@@ -459,10 +706,28 @@
                 document.removeEventListener('mousemove', startOnInteraction);
             };
             
-            document.addEventListener('click', startOnInteraction, { once: true });
-            document.addEventListener('touchstart', startOnInteraction, { once: true });
-            document.addEventListener('keydown', startOnInteraction, { once: true });
-            document.addEventListener('mousemove', startOnInteraction, { once: true });
+            // For shared links, be more aggressive about trying to start music
+            if (isSharedLink) {
+                // Try multiple interaction types
+                document.addEventListener('click', startOnInteraction, { once: true });
+                document.addEventListener('touchstart', startOnInteraction, { once: true });
+                document.addEventListener('keydown', startOnInteraction, { once: true });
+                document.addEventListener('mousemove', startOnInteraction, { once: true });
+                
+                // Also try to start on any scroll (very common first interaction)
+                const startOnScroll = () => {
+                    startMusic();
+                    window.removeEventListener('scroll', startOnScroll);
+                    window.removeEventListener('wheel', startOnScroll);
+                };
+                window.addEventListener('scroll', startOnScroll, { once: true, passive: true });
+                window.addEventListener('wheel', startOnScroll, { once: true, passive: true });
+            } else {
+                document.addEventListener('click', startOnInteraction, { once: true });
+                document.addEventListener('touchstart', startOnInteraction, { once: true });
+                document.addEventListener('keydown', startOnInteraction, { once: true });
+                document.addEventListener('mousemove', startOnInteraction, { once: true });
+            }
             
             // Also try to start on window focus if music was playing
             window.addEventListener('focus', () => {
@@ -541,17 +806,11 @@
         }
         
         if (backgroundMusicLoop) {
-            backgroundMusicLoop.addEventListener('ended', () => {
-                saveMusicState(true);
-                // When loop ends, play ending song
-                if (endingSong && localStorage.getItem('globalMusicEnabled') !== 'false') {
-                    if (endingSong.readyState < 2) {
-                        endingSong.load();
-                    }
-                    endingSong.currentTime = 0;
-                    playTrackOnly(endingSong);
-                }
-            });
+            // Set loop attribute programmatically to ensure it loops
+            backgroundMusicLoop.loop = true;
+            
+            // Note: Loop track should loop continuously, so we don't need an 'ended' handler
+            // The loop attribute will handle the looping automatically
             
             backgroundMusicLoop.addEventListener('play', () => {
                 localStorage.setItem('globalMusicPlaying', 'true');

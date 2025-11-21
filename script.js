@@ -5607,7 +5607,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const start = performance.now();
         // Use a more efficient detection method
         try {
-            console.log('%c ', 'font-size: 1px;');
+        console.log('%c ', 'font-size: 1px;');
         } catch (e) {
             // Console might be closed, stop checking
             consoleWelcomeShown = true;
@@ -8422,6 +8422,73 @@ function initNewsletterSubscription() {
     let savedSpotlightMusicState = null; // Save spotlight music position
     let isSpotlightVisible = false;
     let isRestoring = false; // Flag to prevent multiple restore attempts
+    
+    // Fade in/out utility functions
+    const FADE_DURATION = 800; // milliseconds for fade transition
+    
+    function fadeOutAudio(audio, onComplete) {
+        if (!audio || audio.paused) {
+            if (onComplete) onComplete();
+            return;
+        }
+        
+        const startVolume = audio.volume;
+        const startTime = Date.now();
+        const fadeInterval = 16; // ~60fps
+        
+        const fadeTimer = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / FADE_DURATION, 1);
+            const newVolume = startVolume * (1 - progress);
+            
+            audio.volume = Math.max(0, newVolume);
+            
+            if (progress >= 1) {
+                clearInterval(fadeTimer);
+                audio.pause();
+                audio.volume = startVolume; // Restore original volume
+                if (onComplete) onComplete();
+            }
+        }, fadeInterval);
+    }
+    
+    function fadeInAudio(audio, targetVolume, onComplete) {
+        if (!audio) {
+            if (onComplete) onComplete();
+            return;
+        }
+        
+        const startVolume = 0;
+        const finalVolume = targetVolume || 0.5;
+        const startTime = Date.now();
+        const fadeInterval = 16; // ~60fps
+        
+        // Set initial volume
+        audio.volume = 0;
+        
+        // Start playing if not already
+        if (audio.paused) {
+            audio.play().catch(err => {
+                console.log('Could not play audio during fade in:', err);
+                if (onComplete) onComplete();
+                return;
+            });
+        }
+        
+        const fadeTimer = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / FADE_DURATION, 1);
+            const newVolume = startVolume + (finalVolume - startVolume) * progress;
+            
+            audio.volume = Math.min(finalVolume, newVolume);
+            
+            if (progress >= 1) {
+                clearInterval(fadeTimer);
+                audio.volume = finalVolume;
+                if (onComplete) onComplete();
+            }
+        }, fadeInterval);
+    }
     let isGenerating = false; // Flag to prevent multiple simultaneous generations
     let cooldownUntil = 0; // Timestamp when cooldown expires
     
@@ -8501,40 +8568,52 @@ function initNewsletterSubscription() {
         } : null;
     }
     
-    // Pause all background music
+    // Pause all background music with fade out
     function pauseBackgroundMusic() {
         const music = getBackgroundMusicElements();
+        const audioElementsToFade = [];
+        
         if (music.track1 && !music.track1.paused) {
-            music.track1.pause();
+            audioElementsToFade.push(music.track1);
         }
         if (music.track2 && !music.track2.paused) {
-            music.track2.pause();
+            audioElementsToFade.push(music.track2);
         }
         if (music.loop && !music.loop.paused) {
-            music.loop.pause();
+            audioElementsToFade.push(music.loop);
         }
+        
         // Also check for any other background music elements
         const allAudio = document.querySelectorAll('audio');
         allAudio.forEach(audio => {
             // Don't pause spotlight music
             if (audio !== spotlightMusic && 
                 audio.id && 
-                (audio.id.includes('backgroundMusic') || audio.id.includes('background'))) {
-                if (!audio.paused) {
-                    audio.pause();
-                }
+                (audio.id.includes('backgroundMusic') || audio.id.includes('background')) &&
+                !audio.paused) {
+                audioElementsToFade.push(audio);
             }
+        });
+        
+        // Fade out all background music elements
+        audioElementsToFade.forEach(audio => {
+            fadeOutAudio(audio);
         });
     }
     
-    // Resume background music from saved state
+    // Resume background music from saved state with fade in
     function resumeBackgroundMusic() {
         if (!savedBackgroundMusicState || !savedBackgroundMusicState.element) return;
         
         const musicElement = savedBackgroundMusicState.element;
         musicElement.currentTime = savedBackgroundMusicState.time;
-        musicElement.play().catch(err => {
-            console.log('Could not resume background music:', err);
+        
+        // Get the original volume (default to 0.5 if not set)
+        const targetVolume = musicElement.volume || 0.5;
+        
+        // Fade in the background music
+        fadeInAudio(musicElement, targetVolume, () => {
+            // Music has faded in
         });
     }
     
@@ -8560,18 +8639,18 @@ function initNewsletterSubscription() {
             const currentSrc = spotlightMusic.src;
             const expectedSrc = `${window.location.origin}/SpotlightSongs/${audioFile}`;
             if (currentSrc.includes(audioFile)) {
-                // Same audio file - resume from saved position
+                // Same audio file - resume from saved position with fade in
                 spotlightMusic.currentTime = savedState.time || 0;
                 if (isSpotlightVisible) {
-                    spotlightMusic.play().catch(err => {
-                        console.log('Could not resume spotlight music:', err);
+                    fadeInAudio(spotlightMusic, 0.5, () => {
+                        // Music has faded in
                     });
                 }
                 return;
             }
         }
         
-        // Stop any existing spotlight music and save its state
+        // Stop any existing spotlight music and save its state (with fade out)
         if (spotlightMusic) {
             // Save current state before stopping
             if (currentCountry) {
@@ -8581,14 +8660,22 @@ function initNewsletterSubscription() {
                     audioFile: audioFile
                 };
             }
-            spotlightMusic.pause();
-            spotlightMusic = null;
-            window.spotlightMusic = null; // Clear window reference
+            
+            // Fade out the old spotlight music
+            const oldMusic = spotlightMusic;
+            fadeOutAudio(oldMusic, () => {
+                // After fade out completes, clean up
+                oldMusic.pause();
+                if (oldMusic === spotlightMusic) {
+                    spotlightMusic = null;
+                    window.spotlightMusic = null;
+                }
+            });
         }
         
         // Create new audio element
         spotlightMusic = new Audio(`/SpotlightSongs/${audioFile}`);
-        spotlightMusic.volume = 0.5;
+        spotlightMusic.volume = 0; // Start at 0 for fade in
         spotlightMusic.loop = true;
         
         // Expose on window for external checks (e.g., music monitor in index.html)
@@ -8610,8 +8697,9 @@ function initNewsletterSubscription() {
                     spotlightMusic.currentTime = savedState.time;
                 }
                 
-                spotlightMusic.play().catch(err => {
-                    console.log('Could not play spotlight music:', err);
+                // Fade in the new country music
+                fadeInAudio(spotlightMusic, 0.5, () => {
+                    // Music has faded in
                 });
             }
         });
@@ -8637,7 +8725,7 @@ function initNewsletterSubscription() {
         spotlightMusic.load();
     }
     
-    // Stop country music (but save position for resume)
+    // Stop country music (but save position for resume) with fade out
     function stopCountryMusic() {
         if (spotlightMusic && currentCountry) {
             // Save current position before pausing
@@ -8646,10 +8734,15 @@ function initNewsletterSubscription() {
                 time: spotlightMusic.currentTime,
                 audioFile: countryMusicMap[currentCountry.name]
             };
-            spotlightMusic.pause();
-            // Don't reset currentTime - keep it for resume
-            // Note: Don't clear window.spotlightMusic here - it's still valid, just paused
-            // It will be cleared when a new country music starts or when spotlightMusic is set to null
+            
+            // Fade out the country music
+            const musicToFade = spotlightMusic;
+            fadeOutAudio(musicToFade, () => {
+                musicToFade.pause();
+                // Don't reset currentTime - keep it for resume
+                // Note: Don't clear window.spotlightMusic here - it's still valid, just paused
+                // It will be cleared when a new country music starts or when spotlightMusic is set to null
+            });
         }
     }
     
@@ -8809,23 +8902,29 @@ function initNewsletterSubscription() {
     // Generate an image using the AI API
     async function generateImage(prompt) {
         try {
-            const response = await fetch('/.netlify/functions/noteworthy-chat', {
+            const response = await fetch('/.netlify/functions/generate-image', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    message: prompt,
-                    chatHistory: []
+                    prompt: prompt,
+                    size: '1024x1024',
+                    quality: 'standard',
+                    style: 'vivid'
                 })
             });
             
             if (!response.ok) {
+                const errorText = await response.text().catch(() => 'Unknown error');
+                console.error('Image generation API error:', response.status, errorText);
                 throw new Error(`API error: ${response.status}`);
             }
             
             const data = await response.json();
-            return data.image ? data.image.imageUrl : null;
+            // The generate-image function returns { imageUrl, storedImageUrl, revisedPrompt, prompt }
+            // Prefer storedImageUrl (cached) if available, otherwise use imageUrl
+            return data.storedImageUrl || data.imageUrl || null;
         } catch (error) {
             console.error('Image generation error:', error);
             return null;
@@ -9456,28 +9555,28 @@ IMPORTANT REQUIREMENTS:
             // Function to load spotlight
             const triggerLoadSpotlight = () => {
                 if (spotlightLoaded) return; // Prevent multiple loads
-                spotlightLoaded = true;
+                        spotlightLoaded = true;
                 console.log('Country spotlight section is visible - loading spotlight');
-                
-                // Check rate limit - hide buttons if limit reached, but keep section visible
-                const rateLimit = checkRateLimit();
-                if (!rateLimit.allowed) {
-                    console.log('Daily spotlight limit reached - hiding buttons but keeping content visible');
-                    // Hide generation buttons
-                    if (refreshBtn) {
-                        refreshBtn.style.display = 'none';
-                    }
-                    if (retryBtn) {
-                        retryBtn.style.display = 'none';
-                    }
-                    updateButtonStates(); // Update button states
-                    updateRemainingDisplay(); // Update remaining display
-                    // Still load/restore the last generation so they can view it
-                    loadSpotlight(false); // Try to restore last generation
-                } else {
-                    // Load spotlight (restore or generate new)
-                    loadSpotlight(false); // Try to restore, generate new if needed
-                }
+                        
+                        // Check rate limit - hide buttons if limit reached, but keep section visible
+                        const rateLimit = checkRateLimit();
+                        if (!rateLimit.allowed) {
+                            console.log('Daily spotlight limit reached - hiding buttons but keeping content visible');
+                            // Hide generation buttons
+                            if (refreshBtn) {
+                                refreshBtn.style.display = 'none';
+                            }
+                            if (retryBtn) {
+                                retryBtn.style.display = 'none';
+                            }
+                            updateButtonStates(); // Update button states
+                            updateRemainingDisplay(); // Update remaining display
+                            // Still load/restore the last generation so they can view it
+                            loadSpotlight(false); // Try to restore last generation
+                        } else {
+                            // Load spotlight (restore or generate new)
+                            loadSpotlight(false); // Try to restore, generate new if needed
+                        }
             };
             
             // Check if section is already visible on page load
@@ -9496,17 +9595,17 @@ IMPORTANT REQUIREMENTS:
                         // Only load once when section becomes visible (at least 30% visible)
                         if (entry.isIntersecting && entry.intersectionRatio >= 0.3 && !spotlightLoaded) {
                             triggerLoadSpotlight();
-                            // Disconnect observer after first load
-                            loadObserver.disconnect();
-                        }
-                    });
-                }, {
-                    threshold: [0.3],
-                    rootMargin: '0px'
+                        // Disconnect observer after first load
+                        loadObserver.disconnect();
+                    }
                 });
-                
-                // Start observing the spotlight section
-                loadObserver.observe(spotlightSection);
+            }, {
+                threshold: [0.3],
+                rootMargin: '0px'
+            });
+            
+            // Start observing the spotlight section
+            loadObserver.observe(spotlightSection);
             }
         }, 100);
     }

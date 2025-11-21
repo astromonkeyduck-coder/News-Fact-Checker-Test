@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="app-version" content="November 20, 2025">
+    <meta name="app-version" content="November 21, 2025">
     <title>Noteworthy News - Fact-Checked Journalism & Media Literacy Games | Trusted News Source</title>
     
     <!-- Favicon and Theme -->
@@ -49,7 +49,7 @@
     <meta property="og:site_name" content="Noteworthy News">
     <meta property="og:title" content="Noteworthy News - Fact-Checked Journalism & Media Literacy Games">
     <meta property="og:description" content="Your trusted source for fact-checked journalism, media literacy education, and interactive fact-checking games. Learn critical thinking skills and stay informed with verified news.">
-    <meta property="og:image" content="https://noteworthynews.co/noteworthy-news-preview.jpg">
+    <meta property="og:image" content="https://noteworthynews.co/prevvvvv.jpg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:locale" content="en_US">
@@ -59,7 +59,7 @@
     <meta property="twitter:url" content="https://noteworthynews.co/">
     <meta property="twitter:title" content="Noteworthy News - Fact-Checked Journalism & Media Literacy Games">
     <meta property="twitter:description" content="Your trusted source for fact-checked journalism, media literacy education, and interactive fact-checking games. Learn critical thinking skills and stay informed with verified news.">
-    <meta property="twitter:image" content="https://noteworthynews.co/noteworthy-news-preview.jpg">
+    <meta property="twitter:image" content="https://noteworthynews.co/prevvvvv.jpg">
     <meta property="twitter:creator" content="@NoteworthyNews">
     <meta property="twitter:site" content="@NoteworthyNews">
     
@@ -119,6 +119,43 @@
             const thirdAudio = document.getElementById('backgroundMusicThird');
             const loopAudio = document.getElementById('backgroundMusicLoop');
             
+            // Ensure all audio tracks are properly initialized
+            [audio, secondAudio, thirdAudio, loopAudio].forEach((track, index) => {
+                if (track) {
+                    // Set volume
+                    track.volume = 0.5;
+                    
+                    // Ensure tracks are loaded
+                    if (track.readyState === 0) {
+                        track.load();
+                    }
+                    
+                    // Add error logging
+                    track.addEventListener('error', function(e) {
+                        console.error(`Audio track ${index + 1} error:`, track.src, e);
+                        console.error('Error details:', track.error);
+                    });
+                    
+                    // Log when track is ready
+                    track.addEventListener('loadedmetadata', function() {
+                        console.log(`Track ${index + 1} metadata loaded, duration:`, track.duration);
+                    });
+                    
+                    // Log when track can play
+                    track.addEventListener('canplay', function() {
+                        console.log(`Track ${index + 1} ready to play`);
+                    });
+                } else {
+                    console.warn(`Audio track ${index + 1} element not found`);
+                }
+            });
+            
+            // Helper function to check if maintenance mode is actually active
+            function isMaintenanceModeActive() {
+                const overlay = document.getElementById('maintenance-overlay');
+                return overlay && overlay.style.display !== 'none' && overlay.style.display !== '';
+            }
+            
             // Function to ensure only one track plays at a time
             function pauseAllTracks() {
                 if (audio && !audio.paused) {
@@ -138,8 +175,40 @@
             // Function to ensure only the specified track plays
             function playTrackOnly(track) {
                 pauseAllTracks();
-                if (track && track.paused) {
-                    track.play().catch(() => {});
+                if (!track) return;
+                
+                // Ensure audio is loaded and ready before playing
+                const attemptPlay = () => {
+                    if (track.paused) {
+                        track.play().catch(err => {
+                            console.error('Failed to play track:', err);
+                            // If play fails, try loading first
+                            if (track.readyState < 2) {
+                                track.load();
+                                track.addEventListener('canplay', () => {
+                                    track.play().catch(e => console.error('Failed to play after load:', e));
+                                }, { once: true });
+                            }
+                        });
+                    }
+                };
+                
+                // Check if audio is ready
+                if (track.readyState >= 2) {
+                    // Audio is ready, play immediately
+                    attemptPlay();
+                } else if (track.readyState >= 1) {
+                    // Has metadata, wait for canplay
+                    track.addEventListener('canplay', attemptPlay, { once: true });
+                    track.load(); // Ensure loading continues
+                    attemptPlay(); // Try immediately as fallback
+                } else {
+                    // No metadata yet, load first
+                    track.load();
+                    track.addEventListener('loadedmetadata', () => {
+                        track.addEventListener('canplay', attemptPlay, { once: true });
+                        attemptPlay(); // Try as fallback
+                    }, { once: true });
                 }
             }
             
@@ -148,6 +217,7 @@
                 let currentTrack = 'none';
                 let currentTime = 0;
                 
+                // Always save the current position, whether playing or paused
                 if (audio && !audio.paused) {
                     currentTrack = 'track1';
                     currentTime = audio.currentTime;
@@ -161,7 +231,7 @@
                     currentTrack = 'loop';
                     currentTime = loopAudio.currentTime;
                 } else {
-                    // Get time from paused track
+                    // Get time from paused track - always save the last position
                     if (audio && audio.currentTime > 0 && audio.currentTime < (audio.duration || Infinity)) {
                         currentTrack = 'track1';
                         currentTime = audio.currentTime;
@@ -174,10 +244,18 @@
                     } else if (loopAudio && loopAudio.currentTime > 0) {
                         currentTrack = 'loop';
                         currentTime = loopAudio.currentTime;
+                    } else {
+                        // If no track has time, check saved state to preserve last known position
+                        const lastSaved = JSON.parse(localStorage.getItem('globalMusicState') || '{}');
+                        if (lastSaved.track && lastSaved.time > 0) {
+                            currentTrack = lastSaved.track;
+                            currentTime = lastSaved.time;
+                        }
                     }
                 }
                 
-                if (currentTrack !== 'none') {
+                // Always save state, even if paused
+                if (currentTrack !== 'none' || localStorage.getItem('globalMusicState')) {
                     localStorage.setItem('globalMusicState', JSON.stringify({
                         track: currentTrack,
                         time: currentTime,
@@ -198,9 +276,10 @@
             const savedTimestamp = savedMusicState.timestamp || 0;
             
             // Function to restore music state
-            function restoreMusicState() {
+            function restoreMusicState(shouldPlay = true) {
                 const timeSinceSave = Date.now() - savedTimestamp;
-                if (timeSinceSave > 300000) return; // 5 minutes
+                // Increase timeout to 24 hours so position is always restored
+                if (timeSinceSave > 86400000) return; // 24 hours
                 
                 let track = null;
                 if (savedTrack === 'track1') {
@@ -213,9 +292,32 @@
                     track = loopAudio;
                 }
                 
-                if (track && track.readyState >= 2) {
-                    track.currentTime = Math.max(0, Math.min(savedTime, track.duration || Infinity));
-                    playTrackOnly(track);
+                if (track) {
+                    // Wait for track to be ready, then restore position
+                    const restorePosition = () => {
+                        if (track.readyState >= 2) {
+                            track.currentTime = Math.max(0, Math.min(savedTime, track.duration || Infinity));
+                            if (shouldPlay) {
+                                playTrackOnly(track);
+                            }
+                        } else {
+                            // Wait for metadata
+                            track.addEventListener('loadedmetadata', () => {
+                                track.currentTime = Math.max(0, Math.min(savedTime, track.duration || Infinity));
+                                if (shouldPlay) {
+                                    playTrackOnly(track);
+                                }
+                            }, { once: true });
+                            track.load();
+                        }
+                    };
+                    
+                    if (track.readyState >= 1) {
+                        restorePosition();
+                    } else {
+                        track.addEventListener('loadedmetadata', restorePosition, { once: true });
+                        track.load();
+                    }
                 }
             }
             
@@ -229,8 +331,44 @@
                 const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
                 const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
                 
+                // Always restore position on load, even if paused
+                if (savedTrack !== 'none' && savedTime > 0) {
+                    const restorePositionOnly = () => {
+                        let trackToRestore = null;
+                        if (savedTrack === 'track1') {
+                            trackToRestore = audio;
+                        } else if (savedTrack === 'track2') {
+                            trackToRestore = secondAudio;
+                        } else if (savedTrack === 'track3') {
+                            trackToRestore = thirdAudio;
+                        } else if (savedTrack === 'loop') {
+                            trackToRestore = loopAudio;
+                        }
+                        
+                        if (trackToRestore) {
+                            const setPosition = () => {
+                                if (trackToRestore.readyState >= 1) {
+                                    trackToRestore.currentTime = Math.max(0, Math.min(savedTime, trackToRestore.duration || Infinity));
+                                } else {
+                                    trackToRestore.addEventListener('loadedmetadata', () => {
+                                        trackToRestore.currentTime = Math.max(0, Math.min(savedTime, trackToRestore.duration || Infinity));
+                                    }, { once: true });
+                                }
+                            };
+                            setPosition();
+                        }
+                    };
+                    
+                    // Restore position after a short delay to ensure audio elements are ready
+                    setTimeout(restorePositionOnly, 100);
+                }
+                
                 // Force play with multiple attempts
                 const forcePlay = () => {
+                    // Don't play if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        return;
+                    }
                     if (musicEnabled) {
                         // Try to restore saved state first
                         if (musicWasPlaying && savedTrack !== 'none' && savedTrack !== 'track1') {
@@ -243,12 +381,27 @@
                                 localStorage.setItem('globalMusicPlaying', 'true');
                                 localStorage.setItem('globalMusicEnabled', 'true');
                                 updateMusicButtonState(true);
+                            } else {
+                                // Wait for audio to be ready
+                                audio.addEventListener('loadedmetadata', () => {
+                                    audio.currentTime = Math.max(0, Math.min(savedTime, audio.duration || Infinity));
+                                    playTrackOnly(audio);
+                                    localStorage.setItem('globalMusicPlaying', 'true');
+                                    localStorage.setItem('globalMusicEnabled', 'true');
+                                    updateMusicButtonState(true);
+                                }, { once: true });
                             }
                         } else if (musicWasPlaying || localStorage.getItem('globalMusicPlaying') === null) {
                             // Start from beginning or saved position
                             playTrackOnly(audio);
                             if (savedTime > 0 && savedTrack === 'track1') {
-                                audio.currentTime = Math.max(0, Math.min(savedTime, audio.duration || Infinity));
+                                if (audio.readyState >= 1) {
+                                    audio.currentTime = Math.max(0, Math.min(savedTime, audio.duration || Infinity));
+                                } else {
+                                    audio.addEventListener('loadedmetadata', () => {
+                                        audio.currentTime = Math.max(0, Math.min(savedTime, audio.duration || Infinity));
+                                    }, { once: true });
+                                }
                             }
                             audio.play().then(() => {
                                 localStorage.setItem('globalMusicPlaying', 'true');
@@ -267,6 +420,12 @@
                 
                 // Add event listeners for music state changes
                 audio.addEventListener('play', function() {
+                    // Don't allow play if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        audio.pause();
+                        audio.currentTime = 0;
+                        return;
+                    }
                     // Ensure other tracks are paused when main track plays
                     if (secondAudio && !secondAudio.paused) {
                         secondAudio.pause();
@@ -297,12 +456,16 @@
                 // Handle audio errors - attempt to resume if music should be playing
                 audio.addEventListener('error', function(e) {
                     console.error('Audio error on main track:', e);
+                    // Don't resume if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        return;
+                    }
                     const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
                     const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
                     if (musicEnabled && musicWasPlaying) {
                         // Try to resume after a short delay
                         setTimeout(() => {
-                            if (audio && audio.paused && musicEnabled) {
+                            if (audio && audio.paused && musicEnabled && !isMaintenanceModeActive()) {
                                 audio.load(); // Reload the audio
                                 audio.play().catch(err => console.error('Failed to resume after error:', err));
                             }
@@ -313,36 +476,59 @@
                 // Handle stalled/aborted events - attempt to resume
                 audio.addEventListener('stalled', function() {
                     console.warn('Audio stalled, attempting to resume...');
+                    // Don't resume if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        return;
+                    }
                     const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
                     const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
                     if (musicEnabled && musicWasPlaying && audio.paused) {
                         setTimeout(() => {
-                            audio.play().catch(err => console.error('Failed to resume after stall:', err));
+                            if (!isMaintenanceModeActive()) {
+                                audio.play().catch(err => console.error('Failed to resume after stall:', err));
+                            }
                         }, 500);
                     }
                 });
                 
                 audio.addEventListener('suspend', function() {
                     console.warn('Audio suspended, attempting to resume...');
+                    // Don't resume if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        return;
+                    }
                     const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
                     const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
                     if (musicEnabled && musicWasPlaying && audio.paused) {
                         setTimeout(() => {
-                            audio.play().catch(err => console.error('Failed to resume after suspend:', err));
+                            if (!isMaintenanceModeActive()) {
+                                audio.play().catch(err => console.error('Failed to resume after suspend:', err));
+                            }
                         }, 500);
                     }
                 });
                 
                 // When first track (WOAHFireeee) ends, start the second track (YEAHHHHHH)
                 audio.addEventListener('ended', function() {
+                    console.log('Track 1 ended, transitioning to track 2');
+                    // Don't start next track if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        return;
+                    }
                     saveMusicState();
                     if (secondAudio) {
                         // Pause main track (should already be paused, but ensure it)
                         audio.pause();
                         secondAudio.volume = audio.volume;
                         secondAudio.currentTime = 0;
+                        // Ensure second track is loaded before playing
+                        if (secondAudio.readyState < 1) {
+                            secondAudio.load();
+                        }
                         playTrackOnly(secondAudio);
                         updateMusicButtonState(true);
+                    } else {
+                        console.warn('Second audio track not found');
                     }
                 });
             }
@@ -351,6 +537,12 @@
             if (secondAudio) {
                 secondAudio.volume = 0.5;
                 secondAudio.addEventListener('play', function() {
+                    // Don't allow play if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        secondAudio.pause();
+                        secondAudio.currentTime = 0;
+                        return;
+                    }
                     // Ensure other tracks are paused when second track plays
                     if (audio && !audio.paused) {
                         audio.pause();
@@ -381,11 +573,15 @@
                 // Handle audio errors - attempt to resume if music should be playing
                 secondAudio.addEventListener('error', function(e) {
                     console.error('Audio error on second track:', e);
+                    // Don't resume if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        return;
+                    }
                     const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
                     const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
                     if (musicEnabled && musicWasPlaying) {
                         setTimeout(() => {
-                            if (secondAudio && secondAudio.paused && musicEnabled) {
+                            if (secondAudio && secondAudio.paused && musicEnabled && !isMaintenanceModeActive()) {
                                 secondAudio.load();
                                 secondAudio.play().catch(err => console.error('Failed to resume after error:', err));
                             }
@@ -394,25 +590,42 @@
                 });
                 
                 secondAudio.addEventListener('stalled', function() {
+                    // Don't resume if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        return;
+                    }
                     const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
                     const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
                     if (musicEnabled && musicWasPlaying && secondAudio.paused) {
                         setTimeout(() => {
-                            secondAudio.play().catch(err => console.error('Failed to resume after stall:', err));
+                            if (!isMaintenanceModeActive()) {
+                                secondAudio.play().catch(err => console.error('Failed to resume after stall:', err));
+                            }
                         }, 500);
                     }
                 });
                 
                 // When second track (YEAHHHHHH) ends, start the third track (TheMoneyMaker)
                 secondAudio.addEventListener('ended', function() {
+                    console.log('Track 2 ended, transitioning to track 3');
+                    // Don't start next track if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        return;
+                    }
                     saveMusicState();
                     if (thirdAudio) {
                         // Pause second track (should already be paused, but ensure it)
                         secondAudio.pause();
                         thirdAudio.volume = secondAudio.volume;
                         thirdAudio.currentTime = 0;
+                        // Ensure third track is loaded before playing
+                        if (thirdAudio.readyState < 1) {
+                            thirdAudio.load();
+                        }
                         playTrackOnly(thirdAudio);
                         updateMusicButtonState(true);
+                    } else {
+                        console.warn('Third audio track not found');
                     }
                 });
             }
@@ -421,6 +634,12 @@
             if (thirdAudio) {
                 thirdAudio.volume = 0.5;
                 thirdAudio.addEventListener('play', function() {
+                    // Don't allow play if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        thirdAudio.pause();
+                        thirdAudio.currentTime = 0;
+                        return;
+                    }
                     // Ensure other tracks are paused when third track plays
                     if (audio && !audio.paused) {
                         audio.pause();
@@ -451,11 +670,15 @@
                 // Handle audio errors - attempt to resume if music should be playing
                 thirdAudio.addEventListener('error', function(e) {
                     console.error('Audio error on third track:', e);
+                    // Don't resume if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        return;
+                    }
                     const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
                     const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
                     if (musicEnabled && musicWasPlaying) {
                         setTimeout(() => {
-                            if (thirdAudio && thirdAudio.paused && musicEnabled) {
+                            if (thirdAudio && thirdAudio.paused && musicEnabled && !isMaintenanceModeActive()) {
                                 thirdAudio.load();
                                 thirdAudio.play().catch(err => console.error('Failed to resume after error:', err));
                             }
@@ -464,25 +687,42 @@
                 });
                 
                 thirdAudio.addEventListener('stalled', function() {
+                    // Don't resume if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        return;
+                    }
                     const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
                     const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
                     if (musicEnabled && musicWasPlaying && thirdAudio.paused) {
                         setTimeout(() => {
-                            thirdAudio.play().catch(err => console.error('Failed to resume after stall:', err));
+                            if (!isMaintenanceModeActive()) {
+                                thirdAudio.play().catch(err => console.error('Failed to resume after stall:', err));
+                            }
                         }, 500);
                     }
                 });
                 
                 // When third track (TheMoneyMaker) ends, start the looping track
                 thirdAudio.addEventListener('ended', function() {
+                    console.log('Track 3 ended, transitioning to loop track');
+                    // Don't start next track if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        return;
+                    }
                     saveMusicState();
                     if (loopAudio) {
                         // Pause third track (should already be paused, but ensure it)
                         thirdAudio.pause();
                         loopAudio.volume = thirdAudio.volume;
                         loopAudio.currentTime = 0;
+                        // Ensure loop track is loaded before playing
+                        if (loopAudio.readyState < 1) {
+                            loopAudio.load();
+                        }
                         playTrackOnly(loopAudio);
                         updateMusicButtonState(true);
+                    } else {
+                        console.warn('Loop audio track not found');
                     }
                 });
             }
@@ -491,6 +731,12 @@
             if (loopAudio) {
                 loopAudio.volume = 0.5;
                 loopAudio.addEventListener('play', function() {
+                    // Don't allow play if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        loopAudio.pause();
+                        loopAudio.currentTime = 0;
+                        return;
+                    }
                     // Ensure other tracks are paused when loop track plays
                     if (audio && !audio.paused) {
                         audio.pause();
@@ -521,11 +767,15 @@
                 // Handle audio errors - attempt to resume if music should be playing
                 loopAudio.addEventListener('error', function(e) {
                     console.error('Audio error on loop track:', e);
+                    // Don't resume if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        return;
+                    }
                     const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
                     const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
                     if (musicEnabled && musicWasPlaying) {
                         setTimeout(() => {
-                            if (loopAudio && loopAudio.paused && musicEnabled) {
+                            if (loopAudio && loopAudio.paused && musicEnabled && !isMaintenanceModeActive()) {
                                 loopAudio.load();
                                 loopAudio.play().catch(err => console.error('Failed to resume after error:', err));
                             }
@@ -534,11 +784,17 @@
                 });
                 
                 loopAudio.addEventListener('stalled', function() {
+                    // Don't resume if maintenance mode is active
+                    if (isMaintenanceModeActive()) {
+                        return;
+                    }
                     const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
                     const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
                     if (musicEnabled && musicWasPlaying && loopAudio.paused) {
                         setTimeout(() => {
-                            loopAudio.play().catch(err => console.error('Failed to resume after stall:', err));
+                            if (!isMaintenanceModeActive()) {
+                                loopAudio.play().catch(err => console.error('Failed to resume after stall:', err));
+                            }
                         }, 500);
                     }
                 });
@@ -546,8 +802,21 @@
             
             // Periodic check to ensure music is still playing if it should be
             setInterval(function() {
+                // Don't resume if maintenance mode is active
+                if (isMaintenanceModeActive()) {
+                    return;
+                }
+                
                 const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
                 const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
+                
+                // Check if maintenance was just dismissed (music should resume but isn't)
+                const maintenanceJustDismissed = localStorage.getItem('musicWasPlayingBeforeMaintenance') === 'true';
+                if (maintenanceJustDismissed) {
+                    // Clear the flag and ensure music resumes
+                    localStorage.removeItem('musicWasPlayingBeforeMaintenance');
+                    console.log('Detected maintenance dismissal, ensuring music resumes');
+                }
                 
                 // Check if country spotlight is currently visible - if so, don't resume background music
                 const spotlightSection = document.getElementById('country-spotlight-section');
@@ -665,37 +934,168 @@
                         updateMusicButtonState(false);
                     } else {
                         // Restore from saved state or determine which track to play
+                        const savedMusicState = JSON.parse(localStorage.getItem('globalMusicState') || '{}');
+                        const savedTrack = savedMusicState.track || 'track1';
+                        const savedTime = savedMusicState.time || 0;
+                        
                         if (savedTrack !== 'none' && savedTrack !== 'track1') {
                             restoreMusicState();
-                        } else if (audio && audio.currentTime < (audio.duration || Infinity)) {
+                        } else if (audio) {
+                            // Always restore saved position when resuming
                             if (savedTime > 0 && savedTrack === 'track1') {
-                                audio.currentTime = Math.max(0, Math.min(savedTime, audio.duration || Infinity));
+                                const setPosition = () => {
+                                    if (audio.readyState >= 1) {
+                                        audio.currentTime = Math.max(0, Math.min(savedTime, audio.duration || Infinity));
+                                        audio.play().catch(err => console.error('Failed to play main track:', err));
+                                    } else {
+                                        audio.addEventListener('loadedmetadata', () => {
+                                            audio.currentTime = Math.max(0, Math.min(savedTime, audio.duration || Infinity));
+                                            audio.play().catch(err => console.error('Failed to play main track:', err));
+                                        }, { once: true });
+                                        audio.load();
+                                    }
+                                };
+                                setPosition();
+                            } else {
+                                audio.play().catch(err => console.error('Failed to play main track:', err));
                             }
-                            audio.play().catch(err => console.error('Failed to play main track:', err));
                             console.log('Playing main audio track');
-                        } else if (secondAudio && secondAudio.currentTime < (secondAudio.duration || Infinity)) {
-                            if (savedTime > 0 && savedTrack === 'track2') {
-                                secondAudio.currentTime = Math.max(0, Math.min(savedTime, secondAudio.duration || Infinity));
+                        } else if (secondAudio && savedTrack === 'track2') {
+                            if (savedTime > 0) {
+                                const setPosition = () => {
+                                    if (secondAudio.readyState >= 1) {
+                                        secondAudio.currentTime = Math.max(0, Math.min(savedTime, secondAudio.duration || Infinity));
+                                        secondAudio.play().catch(err => console.error('Failed to play second track:', err));
+                                    } else {
+                                        secondAudio.addEventListener('loadedmetadata', () => {
+                                            secondAudio.currentTime = Math.max(0, Math.min(savedTime, secondAudio.duration || Infinity));
+                                            secondAudio.play().catch(err => console.error('Failed to play second track:', err));
+                                        }, { once: true });
+                                        secondAudio.load();
+                                    }
+                                };
+                                setPosition();
+                            } else {
+                                secondAudio.play().catch(err => console.error('Failed to play second track:', err));
                             }
-                            secondAudio.play().catch(err => console.error('Failed to play second track:', err));
                             console.log('Playing second audio track');
-                        } else if (thirdAudio && thirdAudio.currentTime < (thirdAudio.duration || Infinity)) {
-                            if (savedTime > 0 && savedTrack === 'track3') {
-                                thirdAudio.currentTime = Math.max(0, Math.min(savedTime, thirdAudio.duration || Infinity));
+                        } else if (thirdAudio && savedTrack === 'track3') {
+                            if (savedTime > 0) {
+                                const setPosition = () => {
+                                    if (thirdAudio.readyState >= 1) {
+                                        thirdAudio.currentTime = Math.max(0, Math.min(savedTime, thirdAudio.duration || Infinity));
+                                        thirdAudio.play().catch(err => console.error('Failed to play third track:', err));
+                                    } else {
+                                        thirdAudio.addEventListener('loadedmetadata', () => {
+                                            thirdAudio.currentTime = Math.max(0, Math.min(savedTime, thirdAudio.duration || Infinity));
+                                            thirdAudio.play().catch(err => console.error('Failed to play third track:', err));
+                                        }, { once: true });
+                                        thirdAudio.load();
+                                    }
+                                };
+                                setPosition();
+                            } else {
+                                thirdAudio.play().catch(err => console.error('Failed to play third track:', err));
                             }
-                            thirdAudio.play().catch(err => console.error('Failed to play third track:', err));
                             console.log('Playing third audio track');
-                        } else if (loopAudio) {
-                            if (savedTime > 0 && savedTrack === 'loop') {
-                                loopAudio.currentTime = Math.max(0, savedTime % (loopAudio.duration || 1));
+                        } else if (loopAudio && savedTrack === 'loop') {
+                            if (savedTime > 0) {
+                                const setPosition = () => {
+                                    if (loopAudio.readyState >= 1) {
+                                        loopAudio.currentTime = Math.max(0, savedTime % (loopAudio.duration || 1));
+                                        loopAudio.play().catch(err => console.error('Failed to play loop track:', err));
+                                    } else {
+                                        loopAudio.addEventListener('loadedmetadata', () => {
+                                            loopAudio.currentTime = Math.max(0, savedTime % (loopAudio.duration || 1));
+                                            loopAudio.play().catch(err => console.error('Failed to play loop track:', err));
+                                        }, { once: true });
+                                        loopAudio.load();
+                                    }
+                                };
+                                setPosition();
+                            } else {
+                                loopAudio.play().catch(err => console.error('Failed to play loop track:', err));
                             }
-                            loopAudio.play().catch(err => console.error('Failed to play loop track:', err));
                             console.log('Playing loop audio track');
                         }
                         localStorage.setItem('globalMusicEnabled', 'true');
                         localStorage.setItem('globalMusicPlaying', 'true');
                         updateMusicButtonState(true);
                     }
+                });
+            }
+            
+            // Watch for maintenance overlay dismissal and resume music
+            const maintenanceOverlay = document.getElementById('maintenance-overlay');
+            if (maintenanceOverlay) {
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                            const isVisible = maintenanceOverlay.style.display !== 'none' && maintenanceOverlay.style.display !== '';
+                            const wasVisible = mutation.oldValue && !mutation.oldValue.includes('display: none');
+                            
+                            // If overlay was just hidden (was visible, now not visible)
+                            if (wasVisible && !isVisible) {
+                                console.log('Maintenance overlay dismissed, checking if music should resume');
+                                
+                                const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+                                const musicWasPlaying = localStorage.getItem('musicWasPlayingBeforeMaintenance') === 'true' || 
+                                                      localStorage.getItem('globalMusicPlaying') === 'true';
+                                
+                                if (musicEnabled && musicWasPlaying) {
+                                    // Wait a moment for the overlay to fully disappear
+                                    setTimeout(function() {
+                                        // Check if music is actually playing (all tracks are paused)
+                                        const allPaused = (!audio || audio.paused) && 
+                                                         (!secondAudio || secondAudio.paused) && 
+                                                         (!thirdAudio || thirdAudio.paused) && 
+                                                         (!loopAudio || loopAudio.paused);
+                                        
+                                        if (allPaused) {
+                                            console.log('Music not playing after maintenance dismissal, attempting to resume');
+                                            
+                                            // Get saved music state
+                                            const savedMusicState = JSON.parse(localStorage.getItem('globalMusicState') || '{}');
+                                            const savedTrack = savedMusicState.track || 'track1';
+                                            const savedTime = savedMusicState.time || 0;
+                                            
+                                            let trackToResume = null;
+                                            if (savedTrack === 'track1' && audio) {
+                                                trackToResume = audio;
+                                            } else if (savedTrack === 'track2' && secondAudio) {
+                                                trackToResume = secondAudio;
+                                            } else if (savedTrack === 'track3' && thirdAudio) {
+                                                trackToResume = thirdAudio;
+                                            } else if (savedTrack === 'loop' && loopAudio) {
+                                                trackToResume = loopAudio;
+                                            } else if (audio) {
+                                                trackToResume = audio;
+                                            }
+                                            
+                                            if (trackToResume) {
+                                                playTrackOnly(trackToResume);
+                                                if (savedTime > 0 && trackToResume.duration) {
+                                                    trackToResume.currentTime = Math.min(savedTime, trackToResume.duration - 0.5);
+                                                }
+                                                localStorage.setItem('globalMusicPlaying', 'true');
+                                                localStorage.setItem('globalMusicEnabled', 'true');
+                                                updateMusicButtonState(true);
+                                            }
+                                        }
+                                    }, 300);
+                                }
+                                
+                                // Clear the maintenance flag
+                                localStorage.removeItem('musicWasPlayingBeforeMaintenance');
+                            }
+                        }
+                    });
+                });
+                
+                observer.observe(maintenanceOverlay, {
+                    attributes: true,
+                    attributeOldValue: true,
+                    attributeFilter: ['style']
                 });
             }
         });
@@ -717,25 +1117,36 @@
         }
     </script>
     <audio id="backgroundMusic" preload="metadata">
-                        <source src="WOAHFireeee(Cover).mp4" type="video/mp4">
+                        <source src="WOAHFireeee(Cover).mp4" type="audio/mp4">
+                        <source src="WOAHFireeee(Cover).mp4" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
     
     <!-- Second track (plays after first) -->
     <audio id="backgroundMusicSecond" preload="metadata">
                         <source src="YEAHHHHHH.mp3" type="audio/mpeg">
+                        <source src="YEAHHHHHH.mp3" type="audio/mp3">
         Your browser does not support the audio element.
     </audio>
     
     <!-- Third track (plays after second) -->
     <audio id="backgroundMusicThird" preload="metadata">
                         <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+                        <source src="TheMoneyMaker 🤑.mp3" type="audio/mp3">
         Your browser does not support the audio element.
     </audio>
     
     <!-- Fourth track (plays after third, then ending song) -->
-    <audio id="backgroundMusicLoop" preload="metadata">
+    <audio id="backgroundMusicLoop" preload="metadata" loop>
                         <source src="Audiolandingpage.m4a" type="audio/mp4">
+                        <source src="Audiolandingpage.m4a" type="audio/x-m4a">
+                        <source src="Audiolandingpage.m4a" type="audio/aac">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Maintenance screen music -->
+    <audio id="maintenanceMusic" preload="auto" loop>
+        <source src="MSCREEN.wav" type="audio/wav">
         Your browser does not support the audio element.
     </audio>
     
@@ -2586,7 +2997,7 @@
         .tip-modal {
             display: none;
             position: fixed;
-            z-index: 10000;
+            z-index: 1000000;
             left: 0;
             top: 0;
             width: 100%;
@@ -13364,5 +13775,744 @@
             initAdvancedLazyLoading();
         }
     </script>
+    
+    <!-- Maintenance Screen -->
+    <!-- TO ENABLE MAINTENANCE MODE: Change the variable below to true -->
+    <!-- TO DISABLE MAINTENANCE MODE: Change the variable below to false -->
+    <script>
+        // Maintenance Mode Toggle - Set to true to enable, false to disable
+        window.MAINTENANCE_MODE_ENABLED = true;
+    </script>
+    <div id="maintenance-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background-size: cover; background-position: center; z-index: 999999; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box; overflow: hidden;">
+        <!-- Official Document -->
+        <div id="maintenance-document" style="max-width: 750px; width: 100%; height: auto; background: #faf8f3; background-image: repeating-linear-gradient(0deg, transparent, transparent 25px, rgba(0,0,0,0.04) 25px, rgba(0,0,0,0.04) 26px); padding: 40px 50px 0px 50px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0, 0, 0, 0.1); border: 1px solid rgba(0, 0, 0, 0.15); outline: 1px solid rgba(0, 0, 0, 0.08); outline-offset: 2px; position: relative; font-family: 'Times New Roman', 'Georgia', serif; color: #1a1a1a; line-height: 1.5; overflow: visible;">
+            <!-- Official Seal -->
+            <div class="official-seal">
+                <img src="sealofapp.png" alt="Official Seal" style="width: 180px; height: 180px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));">
+            </div>
+            
+            <!-- Letterhead -->
+            <div style="text-align: center; margin-bottom: 18px; border-bottom: 3px double #1a1a1a; padding-bottom: 10px;">
+                <h1 style="font-size: 1.6rem; font-weight: bold; margin: 0 0 5px 0; letter-spacing: 1.5px; color: #1a1a1a; font-family: 'Times New Roman', serif;">NOTEWORTHY NEWS</h1>
+                <p style="font-size: 0.7rem; margin: 0; color: #555; letter-spacing: 0.8px; text-transform: uppercase;">Official Notice of Temporary Service Interruption</p>
+            </div>
+            
+            <!-- Date -->
+            <div style="text-align: right; margin-bottom: 15px; font-size: 0.8rem; color: #555;">
+                <span id="current-date"></span>
+            </div>
+            
+            <!-- Main Content -->
+            <div style="text-align: left; margin-bottom: 5px;">
+                <p style="font-size: 0.9rem; margin-bottom: 10px; line-height: 1.5; font-weight: 500;">Fellow readers,</p>
+                
+                <p style="font-size: 0.9rem; margin-bottom: 10px; text-indent: 1.5em; line-height: 1.5;">In accordance with scheduled system upgrades and critical infrastructure improvements, Noteworthy News issues this formal notice of a temporary service interruption.</p>
+                
+                <p style="font-size: 0.9rem; margin-bottom: 10px; text-indent: 1.5em; line-height: 1.5;">Our team is currently carrying out essential modernization work designed to strengthen platform security, improve performance, and enhance the overall user experience. These upgrades ensure that Noteworthy News continues to deliver the reliable, fact-checked journalism our readers expect and deserve.</p>
+                
+                <p style="font-size: 0.9rem; margin-bottom: 12px; text-indent: 1.5em; line-height: 1.5;">We recognize that any interruption may cause inconvenience, and we extend our sincere appreciation for your patience and understanding.</p>
+                
+                <!-- Countdown Section -->
+                <div style="text-align: center; margin: 15px 0; padding: 15px; background: rgba(0, 0, 0, 0.02); border: 2px solid #1a1a1a; border-radius: 0;">
+                    <p style="font-size: 0.7rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: #555;">Estimated Time Until Service Restoration</p>
+                    <div id="countdown" style="font-size: 2rem; font-weight: bold; font-family: 'Courier New', monospace; color: #1a1a1a; letter-spacing: 5px; margin: 10px 0;">00:00:00</div>
+                    <p style="font-size: 0.8rem; margin-top: 6px; color: #555;">10:00 PM Eastern Standard Time</p>
+                </div>
+                
+                <p style="font-size: 0.9rem; margin-bottom: 10px; text-indent: 1.5em; line-height: 1.5;">As we complete this brief but important maintenance window, please know that Noteworthy News remains steadfast in its commitment to accuracy, transparency, and public trust.</p>
+                
+                <p style="font-size: 0.9rem; margin-bottom: 0; text-indent: 1.5em; line-height: 1.5;">Thank you for your continued support and for standing with us as we work to improve the platform for everyone.</p>
+            </div>
+            
+            <!-- Follow Us Section -->
+            <div style="text-align: center; margin-top: 20px; margin-bottom: 10px;">
+                <p style="font-size: 0.85rem; color: #555; margin-bottom: 5px;">
+                    <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="color: #1a1a1a; text-decoration: underline; font-weight: 500;">Follow us on X!</a>
+                </p>
+            </div>
+            
+            <!-- Signature Section -->
+            <div style="position: absolute; bottom: -40px; right: 50px; margin: 0; padding: 0; text-align: right; z-index: 10;">
+                <div style="margin: 0; padding: 0;">
+                    <img src="NWSIGGG.png" alt="Noteworthy News Signature" style="max-width: 280px; height: auto; object-fit: contain; display: block; margin: 0; padding: 0;">
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <style>
+        /* Prevent scrolling when maintenance screen is active */
+        body.maintenance-active,
+        html.maintenance-active {
+            overflow: hidden !important;
+            position: fixed !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        #maintenance-document {
+            font-family: 'Times New Roman', 'Georgia', serif;
+            transform: scale(0.9);
+            transform-origin: center center;
+            position: relative;
+            padding-bottom: 200px !important; /* Add space at bottom for signature */
+            transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            will-change: transform;
+        }
+        
+        /* Animated background for maintenance overlay - roundabout swing motion */
+        @keyframes backgroundRoundabout {
+            0% {
+                background-position: 50% 50%;
+            }
+            25% {
+                background-position: 60% 40%;
+            }
+            50% {
+                background-position: 50% 30%;
+            }
+            75% {
+                background-position: 40% 40%;
+            }
+            100% {
+                background-position: 50% 50%;
+            }
+        }
+        
+        #maintenance-overlay {
+            animation: backgroundRoundabout 20s ease-in-out infinite;
+            background-size: cover !important;
+        }
+        
+        /* Ensure all content is visible */
+        #maintenance-document {
+            min-height: fit-content;
+            height: auto !important;
+        }
+        
+        /* Remove all space below signature */
+        #maintenance-document > div:last-child {
+            margin-bottom: 0 !important;
+            padding-bottom: 0 !important;
+        }
+        
+        #maintenance-document img[src="NWSIGGG.png"] {
+            margin-bottom: 0 !important;
+            padding-bottom: 0 !important;
+            display: block;
+        }
+        
+        /* Shift letter to the left when 2ndNWMS.jpg is the background */
+        #maintenance-document.shift-left {
+            margin-left: -450px;
+            transform: scale(0.9) translateX(-50px);
+        }
+        
+        @media (max-width: 768px) {
+            #maintenance-document.shift-left {
+                margin-left: 0;
+            }
+        }
+        
+        #maintenance-document {
+            will-change: transform;
+            backface-visibility: hidden;
+            perspective: 1000px;
+            transform-style: preserve-3d;
+        }
+        
+        .official-seal {
+            position: absolute;
+            top: -35px;
+            right: 10px;
+            z-index: 1;
+        }
+        
+        @media (max-width: 768px) {
+            #maintenance-overlay {
+                padding: 10px !important;
+            }
+            
+            #maintenance-document {
+                padding: 25px 20px !important;
+                max-width: 95% !important;
+                max-height: 98vh !important;
+            }
+            
+            .official-seal {
+                position: relative;
+                top: 0;
+                right: 0;
+                margin: 0 auto 15px auto;
+                text-align: center;
+            }
+            
+            .official-seal img {
+                width: 120px !important;
+                height: 120px !important;
+            }
+            
+            #maintenance-document h1 {
+                font-size: 1.4rem !important;
+            }
+            
+            #countdown {
+                font-size: 1.8rem !important;
+                letter-spacing: 3px !important;
+            }
+            
+            #maintenance-document p {
+                font-size: 0.85rem !important;
+            }
+            
+            /* Signature positioning on mobile */
+            #maintenance-document > div:last-child {
+                position: relative !important;
+                bottom: auto !important;
+                right: auto !important;
+                text-align: right !important;
+                margin-top: 10px !important;
+            }
+        }
+    </style>
+    
+    <script>
+        // Randomly select background image for maintenance screen: 2ndNWMS.jpg 70% of the time
+        (function() {
+            const overlay = document.getElementById('maintenance-overlay');
+            const documentElement = document.getElementById('maintenance-document');
+            if (overlay) {
+                const randomValue = Math.random();
+                const use2ndNWMS = randomValue < 0.7; // 70% chance
+                const backgroundImage = use2ndNWMS ? '2ndNWMS.jpg' : 'images/CAP12i.jpg';
+                overlay.style.backgroundImage = `url('${backgroundImage}')`;
+                
+                // Add class to move letter left when 2ndNWMS.jpg is used
+                if (use2ndNWMS && documentElement) {
+                    documentElement.classList.add('shift-left');
+                }
+            }
+        })();
+    </script>
+    
+    <script>
+        // Initialize maintenance screen based on toggle
+        (function() {
+            const overlay = document.getElementById('maintenance-overlay');
+            const isEnabled = window.MAINTENANCE_MODE_ENABLED === true;
+            
+            // Function to pause all background music
+            function pauseAllBackgroundMusic() {
+                const backgroundMusic = document.getElementById('backgroundMusic');
+                const backgroundMusicSecond = document.getElementById('backgroundMusicSecond');
+                const backgroundMusicThird = document.getElementById('backgroundMusicThird');
+                const backgroundMusicLoop = document.getElementById('backgroundMusicLoop');
+                
+                if (backgroundMusic) {
+                    backgroundMusic.pause();
+                    backgroundMusic.currentTime = 0;
+                }
+                if (backgroundMusicSecond) {
+                    backgroundMusicSecond.pause();
+                    backgroundMusicSecond.currentTime = 0;
+                }
+                if (backgroundMusicThird) {
+                    backgroundMusicThird.pause();
+                    backgroundMusicThird.currentTime = 0;
+                }
+                if (backgroundMusicLoop) {
+                    backgroundMusicLoop.pause();
+                    backgroundMusicLoop.currentTime = 0;
+                }
+            }
+            
+            // Get all audio elements
+            const backgroundMusic = document.getElementById('backgroundMusic');
+            const backgroundMusicSecond = document.getElementById('backgroundMusicSecond');
+            const backgroundMusicThird = document.getElementById('backgroundMusicThird');
+            const backgroundMusicLoop = document.getElementById('backgroundMusicLoop');
+            const maintenanceMusic = document.getElementById('maintenanceMusic');
+            
+            if (isEnabled && overlay) {
+                overlay.style.display = 'flex';
+                // Prevent scrolling when maintenance screen is active
+                document.body.classList.add('maintenance-active');
+                document.documentElement.classList.add('maintenance-active');
+                
+                // Save current music playing state BEFORE pausing
+                const wasMusicPlaying = (backgroundMusic && !backgroundMusic.paused) || 
+                                      (backgroundMusicSecond && !backgroundMusicSecond.paused) || 
+                                      (backgroundMusicThird && !backgroundMusicThird.paused) || 
+                                      (backgroundMusicLoop && !backgroundMusicLoop.paused);
+                
+                // Save the music state for later resume
+                if (wasMusicPlaying) {
+                    localStorage.setItem('musicWasPlayingBeforeMaintenance', 'true');
+                    // Also save the current globalMusicPlaying state
+                    localStorage.setItem('globalMusicPlaying', 'true');
+                }
+                
+                // Set flag to prevent music auto-resume
+                localStorage.setItem('maintenanceModeActive', 'true');
+                
+                // Pause all background music immediately
+                pauseAllBackgroundMusic();
+                
+                // Set globalMusicPlaying to false AFTER pausing
+                localStorage.setItem('globalMusicPlaying', 'false');
+                
+                // Add event listeners to prevent music from playing
+                const preventMusicPlay = function(e) {
+                    const target = e.target;
+                    if (target && (target.id === 'backgroundMusic' || 
+                                  target.id === 'backgroundMusicSecond' || 
+                                  target.id === 'backgroundMusicThird' || 
+                                  target.id === 'backgroundMusicLoop')) {
+                        e.preventDefault();
+                        target.pause();
+                        target.currentTime = 0;
+                    }
+                };
+                
+                // Listen for play events on all background music elements
+                if (backgroundMusic) {
+                    backgroundMusic.addEventListener('play', preventMusicPlay);
+                    backgroundMusic.addEventListener('playing', preventMusicPlay);
+                }
+                if (backgroundMusicSecond) {
+                    backgroundMusicSecond.addEventListener('play', preventMusicPlay);
+                    backgroundMusicSecond.addEventListener('playing', preventMusicPlay);
+                }
+                if (backgroundMusicThird) {
+                    backgroundMusicThird.addEventListener('play', preventMusicPlay);
+                    backgroundMusicThird.addEventListener('playing', preventMusicPlay);
+                }
+                if (backgroundMusicLoop) {
+                    backgroundMusicLoop.addEventListener('play', preventMusicPlay);
+                    backgroundMusicLoop.addEventListener('playing', preventMusicPlay);
+                }
+                
+                // Continuously monitor and pause any music that tries to play
+                const musicMonitor = setInterval(function() {
+                    if (overlay && overlay.style.display !== 'none') {
+                        pauseAllBackgroundMusic();
+                    } else {
+                        clearInterval(musicMonitor);
+                    }
+                }, 500);
+                
+                // Play maintenance screen music
+                if (maintenanceMusic) {
+                    // Try to restore from saved state
+                    const savedMaintenanceMusicState = localStorage.getItem('maintenanceMusicState');
+                    if (savedMaintenanceMusicState) {
+                        try {
+                            const savedState = JSON.parse(savedMaintenanceMusicState);
+                            const timeSinceSave = Date.now() - (savedState.timestamp || 0);
+                            // Only restore if saved within last 24 hours
+                            if (timeSinceSave < 86400000 && savedState.time > 0) {
+                                maintenanceMusic.currentTime = Math.min(savedState.time, maintenanceMusic.duration || Infinity);
+                            } else {
+                                maintenanceMusic.currentTime = 0;
+                            }
+                        } catch (e) {
+                            maintenanceMusic.currentTime = 0;
+                        }
+                    } else {
+                        maintenanceMusic.currentTime = 0;
+                    }
+                    
+                    maintenanceMusic.play().catch(function(err) {
+                        console.log('Could not play maintenance music:', err);
+                    });
+                    
+                    // Save maintenance music state periodically
+                    const saveMaintenanceMusicState = function() {
+                        if (maintenanceMusic && !maintenanceMusic.paused && maintenanceMusic.currentTime > 0) {
+                            localStorage.setItem('maintenanceMusicState', JSON.stringify({
+                                time: maintenanceMusic.currentTime,
+                                timestamp: Date.now()
+                            }));
+                        }
+                    };
+                    
+                    // Save state every second while playing
+                    maintenanceMusic.addEventListener('timeupdate', saveMaintenanceMusicState);
+                    maintenanceMusic.addEventListener('pause', saveMaintenanceMusicState);
+                    maintenanceMusic.addEventListener('ended', function() {
+                        // Clear saved state when music ends
+                        localStorage.removeItem('maintenanceMusicState');
+                    });
+                }
+                
+                // Prevent touch scrolling on mobile
+                document.addEventListener('touchmove', function(e) {
+                    if (overlay && overlay.style.display !== 'none') {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+                
+                // Prevent wheel scrolling
+                document.addEventListener('wheel', function(e) {
+                    if (overlay && overlay.style.display !== 'none') {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+            } else if (overlay) {
+                overlay.style.display = 'none';
+                
+                // Remove maintenance mode flag
+                localStorage.removeItem('maintenanceModeActive');
+                
+                // Stop maintenance music (but save state for resume)
+                if (maintenanceMusic) {
+                    // Save current position before pausing
+                    if (maintenanceMusic.currentTime > 0) {
+                        localStorage.setItem('maintenanceMusicState', JSON.stringify({
+                            time: maintenanceMusic.currentTime,
+                            timestamp: Date.now()
+                        }));
+                    }
+                    maintenanceMusic.pause();
+                    // Don't reset currentTime - keep it for next time
+                }
+                
+                // Resume background music if it should be playing
+                const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+                const musicWasPlaying = localStorage.getItem('musicWasPlayingBeforeMaintenance') === 'true' || 
+                                      localStorage.getItem('globalMusicPlaying') === 'true';
+                
+                // Clear the maintenance flag
+                localStorage.removeItem('musicWasPlayingBeforeMaintenance');
+                
+                if (musicEnabled && musicWasPlaying) {
+                    // Try to resume music after a short delay
+                    setTimeout(function() {
+                        console.log('Attempting to resume music after maintenance screen dismissal');
+                        const audio = document.getElementById('backgroundMusic');
+                        const secondAudio = document.getElementById('backgroundMusicSecond');
+                        const thirdAudio = document.getElementById('backgroundMusicThird');
+                        const loopAudio = document.getElementById('backgroundMusicLoop');
+                        
+                        // Get saved music state
+                        const savedMusicState = JSON.parse(localStorage.getItem('globalMusicState') || '{}');
+                        const savedTrack = savedMusicState.track || 'track1';
+                        const savedTime = savedMusicState.time || 0;
+                        
+                        let trackToResume = null;
+                        if (savedTrack === 'track1' && audio) {
+                            trackToResume = audio;
+                        } else if (savedTrack === 'track2' && secondAudio) {
+                            trackToResume = secondAudio;
+                        } else if (savedTrack === 'track3' && thirdAudio) {
+                            trackToResume = thirdAudio;
+                        } else if (savedTrack === 'loop' && loopAudio) {
+                            trackToResume = loopAudio;
+                        } else if (audio) {
+                            trackToResume = audio;
+                        }
+                        
+                        if (trackToResume) {
+                            // Ensure audio is loaded and ready before playing
+                            const attemptResume = function() {
+                                if (trackToResume.readyState >= 2) {
+                                    // Audio is ready, set position and play
+                                    if (savedTime > 0 && trackToResume.duration) {
+                                        trackToResume.currentTime = Math.min(savedTime, trackToResume.duration - 0.5);
+                                    }
+                                    
+                                    // Pause all other tracks first
+                                    if (audio && audio !== trackToResume && !audio.paused) {
+                                        audio.pause();
+                                    }
+                                    if (secondAudio && secondAudio !== trackToResume && !secondAudio.paused) {
+                                        secondAudio.pause();
+                                    }
+                                    if (thirdAudio && thirdAudio !== trackToResume && !thirdAudio.paused) {
+                                        thirdAudio.pause();
+                                    }
+                                    if (loopAudio && loopAudio !== trackToResume && !loopAudio.paused) {
+                                        loopAudio.pause();
+                                    }
+                                    
+                                    trackToResume.play().then(function() {
+                                        console.log('Successfully resumed music after maintenance:', savedTrack);
+                                        // Restore the music playing state
+                                        localStorage.setItem('globalMusicPlaying', 'true');
+                                        localStorage.setItem('globalMusicEnabled', 'true');
+                                        
+                                        // Update music button state if it exists
+                                        const musicBtn = document.getElementById('musicControlBtn');
+                                        if (musicBtn) {
+                                            musicBtn.classList.add('playing');
+                                            musicBtn.innerHTML = '<span class="btn-icon">🔇</span>';
+                                            musicBtn.title = 'Pause Background Music';
+                                        }
+                                    }).catch(function(err) {
+                                        console.error('Could not resume background music:', err);
+                                        // Try again after a short delay
+                                        setTimeout(attemptResume, 1000);
+                                    });
+                                } else if (trackToResume.readyState >= 1) {
+                                    // Has metadata, wait for canplay
+                                    trackToResume.addEventListener('canplay', attemptResume, { once: true });
+                                    trackToResume.load(); // Ensure loading continues
+                                } else {
+                                    // No metadata yet, load first
+                                    trackToResume.load();
+                                    trackToResume.addEventListener('loadedmetadata', function() {
+                                        trackToResume.addEventListener('canplay', attemptResume, { once: true });
+                                    }, { once: true });
+                                }
+                            };
+                            
+                            attemptResume();
+                        } else {
+                            console.warn('No track found to resume after maintenance screen');
+                        }
+                    }, 500);
+                }
+            }
+        })();
+        
+        // Set current date
+        (function() {
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            const dateStr = now.toLocaleDateString('en-US', options);
+            const dateElement = document.getElementById('current-date');
+            if (dateElement) {
+                dateElement.textContent = dateStr;
+            }
+        })();
+    </script>
+    
+    <script>
+        // Interactive letter movement with mouse - optimized for smooth performance
+        (function() {
+            const documentElement = document.getElementById('maintenance-document');
+            const overlay = document.getElementById('maintenance-overlay');
+            
+            if (!documentElement || !overlay) return;
+            
+            let mouseX = window.innerWidth / 2;
+            let mouseY = window.innerHeight / 2;
+            let currentX = 0;
+            let currentY = 0;
+            let rafId = null;
+            let isActive = false;
+            const isShiftLeft = documentElement.classList.contains('shift-left');
+            const shiftX = isShiftLeft ? -50 : 0;
+            
+            // Throttled mouse tracking for better performance
+            let lastUpdate = 0;
+            const throttleDelay = 16; // ~60fps
+            
+            // Track mouse position with throttling
+            overlay.addEventListener('mousemove', function(e) {
+                const now = performance.now();
+                if (now - lastUpdate >= throttleDelay) {
+                    mouseX = e.clientX;
+                    mouseY = e.clientY;
+                    lastUpdate = now;
+                    
+                    if (!isActive && overlay.style.display !== 'none') {
+                        isActive = true;
+                        animateLetter();
+                    }
+                }
+            }, { passive: true });
+            
+            // Reset when mouse leaves
+            overlay.addEventListener('mouseleave', function() {
+                mouseX = window.innerWidth / 2;
+                mouseY = window.innerHeight / 2;
+            }, { passive: true });
+            
+            // Optimized animation function
+            function animateLetter() {
+                if (overlay.style.display === 'none' || overlay.style.display === '') {
+                    // Reset position when hidden
+                    currentX = 0;
+                    currentY = 0;
+                    isActive = false;
+                    if (rafId) {
+                        cancelAnimationFrame(rafId);
+                        rafId = null;
+                    }
+                    documentElement.style.transform = `scale(0.9) translate(${shiftX}px, 0px)`;
+                    return;
+                }
+                
+                // Cache rect calculation - only update when needed
+                const rect = documentElement.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                // Calculate distance from mouse to center
+                const deltaX = mouseX - centerX;
+                const deltaY = mouseY - centerY;
+                
+                // Calculate target position (letter moves away from mouse)
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                const maxDistance = 400;
+                const movementFactor = Math.min(distance / maxDistance, 1) * 0.03; // Reduced to 3% for less sensitivity
+                
+                // Move letter away from mouse (opposite direction)
+                // If mouse is to the right (deltaX positive), move letter left (negative X)
+                // If mouse is below (deltaY positive), move letter up (negative Y)
+                const targetX = -deltaX * movementFactor;
+                const targetY = -deltaY * movementFactor;
+                
+                // Faster, smoother interpolation
+                const easing = 0.2; // Increased for more responsive feel
+                currentX += (targetX - currentX) * easing;
+                currentY += (targetY - currentY) * easing;
+                
+                // Apply transform using transform3d for GPU acceleration
+                documentElement.style.transform = `translate3d(${currentX + shiftX}px, ${currentY}px, 0) scale(0.9)`;
+                
+                // Continue animation if still moving
+                const isMoving = Math.abs(targetX - currentX) > 0.5 || Math.abs(targetY - currentY) > 0.5;
+                if (isMoving) {
+                    rafId = requestAnimationFrame(animateLetter);
+                } else {
+                    isActive = false;
+                    rafId = null;
+                }
+            }
+            
+            // Start animation when overlay becomes visible
+            const checkVisibility = setInterval(function() {
+                if (overlay.style.display !== 'none' && overlay.style.display !== '' && !isActive) {
+                    isActive = true;
+                    animateLetter();
+                }
+            }, 200);
+            
+            // Also start animation on mouse enter
+            overlay.addEventListener('mouseenter', function() {
+                if (!isActive && overlay.style.display !== 'none') {
+                    isActive = true;
+                    animateLetter();
+                }
+            }, { passive: true });
+        })();
+    </script>
+    
+    <script>
+        (function() {
+            function updateCountdown() {
+                const countdownElement = document.getElementById('countdown');
+                if (!countdownElement) return;
+                
+                const now = new Date();
+                const estOffset = -5 * 60;
+                const estNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (estOffset * 60000));
+                const target = new Date(estNow);
+                target.setHours(22, 0, 0, 0);
+                if (estNow >= target) {
+                    target.setDate(target.getDate() + 1);
+                }
+                const diff = target - estNow;
+                if (diff <= 0) {
+                    countdownElement.textContent = '00:00:00';
+                    return;
+                }
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                const hoursStr = String(hours).padStart(2, '0');
+                const minutesStr = String(minutes).padStart(2, '0');
+                const secondsStr = String(seconds).padStart(2, '0');
+                countdownElement.textContent = hoursStr + ':' + minutesStr + ':' + secondsStr;
+            }
+            
+            // Only run countdown if maintenance mode is enabled
+            if (window.MAINTENANCE_MODE_ENABLED === true) {
+                updateCountdown();
+                setInterval(updateCountdown, 1000);
+            }
+            
+            // Hide maintenance screen with Cmd+K (Mac) or Ctrl+K (Windows/Linux)
+            document.addEventListener('keydown', function(e) {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                    e.preventDefault();
+                    const overlay = document.getElementById('maintenance-overlay');
+                    const maintenanceMusic = document.getElementById('maintenanceMusic');
+                    if (overlay) {
+                        overlay.style.display = 'none';
+                        // Re-enable scrolling when maintenance screen is hidden
+                        document.body.classList.remove('maintenance-active');
+                        document.documentElement.classList.remove('maintenance-active');
+                        // Remove maintenance mode flag
+                        localStorage.removeItem('maintenanceModeActive');
+                        // Stop maintenance music (but save state for resume)
+                        if (maintenanceMusic) {
+                            // Save current position before pausing
+                            if (maintenanceMusic.currentTime > 0) {
+                                localStorage.setItem('maintenanceMusicState', JSON.stringify({
+                                    time: maintenanceMusic.currentTime,
+                                    timestamp: Date.now()
+                                }));
+                            }
+                            maintenanceMusic.pause();
+                            // Don't reset currentTime - keep it for next time
+                        }
+                        
+                        // Resume background music if it should be playing
+                        const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+                        const musicWasPlaying = localStorage.getItem('musicWasPlayingBeforeMaintenance') === 'true' || 
+                                              localStorage.getItem('globalMusicPlaying') === 'true';
+                        
+                        // Clear the maintenance flag
+                        localStorage.removeItem('musicWasPlayingBeforeMaintenance');
+                        
+                        if (musicEnabled && musicWasPlaying) {
+                            // Try to resume music after a short delay
+                            setTimeout(function() {
+                                const audio = document.getElementById('backgroundMusic');
+                                const secondAudio = document.getElementById('backgroundMusicSecond');
+                                const thirdAudio = document.getElementById('backgroundMusicThird');
+                                const loopAudio = document.getElementById('backgroundMusicLoop');
+                                
+                                // Get saved music state
+                                const savedMusicState = JSON.parse(localStorage.getItem('globalMusicState') || '{}');
+                                const savedTrack = savedMusicState.track || 'track1';
+                                const savedTime = savedMusicState.time || 0;
+                                
+                                let trackToResume = null;
+                                if (savedTrack === 'track1' && audio) {
+                                    trackToResume = audio;
+                                } else if (savedTrack === 'track2' && secondAudio) {
+                                    trackToResume = secondAudio;
+                                } else if (savedTrack === 'track3' && thirdAudio) {
+                                    trackToResume = thirdAudio;
+                                } else if (savedTrack === 'loop' && loopAudio) {
+                                    trackToResume = loopAudio;
+                                } else if (audio) {
+                                    trackToResume = audio;
+                                }
+                                
+                                if (trackToResume && trackToResume.paused) {
+                                    if (savedTime > 0 && trackToResume.duration) {
+                                        trackToResume.currentTime = Math.min(savedTime, trackToResume.duration - 0.5);
+                                    }
+                                    trackToResume.play().then(function() {
+                                        // Restore the music playing state
+                                        localStorage.setItem('globalMusicPlaying', 'true');
+                                    }).catch(function(err) {
+                                        console.log('Could not resume background music:', err);
+                                    });
+                                }
+                            }, 500);
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
+    
 </body>
 </html>

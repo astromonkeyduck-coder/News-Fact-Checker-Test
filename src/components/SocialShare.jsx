@@ -16,15 +16,30 @@ export default function SocialShare({
   url = typeof window !== 'undefined' ? window.location.href : '',
   title = '',
   description = '',
-  image = '',
+  image = 'https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg',
   className = ''
 }) {
   const [copied, setCopied] = useState(false);
 
-  const shareUrl = encodeURIComponent(url);
-  const shareTitle = encodeURIComponent(title);
-  const shareDescription = encodeURIComponent(description);
-  const shareText = encodeURIComponent(`${title} - ${description}`);
+  // Add music=true parameter to shared URLs to enable audio on shared links
+  const addMusicParam = (urlToShare) => {
+    try {
+      const urlObj = new URL(urlToShare);
+      urlObj.searchParams.set('music', 'true');
+      return urlObj.toString();
+    } catch (e) {
+      // If URL parsing fails, append parameter manually
+      const separator = urlToShare.includes('?') ? '&' : '?';
+      return `${urlToShare}${separator}music=true`;
+    }
+  };
+
+  const urlWithMusic = addMusicParam(url);
+  const shareUrl = encodeURIComponent(urlWithMusic);
+  // Remove text from shares to show only the image
+  const shareTitle = '';
+  const shareDescription = '';
+  const shareText = '';
 
   const shareLinks = {
     twitter: `https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareText}`,
@@ -43,13 +58,14 @@ export default function SocialShare({
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      // Copy URL with music parameter
+      await navigator.clipboard.writeText(urlWithMusic);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       // Fallback for older browsers
       const textArea = document.createElement('textarea');
-      textArea.value = url;
+      textArea.value = urlWithMusic;
       document.body.appendChild(textArea);
       textArea.select();
       document.execCommand('copy');
@@ -63,9 +79,10 @@ export default function SocialShare({
     if (navigator.share) {
       try {
         await navigator.share({
-          title,
-          text: description,
-          url
+          title: '', // No text, just image
+          text: '', // No text, just image
+          url: urlWithMusic, // Use URL with music parameter
+          ...(image && { files: [image] }) // Include image if available (some platforms support this)
         });
       } catch (err) {
         // User cancelled or error occurred

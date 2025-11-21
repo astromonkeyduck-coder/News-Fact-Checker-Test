@@ -2229,7 +2229,7 @@ class GeographyGame {
         
         // Append to body for fixed positioning to work correctly
         document.body.appendChild(inputContainer);
-        this.typingInput = input;
+            this.typingInput = input;
         console.log('[Geography Game] Typing input container added to body');
     }
     
@@ -2253,12 +2253,12 @@ class GeographyGame {
                 this.typingInput.value = this.getRevealedCountryName(normalizedName);
             } else {
                 // Reset for new country
-                this.typingInput.value = '';
+            this.typingInput.value = '';
             }
             
             // Small delay before focus to ensure container is visible
             setTimeout(() => {
-                this.typingInput.focus();
+            this.typingInput.focus();
                 if (this.typingInput.value) {
                     this.typingInput.select();
                 }
@@ -3311,17 +3311,17 @@ class GeographyGame {
             btn.dataset.mode = value;
             
             // All modes are enabled now
-            btn.textContent = this.getModeName(value);
-            btn.style.cssText = `
-                padding: 10px 20px;
-                font-size: 0.9rem;
-                font-weight: 600;
-                background: ${this.gameMode === value ? 'rgba(74, 144, 226, 0.8)' : 'rgba(74, 144, 226, 0.2)'};
-                border: 2px solid ${this.gameMode === value ? '#4A90E2' : 'rgba(74, 144, 226, 0.4)'};
-                border-radius: 8px;
-                color: white;
-                cursor: pointer;
-                transition: all 0.3s ease;
+                btn.textContent = this.getModeName(value);
+                btn.style.cssText = `
+                    padding: 10px 20px;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    background: ${this.gameMode === value ? 'rgba(74, 144, 226, 0.8)' : 'rgba(74, 144, 226, 0.2)'};
+                    border: 2px solid ${this.gameMode === value ? '#4A90E2' : 'rgba(74, 144, 226, 0.4)'};
+                    border-radius: 8px;
+                    color: white;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
                 pointer-events: auto;
                 z-index: 10;
             `;
@@ -4268,35 +4268,35 @@ class GeographyGame {
         
         factDisplay.innerHTML = `
             <div class="country-fact-main">
-                <div class="country-fact-header" style="color: ${textColor};">
+            <div class="country-fact-header" style="color: ${textColor};">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span class="country-flag">${flag}</span>
+                <span class="country-flag">${flag}</span>
                         <span>${country.name}</span>
                     </div>
-                </div>
-                <div class="country-fact-continent" style="color: ${labelColor};">
-                    <span class="region-icon">📍</span>
-                    ${fact.continent}
-                </div>
-                <div class="country-fact-population">
-                    <span class="population-label" style="color: ${labelColor};">Population</span>
-                    <div class="population-value" style="color: ${textColor};">${formattedPopulation}</div>
-                </div>
+            </div>
+            <div class="country-fact-continent" style="color: ${labelColor};">
+                <span class="region-icon">📍</span>
+                ${fact.continent}
+            </div>
+            <div class="country-fact-population">
+                <span class="population-label" style="color: ${labelColor};">Population</span>
+                <div class="population-value" style="color: ${textColor};">${formattedPopulation}</div>
+            </div>
             </div>
             <div class="country-fact-side">
-                <div class="country-fact-fun-fact">
-                    <span class="fun-fact-label" style="color: ${labelColor};">
-                        <span class="fun-fact-icon">💡</span>
-                        Fun Fact
-                    </span>
-                    <div class="fun-fact-value" style="color: ${textColor};">${fact.fact}</div>
-                </div>
-                <div class="country-fact-source">
-                    <span class="source-label" style="color: ${labelColor};">Source</span>
-                    ${sourceUrl !== '#' ? 
-                        `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" class="source-link" style="color: ${linkColor};">${sourceDomain}</a>` :
-                        `<span class="source-link" style="color: ${labelColor}; opacity: 0.7;">${sourceDomain}</span>`
-                    }
+            <div class="country-fact-fun-fact">
+                <span class="fun-fact-label" style="color: ${labelColor};">
+                    <span class="fun-fact-icon">💡</span>
+                    Fun Fact
+                </span>
+                <div class="fun-fact-value" style="color: ${textColor};">${fact.fact}</div>
+            </div>
+            <div class="country-fact-source">
+                <span class="source-label" style="color: ${labelColor};">Source</span>
+                ${sourceUrl !== '#' ? 
+                    `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" class="source-link" style="color: ${linkColor};">${sourceDomain}</a>` :
+                    `<span class="source-link" style="color: ${labelColor}; opacity: 0.7;">${sourceDomain}</span>`
+                }
                 </div>
             </div>
         `;
@@ -4821,15 +4821,15 @@ class GeographyGame {
         this.pendingScoreData = {
             gameType: gameTypeWithMode,
             gameMode: this.gameMode, // Also store separately for reference
-            score: this.score,
+                    score: this.score,
             userId: userId || null,
             userName: null,
-            correct: this.correct,
-            wrong: this.wrong,
-            time: finalTime,
+                    correct: this.correct,
+                    wrong: this.wrong,
+                    time: finalTime,
             timeString: timeString,
-            speedBonus: this.speedBonus,
-            avgTime: parseFloat(avgTime),
+                    speedBonus: this.speedBonus,
+                    avgTime: parseFloat(avgTime),
             accuracy: accuracy,
             isPerfectGame: isPerfectGame,
         };
@@ -5109,7 +5109,7 @@ class GeographyGame {
                         await window.leaderboardGeo.init();
                     }
                     
-                        // Load leaderboard to show user their rank
+                    // Load leaderboard to show user their rank
                     try {
                         await window.leaderboardGeo.loadScores(50); // Load more to find user's rank
                         

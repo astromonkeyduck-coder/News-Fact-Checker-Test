@@ -869,7 +869,7 @@
                 transform: translateY(-15px) rotate(5deg);
             }
         }
-
+        
         .game-over-title {
             font-size: 3.5rem;
             font-weight: 900;
@@ -1003,7 +1003,7 @@
             background: rgba(74, 144, 226, 0.1);
             border-color: rgba(74, 144, 226, 0.3);
         }
-
+        
         .stat-item.stat-highlight {
             background: linear-gradient(135deg, rgba(74, 144, 226, 0.25) 0%, rgba(107, 179, 255, 0.15) 50%, rgba(74, 144, 226, 0.25) 100%);
             border: 2px solid;
@@ -1074,20 +1074,20 @@
             flex-direction: column;
             gap: 20px;
         }
-
+        
         .form-group {
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
-
+        
         .form-group label {
             font-size: 0.875rem;
             font-weight: 600;
             color: rgba(255, 255, 255, 0.9);
             text-align: left;
         }
-
+        
         .player-name-input {
             width: 100%;
             padding: 14px 16px;
@@ -1099,7 +1099,7 @@
             transition: all 0.2s ease;
             box-sizing: border-box;
         }
-
+        
         .player-name-input:focus {
             outline: none;
             border-color: #4A90E2;
@@ -1110,14 +1110,14 @@
         .player-name-input::placeholder {
             color: rgba(255, 255, 255, 0.4);
         }
-
+        
         .form-hint {
             font-size: 0.75rem;
             color: rgba(255, 255, 255, 0.5);
             text-align: left;
             margin: 0;
         }
-
+        
         .form-actions {
             display: flex;
             flex-direction: column;
@@ -1189,7 +1189,7 @@
                 0 6px 16px rgba(0, 0, 0, 0.4);
             filter: brightness(1.1);
         }
-
+        
         .btn-primary:active:not(:disabled) {
             transform: translateY(0) scale(1);
         }
@@ -1199,7 +1199,7 @@
             cursor: not-allowed;
             transform: none;
         }
-
+        
         .btn-secondary {
             background: rgba(74, 144, 226, 0.1);
             color: #4A90E2;
@@ -1289,13 +1289,13 @@
         .submit-status:empty {
             display: none;
         }
-
+        
         .submit-status.success {
             background: rgba(76, 175, 80, 0.15);
             color: #4CAF50;
             border: 1px solid rgba(76, 175, 80, 0.3);
         }
-
+        
         .submit-status.error {
             background: rgba(244, 67, 54, 0.15);
             color: #f44336;
@@ -2171,8 +2171,8 @@
         <div class="feedback" id="feedback">
             <div class="feedback-content">
                 <div class="feedback-main">
-                    <h3 id="feedbackTitle">Correct!</h3>
-                    <p id="feedbackText">Great job! You identified this correctly.</p>
+                <h3 id="feedbackTitle">Correct!</h3>
+                <p id="feedbackText">Great job! You identified this correctly.</p>
                 </div>
                 <div class="fact-check-tips" id="factCheckTips">
                     <h4>💡 Fact-Checking Tips:</h4>
@@ -2223,7 +2223,7 @@
                     <div class="celebration-badge">🎉</div>
                     <h2 class="game-over-title">Game Complete!</h2>
                     <p class="game-over-subtitle">Nice run! Here's how you did.</p>
-                </div>
+            </div>
 
                 <!-- Main Content: Stats + Leaderboard -->
                 <div class="game-over-content">
@@ -2273,24 +2273,24 @@
                     <!-- Leaderboard Card -->
                     <div class="game-over-card leaderboard-card">
                         <h3 class="card-title" id="leaderboardCardTitle">Submit to Leaderboard</h3>
-                        <div class="leaderboard-submit-form" id="leaderboardSubmitForm">
-                            <div class="form-group">
+            <div class="leaderboard-submit-form" id="leaderboardSubmitForm">
+                <div class="form-group">
                                 <label for="playerNameInput">Enter your name</label>
-                                <input 
-                                    type="text" 
-                                    id="playerNameInput" 
-                                    class="player-name-input" 
-                                    placeholder="Your name (max 30 characters)"
-                                    maxlength="30"
-                                />
-                                <p class="form-hint">Your name will be filtered for inappropriate content</p>
-                            </div>
+                    <input 
+                        type="text" 
+                        id="playerNameInput" 
+                        class="player-name-input" 
+                        placeholder="Your name (max 30 characters)"
+                        maxlength="30"
+                    />
+                    <p class="form-hint">Your name will be filtered for inappropriate content</p>
+                </div>
                             <div class="form-actions">
                                 <button class="btn btn-primary btn-submit-score" id="submitScoreBtn">Submit Score</button>
                                 <button class="btn btn-secondary btn-view-leaderboard" id="viewLeaderboardBtn">View Leaderboard</button>
                             </div>
-                            <div class="submit-status" id="submitStatus"></div>
-                        </div>
+                <div class="submit-status" id="submitStatus"></div>
+            </div>
                         <!-- Inline Leaderboard Display -->
                         <div class="inline-leaderboard-container" id="inlineLeaderboardContainer" style="display: none;">
                             <h4 class="inline-leaderboard-title">🏆 Top Scores</h4>
@@ -2322,9 +2322,9 @@
 
     <footer class="footer">
         <div class="footer-content">
-            <div class="footer-logo">
-                <a href="https://x.com/newsnoteworthy" target="_blank" class="footer-company">Noteworthy News</a>
-            </div>
+                    <div class="footer-logo">
+            <a href="https://x.com/newsnoteworthy" target="_blank" class="footer-company">Noteworthy News</a>
+        </div>
             <p class="footer-tagline">Empowering informed decisions through media literacy education</p>
             
             <div class="social-links">
