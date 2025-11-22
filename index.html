@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="app-version" content="November 21, 2025">
+    <meta name="app-version" content="November 22, 2025">
     <title>Noteworthy News - Fact-Checked Journalism & Media Literacy Games | Trusted News Source</title>
     
     <!-- Favicon and Theme -->
@@ -1159,6 +1159,12 @@
     <!-- Maintenance screen music -->
     <audio id="maintenanceMusic" preload="auto" loop>
         <source src="MSCREEN.wav" type="audio/wav">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Completion screen music (plays when countdown ends) -->
+    <audio id="completionMusic" preload="auto">
+        <source src="goodtrumpmusic.wav" type="audio/wav">
         Your browser does not support the audio element.
     </audio>
     
@@ -13958,6 +13964,27 @@
         // Maintenance Mode Toggle - Set to true to enable, false to disable
         window.MAINTENANCE_MODE_ENABLED = true;
     </script>
+    <!-- Countdown Completion Screen -->
+    <div id="countdown-completion-screen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 10000000; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); background-size: 400% 400%; animation: gradientShift 8s ease infinite; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;">
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none;">
+            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #ffd700; left: 10%; animation: confettiFall 3s linear infinite;"></div>
+            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #ff6b6b; left: 20%; animation: confettiFall 3.5s linear infinite; animation-delay: 0.5s;"></div>
+            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #4ecdc4; left: 30%; animation: confettiFall 2.8s linear infinite; animation-delay: 1s;"></div>
+            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #ffe66d; left: 40%; animation: confettiFall 3.2s linear infinite; animation-delay: 0.3s;"></div>
+            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #ff9ff3; left: 50%; animation: confettiFall 3.7s linear infinite; animation-delay: 0.7s;"></div>
+            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #54a0ff; left: 60%; animation: confettiFall 2.9s linear infinite; animation-delay: 1.2s;"></div>
+            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #5f27cd; left: 70%; animation: confettiFall 3.4s linear infinite; animation-delay: 0.2s;"></div>
+            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #00d2d3; left: 80%; animation: confettiFall 3.1s linear infinite; animation-delay: 0.8s;"></div>
+            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #ff6348; left: 90%; animation: confettiFall 3.6s linear infinite; animation-delay: 0.4s;"></div>
+        </div>
+        <div style="text-align: center; color: white; z-index: 1; animation: fadeInScale 1s ease-out;">
+            <div style="font-size: 8rem; margin-bottom: 20px; animation: bounce 1s ease-in-out infinite; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.3));">🎉</div>
+            <h1 style="font-size: clamp(2.5rem, 6vw, 5rem); font-weight: 900; margin-bottom: 20px; text-shadow: 0 5px 20px rgba(0,0,0,0.3); letter-spacing: 2px; animation: slideInUp 0.8s ease-out;">WE'RE BACK!</h1>
+            <p style="font-size: clamp(1.2rem, 3vw, 2rem); margin-bottom: 40px; opacity: 0.95; text-shadow: 0 2px 10px rgba(0,0,0,0.2); animation: slideInUp 1s ease-out;">Noteworthy News is now live!</p>
+            <div style="font-size: clamp(1rem, 2vw, 1.5rem); opacity: 0.9; animation: slideInUp 1.2s ease-out;">Thank you for your patience</div>
+        </div>
+    </div>
+    
     <div id="maintenance-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background-size: cover; background-position: center; z-index: 999999; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; overflow: hidden;">
         <!-- Official Document -->
         <div id="maintenance-document" style="max-width: 750px; width: 100%; height: auto; background: #faf8f3; background-image: repeating-linear-gradient(0deg, transparent, transparent 25px, rgba(0,0,0,0.04) 25px, rgba(0,0,0,0.04) 26px); padding: 40px 50px 0px 50px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0, 0, 0, 0.1); border: 1px solid rgba(0, 0, 0, 0.15); outline: 1px solid rgba(0, 0, 0, 0.08); outline-offset: 2px; position: relative; font-family: 'Times New Roman', 'Georgia', serif; color: #1a1a1a; line-height: 1.5; overflow: visible;">
@@ -13991,7 +14018,8 @@
                 <div style="text-align: center; margin: 15px 0; padding: 15px; background: rgba(0, 0, 0, 0.02); border: 2px solid #1a1a1a; border-radius: 0;">
                     <p style="font-size: 0.7rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: #555;">Estimated Time Until Service Restoration</p>
                     <div id="countdown" style="font-size: 2rem; font-weight: bold; font-family: 'Courier New', monospace; color: #1a1a1a; letter-spacing: 5px; margin: 10px 0;">00:00:00</div>
-                    <p style="font-size: 0.8rem; margin-top: 6px; color: #555;">6:00 PM Eastern Standard Time</p>
+                    <p style="font-size: 0.8rem; margin-top: 6px; color: #555;">7:45 PM Eastern Standard Time</p>
+                    <p style="font-size: 0.75rem; margin-top: 8px; color: #666; font-style: italic;">We apologize for the extension of the maintenance period.</p>
                 </div>
                 
                 <p style="font-size: 0.9rem; margin-bottom: 10px; text-indent: 1.5em; line-height: 1.5;">As we complete this brief but important maintenance window, please know that Noteworthy News remains steadfast in its commitment to accuracy, transparency, and public trust.</p>
@@ -14215,6 +14243,55 @@
                 margin-top: 10px !important;
             }
         }
+        
+        /* Countdown Completion Screen Animations */
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes fadeInScale {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+        
+        @keyframes slideInUp {
+            0% {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
     
     <script>
@@ -14274,6 +14351,10 @@
             const backgroundMusicLoop = document.getElementById('backgroundMusicLoop');
             const maintenanceMusic = document.getElementById('maintenanceMusic');
             
+            // Store music prevention function globally so we can remove it later
+            window.maintenancePreventMusicPlay = null;
+            window.maintenanceMusicMonitor = null;
+            
             if (isEnabled && overlay) {
                 overlay.style.display = 'flex';
                 // Prevent scrolling when maintenance screen is active
@@ -14315,6 +14396,9 @@
                     }
                 };
                 
+                // Store reference globally for removal later
+                window.maintenancePreventMusicPlay = preventMusicPlay;
+                
                 // Listen for play events on all background music elements
                 if (backgroundMusic) {
                     backgroundMusic.addEventListener('play', preventMusicPlay);
@@ -14339,8 +14423,12 @@
                         pauseAllBackgroundMusic();
                     } else {
                         clearInterval(musicMonitor);
+                        window.maintenanceMusicMonitor = null;
                     }
                 }, 500);
+                
+                // Store reference globally
+                window.maintenanceMusicMonitor = musicMonitor;
                 
                 // Play maintenance screen music
                 if (maintenanceMusic) {
@@ -14404,6 +14492,40 @@
                 
                 // Remove maintenance mode flag
                 localStorage.removeItem('maintenanceModeActive');
+                
+                // Clear music monitor interval
+                if (window.maintenanceMusicMonitor) {
+                    clearInterval(window.maintenanceMusicMonitor);
+                    window.maintenanceMusicMonitor = null;
+                }
+                
+                // Remove music prevention listeners
+                const preventMusicPlay = window.maintenancePreventMusicPlay;
+                if (preventMusicPlay) {
+                    const bgMusic = document.getElementById('backgroundMusic');
+                    const bgMusicSecond = document.getElementById('backgroundMusicSecond');
+                    const bgMusicThird = document.getElementById('backgroundMusicThird');
+                    const bgMusicLoop = document.getElementById('backgroundMusicLoop');
+                    
+                    if (bgMusic) {
+                        bgMusic.removeEventListener('play', preventMusicPlay);
+                        bgMusic.removeEventListener('playing', preventMusicPlay);
+                    }
+                    if (bgMusicSecond) {
+                        bgMusicSecond.removeEventListener('play', preventMusicPlay);
+                        bgMusicSecond.removeEventListener('playing', preventMusicPlay);
+                    }
+                    if (bgMusicThird) {
+                        bgMusicThird.removeEventListener('play', preventMusicPlay);
+                        bgMusicThird.removeEventListener('playing', preventMusicPlay);
+                    }
+                    if (bgMusicLoop) {
+                        bgMusicLoop.removeEventListener('play', preventMusicPlay);
+                        bgMusicLoop.removeEventListener('playing', preventMusicPlay);
+                    }
+                    
+                    window.maintenancePreventMusicPlay = null;
+                }
                 
                 // Stop maintenance music (but save state for resume)
                 if (maintenanceMusic) {
@@ -14530,6 +14652,186 @@
     
     <script>
         (function() {
+            let countdownEnded = false;
+            
+            // Function to show completion screen and remove maintenance screen
+            function showCompletionScreen() {
+                if (countdownEnded) return; // Prevent multiple triggers
+                countdownEnded = true;
+                
+                const overlay = document.getElementById('maintenance-overlay');
+                const completionScreen = document.getElementById('countdown-completion-screen');
+                const maintenanceMusic = document.getElementById('maintenanceMusic');
+                const completionMusic = document.getElementById('completionMusic');
+                
+                // Hide maintenance screen
+                if (overlay) {
+                    overlay.style.display = 'none';
+                }
+                
+                // Re-enable scrolling
+                document.body.classList.remove('maintenance-active');
+                document.documentElement.classList.remove('maintenance-active');
+                
+                // Remove maintenance mode flag
+                localStorage.removeItem('maintenanceModeActive');
+                
+                // Clear music monitor interval
+                if (window.maintenanceMusicMonitor) {
+                    clearInterval(window.maintenanceMusicMonitor);
+                    window.maintenanceMusicMonitor = null;
+                }
+                
+                // Remove music prevention listeners
+                const preventMusicPlay = window.maintenancePreventMusicPlay;
+                if (preventMusicPlay) {
+                    const bgMusic = document.getElementById('backgroundMusic');
+                    const bgMusicSecond = document.getElementById('backgroundMusicSecond');
+                    const bgMusicThird = document.getElementById('backgroundMusicThird');
+                    const bgMusicLoop = document.getElementById('backgroundMusicLoop');
+                    
+                    if (bgMusic) {
+                        bgMusic.removeEventListener('play', preventMusicPlay);
+                        bgMusic.removeEventListener('playing', preventMusicPlay);
+                    }
+                    if (bgMusicSecond) {
+                        bgMusicSecond.removeEventListener('play', preventMusicPlay);
+                        bgMusicSecond.removeEventListener('playing', preventMusicPlay);
+                    }
+                    if (bgMusicThird) {
+                        bgMusicThird.removeEventListener('play', preventMusicPlay);
+                        bgMusicThird.removeEventListener('playing', preventMusicPlay);
+                    }
+                    if (bgMusicLoop) {
+                        bgMusicLoop.removeEventListener('play', preventMusicPlay);
+                        bgMusicLoop.removeEventListener('playing', preventMusicPlay);
+                    }
+                    
+                    window.maintenancePreventMusicPlay = null;
+                }
+                
+                // Stop maintenance music
+                if (maintenanceMusic) {
+                    maintenanceMusic.pause();
+                }
+                
+                // Play completion music
+                if (completionMusic) {
+                    completionMusic.currentTime = 0; // Start from beginning
+                    completionMusic.play().catch(function(err) {
+                        console.log('Could not play completion music:', err);
+                    });
+                }
+                
+                // Show completion screen
+                if (completionScreen) {
+                    completionScreen.style.display = 'flex';
+                    
+                    // Auto-hide after 5 seconds
+                    setTimeout(function() {
+                        if (completionScreen) {
+                            completionScreen.style.display = 'none';
+                        }
+                    }, 5000);
+                }
+                
+                // Resume background music if it should be playing
+                const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+                const musicWasPlaying = localStorage.getItem('musicWasPlayingBeforeMaintenance') === 'true' || 
+                                      localStorage.getItem('globalMusicPlaying') === 'true';
+                
+                // Clear the maintenance flag
+                localStorage.removeItem('musicWasPlayingBeforeMaintenance');
+                
+                if (musicEnabled && musicWasPlaying) {
+                    // Try to resume music after a short delay
+                    setTimeout(function() {
+                        console.log('Attempting to resume music after countdown completion');
+                        const audio = document.getElementById('backgroundMusic');
+                        const secondAudio = document.getElementById('backgroundMusicSecond');
+                        const thirdAudio = document.getElementById('backgroundMusicThird');
+                        const loopAudio = document.getElementById('backgroundMusicLoop');
+                        
+                        // Get saved music state
+                        const savedMusicState = JSON.parse(localStorage.getItem('globalMusicState') || '{}');
+                        const savedTrack = savedMusicState.track || 'track1';
+                        const savedTime = savedMusicState.time || 0;
+                        
+                        let trackToResume = null;
+                        if (savedTrack === 'track1' && audio) {
+                            trackToResume = audio;
+                        } else if (savedTrack === 'track2' && secondAudio) {
+                            trackToResume = secondAudio;
+                        } else if (savedTrack === 'track3' && thirdAudio) {
+                            trackToResume = thirdAudio;
+                        } else if (savedTrack === 'loop' && loopAudio) {
+                            trackToResume = loopAudio;
+                        } else if (audio) {
+                            trackToResume = audio;
+                        }
+                        
+                        if (trackToResume) {
+                            // Ensure audio is loaded and ready before playing
+                            const attemptResume = function() {
+                                if (trackToResume.readyState >= 2) {
+                                    // Audio is ready, set position and play
+                                    if (savedTime > 0 && trackToResume.duration) {
+                                        trackToResume.currentTime = Math.min(savedTime, trackToResume.duration - 0.5);
+                                    }
+                                    
+                                    // Pause all other tracks first
+                                    if (audio && audio !== trackToResume && !audio.paused) {
+                                        audio.pause();
+                                    }
+                                    if (secondAudio && secondAudio !== trackToResume && !secondAudio.paused) {
+                                        secondAudio.pause();
+                                    }
+                                    if (thirdAudio && thirdAudio !== trackToResume && !thirdAudio.paused) {
+                                        thirdAudio.pause();
+                                    }
+                                    if (loopAudio && loopAudio !== trackToResume && !loopAudio.paused) {
+                                        loopAudio.pause();
+                                    }
+                                    
+                                    trackToResume.play().then(function() {
+                                        console.log('Successfully resumed music after countdown completion:', savedTrack);
+                                        // Restore the music playing state
+                                        localStorage.setItem('globalMusicPlaying', 'true');
+                                        localStorage.setItem('globalMusicEnabled', 'true');
+                                        
+                                        // Update music button state if it exists
+                                        const musicBtn = document.getElementById('musicControlBtn');
+                                        if (musicBtn) {
+                                            musicBtn.classList.add('playing');
+                                            musicBtn.innerHTML = '<span class="btn-icon">🔇</span>';
+                                            musicBtn.title = 'Pause Background Music';
+                                        }
+                                    }).catch(function(err) {
+                                        console.error('Could not resume background music:', err);
+                                        // Try again after a short delay
+                                        setTimeout(attemptResume, 1000);
+                                    });
+                                } else if (trackToResume.readyState >= 1) {
+                                    // Has metadata, wait for canplay
+                                    trackToResume.addEventListener('canplay', attemptResume, { once: true });
+                                    trackToResume.load(); // Ensure loading continues
+                                } else {
+                                    // No metadata yet, load first
+                                    trackToResume.load();
+                                    trackToResume.addEventListener('loadedmetadata', function() {
+                                        trackToResume.addEventListener('canplay', attemptResume, { once: true });
+                                    }, { once: true });
+                                }
+                            };
+                            
+                            attemptResume();
+                        } else {
+                            console.warn('No track found to resume after countdown completion');
+                        }
+                    }, 500);
+                }
+            }
+            
             function updateCountdown() {
                 const countdownElement = document.getElementById('countdown');
                 if (!countdownElement) return;
@@ -14538,13 +14840,17 @@
                 const estOffset = -5 * 60;
                 const estNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (estOffset * 60000));
                 const target = new Date(estNow);
-                target.setHours(18, 0, 0, 0);
+                target.setHours(19, 45, 0, 0);
                 if (estNow >= target) {
                     target.setDate(target.getDate() + 1);
                 }
                 const diff = target - estNow;
                 if (diff <= 0) {
                     countdownElement.textContent = '00:00:00';
+                    // Show completion screen when countdown ends
+                    if (!countdownEnded) {
+                        showCompletionScreen();
+                    }
                     return;
                 }
                 const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -14575,6 +14881,41 @@
                         document.documentElement.classList.remove('maintenance-active');
                         // Remove maintenance mode flag
                         localStorage.removeItem('maintenanceModeActive');
+                        
+                        // Clear music monitor interval
+                        if (window.maintenanceMusicMonitor) {
+                            clearInterval(window.maintenanceMusicMonitor);
+                            window.maintenanceMusicMonitor = null;
+                        }
+                        
+                        // Remove music prevention listeners
+                        const preventMusicPlay = window.maintenancePreventMusicPlay;
+                        if (preventMusicPlay) {
+                            const bgMusic = document.getElementById('backgroundMusic');
+                            const bgMusicSecond = document.getElementById('backgroundMusicSecond');
+                            const bgMusicThird = document.getElementById('backgroundMusicThird');
+                            const bgMusicLoop = document.getElementById('backgroundMusicLoop');
+                            
+                            if (bgMusic) {
+                                bgMusic.removeEventListener('play', preventMusicPlay);
+                                bgMusic.removeEventListener('playing', preventMusicPlay);
+                            }
+                            if (bgMusicSecond) {
+                                bgMusicSecond.removeEventListener('play', preventMusicPlay);
+                                bgMusicSecond.removeEventListener('playing', preventMusicPlay);
+                            }
+                            if (bgMusicThird) {
+                                bgMusicThird.removeEventListener('play', preventMusicPlay);
+                                bgMusicThird.removeEventListener('playing', preventMusicPlay);
+                            }
+                            if (bgMusicLoop) {
+                                bgMusicLoop.removeEventListener('play', preventMusicPlay);
+                                bgMusicLoop.removeEventListener('playing', preventMusicPlay);
+                            }
+                            
+                            window.maintenancePreventMusicPlay = null;
+                        }
+                        
                         // Stop maintenance music (but save state for resume)
                         if (maintenanceMusic) {
                             // Save current position before pausing
@@ -14599,6 +14940,7 @@
                         if (musicEnabled && musicWasPlaying) {
                             // Try to resume music after a short delay
                             setTimeout(function() {
+                                console.log('Attempting to resume music after maintenance screen dismissal (Cmd+K)');
                                 const audio = document.getElementById('backgroundMusic');
                                 const secondAudio = document.getElementById('backgroundMusicSecond');
                                 const thirdAudio = document.getElementById('backgroundMusicThird');
@@ -14622,16 +14964,63 @@
                                     trackToResume = audio;
                                 }
                                 
-                                if (trackToResume && trackToResume.paused) {
-                                    if (savedTime > 0 && trackToResume.duration) {
-                                        trackToResume.currentTime = Math.min(savedTime, trackToResume.duration - 0.5);
-                                    }
-                                    trackToResume.play().then(function() {
-                                        // Restore the music playing state
-                                        localStorage.setItem('globalMusicPlaying', 'true');
-                                    }).catch(function(err) {
-                                        console.log('Could not resume background music:', err);
-                                    });
+                                if (trackToResume) {
+                                    // Ensure audio is loaded and ready before playing
+                                    const attemptResume = function() {
+                                        if (trackToResume.readyState >= 2) {
+                                            // Audio is ready, set position and play
+                                            if (savedTime > 0 && trackToResume.duration) {
+                                                trackToResume.currentTime = Math.min(savedTime, trackToResume.duration - 0.5);
+                                            }
+                                            
+                                            // Pause all other tracks first
+                                            if (audio && audio !== trackToResume && !audio.paused) {
+                                                audio.pause();
+                                            }
+                                            if (secondAudio && secondAudio !== trackToResume && !secondAudio.paused) {
+                                                secondAudio.pause();
+                                            }
+                                            if (thirdAudio && thirdAudio !== trackToResume && !thirdAudio.paused) {
+                                                thirdAudio.pause();
+                                            }
+                                            if (loopAudio && loopAudio !== trackToResume && !loopAudio.paused) {
+                                                loopAudio.pause();
+                                            }
+                                            
+                                            trackToResume.play().then(function() {
+                                                console.log('Successfully resumed music after maintenance (Cmd+K):', savedTrack);
+                                                // Restore the music playing state
+                                                localStorage.setItem('globalMusicPlaying', 'true');
+                                                localStorage.setItem('globalMusicEnabled', 'true');
+                                                
+                                                // Update music button state if it exists
+                                                const musicBtn = document.getElementById('musicControlBtn');
+                                                if (musicBtn) {
+                                                    musicBtn.classList.add('playing');
+                                                    musicBtn.innerHTML = '<span class="btn-icon">🔇</span>';
+                                                    musicBtn.title = 'Pause Background Music';
+                                                }
+                                            }).catch(function(err) {
+                                                console.error('Could not resume background music:', err);
+                                                // Try again after a short delay
+                                                setTimeout(attemptResume, 1000);
+                                            });
+                                        } else if (trackToResume.readyState >= 1) {
+                                            // Has metadata, wait for canplay
+                                            trackToResume.addEventListener('canplay', attemptResume, { once: true });
+                                            trackToResume.load(); // Ensure loading continues
+                                        } else {
+                                            // No metadata yet, load first
+                                            trackToResume.load();
+                                            trackToResume.addEventListener('loadedmetadata', function() {
+                                                trackToResume.addEventListener('canplay', attemptResume, { once: true });
+                                            }, { once: true });
+                                        }
+                                    };
+                                    
+                                    attemptResume();
+                                } else {
+                                    console.warn('No track found to resume after maintenance screen (Cmd+K)');
                                 }
                             }, 500);
                         }
