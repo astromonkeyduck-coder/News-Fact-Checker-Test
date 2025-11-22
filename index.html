@@ -3009,7 +3009,7 @@
         .tip-modal {
             display: none;
             position: fixed;
-            z-index: 1000000;
+            z-index: 10000000;
             left: 0;
             top: 0;
             width: 100%;
@@ -3017,12 +3017,18 @@
             background-color: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(5px);
             animation: fadeIn 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .tip-modal.active {
+            pointer-events: auto;
         }
         
         .tip-modal.active {
             display: flex;
             align-items: center;
             justify-content: center;
+            pointer-events: auto;
         }
         
         .tip-modal-content {
@@ -3037,6 +3043,7 @@
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(74, 144, 226, 0.2);
             animation: slideDown 0.3s ease;
             position: relative;
+            pointer-events: auto;
         }
         
         @keyframes fadeIn {
@@ -11301,13 +11308,14 @@
 </head>
 <body>
     <!-- Mobile Block Overlay -->
-    <div id="mobile-block-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%); z-index: 9999999; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; text-align: center; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; overflow: hidden;">
+    <div id="mobile-block-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%); z-index: 9999999; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
         <!-- Animated background elements -->
-        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none;">
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; z-index: 0;">
             <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(74, 144, 226, 0.15) 0%, transparent 70%); animation: pulse 8s ease-in-out infinite;"></div>
             <div style="position: absolute; bottom: -50%; right: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(46, 204, 113, 0.15) 0%, transparent 70%); animation: pulse 10s ease-in-out infinite reverse;"></div>
         </div>
         
+        <div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; position: relative; z-index: 1;">
         <div style="max-width: 600px; width: 100%; position: relative; z-index: 1; animation: fadeInUp 0.8s ease-out;">
             <!-- Icon/Logo Area -->
             <div style="margin-bottom: 30px; animation: float 3s ease-in-out infinite;">
@@ -11371,6 +11379,7 @@
                 </p>
             </div>
         </div>
+        </div>
         
         <style>
             @keyframes fadeInUp {
@@ -11408,6 +11417,18 @@
                 transform: translateY(-2px);
                 box-shadow: 0 6px 30px rgba(74, 144, 226, 0.3) !important;
             }
+            
+            /* Allow chatbox and tip modal to work on mobile */
+            noteworthy-chat,
+            .tip-modal,
+            .tip-modal * {
+                pointer-events: auto !important;
+            }
+            
+            /* Ensure chatbox launcher is clickable */
+            .launcher {
+                pointer-events: auto !important;
+            }
         </style>
     </div>
     
@@ -11422,15 +11443,34 @@
             if (isMobileDevice()) {
                 const overlay = document.getElementById('mobile-block-overlay');
                 if (overlay) {
-                    overlay.style.display = 'flex';
-                    // Hide all body content
+                    overlay.style.display = 'block';
+                    // Hide all body content behind overlay
                     document.body.style.overflow = 'hidden';
-                    // Prevent scrolling
+                    document.documentElement.style.overflow = 'hidden';
+                    
+                    // Prevent scrolling on body/html, but allow scrolling within overlay and higher z-index elements
                     document.addEventListener('touchmove', function(e) {
-                        e.preventDefault();
+                        const target = e.target;
+                        // Allow if target is in overlay, chatbox, or tip modal
+                        const isInOverlay = overlay.contains(target);
+                        const isInChatbox = target.closest('noteworthy-chat') || target instanceof HTMLElement && (target.closest('[style*="z-index: 2147483000"]') || target.closest('[style*="z-index:2147483000"]'));
+                        const isInTipModal = target.closest('.tip-modal') || target.closest('#tipModal');
+                        
+                        if (!isInOverlay && !isInChatbox && !isInTipModal) {
+                            e.preventDefault();
+                        }
                     }, { passive: false });
+                    
                     document.addEventListener('wheel', function(e) {
-                        e.preventDefault();
+                        const target = e.target;
+                        // Allow if target is in overlay, chatbox, or tip modal
+                        const isInOverlay = overlay.contains(target);
+                        const isInChatbox = target.closest('noteworthy-chat') || target.closest('[style*="z-index: 2147483000"]') || target.closest('[style*="z-index:2147483000"]');
+                        const isInTipModal = target.closest('.tip-modal') || target.closest('#tipModal');
+                        
+                        if (!isInOverlay && !isInChatbox && !isInTipModal) {
+                            e.preventDefault();
+                        }
                     }, { passive: false });
                 }
             }
@@ -13277,19 +13317,6 @@
         })();
     </script>
     
-    <!-- Auth0 Configuration - DISABLED: Authentication removed -->
-    <!--
-    <script>
-      // Placeholder for build-time injection
-      // Will be replaced by scripts/inject-auth0.js during build
-      window.AUTH0_DOMAIN = window.AUTH0_DOMAIN || null;
-      window.AUTH0_CLIENT_ID = window.AUTH0_CLIENT_ID || null;
-    </script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/@auth0/auth0-spa-js@2.1.2/dist/auth0-spa-js.production.js"></script>
-    
-    <script src="/src/auth/auth0.js"></script>
-    -->
     
     <!-- Comment Section Component -->
     <script src="/src/components/comment-section.js"></script>

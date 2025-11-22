@@ -430,15 +430,20 @@ export class NoteworthyChat extends HTMLElement {
         
         @media (max-width: 768px) {
           .wrap {
-            width: calc(100vw - 16px) !important;
-            height: calc(100vh - 80px) !important;
-            max-width: calc(100vw - 16px) !important;
-            max-height: calc(100vh - 80px) !important;
-            left: 8px !important;
-            top: 80px !important;
-            border-radius: 20px 20px 0 0 !important;
-            min-width: calc(100vw - 16px) !important;
-            min-height: 300px !important;
+            width: calc(100vw - 32px) !important;
+            height: 70vh !important;
+            max-width: calc(100vw - 32px) !important;
+            max-height: 70vh !important;
+            left: 16px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            border-radius: 20px !important;
+            min-width: calc(100vw - 32px) !important;
+            min-height: 400px !important;
+          }
+          
+          .wrap.open {
+            transform: translateY(-50%) !important;
           }
           
           .launcher {

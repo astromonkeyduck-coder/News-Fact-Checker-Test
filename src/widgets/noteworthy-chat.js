@@ -764,18 +764,18 @@ class NoteworthyChat extends HTMLElement {
           .wrap {
             width: calc(100vw - 32px) !important;
             max-width: calc(100vw - 32px) !important;
-            height: calc(100vh - 100px) !important;
-            max-height: calc(100vh - 100px) !important;
+            height: 70vh !important;
+            max-height: 70vh !important;
             min-height: 400px !important;
             left: 16px !important;
-            top: 80px !important;
-            transform: none !important;
-            border-radius: 16px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            border-radius: 20px !important;
             min-width: calc(100vw - 32px) !important;
           }
           
           .wrap.open {
-            transform: none !important;
+            transform: translateY(-50%) !important;
           }
           
           .launcher {
@@ -816,16 +816,16 @@ class NoteworthyChat extends HTMLElement {
           .wrap {
             width: calc(100vw - 24px) !important;
             max-width: calc(100vw - 24px) !important;
-            height: calc(100vh - 80px) !important;
-            max-height: calc(100vh - 80px) !important;
+            height: 70vh !important;
+            max-height: 70vh !important;
             min-height: 350px !important;
             left: 12px !important;
-            top: 70px !important;
-            transform: none !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
           }
           
           .wrap.open {
-            transform: none !important;
+            transform: translateY(-50%) !important;
           }
           
           .head {
