@@ -407,7 +407,7 @@ Image URL: ${imageUrl}
 ---
 This is an automated notification from your website.`,
         })
-      )));
+      ));
       
       // Log results and handle 403 errors specifically
       emailResults.forEach((result, index) => {

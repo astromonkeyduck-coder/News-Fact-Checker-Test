@@ -11300,6 +11300,142 @@
     <script src="src/utils/analytics-tracker.js"></script>
 </head>
 <body>
+    <!-- Mobile Block Overlay -->
+    <div id="mobile-block-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%); z-index: 9999999; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; text-align: center; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; overflow: hidden;">
+        <!-- Animated background elements -->
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none;">
+            <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(74, 144, 226, 0.15) 0%, transparent 70%); animation: pulse 8s ease-in-out infinite;"></div>
+            <div style="position: absolute; bottom: -50%; right: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(46, 204, 113, 0.15) 0%, transparent 70%); animation: pulse 10s ease-in-out infinite reverse;"></div>
+        </div>
+        
+        <div style="max-width: 600px; width: 100%; position: relative; z-index: 1; animation: fadeInUp 0.8s ease-out;">
+            <!-- Icon/Logo Area -->
+            <div style="margin-bottom: 30px; animation: float 3s ease-in-out infinite;">
+                <div style="width: 120px; height: 120px; margin: 0 auto 20px; background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(46, 204, 113, 0.2)); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 0 40px rgba(74, 144, 226, 0.1);">
+                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.9;">
+                        <path d="M17 2H7C5.9 2 5 2.9 5 4V20C5 21.1 5.9 22 7 22H17C18.1 22 19 21.1 19 20V4C19 2.9 18.1 2 17 2ZM17 18H7V6H17V18Z" fill="currentColor"/>
+                        <path d="M12 19.5C12.83 19.5 13.5 18.83 13.5 18C13.5 17.17 12.83 16.5 12 16.5C11.17 16.5 10.5 17.17 10.5 18C10.5 18.83 11.17 19.5 12 19.5Z" fill="currentColor"/>
+                    </svg>
+                </div>
+            </div>
+            
+            <!-- Main Heading -->
+            <h1 style="font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 20px; color: #ffffff; font-weight: 700; letter-spacing: -0.5px; text-shadow: 0 2px 20px rgba(74, 144, 226, 0.3); line-height: 1.2;">
+                Desktop Experience Required
+            </h1>
+            
+            <!-- Subtitle -->
+            <p style="font-size: clamp(1rem, 2.5vw, 1.25rem); line-height: 1.7; margin-bottom: 40px; color: #e0e0e0; max-width: 500px; margin-left: auto; margin-right: auto;">
+                This website is optimized for desktop and laptop computers to deliver the best interactive experience.
+            </p>
+            
+            <!-- Feature Cards -->
+            <div style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 40px;">
+                <div style="background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(10px); border-radius: 16px; padding: 20px; border: 1px solid rgba(255, 255, 255, 0.15); transition: transform 0.3s ease, box-shadow 0.3s ease; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);">
+                    <div style="display: flex; align-items: center; gap: 15px; text-align: left;">
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, rgba(74, 144, 226, 0.3), rgba(46, 204, 113, 0.3)); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 6H20V18H4V6ZM2 4V20H22V4H2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M8 8H16M8 12H16M8 16H12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 1.1rem; font-weight: 600; margin: 0 0 5px 0; color: #ffffff;">Rich Interactive Features</h3>
+                            <p style="font-size: 0.95rem; margin: 0; color: #d0d0d0; line-height: 1.5;">Designed for larger screens with enhanced interactivity</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(10px); border-radius: 16px; padding: 20px; border: 1px solid rgba(255, 255, 255, 0.15); transition: transform 0.3s ease, box-shadow 0.3s ease; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);">
+                    <div style="display: flex; align-items: center; gap: 15px; text-align: left;">
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, rgba(74, 144, 226, 0.3), rgba(46, 204, 113, 0.3)); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 1.1rem; font-weight: 600; margin: 0 0 5px 0; color: #ffffff;">Optimized Layout</h3>
+                            <p style="font-size: 0.95rem; margin: 0; color: #d0d0d0; line-height: 1.5;">Content and features optimized for desktop viewing</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Call to Action -->
+            <div style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(46, 204, 113, 0.2)); border-radius: 16px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
+                <p style="font-size: 1rem; margin: 0; color: #ffffff; line-height: 1.8; font-weight: 500;">
+                    <strong style="display: block; margin-bottom: 8px; font-size: 1.1rem;">💡 Visit on Desktop</strong>
+                    Open this website on your laptop or desktop computer to access all features and enjoy the full experience.
+                </p>
+            </div>
+        </div>
+        
+        <style>
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            @keyframes float {
+                0%, 100% {
+                    transform: translateY(0px);
+                }
+                50% {
+                    transform: translateY(-10px);
+                }
+            }
+            
+            @keyframes pulse {
+                0%, 100% {
+                    opacity: 0.5;
+                    transform: scale(1);
+                }
+                50% {
+                    opacity: 0.8;
+                    transform: scale(1.1);
+                }
+            }
+            
+            #mobile-block-overlay div[style*="background: rgba(255, 255, 255, 0.08)"]:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 30px rgba(74, 144, 226, 0.3) !important;
+            }
+        </style>
+    </div>
+    
+    <script>
+        // Block mobile users
+        (function() {
+            function isMobileDevice() {
+                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                       (window.innerWidth <= 768 && window.innerHeight <= 1024);
+            }
+            
+            if (isMobileDevice()) {
+                const overlay = document.getElementById('mobile-block-overlay');
+                if (overlay) {
+                    overlay.style.display = 'flex';
+                    // Hide all body content
+                    document.body.style.overflow = 'hidden';
+                    // Prevent scrolling
+                    document.addEventListener('touchmove', function(e) {
+                        e.preventDefault();
+                    }, { passive: false });
+                    document.addEventListener('wheel', function(e) {
+                        e.preventDefault();
+                    }, { passive: false });
+                }
+            }
+        })();
+    </script>
 <!--
 ╔═══════════════════════════════════════════════════════════════╗
 ║                                                               ║
@@ -13797,7 +13933,7 @@
     </script>
     <div id="maintenance-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background-size: cover; background-position: center; z-index: 999999; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; overflow: hidden;">
         <!-- Official Document -->
-        <div id="maintenance-document" style="max-width: 550px; width: 100%; height: auto; background: #faf8f3; background-image: repeating-linear-gradient(0deg, transparent, transparent 25px, rgba(0,0,0,0.04) 25px, rgba(0,0,0,0.04) 26px); padding: 40px 50px 0px 50px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0, 0, 0, 0.1); border: 1px solid rgba(0, 0, 0, 0.15); outline: 1px solid rgba(0, 0, 0, 0.08); outline-offset: 2px; position: relative; font-family: 'Times New Roman', 'Georgia', serif; color: #1a1a1a; line-height: 1.5; overflow: visible;">
+        <div id="maintenance-document" style="max-width: 750px; width: 100%; height: auto; background: #faf8f3; background-image: repeating-linear-gradient(0deg, transparent, transparent 25px, rgba(0,0,0,0.04) 25px, rgba(0,0,0,0.04) 26px); padding: 40px 50px 0px 50px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0, 0, 0, 0.1); border: 1px solid rgba(0, 0, 0, 0.15); outline: 1px solid rgba(0, 0, 0, 0.08); outline-offset: 2px; position: relative; font-family: 'Times New Roman', 'Georgia', serif; color: #1a1a1a; line-height: 1.5; overflow: visible;">
             <!-- Official Seal -->
             <div class="official-seal">
                 <img src="sealofapp.png" alt="Official Seal" style="width: 180px; height: 180px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));">
@@ -13871,11 +14007,17 @@
             padding-bottom: 200px !important; /* Add space at bottom for signature */
             transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             will-change: transform;
-            max-height: 797px !important;
+            height: 750px !important;
             overflow-y: auto !important;
             overflow-x: hidden !important;
             margin-top: 20px !important;
             margin-bottom: 20px !important;
+            scrollbar-width: none !important; /* Firefox */
+            -ms-overflow-style: none !important; /* IE and Edge */
+        }
+        
+        #maintenance-document::-webkit-scrollbar {
+            display: none !important; /* Chrome, Safari, Opera */
         }
         
         /* Animated background for maintenance overlay - roundabout swing motion */
@@ -13916,17 +14058,22 @@
             }
             
             #maintenance-document {
-                max-height: 797px !important;
+                height: 750px !important;
             }
         }
         
         /* Ensure all content is visible and fits on screen */
         #maintenance-document {
             min-height: fit-content;
-            height: auto !important;
-            max-height: 797px !important;
+            height: 750px !important;
             overflow-y: auto !important;
             overflow-x: hidden !important;
+            scrollbar-width: none !important; /* Firefox */
+            -ms-overflow-style: none !important; /* IE and Edge */
+        }
+        
+        #maintenance-document::-webkit-scrollbar {
+            display: none !important; /* Chrome, Safari, Opera */
         }
         
         /* Remove all space below signature */
@@ -13962,7 +14109,7 @@
         
         .official-seal {
             position: absolute;
-            top: 20px;
+            top: -20px;
             right: 20px;
             z-index: 1;
             pointer-events: none;
@@ -13988,10 +14135,16 @@
             #maintenance-document {
                 padding: 25px 20px !important;
                 max-width: 95% !important;
-                max-height: 797px !important;
+                height: 750px !important;
                 overflow-y: auto !important;
                 margin-top: 10px !important;
                 margin-bottom: 10px !important;
+                scrollbar-width: none !important; /* Firefox */
+                -ms-overflow-style: none !important; /* IE and Edge */
+            }
+            
+            #maintenance-document::-webkit-scrollbar {
+                display: none !important; /* Chrome, Safari, Opera */
             }
             
             .official-seal {

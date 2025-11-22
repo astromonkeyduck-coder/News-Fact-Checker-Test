@@ -230,16 +230,16 @@ function calculateTrends(logs, profile) {
   const previous7Days = dates.slice(-14, -7);
 
   // Calculate activity trend
-  const recentActivity = last7Days.reduce((sum, date) => sum + (logsByDate[date]?.length || 0), 0);
+  const recentActivityCount = last7Days.reduce((sum, date) => sum + (logsByDate[date]?.length || 0), 0);
   const previousActivity = previous7Days.reduce((sum, date) => sum + (logsByDate[date]?.length || 0), 0);
   
   let activityTrend = 'stable';
   let growthRate = 0;
   if (previousActivity > 0) {
-    growthRate = ((recentActivity - previousActivity) / previousActivity) * 100;
+    growthRate = ((recentActivityCount - previousActivity) / previousActivity) * 100;
     if (growthRate > 20) activityTrend = 'increasing';
     else if (growthRate < -20) activityTrend = 'decreasing';
-  } else if (recentActivity > 0) {
+  } else if (recentActivityCount > 0) {
     activityTrend = 'new';
     growthRate = 100;
   }
