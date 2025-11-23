@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Noteworthy News</title>
+    <link rel="icon" type="image/png" href="IMG_5794.PNG">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f234a 0%, #07152a 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(45deg, #4A90E2, #2ECC71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 2rem;
+            color: #4A90E2;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .back-link:hover {
+            color: #2ECC71;
+        }
+        
+        .profile-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #4A90E2, #2ECC71);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        
+        .profile-info h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .profile-info p {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4A90E2;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #4A90E2;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #4A90E2, #2ECC71);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(74, 144, 226, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .error {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.5);
+            color: #e74c3c;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        
+        .not-authenticated {
+            text-align: center;
+            padding: 3rem;
+        }
+        
+        .not-authenticated h2 {
+            margin-bottom: 1rem;
+        }
+        
+        .not-authenticated p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← Back to Home</a>
+        
+        <div class="header">
+            <h1>My Profile</h1>
+        </div>
+        
+        <div id="profileContent">
+            <div class="loading">Loading profile...</div>
+        </div>
+    </div>
+    
+    <!-- Auth0 SDK -->
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.2/auth0-spa-js.production.js"></script>
+    <script src="/src/auth/auth0.js"></script>
+    
+    <script>
+        // Wait for Auth0 to initialize
+        async function loadProfile() {
+            const contentDiv = document.getElementById('profileContent');
+            
+            try {
+                // Wait for auth0 to be available
+                let retries = 20;
+                while (!window.auth0 && retries > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    retries--;
+                }
+                
+                if (!window.auth0) {
+                    throw new Error('Auth0 not initialized');
+                }
+                
+                const isAuthenticated = window.auth0.isAuthenticated();
+                
+                if (!isAuthenticated) {
+                    contentDiv.innerHTML = `
+                        <div class="not-authenticated">
+                            <h2>Please Sign In</h2>
+                            <p>You need to be signed in to view your profile.</p>
+                            <button class="btn btn-primary" onclick="window.auth0.login()">Sign In</button>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const user = await window.auth0.getUser();
+                
+                if (!user) {
+                    throw new Error('Failed to get user information');
+                }
+                
+                // Get user initials for avatar
+                const initials = (user.name || user.email || 'U')
+                    .split(' ')
+                    .map(n => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .substring(0, 2);
+                
+                // Fetch user stats (you can extend this with actual data)
+                const stats = {
+                    gamesPlayed: 0,
+                    highScore: 0,
+                    comments: 0,
+                    tipsSubmitted: 0
+                };
+                
+                // Try to fetch user data from backend
+                try {
+                    const token = await window.auth0.getToken();
+                    if (token) {
+                        const response = await fetch('/.netlify/functions/user-data?email=' + encodeURIComponent(user.email), {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        if (response.ok) {
+                            const userData = await response.json();
+                            // Merge stats if available
+                            if (userData.stats) {
+                                Object.assign(stats, userData.stats);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log('Could not fetch user data:', e);
+                }
+                
+                contentDiv.innerHTML = `
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div class="avatar">${initials}</div>
+                            <div class="profile-info">
+                                <h2>${user.name || user.nickname || 'User'}</h2>
+                                <p>${user.email || ''}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value">${stats.gamesPlayed}</div>
+                                <div class="stat-label">Games Played</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">${stats.highScore}</div>
+                                <div class="stat-label">High Score</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">${stats.comments}</div>
+                                <div class="stat-label">Comments</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">${stats.tipsSubmitted}</div>
+                                <div class="stat-label">Tips Submitted</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-card">
+                        <h3 class="section-title">Account Settings</h3>
+                        <p style="margin-bottom: 1rem; color: rgba(255, 255, 255, 0.7);">
+                            Manage your account settings and preferences.
+                        </p>
+                        <button class="btn btn-secondary" onclick="window.auth0.logout()">Sign Out</button>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <strong>Error loading profile:</strong> ${error.message}
+                    </div>
+                    <div class="not-authenticated">
+                        <button class="btn btn-primary" onclick="window.location.reload()">Retry</button>
+                    </div>
+                `;
+            }
+        }
+        
+        // Initialize when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(loadProfile, 1000);
+            });
+        } else {
+            setTimeout(loadProfile, 1000);
+        }
+    </script>
+</body>
+</html>
+

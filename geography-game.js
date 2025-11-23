@@ -4864,6 +4864,48 @@ class GeographyGame {
             const finalAvgTimeEl = document.getElementById('finalAvgTimeGeo');
             if (finalAvgTimeEl) finalAvgTimeEl.textContent = `${avgTime}s`;
             
+            // Ensure submit form is visible
+            const submitForm = document.getElementById('leaderboardSubmitFormGeo');
+            if (submitForm) {
+                submitForm.style.display = 'block';
+                console.log('[Geography Game] Submit form is visible');
+            } else {
+                console.error('[Geography Game] Submit form not found!');
+            }
+            
+            // Hide inline leaderboard initially (show after submission)
+            const inlineLeaderboard = document.getElementById('inlineLeaderboardContainerGeo');
+            if (inlineLeaderboard) {
+                inlineLeaderboard.style.display = 'none';
+            }
+            
+            // Reset submit form state
+            const nameInput = document.getElementById('playerNameInputGeo');
+            if (nameInput) {
+                nameInput.disabled = false;
+                nameInput.value = '';
+                nameInput.focus(); // Focus the input so user can type immediately
+            }
+            
+            // Reset submit button
+            const submitBtn = document.getElementById('submitScoreBtnGeo');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+            }
+            
+            // Clear any previous status messages
+            const statusDiv = document.getElementById('submitStatusGeo');
+            if (statusDiv) {
+                statusDiv.textContent = '';
+                statusDiv.className = 'submit-status';
+            }
+            
+            // Update card title to show submit form
+            const cardTitle = document.getElementById('leaderboardCardTitleGeo');
+            if (cardTitle) {
+                cardTitle.textContent = 'Submit to Leaderboard';
+            }
+            
             console.log('[Geography Game] Game complete screen displayed');
         } else {
             console.error('[Geography Game] Game over element not found!');
@@ -4883,13 +4925,13 @@ class GeographyGame {
             });
         }
         
-        // Load and prepare leaderboard immediately when game ends
-        this.prepareLeaderboard();
+        // Load and prepare leaderboard (but don't show inline leaderboard yet - wait for submission)
+        this.prepareLeaderboard(false); // Pass false to not show inline leaderboard immediately
         
         this.startBtn.disabled = false;
     }
     
-    async prepareLeaderboard() {
+    async prepareLeaderboard(showInlineImmediately = false) {
         // Use gameMode-specific leaderboard
         const gameTypeWithMode = `geography-${this.gameMode}`;
         const leaderboardKey = `leaderboardGeo_${this.gameMode}`;
@@ -4910,8 +4952,10 @@ class GeographyGame {
             window.leaderboardGeo.render();
             console.log(`[Geography Game] Leaderboard prepared for ${this.gameMode} mode`);
             
-            // Show inline leaderboard immediately (before name submission)
-            this.showInlineLeaderboard();
+            // Only show inline leaderboard immediately if requested (default: false, show after submission)
+            if (showInlineImmediately) {
+                this.showInlineLeaderboard();
+            }
         } catch (error) {
             console.error('[Geography Game] Error preparing leaderboard:', error);
         }
@@ -5175,10 +5219,16 @@ class GeographyGame {
         const container = document.getElementById('inlineLeaderboardContainerGeo');
         const list = document.getElementById('inlineLeaderboardListGeo');
         const cardTitle = document.getElementById('leaderboardCardTitleGeo');
+        const submitForm = document.getElementById('leaderboardSubmitFormGeo');
         
         if (!container || !list) {
             console.warn('[Geography Game] Inline leaderboard elements not found');
             return;
+        }
+        
+        // Hide submit form since score has been submitted
+        if (submitForm) {
+            submitForm.style.display = 'none';
         }
         
         // Update card title

@@ -19,23 +19,37 @@
  */
 
 // Auth0 Configuration
+// CRITICAL: Never hardcode credentials in production code
 // For production: Set AUTH0_DOMAIN and AUTH0_CLIENT_ID in Netlify Environment Variables
 // These will be injected at build time via scripts/inject-auth0.js
-// For local development: Falls back to development credentials (not recommended for production)
-const auth0Config = {
-  domain: window.AUTH0_DOMAIN || 'dev-u7a2ovr5jdmdwryp.us.auth0.com',
-  clientId: window.AUTH0_CLIENT_ID || 'LTAU4cZtZFsG8DqK2SbPoAKiYt14bCER',
-  authorizationParams: {
-    redirect_uri: window.location.origin + window.location.pathname,
-  },
-  cacheLocation: 'localstorage',
-  useRefreshTokens: false, // Disable refresh tokens for SPA
-};
+// For local development: Create a .env.local file or set window.AUTH0_DOMAIN and window.AUTH0_CLIENT_ID
 
-// Warn if using development credentials in production
-if (!window.AUTH0_DOMAIN || !window.AUTH0_CLIENT_ID) {
-  console.warn('[Auth0] ⚠️ Using development credentials. Set AUTH0_DOMAIN and AUTH0_CLIENT_ID environment variables in Netlify for production.');
-  console.warn('[Auth0] This warning will disappear once production credentials are configured.');
+// Validate and get Auth0 configuration
+function getAuth0Config() {
+  const domain = window.AUTH0_DOMAIN;
+  const clientId = window.AUTH0_CLIENT_ID;
+
+  // Validate configuration exists
+  if (!domain || !clientId) {
+    const errorMsg = 'Auth0 configuration missing. Please set AUTH0_DOMAIN and AUTH0_CLIENT_ID environment variables in Netlify Dashboard, or set window.AUTH0_DOMAIN and window.AUTH0_CLIENT_ID for local development.';
+    console.error('[Auth0]', errorMsg);
+    throw new Error(errorMsg);
+  }
+
+  // Validate domain format
+  if (!domain.includes('.auth0.com') && !domain.includes('.us.auth0.com') && !domain.includes('.eu.auth0.com') && !domain.includes('.au.auth0.com')) {
+    console.warn('[Auth0] Domain format might be incorrect. Expected format: your-domain.auth0.com');
+  }
+
+  return {
+    domain: domain,
+    clientId: clientId,
+    authorizationParams: {
+      redirect_uri: window.location.origin + window.location.pathname,
+    },
+    cacheLocation: 'localstorage',
+    useRefreshTokens: false, // Disable refresh tokens for SPA
+  };
 }
 
 let auth0Client = null;
@@ -102,19 +116,26 @@ async function initAuth0() {
     
     console.log('[Auth0] SDK loaded, creating client...');
 
+    // Get and validate Auth0 configuration
+    const auth0Config = getAuth0Config();
+    
     // Create Auth0 client - createAuth0Client is available globally from the SDK
     auth0Client = await createClient(auth0Config);
     console.log('[Auth0] Client created successfully');
 
-    // Handle callback from Auth0 redirect
+    // CRITICAL: Handle callback from Auth0 redirect
+    // This MUST be called when authentication parameters are present in the URL
     if (window.location.search.includes('code=') && window.location.search.includes('state=')) {
       try {
         console.log('[Auth0] Handling redirect callback...');
         console.log('[Auth0] Current URL:', window.location.href);
         console.log('[Auth0] Origin:', window.location.origin);
+        
+        // Handle the redirect callback - this processes the authentication response
         await auth0Client.handleRedirectCallback();
         console.log('[Auth0] Redirect callback handled successfully');
-        // Clean URL
+        
+        // Clean up the URL to remove query parameters
         window.history.replaceState({}, document.title, window.location.pathname);
       } catch (error) {
         console.error('[Auth0] Redirect callback error:', error);
@@ -122,7 +143,12 @@ async function initAuth0() {
         console.error('[Auth0] 1. Callback URL in Auth0 Dashboard doesn\'t match:', window.location.origin);
         console.error('[Auth0] 2. Client ID might be wrong');
         console.error('[Auth0] 3. Application type must be "Single Page Application"');
+        console.error('[Auth0] 4. Allowed Web Origins must include:', window.location.origin);
         console.error('[Auth0] Please check your Auth0 Dashboard settings');
+        
+        // Show user-friendly error
+        showAuthNotification('Authentication failed. Please check your Auth0 configuration.', 'error');
+        
         // Clear the URL params to prevent retrying
         window.history.replaceState({}, document.title, window.location.pathname);
       }
@@ -142,6 +168,7 @@ async function initAuth0() {
     // Make auth functions globally available
     window.auth0 = {
       login: login,
+      signup: signup,
       logout: logout,
       getUser: getUser,
       getToken: getToken,
@@ -175,12 +202,13 @@ let isAuthenticated = false;
 async function bindAuthButtons() {
   console.log('[Auth0] Binding button events...');
   const signinBtn = document.getElementById('signinBtn');
+  const signupBtn = document.getElementById('signupBtn');
   
-  console.log('[Auth0] Found button:', { signinBtn: !!signinBtn });
+  console.log('[Auth0] Found buttons:', { signinBtn: !!signinBtn, signupBtn: !!signupBtn });
   
-  if (!signinBtn) {
-    console.warn('[Auth0] Button not found in DOM yet, retrying...');
-    // Retry after a delay if button isn't found
+  if (!signinBtn || !signupBtn) {
+    console.warn('[Auth0] Buttons not found in DOM yet, retrying...');
+    // Retry after a delay if buttons aren't found
     setTimeout(() => bindAuthButtons(), 500);
     return;
   }
@@ -211,6 +239,10 @@ async function bindAuthButtons() {
       console.log('[Auth0] Logout button clicked');
       await logout();
     };
+    // Hide sign-up button when authenticated
+    if (signupBtn) {
+      signupBtn.style.display = 'none';
+    }
   } else {
     // Handler for login when not authenticated
     signinHandler = async (e) => {
@@ -227,6 +259,28 @@ async function bindAuthButtons() {
         alert('Login failed: ' + (error.message || 'Unknown error'));
       }
     };
+    
+    // Handler for sign-up
+    const signupHandler = async (e) => {
+      console.log('[Auth0] Sign Up button clicked');
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      try {
+        await signup();
+      } catch (error) {
+        console.error('[Auth0] Signup error in handler:', error);
+        alert('Sign up failed: ' + (error.message || 'Unknown error'));
+      }
+    };
+    
+    // Bind sign-up button
+    if (signupBtn) {
+      signupBtn.onclick = signupHandler;
+      signupBtn.addEventListener('click', signupHandler);
+      signupBtn.style.display = 'inline-block';
+    }
   }
   
   // Simple direct binding - remove any existing handlers first
@@ -252,12 +306,15 @@ async function bindAuthButtons() {
   
   console.log('[Auth0] Button events bound successfully');
   
-  // Debug: Verify button exists and has handler
+  // Debug: Verify buttons exist and have handlers
   setTimeout(() => {
     const verifySignin = document.getElementById('signinBtn');
+    const verifySignup = document.getElementById('signupBtn');
     console.log('[Auth0] Button verification:', {
       signinExists: !!verifySignin,
-      signinHasOnclick: verifySignin && verifySignin.onclick !== null
+      signinHasOnclick: verifySignin && verifySignin.onclick !== null,
+      signupExists: !!verifySignup,
+      signupHasOnclick: verifySignup && verifySignup.onclick !== null
     });
   }, 200);
 }
@@ -294,6 +351,8 @@ async function login() {
       hasLoginMethod: typeof auth0Client.loginWithRedirect === 'function'
     });
     
+    // CRITICAL: authorizationParams with redirect_uri is required
+    // The SDK uses this to know where to redirect after authentication
     await auth0Client.loginWithRedirect({
       authorizationParams: {
         screen_hint: 'login',
@@ -314,7 +373,58 @@ async function login() {
     });
     const errorMsg = error.message || 'Login failed. Please try again.';
     showAuthNotification(errorMsg, 'error');
-    alert(`Login error: ${errorMsg}`);
+  }
+}
+
+/**
+ * Sign up with Auth0
+ */
+async function signup() {
+  console.log('[Auth0] Sign up function called');
+  
+  // Ensure Auth0 client is initialized
+  if (!auth0Client) {
+    console.log('[Auth0] Client not initialized, initializing now...');
+    try {
+      await initAuth0();
+    } catch (initError) {
+      console.error('[Auth0] Initialization failed:', initError);
+    }
+  }
+  
+  if (!auth0Client) {
+    console.error('[Auth0] Failed to initialize client');
+    const errorMsg = 'Authentication service not available. Please refresh the page.';
+    console.error('[Auth0]', errorMsg);
+    showAuthNotification(errorMsg, 'error');
+    alert('Unable to initialize authentication. Please refresh the page and try again.');
+    return;
+  }
+  
+  try {
+    console.log('[Auth0] Redirecting to sign up...');
+    
+    // CRITICAL: authorizationParams with redirect_uri is required
+    await auth0Client.loginWithRedirect({
+      authorizationParams: {
+        screen_hint: 'signup',
+        ui_locales: 'en',
+        appState: {
+          returnTo: window.location.href,
+        },
+      },
+    });
+    
+    console.log('[Auth0] Sign up redirect initiated successfully');
+  } catch (error) {
+    console.error('[Auth0] Sign up error:', error);
+    console.error('[Auth0] Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    const errorMsg = error.message || 'Sign up failed. Please try again.';
+    showAuthNotification(errorMsg, 'error');
   }
 }
 
@@ -373,6 +483,8 @@ async function updateAuthUI(user) {
   // Update authentication state
   isAuthenticated = !!user;
 
+  const signupBtn = document.getElementById('signupBtn');
+  
   if (user) {
     // User is authenticated
     const displayName = user.name || user.nickname || user.email || 'User';
@@ -394,10 +506,21 @@ async function updateAuthUI(user) {
       signinBtn.title = `Signed in as ${displayName}`;
     }
     
+    // Hide sign-up button when authenticated
+    if (signupBtn) {
+      signupBtn.style.display = 'none';
+    }
+    
     // Add logged-in indicator to header
     document.body.setAttribute('data-user-logged-in', 'true');
     document.body.setAttribute('data-user-name', firstName);
     document.body.setAttribute('data-user-email', userEmail);
+    
+    // Show profile link
+    const profileLink = document.getElementById('profileLink');
+    const mobileProfileLink = document.getElementById('mobileProfileLink');
+    if (profileLink) profileLink.style.display = 'inline-block';
+    if (mobileProfileLink) mobileProfileLink.style.display = 'block';
     
     // Auto-fill forms with user info
     autoFillUserForms(userName, userEmail);
@@ -426,9 +549,20 @@ async function updateAuthUI(user) {
       signinBtn.title = '';
     }
     
+    // Show sign-up button when not authenticated
+    if (signupBtn) {
+      signupBtn.style.display = 'inline-block';
+    }
+    
     // Remove logged-in indicator
     document.body.removeAttribute('data-user-logged-in');
     document.body.removeAttribute('data-user-name');
+    
+    // Hide profile link
+    const profileLink = document.getElementById('profileLink');
+    const mobileProfileLink = document.getElementById('mobileProfileLink');
+    if (profileLink) profileLink.style.display = 'none';
+    if (mobileProfileLink) mobileProfileLink.style.display = 'none';
 
     // Update any auth buttons
     authButtons.forEach(btn => {
@@ -558,5 +692,6 @@ window.auth0Logout = logout;
 
 // Also expose directly for inline handlers
 window.login = login;
+window.signup = signup;
 window.logout = logout;
 

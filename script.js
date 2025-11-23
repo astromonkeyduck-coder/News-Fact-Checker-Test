@@ -7978,7 +7978,14 @@ function initNewsletterSubscription() {
     let isRestoring = false; // Flag to prevent multiple restore attempts
     
     // Fade in/out utility functions
-    const FADE_DURATION = 800; // milliseconds for fade transition
+    const FADE_DURATION = 1500; // milliseconds for fade transition - increased for smoother transitions
+    
+    // Easing function for smooth fade curves (ease-in-out)
+    function easeInOutCubic(t) {
+        return t < 0.5 
+            ? 4 * t * t * t 
+            : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
     
     function fadeOutAudio(audio, onComplete) {
         if (!audio || audio.paused) {
@@ -7993,7 +8000,9 @@ function initNewsletterSubscription() {
         const fadeTimer = setInterval(() => {
             const elapsed = Date.now() - startTime;
             const progress = Math.min(elapsed / FADE_DURATION, 1);
-            const newVolume = startVolume * (1 - progress);
+            // Apply easing function for smoother curve
+            const easedProgress = easeInOutCubic(progress);
+            const newVolume = startVolume * (1 - easedProgress);
             
             audio.volume = Math.max(0, newVolume);
             
@@ -8032,7 +8041,9 @@ function initNewsletterSubscription() {
         const fadeTimer = setInterval(() => {
             const elapsed = Date.now() - startTime;
             const progress = Math.min(elapsed / FADE_DURATION, 1);
-            const newVolume = startVolume + (finalVolume - startVolume) * progress;
+            // Apply easing function for smoother curve
+            const easedProgress = easeInOutCubic(progress);
+            const newVolume = startVolume + (finalVolume - startVolume) * easedProgress;
             
             audio.volume = Math.min(finalVolume, newVolume);
             
@@ -8165,10 +8176,21 @@ function initNewsletterSubscription() {
         // Get the original volume (default to 0.5 if not set)
         const targetVolume = musicElement.volume || 0.5;
         
-        // Fade in the background music
-        fadeInAudio(musicElement, targetVolume, () => {
-            // Music has faded in
-        });
+        // Ensure spotlight music is fully faded out before starting background fade in
+        // This creates a smoother transition
+        if (spotlightMusic && !spotlightMusic.paused) {
+            // Wait a bit for spotlight to finish fading, then start background
+            setTimeout(() => {
+                fadeInAudio(musicElement, targetVolume, () => {
+                    // Music has faded in
+                });
+            }, 100);
+        } else {
+            // Fade in the background music immediately
+            fadeInAudio(musicElement, targetVolume, () => {
+                // Music has faded in
+            });
+        }
     }
     
     // Load and play country music
@@ -8179,7 +8201,8 @@ function initNewsletterSubscription() {
             return;
         }
         
-        // First, ensure background music is paused
+        // First, ensure background music is faded out smoothly
+        // Don't wait for it to complete - start loading country music in parallel
         pauseBackgroundMusic();
         
         // Check if we have saved state for this country's music
@@ -8251,10 +8274,14 @@ function initNewsletterSubscription() {
                     spotlightMusic.currentTime = savedState.time;
                 }
                 
-                // Fade in the new country music
-                fadeInAudio(spotlightMusic, 0.5, () => {
-                    // Music has faded in
-                });
+                // Wait a brief moment to ensure background fade out has started
+                // This creates a smoother crossfade effect
+                setTimeout(() => {
+                    // Fade in the new country music
+                    fadeInAudio(spotlightMusic, 0.5, () => {
+                        // Music has faded in
+                    });
+                }, 200);
             }
         });
         
@@ -8342,9 +8369,13 @@ function initNewsletterSubscription() {
                         }
                     } else {
                         // Spotlight is not visible - stop country music (save position), resume background
+                        // Use a coordinated fade for smoother transition
                         stopCountryMusic();
                         stopMusicMonitor(); // Stop monitoring
-                        resumeBackgroundMusic();
+                        // Wait for country music to start fading out before resuming background
+                        setTimeout(() => {
+                            resumeBackgroundMusic();
+                        }, 300);
                     }
                 } else if (isSpotlightVisible && currentCountry && countryMusicMap[currentCountry.name]) {
                     // Spotlight is visible and country changed - update music
@@ -8471,14 +8502,24 @@ function initNewsletterSubscription() {
             
             if (!response.ok) {
                 const errorText = await response.text().catch(() => 'Unknown error');
-                console.error('Image generation API error:', response.status, errorText);
-                throw new Error(`API error: ${response.status}`);
+                let errorData = null;
+                try {
+                    errorData = JSON.parse(errorText);
+                } catch {
+                    // Not JSON, use text as is
+                }
+                console.error('Image generation API error:', response.status, errorData || errorText);
+                return null; // Return null instead of throwing to prevent promise rejection
             }
             
             const data = await response.json();
             // The generate-image function returns { imageUrl, storedImageUrl, revisedPrompt, prompt }
             // Prefer storedImageUrl (cached) if available, otherwise use imageUrl
-            return data.storedImageUrl || data.imageUrl || null;
+            const imageUrl = data.storedImageUrl || data.imageUrl || null;
+            if (!imageUrl) {
+                console.error('Image generation returned no URL:', data);
+            }
+            return imageUrl;
         } catch (error) {
             console.error('Image generation error:', error);
             return null;
@@ -8708,10 +8749,17 @@ function initNewsletterSubscription() {
                 isRestoring = true; // Set flag to prevent multiple restore attempts
                 const savedData = loadSpotlightData();
                 console.log('Attempting to restore spotlight, savedData:', savedData ? 'exists' : 'none');
-                if (savedData && savedData.country && savedData.aiResponse) {
+                
+                // Check if saved data has all required content (country, AI response, AND all images)
+                const hasAllImages = savedData && savedData.images && 
+                    savedData.images.flag && 
+                    savedData.images.culture1 && 
+                    savedData.images.culture2;
+                
+                if (savedData && savedData.country && savedData.aiResponse && hasAllImages) {
                     const restored = restoreSpotlight(savedData);
                     if (restored) {
-                        console.log('✅ Restored spotlight from saved data - skipping API calls');
+                        console.log('✅ Restored spotlight from saved data with all images - skipping API calls');
                         isRestoring = false;
                         updateButtonStates(); // Update button states after restore
                         return; // Exit early - don't generate new content
@@ -8719,7 +8767,17 @@ function initNewsletterSubscription() {
                         console.log('⚠️ Failed to restore spotlight, will generate new');
                     }
                 } else {
-                    console.log('No saved data found or incomplete, will generate new');
+                    if (savedData && savedData.country && savedData.aiResponse) {
+                        console.log('⚠️ Saved data exists but images are missing - will restore text and generate images');
+                        // Restore what we can (country and text), then generate missing images
+                        const restored = restoreSpotlight(savedData);
+                        if (restored) {
+                            // Don't return - continue to generate missing images below
+                            console.log('✅ Restored country and text, will generate missing images');
+                        }
+                    } else {
+                        console.log('No saved data found or incomplete, will generate new');
+                    }
                 }
                 isRestoring = false;
             } else if (forceNew) {
@@ -8793,36 +8851,119 @@ function initNewsletterSubscription() {
             // Show content area
             spotlightLoading.style.display = 'none';
             spotlightContent.style.display = 'block';
-            aiThinking.style.display = 'block';
-            aiResponse.innerHTML = '';
             
-            // Reset image placeholders
-            const imageWrappers = ['flag-image-wrapper', 'culture1-image-wrapper', 'culture2-image-wrapper'];
-            imageWrappers.forEach(wrapperId => {
-                const wrapper = document.getElementById(wrapperId);
-                if (wrapper) {
-                    wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
-                }
+            // Check if we already have AI response (from restore)
+            const hasExistingAIResponse = aiResponse && aiResponse.innerHTML && aiResponse.innerHTML.trim() !== '';
+            if (!hasExistingAIResponse) {
+                aiThinking.style.display = 'block';
+                aiResponse.innerHTML = '';
+            } else {
+                aiThinking.style.display = 'none';
+            }
+            
+            // Check which images are missing and need to be generated
+            const flagWrapper = document.getElementById('flag-image-wrapper');
+            const culture1Wrapper = document.getElementById('culture1-image-wrapper');
+            const culture2Wrapper = document.getElementById('culture2-image-wrapper');
+            
+            // Check if images exist and are valid (not just placeholders)
+            const flagImg = flagWrapper && flagWrapper.querySelector('img');
+            const culture1Img = culture1Wrapper && culture1Wrapper.querySelector('img');
+            const culture2Img = culture2Wrapper && culture2Wrapper.querySelector('img');
+            
+            const hasFlagImage = flagImg && flagImg.src && !flagImg.src.includes('data:') && flagImg.complete && !flagImg.src.includes('placeholder');
+            const hasCulture1Image = culture1Img && culture1Img.src && !culture1Img.src.includes('data:') && culture1Img.complete && !culture1Img.src.includes('placeholder');
+            const hasCulture2Image = culture2Img && culture2Img.src && !culture2Img.src.includes('data:') && culture2Img.complete && !culture2Img.src.includes('placeholder');
+            
+            console.log('Image status check:', {
+                flag: hasFlagImage ? 'exists' : 'missing',
+                culture1: hasCulture1Image ? 'exists' : 'missing',
+                culture2: hasCulture2Image ? 'exists' : 'missing',
+                aiResponse: hasExistingAIResponse ? 'exists' : 'missing'
             });
             
-            // Generate images in parallel
-            const imagePromises = [
-                generateImage(`generate an image of the flag of ${currentCountry.name}, official flag design, high quality`).then(url => {
-                    loadImageIntoWrapper('flag-image-wrapper', url);
-                    return { type: 'flag', url };
-                }),
-                generateImage(`generate an image showing the culture of ${currentCountry.name}, traditional customs, people, architecture, vibrant and colorful`).then(url => {
-                    loadImageIntoWrapper('culture1-image-wrapper', url);
-                    return { type: 'culture1', url };
-                }),
-                generateImage(`generate an image of cultural aspects of ${currentCountry.name}, festivals, food, art, traditional scenes`).then(url => {
-                    loadImageIntoWrapper('culture2-image-wrapper', url);
-                    return { type: 'culture2', url };
-                })
-            ];
+            // Reset placeholders only for missing images
+            if (!hasFlagImage && flagWrapper) {
+                flagWrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+            }
+            if (!hasCulture1Image && culture1Wrapper) {
+                culture1Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+            }
+            if (!hasCulture2Image && culture2Wrapper) {
+                culture2Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+            }
             
-            // Call AI API for text content
-            const textPrompt = `Tell me about ${currentCountry.name}. Please include:
+            // Generate only missing images in parallel
+            const imagePromises = [];
+            
+            if (!hasFlagImage) {
+                console.log('Generating flag image for', currentCountry.name);
+                imagePromises.push(
+                    generateImage(`generate an image of the flag of ${currentCountry.name}, official flag design, high quality`).then(url => {
+                        console.log('Flag image generated:', url ? 'success' : 'failed');
+                        loadImageIntoWrapper('flag-image-wrapper', url);
+                        return { type: 'flag', url };
+                    }).catch(error => {
+                        console.error('Error generating flag image:', error);
+                        loadImageIntoWrapper('flag-image-wrapper', null);
+                        return { type: 'flag', url: null };
+                    })
+                );
+            } else {
+                // Image already exists, return it
+                console.log('Flag image already exists, skipping generation');
+                const existingUrl = flagWrapper.querySelector('img').src;
+                imagePromises.push(Promise.resolve({ type: 'flag', url: existingUrl }));
+            }
+            
+            if (!hasCulture1Image) {
+                console.log('Generating culture1 image for', currentCountry.name);
+                imagePromises.push(
+                    generateImage(`generate an image showing the culture of ${currentCountry.name}, traditional customs, people, architecture, vibrant and colorful`).then(url => {
+                        console.log('Culture1 image generated:', url ? 'success' : 'failed');
+                        loadImageIntoWrapper('culture1-image-wrapper', url);
+                        return { type: 'culture1', url };
+                    }).catch(error => {
+                        console.error('Error generating culture1 image:', error);
+                        loadImageIntoWrapper('culture1-image-wrapper', null);
+                        return { type: 'culture1', url: null };
+                    })
+                );
+            } else {
+                // Image already exists, return it
+                console.log('Culture1 image already exists, skipping generation');
+                const existingUrl = culture1Wrapper.querySelector('img').src;
+                imagePromises.push(Promise.resolve({ type: 'culture1', url: existingUrl }));
+            }
+            
+            if (!hasCulture2Image) {
+                console.log('Generating culture2 image for', currentCountry.name);
+                imagePromises.push(
+                    generateImage(`generate an image of cultural aspects of ${currentCountry.name}, festivals, food, art, traditional scenes`).then(url => {
+                        console.log('Culture2 image generated:', url ? 'success' : 'failed');
+                        loadImageIntoWrapper('culture2-image-wrapper', url);
+                        return { type: 'culture2', url };
+                    }).catch(error => {
+                        console.error('Error generating culture2 image:', error);
+                        loadImageIntoWrapper('culture2-image-wrapper', null);
+                        return { type: 'culture2', url: null };
+                    })
+                );
+            } else {
+                // Image already exists, return it
+                console.log('Culture2 image already exists, skipping generation');
+                const existingUrl = culture2Wrapper.querySelector('img').src;
+                imagePromises.push(Promise.resolve({ type: 'culture2', url: existingUrl }));
+            }
+            
+            // Call AI API for text content (only if we don't already have it)
+            let textResponse;
+            if (hasExistingAIResponse) {
+                // Already have text, use it
+                console.log('Using existing AI response, skipping text generation');
+                textResponse = Promise.resolve(aiResponse.innerHTML);
+            } else {
+                const textPrompt = `Tell me about ${currentCountry.name}. Please include:
 1. **Culture** - Interesting cultural aspects, traditions, or customs
 2. **Fun Facts** - Surprising or fascinating facts about the country
 3. **Breaking News** - Recent important news or events from ${currentCountry.name} (if any significant developments)
@@ -8834,34 +8975,61 @@ IMPORTANT REQUIREMENTS:
 - Use proper markdown formatting with ## for section headers
 - Keep it engaging and informative, around 300-400 words total
 - Do NOT use ## or ** in the middle of paragraphs - only for section headers`;
-            
-            const textResponse = fetch('/.netlify/functions/noteworthy-chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: textPrompt,
-                    chatHistory: []
-                })
-            }).then(response => {
-                if (!response.ok) {
-                    throw new Error(`API error: ${response.status}`);
-                }
-                return response.json();
-            }).then(data => {
-                if (data.reply) {
+                
+                textResponse = fetch('/.netlify/functions/noteworthy-chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: textPrompt,
+                        chatHistory: []
+                    })
+                }).then(response => {
+                    if (!response.ok) {
+                        throw new Error(`API error: ${response.status}`);
+                    }
+                    return response.json();
+                }).then(data => {
+                    if (data.reply) {
+                        aiThinking.style.display = 'none';
+                        const formattedResponse = formatAIResponse(data.reply);
+                        aiResponse.innerHTML = formattedResponse;
+                        return formattedResponse;
+                    } else {
+                        throw new Error('No reply from AI');
+                    }
+                }).catch(error => {
+                    console.error('Error fetching AI text content:', error);
                     aiThinking.style.display = 'none';
-                    const formattedResponse = formatAIResponse(data.reply);
-                    aiResponse.innerHTML = formattedResponse;
-                    return formattedResponse;
+                    if (aiResponse) {
+                        aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Unable to load AI content. Please try again later.</p>';
+                    }
+                    return ''; // Return empty string so Promise.allSettled doesn't fail
+                });
+            }
+            
+            // Wait for all images and text to complete (use allSettled so individual failures don't stop others)
+            const allPromises = [...imagePromises, textResponse];
+            const settledResults = await Promise.allSettled(allPromises);
+            
+            // Process settled results
+            const results = settledResults.map((result, index) => {
+                if (result.status === 'fulfilled') {
+                    return result.value;
                 } else {
-                    throw new Error('No reply from AI');
+                    // Handle rejected promises
+                    console.error(`Promise ${index} rejected:`, result.reason);
+                    // If it's an image promise (first 3), return null
+                    if (index < 3) {
+                        const imageTypes = ['flag', 'culture1', 'culture2'];
+                        loadImageIntoWrapper(`${imageTypes[index]}-image-wrapper`, null);
+                        return { type: imageTypes[index], url: null };
+                    }
+                    // If it's the text response, return empty string
+                    return '';
                 }
             });
-            
-            // Wait for all images and text to complete
-            const results = await Promise.all([...imagePromises, textResponse]);
             
             // Collect image URLs
             const images = {};

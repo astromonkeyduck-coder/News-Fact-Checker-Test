@@ -1,0 +1,29 @@
+Copy these URLs exactly into Auth0 (one per line, no commas):
+
+=== ALLOWED CALLBACK URLs ===
+https://eloquent-biscochitos-4fbdc5.netlify.app
+https://eloquent-biscochitos-4fbdc5.netlify.app/
+https://eloquent-biscochitos-4fbdc5.netlify.app/index.html
+https://noteworthynews.co
+https://noteworthynews.co/
+https://noteworthynews.co/index.html
+http://localhost:8888
+http://localhost:8888/
+http://localhost:8888/index.html
+
+=== ALLOWED LOGOUT URLs ===
+https://eloquent-biscochitos-4fbdc5.netlify.app
+https://eloquent-biscochitos-4fbdc5.netlify.app/
+https://eloquent-biscochitos-4fbdc5.netlify.app/index.html
+https://noteworthynews.co
+https://noteworthynews.co/
+https://noteworthynews.co/index.html
+http://localhost:8888
+http://localhost:8888/
+http://localhost:8888/index.html
+
+=== ALLOWED WEB ORIGINS ===
+https://eloquent-biscochitos-4fbdc5.netlify.app
+https://noteworthynews.co
+http://localhost:8888
+

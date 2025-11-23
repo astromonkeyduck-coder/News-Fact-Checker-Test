@@ -30,7 +30,14 @@
         }
         
         // Fade in/out utility functions
-        const FADE_DURATION = 800; // milliseconds for fade transition
+        const FADE_DURATION = 1500; // milliseconds for fade transition - increased for smoother transitions
+        
+        // Easing function for smooth fade curves (ease-in-out)
+        function easeInOutCubic(t) {
+            return t < 0.5 
+                ? 4 * t * t * t 
+                : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
         
         function fadeOutAudio(audio, onComplete) {
             if (!audio || audio.paused) {
@@ -45,7 +52,9 @@
             const fadeTimer = setInterval(() => {
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / FADE_DURATION, 1);
-                const newVolume = startVolume * (1 - progress);
+                // Apply easing function for smoother curve
+                const easedProgress = easeInOutCubic(progress);
+                const newVolume = startVolume * (1 - easedProgress);
                 
                 audio.volume = Math.max(0, newVolume);
                 
@@ -84,7 +93,9 @@
             const fadeTimer = setInterval(() => {
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / FADE_DURATION, 1);
-                const newVolume = startVolume + (finalVolume - startVolume) * progress;
+                // Apply easing function for smoother curve
+                const easedProgress = easeInOutCubic(progress);
+                const newVolume = startVolume + (finalVolume - startVolume) * easedProgress;
                 
                 audio.volume = Math.min(finalVolume, newVolume);
                 
