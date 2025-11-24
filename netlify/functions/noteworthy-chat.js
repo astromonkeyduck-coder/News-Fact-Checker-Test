@@ -349,8 +349,13 @@ exports.handler = async (event, context) => {
           console.log("Image generated successfully:", {
             hasUrl: !!imageData.imageUrl,
             urlPreview: imageData.imageUrl ? imageData.imageUrl.substring(0, 50) + '...' : 'none',
-            revisedPrompt: imageData.revisedPrompt
+            revisedPrompt: imageData.revisedPrompt,
+            fullImageUrl: imageData.imageUrl // Log full URL for debugging
           });
+          
+          if (!imageData.imageUrl) {
+            console.error("Image generation returned no URL in response:", JSON.stringify(imageResult, null, 2));
+          }
         } else {
           const errorText = await imageResponse.text().catch(() => 'Unknown error');
           console.error("Image generation failed:", imageResponse.status, errorText);
@@ -1250,10 +1255,17 @@ This is an automated notification from your website.`;
       responseBody.image = imageData;
       console.log("[Noteworthy Chat] Including image in response:", {
         hasUrl: true,
-        urlPreview: imageData.imageUrl.substring(0, 50) + '...'
+        urlPreview: imageData.imageUrl.substring(0, 50) + '...',
+        fullImageUrl: imageData.imageUrl,
+        hasRevisedPrompt: !!imageData.revisedPrompt,
+        hasPrompt: !!imageData.prompt
       });
+      console.log("[Noteworthy Chat] Full image data being sent:", JSON.stringify(imageData, null, 2));
     } else {
-      console.log("[Noteworthy Chat] No image data to include in response");
+      console.log("[Noteworthy Chat] No image data to include in response", {
+        hasImageData: !!imageData,
+        hasImageUrl: !!(imageData && imageData.imageUrl)
+      });
     }
 
     return {

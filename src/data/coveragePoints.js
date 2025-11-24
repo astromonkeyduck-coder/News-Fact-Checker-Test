@@ -1,0 +1,38 @@
+// src/data/coveragePoints.js
+const coveragePoints = [
+  {
+    id: "nyc-incident",
+    lat: 40.7128,
+    lng: -74.0060,
+    location: "New York, USA",
+    headline: "High-rise fire near Midtown",
+    timestamp: "2025-11-21T18:32:00Z"
+  },
+  {
+    id: "kyiv-strike",
+    lat: 50.4501,
+    lng: 30.5234,
+    location: "Kyiv, Ukraine",
+    headline: "Explosions reported in central Kyiv",
+    timestamp: "2025-11-23T03:10:00Z"
+  },
+  {
+    id: "buenos-aires-blast",
+    lat: -34.6037,
+    lng: -58.3816,
+    location: "Buenos Aires, Argentina",
+    headline: "Industrial-area explosion in Ezeiza",
+    timestamp: "2025-11-20T14:05:00Z"
+  },
+  {
+    id: "la-fire",
+    lat: 34.0522,
+    lng: -118.2437,
+    location: "Los Angeles, USA",
+    headline: "Large structure fire downtown",
+    timestamp: "2025-11-19T09:47:00Z"
+  }
+];
+
+export default coveragePoints;
+

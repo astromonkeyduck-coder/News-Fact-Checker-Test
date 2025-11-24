@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Coverage Map - Noteworthy News</title>
+    <link rel="icon" type="image/png" href="IMG_5794.PNG">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="src/styles/ciaGlobe.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #020617;
+        }
+        #cia-globe-container {
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="cia-globe-container"></div>
+    
+    <script src="/src/components/CiaMissionGlobe-cdn.js"></script>
+    <script>
+        // Initialize the globe when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof CiaMissionGlobe !== 'undefined') {
+                const globe = new CiaMissionGlobe('cia-globe-container');
+                console.log('CIA Mission Globe initialized');
+            } else {
+                console.error('CiaMissionGlobe class not found');
+            }
+        });
+    </script>
+</body>
+</html>
+

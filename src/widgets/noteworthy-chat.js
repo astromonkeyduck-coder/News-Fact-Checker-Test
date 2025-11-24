@@ -2124,29 +2124,52 @@ class NoteworthyChat extends HTMLElement {
         // If image was generated, add it to the response
         if (data.image && data.image.imageUrl) {
           console.log('Adding generated image to response:', data.image.imageUrl.substring(0, 50) + '...');
+          console.log('Full image data:', data.image);
+          
+          // Create image container
+          const imageContainer = document.createElement('div');
+          imageContainer.style.cssText = 'margin: 12px 0; width: 100%;';
+          
           const imageEl = document.createElement('img');
           imageEl.src = data.image.imageUrl;
           imageEl.alt = data.image.revisedPrompt || data.image.prompt || 'Generated image';
           imageEl.loading = 'lazy';
-          imageEl.style.cssText = 'max-width: 100%; border-radius: 8px; margin: 12px 0; box-shadow: 0 4px 12px rgba(0,0,0,.3); display: block;';
-          imageEl.onerror = function() {
-            this.style.display = 'none';
-            const errorMsg = document.createElement('p');
-            errorMsg.textContent = 'Failed to load image. Please try again.';
-            errorMsg.style.color = 'rgba(255, 100, 100, 0.9)';
-            replyContent.appendChild(errorMsg);
+          imageEl.style.cssText = 'max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.3); display: block; background: rgba(0,0,0,0.2);';
+          
+          // Add loading state
+          imageEl.style.opacity = '0.7';
+          imageEl.style.transition = 'opacity 0.3s ease';
+          
+          imageEl.onload = function() {
+            console.log('Image loaded successfully');
+            this.style.opacity = '1';
           };
           
-          // Insert image before the text
-          replyContent.insertBefore(imageEl, replyContent.firstChild);
+          imageEl.onerror = function() {
+            console.error('Image failed to load:', this.src);
+            this.style.display = 'none';
+            const errorMsg = document.createElement('p');
+            errorMsg.textContent = 'Failed to load image. The image URL may have expired. Please try generating again.';
+            errorMsg.style.cssText = 'color: rgba(255, 100, 100, 0.9); padding: 12px; background: rgba(255, 100, 100, 0.1); border-radius: 8px; margin: 12px 0;';
+            imageContainer.appendChild(errorMsg);
+          };
+          
+          imageContainer.appendChild(imageEl);
           
           // Add prompt info below image
           if (data.image.revisedPrompt || data.image.prompt) {
             const promptText = document.createElement('p');
             promptText.style.cssText = 'font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 8px; font-style: italic;';
             promptText.innerHTML = `<strong>Prompt:</strong> ${(data.image.revisedPrompt || data.image.prompt).replace(/</g, '&lt;').replace(/>/g, '&gt;')}`;
-            replyContent.insertBefore(promptText, replyContent.children[1] || null);
+            imageContainer.appendChild(promptText);
           }
+          
+          // Insert image container before the text content
+          replyContent.insertBefore(imageContainer, replyContent.firstChild);
+          
+          console.log('Image element added to DOM');
+        } else {
+          console.log('No image data in response:', { hasImage: !!data.image, hasImageUrl: !!(data.image && data.image.imageUrl) });
         }
 
         aiGroup.innerHTML = `

@@ -1,0 +1,232 @@
+/* CIA Mission Globe Styles */
+
+.cia-globe-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at top, #020b1f 0%, #020617 45%, #000 100%);
+  color: #e5e7eb;
+  overflow: hidden;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace, system-ui;
+}
+
+.cia-globe-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.cia-hud-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.cia-hud-panel {
+  pointer-events: auto;
+  background: rgba(5, 15, 35, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.18);
+  backdrop-filter: blur(10px);
+  padding: 12px 16px;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 0.5px;
+}
+
+.cia-hud-top-left {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  min-width: 280px;
+}
+
+.cia-hud-top-right {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  min-width: 200px;
+}
+
+.hud-label {
+  color: #22d3ee;
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  text-shadow: 0 0 8px rgba(34, 211, 238, 0.5);
+}
+
+.hud-sub {
+  color: rgba(255, 75, 75, 0.9);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.hud-status-line {
+  color: rgba(229, 231, 235, 0.85);
+  margin: 6px 0;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-status-line strong {
+  color: #22d3ee;
+  font-weight: 600;
+}
+
+.cia-live-dot {
+  width: 6px;
+  height: 6px;
+  background: #ff4b4b;
+  border-radius: 50%;
+  display: inline-block;
+  margin-left: 4px;
+  animation: ciaPulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(255, 75, 75, 0.8);
+}
+
+@keyframes ciaPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.3);
+  }
+}
+
+.cia-hud-bottom-strip {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(to top, rgba(2, 6, 23, 0.95) 0%, rgba(2, 6, 23, 0.7) 70%, transparent 100%);
+  border-top: 1px solid rgba(148, 163, 184, 0.3);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 211, 238, 0.3) transparent;
+}
+
+.cia-hud-bottom-strip::-webkit-scrollbar {
+  height: 4px;
+}
+
+.cia-hud-bottom-strip::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cia-hud-bottom-strip::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.3);
+  border-radius: 2px;
+}
+
+.cia-op-item {
+  min-width: 220px;
+  padding: 10px 14px;
+  background: rgba(5, 15, 35, 0.6);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-left: 2px solid #ff4b4b;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.cia-op-item:hover {
+  background: rgba(5, 15, 35, 0.85);
+  border-color: rgba(34, 211, 238, 0.4);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.2);
+  transform: translateY(-2px);
+}
+
+.cia-op-item.active {
+  border-left-color: #22d3ee;
+  background: rgba(5, 15, 35, 0.9);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.3);
+}
+
+.cia-op-location {
+  color: #22d3ee;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.cia-op-headline {
+  color: rgba(229, 231, 235, 0.9);
+  font-size: 10px;
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.cia-op-coords {
+  color: rgba(148, 163, 184, 0.7);
+  font-size: 9px;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.3px;
+}
+
+.cia-active-op-panel {
+  position: absolute;
+  bottom: 80px;
+  right: 16px;
+  min-width: 280px;
+  max-width: 320px;
+}
+
+.cia-active-op-panel .hud-label {
+  margin-bottom: 8px;
+}
+
+.cia-active-op-details {
+  color: rgba(229, 231, 235, 0.85);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.cia-active-op-details strong {
+  color: #22d3ee;
+  font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .cia-hud-top-left,
+  .cia-hud-top-right {
+    min-width: auto;
+    max-width: 45%;
+    font-size: 9px;
+    padding: 8px 10px;
+  }
+  
+  .hud-label {
+    font-size: 11px;
+  }
+  
+  .cia-op-item {
+    min-width: 180px;
+    padding: 8px 10px;
+  }
+  
+  .cia-hud-bottom-strip {
+    padding: 8px 12px;
+  }
+}
+
+/* Dark mode enhancements */
+@media (prefers-color-scheme: light) {
+  .cia-globe-root {
+    background: radial-gradient(circle at top, #010510 0%, #000 100%);
+  }
+}
+

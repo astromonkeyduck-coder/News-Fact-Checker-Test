@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mission Control - Global Coverage Map | Noteworthy News</title>
+    <link rel="icon" type="image/png" href="IMG_5794.PNG">
+    <link rel="stylesheet" href="src/styles/ciaGlobe.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Courier New', 'Monaco', 'Menlo', monospace, system-ui;
+        }
+    </style>
+</head>
+<body>
+    <!-- Container for the CIA Globe -->
+    <div id="cia-globe-container"></div>
+
+    <!-- Load the CIA Globe component -->
+    <script type="module">
+        import CiaMissionGlobe from './src/components/CiaMissionGlobe.js';
+        
+        // Initialize the globe when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            const globe = new CiaMissionGlobe('cia-globe-container');
+            
+            // Store reference globally for cleanup if needed
+            window.ciaGlobe = globe;
+        });
+    </script>
+</body>
+</html>
+

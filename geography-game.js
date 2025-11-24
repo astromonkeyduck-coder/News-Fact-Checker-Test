@@ -807,6 +807,7 @@ class GeographyGame {
             let touchStartTime = 0;
             let touchMoved = false;
             let touchTarget = null;
+            let wasPinchZoom = false; // Track if we're doing pinch zoom
             
             // Pinch to zoom on mobile
             let initialDistance = 0;
@@ -829,18 +830,27 @@ class GeographyGame {
                     pinchCenterX = ((touch1.clientX + touch2.clientX) / 2) - rect.left;
                     pinchCenterY = ((touch1.clientY + touch2.clientY) / 2) - rect.top;
                     this.isPanning = false; // Disable panning during pinch
+                    wasPinchZoom = true; // Mark that we're doing pinch zoom
+                    touchTarget = null; // Clear touchTarget to prevent accidental clicks after pinch
+                    touchMoved = true; // Mark as moved to prevent tap detection
                     e.preventDefault();
                 } else if (e.touches.length === 1) {
                     // Single touch - prepare for pan or tap
                     touchTarget = e.target;
-                    const path = touchTarget.closest('path');
+                    // Find path element - could be target itself or parent
+                    let path = touchTarget;
+                    if (touchTarget.tagName !== 'path') {
+                        path = touchTarget.closest('path');
+                    }
                     
                     // If touching a country path, don't start panning - allow click
                     if (path && (path.hasAttribute('data-country-code') || path.classList.contains('country-path'))) {
                         // This is a country click, don't pan
                         this.isPanning = false;
                         touchMoved = false;
-                        // Don't prevent default - let the click handler work
+                        touchTarget = path; // Store the path element for later
+                        touchStartTime = Date.now();
+                        // Don't prevent default yet - let the click handler work
                         return;
                     }
                     
@@ -869,6 +879,9 @@ class GeographyGame {
                     const newZoom = initialZoom * scale;
                     this.zoomLevel = Math.min(3, Math.max(this.minZoomLevel || 1, newZoom));
                     this.zoom(1, pinchCenterX, pinchCenterY); // Update zoom and center
+                    wasPinchZoom = true; // Ensure we mark pinch zoom as active
+                    touchTarget = null; // Clear touchTarget during pinch zoom
+                    touchMoved = true; // Mark as moved to prevent tap detection
                     e.preventDefault();
                 } else if (this.isPanning && e.touches.length === 1) {
                     // Single touch pan
@@ -897,33 +910,90 @@ class GeographyGame {
             this.mapContainer.addEventListener('touchend', (e) => {
                 if (e.touches.length === 0) {
                     // All fingers lifted
+                    
+                    // If we were doing pinch zoom, don't trigger any click
+                    if (wasPinchZoom) {
+                        wasPinchZoom = false;
+                        touchTarget = null;
+                        touchMoved = false;
+                        this.isPanning = false;
+                        initialDistance = 0;
+                        return;
+                    }
+                    
                     if (!touchMoved && touchStartTime) {
                         const touchDuration = Date.now() - touchStartTime;
-                        const wasQuickTap = !touchMoved && touchDuration < 300;
+                        const wasQuickTap = !touchMoved && touchDuration < 500; // Increased timeout for mobile
                         
-                        // If it was a quick tap on a country path, trigger click
-                        if (wasQuickTap && touchTarget && touchTarget.tagName === 'path' && touchTarget.hasAttribute('data-country-code')) {
-                            // Prevent default to avoid double-firing with native click
-                            e.preventDefault();
-                            e.stopPropagation();
+                        // If it was a quick tap, find the country path and trigger click
+                        // Only if we weren't doing pinch zoom and have a valid touchTarget
+                        if (wasQuickTap && touchTarget && !wasPinchZoom) {
+                            // Capture touch coordinates early - before setTimeout, while event is still valid
+                            const touchX = e.changedTouches[0] ? e.changedTouches[0].clientX : 0;
+                            const touchY = e.changedTouches[0] ? e.changedTouches[0].clientY : 0;
                             
-                            // Small delay to ensure touch events are fully processed
-                            setTimeout(() => {
-                            // Trigger click event on the path
-                            const clickEvent = new MouseEvent('click', {
-                                bubbles: true,
-                                cancelable: true,
-                                view: window
-                            });
-                            touchTarget.dispatchEvent(clickEvent);
-                            }, 50);
+                            // Find the path element - could be the target itself or a parent
+                            let pathElement = touchTarget;
+                            if (touchTarget.tagName !== 'path') {
+                                pathElement = touchTarget.closest('path');
+                            }
+                            
+                            // Also try to find path by coordinates if closest didn't work
+                            if (!pathElement || (!pathElement.hasAttribute('data-country-code') && !pathElement.classList.contains('country-path'))) {
+                                const rect = this.mapContainer.getBoundingClientRect();
+                                const svgX = touchX - rect.left;
+                                const svgY = touchY - rect.top;
+                                
+                                // Try to find path at touch coordinates
+                                const allPaths = this.mapContainer.querySelectorAll('path[data-country-code], path.country-path');
+                                for (const path of allPaths) {
+                                    const pathRect = path.getBoundingClientRect();
+                                    if (touchX >= pathRect.left && touchX <= pathRect.right &&
+                                        touchY >= pathRect.top && touchY <= pathRect.bottom) {
+                                        pathElement = path;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            // Check if we found a valid country path
+                            if (pathElement && (pathElement.hasAttribute('data-country-code') || pathElement.classList.contains('country-path'))) {
+                                // Prevent default to avoid double-firing with native click
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                // Store pathElement and coordinates in closure for setTimeout callback
+                                const finalPathElement = pathElement;
+                                const finalTouchX = touchX;
+                                const finalTouchY = touchY;
+                                
+                                // Small delay to ensure touch events are fully processed
+                                setTimeout(() => {
+                                    // Trigger click event on the path using captured coordinates
+                                    const clickEvent = new MouseEvent('click', {
+                                        bubbles: true,
+                                        cancelable: true,
+                                        view: window,
+                                        clientX: finalTouchX,
+                                        clientY: finalTouchY
+                                    });
+                                    finalPathElement.dispatchEvent(clickEvent);
+                                }, 150);
+                            }
                         }
                     }
                     
                     this.isPanning = false;
                     touchMoved = false;
                     touchTarget = null;
+                    wasPinchZoom = false; // Reset pinch zoom flag
                     initialDistance = 0;
+                } else if (e.touches.length === 1) {
+                    // One finger lifted but another still touching (transition from 2 to 1 finger)
+                    // This means we were doing pinch zoom, so clear touchTarget
+                    wasPinchZoom = true;
+                    touchTarget = null;
+                    touchMoved = true;
                 }
             }, { passive: false });
             

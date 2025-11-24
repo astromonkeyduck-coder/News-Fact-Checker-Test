@@ -29,11 +29,10 @@ function getAuth0Config() {
   const domain = window.AUTH0_DOMAIN;
   const clientId = window.AUTH0_CLIENT_ID;
 
-  // Validate configuration exists
+  // Validate configuration exists - fail silently instead of throwing
   if (!domain || !clientId) {
-    const errorMsg = 'Auth0 configuration missing. Please set AUTH0_DOMAIN and AUTH0_CLIENT_ID environment variables in Netlify Dashboard, or set window.AUTH0_DOMAIN and window.AUTH0_CLIENT_ID for local development.';
-    console.error('[Auth0]', errorMsg);
-    throw new Error(errorMsg);
+    // Configuration missing - return null to fail silently
+    return null;
   }
 
   // Validate domain format
@@ -110,7 +109,7 @@ async function initAuth0() {
         'window.auth0SpaJs': typeof window.auth0SpaJs,
         'auth0': typeof auth0
       });
-      showAuthNotification('Auth0 SDK failed to load. Please refresh the page.', 'error');
+      // Error notification suppressed
       return;
     }
     
@@ -118,6 +117,12 @@ async function initAuth0() {
 
     // Get and validate Auth0 configuration
     const auth0Config = getAuth0Config();
+    
+    // If config is missing, fail silently
+    if (!auth0Config) {
+      console.log('[Auth0] Configuration not available, skipping initialization');
+      return;
+    }
     
     // Create Auth0 client - createAuth0Client is available globally from the SDK
     auth0Client = await createClient(auth0Config);
@@ -146,8 +151,7 @@ async function initAuth0() {
         console.error('[Auth0] 4. Allowed Web Origins must include:', window.location.origin);
         console.error('[Auth0] Please check your Auth0 Dashboard settings');
         
-        // Show user-friendly error
-        showAuthNotification('Authentication failed. Please check your Auth0 configuration.', 'error');
+        // Error notification suppressed
         
         // Clear the URL params to prevent retrying
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -188,7 +192,7 @@ async function initAuth0() {
     console.warn('[Auth0] 1. Updated auth0Config with your domain and clientId');
     console.warn('[Auth0] 2. Added allowed callback URLs in Auth0 Dashboard');
     console.warn('[Auth0] 3. Added allowed logout URLs in Auth0 Dashboard');
-    showAuthNotification('Auth0 initialization failed. Check console for details.', 'error');
+    // Error notification suppressed
   }
 }
 
@@ -339,8 +343,8 @@ async function login() {
     console.error('[Auth0] Failed to initialize client');
     const errorMsg = 'Authentication service not available. Please refresh the page.';
     console.error('[Auth0]', errorMsg);
-    showAuthNotification(errorMsg, 'error');
-    alert('Unable to initialize authentication. Please refresh the page and try again.');
+    // Error notification suppressed
+    // alert('Unable to initialize authentication. Please refresh the page and try again.');
     return;
   }
   
@@ -372,7 +376,7 @@ async function login() {
       name: error.name
     });
     const errorMsg = error.message || 'Login failed. Please try again.';
-    showAuthNotification(errorMsg, 'error');
+    // Error notification suppressed
   }
 }
 
@@ -396,8 +400,8 @@ async function signup() {
     console.error('[Auth0] Failed to initialize client');
     const errorMsg = 'Authentication service not available. Please refresh the page.';
     console.error('[Auth0]', errorMsg);
-    showAuthNotification(errorMsg, 'error');
-    alert('Unable to initialize authentication. Please refresh the page and try again.');
+    // Error notification suppressed
+    // alert('Unable to initialize authentication. Please refresh the page and try again.');
     return;
   }
   
@@ -424,7 +428,7 @@ async function signup() {
       name: error.name
     });
     const errorMsg = error.message || 'Sign up failed. Please try again.';
-    showAuthNotification(errorMsg, 'error');
+    // Error notification suppressed
   }
 }
 
@@ -442,7 +446,7 @@ async function logout() {
     });
   } catch (error) {
     console.error('[Auth0] Logout error:', error);
-    showAuthNotification('Logout failed. Please try again.', 'error');
+    // Error notification suppressed
   }
 }
 
@@ -612,37 +616,11 @@ function autoFillUserForms(userName, userEmail) {
 }
 
 /**
- * Show notification
+ * Show notification - DISABLED
  */
 function showAuthNotification(message, type = 'info') {
-  const notification = document.createElement('div');
-  notification.className = `notification notification-${type}`;
-  notification.textContent = message;
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 15px 20px;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-    z-index: 10000;
-    animation: slideInRight 0.3s ease-out;
-  `;
-  
-  if (type === 'success') {
-    notification.style.background = 'linear-gradient(45deg, #2ecc71, #27ae60)';
-  } else if (type === 'error') {
-    notification.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
-  } else {
-    notification.style.background = 'linear-gradient(45deg, #3498db, #2980b9)';
-  }
-  
-  document.body.appendChild(notification);
-  
-  setTimeout(() => {
-    notification.remove();
-  }, 3000);
+  // All notifications suppressed - do nothing
+  return;
 }
 
 // Initialize when DOM is ready
