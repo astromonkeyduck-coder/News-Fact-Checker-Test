@@ -238,7 +238,26 @@ function renderEnhancedPostCard(post) {
   const timestamp = formatRelativeTime(postDate);
   const timestampTooltip = formatAbsoluteTime(postDate);
   const postText = post.text || post.story || post.title || '';
-  const link = post.link || post.url || `https://x.com/newsnoteworthy/status/${post.id || ''}`;
+  let link = post.link || post.url || `https://x.com/newsnoteworthy/status/${post.id || ''}`;
+  
+  // Sanitize link URL to prevent XSS
+  try {
+    const urlObj = new URL(link);
+    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      link = 'https://x.com/newsnoteworthy'; // Fallback to safe URL
+    } else {
+      // Escape special characters for HTML attribute insertion
+      link = link
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+  } catch (e) {
+    // Invalid URL, use fallback
+    link = 'https://x.com/newsnoteworthy';
+  }
   
   // Format story text (same as old feed)
   const formatStory = (text) => {
@@ -262,20 +281,46 @@ function renderEnhancedPostCard(post) {
       }
       
       const url = match[0];
+      
+      // Sanitize URL to prevent XSS (only allow http/https, escape special chars)
+      let sanitizedUrl = null;
+      try {
+        const urlObj = new URL(url);
+        // Only allow http and https protocols (prevent javascript:, data:, etc.)
+        if (['http:', 'https:'].includes(urlObj.protocol)) {
+          // Escape special characters for HTML attribute insertion
+          sanitizedUrl = url
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        }
+      } catch (e) {
+        // Invalid URL, skip it
+        sanitizedUrl = null;
+      }
+      
+      // Skip invalid or unsafe URLs
+      if (!sanitizedUrl) {
+        lastIndex = match.index + match[0].length;
+        continue;
+      }
+      
       const isImage = /\.(jpg|jpeg|png|gif|webp|svg|JPG|JPEG|PNG|GIF|WEBP|SVG)(\?[^\s]*)?$/i.test(url);
       
       if (isImage) {
         // Create img tag for images
         parts.push({ 
           type: 'image', 
-          content: `<img src="${url}" alt="Post image" loading="lazy" style="max-width: 100%; height: auto; border-radius: 12px; margin: 0.5rem 0; display: block;" onerror="this.style.display='none';" />` 
+          content: `<img src="${sanitizedUrl}" alt="Post image" loading="lazy" style="max-width: 100%; height: auto; border-radius: 12px; margin: 0.5rem 0; display: block;" onerror="this.style.display='none';" />` 
         });
       } else {
         // Create clickable link for other URLs
-        const displayUrl = url.length > 50 ? url.substring(0, 47) + '...' : url;
+        const displayUrl = escapeHtml(url.length > 50 ? url.substring(0, 47) + '...' : url);
         parts.push({ 
           type: 'link', 
-          content: `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: rgb(29, 155, 240); text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${displayUrl}</a>` 
+          content: `<a href="${sanitizedUrl}" target="_blank" rel="noopener noreferrer" style="color: rgb(29, 155, 240); text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${displayUrl}</a>` 
         });
       }
       
@@ -439,10 +484,10 @@ function renderEnhancedPostCard(post) {
   
   // Use November 23rd card design style (from post-feed-v2.js)
   return `
-    <article class="feed-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || ''}" style="background: transparent; min-height: 520px; padding: 1.5rem; margin-bottom: 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease; display: grid; grid-template-rows: auto 1fr auto;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
-      <div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem;">
+    <article class="feed-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || ''}" style="background: transparent; min-height: 520px; padding: 1.5rem; margin: 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease; display: grid; grid-template-rows: auto 1fr auto;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+      <div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem; align-items: flex-start;">
         <!-- Avatar -->
-        <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; text-decoration: none;">
+        <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; text-decoration: none; display: block;">
           <img src="/IMG_5794.PNG" alt="Noteworthy News" style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
           <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #1DA1F2 0%, #1a91da 100%); display: none; align-items: center; justify-content: center; font-weight: 700; font-size: 1.25rem; color: white;">
             NW
@@ -486,10 +531,30 @@ function formatPostTextWithLinks(text) {
   // Escape HTML first
   let escaped = escapeHtml(text);
   
-  // Convert URLs to links
+  // Convert URLs to links (with sanitization)
   const urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
   escaped = escaped.replace(urlRegex, (url) => {
-    return `<a href="${url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="color: rgb(29, 155, 240); text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${url}</a>`;
+    // Sanitize URL to prevent XSS
+    let sanitizedUrl = null;
+    try {
+      const urlObj = new URL(url);
+      if (['http:', 'https:'].includes(urlObj.protocol)) {
+        sanitizedUrl = url
+          .replace(/&/g, '&amp;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#x27;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
+    } catch (e) {
+      // Invalid URL, skip it
+    }
+    
+    if (!sanitizedUrl) {
+      return escapeHtml(url); // Return escaped URL as plain text if invalid
+    }
+    
+    return `<a href="${sanitizedUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="color: rgb(29, 155, 240); text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${escapeHtml(url)}</a>`;
   });
   
   // Convert hashtags to links

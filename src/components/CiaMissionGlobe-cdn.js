@@ -44,25 +44,11 @@ class CiaMissionGlobe {
     // Load CSS
     loadCSS('/src/styles/ciaGlobe.css');
     
-    // Load coverage points
-    try {
-      const response = await fetch('/src/data/coveragePoints.js');
-      const text = await response.text();
-      // Extract the array from the module export
-      const match = text.match(/const coveragePoints = (\[[\s\S]*?\]);/);
-      if (match) {
-        this.coveragePoints = eval(match[1]);
-      } else {
-        // Fallback to default points
-        this.coveragePoints = [
-          { id: "nyc-incident", lat: 40.7128, lng: -74.0060, location: "New York, USA", headline: "High-rise fire near Midtown", timestamp: "2025-11-21T18:32:00Z" },
-          { id: "kyiv-strike", lat: 50.4501, lng: 30.5234, location: "Kyiv, Ukraine", headline: "Explosions reported in central Kyiv", timestamp: "2025-11-23T03:10:00Z" },
-          { id: "buenos-aires-blast", lat: -34.6037, lng: -58.3816, location: "Buenos Aires, Argentina", headline: "Industrial-area explosion in Ezeiza", timestamp: "2025-11-20T14:05:00Z" },
-          { id: "la-fire", lat: 34.0522, lng: -118.2437, location: "Los Angeles, USA", headline: "Large structure fire downtown", timestamp: "2025-11-19T09:47:00Z" }
-        ];
-      }
-    } catch (err) {
-      console.warn('Could not load coverage points, using defaults');
+    // Extract locations from posts
+    this.coveragePoints = await this.extractLocationsFromPosts();
+    
+    if (this.coveragePoints.length === 0) {
+      // Fallback to default points if no posts found
       this.coveragePoints = [
         { id: "nyc-incident", lat: 40.7128, lng: -74.0060, location: "New York, USA", headline: "High-rise fire near Midtown", timestamp: "2025-11-21T18:32:00Z" },
         { id: "kyiv-strike", lat: 50.4501, lng: 30.5234, location: "Kyiv, Ukraine", headline: "Explosions reported in central Kyiv", timestamp: "2025-11-23T03:10:00Z" },
@@ -72,6 +58,213 @@ class CiaMissionGlobe {
     }
     
     this.activeOp = this.coveragePoints[0] || null;
+  }
+
+  // Country name to coordinates mapping (from geography game)
+  getCountryCoordinates(countryName) {
+    const countryMap = {
+      'China': { lat: 35.8617, lng: 104.1954 },
+      'India': { lat: 20.5937, lng: 78.9629 },
+      'United States': { lat: 37.0902, lng: -95.7129 },
+      'USA': { lat: 37.0902, lng: -95.7129 },
+      'US': { lat: 37.0902, lng: -95.7129 },
+      'America': { lat: 37.0902, lng: -95.7129 },
+      'Indonesia': { lat: -0.7893, lng: 113.9213 },
+      'Pakistan': { lat: 30.3753, lng: 69.3451 },
+      'Brazil': { lat: -14.2350, lng: -51.9253 },
+      'Bangladesh': { lat: 23.6850, lng: 90.3563 },
+      'Russia': { lat: 61.5240, lng: 105.3188 },
+      'Mexico': { lat: 23.6345, lng: -102.5528 },
+      'Japan': { lat: 36.2048, lng: 138.2529 },
+      'Philippines': { lat: 12.8797, lng: 121.7740 },
+      'Egypt': { lat: 26.8206, lng: 30.8025 },
+      'Ethiopia': { lat: 9.1450, lng: 38.7667 },
+      'Vietnam': { lat: 14.0583, lng: 108.2772 },
+      'Democratic Republic of the Congo': { lat: -4.0383, lng: 21.7587 },
+      'Iran': { lat: 32.4279, lng: 53.6880 },
+      'Türkiye': { lat: 38.9637, lng: 35.2433 },
+      'Turkey': { lat: 38.9637, lng: 35.2433 },
+      'Germany': { lat: 51.1657, lng: 10.4515 },
+      'Thailand': { lat: 15.8700, lng: 100.9925 },
+      'United Kingdom': { lat: 55.3781, lng: -3.4360 },
+      'UK': { lat: 55.3781, lng: -3.4360 },
+      'France': { lat: 46.2276, lng: 2.2137 },
+      'Italy': { lat: 41.8719, lng: 12.5674 },
+      'Spain': { lat: 40.4637, lng: -3.7492 },
+      'Canada': { lat: 56.1304, lng: -106.3468 },
+      'Australia': { lat: -25.2744, lng: 133.7751 },
+      'South Korea': { lat: 35.9078, lng: 127.7669 },
+      'Argentina': { lat: -38.4161, lng: -63.6167 },
+      'South Africa': { lat: -30.5595, lng: 22.9375 },
+      'Ukraine': { lat: 48.3794, lng: 31.1656 },
+      'Poland': { lat: 51.9194, lng: 19.1451 },
+      'Iraq': { lat: 33.2232, lng: 43.6793 },
+      'Afghanistan': { lat: 33.9391, lng: 67.7100 },
+      'Saudi Arabia': { lat: 23.8859, lng: 45.0792 },
+      'Uzbekistan': { lat: 41.3775, lng: 64.5853 },
+      'Peru': { lat: -9.1900, lng: -75.0152 },
+      'Malaysia': { lat: 4.2105, lng: 101.9758 },
+      'Angola': { lat: -11.2027, lng: 17.8739 },
+      'Mozambique': { lat: -18.6657, lng: 35.5296 },
+      'Ghana': { lat: 7.9465, lng: -1.0232 },
+      'Yemen': { lat: 15.5527, lng: 48.5164 },
+      'Nepal': { lat: 28.3949, lng: 84.1240 },
+      'Nigeria': { lat: 9.0820, lng: 8.6753 },
+      'Venezuela': { lat: 6.4238, lng: -66.5897 }
+    };
+
+    // Try exact match first
+    if (countryMap[countryName]) {
+      return countryMap[countryName];
+    }
+
+    // Try case-insensitive match
+    const countryNameLower = countryName.toLowerCase();
+    for (const [key, coords] of Object.entries(countryMap)) {
+      if (key.toLowerCase() === countryNameLower) {
+        return coords;
+      }
+    }
+
+    return null;
+  }
+
+  // Extract country names from post text
+  extractCountryFromPost(post) {
+    const text = (post.text || post.story || post.title || '').toLowerCase();
+    
+    // Extended country list with common names and variations
+    const countryMap = {
+      'china': 'China',
+      'india': 'India',
+      'united states': 'United States',
+      'usa': 'United States',
+      'us': 'United States',
+      'america': 'United States',
+      'indonesia': 'Indonesia',
+      'pakistan': 'Pakistan',
+      'brazil': 'Brazil',
+      'bangladesh': 'Bangladesh',
+      'russia': 'Russia',
+      'russian': 'Russia',
+      'mexico': 'Mexico',
+      'japan': 'Japan',
+      'philippines': 'Philippines',
+      'egypt': 'Egypt',
+      'ethiopia': 'Ethiopia',
+      'vietnam': 'Vietnam',
+      'congo': 'Democratic Republic of the Congo',
+      'drc': 'Democratic Republic of the Congo',
+      'iran': 'Iran',
+      'türkiye': 'Turkey',
+      'turkey': 'Turkey',
+      'germany': 'Germany',
+      'thailand': 'Thailand',
+      'united kingdom': 'United Kingdom',
+      'uk': 'United Kingdom',
+      'britain': 'United Kingdom',
+      'france': 'France',
+      'italy': 'Italy',
+      'spain': 'Spain',
+      'canada': 'Canada',
+      'australia': 'Australia',
+      'south korea': 'South Korea',
+      'korea': 'South Korea',
+      'argentina': 'Argentina',
+      'south africa': 'South Africa',
+      'ukraine': 'Ukraine',
+      'poland': 'Poland',
+      'iraq': 'Iraq',
+      'afghanistan': 'Afghanistan',
+      'saudi arabia': 'Saudi Arabia',
+      'saudi': 'Saudi Arabia',
+      'uzbekistan': 'Uzbekistan',
+      'peru': 'Peru',
+      'malaysia': 'Malaysia',
+      'angola': 'Angola',
+      'mozambique': 'Mozambique',
+      'ghana': 'Ghana',
+      'yemen': 'Yemen',
+      'nepal': 'Nepal',
+      'nigeria': 'Nigeria',
+      'venezuela': 'Venezuela'
+    };
+
+    // Check for country names in text (with word boundaries)
+    for (const [key, country] of Object.entries(countryMap)) {
+      const regex = new RegExp(`\\b${key}\\b`, 'i');
+      if (regex.test(text)) {
+        return country;
+      }
+    }
+
+    return null;
+  }
+
+  // Extract locations from posts and convert to coordinates
+  async extractLocationsFromPosts() {
+    const coveragePoints = [];
+    const seenLocations = new Set();
+
+    try {
+      // Get posts from localStorage or API
+      let posts = [];
+      
+      // Try to get from enhanced feed cache
+      const cacheKey = 'noteworthy-posts-cache-enhanced';
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const cacheData = JSON.parse(cached);
+          if (cacheData.posts && Array.isArray(cacheData.posts)) {
+            posts = cacheData.posts;
+          }
+        } catch (e) {
+          console.warn('Failed to parse cached posts:', e);
+        }
+      }
+
+      // If no cached posts, try to fetch from API
+      if (posts.length === 0) {
+        try {
+          const response = await fetch('/.netlify/functions/posts-read?limit=200');
+          if (response.ok) {
+            const data = await response.json();
+            posts = Array.isArray(data) ? data : (data.posts || data.data || []);
+          }
+        } catch (e) {
+          console.warn('Failed to fetch posts for globe:', e);
+        }
+      }
+
+      // Extract unique countries from posts
+      for (const post of posts) {
+        const country = this.extractCountryFromPost(post);
+        if (country && !seenLocations.has(country)) {
+          const coords = this.getCountryCoordinates(country);
+          if (coords) {
+            seenLocations.add(country);
+            const postText = post.text || post.story || post.title || '';
+            const headline = postText.length > 60 ? postText.substring(0, 57) + '...' : postText;
+            
+            coveragePoints.push({
+              id: `post-${post.id || Date.now()}-${country}`,
+              lat: coords.lat,
+              lng: coords.lng,
+              location: country,
+              headline: headline || `Coverage from ${country}`,
+              timestamp: post.createdAt || post.datePosted || new Date().toISOString()
+            });
+          }
+        }
+      }
+
+      console.log(`[Globe] Extracted ${coveragePoints.length} locations from ${posts.length} posts`);
+      return coveragePoints;
+    } catch (err) {
+      console.error('[Globe] Error extracting locations from posts:', err);
+      return [];
+    }
   }
 
   async init() {
@@ -119,8 +312,9 @@ class CiaMissionGlobe {
       .pointLng(d => d.lng)
       .pointLabel(d => `${d.location}\n${d.headline}`)
       .pointColor(() => '#ff3333')
-      .pointRadius(0.35)
-      .pointAltitude(0.02);
+      .pointRadius(0.5)
+      .pointAltitude(0.02)
+      .pointsTransitionDuration(1000);
 
     // Configure controls
     const controls = this.globeInstance.controls();
@@ -172,7 +366,7 @@ class CiaMissionGlobe {
     this.globeInstance.pointRadius(d => {
       const phase = (d.lat + d.lng) * 0.1;
       const scale = (Math.sin(this.t + phase) + 1) / 2;
-      return 0.35 + scale * 0.1;
+      return 0.5 + scale * 0.2; // Larger pulsating dots
     });
 
     this.animationFrameId = requestAnimationFrame(() => this.animate());

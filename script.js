@@ -8770,7 +8770,7 @@ function initNewsletterSubscription() {
     async function generateImage(prompt, retries = 10) {
         // Prevent multiple concurrent requests for the same prompt
         if (imageRequestQueue.has(prompt)) {
-            console.log('Image generation already in progress for this prompt, waiting...');
+            // Suppress duplicate request logs to reduce console noise
             return imageRequestQueue.get(prompt);
         }
         
@@ -8820,20 +8820,29 @@ function initNewsletterSubscription() {
                             // Progressive backoff: start with 2s, increase gradually, max 30s
                             const baseDelay = 2000;
                             const delay = Math.min(baseDelay * Math.pow(1.5, attempt), 30000);
-                            console.log(`Image generation failed (${response.status}), retrying in ${Math.round(delay/1000)}s... (attempt ${attempt + 1}/${retries})`);
+                            // Only log retries for non-502 errors or on first attempt to reduce console spam
+                            if (response.status !== 502 || attempt === 0) {
+                                // Suppress most 502 retry logs to reduce console spam
+                            }
                             await new Promise(resolve => setTimeout(resolve, delay));
                             continue; // Retry
                         } else if (attempt < retries - 1) {
                             // For other errors, still retry but with longer delay
                             const delay = Math.min(5000 * Math.pow(1.5, attempt), 30000);
-                            console.log(`Image generation error (${response.status}), retrying in ${Math.round(delay/1000)}s... (attempt ${attempt + 1}/${retries})`);
+                            // Only log on first attempt for non-critical errors
+                            if (attempt === 0) {
+                                // Suppress retry logs to reduce console spam
+                            }
                             await new Promise(resolve => setTimeout(resolve, delay));
                             continue;
                         } else {
-                            // Don't retry on client errors (4xx) or if we've exhausted retries
-                            if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+                            // Only log errors after all retries are exhausted, and suppress 502 errors
+                            if (response.status === 502) {
+                                // Suppress 502 errors - they're server-side issues and we're already retrying
+                            } else if (response.status >= 400 && response.status < 500 && response.status !== 429) {
                                 console.error('Image generation API error (client error):', response.status, errorData || errorText);
-                            } else if (attempt === retries - 1) {
+                            } else if (attempt === retries - 1 && response.status !== 502) {
+                                // Only log final errors that aren't 502
                                 console.error(`Image generation API error after ${retries} attempts:`, response.status, errorData || errorText);
                             }
                             return null;
@@ -8845,20 +8854,23 @@ function initNewsletterSubscription() {
                     const imageUrl = data.storedImageUrl || data.imageUrl || null;
                     
                     if (!imageUrl) {
-                        console.warn('Image generation returned no URL, retrying...');
+                        // Suppress "no URL" retry logs to reduce console spam
                         // Always retry if no URL returned (unless we've exhausted all attempts)
                         if (attempt < retries - 1) {
                             const delay = Math.min(3000 * Math.pow(1.5, attempt), 30000);
                             await new Promise(resolve => setTimeout(resolve, delay));
                             continue;
                         }
-                        console.error('Image generation returned no URL after all retries:', data);
+                        // Only log if it's not a 502-related issue
+                        if (!data?.error?.includes('502') && !data?.error?.includes('Bad Gateway')) {
+                            console.error('Image generation returned no URL after all retries:', data);
+                        }
                         return null;
                     }
                     
-                    // Success!
+                    // Success! Only log if we had to retry
                     if (attempt > 0) {
-                        console.log(`Image generation succeeded on attempt ${attempt + 1}`);
+                        // Suppress success logs to reduce console noise
                     }
                     return imageUrl;
                     
@@ -8870,11 +8882,14 @@ function initNewsletterSubscription() {
                         // Progressive backoff for network errors
                         const baseDelay = 3000;
                         const delay = Math.min(baseDelay * Math.pow(1.5, attempt), 30000);
-                        console.log(`Image generation network error (${error.name}), retrying in ${Math.round(delay/1000)}s... (attempt ${attempt + 1}/${retries})`);
+                        // Suppress retry logs to reduce console spam
                         await new Promise(resolve => setTimeout(resolve, delay));
                         continue; // Retry
                     } else {
-                        console.error(`Image generation error after ${retries} attempts:`, error);
+                        // Only log final errors, suppress 502-related network errors
+                        if (error.name !== 'AbortError' && !error.message?.includes('502')) {
+                            console.error(`Image generation error after ${retries} attempts:`, error);
+                        }
                         return null;
                     }
                 }
@@ -8882,7 +8897,11 @@ function initNewsletterSubscription() {
             
             // All retries exhausted - but don't give up! Queue for background retry
             if (lastError) {
-                console.warn(`Image generation failed after ${retries} attempts, will retry in background:`, lastError);
+                // Suppress background retry warnings for 502 errors to reduce console spam
+                const is502Error = lastError.status === 502 || lastError.message?.includes('502') || lastError.message?.includes('Bad Gateway');
+                if (!is502Error) {
+                    console.warn(`Image generation failed after ${retries} attempts, will retry in background:`, lastError);
+                }
                 // Note: We can't queue here because we don't have wrapperId in this scope
                 // The caller will handle background retry via failedImageRequests
             }

@@ -129,10 +129,9 @@ exports.handler = async (event, context) => {
 
     // Main handler logic
     try {
-      // Debug: Log all environment variables (remove in production)
+      // Debug: Log environment check (without exposing API key)
       console.log('Environment check:', {
         hasResendKey: !!process.env.RESEND_API_KEY,
-        keyPrefix: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 10) + '...' : 'NOT SET',
         allEnvKeys: Object.keys(process.env).filter(k => k.includes('RESEND')),
         netlifyDev: process.env.NETLIFY_DEV
       });

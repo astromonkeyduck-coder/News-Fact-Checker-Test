@@ -254,7 +254,8 @@ exports.handler = async (event, context) => {
       };
     }
     
-    console.log("API key found:", apiKey.substring(0, 7) + "...");
+    // Don't log API key, even partially (security best practice)
+    console.log("API key configured");
 
     // Auto-detect if message is requesting image generation
     function isImageRequest(msg) {

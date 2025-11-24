@@ -12350,6 +12350,13 @@
             </div>
         </div>
 
+        <!-- Global Coverage Globe Section -->
+        <div class="globe-section" id="globe-section" style="padding: 3rem 1rem; background: rgba(7, 21, 42, 0.5); margin: 2rem 0;">
+            <h2 class="news-title" style="text-align: center; margin-bottom: 1rem;">Global Coverage Map</h2>
+            <p class="news-subtitle" style="text-align: center; margin-bottom: 2rem;">See all the places we've covered from around the world</p>
+            <div id="cia-globe-container" style="width: 100%; height: 600px; max-width: 1200px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: #020617;"></div>
+        </div>
+
         <!-- News Articles Section -->
         <div class="news-section" id="news-section">
             <h2 class="news-title">Breaking News & Analysis</h2>
@@ -14134,18 +14141,36 @@
     
     <!-- Enhanced Posts Feed - Premium features -->
     <script src="/src/components/post-feed-enhanced.js?v=1.0"></script>
+    
+    <!-- Global Coverage Globe -->
+    <script src="/src/components/CiaMissionGlobe-cdn.js"></script>
+    <script>
+        // Initialize globe after page loads and posts are available
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait a bit for posts to load, then initialize globe
+            setTimeout(function() {
+                if (typeof CiaMissionGlobe !== 'undefined') {
+                    const globe = new CiaMissionGlobe('cia-globe-container');
+                    console.log('[Globe] Initialized global coverage map');
+                } else {
+                    console.warn('[Globe] CiaMissionGlobe not available');
+                }
+            }, 2000); // Wait 2 seconds for posts to load
+        });
+    </script>
     <script>
         // Wait for script to load and function to be available
-        function waitForRenderFunction(callback, maxAttempts = 20) {
+        function waitForRenderFunction(callback, maxAttempts = 30) {
             let attempts = 0;
             const checkInterval = setInterval(function() {
                 attempts++;
-                if (window.renderPostFeedV2) {
+                // Check for enhanced feed first, then v2, then old feed
+                if (window.renderPostFeedEnhanced || window.renderPostFeedV2 || typeof renderPostFeed !== 'undefined') {
                     clearInterval(checkInterval);
                     callback();
                 } else if (attempts >= maxAttempts) {
                     clearInterval(checkInterval);
-                    console.warn('[X Posts] renderPostFeedV2 not available after', maxAttempts * 100, 'ms, trying fallback');
+                    console.warn('[X Posts] Post feed functions not available after', maxAttempts * 100, 'ms, trying fallback');
                     callback();
                 }
             }, 100);
@@ -14251,7 +14276,7 @@
             }, 1000); // Wait 1 second after DOM load
         });
         
-        // Show skeleton animation immediately when page loads
+        // Show skeleton animation immediately when page loads AND try to load posts immediately
         document.addEventListener('DOMContentLoaded', function() {
             const container = document.getElementById('articlesTrack');
             if (container && (!container.innerHTML || container.innerHTML.trim().length < 100)) {
@@ -14264,7 +14289,7 @@
                         }
                     </style>
                     ${Array.from({ length: 5 }, () => `
-                        <article class="feed-post-card skeleton" style="padding: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                        <article class="feed-post-card skeleton" style="padding: 1.5rem; margin: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
                             <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem;">
                                 <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.1); animation: pulse 1.5s ease-in-out infinite;"></div>
                                 <div style="flex: 1;">
@@ -14278,6 +14303,18 @@
                     `).join('')}
                 `;
                 container.innerHTML = skeletonHTML;
+            }
+            
+            // Try to load posts immediately if script is already loaded
+            if (window.renderPostFeedEnhanced) {
+                console.log('[X Posts] Enhanced feed available immediately, loading posts...');
+                window.renderPostFeedEnhanced('articlesTrack', '/.netlify/functions/posts-read', 200);
+            } else if (window.renderPostFeedV2) {
+                console.log('[X Posts] V2 feed available immediately, loading posts...');
+                window.renderPostFeedV2('articlesTrack', '/.netlify/functions/posts-read', 200);
+            } else if (typeof renderPostFeed !== 'undefined') {
+                console.log('[X Posts] Old feed available immediately, loading posts...');
+                renderPostFeed('articlesTrack', '/.netlify/functions/posts-read', 200);
             }
         });
         

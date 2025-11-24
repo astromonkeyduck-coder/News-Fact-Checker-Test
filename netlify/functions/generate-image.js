@@ -19,6 +19,25 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
     };
   }
 
+  // Timeout handling - Netlify functions have execution time limits
+  const startTime = Date.now();
+  const getRemainingTime = () => {
+    if (context && typeof context.getRemainingTimeInMillis === 'function') {
+      return context.getRemainingTimeInMillis();
+    }
+    // Fallback: assume 25 seconds for pro tier, 9 seconds for free tier
+    const elapsed = Date.now() - startTime;
+    return Math.max(5000, 25000 - elapsed); // Leave 5 seconds buffer
+  };
+
+  const checkTimeout = (operation) => {
+    const remaining = getRemainingTime();
+    if (remaining < 3000) { // Less than 3 seconds remaining
+      throw new Error(`Function timeout: ${operation} would exceed execution limit`);
+    }
+    return remaining;
+  };
+
   try {
     if (event.httpMethod !== "POST" && event.httpMethod !== "OPTIONS") {
       return {
@@ -112,23 +131,40 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
     }
     
     console.log("Generating image with prompt:", prompt.substring(0, 100) + "...");
+    
+    // Check timeout before OpenAI call
+    checkTimeout("OpenAI API call");
 
-    // Call OpenAI DALL-E API
-    const r = await fetch("https://api.openai.com/v1/images/generations", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "dall-e-3",
-        prompt: prompt.trim(),
-        size: size,
-        quality: quality,
-        style: style,
-        n: 1,
-      }),
-    });
+    // Call OpenAI DALL-E API with timeout
+    const openaiController = new AbortController();
+    const openaiTimeout = setTimeout(() => openaiController.abort(), Math.min(getRemainingTime() - 2000, 20000)); // 20s max or remaining time - 2s
+    
+    let r;
+    try {
+      r = await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "dall-e-3",
+          prompt: prompt.trim(),
+          size: size,
+          quality: quality,
+          style: style,
+          n: 1,
+        }),
+        signal: openaiController.signal,
+      });
+      clearTimeout(openaiTimeout);
+    } catch (fetchError) {
+      clearTimeout(openaiTimeout);
+      if (fetchError.name === 'AbortError') {
+        throw new Error("OpenAI API request timed out");
+      }
+      throw fetchError;
+    }
 
     if (!r.ok) {
       let errorData;
@@ -164,82 +200,99 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
       };
     }
 
-    // Download and store image in Netlify Blobs
+    // Check timeout before blob storage
+    const remainingBeforeBlob = checkTimeout("Blob storage");
+    
+    // Download and store image in Netlify Blobs (with timeout protection)
     let storedImageKey = null;
     let storedImageUrl = null;
-    try {
-      const { getStore } = require("@netlify/blobs");
-      
-      const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
-      const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
-      
-      let store;
-      if (siteID && token) {
-        store = getStore({
-          name: "dalle-images",
-          siteID: siteID,
-          token: token,
-        });
-      } else {
-        store = getStore({ name: "dalle-images" });
-      }
+    
+    // Only attempt blob storage if we have enough time (at least 8 seconds)
+    if (remainingBeforeBlob > 8000) {
+      try {
+        const { getStore } = require("@netlify/blobs");
+        
+        const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
+        const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
+        
+        let store;
+        if (siteID && token) {
+          store = getStore({
+            name: "dalle-images",
+            siteID: siteID,
+            token: token,
+          });
+        } else {
+          store = getStore({ name: "dalle-images" });
+        }
 
-      // Generate unique key for the image (using timestamp + hash of prompt)
-      const timestamp = Date.now();
-      const promptHash = Buffer.from(prompt.trim()).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
-      const imageKey = `image-${timestamp}-${promptHash}.png`;
-      
-      console.log("[Generate Image] Downloading image from DALL-E URL...");
-      
-      // Download the image
-      const imageResponse = await fetch(imageUrl);
-      if (!imageResponse.ok) {
-        throw new Error(`Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`);
+        // Generate unique key for the image (using timestamp + hash of prompt)
+        const timestamp = Date.now();
+        const promptHash = Buffer.from(prompt.trim()).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+        const imageKey = `image-${timestamp}-${promptHash}.png`;
+        
+        console.log("[Generate Image] Downloading image from DALL-E URL...");
+        
+        // Download the image with timeout
+        const downloadController = new AbortController();
+        const downloadTimeout = setTimeout(() => downloadController.abort(), Math.min(remainingBeforeBlob - 3000, 10000)); // 10s max or remaining - 3s
+        
+        let imageResponse;
+        try {
+          imageResponse = await fetch(imageUrl, { signal: downloadController.signal });
+          clearTimeout(downloadTimeout);
+        } catch (downloadError) {
+          clearTimeout(downloadTimeout);
+          throw new Error(`Image download failed: ${downloadError.message}`);
+        }
+        
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`);
+        }
+        
+        // Get image as array buffer
+        const imageBuffer = await imageResponse.arrayBuffer();
+        console.log("[Generate Image] Image downloaded, size:", imageBuffer.byteLength, "bytes");
+        
+        // Check timeout before storing
+        checkTimeout("Blob storage write");
+        
+        // Store image in Netlify Blobs
+        await store.set(imageKey, imageBuffer, {
+          contentType: "image/png",
+        });
+        
+        storedImageKey = imageKey;
+        // Generate URL to retrieve the stored image
+        storedImageUrl = `/.netlify/functions/get-dalle-image?key=${encodeURIComponent(imageKey)}`;
+        console.log("[Generate Image] ✅ Image stored in Netlify Blobs with key:", imageKey);
+        console.log("[Generate Image] ✅ Stored image URL:", storedImageUrl);
+        
+        // Store metadata about the image
+        const metadataKey = `metadata-${imageKey}.json`;
+        await store.set(metadataKey, JSON.stringify({
+          originalUrl: imageUrl,
+          prompt: prompt.trim(),
+          revisedPrompt: revisedPrompt,
+          size: size,
+          quality: quality,
+          style: style,
+          model: "dall-e-3",
+          storedAt: new Date().toISOString(),
+          imageKey: imageKey,
+        }), {
+          contentType: "application/json",
+        });
+        
+        console.log("[Generate Image] ✅ Metadata stored with key:", metadataKey);
+        
+      } catch (blobErr) {
+        console.error("[Generate Image] ❌ Error storing image in Netlify Blobs:", blobErr.message);
+        // Don't fail the request if blob storage fails - we still have the original URL
+        // Continue to return the original imageUrl
       }
-      
-      // Get image as array buffer
-      const imageBuffer = await imageResponse.arrayBuffer();
-      console.log("[Generate Image] Image downloaded, size:", imageBuffer.byteLength, "bytes");
-      
-      // Store image in Netlify Blobs
-      await store.set(imageKey, imageBuffer, {
-        contentType: "image/png",
-      });
-      
-      storedImageKey = imageKey;
-      // Generate URL to retrieve the stored image
-      storedImageUrl = `/.netlify/functions/get-dalle-image?key=${encodeURIComponent(imageKey)}`;
-      console.log("[Generate Image] ✅ Image stored in Netlify Blobs with key:", imageKey);
-      console.log("[Generate Image] ✅ Stored image URL:", storedImageUrl);
-      
-      // Store metadata about the image
-      const metadataKey = `metadata-${imageKey}.json`;
-      await store.set(metadataKey, JSON.stringify({
-        originalUrl: imageUrl,
-        prompt: prompt.trim(),
-        revisedPrompt: revisedPrompt,
-        size: size,
-        quality: quality,
-        style: style,
-        model: "dall-e-3",
-        storedAt: new Date().toISOString(),
-        imageKey: imageKey,
-      }), {
-        contentType: "application/json",
-      });
-      
-      console.log("[Generate Image] ✅ Metadata stored with key:", metadataKey);
-      
-    } catch (blobErr) {
-      console.error("[Generate Image] ❌ Error storing image in Netlify Blobs:", blobErr);
-      console.error("[Generate Image] Error details:", blobErr.message);
-      console.error("[Generate Image] Error stack:", blobErr.stack);
-      console.error("[Generate Image] Blob storage config:", {
-        hasSiteID: !!process.env.NETLIFY_SITE_ID,
-        hasToken: !!process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
-        hasEventHeaders: !!(event.headers['x-nf-site-id'] && event.headers['x-nf-token'])
-      });
-      // Don't fail the request if blob storage fails - we still have the original URL
+    } else {
+      console.log("[Generate Image] ⚠️ Skipping blob storage - insufficient time remaining");
     }
 
     // Get user email from event (if available)
@@ -249,45 +302,51 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
     // Only extract email if it's explicitly provided in the request
     // Don't do IP-based lookup for image generation
 
-    // Log image generation (non-blocking - don't wait for it)
-    try {
-      const { logData } = require("./log-data");
-      console.log("[Generate Image] Attempting to log image generation...");
-      console.log("[Generate Image] Image URL:", imageUrl);
-      console.log("[Generate Image] Prompt:", prompt.trim());
-      
-      const logResult = await logData("image-generation", {
-        userPrompt: prompt.trim(),
-        revisedPrompt: revisedPrompt,
-        imageUrl: imageUrl,
+    // Return response immediately - don't wait for logging/email
+    // This prevents timeouts
+    const response = {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({ 
+        imageUrl,
+        revisedPrompt,
+        prompt: prompt.trim(),
         storedImageKey: storedImageKey,
         storedImageUrl: storedImageUrl,
-        size: size,
-        quality: quality,
-        style: style,
-        model: "dall-e-3",
-      }, event);
-      
-      if (logResult && logResult.success) {
-        console.log("[Generate Image] ✅ Successfully logged image generation:", logResult.id);
-        console.log("[Generate Image] Log entry ID:", logResult.id);
-      } else {
-        console.error("[Generate Image] ❌ Logging failed:", logResult ? logResult.error : "No result returned");
-        console.error("[Generate Image] Full result:", JSON.stringify(logResult, null, 2));
-        // If logging was skipped (not an error), that's okay
-        if (logResult && logResult.skipped) {
-          console.log("[Generate Image] ⚠️ Logging was skipped (this is okay):", logResult.reason);
+        stored: !!storedImageKey
+      }),
+    };
+
+    // Log image generation (truly non-blocking - fire and forget)
+    if (getRemainingTime() > 2000) {
+      // Only attempt logging if we have time
+      Promise.resolve().then(async () => {
+        try {
+          const { logData } = require("./log-data");
+          await Promise.race([
+            logData("image-generation", {
+              userPrompt: prompt.trim(),
+              revisedPrompt: revisedPrompt,
+              imageUrl: imageUrl,
+              storedImageKey: storedImageKey,
+              storedImageUrl: storedImageUrl,
+              size: size,
+              quality: quality,
+              style: style,
+              model: "dall-e-3",
+            }, event),
+            new Promise((resolve) => setTimeout(() => resolve({ skipped: true, reason: "timeout" }), 1500))
+          ]);
+        } catch (err) {
+          // Silently fail - logging is not critical
         }
-      }
-    } catch (err) {
-      console.error("[Generate Image] ❌ Error logging data:", err);
-      console.error("[Generate Image] Error stack:", err.stack);
-      console.error("[Generate Image] Error name:", err.name);
-      // Don't fail the request if logging fails
+      }).catch(() => {});
     }
 
-    // Send email notification (non-blocking - don't wait for it)
-    try {
+    // Send email notification (truly non-blocking - fire and forget)
+    if (getRemainingTime() > 2000) {
+      Promise.resolve().then(async () => {
+        try {
       // Validate API key exists
       if (!process.env.RESEND_API_KEY) {
         console.error("[Generate Image] RESEND_API_KEY environment variable is missing!");
@@ -329,6 +388,15 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
         .replace(/'/g, '&#39;')
         .substring(0, 500);
       
+      // Sanitize userEmail for HTML output
+      const safeUserEmail = userEmail ? String(userEmail)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .substring(0, 100) : null;
+      
       // Send to all notification emails
       const emailResults = await Promise.allSettled(notificationEmails.map(email =>
         resend.emails.send({
@@ -361,9 +429,9 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
                 </p>
               </div>
               <div style="padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: 2px solid #ffc107; border-radius: 8px; margin-bottom: 20px;">
-                ${userEmail ? `
+                ${safeUserEmail ? `
                 <div style="padding: 15px; background: rgba(74, 144, 226, 0.1); border-left: 4px solid #4A90E2; border-radius: 6px; margin-bottom: 15px;">
-                  <p style="color: #333333; font-size: 16px; margin: 0; line-height: 1.6;"><strong style="color: #4A90E2;">👤 Generated By:</strong> <span style="color: #666666; font-weight: 600;">${userEmail}</span></p>
+                  <p style="color: #333333; font-size: 16px; margin: 0; line-height: 1.6;"><strong style="color: #4A90E2;">👤 Generated By:</strong> <span style="color: #666666; font-weight: 600;">${safeUserEmail}</span></p>
                 </div>
                 ` : `
                 <div style="padding: 15px; background: rgba(100, 100, 100, 0.1); border-left: 4px solid #666666; border-radius: 6px; margin-bottom: 15px;">
@@ -449,22 +517,13 @@ This is an automated notification from your website.`,
         console.error(`[Generate Image] 403 Forbidden error in exception handler`);
         console.error(`[Generate Image] Check RESEND_API_KEY and domain verification at https://resend.com/domains`);
       }
-      
-      // Don't fail the request if email fails
+      // Don't fail the request if email fails - email is not critical
+    }
+  }).catch(() => {});
     }
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ 
-        imageUrl,
-        revisedPrompt,
-        prompt: prompt.trim(),
-        storedImageKey: storedImageKey,
-        storedImageUrl: storedImageUrl,
-        stored: !!storedImageKey
-      }),
-    };
+    // Return response immediately
+    return response;
   } catch (e) {
     console.error("Image generation function error:", e);
     console.error("Error stack:", e.stack);
@@ -497,5 +556,5 @@ This is an automated notification from your website.`,
       body: JSON.stringify(errorDetails),
     };
   }
-};
+});
 

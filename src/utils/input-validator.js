@@ -243,6 +243,45 @@ export function validateRequestBody(body, schema) {
 }
 
 /**
+ * Sanitize URL for safe insertion into HTML attributes (href, src)
+ * Validates URL and escapes special characters
+ * @param {string} url - URL to sanitize
+ * @returns {string|null} - Sanitized URL or null if invalid
+ */
+export function sanitizeURLForHTML(url) {
+  if (!url || typeof url !== 'string') {
+    return null;
+  }
+
+  const trimmed = url.trim();
+  
+  if (trimmed.length === 0) {
+    return null;
+  }
+
+  try {
+    const urlObj = new URL(trimmed);
+    
+    // Only allow http and https protocols (prevent javascript:, data:, etc.)
+    if (!['http:', 'https:'].includes(urlObj.protocol)) {
+      return null;
+    }
+
+    // Escape special characters for HTML attribute insertion
+    // This prevents breaking out of attributes with quotes or other characters
+    return trimmed
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  } catch (e) {
+    // Invalid URL format
+    return null;
+  }
+}
+
+/**
  * Rate limit validation (client-side check)
  * @param {string} action - Action identifier
  * @param {number} maxAttempts - Maximum attempts
@@ -289,6 +328,7 @@ export function checkClientRateLimit(action, maxAttempts = 5, windowMs = 60000) 
 export default {
   validateEmail,
   validateURL,
+  sanitizeURLForHTML,
   sanitizeInput,
   validateText,
   validateChatMessage,

@@ -24,10 +24,9 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // Check if API key exists
+    // Check if API key exists (don't log key, even partially)
     const apiKey = process.env.RESEND_API_KEY;
     const hasApiKey = !!apiKey;
-    const apiKeyPrefix = apiKey ? apiKey.substring(0, 7) + '...' : 'NOT SET';
 
     // Only initialize Resend if we have an API key
     let resend = null;
@@ -39,7 +38,6 @@ exports.handler = async (event, context) => {
     const testResults = {
       timestamp: new Date().toISOString(),
       apiKeyExists: hasApiKey,
-      apiKeyPrefix: apiKeyPrefix,
       tests: [],
     };
 
