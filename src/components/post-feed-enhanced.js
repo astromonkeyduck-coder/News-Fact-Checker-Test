@@ -695,8 +695,12 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
     const response = await fetch(`${endpoint}?limit=${limit}`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     
-    const posts = await response.json();
+    const data = await response.json();
+    // Handle both array response and object with posts property
+    const posts = Array.isArray(data) ? data : (data.posts || data.data || []);
     enhancedCurrentPosts = posts || [];
+    
+    console.log('[Enhanced Feed] Loaded', enhancedCurrentPosts.length, 'posts');
     
     // Cache posts
     localStorage.setItem(ENHANCED_CACHE_KEY, JSON.stringify({
@@ -848,15 +852,36 @@ function renderEnhancedFeed() {
  * Initialize enhanced feed
  */
 let enhancedFeedInitialized = false;
+let lastContainerId = null;
 
 function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/functions/posts-read', limit = 200) {
-  // Prevent multiple initializations
-  if (enhancedFeedInitialized) {
-    console.warn('[Enhanced Feed] Already initialized, skipping...');
+  const container = document.getElementById(containerId);
+  if (!container) {
+    console.error('[Enhanced Feed] Container not found:', containerId);
+    return;
+  }
+  
+  // Check if container is empty or has very little content (likely needs loading)
+  const isEmpty = !container.innerHTML || 
+                  container.innerHTML.trim().length < 100 || 
+                  container.innerHTML.includes('Loading') || 
+                  container.innerHTML.includes('skeleton') ||
+                  container.innerHTML.includes('Failed to load');
+  
+  // Allow re-initialization if container changed or if not initialized yet
+  if (enhancedFeedInitialized && lastContainerId === containerId) {
+    // But still try to load posts if container is empty
+    if (isEmpty) {
+      console.log('[Enhanced Feed] Already initialized but container is empty, loading posts...');
+      loadEnhancedPosts(endpoint, limit);
+    } else {
+      console.warn('[Enhanced Feed] Already initialized for this container, skipping...');
+    }
     return;
   }
   
   enhancedFeedInitialized = true;
+  lastContainerId = containerId;
   
   // Expose functions to window (only once)
   if (!window.togglePostExpand) {
@@ -869,12 +894,25 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
     window.openMediaLightbox = openMediaLightbox;
   }
   // Always update loadEnhancedPosts to use current endpoint/limit
-  window.loadEnhancedPosts = () => {
+  // Store endpoint and limit in closure to prevent recursion
+  const savedEndpoint = endpoint;
+  const savedLimit = limit;
+  
+  // Get a direct reference to the actual function before any potential reassignment
+  // This ensures we always call the real function, not a wrapper
+  const actualLoadFunction = (function getLoadFunction() {
+    return loadEnhancedPosts;
+  })();
+  
+  // Create a wrapper that calls the actual function directly
+  window.loadEnhancedPosts = async function() {
     if (enhancedIsLoading) {
       console.warn('[Enhanced Feed] Already loading, skipping...');
-      return;
+      return Promise.resolve();
     }
-    return loadEnhancedPosts(endpoint, limit);
+    // Call the actual function directly using the captured reference
+    // This prevents infinite recursion by ensuring we never call window.loadEnhancedPosts
+    return actualLoadFunction.call(null, savedEndpoint, savedLimit);
   };
   if (!window.renderEnhancedFeed) {
     window.renderEnhancedFeed = renderEnhancedFeed;

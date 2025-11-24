@@ -8458,6 +8458,16 @@ function initNewsletterSubscription() {
                     spotlightMusic.currentTime = savedState.time;
                 }
                 
+                // Actually start playing the audio
+                spotlightMusic.play().catch(err => {
+                    console.error('Error playing spotlight music:', err);
+                    // If autoplay is blocked, try again after user interaction
+                    document.addEventListener('click', function playOnce() {
+                        spotlightMusic.play().catch(() => {});
+                        document.removeEventListener('click', playOnce);
+                    }, { once: true });
+                });
+                
                 // Wait a brief moment to ensure background fade out has started
                 // This creates a smoother crossfade effect
                 setTimeout(() => {
@@ -8466,6 +8476,15 @@ function initNewsletterSubscription() {
                         // Music has faded in
                     });
                 }, 200);
+            }
+        });
+        
+        // Also try to play when canplay event fires (more reliable than loadeddata)
+        spotlightMusic.addEventListener('canplay', () => {
+            if (isSpotlightVisible && spotlightMusic.paused) {
+                spotlightMusic.play().catch(err => {
+                    console.error('Error playing spotlight music on canplay:', err);
+                });
             }
         });
         
