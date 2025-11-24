@@ -437,19 +437,17 @@ function renderEnhancedPostCard(post) {
     `).join('');
   };
   
-  // Use old card design
+  // Use November 23rd card design style (from post-feed-v2.js)
   return `
-    <article class="x-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || ''}" style="background: transparent; padding: 1rem 1rem; margin-bottom: 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
-      <div style="display: flex; gap: 0.75rem;">
+    <article class="feed-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || ''}" style="background: transparent; min-height: 520px; padding: 1.5rem; margin-bottom: 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease; display: grid; grid-template-rows: auto 1fr auto;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+      <div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem;">
         <!-- Avatar -->
-        <div style="flex-shrink: 0;">
-          <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="display: block; text-decoration: none;">
-            <img src="/IMG_5794.PNG" alt="Noteworthy News" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-            <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #1DA1F2 0%, #1a91da 100%); display: none; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; color: white; flex-shrink: 0;">
-              NW
-        </div>
-          </a>
-      </div>
+        <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; text-decoration: none;">
+          <img src="/IMG_5794.PNG" alt="Noteworthy News" style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #1DA1F2 0%, #1a91da 100%); display: none; align-items: center; justify-content: center; font-weight: 700; font-size: 1.25rem; color: white;">
+            NW
+          </div>
+        </a>
       
         <!-- Post Content -->
         <div style="flex: 1; min-width: 0;">
@@ -464,7 +462,7 @@ function renderEnhancedPostCard(post) {
           <!-- Post Text -->
           <div style="color: rgb(231, 233, 234); font-size: 0.938rem; line-height: 1.375rem; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 0.75rem;">
             ${formatStory(postText)}
-      </div>
+          </div>
       
           <!-- Media -->
           ${renderMedia(post)}
