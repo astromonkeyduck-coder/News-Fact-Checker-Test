@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="app-version" content="November 22, 2025">
+    <meta name="app-version" content="November 23, 2025">
     <title>Noteworthy News - Fact-Checked Journalism & Media Literacy Games | Trusted News Source</title>
     
     <!-- Favicon and Theme -->
@@ -1129,8 +1129,7 @@
         }
     </script>
     <audio id="backgroundMusic" preload="metadata">
-                        <source src="WOAHFireeee(Cover).mp4" type="audio/mp4">
-                        <source src="WOAHFireeee(Cover).mp4" type="audio/mpeg">
+                        <source src="goodtrumpmusic.wav" type="audio/wav">
         Your browser does not support the audio element.
     </audio>
     
@@ -2599,7 +2598,7 @@
             font-size: 0.95rem;
             font-weight: 700;
             margin: 0;
-            color: white;
+            color: #4A90E2;
             line-height: 1.2;
             white-space: nowrap;
         }
@@ -2789,10 +2788,7 @@
             font-weight: 700;
             margin: 0;
             line-height: 1;
-            background: linear-gradient(45deg, #4A90E2, #2ECC71);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #4A90E2;
         }
         
         .brand-info p {
@@ -3733,9 +3729,8 @@
             /* CRITICAL: Prevent any horizontal overflow */
             width: 100%;
             max-width: 100%;
-            overflow: hidden !important; /* Prevent scrollbar on container */
-            overflow-x: hidden !important;
-            overflow-y: hidden !important;
+            overflow-x: hidden !important; /* Prevent horizontal scrollbar on container */
+            overflow-y: visible !important; /* Allow vertical overflow for z-index stacking */
             box-sizing: border-box;
         }
         
@@ -5967,6 +5962,8 @@
         .news-section {
             margin: 50px 0;
             padding: 30px 0;
+            position: relative;
+            z-index: 1;
         }
         .news-title {
             font-size: 2.5rem;
@@ -6010,6 +6007,7 @@
             /* Fix scroll bounds */
             scroll-padding: 0;
             scroll-margin: 0;
+            z-index: 1;
         }
         /* Custom scrollbar for Webkit browsers (Chrome, Safari, Edge) */
         .news-carousel::-webkit-scrollbar {
@@ -6275,6 +6273,8 @@
             min-height: 480px;
             display: flex;
             flex-direction: column;
+            position: relative;
+            z-index: 1;
         }
         .article-card:hover {
             transform: translateY(-8px);
@@ -7357,7 +7357,8 @@
                 rgba(25, 25, 112, 0.85) 0%, 
                 rgba(65, 105, 225, 0.75) 50%, 
                 rgba(25, 25, 112, 0.85) 100%);
-            z-index: 10;
+            z-index: 100;
+            isolation: isolate;
         }
         
         .credibility-section > * {
@@ -7460,7 +7461,8 @@
             max-width: 1200px;
             margin-left: auto;
             margin-right: auto;
-            z-index: 11;
+            z-index: 101;
+            isolation: isolate;
         }
         
         .hero-stat-main {
@@ -7473,8 +7475,9 @@
             backdrop-filter: blur(15px);
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             position: relative;
-            overflow: hidden;
-            z-index: 11;
+            overflow: visible;
+            z-index: 102;
+            isolation: isolate;
         }
         
         .stats-surrounding {
@@ -11318,180 +11321,360 @@
         ins.adsbygoogle[style*="display:block"]:empty {
             display: none !important;
         }
+        
+        /* ============================================
+           COMPREHENSIVE MOBILE-FRIENDLY STYLES
+           These styles only affect mobile devices
+           and will NOT impact desktop/laptop experience
+           ============================================ */
+        
+        /* Base Mobile Improvements - Prevent horizontal scroll */
+        @media (max-width: 768px) {
+            html, body {
+                overflow-x: hidden !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            
+            * {
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+            
+            img, video, iframe, embed, object {
+                max-width: 100% !important;
+                height: auto !important;
+            }
+            
+            /* Improve touch targets - minimum 44x44px */
+            button, a, input[type="button"], input[type="submit"], 
+            .btn, .auth-btn, .nav-link, .feed-engagement-btn {
+                min-height: 44px;
+                min-width: 44px;
+                padding: 12px 16px;
+            }
+            
+            /* Better spacing for mobile */
+            .container, section {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            
+            /* Typography improvements */
+            h1 { font-size: clamp(1.75rem, 5vw, 2.5rem) !important; }
+            h2 { font-size: clamp(1.5rem, 4vw, 2rem) !important; }
+            h3 { font-size: clamp(1.25rem, 3.5vw, 1.75rem) !important; }
+            p, li { font-size: clamp(0.9rem, 2.5vw, 1rem) !important; line-height: 1.6 !important; }
+            
+            /* Form inputs - prevent zoom on iOS */
+            input[type="text"],
+            input[type="email"],
+            input[type="password"],
+            input[type="search"],
+            input[type="tel"],
+            input[type="url"],
+            textarea,
+            select {
+                font-size: 16px !important; /* Prevents iOS zoom */
+                padding: 12px !important;
+                min-height: 44px !important;
+            }
+            
+            /* Cards and sections - better mobile layout */
+            .card, .article-card, .game-card, .fact-checker-section {
+                margin-bottom: 1.5rem;
+                padding: 1rem;
+            }
+            
+            /* Modals and drawers - full width on mobile */
+            .modal, .tip-modal, .feed-comment-drawer {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+                max-height: 100vh !important;
+            }
+            
+            .modal-content, .tip-modal-content {
+                padding: 1.5rem 1rem !important;
+            }
+            
+            /* Navigation improvements */
+            .mobile-nav {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            
+            .mobile-nav-content ul {
+                padding: 1rem 0 !important;
+            }
+            
+            .mobile-nav-content li {
+                padding: 0.75rem 1.5rem !important;
+            }
+            
+            /* Feed improvements */
+            .feed-container {
+                padding: 0.5rem !important;
+            }
+            
+            .feed-post-card {
+                padding: 0.75rem !important;
+                min-height: auto !important;
+            }
+            
+            /* Buttons - stack vertically on very small screens */
+            .cta-buttons, .button-group {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .cta-btn, .play-button-large {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            
+            /* Tables - make scrollable */
+            table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            /* Images in cards */
+            .article-image, .card-image {
+                height: auto !important;
+                min-height: 200px;
+                max-height: 300px;
+            }
+            
+            /* Hero section adjustments */
+            .hero-section {
+                padding: 1rem !important;
+            }
+            
+            .hero-title {
+                font-size: clamp(1.5rem, 6vw, 2.5rem) !important;
+                line-height: 1.2 !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            .hero-subtitle {
+                font-size: clamp(0.9rem, 3vw, 1.2rem) !important;
+                line-height: 1.4 !important;
+            }
+            
+            /* Section spacing */
+            section {
+                padding: 2rem 1rem !important;
+            }
+            
+            /* Grid layouts - single column on mobile */
+            .grid, .cards-grid, .articles-grid {
+                grid-template-columns: 1fr !important;
+                gap: 1rem !important;
+            }
+            
+            /* Flex containers - stack on mobile */
+            .flex-row {
+                flex-direction: column !important;
+            }
+            
+            /* Spacing adjustments */
+            .spacing-large {
+                margin: 1.5rem 0 !important;
+            }
+            
+            .spacing-medium {
+                margin: 1rem 0 !important;
+            }
+            
+            /* Text alignment */
+            .text-center-mobile {
+                text-align: center !important;
+            }
+            
+            /* Hide less important elements on mobile */
+            .desktop-only {
+                display: none !important;
+            }
+            
+            /* Show mobile-specific elements */
+            .mobile-only {
+                display: block !important;
+            }
+        }
+        
+        /* Small mobile devices (480px and below) */
+        @media (max-width: 480px) {
+            /* Even tighter spacing */
+            .container, section {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+            
+            /* Smaller font sizes */
+            h1 { font-size: clamp(1.5rem, 6vw, 2rem) !important; }
+            h2 { font-size: clamp(1.25rem, 5vw, 1.75rem) !important; }
+            h3 { font-size: clamp(1.1rem, 4vw, 1.5rem) !important; }
+            
+            /* Compact cards */
+            .card, .article-card {
+                padding: 0.75rem !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            /* Header adjustments */
+            .main-header {
+                padding: 0.5rem 0.75rem !important;
+            }
+            
+            .brand-info h1 {
+                font-size: 0.85rem !important;
+            }
+            
+            .brand-info p {
+                font-size: 0.7rem !important;
+            }
+            
+            /* Buttons - full width */
+            button, .btn, .auth-btn {
+                width: 100% !important;
+                margin-bottom: 0.5rem;
+            }
+            
+            /* Feed cards */
+            .feed-post-card {
+                padding: 0.5rem !important;
+            }
+            
+            /* Modal padding */
+            .modal-content, .tip-modal-content {
+                padding: 1rem 0.75rem !important;
+            }
+        }
+        
+        /* Extra small devices (360px and below) */
+        @media (max-width: 360px) {
+            .container, section {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+            
+            h1 { font-size: 1.5rem !important; }
+            h2 { font-size: 1.25rem !important; }
+            h3 { font-size: 1.1rem !important; }
+            
+            .card, .article-card {
+                padding: 0.5rem !important;
+            }
+            
+            .brand-info p {
+                display: none; /* Hide subtitle on very small screens */
+            }
+        }
+        
+        /* Landscape mobile orientation */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .hero-section {
+                min-height: auto !important;
+                padding: 2rem 1rem !important;
+            }
+            
+            .main-header {
+                height: 56px !important;
+            }
+        }
+        
+        /* Touch device optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            /* Larger touch targets */
+            a, button, .btn, .nav-link {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            /* Remove hover effects on touch devices */
+            *:hover {
+                transform: none !important;
+            }
+            
+            /* Better tap feedback */
+            button:active, a:active, .btn:active {
+                opacity: 0.7;
+                transform: scale(0.98);
+            }
+        }
+        
+        /* Prevent text size adjustment on iOS */
+        @media screen and (max-width: 768px) {
+            html {
+                -webkit-text-size-adjust: 100%;
+                text-size-adjust: 100%;
+            }
+        }
+        
+        /* Smooth scrolling on mobile */
+        @media (max-width: 768px) {
+            html {
+                scroll-behavior: smooth;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+        
+        /* Ensure mobile nav is accessible */
+        @media (max-width: 768px) {
+            .mobile-nav {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                z-index: 9999 !important;
+            }
+        }
+        
+        /* Fix for fixed elements on mobile */
+        @media (max-width: 768px) {
+            .tip-submit-btn,
+            .floating-btn {
+                position: fixed !important;
+                bottom: 1rem !important;
+                right: 1rem !important;
+                z-index: 1000 !important;
+                width: 56px !important;
+                height: 56px !important;
+                border-radius: 50% !important;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+            }
+        }
+        
+        /* Ensure content is not hidden behind fixed header */
+        @media (max-width: 768px) {
+            body {
+                padding-top: 64px;
+            }
+        }
     </style>
     <!-- Analytics Tracker - Comprehensive visitor tracking -->
     <script src="src/utils/analytics-tracker.js"></script>
 </head>
 <body>
-    <!-- Mobile Block Overlay -->
-    <div id="mobile-block-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%); z-index: 9999999; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
-        <!-- Animated background elements -->
-        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; z-index: 0;">
-            <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(74, 144, 226, 0.15) 0%, transparent 70%); animation: pulse 8s ease-in-out infinite;"></div>
-            <div style="position: absolute; bottom: -50%; right: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(46, 204, 113, 0.15) 0%, transparent 70%); animation: pulse 10s ease-in-out infinite reverse;"></div>
-        </div>
-        
-        <div style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; position: relative; z-index: 1;">
-        <div style="max-width: 600px; width: 100%; position: relative; z-index: 1; animation: fadeInUp 0.8s ease-out;">
-            <!-- Icon/Logo Area -->
-            <div style="margin-bottom: 30px; animation: float 3s ease-in-out infinite;">
-                <div style="width: 120px; height: 120px; margin: 0 auto 20px; background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(46, 204, 113, 0.2)); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 0 40px rgba(74, 144, 226, 0.1);">
-                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.9;">
-                        <path d="M17 2H7C5.9 2 5 2.9 5 4V20C5 21.1 5.9 22 7 22H17C18.1 22 19 21.1 19 20V4C19 2.9 18.1 2 17 2ZM17 18H7V6H17V18Z" fill="currentColor"/>
-                        <path d="M12 19.5C12.83 19.5 13.5 18.83 13.5 18C13.5 17.17 12.83 16.5 12 16.5C11.17 16.5 10.5 17.17 10.5 18C10.5 18.83 11.17 19.5 12 19.5Z" fill="currentColor"/>
-                    </svg>
-                </div>
-            </div>
-            
-            <!-- Main Heading -->
-            <h1 style="font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 20px; color: #ffffff; font-weight: 700; letter-spacing: -0.5px; text-shadow: 0 2px 20px rgba(74, 144, 226, 0.3); line-height: 1.2;">
-                Desktop Experience Required
-            </h1>
-            
-            <!-- Subtitle -->
-            <p style="font-size: clamp(1rem, 2.5vw, 1.25rem); line-height: 1.7; margin-bottom: 40px; color: #e0e0e0; max-width: 500px; margin-left: auto; margin-right: auto;">
-                This website is optimized for desktop and laptop computers to deliver the best interactive experience.
-            </p>
-            
-            <!-- Feature Cards -->
-            <div style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 40px;">
-                <div style="background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(10px); border-radius: 16px; padding: 20px; border: 1px solid rgba(255, 255, 255, 0.15); transition: transform 0.3s ease, box-shadow 0.3s ease; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);">
-                    <div style="display: flex; align-items: center; gap: 15px; text-align: left;">
-                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, rgba(74, 144, 226, 0.3), rgba(46, 204, 113, 0.3)); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 6H20V18H4V6ZM2 4V20H22V4H2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M8 8H16M8 12H16M8 16H12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 style="font-size: 1.1rem; font-weight: 600; margin: 0 0 5px 0; color: #ffffff;">Rich Interactive Features</h3>
-                            <p style="font-size: 0.95rem; margin: 0; color: #d0d0d0; line-height: 1.5;">Designed for larger screens with enhanced interactivity</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div style="background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(10px); border-radius: 16px; padding: 20px; border: 1px solid rgba(255, 255, 255, 0.15); transition: transform 0.3s ease, box-shadow 0.3s ease; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);">
-                    <div style="display: flex; align-items: center; gap: 15px; text-align: left;">
-                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, rgba(74, 144, 226, 0.3), rgba(46, 204, 113, 0.3)); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 style="font-size: 1.1rem; font-weight: 600; margin: 0 0 5px 0; color: #ffffff;">Optimized Layout</h3>
-                            <p style="font-size: 0.95rem; margin: 0; color: #d0d0d0; line-height: 1.5;">Content and features optimized for desktop viewing</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Call to Action -->
-            <div style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(46, 204, 113, 0.2)); border-radius: 16px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
-                <p style="font-size: 1rem; margin: 0; color: #ffffff; line-height: 1.8; font-weight: 500;">
-                    <strong style="display: block; margin-bottom: 8px; font-size: 1.1rem;">💡 Visit on Desktop</strong>
-                    Open this website on your laptop or desktop computer to access all features and enjoy the full experience.
-                </p>
-            </div>
-        </div>
-        </div>
-        
-        <style>
-            @keyframes fadeInUp {
-                from {
-                    opacity: 0;
-                    transform: translateY(30px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-            
-            @keyframes float {
-                0%, 100% {
-                    transform: translateY(0px);
-                }
-                50% {
-                    transform: translateY(-10px);
-                }
-            }
-            
-            @keyframes pulse {
-                0%, 100% {
-                    opacity: 0.5;
-                    transform: scale(1);
-                }
-                50% {
-                    opacity: 0.8;
-                    transform: scale(1.1);
-                }
-            }
-            
-            #mobile-block-overlay div[style*="background: rgba(255, 255, 255, 0.08)"]:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 30px rgba(74, 144, 226, 0.3) !important;
-            }
-            
-            /* Allow chatbox and tip modal to work on mobile */
-            noteworthy-chat,
-            .tip-modal,
-            .tip-modal * {
-                pointer-events: auto !important;
-            }
-            
-            /* Ensure chatbox launcher is clickable */
-            .launcher {
-                pointer-events: auto !important;
-            }
-        </style>
-    </div>
+    <!-- Mobile block overlay completely removed - site is now fully mobile-friendly -->
     
-    <script>
-        // Block mobile users
-        (function() {
-            function isMobileDevice() {
-                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                       (window.innerWidth <= 768 && window.innerHeight <= 1024);
-            }
-            
-            if (isMobileDevice()) {
-                const overlay = document.getElementById('mobile-block-overlay');
-                if (overlay) {
-                    overlay.style.display = 'block';
-                    // Hide all body content behind overlay
-                    document.body.style.overflow = 'hidden';
-                    document.documentElement.style.overflow = 'hidden';
-                    
-                    // Prevent scrolling on body/html, but allow scrolling within overlay and higher z-index elements
-                    document.addEventListener('touchmove', function(e) {
-                        const target = e.target;
-                        // Allow if target is in overlay, chatbox, or tip modal
-                        const isInOverlay = overlay.contains(target);
-                        const isInChatbox = target.closest('noteworthy-chat') || target instanceof HTMLElement && (target.closest('[style*="z-index: 2147483000"]') || target.closest('[style*="z-index:2147483000"]'));
-                        const isInTipModal = target.closest('.tip-modal') || target.closest('#tipModal');
-                        
-                        if (!isInOverlay && !isInChatbox && !isInTipModal) {
-                            e.preventDefault();
-                        }
-                    }, { passive: false });
-                    
-                    document.addEventListener('wheel', function(e) {
-                        const target = e.target;
-                        // Allow if target is in overlay, chatbox, or tip modal
-                        const isInOverlay = overlay.contains(target);
-                        const isInChatbox = target.closest('noteworthy-chat') || target.closest('[style*="z-index: 2147483000"]') || target.closest('[style*="z-index:2147483000"]');
-                        const isInTipModal = target.closest('.tip-modal') || target.closest('#tipModal');
-                        
-                        if (!isInOverlay && !isInChatbox && !isInTipModal) {
-                            e.preventDefault();
-                        }
-                    }, { passive: false });
-                }
-            }
-        })();
-    </script>
+    <style>
+        /* Allow chatbox and tip modal to work on mobile */
+        noteworthy-chat,
+        .tip-modal,
+        .tip-modal * {
+            pointer-events: auto !important;
+        }
+        
+        /* Ensure chatbox launcher is clickable */
+        .launcher {
+            pointer-events: auto !important;
+        }
+    </style>
 <!--
 ╔═══════════════════════════════════════════════════════════════╗
 ║                                                               ║
@@ -12835,6 +13018,34 @@
             initCountryFlags();
         });
         
+        // Ensure hero section displays correctly on page load and after scroll restoration
+        window.addEventListener('load', function() {
+            // Check initial scroll position
+            setTimeout(function() {
+                const scrollY = window.scrollY || window.pageYOffset;
+                const heroSection = document.querySelector('.hero-section');
+                
+                if (heroSection && scrollY > 0) {
+                    // Page loaded with scroll position - ensure hero is in final state
+                    const heroHeight = heroSection.offsetHeight || window.innerHeight;
+                    if (scrollY > heroHeight * 0.5) {
+                        // Set hero to final state immediately
+                        heroSection.style.opacity = '1';
+                        heroSection.style.transform = 'translateY(0)';
+                        
+                        const heroChildren = heroSection.querySelectorAll('.hero-title, .hero-subtitle, .hero-logo, .hero-stats-container, .welcome-text, .welcome-text-container, .hero-subtitle-container');
+                        heroChildren.forEach(child => {
+                            child.style.opacity = '1';
+                            child.style.transform = 'translateY(0)';
+                        });
+                    }
+                }
+                
+                // Always check hero section display
+                ensureHeroSectionDisplay();
+            }, 300);
+        });
+        
         // Save page state before page unload
         window.addEventListener('beforeunload', function() {
             savePageState();
@@ -12846,12 +13057,55 @@
         let lastScrollTime = 0;
         const scrollThrottle = 100; // Only save state every 100ms
         
+        // Ensure hero section displays correctly when scrolling
+        function ensureHeroSectionDisplay() {
+            const heroSection = document.querySelector('.hero-section');
+            if (!heroSection) return;
+            
+            const heroRect = heroSection.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const scrollY = window.scrollY || window.pageYOffset;
+            const heroHeight = heroSection.offsetHeight || window.innerHeight;
+            
+            // Check if hero section is visible in viewport
+            const isVisible = heroRect.top < viewportHeight && heroRect.bottom > 0;
+            const isScrolledPast = scrollY > heroHeight * 0.5;
+            
+            if (isVisible) {
+                // Hero section is visible - ensure it's in final state (fully visible)
+                // This fixes the issue where it's stuck in mid-animation
+                heroSection.style.opacity = '1';
+                heroSection.style.transform = 'translateY(0)';
+                
+                // Also ensure all hero children are in final state
+                const heroChildren = heroSection.querySelectorAll('.hero-title, .hero-subtitle, .hero-logo, .hero-stats-container, .welcome-text, .welcome-text-container, .hero-subtitle-container');
+                heroChildren.forEach(child => {
+                    child.style.opacity = '1';
+                    child.style.transform = 'translateY(0)';
+                });
+            } else if (isScrolledPast) {
+                // We've scrolled past hero - ensure it's in final state so it looks good when scrolling back up
+                heroSection.style.opacity = '1';
+                heroSection.style.transform = 'translateY(0)';
+                
+                const heroChildren = heroSection.querySelectorAll('.hero-title, .hero-subtitle, .hero-logo, .hero-stats-container, .welcome-text, .welcome-text-container, .hero-subtitle-container');
+                heroChildren.forEach(child => {
+                    child.style.opacity = '1';
+                    child.style.transform = 'translateY(0)';
+                });
+            }
+        }
+        
         window.addEventListener('scroll', function() {
             const now = Date.now();
             if (now - lastScrollTime < scrollThrottle) {
                 return; // Skip if too soon
             }
             lastScrollTime = now;
+            
+            // Ensure hero section displays correctly when scrolling
+            ensureHeroSectionDisplay();
+            
             clearTimeout(stateTimeout);
             stateTimeout = setTimeout(function() {
                 savePageState();
@@ -12907,11 +13161,37 @@
                         
                         // Restore scroll position with small delay to ensure page is fully rendered
                         setTimeout(function() {
+                            const heroSection = document.querySelector('.hero-section');
+                            const scrollY = pageState.scrollY || 0;
+                            
+                            // Check if scroll position is past the hero section
+                            if (heroSection && scrollY > 0) {
+                                const heroHeight = heroSection.offsetHeight || window.innerHeight;
+                                
+                                // If scrolling past hero section, immediately set it to final state
+                                // This prevents it from being stuck in mid-animation
+                                if (scrollY > heroHeight * 0.5) {
+                                    heroSection.style.opacity = '1';
+                                    heroSection.style.transform = 'translateY(0)';
+                                    
+                                    const heroChildren = heroSection.querySelectorAll('.hero-title, .hero-subtitle, .hero-logo, .hero-stats-container, .welcome-text, .welcome-text-container, .hero-subtitle-container');
+                                    heroChildren.forEach(child => {
+                                        child.style.opacity = '1';
+                                        child.style.transform = 'translateY(0)';
+                                    });
+                                }
+                            }
+                            
                             window.scrollTo({
                                 left: pageState.scrollX || 0,
-                                top: pageState.scrollY || 0,
+                                top: scrollY,
                                 behavior: 'auto' // Use 'auto' for instant scroll
                             });
+                            
+                            // After scroll, ensure hero section is correct
+                            setTimeout(function() {
+                                ensureHeroSectionDisplay();
+                            }, 100);
                         }, 200);
                     } else {
                         // Clear old page state
@@ -13341,8 +13621,54 @@
     </script>
     
     
-    <!-- Auth0 SDK -->
-    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.2/auth0-spa-js.production.js"></script>
+    <!-- Auth0 SDK - Must load before auth0.js -->
+    <script>
+        // Load Auth0 credentials from environment variables
+        // For local dev with 'npx netlify dev', this fetches from Netlify function
+        // For production, credentials are injected at build time
+        (async function() {
+            // Check if credentials are already set (injected at build time)
+            if (window.AUTH0_DOMAIN && window.AUTH0_CLIENT_ID) {
+                console.log('[Auth0] Credentials already loaded from build injection');
+                return;
+            }
+            
+            // Try to fetch from Netlify function (works with 'npx netlify dev')
+            try {
+                const response = await fetch('/.netlify/functions/get-auth0-config');
+                if (response.ok) {
+                    const config = await response.json();
+                    window.AUTH0_DOMAIN = config.domain;
+                    window.AUTH0_CLIENT_ID = config.clientId;
+                    console.log('[Auth0] Credentials loaded from environment variables');
+                } else {
+                    console.warn('[Auth0] Could not load credentials from function. Make sure you\'re running "npx netlify dev" or set credentials manually.');
+                }
+            } catch (error) {
+                console.warn('[Auth0] Could not fetch credentials:', error.message);
+                console.warn('[Auth0] For local dev, either:');
+                console.warn('[Auth0] 1. Run "npx netlify dev" (recommended)');
+                console.warn('[Auth0] 2. Or uncomment and set credentials in this script block');
+            }
+        })();
+    </script>
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.4/auth0-spa-js.production.js"></script>
+    <script>
+        // Verify SDK loaded
+        window.addEventListener('load', function() {
+            if (typeof createAuth0Client === 'undefined') {
+                console.error('[Auth0] SDK failed to load from CDN. Trying fallback...');
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/@auth0/auth0-spa-js@2.4/dist/auth0-spa-js.production.js';
+                script.onload = function() {
+                    console.log('[Auth0] SDK loaded from fallback CDN');
+                };
+                document.head.appendChild(script);
+            } else {
+                console.log('[Auth0] SDK loaded successfully from primary CDN');
+            }
+        });
+    </script>
     
     <!-- Auth0 Integration -->
     <script src="/src/auth/auth0.js"></script>
@@ -13988,47 +14314,79 @@
     <!-- TO DISABLE MAINTENANCE MODE: Change the variable below to false -->
     <script>
         // Maintenance Mode Toggle - Set to true to enable, false to disable
-        window.MAINTENANCE_MODE_ENABLED = true;
+        window.MAINTENANCE_MODE_ENABLED = false;
     </script>
     <!-- Countdown Completion Screen -->
     <div id="countdown-completion-screen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 10000000; background-image: url('IMG_7942.JPG'); background-size: cover; background-position: center; background-repeat: no-repeat; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;">
-        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none;">
-            <!-- More confetti pieces for a more celebratory effect -->
-            <div class="confetti" style="position: absolute; width: 12px; height: 12px; background: #ffd700; left: 5%; animation: confettiFall 2.5s linear infinite; border-radius: 50%;"></div>
-            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #ff6b6b; left: 10%; animation: confettiFall 3s linear infinite; animation-delay: 0.2s;"></div>
-            <div class="confetti" style="position: absolute; width: 14px; height: 14px; background: #4ecdc4; left: 15%; animation: confettiFall 2.8s linear infinite; animation-delay: 0.4s; border-radius: 50%;"></div>
-            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #ffe66d; left: 20%; animation: confettiFall 3.2s linear infinite; animation-delay: 0.1s;"></div>
-            <div class="confetti" style="position: absolute; width: 12px; height: 12px; background: #ff9ff3; left: 25%; animation: confettiFall 2.9s linear infinite; animation-delay: 0.6s; border-radius: 50%;"></div>
-            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #54a0ff; left: 30%; animation: confettiFall 3.1s linear infinite; animation-delay: 0.3s;"></div>
-            <div class="confetti" style="position: absolute; width: 14px; height: 14px; background: #5f27cd; left: 35%; animation: confettiFall 2.7s linear infinite; animation-delay: 0.5s; border-radius: 50%;"></div>
-            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #00d2d3; left: 40%; animation: confettiFall 3.3s linear infinite; animation-delay: 0.7s;"></div>
-            <div class="confetti" style="position: absolute; width: 12px; height: 12px; background: #ff6348; left: 45%; animation: confettiFall 2.6s linear infinite; animation-delay: 0.1s; border-radius: 50%;"></div>
-            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #ffd700; left: 50%; animation: confettiFall 3.4s linear infinite; animation-delay: 0.4s;"></div>
-            <div class="confetti" style="position: absolute; width: 14px; height: 14px; background: #ff6b6b; left: 55%; animation: confettiFall 2.8s linear infinite; animation-delay: 0.6s; border-radius: 50%;"></div>
-            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #4ecdc4; left: 60%; animation: confettiFall 3.2s linear infinite; animation-delay: 0.2s;"></div>
-            <div class="confetti" style="position: absolute; width: 12px; height: 12px; background: #ffe66d; left: 65%; animation: confettiFall 2.9s linear infinite; animation-delay: 0.5s; border-radius: 50%;"></div>
-            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #ff9ff3; left: 70%; animation: confettiFall 3.1s linear infinite; animation-delay: 0.3s;"></div>
-            <div class="confetti" style="position: absolute; width: 14px; height: 14px; background: #54a0ff; left: 75%; animation: confettiFall 2.7s linear infinite; animation-delay: 0.7s; border-radius: 50%;"></div>
-            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #5f27cd; left: 80%; animation: confettiFall 3.3s linear infinite; animation-delay: 0.1s;"></div>
-            <div class="confetti" style="position: absolute; width: 12px; height: 12px; background: #00d2d3; left: 85%; animation: confettiFall 2.6s linear infinite; animation-delay: 0.4s; border-radius: 50%;"></div>
-            <div class="confetti" style="position: absolute; width: 10px; height: 10px; background: #ff6348; left: 90%; animation: confettiFall 3.4s linear infinite; animation-delay: 0.6s;"></div>
-            <div class="confetti" style="position: absolute; width: 14px; height: 14px; background: #ffd700; left: 95%; animation: confettiFall 2.8s linear infinite; animation-delay: 0.2s; border-radius: 50%;"></div>
-        </div>
-        <div style="text-align: center; color: white; z-index: 1; animation: fadeInScale 1s ease-out; position: relative;">
-            <div style="font-size: clamp(6rem, 15vw, 12rem); margin-bottom: 30px; animation: bounce 1.2s ease-in-out infinite, rotate 3s linear infinite; filter: drop-shadow(0 15px 40px rgba(0,0,0,0.4)); display: inline-block; transform-origin: center;">🎉</div>
-            <h1 style="font-size: clamp(3rem, 8vw, 6rem); font-weight: 900; margin-bottom: 25px; text-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 0 40px rgba(255,255,255,0.3); letter-spacing: 3px; animation: slideInUp 0.8s ease-out, pulse 2s ease-in-out infinite, gradientText 3s ease infinite; background: linear-gradient(45deg, #fff, #f0f0f0, #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; background-size: 200% 200%;">WE'RE BACK!</h1>
-            <p style="font-size: clamp(1.5rem, 4vw, 2.5rem); margin-bottom: 50px; opacity: 0.98; text-shadow: 0 4px 15px rgba(0,0,0,0.3), 0 0 20px rgba(255,255,255,0.2); animation: slideInUp 1s ease-out, glow 2s ease-in-out infinite alternate; font-weight: 600;">Noteworthy News is now live!</p>
-            <div style="font-size: clamp(1.2rem, 3vw, 1.8rem); opacity: 0.95; animation: slideInUp 1.2s ease-out; text-shadow: 0 2px 10px rgba(0,0,0,0.2); font-weight: 500;">Thank you for your patience</div>
-            <div style="margin-top: 40px; font-size: clamp(1rem, 2.5vw, 1.5rem); opacity: 0.9; animation: slideInUp 1.4s ease-out; text-shadow: 0 2px 8px rgba(0,0,0,0.2);">✨ Ready to explore the news ✨</div>
-            <!-- Progress Bar -->
-            <div style="margin-top: 60px; width: 80%; max-width: 600px; animation: slideInUp 1.6s ease-out; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div style="background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(10px); height: 12px; width: 100%; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.5), inset 0 2px 4px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); position: relative;">
-                    <div id="completion-progress-bar" style="background: linear-gradient(90deg, #4facfe 0%, #00f2fe 50%, #4facfe 100%); background-size: 200% 100%; height: 100%; width: 0%; transition: width 0.3s ease; border-radius: 10px; box-shadow: 0 0 30px rgba(79, 172, 254, 0.6), inset 0 0 20px rgba(255,255,255,0.3); animation: shimmer 2s ease-in-out infinite;"></div>
+        <!-- Progress Bar -->
+        <div style="width: 85%; max-width: 900px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1; margin-top: 300px;">
+            <!-- Outer glow effect -->
+            <div style="position: relative; width: 100%; padding: 8px; background: linear-gradient(135deg, rgba(79, 172, 254, 0.3) 0%, rgba(0, 242, 254, 0.3) 100%); border-radius: 30px; box-shadow: 0 0 60px rgba(79, 172, 254, 0.8), 0 0 120px rgba(0, 242, 254, 0.4), inset 0 0 30px rgba(255,255,255,0.1);">
+                <!-- Progress bar container -->
+                <div style="background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(15px); height: 40px; width: 100%; border-radius: 25px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.7), inset 0 4px 8px rgba(0,0,0,0.4), inset 0 -2px 4px rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.15); position: relative;">
+                    <!-- Animated background pattern -->
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(255,255,255,0.03) 8px, rgba(255,255,255,0.03) 9px); animation: progressStripes 1s linear infinite;"></div>
+                    <!-- Progress fill with realistic segments -->
+                    <div id="completion-progress-bar" style="background: linear-gradient(90deg, #4facfe 0%, #00f2fe 25%, #4facfe 50%, #00f2fe 75%, #4facfe 100%); background-size: 300% 100%; height: 100%; width: 0%; transition: width 0.1s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 25px; box-shadow: 0 0 40px rgba(79, 172, 254, 0.9), inset 0 0 30px rgba(255,255,255,0.4), inset 0 -2px 10px rgba(0,0,0,0.2); position: relative; overflow: hidden; animation: progressShimmer 1.5s ease-in-out infinite;">
+                        <!-- Shimmer effect -->
+                        <div style="position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent); animation: progressShine 2s ease-in-out infinite;"></div>
+                        <!-- Glow particles -->
+                        <div style="position: absolute; top: 50%; left: 0; width: 20px; height: 20px; background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%); border-radius: 50%; transform: translateY(-50%); box-shadow: 0 0 20px rgba(255,255,255,0.8); animation: progressPulse 1.5s ease-in-out infinite;"></div>
+                    </div>
                 </div>
-                <div id="completion-progress-text" style="margin-top: 20px; font-size: clamp(1rem, 2.5vw, 1.4rem); opacity: 0.95; text-shadow: 0 2px 10px rgba(0,0,0,0.5), 0 0 20px rgba(255,255,255,0.3); font-weight: 600; letter-spacing: 1px;">Loading...</div>
             </div>
+            <div id="completion-progress-text" style="margin-top: 30px; font-size: clamp(1.3rem, 3.5vw, 2rem); opacity: 0.98; text-shadow: 0 4px 20px rgba(0,0,0,0.8), 0 0 30px rgba(79, 172, 254, 0.6), 0 0 60px rgba(0, 242, 254, 0.4); font-weight: 700; letter-spacing: 2px; color: white; text-transform: uppercase; animation: textGlow 2s ease-in-out infinite alternate;">Loading...</div>
         </div>
     </div>
+    
+    <style>
+        @keyframes progressShimmer {
+            0%, 100% {
+                background-position: 0% 0;
+            }
+            50% {
+                background-position: 100% 0;
+            }
+        }
+        
+        @keyframes progressShine {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        @keyframes progressPulse {
+            0%, 100% {
+                opacity: 0.6;
+                transform: translateY(-50%) scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: translateY(-50%) scale(1.2);
+            }
+        }
+        
+        @keyframes progressStripes {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 16px 0;
+            }
+        }
+        
+        @keyframes textGlow {
+            0% {
+                text-shadow: 0 4px 20px rgba(0,0,0,0.8), 0 0 30px rgba(79, 172, 254, 0.6), 0 0 60px rgba(0, 242, 254, 0.4);
+            }
+            100% {
+                text-shadow: 0 4px 20px rgba(0,0,0,0.8), 0 0 50px rgba(79, 172, 254, 1), 0 0 100px rgba(0, 242, 254, 0.8);
+            }
+        }
+    </style>
     
     <div id="maintenance-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background-size: cover; background-position: center; z-index: 999999; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; overflow: hidden;">
         <!-- Official Document -->
@@ -14412,14 +14770,32 @@
             const overlay = document.getElementById('maintenance-overlay');
             const isEnabled = window.MAINTENANCE_MODE_ENABLED === true;
             
-            // Don't show maintenance screen if already completed
-            if (localStorage.getItem('maintenanceCompleted') === 'true') {
+            // Don't show maintenance screen if already completed OR if countdown has ended
+            if (localStorage.getItem('maintenanceCompleted') === 'true' || localStorage.getItem('countdownEnded') === 'true') {
                 if (overlay) {
                     overlay.style.display = 'none';
+                    overlay.style.visibility = 'hidden';
+                    overlay.style.opacity = '0';
+                    overlay.style.pointerEvents = 'none';
                 }
                 document.body.classList.remove('maintenance-active');
                 document.documentElement.classList.remove('maintenance-active');
+                document.body.style.overflow = '';
+                document.documentElement.style.overflow = '';
                 localStorage.removeItem('maintenanceModeActive');
+                
+                // If countdown ended but completion screen hasn't been shown yet, show it
+                if (localStorage.getItem('countdownEnded') === 'true' && 
+                    localStorage.getItem('completionScreenShown') !== 'true' && 
+                    localStorage.getItem('maintenanceCompleted') !== 'true') {
+                    // Delay slightly to ensure DOM is ready
+                    setTimeout(function() {
+                        if (typeof showCompletionScreen === 'function') {
+                            showCompletionScreen();
+                        }
+                    }, 100);
+                }
+                
                 return; // Exit early, don't initialize maintenance screen
             }
             
@@ -14799,7 +15175,7 @@
             let countdownEnded = false;
             
             // Fade in/out utility functions
-            const FADE_DURATION = 1000; // milliseconds for fade transition
+            const FADE_DURATION = 400; // milliseconds for fade transition (faster)
             
             function fadeOutAudio(audio, onComplete) {
                 if (!audio || audio.paused) {
@@ -14874,8 +15250,18 @@
                     return;
                 }
                 
-                if (!isTestMode && countdownEnded) return; // Prevent multiple triggers
-                if (!isTestMode) countdownEnded = true;
+                if (!isTestMode && (countdownEnded || localStorage.getItem('countdownEnded') === 'true')) {
+                    // If countdown ended but completion screen hasn't been shown, show it
+                    if (localStorage.getItem('completionScreenShown') !== 'true') {
+                        localStorage.setItem('completionScreenShown', 'true');
+                    } else {
+                        return; // Already shown, don't show again
+                    }
+                }
+                if (!isTestMode) {
+                    countdownEnded = true;
+                    localStorage.setItem('countdownEnded', 'true');
+                }
                 
                 const overlay = document.getElementById('maintenance-overlay');
                 const completionScreen = document.getElementById('countdown-completion-screen');
@@ -14884,9 +15270,12 @@
                 const progressBar = document.getElementById('completion-progress-bar');
                 const progressText = document.getElementById('completion-progress-text');
                 
-                // Hide maintenance screen
+                // Hide maintenance screen - ensure it's completely hidden
                 if (overlay) {
                     overlay.style.display = 'none';
+                    overlay.style.visibility = 'hidden';
+                    overlay.style.opacity = '0';
+                    overlay.style.pointerEvents = 'none';
                 }
                 
                 // Re-enable scrolling
@@ -14895,6 +15284,10 @@
                 
                 // Remove maintenance mode flag
                 localStorage.removeItem('maintenanceModeActive');
+                
+                // Ensure body is scrollable
+                document.body.style.overflow = '';
+                document.documentElement.style.overflow = '';
                 
                 // Clear music monitor interval
                 if (window.maintenanceMusicMonitor) {
@@ -14930,26 +15323,30 @@
                     window.maintenancePreventMusicPlay = null;
                 }
                 
-                // Fade out maintenance music
+                // Fade out maintenance music and fade in completion music simultaneously (faster transition)
                 if (maintenanceMusic) {
-                    fadeOutAudio(maintenanceMusic, function() {
-                        // After maintenance music fades out, fade in completion music
-                        if (completionMusic) {
-                            completionMusic.volume = 0.5;
-                            fadeInAudio(completionMusic, 0.5);
-                        }
-                    });
+                    // Start fading in completion music immediately (overlap for faster transition)
+                    if (completionMusic) {
+                        completionMusic.volume = 0;
+                        fadeInAudio(completionMusic, 0.5);
+                    }
+                    // Fade out maintenance music (completion music already starting)
+                    fadeOutAudio(maintenanceMusic);
                 } else {
                     // If no maintenance music, just start completion music
                     if (completionMusic) {
-                        completionMusic.volume = 0.5;
+                        completionMusic.volume = 0;
                         fadeInAudio(completionMusic, 0.5);
                     }
                 }
                 
-                // Show completion screen
+                // Show completion screen - ensure it's visible and on top
                 if (completionScreen) {
                     completionScreen.style.display = 'flex';
+                    completionScreen.style.visibility = 'visible';
+                    completionScreen.style.opacity = '1';
+                    completionScreen.style.zIndex = '10000000';
+                    completionScreen.style.pointerEvents = 'auto';
                     
                     // Reset progress bar
                     if (progressBar) {
@@ -14964,20 +15361,51 @@
                     localStorage.setItem('completionScreenStartTime', startTime.toString());
                     localStorage.setItem('completionScreenInProgress', 'true');
                     
-                    // Progress bar animation (30 seconds)
+                    // Progress bar animation (30 seconds) with realistic variable speed
                     const totalDuration = 30000; // 30 seconds
-                    const updateInterval = 100; // Update every 100ms
+                    const updateInterval = 50; // Update every 50ms for smoother animation
                     let elapsed = 0;
+                    let lastProgress = 0;
+                    
+                    // Function to create realistic progress curve (starts fast, slows in middle, speeds up at end)
+                    function getRealisticProgress(percent) {
+                        // Ease-in-out-cubic curve for more realistic feel
+                        if (percent < 0.5) {
+                            return 4 * percent * percent * percent;
+                        } else {
+                            return 1 - Math.pow(-2 * percent + 2, 3) / 2;
+                        }
+                    }
+                    
+                    // Add some random variation to make it feel more realistic
+                    function getVariation(baseProgress) {
+                        // Add small random variations (±0.5%) to simulate real loading
+                        const variation = (Math.random() - 0.5) * 0.5;
+                        return Math.max(0, Math.min(100, baseProgress + variation));
+                    }
                     
                     const progressInterval = setInterval(function() {
                         elapsed += updateInterval;
-                        const progress = Math.min((elapsed / totalDuration) * 100, 100);
+                        const rawProgress = (elapsed / totalDuration) * 100;
+                        
+                        // Apply realistic curve
+                        const curvedProgress = getRealisticProgress(rawProgress / 100) * 100;
+                        
+                        // Add small variations for realism (but ensure it never goes backwards)
+                        const finalProgress = Math.max(lastProgress, Math.min(100, getVariation(curvedProgress)));
+                        lastProgress = finalProgress;
                         
                         if (progressBar) {
-                            progressBar.style.width = progress + '%';
+                            // Update the glow particle position
+                            const glowParticle = progressBar.querySelector('div[style*="progressPulse"]');
+                            if (glowParticle) {
+                                glowParticle.style.left = finalProgress + '%';
+                            }
+                            progressBar.style.width = finalProgress + '%';
                         }
                         if (progressText) {
-                            progressText.textContent = 'Loading... ' + Math.round(progress) + '%';
+                            const roundedProgress = Math.round(finalProgress);
+                            progressText.textContent = 'Loading... ' + roundedProgress + '%';
                         }
                         
                         // Update stored progress
@@ -14987,10 +15415,30 @@
                         if (progress >= 100) {
                             clearInterval(progressInterval);
                             
-                            // Hide completion screen
+                            // Hide completion screen and ensure site is accessible
                             if (completionScreen) {
                                 completionScreen.style.display = 'none';
+                                completionScreen.style.visibility = 'hidden';
+                                completionScreen.style.opacity = '0';
+                                completionScreen.style.pointerEvents = 'none';
                             }
+                            
+                            // Ensure maintenance overlay is still hidden
+                            const overlayCheck = document.getElementById('maintenance-overlay');
+                            if (overlayCheck) {
+                                overlayCheck.style.display = 'none';
+                                overlayCheck.style.visibility = 'hidden';
+                                overlayCheck.style.opacity = '0';
+                                overlayCheck.style.pointerEvents = 'none';
+                            }
+                            
+                            // Final cleanup - ensure site is fully accessible
+                            document.body.classList.remove('maintenance-active');
+                            document.documentElement.classList.remove('maintenance-active');
+                            document.body.style.overflow = '';
+                            document.documentElement.style.overflow = '';
+                            document.body.style.position = '';
+                            document.documentElement.style.position = '';
                             
                             // Stop completion music and then resume background music
                             if (completionMusic) {
@@ -15142,7 +15590,7 @@
                                     } else {
                                         console.error('No track available to resume!');
                                     }
-                                }, 500);
+                                }, 200); // Reduced delay for faster transition
                             }
                         }
                     }, updateInterval);
@@ -15348,7 +15796,7 @@
                                             } else {
                                                 console.error('No track available to resume (refresh)!');
                                             }
-                                        }, 500);
+                                        }, 200); // Reduced delay for faster transition
                                     }
                                 }
                             }, updateInterval);
@@ -15370,6 +15818,18 @@
                 
                 // Don't update countdown if maintenance is already completed
                 if (localStorage.getItem('maintenanceCompleted') === 'true') {
+                    countdownElement.textContent = '00:00:00';
+                    return;
+                }
+                
+                // If countdown has already ended, keep it at 00:00:00 and don't recalculate
+                if (countdownEnded || localStorage.getItem('countdownEnded') === 'true') {
+                    countdownElement.textContent = '00:00:00';
+                    // Make sure completion screen is shown if it hasn't been yet
+                    if (localStorage.getItem('maintenanceCompleted') !== 'true' && localStorage.getItem('completionScreenShown') !== 'true') {
+                        localStorage.setItem('completionScreenShown', 'true');
+                        showCompletionScreen();
+                    }
                     return;
                 }
                 
@@ -15377,19 +15837,27 @@
                 const estOffset = -5 * 60;
                 const estNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (estOffset * 60000));
                 const target = new Date(estNow);
-                target.setHours(20, 30, 0, 0);
-                if (estNow >= target) {
-                    target.setDate(target.getDate() + 1);
-                }
+                target.setHours(19, 45, 0, 0); // 7:45 PM EST
+                
+                // Calculate diff BEFORE checking if we should set to tomorrow
+                // This prevents resetting the countdown when we're past the target time
                 const diff = target - estNow;
+                
+                // If countdown has reached zero or passed, trigger completion screen
                 if (diff <= 0) {
                     countdownElement.textContent = '00:00:00';
-                    // Show completion screen when countdown ends
-                    if (!countdownEnded && localStorage.getItem('maintenanceCompleted') !== 'true') {
+                    // Mark countdown as ended in localStorage to persist across refreshes
+                    localStorage.setItem('countdownEnded', 'true');
+                    countdownEnded = true;
+                    // Show completion screen when countdown ends (only once)
+                    if (localStorage.getItem('maintenanceCompleted') !== 'true' && localStorage.getItem('completionScreenShown') !== 'true') {
+                        localStorage.setItem('completionScreenShown', 'true');
                         showCompletionScreen();
                     }
                     return;
                 }
+                
+                // Update countdown display
                 const hours = Math.floor(diff / (1000 * 60 * 60));
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((diff % (1000 * 60)) / 1000);

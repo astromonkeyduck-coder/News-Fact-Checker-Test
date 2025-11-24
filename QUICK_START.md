@@ -48,3 +48,4 @@ Once you complete these 6 steps, your account system will be fully working!
 
 **Full detailed guide**: See `NEXT_STEPS.md` for complete instructions.
 
+

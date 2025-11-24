@@ -7982,10 +7982,17 @@ function initNewsletterSubscription() {
     
     // Easing function for smooth fade curves (ease-in-out)
     function easeInOutCubic(t) {
-        return t < 0.5 
-            ? 4 * t * t * t 
-            : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        // Clamp t to valid range
+        t = Math.max(0, Math.min(1, t));
+        if (t < 0.5) {
+            return 4 * t * t * t;
+        } else {
+            return 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
     }
+    
+    // Track active fade timers to prevent overlapping fades
+    const activeFadeTimers = new WeakMap();
     
     function fadeOutAudio(audio, onComplete) {
         if (!audio || audio.paused) {
@@ -7993,26 +8000,57 @@ function initNewsletterSubscription() {
             return;
         }
         
+        // Cancel any existing fade on this audio element
+        const existingTimer = activeFadeTimers.get(audio);
+        if (existingTimer) {
+            clearInterval(existingTimer);
+            activeFadeTimers.delete(audio);
+        }
+        
         const startVolume = audio.volume;
         const startTime = Date.now();
         const fadeInterval = 16; // ~60fps
         
         const fadeTimer = setInterval(() => {
+            // Check if audio still exists and is still playing
+            if (!audio || audio.paused) {
+                clearInterval(fadeTimer);
+                activeFadeTimers.delete(audio);
+                if (onComplete) onComplete();
+                return;
+            }
+            
             const elapsed = Date.now() - startTime;
             const progress = Math.min(elapsed / FADE_DURATION, 1);
             // Apply easing function for smoother curve
             const easedProgress = easeInOutCubic(progress);
             const newVolume = startVolume * (1 - easedProgress);
             
-            audio.volume = Math.max(0, newVolume);
+            try {
+                audio.volume = Math.max(0, newVolume);
+            } catch (error) {
+                console.error('Error setting volume during fade out:', error);
+                clearInterval(fadeTimer);
+                activeFadeTimers.delete(audio);
+                if (onComplete) onComplete();
+                return;
+            }
             
             if (progress >= 1) {
                 clearInterval(fadeTimer);
-                audio.pause();
-                audio.volume = startVolume; // Restore original volume
+                activeFadeTimers.delete(audio);
+                try {
+                    audio.pause();
+                    audio.volume = startVolume; // Restore original volume
+                } catch (error) {
+                    console.error('Error pausing audio after fade out:', error);
+                }
                 if (onComplete) onComplete();
             }
         }, fadeInterval);
+        
+        // Store the timer so we can cancel it if needed
+        activeFadeTimers.set(audio, fadeTimer);
     }
     
     function fadeInAudio(audio, targetVolume, onComplete) {
@@ -8021,38 +8059,90 @@ function initNewsletterSubscription() {
             return;
         }
         
+        // Cancel any existing fade on this audio element
+        const existingTimer = activeFadeTimers.get(audio);
+        if (existingTimer) {
+            clearInterval(existingTimer);
+            activeFadeTimers.delete(audio);
+        }
+        
         const startVolume = 0;
         const finalVolume = targetVolume || 0.5;
         const startTime = Date.now();
         const fadeInterval = 16; // ~60fps
         
         // Set initial volume
-        audio.volume = 0;
-        
-        // Start playing if not already
-        if (audio.paused) {
-            audio.play().catch(err => {
-                console.log('Could not play audio during fade in:', err);
-                if (onComplete) onComplete();
-                return;
-            });
+        try {
+            audio.volume = 0;
+        } catch (error) {
+            console.error('Error setting initial volume:', error);
+            if (onComplete) onComplete();
+            return;
         }
         
-        const fadeTimer = setInterval(() => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / FADE_DURATION, 1);
-            // Apply easing function for smoother curve
-            const easedProgress = easeInOutCubic(progress);
-            const newVolume = startVolume + (finalVolume - startVolume) * easedProgress;
-            
-            audio.volume = Math.min(finalVolume, newVolume);
-            
-            if (progress >= 1) {
-                clearInterval(fadeTimer);
+        // Start playing if not already
+        const playPromise = audio.paused ? audio.play() : Promise.resolve();
+        
+        playPromise.catch(err => {
+            console.log('Could not play audio during fade in:', err);
+            // Fallback: try to set volume directly and complete
+            try {
                 audio.volume = finalVolume;
+            } catch (e) {
+                console.error('Error setting audio volume:', e);
+            }
+            if (onComplete) onComplete();
+            return;
+        });
+        
+        // Start fade timer regardless of play state
+        const fadeTimer = setInterval(() => {
+            // Check if audio still exists
+            if (!audio) {
+                clearInterval(fadeTimer);
+                activeFadeTimers.delete(audio);
+                if (onComplete) onComplete();
+                return;
+            }
+            
+            try {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / FADE_DURATION, 1);
+                // Apply easing function for smoother curve
+                const easedProgress = easeInOutCubic(progress);
+                const newVolume = startVolume + (finalVolume - startVolume) * easedProgress;
+                
+                // Ensure volume is valid
+                if (!isNaN(newVolume) && isFinite(newVolume) && newVolume >= 0 && newVolume <= 1) {
+                    audio.volume = Math.max(0, Math.min(finalVolume, newVolume));
+                }
+                
+                if (progress >= 1) {
+                    clearInterval(fadeTimer);
+                    activeFadeTimers.delete(audio);
+                    try {
+                        audio.volume = finalVolume;
+                    } catch (error) {
+                        console.error('Error setting final volume:', error);
+                    }
+                    if (onComplete) onComplete();
+                }
+            } catch (error) {
+                // If fade fails, just set volume directly
+                console.error('Error during fade in:', error);
+                clearInterval(fadeTimer);
+                activeFadeTimers.delete(audio);
+                try {
+                    audio.volume = finalVolume;
+                } catch (e) {
+                    console.error('Error setting final volume:', e);
+                }
                 if (onComplete) onComplete();
             }
         }, fadeInterval);
+        
+        // Store the timer so we can cancel it if needed
+        activeFadeTimers.set(audio, fadeTimer);
     }
     let isGenerating = false; // Flag to prevent multiple simultaneous generations
     let cooldownUntil = 0; // Timestamp when cooldown expires
@@ -8103,48 +8193,85 @@ function initNewsletterSubscription() {
         const music = getBackgroundMusicElements();
         let currentTrack = null;
         let currentTime = 0;
+        let originalVolume = 0.5; // Default volume
+        
+        // Helper to get or set original volume
+        const getOriginalVolume = (track) => {
+            if (track.dataset.originalVolume) {
+                return parseFloat(track.dataset.originalVolume);
+            }
+            // If no original volume stored, use current volume if it's reasonable (> 0.1)
+            // Otherwise default to 0.5
+            const vol = track.volume > 0.1 ? track.volume : 0.5;
+            track.dataset.originalVolume = vol.toString();
+            return vol;
+        };
         
         if (music.track1 && !music.track1.paused) {
             currentTrack = music.track1;
             currentTime = music.track1.currentTime;
+            originalVolume = getOriginalVolume(music.track1);
         } else if (music.track2 && !music.track2.paused) {
             currentTrack = music.track2;
             currentTime = music.track2.currentTime;
+            originalVolume = getOriginalVolume(music.track2);
         } else if (music.loop && !music.loop.paused) {
             currentTrack = music.loop;
             currentTime = music.loop.currentTime;
+            originalVolume = getOriginalVolume(music.loop);
         } else {
             // Get from paused track
             if (music.track1 && music.track1.currentTime > 0) {
                 currentTrack = music.track1;
                 currentTime = music.track1.currentTime;
+                originalVolume = getOriginalVolume(music.track1);
             } else if (music.track2 && music.track2.currentTime > 0) {
                 currentTrack = music.track2;
                 currentTime = music.track2.currentTime;
+                originalVolume = getOriginalVolume(music.track2);
             } else if (music.loop && music.loop.currentTime > 0) {
                 currentTrack = music.loop;
                 currentTime = music.loop.currentTime;
+                originalVolume = getOriginalVolume(music.loop);
             }
         }
         
         savedBackgroundMusicState = currentTrack ? {
             element: currentTrack,
-            time: currentTime
+            time: currentTime,
+            originalVolume: originalVolume
         } : null;
     }
     
     // Pause all background music with fade out
     function pauseBackgroundMusic() {
+        // Don't pause if already transitioning (prevents conflicts)
+        if (isTransitioning) {
+            return;
+        }
+        
         const music = getBackgroundMusicElements();
         const audioElementsToFade = [];
         
+        // Helper to ensure original volume is stored before fading
+        const ensureOriginalVolume = (track) => {
+            if (!track.dataset.originalVolume) {
+                // Store current volume as original if it's reasonable (> 0.1)
+                const vol = track.volume > 0.1 ? track.volume : 0.5;
+                track.dataset.originalVolume = vol.toString();
+            }
+        };
+        
         if (music.track1 && !music.track1.paused) {
+            ensureOriginalVolume(music.track1);
             audioElementsToFade.push(music.track1);
         }
         if (music.track2 && !music.track2.paused) {
+            ensureOriginalVolume(music.track2);
             audioElementsToFade.push(music.track2);
         }
         if (music.loop && !music.loop.paused) {
+            ensureOriginalVolume(music.loop);
             audioElementsToFade.push(music.loop);
         }
         
@@ -8156,11 +8283,24 @@ function initNewsletterSubscription() {
                 audio.id && 
                 (audio.id.includes('backgroundMusic') || audio.id.includes('background')) &&
                 !audio.paused) {
+                ensureOriginalVolume(audio);
                 audioElementsToFade.push(audio);
             }
         });
         
         // Fade out all background music elements
+        // First, ensure all other background tracks are paused immediately to prevent overlap
+        if (music.track1 && !audioElementsToFade.includes(music.track1)) {
+            music.track1.pause();
+        }
+        if (music.track2 && !audioElementsToFade.includes(music.track2)) {
+            music.track2.pause();
+        }
+        if (music.loop && !audioElementsToFade.includes(music.loop)) {
+            music.loop.pause();
+        }
+        
+        // Then fade out the ones that were playing
         audioElementsToFade.forEach(audio => {
             fadeOutAudio(audio);
         });
@@ -8168,33 +8308,77 @@ function initNewsletterSubscription() {
     
     // Resume background music from saved state with fade in
     function resumeBackgroundMusic() {
-        if (!savedBackgroundMusicState || !savedBackgroundMusicState.element) return;
+        if (!savedBackgroundMusicState || !savedBackgroundMusicState.element) {
+            console.log('No saved background music state to resume');
+            return;
+        }
+        
+        // Don't resume if spotlight is visible or transitioning
+        if (isSpotlightVisible || isTransitioning) {
+            console.log('Spotlight visible or transitioning, skipping background music resume');
+            return;
+        }
         
         const musicElement = savedBackgroundMusicState.element;
+        if (!musicElement) {
+            console.log('Saved music element not found');
+            return;
+        }
+        
+        // Ensure all other background tracks are paused before resuming
+        const music = getBackgroundMusicElements();
+        if (music.track1 && music.track1 !== musicElement && !music.track1.paused) {
+            music.track1.pause();
+        }
+        if (music.track2 && music.track2 !== musicElement && !music.track2.paused) {
+            music.track2.pause();
+        }
+        if (music.loop && music.loop !== musicElement && !music.loop.paused) {
+            music.loop.pause();
+        }
+        
         musicElement.currentTime = savedBackgroundMusicState.time;
         
-        // Get the original volume (default to 0.5 if not set)
-        const targetVolume = musicElement.volume || 0.5;
+        // Use the saved original volume, or get from dataset, or default to 0.5
+        const targetVolume = savedBackgroundMusicState.originalVolume || 
+                            (musicElement.dataset.originalVolume ? 
+                                parseFloat(musicElement.dataset.originalVolume) : 0.5);
+        
+        // Ensure we're using the correct original volume
+        if (!musicElement.dataset.originalVolume) {
+            musicElement.dataset.originalVolume = targetVolume.toString();
+        }
         
         // Ensure spotlight music is fully faded out before starting background fade in
         // This creates a smoother transition
         if (spotlightMusic && !spotlightMusic.paused) {
             // Wait a bit for spotlight to finish fading, then start background
             setTimeout(() => {
-                fadeInAudio(musicElement, targetVolume, () => {
-                    // Music has faded in
-                });
-            }, 100);
+                // Double-check spotlight is not visible before resuming
+                if (!isSpotlightVisible && !isTransitioning) {
+                    fadeInAudio(musicElement, targetVolume, () => {
+                        // Music has faded in at original volume
+                    });
+                }
+            }, 200); // Slightly longer wait for smoother transition
         } else {
             // Fade in the background music immediately
-            fadeInAudio(musicElement, targetVolume, () => {
-                // Music has faded in
-            });
+            if (!isSpotlightVisible && !isTransitioning) {
+                fadeInAudio(musicElement, targetVolume, () => {
+                    // Music has faded in at original volume
+                });
+            }
         }
     }
     
     // Load and play country music
     function playCountryMusic(countryName, resumeFromSaved = false) {
+        // Don't play if not visible or transitioning
+        if (!isSpotlightVisible || isTransitioning) {
+            console.log('Spotlight not visible or transitioning, skipping country music play');
+            return;
+        }
+        
         const audioFile = countryMusicMap[countryName];
         if (!audioFile) {
             console.log(`No music file found for ${countryName}`);
@@ -8329,15 +8513,31 @@ function initNewsletterSubscription() {
     
     // Monitor to ensure background music stays paused while spotlight music plays
     let musicMonitorInterval = null;
+    let isTransitioning = false; // Lock to prevent overlapping transitions
     function startMusicMonitor() {
         if (musicMonitorInterval) return; // Already monitoring
         
         musicMonitorInterval = setInterval(() => {
-            if (spotlightMusic && !spotlightMusic.paused && isSpotlightVisible) {
+            if (spotlightMusic && !spotlightMusic.paused && isSpotlightVisible && !isTransitioning) {
                 // Spotlight music is playing - ensure background is paused
-                pauseBackgroundMusic();
+                // Only pause if not currently transitioning
+                const music = getBackgroundMusicElements();
+                let shouldPause = false;
+                
+                // Check if any background track is actually playing (not just paused)
+                if (music.track1 && !music.track1.paused && music.track1.volume > 0.01) {
+                    shouldPause = true;
+                } else if (music.track2 && !music.track2.paused && music.track2.volume > 0.01) {
+                    shouldPause = true;
+                } else if (music.loop && !music.loop.paused && music.loop.volume > 0.01) {
+                    shouldPause = true;
+                }
+                
+                if (shouldPause) {
+                    pauseBackgroundMusic();
+                }
             }
-        }, 500); // Check every 500ms
+        }, 1000); // Check every 1 second (less aggressive)
     }
     
     function stopMusicMonitor() {
@@ -8348,47 +8548,83 @@ function initNewsletterSubscription() {
     }
     
     // Setup Intersection Observer to detect when spotlight is visible
+    let visibilityChangeTimeout = null;
     function setupSpotlightVisibilityObserver() {
         const spotlightSection = document.getElementById('country-spotlight-section');
         if (!spotlightSection) return;
         
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
-                const wasVisible = isSpotlightVisible;
-                isSpotlightVisible = entry.isIntersecting && entry.intersectionRatio > 0.3;
+                // Clear any pending visibility changes
+                if (visibilityChangeTimeout) {
+                    clearTimeout(visibilityChangeTimeout);
+                    visibilityChangeTimeout = null;
+                }
                 
-                // Only act if visibility state actually changed
-                if (wasVisible !== isSpotlightVisible) {
-                    if (isSpotlightVisible) {
-                        // Spotlight is now visible - pause background, play/resume country music
-                        if (currentCountry && countryMusicMap[currentCountry.name]) {
+                // Debounce rapid visibility changes
+                visibilityChangeTimeout = setTimeout(() => {
+                    const wasVisible = isSpotlightVisible;
+                    isSpotlightVisible = entry.isIntersecting && entry.intersectionRatio > 0.3;
+                    
+                    // Only act if visibility state actually changed and we're not transitioning
+                    if (wasVisible !== isSpotlightVisible && !isTransitioning) {
+                        isTransitioning = true; // Lock transitions
+                        window.spotlightTransitioning = true; // Expose to global scope
+                        
+                        if (isSpotlightVisible) {
+                            // Spotlight is now visible - pause background, play/resume country music
+                            if (currentCountry && countryMusicMap[currentCountry.name]) {
+                                saveBackgroundMusicState();
+                                pauseBackgroundMusic();
+                                // Try to resume from saved state, otherwise start fresh
+                                playCountryMusic(currentCountry.name, true);
+                                
+                                // Unlock after transition completes
+                                setTimeout(() => {
+                                    isTransitioning = false;
+                                    window.spotlightTransitioning = false;
+                                    window.spotlightTransitioning = false;
+                                }, 600); // Wait for fade transitions
+                            } else {
+                                isTransitioning = false;
+                                window.spotlightTransitioning = false;
+                            }
+                        } else {
+                            // Spotlight is not visible - stop country music (save position), resume background
+                            // Use a coordinated fade for smoother transition
+                            stopCountryMusic();
+                            stopMusicMonitor(); // Stop monitoring
+                            // Wait for country music to start fading out before resuming background
+                            setTimeout(() => {
+                                resumeBackgroundMusic();
+                                // Unlock after transition completes
+                                setTimeout(() => {
+                                    isTransitioning = false;
+                                    window.spotlightTransitioning = false;
+                                }, 400); // Wait for fade in
+                            }, 300);
+                        }
+                    } else if (isSpotlightVisible && currentCountry && countryMusicMap[currentCountry.name] && !isTransitioning) {
+                        // Spotlight is visible and country changed - update music
+                        // Check if we need to switch music (country changed while visible)
+                        if (!spotlightMusic || spotlightMusic.paused) {
+                            isTransitioning = true;
+                            window.spotlightTransitioning = true;
                             saveBackgroundMusicState();
                             pauseBackgroundMusic();
-                            // Try to resume from saved state, otherwise start fresh
-                            playCountryMusic(currentCountry.name, true);
+                            playCountryMusic(currentCountry.name, false); // New country, start fresh
+                            
+                            // Unlock after transition completes
+                            setTimeout(() => {
+                                isTransitioning = false;
+                                window.spotlightTransitioning = false;
+                            }, 600);
                         }
-                    } else {
-                        // Spotlight is not visible - stop country music (save position), resume background
-                        // Use a coordinated fade for smoother transition
-                        stopCountryMusic();
-                        stopMusicMonitor(); // Stop monitoring
-                        // Wait for country music to start fading out before resuming background
-                        setTimeout(() => {
-                            resumeBackgroundMusic();
-                        }, 300);
                     }
-                } else if (isSpotlightVisible && currentCountry && countryMusicMap[currentCountry.name]) {
-                    // Spotlight is visible and country changed - update music
-                    // Check if we need to switch music (country changed while visible)
-                    if (!spotlightMusic || spotlightMusic.paused) {
-                        saveBackgroundMusicState();
-                        pauseBackgroundMusic();
-                        playCountryMusic(currentCountry.name, false); // New country, start fresh
-                    }
-                }
+                }, 150); // Debounce rapid changes
             });
         }, {
-            threshold: [0, 0.3, 0.5, 0.7, 1.0],
+            threshold: [0.3], // Single threshold to reduce rapid firing
             rootMargin: '0px'
         });
         

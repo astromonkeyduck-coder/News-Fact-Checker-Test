@@ -34,9 +34,13 @@
         
         // Easing function for smooth fade curves (ease-in-out)
         function easeInOutCubic(t) {
-            return t < 0.5 
-                ? 4 * t * t * t 
-                : 1 - Math.pow(-2 * t + 2, 3) / 2;
+            // Clamp t to valid range
+            t = Math.max(0, Math.min(1, t));
+            if (t < 0.5) {
+                return 4 * t * t * t;
+            } else {
+                return 1 - Math.pow(-2 * t + 2, 3) / 2;
+            }
         }
         
         function fadeOutAudio(audio, onComplete) {
@@ -82,26 +86,48 @@
             audio.volume = 0;
             
             // Start playing if not already
-            if (audio.paused) {
-                audio.play().catch(err => {
-                    console.log('Could not play audio during fade in:', err);
-                    if (onComplete) onComplete();
-                    return;
-                });
-            }
+            const playPromise = audio.paused ? audio.play() : Promise.resolve();
             
-            const fadeTimer = setInterval(() => {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / FADE_DURATION, 1);
-                // Apply easing function for smoother curve
-                const easedProgress = easeInOutCubic(progress);
-                const newVolume = startVolume + (finalVolume - startVolume) * easedProgress;
-                
-                audio.volume = Math.min(finalVolume, newVolume);
-                
-                if (progress >= 1) {
-                    clearInterval(fadeTimer);
+            playPromise.catch(err => {
+                console.log('Could not play audio during fade in:', err);
+                // Fallback: try to set volume directly and complete
+                try {
                     audio.volume = finalVolume;
+                } catch (e) {
+                    console.error('Error setting audio volume:', e);
+                }
+                if (onComplete) onComplete();
+                return;
+            });
+            
+            // Start fade timer regardless of play state
+            const fadeTimer = setInterval(() => {
+                try {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / FADE_DURATION, 1);
+                    // Apply easing function for smoother curve
+                    const easedProgress = easeInOutCubic(progress);
+                    const newVolume = startVolume + (finalVolume - startVolume) * easedProgress;
+                    
+                    // Ensure volume is valid
+                    if (!isNaN(newVolume) && isFinite(newVolume) && newVolume >= 0 && newVolume <= 1) {
+                        audio.volume = Math.max(0, Math.min(finalVolume, newVolume));
+                    }
+                    
+                    if (progress >= 1) {
+                        clearInterval(fadeTimer);
+                        audio.volume = finalVolume;
+                        if (onComplete) onComplete();
+                    }
+                } catch (error) {
+                    // If fade fails, just set volume directly
+                    console.error('Error during fade in:', error);
+                    clearInterval(fadeTimer);
+                    try {
+                        audio.volume = finalVolume;
+                    } catch (e) {
+                        console.error('Error setting final volume:', e);
+                    }
                     if (onComplete) onComplete();
                 }
             }, fadeInterval);
@@ -134,6 +160,12 @@
         if (backgroundMusicSecond) backgroundMusicSecond.volume = 0.5;
         if (backgroundMusicThird) backgroundMusicThird.volume = 0.5;
         if (backgroundMusicLoop) backgroundMusicLoop.volume = 0.5;
+        
+        // Store original volume in data attributes for restoration
+        backgroundMusic.dataset.originalVolume = '0.5';
+        if (backgroundMusicSecond) backgroundMusicSecond.dataset.originalVolume = '0.5';
+        if (backgroundMusicThird) backgroundMusicThird.dataset.originalVolume = '0.5';
+        if (backgroundMusicLoop) backgroundMusicLoop.dataset.originalVolume = '0.5';
         
         // Explicitly load audio metadata for all tracks
         // This ensures they're ready when we need to play

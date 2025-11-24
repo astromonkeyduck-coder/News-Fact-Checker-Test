@@ -132,3 +132,4 @@ After saving, test by:
 2. Clicking "Sign Up"
 3. If it redirects to Auth0 login, your URLs are correct! ✅
 
+
