@@ -13539,12 +13539,46 @@
             }
         }
         
+        // Track if user has scrolled past landing page
+        let hasScrolledPastLanding = false;
+        let refreshTimeout = null;
+        
         window.addEventListener('scroll', function() {
             const now = Date.now();
             if (now - lastScrollTime < scrollThrottle) {
                 return; // Skip if too soon
             }
             lastScrollTime = now;
+            
+            const scrollY = window.scrollY || window.pageYOffset;
+            const heroSection = document.querySelector('.hero-section');
+            const heroHeight = heroSection ? heroSection.offsetHeight || window.innerHeight : window.innerHeight;
+            
+            // Check if user has scrolled past the landing page (hero section)
+            if (scrollY > heroHeight) {
+                hasScrolledPastLanding = true;
+            }
+            
+            // Check if user has scrolled back to the top
+            if (scrollY <= 50 && hasScrolledPastLanding) {
+                // User scrolled back to top after being below landing page
+                // Clear any existing refresh timeout
+                if (refreshTimeout) {
+                    clearTimeout(refreshTimeout);
+                }
+                
+                // Set a small delay before refreshing to avoid flicker
+                refreshTimeout = setTimeout(function() {
+                    // Only refresh if still at the top
+                    const currentScroll = window.scrollY || window.pageYOffset;
+                    if (currentScroll <= 50) {
+                        // Reset the flag before refresh
+                        hasScrolledPastLanding = false;
+                        // Refresh the page
+                        window.location.reload();
+                    }
+                }, 300);
+            }
             
             // Ensure hero section displays correctly when scrolling
             ensureHeroSectionDisplay();
@@ -14487,7 +14521,8 @@
             let html = '';
             scores.forEach((entry, index) => {
                 const rank = index + 1;
-                const name = escapeHtml(entry.name || entry.playerName || 'Anonymous');
+                // Check multiple possible field names for user name
+                const name = escapeHtml(entry.userName || entry.name || entry.playerName || 'Anonymous');
                 const score = entry.score || 0;
                 const isTopThree = rank <= 3;
                 

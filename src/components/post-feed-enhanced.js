@@ -674,12 +674,17 @@ function renderSkeletonCards(count = 5) {
  * Load posts from API
  */
 async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', limit = 200) {
-  if (enhancedIsLoading) return;
+  // Prevent concurrent loads and infinite recursion
+  if (enhancedIsLoading) {
+    console.warn('[Enhanced Feed] Already loading, skipping duplicate call');
+    return;
+  }
   
   enhancedIsLoading = true;
   const container = document.getElementById('articlesTrack');
   if (!container) {
     console.error('[Enhanced Feed] Container not found');
+    enhancedIsLoading = false;
     return;
   }
   
@@ -702,6 +707,7 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
     renderEnhancedFeed();
   } catch (error) {
     console.error('[Enhanced Feed] Load error:', error);
+    const errorId = 'enhanced-feed-error-' + Date.now();
     container.innerHTML = `
       <div style="
         padding: 3rem;
@@ -712,7 +718,7 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
         <h3 style="color: white; margin-bottom: 0.5rem;">Failed to load posts</h3>
         <p style="margin-bottom: 1.5rem;">${error.message}</p>
         <button
-          onclick="window.loadEnhancedPosts()"
+          id="${errorId}"
           style="
             padding: 0.75rem 1.5rem;
             background: rgb(29, 155, 240);
@@ -726,6 +732,16 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
         >Try Again</button>
       </div>
     `;
+    
+    // Attach event listener safely
+    const retryButton = document.getElementById(errorId);
+    if (retryButton && window.loadEnhancedPosts) {
+      retryButton.addEventListener('click', () => {
+        if (!enhancedIsLoading && window.loadEnhancedPosts) {
+          window.loadEnhancedPosts();
+        }
+      });
+    }
   } finally {
     enhancedIsLoading = false;
   }
@@ -831,13 +847,38 @@ function renderEnhancedFeed() {
 /**
  * Initialize enhanced feed
  */
+let enhancedFeedInitialized = false;
+
 function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/functions/posts-read', limit = 200) {
-  // Expose functions to window
-  window.togglePostExpand = togglePostExpand;
-  window.sharePostEnhanced = sharePost;
-  window.openMediaLightbox = openMediaLightbox;
-  window.loadEnhancedPosts = () => loadEnhancedPosts(endpoint, limit);
-  window.renderEnhancedFeed = renderEnhancedFeed;
+  // Prevent multiple initializations
+  if (enhancedFeedInitialized) {
+    console.warn('[Enhanced Feed] Already initialized, skipping...');
+    return;
+  }
+  
+  enhancedFeedInitialized = true;
+  
+  // Expose functions to window (only once)
+  if (!window.togglePostExpand) {
+    window.togglePostExpand = togglePostExpand;
+  }
+  if (!window.sharePostEnhanced) {
+    window.sharePostEnhanced = sharePost;
+  }
+  if (!window.openMediaLightbox) {
+    window.openMediaLightbox = openMediaLightbox;
+  }
+  // Always update loadEnhancedPosts to use current endpoint/limit
+  window.loadEnhancedPosts = () => {
+    if (enhancedIsLoading) {
+      console.warn('[Enhanced Feed] Already loading, skipping...');
+      return;
+    }
+    return loadEnhancedPosts(endpoint, limit);
+  };
+  if (!window.renderEnhancedFeed) {
+    window.renderEnhancedFeed = renderEnhancedFeed;
+  }
   
   // Load posts
   loadEnhancedPosts(endpoint, limit);
