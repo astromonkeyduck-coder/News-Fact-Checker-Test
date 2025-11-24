@@ -190,15 +190,26 @@
                 if (!track) return;
                 
                 // Ensure audio is loaded and ready before playing
+                let playAttempted = false;
                 const attemptPlay = () => {
-                    if (track.paused) {
+                    if (track.paused && !playAttempted) {
+                        playAttempted = true;
                         track.play().catch(err => {
-                            console.error('Failed to play track:', err);
+                            // Only log if it's not an AbortError (interrupted by load)
+                            if (err.name !== 'AbortError') {
+                                console.error('Failed to play track:', err);
+                            }
                             // If play fails, try loading first
                             if (track.readyState < 2) {
                                 track.load();
                                 track.addEventListener('canplay', () => {
-                                    track.play().catch(e => console.error('Failed to play after load:', e));
+                                    if (track.paused) {
+                                        track.play().catch(e => {
+                                            if (e.name !== 'AbortError') {
+                                                console.error('Failed to play after load:', e);
+                                            }
+                                        });
+                                    }
                                 }, { once: true });
                             }
                         });
@@ -12362,87 +12373,8 @@
             
             <div class="news-carousel" role="region" aria-label="News articles carousel">
                 <div class="articles-track" id="articlesTrack" role="list" aria-live="polite">
-                    <article class="article-card" role="listitem" data-coming-soon="true" data-article-id="article-1">
-                        <div class="article-image">
-                            <div class="article-category breaking">BREAKING</div>
-                            <img src="4e128167-d2b8-4cff-9b9b-94d1775e4f11.png" alt="Western Saloon Scene" loading="lazy" style="transform: scale(1.5) translateY(15px);">
-            </div>
-                        <div class="article-content">
-                            <h3 class="article-headline">Coming Soon</h3>
-                            <p class="article-excerpt">More breaking news stories are in development. Stay tuned for the latest updates on media literacy and fact-checking.</p>
-                            <div class="article-meta">
-                                <span class="article-date">Coming Soon</span>
-                                <span class="article-read-time">TBD</span>
-          </div>
-                            <div class="coming-soon-badge">Coming Soon</div>
-                            <div class="comment-section" data-article-id="article-1"></div>
-    </div>
-                    </article>
-                    <article class="article-card" role="listitem" data-coming-soon="true" data-article-id="article-2">
-                        <div class="article-image">
-                            <div class="article-category fact-check">FACT CHECK</div>
-                            <img src="ab9518fb-3db7-4f3b-bedb-6332e0c42f2c.png" style="transform: scale(1.2) translateY(15px);" alt="Coming Soon" loading="lazy">
-            </div>
-                        <div class="article-content">
-                            <h3 class="article-headline">Coming Soon</h3>
-                            <p class="article-excerpt">Our fact-checking team is developing comprehensive guides to help you identify and debunk misinformation. More content coming soon.</p>
-                            <div class="article-meta">
-                                <span class="article-date">Coming Soon</span>
-                                <span class="article-read-time">TBD</span>
-            </div>
-                            <div class="coming-soon-badge">Coming Soon</div>
-                            <div class="comment-section" data-article-id="article-2"></div>
-        </div>
-                    </article>
-                    <article class="article-card" role="listitem" data-coming-soon="true" data-article-id="article-3">
-                        <div class="article-image">
-                            <div class="article-category education">EDUCATION</div>
-                            <img src="f64a69de-e4a1-4ac1-9626-c9ada52df776.png" alt="Coming Soon" loading="lazy" style="transform: scale(1.2) translateY(15px);">
-            </div>
-                        <div class="article-content">
-                            <h3 class="article-headline">Coming Soon</h3>
-                            <p class="article-excerpt">Educational resources for media literacy are in development. We're creating comprehensive guides for students, educators, and lifelong learners.</p>
-                            <div class="article-meta">
-                                <span class="article-date">Coming Soon</span>
-                                <span class="article-read-time">TBD</span>
-            </div>
-                            <div class="coming-soon-badge">Coming Soon</div>
-                            <div class="comment-section" data-article-id="article-3"></div>
-            </div>
-                    </article>
-                    <article class="article-card" role="listitem" data-coming-soon="true" data-article-id="article-4">
-                        <div class="article-image">
-                            <div class="article-category technology">TECHNOLOGY</div>
-                            <img src="f41de8d1-cc13-41b2-815c-64e51598326a.png" alt="Coming Soon" loading="lazy" style="transform: scale(1.2) translateY(15px);">
-            </div>
-                        <div class="article-content">
-                            <h3 class="article-headline">Coming Soon</h3>
-                            <p class="article-excerpt">Technology-focused articles about fact-checking tools and digital media literacy resources are in development. Stay tuned for more.</p>
-                            <div class="article-meta">
-                                <span class="article-date">Coming Soon</span>
-                                <span class="article-read-time">TBD</span>
-            </div>
-                            <div class="coming-soon-badge">Coming Soon</div>
-                            <div class="comment-section" data-article-id="article-4"></div>
-            </div>
-                    </article>
-                    <article class="article-card" role="listitem" data-coming-soon="true" data-article-id="article-5">
-                        <div class="article-image">
-                            <div class="article-category opinion">OPINION</div>
-                            <img src="9c606b8d-2cb4-4fbf-afab-9032102e2814.png" alt="Opinion Article Image" loading="lazy">
+                    <!-- Skeleton loading animation will be shown here immediately, then replaced with actual posts -->
                 </div>
-                        <div class="article-content">
-                            <h3 class="article-headline">Coming Soon</h3>
-                            <p class="article-excerpt">Opinion pieces and analysis about media literacy, critical thinking, and their importance in today's digital world are coming soon.</p>
-                            <div class="article-meta">
-                                <span class="article-date">Coming Soon</span>
-                                <span class="article-read-time">TBD</span>
-            </div>
-                            <div class="coming-soon-badge">Coming Soon</div>
-                            <div class="comment-section" data-article-id="article-5"></div>
-            </div>
-                    </article>
-            </div>
             
             <!-- In-Content Ad - After Articles -->
             <ins class="adsbygoogle"
@@ -14317,6 +14249,36 @@
                         });
                     });
             }, 1000); // Wait 1 second after DOM load
+        });
+        
+        // Show skeleton animation immediately when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('articlesTrack');
+            if (container && (!container.innerHTML || container.innerHTML.trim().length < 100)) {
+                // Show skeleton loading animation immediately
+                const skeletonHTML = `
+                    <style>
+                        @keyframes pulse {
+                            0%, 100% { opacity: 1; }
+                            50% { opacity: 0.5; }
+                        }
+                    </style>
+                    ${Array.from({ length: 5 }, () => `
+                        <article class="feed-post-card skeleton" style="padding: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem;">
+                                <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.1); animation: pulse 1.5s ease-in-out infinite;"></div>
+                                <div style="flex: 1;">
+                                    <div style="height: 16px; width: 200px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-bottom: 0.5rem; animation: pulse 1.5s ease-in-out infinite;"></div>
+                                    <div style="height: 14px; width: 150px; background: rgba(255,255,255,0.08); border-radius: 4px; animation: pulse 1.5s ease-in-out infinite;"></div>
+                                </div>
+                            </div>
+                            <div style="height: 60px; width: 100%; background: rgba(255,255,255,0.08); border-radius: 8px; margin-bottom: 1rem; animation: pulse 1.5s ease-in-out infinite;"></div>
+                            <div style="height: 40px; width: 100%; background: rgba(255,255,255,0.05); border-radius: 8px; animation: pulse 1.5s ease-in-out infinite;"></div>
+                        </article>
+                    `).join('')}
+                `;
+                container.innerHTML = skeletonHTML;
+            }
         });
         
         // Auto-refresh posts every 5 minutes

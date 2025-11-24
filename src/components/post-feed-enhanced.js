@@ -238,187 +238,242 @@ function renderEnhancedPostCard(post) {
   const timestamp = formatRelativeTime(postDate);
   const timestampTooltip = formatAbsoluteTime(postDate);
   const postText = post.text || post.story || post.title || '';
-  const readingTime = calculateReadingTime(postText);
-  const isExpanded = expandedPosts.has(post.id);
+  const link = post.link || post.url || `https://x.com/newsnoteworthy/status/${post.id || ''}`;
   
-  // Determine text to show
-  const shouldTruncate = postText.length > 280 && !isExpanded;
-  const displayText = shouldTruncate ? truncateText(postText, 280) : postText;
-  
-  // Format text with links
-  const formattedText = formatPostTextWithLinks(displayText);
-  
-  return `
-    <article 
-      class="feed-post-card enhanced"
-      data-post-id="${post.id}"
-      style="
-        position: relative;
-        padding: 1.5rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        transition: all 0.3s ease;
-        background: transparent;
-        cursor: pointer;
-      "
-      onmouseover="this.style.background='rgba(255,255,255,0.03)'; this.style.transform='translateY(-2px)'"
-      onmouseout="this.style.background='transparent'; this.style.transform='translateY(0)'"
-      onclick="window.open('${post.url || post.link || `https://x.com/newsnoteworthy/status/${post.id}`}', '_blank')"
-    >
+  // Format story text (same as old feed)
+  const formatStory = (text) => {
+    if (!text) return '';
+    
+    // Split text into parts to handle URLs and plain text separately
+    const parts = [];
+    let lastIndex = 0;
+    
+    // Match both image URLs and regular URLs
+    const urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
+    let match;
+    
+    while ((match = urlRegex.exec(text)) !== null) {
+      // Add text before URL
+      if (match.index > lastIndex) {
+        const beforeText = text.substring(lastIndex, match.index);
+        if (beforeText) {
+          parts.push({ type: 'text', content: beforeText });
+        }
+      }
       
-      <!-- Header -->
-      <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem;">
-        <a 
-          href="https://x.com/newsnoteworthy" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          onclick="event.stopPropagation()"
-          style="flex-shrink: 0; text-decoration: none;"
-        >
-          <img 
-            src="${post.author?.avatarUrl || '/IMG_5794.PNG'}" 
-            alt="Noteworthy News"
-            style="
-              width: 48px;
-              height: 48px;
-              border-radius: 50%;
-              object-fit: cover;
-              display: block;
-              border: 2px solid rgba(255,255,255,0.1);
-            "
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-          />
-          <div 
-            style="
-              width: 48px;
-              height: 48px;
-              border-radius: 50%;
-              background: linear-gradient(135deg, #1DA1F2 0%, #1a91da 100%);
-              display: none;
-              align-items: center;
-              justify-content: center;
-              font-weight: 700;
-              font-size: 1.25rem;
-              color: white;
-            "
-          >NW</div>
-        </a>
-        
+      const url = match[0];
+      const isImage = /\.(jpg|jpeg|png|gif|webp|svg|JPG|JPEG|PNG|GIF|WEBP|SVG)(\?[^\s]*)?$/i.test(url);
+      
+      if (isImage) {
+        // Create img tag for images
+        parts.push({ 
+          type: 'image', 
+          content: `<img src="${url}" alt="Post image" loading="lazy" style="max-width: 100%; height: auto; border-radius: 12px; margin: 0.5rem 0; display: block;" onerror="this.style.display='none';" />` 
+        });
+      } else {
+        // Create clickable link for other URLs
+        const displayUrl = url.length > 50 ? url.substring(0, 47) + '...' : url;
+        parts.push({ 
+          type: 'link', 
+          content: `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: rgb(29, 155, 240); text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${displayUrl}</a>` 
+        });
+      }
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text after last URL
+    if (lastIndex < text.length) {
+      const afterText = text.substring(lastIndex);
+      if (afterText) {
+        parts.push({ type: 'text', content: afterText });
+      }
+    }
+    
+    // If no URLs found, just process the whole text
+    if (parts.length === 0) {
+      parts.push({ type: 'text', content: text });
+    }
+    
+    // Process each part: escape HTML for text, keep HTML for images/links
+    const processed = parts.map(part => {
+      if (part.type === 'text') {
+        // Escape HTML and convert newlines to <br>
+        return part.content
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;')
+          .replace(/\n/g, '<br>');
+      } else {
+        // Images and links are already HTML, just convert newlines before/after
+        return part.content;
+      }
+    }).join('');
+    
+    return processed;
+  };
+  
+  // Render media (same as old feed)
+  const renderMedia = (post) => {
+    let mediaHtml = '';
+    const images = post.images || (post.image ? [post.image] : []);
+    const videos = post.videos || [];
+    
+    if (images.length > 0 || videos.length > 0) {
+      mediaHtml = '<div class="modern-post-media" style="margin: 1.25rem 0; border-radius: 12px; overflow: hidden;">';
+      
+      // Render images
+      if (images.length > 0) {
+        if (images.length === 1) {
+          mediaHtml += `<div class="post-image-single" style="border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.2);">
+            <img src="${images[0]}" alt="Post image" loading="lazy" style="width: 100%; height: auto; display: block; max-height: 600px; object-fit: cover;" onerror="this.style.display='none';" />
+          </div>`;
+        } else {
+          const gridCols = Math.min(images.length, 3);
+          mediaHtml += `<div class="post-image-grid" style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); gap: 0.5rem; border-radius: 12px; overflow: hidden;">
+            ${images.slice(0, 4).map(img => `
+              <div style="aspect-ratio: 1; overflow: hidden; background: rgba(0,0,0,0.2);">
+                <img src="${img}" alt="Post image" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none';" />
+          </div>
+            `).join('')}
+          </div>`;
+        }
+      }
+      
+      // Render videos
+      if (videos.length > 0) {
+        videos.forEach(video => {
+          if (video.includes('youtube.com') || video.includes('youtu.be')) {
+            // YouTube embed
+            const videoId = video.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+            if (videoId) {
+              mediaHtml += `<div class="post-video" style="margin-top: 0.5rem; position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; background: rgba(0,0,0,0.2);">
+                <iframe src="https://www.youtube.com/embed/${videoId}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen></iframe>
+              </div>`;
+            }
+          } else {
+            // Regular video tag
+            mediaHtml += `<div class="post-video" style="margin-top: 0.5rem; border-radius: 12px; overflow: hidden;">
+              <video src="${video}" controls style="width: 100%; border-radius: 12px;" onerror="this.style.display='none';"></video>
+            </div>`;
+          }
+        });
+      }
+      
+      mediaHtml += '</div>';
+    }
+    
+    return mediaHtml;
+  };
+  
+  // Render engagement bar (same as old feed)
+  const renderEngagementBar = (post, link) => {
+    const replies = post.replies !== undefined && post.replies !== null ? post.replies : null;
+    const reposts = post.reposts !== undefined && post.reposts !== null ? post.reposts : null;
+    const likes = post.likes !== undefined && post.likes !== null ? post.likes : null;
+    const views = post.views !== undefined && post.views !== null ? post.views : null;
+    
+    const formatNumber = (n) => {
+      if (n === null || n === undefined || isNaN(n)) return '';
+      if (n < 1000) return n.toString();
+      if (n < 1000000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+      return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    };
+    
+    const buttons = [];
+    
+    // Reply button
+    buttons.push({
+      icon: '💬',
+      count: replies,
+      label: 'Reply',
+      color: 'rgb(113, 118, 123)',
+      hoverColor: 'rgb(29, 155, 240)',
+      href: link
+    });
+    
+    // Repost button
+    buttons.push({
+      icon: '🔄',
+      count: reposts,
+      label: 'Repost',
+      color: 'rgb(113, 118, 123)',
+      hoverColor: 'rgb(0, 186, 124)',
+      href: link
+    });
+    
+    // Like button
+    buttons.push({
+      icon: '❤️',
+      count: likes,
+      label: 'Like',
+      color: 'rgb(113, 118, 123)',
+      hoverColor: 'rgb(249, 24, 128)',
+      href: link
+    });
+    
+    // Views button
+    buttons.push({
+      icon: '👁️',
+      count: views,
+      label: 'Views',
+      color: 'rgb(113, 118, 123)',
+      hoverColor: 'rgb(29, 155, 240)',
+      href: link
+    });
+    
+    return buttons.map(btn => `
+      <a href="${btn.href}" target="_blank" rel="noopener noreferrer" 
+         class="x-engagement-btn" 
+         style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; color: ${btn.color}; text-decoration: none; border-radius: 50%; transition: all 0.2s ease; min-width: 36px; justify-content: flex-start;" 
+         onmouseover="this.style.color='${btn.hoverColor}'; this.style.backgroundColor='rgba(29, 155, 240, 0.1)'" 
+         onmouseout="this.style.color='${btn.color}'; this.style.backgroundColor='transparent'"
+         title="${btn.label}">
+        <span style="font-size: 1.25rem; line-height: 1;">${btn.icon}</span>
+        ${btn.count !== null && btn.count !== undefined ? `<span style="font-size: 0.813rem; line-height: 1; font-weight: 400;">${formatNumber(btn.count)}</span>` : ''}
+      </a>
+    `).join('');
+  };
+  
+  // Use old card design
+  return `
+    <article class="x-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || ''}" style="background: transparent; padding: 1rem 1rem; margin-bottom: 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+      <div style="display: flex; gap: 0.75rem;">
+        <!-- Avatar -->
+        <div style="flex-shrink: 0;">
+          <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="display: block; text-decoration: none;">
+            <img src="/IMG_5794.PNG" alt="Noteworthy News" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #1DA1F2 0%, #1a91da 100%); display: none; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; color: white; flex-shrink: 0;">
+              NW
+        </div>
+          </a>
+      </div>
+      
+        <!-- Post Content -->
         <div style="flex: 1; min-width: 0;">
+          <!-- Header: Username, handle, timestamp -->
           <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
-            <a 
-              href="https://x.com/newsnoteworthy" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              onclick="event.stopPropagation()"
-              style="
-                font-weight: 700;
-                font-size: 1rem;
-                color: rgb(231, 233, 234);
-                text-decoration: none;
-              "
-              onmouseover="this.style.textDecoration='underline'"
-              onmouseout="this.style.textDecoration='none'"
-            >Noteworthy News</a>
-            
-            <span style="color: rgb(113, 118, 123); font-size: 0.938rem;">@newsnoteworthy</span>
-            
-            <span style="color: rgb(113, 118, 123); font-size: 0.938rem;">·</span>
-            
-            <a 
-              href="${post.url || post.link || `https://x.com/newsnoteworthy/status/${post.id}`}" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              onclick="event.stopPropagation()"
-              style="
-                color: rgb(113, 118, 123);
-                font-size: 0.938rem;
-                text-decoration: none;
-              "
-              title="${timestampTooltip}"
-              onmouseover="this.style.textDecoration='underline'"
-              onmouseout="this.style.textDecoration='none'"
-            >${timestamp}</a>
-            
-            <span style="color: rgb(113, 118, 123); font-size: 0.938rem;">·</span>
-            
-            <span style="color: rgb(113, 118, 123); font-size: 0.875rem;" title="Reading time">
-              ⏱️ ${readingTime} min read
-            </span>
+            <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="font-weight: 700; font-size: 0.938rem; color: rgb(231, 233, 234); text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Noteworthy News</a>
+            <span style="color: rgb(113, 118, 123); font-size: 0.938rem; line-height: 1.25rem;">@newsnoteworthy</span>
+            <span style="color: rgb(113, 118, 123); font-size: 0.938rem; line-height: 1.25rem;">·</span>
+            <a href="${link}" target="_blank" rel="noopener noreferrer" style="color: rgb(113, 118, 123); font-size: 0.938rem; text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${timestamp}</a>
+          </div>
+          
+          <!-- Post Text -->
+          <div style="color: rgb(231, 233, 234); font-size: 0.938rem; line-height: 1.375rem; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 0.75rem;">
+            ${formatStory(postText)}
+      </div>
+      
+          <!-- Media -->
+          ${renderMedia(post)}
+          
+          <!-- Engagement Bar (Twitter-style) -->
+          <div style="display: flex; align-items: center; justify-content: space-between; max-width: 425px; margin-top: 0.75rem; padding-top: 0.5rem;">
+            ${renderEngagementBar(post, link)}
           </div>
         </div>
-      </div>
-      
-      <!-- Body -->
-      <div style="margin-bottom: 1rem;">
-        <div 
-          class="enhanced-post-text"
-          style="
-            color: rgb(231, 233, 234);
-            font-size: 1rem;
-            line-height: 1.625rem;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            margin-bottom: 1rem;
-          "
-        >${formattedText}</div>
-        
-        ${shouldTruncate ? `
-          <button
-            onclick="event.stopPropagation(); window.togglePostExpand('${post.id}')"
-            style="
-              background: transparent;
-              border: none;
-              color: rgb(29, 155, 240);
-              font-size: 0.938rem;
-              font-weight: 600;
-              cursor: pointer;
-              padding: 0.5rem 0;
-              margin-top: -0.5rem;
-            "
-            onmouseover="this.style.textDecoration='underline'"
-            onmouseout="this.style.textDecoration='none'"
-          >${isExpanded ? 'Show less' : 'Read more'}</button>
-        ` : ''}
-        
-        ${post.media && post.media.length > 0 ? renderEnhancedMedia(post.media) : ''}
-      </div>
-      
-      <!-- Enhanced Action Bar -->
-      <div 
-        style="
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding-top: 0.75rem;
-          border-top: 1px solid rgba(255,255,255,0.05);
-        "
-        onclick="event.stopPropagation()"
-      >
-        ${renderEnhancedEngagementBar(post)}
-        
-        <!-- Share Button -->
-        <button
-          onclick="event.stopPropagation(); window.sharePostEnhanced(${JSON.stringify(post).replace(/"/g, '&quot;')})"
-          style="
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            color: rgb(113, 118, 123);
-            background: transparent;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.875rem;
-            transition: all 0.2s ease;
-          "
-          onmouseover="this.style.color='rgb(29, 155, 240)'; this.style.borderColor='rgb(29, 155, 240)'; this.style.background='rgba(29, 155, 240, 0.1)'"
-          onmouseout="this.style.color='rgb(113, 118, 123)'; this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='transparent'"
-          title="Share post"
-        >
-          <span>🔗</span>
-          <span>Share</span>
-        </button>
       </div>
     </article>
   `;
@@ -617,6 +672,19 @@ function renderEnhancedEngagementBar(post) {
  * Render skeleton loading state
  */
 function renderSkeletonCards(count = 5) {
+  // Ensure pulse animation is available
+  if (!document.getElementById('skeleton-pulse-animation')) {
+    const style = document.createElement('style');
+    style.id = 'skeleton-pulse-animation';
+    style.textContent = `
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
   return Array.from({ length: count }, (_, i) => `
     <article 
       class="feed-post-card skeleton"
@@ -885,13 +953,13 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
   
   // Expose functions to window (only once)
   if (!window.togglePostExpand) {
-    window.togglePostExpand = togglePostExpand;
+  window.togglePostExpand = togglePostExpand;
   }
   if (!window.sharePostEnhanced) {
-    window.sharePostEnhanced = sharePost;
+  window.sharePostEnhanced = sharePost;
   }
   if (!window.openMediaLightbox) {
-    window.openMediaLightbox = openMediaLightbox;
+  window.openMediaLightbox = openMediaLightbox;
   }
   // Always update loadEnhancedPosts to use current endpoint/limit
   // Store endpoint and limit in closure to prevent recursion
@@ -915,7 +983,7 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
     return actualLoadFunction.call(null, savedEndpoint, savedLimit);
   };
   if (!window.renderEnhancedFeed) {
-    window.renderEnhancedFeed = renderEnhancedFeed;
+  window.renderEnhancedFeed = renderEnhancedFeed;
   }
   
   // Load posts
@@ -949,5 +1017,7 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
 // Export for use
 if (typeof window !== 'undefined') {
   window.renderPostFeedEnhanced = initEnhancedFeed;
+  // Also export skeleton function for immediate use
+  window.renderPostFeedEnhanced.renderSkeletonCards = renderSkeletonCards;
 }
 

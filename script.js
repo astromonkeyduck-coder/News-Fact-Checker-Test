@@ -8448,8 +8448,11 @@ function initNewsletterSubscription() {
             startMusicMonitor();
         });
         
+        let playAttempted = false; // Track if we've already attempted to play
+        
         spotlightMusic.addEventListener('loadeddata', () => {
-            if (isSpotlightVisible) {
+            if (isSpotlightVisible && !playAttempted) {
+                playAttempted = true;
                 // Make sure background is paused before playing
                 pauseBackgroundMusic();
                 
@@ -8460,10 +8463,15 @@ function initNewsletterSubscription() {
                 
                 // Actually start playing the audio
                 spotlightMusic.play().catch(err => {
-                    console.error('Error playing spotlight music:', err);
+                    // Only log if it's not an AbortError (interrupted by load)
+                    if (err.name !== 'AbortError') {
+                        console.error('Error playing spotlight music:', err);
+                    }
                     // If autoplay is blocked, try again after user interaction
                     document.addEventListener('click', function playOnce() {
-                        spotlightMusic.play().catch(() => {});
+                        if (spotlightMusic && spotlightMusic.paused) {
+                            spotlightMusic.play().catch(() => {});
+                        }
                         document.removeEventListener('click', playOnce);
                     }, { once: true });
                 });
@@ -8481,10 +8489,26 @@ function initNewsletterSubscription() {
         
         // Also try to play when canplay event fires (more reliable than loadeddata)
         spotlightMusic.addEventListener('canplay', () => {
-            if (isSpotlightVisible && spotlightMusic.paused) {
+            if (isSpotlightVisible && spotlightMusic.paused && !playAttempted) {
+                playAttempted = true;
+                pauseBackgroundMusic();
+                
+                // Resume from saved time if available
+                if (savedState && savedState.time > 0) {
+                    spotlightMusic.currentTime = savedState.time;
+                }
+                
                 spotlightMusic.play().catch(err => {
-                    console.error('Error playing spotlight music on canplay:', err);
+                    // Only log if it's not an AbortError (interrupted by load)
+                    if (err.name !== 'AbortError') {
+                        console.error('Error playing spotlight music on canplay:', err);
+                    }
                 });
+                
+                // Fade in the new country music
+                setTimeout(() => {
+                    fadeInAudio(spotlightMusic, 0.5, () => {});
+                }, 200);
             }
         });
         
@@ -8739,59 +8763,209 @@ function initNewsletterSubscription() {
         return formatted;
     }
     
-    // Generate an image using the AI API
-    async function generateImage(prompt) {
-        try {
-            const response = await fetch('/.netlify/functions/generate-image', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    prompt: prompt,
-                    size: '1024x1024',
-                    quality: 'standard',
-                    style: 'vivid'
-                })
-            });
-            
-            if (!response.ok) {
-                const errorText = await response.text().catch(() => 'Unknown error');
-                let errorData = null;
-                try {
-                    errorData = JSON.parse(errorText);
-                } catch {
-                    // Not JSON, use text as is
-                }
-                console.error('Image generation API error:', response.status, errorData || errorText);
-                return null; // Return null instead of throwing to prevent promise rejection
-            }
-            
-            const data = await response.json();
-            // The generate-image function returns { imageUrl, storedImageUrl, revisedPrompt, prompt }
-            // Prefer storedImageUrl (cached) if available, otherwise use imageUrl
-            const imageUrl = data.storedImageUrl || data.imageUrl || null;
-            if (!imageUrl) {
-                console.error('Image generation returned no URL:', data);
-            }
-            return imageUrl;
-        } catch (error) {
-            console.error('Image generation error:', error);
-            return null;
+    // Generate an image using the AI API with aggressive retry logic
+    let imageGenerationInProgress = false;
+    const imageRequestQueue = new Map(); // Track requests by prompt to avoid duplicates
+    
+    async function generateImage(prompt, retries = 10) {
+        // Prevent multiple concurrent requests for the same prompt
+        if (imageRequestQueue.has(prompt)) {
+            console.log('Image generation already in progress for this prompt, waiting...');
+            return imageRequestQueue.get(prompt);
         }
+        
+        // Create a promise for this request
+        const requestPromise = (async () => {
+            let lastError = null;
+            
+            for (let attempt = 0; attempt < retries; attempt++) {
+                try {
+                    // Create abort controller for timeout (fallback for browsers without AbortSignal.timeout)
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout (increased for reliability)
+                    
+                    const response = await fetch('/.netlify/functions/generate-image', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            prompt: prompt,
+                            size: '1024x1024',
+                            quality: 'standard',
+                            style: 'vivid'
+                        }),
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId); // Clear timeout on success
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text().catch(() => 'Unknown error');
+                        let errorData = null;
+                        try {
+                            errorData = JSON.parse(errorText);
+                        } catch {
+                            // Not JSON, use text as is
+                        }
+                        
+                        lastError = { status: response.status, data: errorData || errorText };
+                        
+                        // Retry on 502, 503, 504 (server errors) or 429 (rate limit)
+                        // Also retry on 500 (internal server error) and 408 (timeout)
+                        const isServerError = [500, 502, 503, 504, 408, 429].includes(response.status);
+                        const shouldRetry = isServerError && attempt < retries - 1;
+                        
+                        if (shouldRetry) {
+                            // Progressive backoff: start with 2s, increase gradually, max 30s
+                            const baseDelay = 2000;
+                            const delay = Math.min(baseDelay * Math.pow(1.5, attempt), 30000);
+                            console.log(`Image generation failed (${response.status}), retrying in ${Math.round(delay/1000)}s... (attempt ${attempt + 1}/${retries})`);
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue; // Retry
+                        } else if (attempt < retries - 1) {
+                            // For other errors, still retry but with longer delay
+                            const delay = Math.min(5000 * Math.pow(1.5, attempt), 30000);
+                            console.log(`Image generation error (${response.status}), retrying in ${Math.round(delay/1000)}s... (attempt ${attempt + 1}/${retries})`);
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        } else {
+                            // Don't retry on client errors (4xx) or if we've exhausted retries
+                            if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+                                console.error('Image generation API error (client error):', response.status, errorData || errorText);
+                            } else if (attempt === retries - 1) {
+                                console.error(`Image generation API error after ${retries} attempts:`, response.status, errorData || errorText);
+                            }
+                            return null;
+                        }
+                    }
+                    
+                    // Success! Parse and return the image URL
+                    const data = await response.json();
+                    const imageUrl = data.storedImageUrl || data.imageUrl || null;
+                    
+                    if (!imageUrl) {
+                        console.warn('Image generation returned no URL, retrying...');
+                        // Always retry if no URL returned (unless we've exhausted all attempts)
+                        if (attempt < retries - 1) {
+                            const delay = Math.min(3000 * Math.pow(1.5, attempt), 30000);
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        }
+                        console.error('Image generation returned no URL after all retries:', data);
+                        return null;
+                    }
+                    
+                    // Success!
+                    if (attempt > 0) {
+                        console.log(`Image generation succeeded on attempt ${attempt + 1}`);
+                    }
+                    return imageUrl;
+                    
+                } catch (error) {
+                    lastError = error;
+                    
+                    // Retry on network errors or timeout - always retry unless we've exhausted all attempts
+                    if (attempt < retries - 1) {
+                        // Progressive backoff for network errors
+                        const baseDelay = 3000;
+                        const delay = Math.min(baseDelay * Math.pow(1.5, attempt), 30000);
+                        console.log(`Image generation network error (${error.name}), retrying in ${Math.round(delay/1000)}s... (attempt ${attempt + 1}/${retries})`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue; // Retry
+                    } else {
+                        console.error(`Image generation error after ${retries} attempts:`, error);
+                        return null;
+                    }
+                }
+            }
+            
+            // All retries exhausted - but don't give up! Queue for background retry
+            if (lastError) {
+                console.warn(`Image generation failed after ${retries} attempts, will retry in background:`, lastError);
+                // Note: We can't queue here because we don't have wrapperId in this scope
+                // The caller will handle background retry via failedImageRequests
+            }
+            return null;
+        })();
+        
+        // Store the promise in the queue
+        imageRequestQueue.set(prompt, requestPromise);
+        
+        // Clean up when done
+        requestPromise.finally(() => {
+            imageRequestQueue.delete(prompt);
+        });
+        
+        return requestPromise;
     }
     
     // Load image into a wrapper element
+    // Track failed image requests for background retry
+    const failedImageRequests = new Map(); // prompt -> { wrapperId, retryCount, lastAttempt }
+    
     function loadImageIntoWrapper(wrapperId, imageUrl) {
         const wrapper = document.getElementById(wrapperId);
         if (!wrapper) return;
         
         if (imageUrl) {
             wrapper.innerHTML = `<img src="${imageUrl}" alt="Generated image" loading="lazy" />`;
+            // Remove from failed requests if it was there
+            for (const [prompt, data] of failedImageRequests.entries()) {
+                if (data.wrapperId === wrapperId) {
+                    failedImageRequests.delete(prompt);
+                    break;
+                }
+            }
         } else {
-            wrapper.innerHTML = '<div class="image-loading-placeholder"><p>Failed to generate image</p></div>';
+            // Keep showing loading state, don't show failure message
+            wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating... (retrying)</p></div>';
         }
     }
+    
+    // Background retry system for failed images
+    async function retryFailedImages() {
+        const now = Date.now();
+        const maxRetries = 20; // Keep trying up to 20 times
+        const retryInterval = 30000; // Retry every 30 seconds
+        
+        for (const [prompt, data] of failedImageRequests.entries()) {
+            // Skip if we've retried too many times
+            if (data.retryCount >= maxRetries) {
+                console.log(`Stopped retrying image for prompt after ${maxRetries} attempts`);
+                failedImageRequests.delete(prompt);
+                continue;
+            }
+            
+            // Skip if we just tried recently
+            if (now - data.lastAttempt < retryInterval) {
+                continue;
+            }
+            
+            // Try again
+            console.log(`Background retry ${data.retryCount + 1}/${maxRetries} for image: ${prompt.substring(0, 50)}...`);
+            data.lastAttempt = now;
+            data.retryCount++;
+            
+            try {
+                const url = await generateImage(prompt, 5); // Use fewer retries for background attempts
+                if (url) {
+                    loadImageIntoWrapper(data.wrapperId, url);
+                    failedImageRequests.delete(prompt);
+                } else {
+                    // Keep in queue for next retry cycle
+                    failedImageRequests.set(prompt, data);
+                }
+            } catch (error) {
+                console.error('Background retry failed:', error);
+                // Keep in queue for next retry cycle
+                failedImageRequests.set(prompt, data);
+            }
+        }
+    }
+    
+    // Run background retry every 30 seconds
+    setInterval(retryFailedImages, 30000);
     
     // Check rate limit (3 per day)
     function checkRateLimit() {
@@ -9153,14 +9327,27 @@ function initNewsletterSubscription() {
             
             if (!hasFlagImage) {
                 console.log('Generating flag image for', currentCountry.name);
+                const flagPrompt = `generate an image of the flag of ${currentCountry.name}, official flag design, high quality`;
                 imagePromises.push(
-                    generateImage(`generate an image of the flag of ${currentCountry.name}, official flag design, high quality`).then(url => {
+                    generateImage(flagPrompt).then(url => {
                         console.log('Flag image generated:', url ? 'success' : 'failed');
                         loadImageIntoWrapper('flag-image-wrapper', url);
+                        if (!url) {
+                            failedImageRequests.set(flagPrompt, {
+                                wrapperId: 'flag-image-wrapper',
+                                retryCount: 0,
+                                lastAttempt: Date.now()
+                            });
+                        }
                         return { type: 'flag', url };
                     }).catch(error => {
                         console.error('Error generating flag image:', error);
                         loadImageIntoWrapper('flag-image-wrapper', null);
+                        failedImageRequests.set(flagPrompt, {
+                            wrapperId: 'flag-image-wrapper',
+                            retryCount: 0,
+                            lastAttempt: Date.now()
+                        });
                         return { type: 'flag', url: null };
                     })
                 );
@@ -9173,14 +9360,27 @@ function initNewsletterSubscription() {
             
             if (!hasCulture1Image) {
                 console.log('Generating culture1 image for', currentCountry.name);
+                const culture1Prompt = `generate an image showing the culture of ${currentCountry.name}, traditional customs, people, architecture, vibrant and colorful`;
                 imagePromises.push(
-                    generateImage(`generate an image showing the culture of ${currentCountry.name}, traditional customs, people, architecture, vibrant and colorful`).then(url => {
+                    generateImage(culture1Prompt).then(url => {
                         console.log('Culture1 image generated:', url ? 'success' : 'failed');
                         loadImageIntoWrapper('culture1-image-wrapper', url);
+                        if (!url) {
+                            failedImageRequests.set(culture1Prompt, {
+                                wrapperId: 'culture1-image-wrapper',
+                                retryCount: 0,
+                                lastAttempt: Date.now()
+                            });
+                        }
                         return { type: 'culture1', url };
                     }).catch(error => {
                         console.error('Error generating culture1 image:', error);
                         loadImageIntoWrapper('culture1-image-wrapper', null);
+                        failedImageRequests.set(culture1Prompt, {
+                            wrapperId: 'culture1-image-wrapper',
+                            retryCount: 0,
+                            lastAttempt: Date.now()
+                        });
                         return { type: 'culture1', url: null };
                     })
                 );
@@ -9193,14 +9393,27 @@ function initNewsletterSubscription() {
             
             if (!hasCulture2Image) {
                 console.log('Generating culture2 image for', currentCountry.name);
+                const culture2Prompt = `generate an image of cultural aspects of ${currentCountry.name}, festivals, food, art, traditional scenes`;
                 imagePromises.push(
-                    generateImage(`generate an image of cultural aspects of ${currentCountry.name}, festivals, food, art, traditional scenes`).then(url => {
+                    generateImage(culture2Prompt).then(url => {
                         console.log('Culture2 image generated:', url ? 'success' : 'failed');
                         loadImageIntoWrapper('culture2-image-wrapper', url);
+                        if (!url) {
+                            failedImageRequests.set(culture2Prompt, {
+                                wrapperId: 'culture2-image-wrapper',
+                                retryCount: 0,
+                                lastAttempt: Date.now()
+                            });
+                        }
                         return { type: 'culture2', url };
                     }).catch(error => {
                         console.error('Error generating culture2 image:', error);
                         loadImageIntoWrapper('culture2-image-wrapper', null);
+                        failedImageRequests.set(culture2Prompt, {
+                            wrapperId: 'culture2-image-wrapper',
+                            retryCount: 0,
+                            lastAttempt: Date.now()
+                        });
                         return { type: 'culture2', url: null };
                     })
                 );
