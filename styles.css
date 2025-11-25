@@ -1099,10 +1099,6 @@ html, body {
     
     /* Fix all containers */
     .container,
-    .hero-section,
-    .welcome-text-container,
-    .welcome-text,
-    .hero-title,
     section,
     div[class*="section"],
     div[class*="container"] {
@@ -1112,6 +1108,199 @@ html, body {
         padding-right: 1rem !important;
         box-sizing: border-box !important;
         overflow-x: hidden !important;
+    }
+
+    /* ========================================
+       COMPLETE MOBILE LANDING PAGE REDESIGN
+       Clean, Simple, Minimal Design
+       ======================================== */
+    
+    /* Hero Section - Complete Redesign */
+    .hero-section {
+        position: relative !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        min-height: 70vh !important;
+        padding: 2rem 1.5rem !important;
+        margin: 0 !important;
+        background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        text-align: center !important;
+        overflow: hidden !important;
+    }
+
+    /* Hide ALL decorative elements on mobile */
+    .hero-section .flags-background,
+    .hero-section .welcome-background-image,
+    .hero-section .rough-terrain-background,
+    .hero-section .hero-logo,
+    .hero-section .welcome-left-image,
+    .hero-section .welcome-right-image {
+        display: none !important;
+    }
+
+    /* Hero Title - Clean & Simple */
+    .hero-title {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto 1.5rem !important;
+        padding: 0 !important;
+        font-size: 2rem !important;
+        font-weight: 600 !important;
+        line-height: 1.2 !important;
+        color: #ffffff !important;
+        text-align: center !important;
+        background: none !important;
+        -webkit-background-clip: unset !important;
+        background-clip: unset !important;
+        text-shadow: none !important;
+        letter-spacing: -0.02em !important;
+    }
+
+    /* Welcome Text Container - Simplified */
+    .welcome-text-container {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        min-height: auto !important;
+    }
+
+    .welcome-text {
+        display: block !important;
+        font-size: 2rem !important;
+        font-weight: 600 !important;
+        color: #ffffff !important;
+        line-height: 1.2 !important;
+        white-space: normal !important;
+        overflow: visible !important;
+        text-align: center !important;
+        background: none !important;
+        -webkit-background-clip: unset !important;
+        background-clip: unset !important;
+        text-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Welcome Location - Minimal */
+    .welcome-location {
+        display: block !important;
+        font-size: 0.875rem !important;
+        color: rgba(255, 255, 255, 0.7) !important;
+        margin-top: 0.5rem !important;
+        font-weight: 400 !important;
+        text-align: center !important;
+    }
+
+    /* Hero Subtitle - Clean Typography */
+    .hero-subtitle-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto 2rem !important;
+        padding: 0 !important;
+    }
+
+    .hero-subtitle {
+        font-size: 1rem !important;
+        line-height: 1.6 !important;
+        color: rgba(255, 255, 255, 0.85) !important;
+        text-align: center !important;
+        font-weight: 400 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .hero-subtitle .subtitle-line-1,
+    .hero-subtitle .subtitle-line-2,
+    .hero-subtitle .subtitle-line-3 {
+        display: block !important;
+        margin-bottom: 0.25rem !important;
+    }
+
+    /* Hero Stats - Minimal Grid */
+    .hero-stats-container {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 1rem !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+    }
+
+    .hero-stat-card {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 12px !important;
+        padding: 1rem !important;
+        text-align: center !important;
+        backdrop-filter: blur(10px) !important;
+        transition: transform 0.2s ease, background 0.2s ease !important;
+    }
+
+    .hero-stat-card:active {
+        transform: scale(0.98) !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .hero-stat-number-small {
+        font-size: 1.25rem !important;
+        font-weight: 600 !important;
+        color: #ffffff !important;
+        margin-bottom: 0.25rem !important;
+    }
+
+    .hero-stat-label-small {
+        font-size: 0.75rem !important;
+        color: rgba(255, 255, 255, 0.7) !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    /* Globe Section - Simplified for Mobile */
+    .globe-section {
+        padding: 1.5rem 0.75rem !important;
+        margin: 1rem 0 !important;
+        background: transparent !important;
+    }
+
+    .globe-section .news-title {
+        font-size: 1.25rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .globe-section .news-subtitle {
+        font-size: 0.875rem !important;
+        margin-bottom: 1rem !important;
+        opacity: 0.8;
+    }
+
+    #cia-globe-container {
+        height: 400px !important;
+        border-radius: 8px !important;
+    }
+
+    /* Additional Mobile Cleanup - Hide any remaining decorative elements */
+    .hero-section::before,
+    .hero-section::after {
+        display: none !important;
+    }
+
+    /* Remove any animations on mobile for performance */
+    .hero-section * {
+        animation: none !important;
+    }
+
+    .welcome-text,
+    .hero-title,
+    .hero-subtitle {
+        animation: none !important;
+        transition: none !important;
     }
     
     /* Fix header on mobile - COMPLETE OVERHAUL - HIGHEST PRIORITY */
@@ -1468,22 +1657,7 @@ html, body {
         background: rgba(255, 255, 255, 0.1) !important;
     }
     
-    /* Fix hero section on mobile */
-    .hero-section {
-        width: 100% !important;
-        max-width: 100vw !important;
-        padding: 2rem 1rem !important;
-        min-height: auto !important;
-        overflow: hidden !important;
-    }
-    
-    .hero-title {
-        font-size: 1.75rem !important;
-        line-height: 1.3 !important;
-        padding: 0 1rem !important;
-        word-wrap: break-word !important;
-        overflow-wrap: break-word !important;
-    }
+    /* Hero section is now handled in the main mobile section above */
     
     .welcome-text {
         font-size: 1.75rem !important;

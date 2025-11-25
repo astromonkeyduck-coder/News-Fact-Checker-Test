@@ -224,10 +224,10 @@ class CiaMissionGlobe {
         }
       }
 
-      // If no cached posts, try to fetch from API
+      // If no cached posts, try to fetch from API - fetch more posts to show all locations
       if (posts.length === 0) {
         try {
-          const response = await fetch('/.netlify/functions/posts-read?limit=200');
+          const response = await fetch('/.netlify/functions/posts-read?limit=500');
           if (response.ok) {
             const data = await response.json();
             posts = Array.isArray(data) ? data : (data.posts || data.data || []);
@@ -237,23 +237,39 @@ class CiaMissionGlobe {
         }
       }
 
-      // Extract unique countries from posts
+      // Track how many posts per country to add slight randomization
+      const countryCounts = new Map();
+
+      // Extract ALL posts with locations (not just unique countries)
       for (const post of posts) {
         const country = this.extractCountryFromPost(post);
-        if (country && !seenLocations.has(country)) {
+        if (country) {
           const coords = this.getCountryCoordinates(country);
           if (coords) {
-            seenLocations.add(country);
+            // Count posts per country for randomization
+            const count = (countryCounts.get(country) || 0) + 1;
+            countryCounts.set(country, count);
+            
+            // Add slight randomization to prevent exact overlap
+            // Spread posts from same country in a small radius
+            const spreadRadius = 2; // degrees
+            const angle = (count * 137.5) % 360; // Golden angle for even distribution
+            const distance = Math.min(count * 0.3, spreadRadius); // Gradually spread out
+            
+            const latOffset = (Math.cos(angle * Math.PI / 180) * distance);
+            const lngOffset = (Math.sin(angle * Math.PI / 180) * distance / Math.cos(coords.lat * Math.PI / 180));
+            
             const postText = post.text || post.story || post.title || '';
             const headline = postText.length > 60 ? postText.substring(0, 57) + '...' : postText;
             
             coveragePoints.push({
-              id: `post-${post.id || Date.now()}-${country}`,
-              lat: coords.lat,
-              lng: coords.lng,
+              id: `post-${post.id || Date.now()}-${country}-${count}`,
+              lat: coords.lat + latOffset,
+              lng: coords.lng + lngOffset,
               location: country,
               headline: headline || `Coverage from ${country}`,
-              timestamp: post.createdAt || post.datePosted || new Date().toISOString()
+              timestamp: post.createdAt || post.datePosted || new Date().toISOString(),
+              postId: post.id
             });
           }
         }
@@ -265,6 +281,10 @@ class CiaMissionGlobe {
       console.error('[Globe] Error extracting locations from posts:', err);
       return [];
     }
+  }
+
+  isMobile() {
+    return window.innerWidth <= 768;
   }
 
   async init() {
@@ -280,11 +300,13 @@ class CiaMissionGlobe {
       return;
     }
 
-    // Create root structure
+    const isMobile = this.isMobile();
+
+    // Create root structure with mobile class
     container.innerHTML = `
-      <div class="cia-globe-root">
+      <div class="cia-globe-root ${isMobile ? 'mobile' : ''}">
         <div class="cia-globe-canvas" id="cia-globe-canvas"></div>
-        <div class="cia-hud-overlay" id="cia-hud-overlay"></div>
+        <div class="cia-hud-overlay ${isMobile ? 'mobile-simple' : ''}" id="cia-hud-overlay"></div>
       </div>
     `;
 
@@ -293,35 +315,46 @@ class CiaMissionGlobe {
     
     if (!canvasEl || !hudEl) return;
 
-    // Render HUD
+    // Render HUD (simplified on mobile)
     this.renderHUD(hudEl);
 
-    // Initialize globe
+    // Initialize globe with mobile optimizations
     this.globeInstance = Globe()(canvasEl)
       .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
-      .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
+      .bumpImageUrl(isMobile ? null : '//unpkg.com/three-globe/example/img/earth-topology.png') // Skip bump map on mobile
       .backgroundColor('#020617')
-      .showAtmosphere(true)
+      .showAtmosphere(!isMobile) // Disable atmosphere on mobile for performance
       .atmosphereColor('#22d3ee')
       .atmosphereAltitude(0.28);
 
-    // Configure points
+    // Configure points (simpler on mobile)
     this.globeInstance
       .pointsData(this.coveragePoints)
       .pointLat(d => d.lat)
       .pointLng(d => d.lng)
-      .pointLabel(d => `${d.location}\n${d.headline}`)
+      .pointLabel(isMobile ? d => d.location : d => `${d.location}\n${d.headline}`) // Simpler labels on mobile
       .pointColor(() => '#ff3333')
-      .pointRadius(0.5)
-      .pointAltitude(0.02)
-      .pointsTransitionDuration(1000);
+      .pointRadius(isMobile ? 0.5 : 0.6) // Smaller dots on mobile
+      .pointAltitude(isMobile ? 0.02 : 0.03)
+      .pointResolution(isMobile ? 4 : 8) // Lower resolution on mobile
+      .pointsTransitionDuration(isMobile ? 500 : 1000); // Faster transitions on mobile
 
-    // Configure controls
+    // Configure controls (simpler on mobile)
     const controls = this.globeInstance.controls();
-    controls.autoRotate = true;
+    controls.autoRotate = !isMobile; // No auto-rotate on mobile (saves battery)
     controls.autoRotateSpeed = 0.7;
     controls.enableZoom = true;
-    controls.enablePan = true;
+    controls.enablePan = !isMobile; // Disable pan on mobile (touch conflicts)
+    controls.enableDamping = !isMobile; // Disable damping on mobile
+    
+    // Set camera distance limits to allow full globe view
+    controls.minDistance = 180;
+    controls.maxDistance = 600;
+    
+    // Set initial camera position to show entire globe
+    setTimeout(() => {
+      this.globeInstance.pointOfView({ lat: 0, lng: 0, altitude: 2.5 }, 0);
+    }, 100);
 
     // Handle point clicks
     this.globeInstance.onPointClick((point) => {
@@ -334,7 +367,7 @@ class CiaMissionGlobe {
     this.handleResize();
     window.addEventListener('resize', () => this.handleResize());
 
-    // Start animation
+    // Start animation (throttled on mobile)
     this.animate();
   }
 
@@ -353,9 +386,17 @@ class CiaMissionGlobe {
   animate() {
     if (!this.globeInstance) return;
 
-    this.t += 0.03;
-    const baseAltitude = 0.02;
-    const pulseAmplitude = 0.015;
+    const isMobile = this.isMobile();
+    
+    // Throttle animation on mobile (slower updates)
+    if (isMobile) {
+      this.t += 0.015; // Half speed on mobile
+    } else {
+      this.t += 0.03;
+    }
+    
+    const baseAltitude = isMobile ? 0.02 : 0.03;
+    const pulseAmplitude = isMobile ? 0.01 : 0.02; // Smaller pulse on mobile
 
     this.globeInstance.pointAltitude(d => {
       const phase = (d.lat + d.lng) * 0.1;
@@ -366,10 +407,19 @@ class CiaMissionGlobe {
     this.globeInstance.pointRadius(d => {
       const phase = (d.lat + d.lng) * 0.1;
       const scale = (Math.sin(this.t + phase) + 1) / 2;
-      return 0.5 + scale * 0.2; // Larger pulsating dots
+      const baseRadius = isMobile ? 0.5 : 0.6;
+      const pulseSize = isMobile ? 0.15 : 0.3; // Smaller pulse on mobile
+      return baseRadius + scale * pulseSize;
     });
 
-    this.animationFrameId = requestAnimationFrame(() => this.animate());
+    // Throttle on mobile - skip every other frame
+    if (isMobile) {
+      this.animationFrameId = requestAnimationFrame(() => {
+        requestAnimationFrame(() => this.animate());
+      });
+    } else {
+      this.animationFrameId = requestAnimationFrame(() => this.animate());
+    }
   }
 
   setActiveOp(point) {
@@ -396,6 +446,29 @@ class CiaMissionGlobe {
   renderHUD(container) {
     if (!container) return;
 
+    const isMobile = this.isMobile();
+
+    // Simplified mobile HUD
+    if (isMobile) {
+      container.innerHTML = `
+        <!-- Mobile: Simple top bar -->
+        <div class="cia-hud-panel cia-hud-mobile-top">
+          <div class="hud-label">GLOBAL COVERAGE</div>
+          <div class="hud-sub">${this.coveragePoints.length} Locations</div>
+        </div>
+
+        <!-- Mobile: Active operation (if selected) -->
+        ${this.activeOp ? `
+          <div class="cia-hud-panel cia-hud-mobile-active">
+            <div class="hud-label">${this.activeOp.location}</div>
+            <div class="cia-active-op-details">${this.activeOp.headline}</div>
+          </div>
+        ` : ''}
+      `;
+      return;
+    }
+
+    // Desktop: Full HUD
     container.innerHTML = `
       <!-- Top-left: Mission title -->
       <div class="cia-hud-panel cia-hud-top-left">
@@ -435,7 +508,7 @@ class CiaMissionGlobe {
 
       <!-- Bottom strip: Recent operations -->
       <div class="cia-hud-bottom-strip">
-        ${this.coveragePoints.slice(0, 8).map((point) => `
+        ${this.coveragePoints.slice(0, 12).map((point) => `
           <div
             class="cia-op-item ${this.activeOp?.id === point.id ? 'active' : ''}"
             data-op-id="${point.id}"

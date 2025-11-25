@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="app-version" content="November 24, 2025">
+    <meta name="app-version" content="November 25, 2025">
     <title>Noteworthy News - Fact-Checked Journalism & Media Literacy Games | Trusted News Source</title>
     
     <!-- Favicon and Theme -->
@@ -12033,6 +12033,86 @@
                 padding-top: 64px;
             }
         }
+
+        /* ========================================
+           MOBILE LANDING PAGE - CLEAN & SIMPLE
+           Complete redesign for mobile devices
+           ======================================== */
+        @media (max-width: 768px) {
+            /* Hide all decorative elements */
+            .hero-section .flags-background,
+            .hero-section .welcome-background-image,
+            .hero-section .rough-terrain-background,
+            .hero-section .hero-logo,
+            .hero-section .welcome-left-image,
+            .hero-section .welcome-right-image {
+                display: none !important;
+            }
+
+            /* Clean hero section */
+            .hero-section {
+                background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
+                min-height: 70vh !important;
+                padding: 3rem 1.5rem 2rem !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: center !important;
+            }
+
+            /* Simple, clean typography */
+            .hero-title {
+                font-size: 2rem !important;
+                font-weight: 600 !important;
+                color: #ffffff !important;
+                margin-bottom: 1.5rem !important;
+                text-align: center !important;
+            }
+
+            .welcome-text {
+                font-size: 2rem !important;
+                color: #ffffff !important;
+                font-weight: 600 !important;
+            }
+
+            .hero-subtitle {
+                font-size: 1rem !important;
+                color: rgba(255, 255, 255, 0.85) !important;
+                line-height: 1.6 !important;
+            }
+
+            /* Minimal stats grid */
+            .hero-stats-container {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 1rem !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .hero-stat-card {
+                background: rgba(255, 255, 255, 0.05) !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                border-radius: 12px !important;
+                padding: 1rem !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-section {
+                padding: 2rem 1rem 1.5rem !important;
+                min-height: 60vh !important;
+            }
+
+            .hero-title,
+            .welcome-text {
+                font-size: 1.75rem !important;
+            }
+
+            .hero-subtitle {
+                font-size: 0.875rem !important;
+            }
+        }
     </style>
     <!-- Analytics Tracker - Comprehensive visitor tracking -->
     <script src="src/utils/analytics-tracker.js"></script>
@@ -12356,6 +12436,19 @@
             <p class="news-subtitle" style="text-align: center; margin-bottom: 2rem;">See all the places we've covered from around the world</p>
             <div id="cia-globe-container" style="width: 100%; height: 600px; max-width: 1200px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: #020617;"></div>
         </div>
+        <style>
+            @media (max-width: 768px) {
+                .globe-section {
+                    padding: 1.5rem 0.75rem !important;
+                    margin: 1rem 0 !important;
+                    background: transparent !important;
+                }
+                #cia-globe-container {
+                    height: 400px !important;
+                    border-radius: 8px !important;
+                }
+            }
+        </style>
 
         <!-- News Articles Section -->
         <div class="news-section" id="news-section">

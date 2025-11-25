@@ -754,27 +754,28 @@ function renderSkeletonCards(count = 5) {
       style="
         padding: 1.5rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        min-height: 520px;
       "
     >
-      <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem;">
+      <div style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem;">
         <div style="
-          width: 48px;
-          height: 48px;
+          width: 56px;
+          height: 56px;
           border-radius: 50%;
           background: rgba(255,255,255,0.1);
           animation: pulse 1.5s ease-in-out infinite;
         "></div>
         <div style="flex: 1;">
           <div style="
-            height: 16px;
+            height: 18px;
             width: 200px;
             background: rgba(255,255,255,0.1);
             border-radius: 4px;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
             animation: pulse 1.5s ease-in-out infinite;
           "></div>
           <div style="
-            height: 14px;
+            height: 16px;
             width: 150px;
             background: rgba(255,255,255,0.08);
             border-radius: 4px;
@@ -782,21 +783,90 @@ function renderSkeletonCards(count = 5) {
           "></div>
         </div>
       </div>
+      <div style="margin-bottom: 1.5rem;">
+        <div style="
+          height: 18px;
+          width: 100%;
+          background: rgba(255,255,255,0.1);
+          border-radius: 4px;
+          margin-bottom: 0.75rem;
+          animation: pulse 1.5s ease-in-out infinite;
+        "></div>
+        <div style="
+          height: 18px;
+          width: 95%;
+          background: rgba(255,255,255,0.1);
+          border-radius: 4px;
+          margin-bottom: 0.75rem;
+          animation: pulse 1.5s ease-in-out infinite;
+        "></div>
+        <div style="
+          height: 18px;
+          width: 90%;
+          background: rgba(255,255,255,0.1);
+          border-radius: 4px;
+          margin-bottom: 0.75rem;
+          animation: pulse 1.5s ease-in-out infinite;
+        "></div>
+        <div style="
+          height: 18px;
+          width: 85%;
+          background: rgba(255,255,255,0.1);
+          border-radius: 4px;
+          margin-bottom: 0.75rem;
+          animation: pulse 1.5s ease-in-out infinite;
+        "></div>
+        <div style="
+          height: 18px;
+          width: 70%;
+          background: rgba(255,255,255,0.08);
+          border-radius: 4px;
+          margin-bottom: 1.5rem;
+          animation: pulse 1.5s ease-in-out infinite;
+        "></div>
+      </div>
       <div style="
-        height: 60px;
+        height: 400px;
         width: 100%;
         background: rgba(255,255,255,0.08);
-        border-radius: 8px;
-        margin-bottom: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
         animation: pulse 1.5s ease-in-out infinite;
       "></div>
       <div style="
-        height: 40px;
-        width: 100%;
-        background: rgba(255,255,255,0.05);
-        border-radius: 8px;
-        animation: pulse 1.5s ease-in-out infinite;
-      "></div>
+        display: flex;
+        gap: 2rem;
+        padding-top: 0.75rem;
+      ">
+        <div style="
+          height: 20px;
+          width: 60px;
+          background: rgba(255,255,255,0.05);
+          border-radius: 4px;
+          animation: pulse 1.5s ease-in-out infinite;
+        "></div>
+        <div style="
+          height: 20px;
+          width: 60px;
+          background: rgba(255,255,255,0.05);
+          border-radius: 4px;
+          animation: pulse 1.5s ease-in-out infinite;
+        "></div>
+        <div style="
+          height: 20px;
+          width: 60px;
+          background: rgba(255,255,255,0.05);
+          border-radius: 4px;
+          animation: pulse 1.5s ease-in-out infinite;
+        "></div>
+        <div style="
+          height: 20px;
+          width: 60px;
+          background: rgba(255,255,255,0.05);
+          border-radius: 4px;
+          animation: pulse 1.5s ease-in-out infinite;
+        "></div>
+      </div>
     </article>
   `).join('');
 }
@@ -938,13 +1008,8 @@ function renderEnhancedFeed() {
   const sorted = [...pinned, ...sortEnhancedPosts(unpinned, enhancedCurrentSort)];
   
   if (sorted.length === 0) {
-    container.innerHTML = `
-      <div style="padding: 3rem; text-align: center; color: rgba(255,255,255,0.7);">
-        <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
-        <h3 style="color: white;">No posts found</h3>
-        <p>Try adjusting your search or filters</p>
-      </div>
-    `;
+    // Show loading skeleton cards when no posts found
+    container.innerHTML = renderSkeletonCards(5);
     return;
   }
   

@@ -199,27 +199,79 @@
   font-weight: 600;
 }
 
-/* Responsive adjustments */
+/* Mobile: Simplified and Clean */
 @media (max-width: 768px) {
-  .cia-hud-top-left,
-  .cia-hud-top-right {
-    min-width: auto;
-    max-width: 45%;
-    font-size: 9px;
-    padding: 8px 10px;
+  /* Hide complex HUD elements on mobile */
+  .cia-hud-overlay.mobile-simple .cia-hud-top-left,
+  .cia-hud-overlay.mobile-simple .cia-hud-top-right,
+  .cia-hud-overlay.mobile-simple .cia-hud-bottom-strip,
+  .cia-hud-overlay.mobile-simple .cia-active-op-panel {
+    display: none !important;
   }
-  
-  .hud-label {
+
+  /* Mobile top bar - simple and clean */
+  .cia-hud-mobile-top {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    text-align: center;
+    padding: 10px 16px;
+    background: rgba(2, 6, 23, 0.9);
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    border-radius: 8px;
+    backdrop-filter: blur(8px);
+  }
+
+  .cia-hud-mobile-top .hud-label {
+    font-size: 12px;
+    margin-bottom: 2px;
+  }
+
+  .cia-hud-mobile-top .hud-sub {
+    font-size: 10px;
+  }
+
+  /* Mobile active operation - bottom center */
+  .cia-hud-mobile-active {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    text-align: center;
+    padding: 12px 16px;
+    background: rgba(2, 6, 23, 0.95);
+    border: 1px solid rgba(34, 211, 238, 0.4);
+    border-radius: 8px;
+    backdrop-filter: blur(8px);
+  }
+
+  .cia-hud-mobile-active .hud-label {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .cia-hud-mobile-active .cia-active-op-details {
     font-size: 11px;
+    line-height: 1.4;
+    color: rgba(229, 231, 235, 0.9);
   }
-  
-  .cia-op-item {
-    min-width: 180px;
-    padding: 8px 10px;
+
+  /* Simplify globe root on mobile */
+  .cia-globe-root.mobile {
+    background: #020617;
+    /* Remove complex gradient for performance */
   }
-  
+
+  /* Reduce animations on mobile */
+  .cia-globe-root.mobile .cia-live-dot {
+    animation: none;
+    opacity: 1;
+  }
+
+  /* Hide bottom strip on mobile */
   .cia-hud-bottom-strip {
-    padding: 8px 12px;
+    display: none !important;
   }
 }
 
@@ -229,4 +281,5 @@
     background: radial-gradient(circle at top, #010510 0%, #000 100%);
   }
 }
+
 
