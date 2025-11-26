@@ -30,8 +30,38 @@ class CiaMissionGlobe {
     this.activeOp = null;
     this.t = 0;
     this.coveragePoints = [];
+    this.locationCacheKey = 'globe-location-cache-v1';
+    this.locationCache = {};
+    this.geocodePromises = {};
+    this.cityMapCache = null;
+    this.countryMapCache = null;
+    this.extraLocationData = null;
+    
+    this.loadLocationCache();
     
     this.loadDependencies().then(() => this.init());
+  }
+
+  loadLocationCache() {
+    try {
+      const cached = localStorage.getItem(this.locationCacheKey);
+      if (cached) {
+        const data = JSON.parse(cached);
+        if (data && typeof data === 'object') {
+          this.locationCache = data;
+        }
+      }
+    } catch (err) {
+      console.warn('[Globe] Failed to load location cache:', err);
+    }
+  }
+
+  saveLocationCache() {
+    try {
+      localStorage.setItem(this.locationCacheKey, JSON.stringify(this.locationCache));
+    } catch (err) {
+      // Ignore quota exceeded errors
+    }
   }
 
   async loadDependencies() {
@@ -61,13 +91,104 @@ class CiaMissionGlobe {
   }
 
   // Get coordinates for city, state, or country
-  getLocationCoordinates(locationName) {
+  async getLocationCoordinates(locationName) {
+    if (!locationName) return null;
+    const normalized = (locationName || '').trim();
+    if (!normalized) return null;
+    const normalizedKey = normalized.toLowerCase();
+    
+    // Check cache first
+    if (this.locationCache[normalizedKey]) {
+      return this.locationCache[normalizedKey];
+    }
+    
     // First try city/state mapping
-    const cityMap = this.getCityCoordinates(locationName);
-    if (cityMap) return cityMap;
+    const cityCoords = this.getCityCoordinates(normalized);
+    if (cityCoords) {
+      this.locationCache[normalizedKey] = cityCoords;
+      this.saveLocationCache();
+      return cityCoords;
+    }
     
     // Then try country mapping
-    return this.getCountryCoordinates(locationName);
+    const countryCoords = this.getCountryCoordinates(normalized);
+    if (countryCoords) {
+      this.locationCache[normalizedKey] = countryCoords;
+      this.saveLocationCache();
+      return countryCoords;
+    }
+    
+    // Fallback to geocoding for previously unseen locations
+    return await this.lookupGeocodedLocation(normalized);
+  }
+
+  getInitialPointOfView(isMobile = false) {
+    // Focus on North America with a close starting zoom
+    return {
+      lat: 25,
+      lng: -95,
+      altitude: isMobile ? 1.35 : 1.1
+    };
+  }
+
+  async lookupGeocodedLocation(locationName) {
+    const normalizedKey = locationName.toLowerCase();
+    
+    // Avoid duplicate geocode requests
+    if (this.geocodePromises[normalizedKey]) {
+      return this.geocodePromises[normalizedKey];
+    }
+    
+    const geocodePromise = this.geocodeLocation(locationName)
+      .then(coords => {
+        if (coords) {
+          this.locationCache[normalizedKey] = coords;
+          this.saveLocationCache();
+        }
+        return coords;
+      })
+      .catch(err => {
+        console.warn('[Globe] Geocoding failed for', locationName, err);
+        return null;
+      })
+      .finally(() => {
+        delete this.geocodePromises[normalizedKey];
+      });
+    
+    this.geocodePromises[normalizedKey] = geocodePromise;
+    return geocodePromise;
+  }
+
+  async geocodeLocation(locationName) {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(locationName)}`;
+      const response = await fetch(url, {
+        headers: {
+          'Accept-Language': 'en',
+          'User-Agent': 'NoteworthyNewsGlobe/1.0 (contact@noteworthynews.co)'
+        }
+      });
+      
+      if (!response.ok) {
+        console.warn('[Globe] Geocoding error:', response.status, response.statusText, locationName);
+        return null;
+      }
+      
+      const data = await response.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const { lat, lon } = data[0];
+        const parsedLat = parseFloat(lat);
+        const parsedLng = parseFloat(lon);
+        if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
+          console.log(`[Globe] Geocoded ${locationName} -> ${parsedLat.toFixed(4)}, ${parsedLng.toFixed(4)}`);
+          return { lat: parsedLat, lng: parsedLng };
+        }
+      }
+    } catch (err) {
+      console.warn('[Globe] Geocoding fetch failed for', locationName, err);
+    }
+    
+    return null;
   }
 
   // Get all city map keys for searching
@@ -77,7 +198,8 @@ class CiaMissionGlobe {
 
   // City and state name to coordinates mapping
   getCityMap() {
-    return {
+    if (this.cityMapCache) return this.cityMapCache;
+    this.cityMapCache = {
       // US Cities
       'Albuquerque': { lat: 35.0844, lng: -106.6504 },
       'Albuquerque, N.M': { lat: 35.0844, lng: -106.6504 },
@@ -425,6 +547,7 @@ class CiaMissionGlobe {
       'Hawaii, Island': { lat: 19.8968, lng: -155.5828 },
       'Makhachkala, Dagestan': { lat: 42.9833, lng: 47.4833 },
     };
+    return this.cityMapCache;
   }
 
   // City and state name to coordinates mapping (wrapper function)
@@ -447,9 +570,9 @@ class CiaMissionGlobe {
     return null;
   }
 
-  // Country name to coordinates mapping (from geography game)
-  getCountryCoordinates(countryName) {
-    const countryMap = {
+  getCountryMap() {
+    if (this.countryMapCache) return this.countryMapCache;
+    this.countryMapCache = {
       'China': { lat: 35.8617, lng: 104.1954 },
       'India': { lat: 20.5937, lng: 78.9629 },
       'United States': { lat: 37.0902, lng: -95.7129 },
@@ -499,6 +622,12 @@ class CiaMissionGlobe {
       'Nigeria': { lat: 9.0820, lng: 8.6753 },
       'Venezuela': { lat: 6.4238, lng: -66.5897 }
     };
+    return this.countryMapCache;
+  }
+
+  // Country name to coordinates mapping (from geography game)
+  getCountryCoordinates(countryName) {
+    const countryMap = this.getCountryMap();
 
     // Try exact match first
     if (countryMap[countryName]) {
@@ -516,166 +645,83 @@ class CiaMissionGlobe {
     return null;
   }
 
-  // Extract location (city, state, or country) from post text
-  extractLocationFromPost(post) {
-    const text = (post.text || post.story || post.title || '').toLowerCase();
-    
-    // First try to extract city names (more specific)
-    const city = this.extractCityFromPost(post);
-    if (city) return city;
-    
-    // Then try country names
-    return this.extractCountryFromPost(post);
-  }
-
-  // Extract city names from post text
-  extractCityFromPost(post) {
-    const text = (post.text || post.story || post.title || '').toLowerCase();
-    
-    // Get all city keys from the city map by checking a dummy call structure
-    // We'll search through common city name patterns
-    const cityNames = [
-      // US Cities
-      'albuquerque', 'anchorage', 'annapolis', 'atlanta', 'austin', 'baltimore',
-      'baton rouge', 'boulder', 'chicago', 'cincinnati', 'cleveland', 'dallas',
-      'denver', 'des moines', 'el paso', 'fort worth', 'houston', 'las vegas',
-      'los angeles', 'miami', 'new york', 'philadelphia', 'phoenix', 'san antonio',
-      'san diego', 'san francisco', 'seattle', 'alene', 'anaconda', 'athens',
-      'auburn', 'ballymena', 'balıkesir', 'belgorod', 'bethesda', 'black river',
-      'bladensburg', 'bosasso', 'bucksnort', 'cadereyta', 'cambridgeshire', 'carbondale',
-      'carlow', 'catalonia', 'chapel hill', 'charlottesville', 'chattanooga', 'chino hills',
-      'chuluota', 'clayton', 'clearwater', 'concord', 'copake', 'cornella', 'cypress',
-      'danville', 'davao', 'daytona beach', 'east palestine', 'edinburgh', 'el segundo',
-      'enterprise', 'erie', 'escondido', 'falmouth', 'fayetteville', 'florence',
-      'fort lauderdale', 'fort myers', 'fort pierce', 'fort wayne', 'fredericton',
-      'freiburg', 'fresno', 'gainesville', 'galveston', 'geelong', 'genoa', 'glenwood',
-      'golden', 'grand blanc', 'grand prairie', 'grand rapids', 'green bay', 'greensboro',
-      'greenville', 'guatemala city', 'halifax', 'hamburg', 'hartford', 'havana',
-      'helensburgh', 'hermiston', 'hillsboro', 'hiroshima', 'hobart', 'hollywood',
-      'honolulu', 'hounslow', 'huntington beach', 'indianapolis', 'invercargill',
-      'irbil', 'islamabad', 'jalalabad', 'jeddah', 'johannesburg', 'juneau', 'kabul',
-      'kamchatka', 'kamchatsky', 'kansas city', 'kennesaw', 'kharkiv', 'lagos',
-      'lake ariel', 'lake wales', 'larnaca', 'las cruces', 'lavaur', 'lebanon',
-      'leicester', 'lexington', 'lima', 'little river', 'liverpool', 'long beach',
-      'louisville', 'lubbock', 'makhachkala', 'makkah', 'mandeville', 'manhattan',
-      'maple grove', 'marbella', 'mariupol', 'marseille', 'mcallen', 'melbourne',
-      'memphis', 'merseyside', 'miami beach', 'milan', 'milwaukee', 'minneapolis',
-      'mobile', 'mogadishu', 'moncton', 'monroe county', 'montreal', 'mount juliet',
-      'muncie', 'munich', 'murfreesboro', 'nantes', 'naples', 'nashville', 'nashua',
-      'nassau county', 'new brunswick', 'new delhi', 'new haven', 'new orleans',
-      'newark', 'newcastle', 'norfolk', 'north las vegas', 'north platte', 'odessa',
-      'oklahoma city', 'olympia', 'orlando', 'oslo', 'ottawa', 'oxford', 'paducah',
-      'palmdale', 'panama city', 'paterson', 'pensacola', 'pittsburgh', 'portland',
-      'prague', 'pretoria', 'prince george', 'providence', 'pueblo', 'pune',
-      'quebec city', 'queens', 'quito', 'raleigh', 'rapid city', 'reading',
-      'recife', 'reno', 'richmond', 'rio de janeiro', 'riyadh', 'rochester',
-      'rockford', 'sacramento', 'salem', 'salt lake city', 'san jose', 'san juan',
-      'san luis potosí', 'sanford', 'santa fe', 'santiago', 'santo domingo',
-      'são paulo', 'savannah', 'scottsdale', 'sheffield', 'shenzhen', 'shreveport',
-      'simferopol', 'sioux city', 'sofia', 'spokane', 'springfield', 'st. augustine',
-      'st. elizabeth', 'susquehanna county', 'swidnik', 'tacoma', 'taif', 'tampa',
-      'tampere', 'tateyama', 'taylortown', 'the bronx', 'traverse city', 'tucson',
-      'tulsa', 'uppsala', 'valdosta', 'vancouver', 'vero beach', 'villahermosa',
-      'virginia beach', 'visayas', 'walton', 'waterbury', 'wayne', 'west valley city',
-      'wichita falls', 'williamstown', 'wilmington', 'wilson county', 'wolf point',
-      'york county',
-      // International
-      'al hudeidah', 'amman', 'bangkok', 'bavaria', 'bogotá', 'buenos aires',
-      'davenish', 'dodge city', 'doha', 'dublin', 'gaza', 'hawaii', 'istanbul',
-      'jakarta', 'jerusalem', 'kyiv', 'london', 'madrid', 'manila', 'mexico city',
-      'moscow', 'paris', 'rome', 'sydney', 'tehran', 'tel aviv',
-    ];
-    
-    // Search for city names in text (longest match first for multi-word cities)
-    const sortedCities = cityNames.sort((a, b) => b.length - a.length);
-    const cityMap = this.getCityMap();
-    
-    for (const cityName of sortedCities) {
-      if (text.includes(cityName.toLowerCase())) {
-        // Try to find the matching key in city map
-        for (const key in cityMap) {
-          const keyLower = key.toLowerCase();
-          // Check if this key matches the city name we found
-          if (keyLower.includes(cityName.toLowerCase()) || cityName.toLowerCase().includes(keyLower.split(',')[0])) {
-            return key; // Return the exact key from the map
-          }
-        }
-      }
-    }
-    
-    return null;
-  }
-
-  // Extract country names from post text
+  // Extract country names from post text (legacy support)
   extractCountryFromPost(post) {
-    const text = (post.text || post.story || post.title || '').toLowerCase();
-    
-    // Extended country list with common names and variations
-    const countryMap = {
-      'china': 'China',
-      'india': 'India',
-      'united states': 'United States',
-      'usa': 'United States',
-      'us': 'United States',
-      'america': 'United States',
-      'indonesia': 'Indonesia',
-      'pakistan': 'Pakistan',
-      'brazil': 'Brazil',
-      'bangladesh': 'Bangladesh',
-      'russia': 'Russia',
-      'russian': 'Russia',
-      'mexico': 'Mexico',
-      'japan': 'Japan',
-      'philippines': 'Philippines',
-      'egypt': 'Egypt',
-      'ethiopia': 'Ethiopia',
-      'vietnam': 'Vietnam',
-      'congo': 'Democratic Republic of the Congo',
-      'drc': 'Democratic Republic of the Congo',
-      'iran': 'Iran',
-      'türkiye': 'Turkey',
-      'turkey': 'Turkey',
-      'germany': 'Germany',
-      'thailand': 'Thailand',
-      'united kingdom': 'United Kingdom',
-      'uk': 'United Kingdom',
-      'britain': 'United Kingdom',
-      'france': 'France',
-      'italy': 'Italy',
-      'spain': 'Spain',
-      'canada': 'Canada',
-      'australia': 'Australia',
-      'south korea': 'South Korea',
-      'korea': 'South Korea',
-      'argentina': 'Argentina',
-      'south africa': 'South Africa',
-      'ukraine': 'Ukraine',
-      'poland': 'Poland',
-      'iraq': 'Iraq',
-      'afghanistan': 'Afghanistan',
-      'saudi arabia': 'Saudi Arabia',
-      'saudi': 'Saudi Arabia',
-      'uzbekistan': 'Uzbekistan',
-      'peru': 'Peru',
-      'malaysia': 'Malaysia',
-      'angola': 'Angola',
-      'mozambique': 'Mozambique',
-      'ghana': 'Ghana',
-      'yemen': 'Yemen',
-      'nepal': 'Nepal',
-      'nigeria': 'Nigeria',
-      'venezuela': 'Venezuela'
-    };
+    const locations = this.extractLocationsFromText(post.text || post.story || post.title || '');
+    return locations.length ? locations[0] : null;
+  }
 
-    // Check for country names in text (with word boundaries)
-    for (const [key, country] of Object.entries(countryMap)) {
-      const regex = new RegExp(`\\b${key}\\b`, 'i');
-      if (regex.test(text)) {
-        return country;
+  extractLocationFromPost(post) {
+    const locations = this.extractLocationsFromText(post.text || post.story || post.title || '');
+    return locations.length ? locations[0] : null;
+  }
+
+  extractLocationsFromText(text) {
+    if (!text) return [];
+    const normalized = text.toLowerCase();
+    const found = new Set();
+    
+    const cityMap = this.getCityMap();
+    for (const cityName of Object.keys(cityMap)) {
+      const cityLower = cityName.toLowerCase();
+      if (this.locationMatches(normalized, cityLower)) {
+        found.add(cityName);
       }
     }
+    
+    const countryMap = this.getCountryMap();
+    for (const countryName of Object.keys(countryMap)) {
+      const countryLower = countryName.toLowerCase();
+      if (this.locationMatches(normalized, countryLower)) {
+        found.add(countryName);
+      }
+    }
+    
+    // Additional aliases and shorthand references
+    const aliasMap = {
+      'nyc': 'New York City, New York',
+      'new york, ny': 'New York City, New York',
+      'new york city': 'New York City, New York',
+      'manhattan': 'Manhattan, New York',
+      'bronx': 'The Bronx, New York',
+      'washington dc': 'Washington, D.C.',
+      'washington, d.c': 'Washington, D.C.',
+      'd.c.': 'Washington, D.C.',
+      'dc': 'Washington, D.C.',
+      'la ': 'Los Angeles, California',
+      'la,': 'Los Angeles, California',
+      'los angeles': 'Los Angeles, California',
+      'sf': 'San Francisco, California',
+      'fort worth': 'Fort Worth, Texas',
+      'são paulo': 'São Paulo, Brazil',
+      'saint louis': 'St. Louis, Missouri'
+    };
+    
+    for (const [alias, canonical] of Object.entries(aliasMap)) {
+      if (normalized.includes(alias)) {
+        found.add(canonical);
+      }
+    }
+    
+    return Array.from(found);
+  }
 
-    return null;
+  locationMatches(textLower, locationLower) {
+    if (!locationLower) return false;
+    const cleanLocation = locationLower.trim();
+    if (!cleanLocation) return false;
+    
+    if (textLower.includes(cleanLocation)) {
+      return true;
+    }
+    
+    const escaped = cleanLocation.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\\\$&');
+    try {
+      const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+      return regex.test(textLower);
+    } catch {
+      return textLower.includes(cleanLocation);
+    }
   }
 
   // Extract locations from posts and convert to coordinates
@@ -721,7 +767,7 @@ class CiaMissionGlobe {
       for (const post of posts) {
         const location = this.extractLocationFromPost(post);
         if (location) {
-          const coords = this.getLocationCoordinates(location);
+          const coords = await this.getLocationCoordinates(location);
           if (coords) {
             // Count posts per location for randomization
             const count = (countryCounts.get(location) || 0) + 1;
@@ -753,12 +799,198 @@ class CiaMissionGlobe {
         }
       }
 
-      console.log(`[Globe] Extracted ${coveragePoints.length} locations from ${posts.length} posts`);
+      // Add extra locations from CSV analytics (posts-with-locations.json)
+      await this.addExtraLocationsFromCSV(coveragePoints);
+      
+      console.log(`[Globe] Extracted ${coveragePoints.length} locations from ${posts.length} posts + CSV data`);
       return coveragePoints;
     } catch (err) {
       console.error('[Globe] Error extracting locations from posts:', err);
       return [];
     }
+  }
+
+  async loadExtraLocationData() {
+    if (this.extraLocationData !== null) {
+      return this.extraLocationData;
+    }
+    // Try JSON cache first (generated via script)
+    try {
+      const response = await fetch('/posts-with-locations.json', {
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data && Array.isArray(data.posts)) {
+          this.extraLocationData = data;
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('[Globe] Failed to load JSON extra location data:', err);
+    }
+    
+    // Fall back to raw CSV analytics file
+    try {
+      const csvResponse = await fetch('/data/account_analytics_content_2025-03-02_2025-11-26.csv', {
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
+      if (csvResponse.ok) {
+        const csvText = await csvResponse.text();
+        const posts = this.parseAnalyticsCSV(csvText);
+        this.extraLocationData = { posts };
+        return this.extraLocationData;
+      }
+    } catch (err) {
+      console.warn('[Globe] Failed to load CSV analytics data:', err);
+    }
+    
+    this.extraLocationData = null;
+    return null;
+  }
+
+  async addExtraLocationsFromCSV(coveragePoints) {
+    const extraData = await this.loadExtraLocationData();
+    if (!extraData || !Array.isArray(extraData.posts)) {
+      return;
+    }
+    
+    const countryCounts = new Map();
+    for (const post of extraData.posts) {
+      const timestamp = post.date ? new Date(post.date).toISOString() : new Date().toISOString();
+      const headline = post.postText || 'Coverage update';
+      const postLocations = Array.isArray(post.locations) && post.locations.length > 0
+        ? post.locations
+        : this.extractLocationsFromText(post.postText || '');
+      if (!postLocations.length) continue;
+      
+      for (const locationName of postLocations) {
+        if (!locationName) continue;
+        try {
+          const coords = await this.getLocationCoordinates(locationName);
+          if (!coords) continue;
+          
+          const count = (countryCounts.get(locationName) || 0) + 1;
+          countryCounts.set(locationName, count);
+          
+          const isCity = !!this.getCityCoordinates(locationName);
+          const spreadRadius = isCity ? 0.4 : 1.5;
+          const angle = (count * 111.25) % 360;
+          const distance = Math.min(count * 0.1, spreadRadius);
+          
+          const latOffset = (Math.cos(angle * Math.PI / 180) * distance);
+          const lngOffset = (Math.sin(angle * Math.PI / 180) * distance / Math.cos(coords.lat * Math.PI / 180));
+          
+          coveragePoints.push({
+            id: `csv-${post.postId || Date.now()}-${locationName}-${count}`,
+            lat: coords.lat + latOffset,
+            lng: coords.lng + lngOffset,
+            location: locationName,
+            headline: headline.substring(0, 140),
+            timestamp,
+            postId: post.postId,
+            source: 'csv'
+          });
+        } catch (err) {
+          console.warn('[Globe] Failed to add CSV location', locationName, err);
+        }
+      }
+    }
+  }
+
+  parseAnalyticsCSV(csvText) {
+    const rows = this.splitCSVRows(csvText);
+    if (!rows.length) return [];
+    
+    const headers = this.parseCSVRow(rows[0]).map(header => header.trim().toLowerCase());
+    const posts = [];
+    
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || !row.trim()) continue;
+      const values = this.parseCSVRow(row);
+      if (!values.length) continue;
+      
+      const record = {};
+      headers.forEach((header, idx) => {
+        record[header] = (values[idx] || '').trim();
+      });
+      
+      const postText = record['post text'] || '';
+      const locations = this.extractLocationsFromText(postText);
+      
+      posts.push({
+        postId: record['post id'] || record['postid'] || record['id'] || `csv-${i}`,
+        date: record['date'] || '',
+        postText,
+        postLink: record['post link'] || record['link'] || '',
+        locations
+      });
+    }
+    
+    return posts;
+  }
+
+  splitCSVRows(csvText) {
+    const rows = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < csvText.length; i++) {
+      const char = csvText[i];
+      if (char === '"') {
+        current += char;
+        if (inQuotes && csvText[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if ((char === '\n' || char === '\r') && !inQuotes) {
+        if (char === '\r' && csvText[i + 1] === '\n') {
+          i++;
+        }
+        rows.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    if (current) {
+      rows.push(current);
+    }
+    
+    return rows.filter(row => row && row.trim().length > 0);
+  }
+
+  parseCSVRow(line) {
+    const values = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        values.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    values.push(current);
+    return values;
   }
 
   isMobile() {
@@ -779,6 +1011,7 @@ class CiaMissionGlobe {
     }
 
     const isMobile = this.isMobile();
+    const initialView = this.getInitialPointOfView(isMobile);
 
     // Create root structure with mobile class
     container.innerHTML = `
@@ -857,23 +1090,23 @@ class CiaMissionGlobe {
       .pointResolution(isMobile ? 4 : 8)
       .pointsTransitionDuration(isMobile ? 500 : 1000);
 
-    // Configure controls - ensure full globe is visible
+    // Configure controls - ensure globe starts centered and zoomed appropriately
     const controls = this.globeInstance.controls();
     controls.autoRotate = !isMobile;
     controls.autoRotateSpeed = 0.5; // Slower rotation
     controls.enableZoom = true;
     controls.enablePan = !isMobile;
     controls.enableDamping = !isMobile;
+    controls.zoomSpeed = 0.5;
+    controls.minDistance = isMobile ? 160 : 200;
+    controls.maxDistance = isMobile ? 420 : 520;
+    controls.target.set(0, 0, 0);
+    controls.update();
     
-    // Set camera distance to show entire globe
-    controls.minDistance = 200;
-    controls.maxDistance = 800;
-    
-    // Set initial camera position to show entire globe clearly
+    // Set initial camera position to start over the Americas, zoomed in
     setTimeout(() => {
-      // Higher altitude shows more of the globe
-      this.globeInstance.pointOfView({ lat: 0, lng: 0, altitude: 3.0 }, 0);
-    }, 100);
+      this.globeInstance.pointOfView(initialView, 0);
+    }, 150);
 
     // Handle point clicks
     this.globeInstance.onPointClick((point) => {
@@ -915,7 +1148,7 @@ class CiaMissionGlobe {
     }
     
     const baseAltitude = isMobile ? 0.02 : 0.03;
-    const pulseAmplitude = isMobile ? 0.01 : 0.02; // Smaller pulse on mobile
+    const pulseAmplitude = isMobile ? 0.0125 : 0.03; // More visible pulse
 
     this.globeInstance.pointAltitude(d => {
       const phase = (d.lat + d.lng) * 0.1;
@@ -926,9 +1159,21 @@ class CiaMissionGlobe {
     this.globeInstance.pointRadius(d => {
       const phase = (d.lat + d.lng) * 0.1;
       const scale = (Math.sin(this.t + phase) + 1) / 2;
-      const baseRadius = isMobile ? 0.5 : 0.6;
-      const pulseSize = isMobile ? 0.15 : 0.3; // Smaller pulse on mobile
+      const baseRadius = isMobile ? 0.45 : 0.6;
+      const pulseSize = isMobile ? 0.25 : 0.45; // More dramatic pulse
       return baseRadius + scale * pulseSize;
+    });
+
+    // Update point color with pulsating glow effect
+    this.globeInstance.pointColor(d => {
+      const phase = (d.lat + d.lng) * 0.1;
+      const scale = (Math.sin(this.t + phase) + 1) / 2;
+      const glow = 0.5 + scale * 0.5;
+      const alpha = 0.65 + scale * 0.35;
+      const r = Math.min(255, Math.floor(74 + scale * 120));
+      const g = Math.min(255, Math.floor(158 + scale * 40));
+      const b = 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     });
 
     // Throttle on mobile - skip every other frame
