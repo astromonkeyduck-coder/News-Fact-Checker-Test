@@ -480,6 +480,7 @@ function renderPostCard(post) {
         transition: background 0.2s ease;
         display: grid;
         grid-template-rows: auto 1fr auto;
+        box-sizing: border-box;
       "
       onmouseover="this.style.background='rgba(255,255,255,0.03)'"
       onmouseout="this.style.background='transparent'"
@@ -572,7 +573,11 @@ function renderPostCard(post) {
             line-height: 1.625rem;
             white-space: pre-wrap;
             word-wrap: break-word;
-            margin-bottom: 1rem;
+            overflow-wrap: break-word;
+            margin: 0 0 1rem 0;
+            padding: 0;
+            text-align: left;
+            text-indent: 0;
             display: -webkit-box;
             -webkit-line-clamp: 8;
             -webkit-box-orient: vertical;
@@ -624,7 +629,12 @@ function formatPostText(text, postMedia = []) {
   }
   
   // Clean up extra whitespace after removing URLs
-  cleanedText = cleanedText.replace(/\s+/g, ' ').trim();
+  // Strip ALL leading whitespace to prevent indentation
+  cleanedText = cleanedText
+    .replace(/^[\s\u00a0]+/, '')
+    .replace(/\n[\s\u00a0]+/g, '\n')
+    .replace(/\s+/g, ' ')
+    .trim();
   
   // Split by remaining URLs
   const urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
@@ -1728,16 +1738,22 @@ async function renderPostFeedV2(
     // Ignore cache errors
   }
   
-  // Check cache
+  // Check cache and render immediately (don't wait for API)
   if (!forceRefresh) {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
         const { data, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < CACHE_EXPIRY) {
+        // Use cached data even if slightly stale (up to 24 hours) for instant display
+        if (Date.now() - timestamp < 86400000) {
           currentPosts = data.map(mapRawPostToPost);
           await renderFeed();
-          return;
+          // If cache is older than 5 minutes, refresh in background
+          if (Date.now() - timestamp > 300000) {
+            // Continue to fetch fresh data below
+          } else {
+            return; // Cache is fresh, no need to fetch
+          }
         }
       }
     } catch (err) {
@@ -1745,7 +1761,7 @@ async function renderPostFeedV2(
     }
   }
   
-  // Fetch posts
+  // Fetch posts (in background if we already rendered cached data)
   if (isLoading) return;
   isLoading = true;
   

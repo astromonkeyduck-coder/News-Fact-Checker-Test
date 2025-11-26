@@ -263,6 +263,16 @@ function renderEnhancedPostCard(post) {
   const formatStory = (text) => {
     if (!text) return '';
     
+    // Normalize whitespace - strip ALL leading whitespace to prevent indentation
+    let normalizedText = text
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .replace(/\u00a0/g, ' ')
+      .replace(/^[\s\u00a0]+/, '')
+      .replace(/\n[\s\u00a0]+/g, '\n');
+    
+    if (!normalizedText) return '';
+    
     // Split text into parts to handle URLs and plain text separately
     const parts = [];
     let lastIndex = 0;
@@ -271,10 +281,10 @@ function renderEnhancedPostCard(post) {
     const urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
     let match;
     
-    while ((match = urlRegex.exec(text)) !== null) {
+    while ((match = urlRegex.exec(normalizedText)) !== null) {
       // Add text before URL
       if (match.index > lastIndex) {
-        const beforeText = text.substring(lastIndex, match.index);
+        const beforeText = normalizedText.substring(lastIndex, match.index);
         if (beforeText) {
           parts.push({ type: 'text', content: beforeText });
         }
@@ -328,8 +338,8 @@ function renderEnhancedPostCard(post) {
     }
     
     // Add remaining text after last URL
-    if (lastIndex < text.length) {
-      const afterText = text.substring(lastIndex);
+    if (lastIndex < normalizedText.length) {
+      const afterText = normalizedText.substring(lastIndex);
       if (afterText) {
         parts.push({ type: 'text', content: afterText });
       }
@@ -337,7 +347,7 @@ function renderEnhancedPostCard(post) {
     
     // If no URLs found, just process the whole text
     if (parts.length === 0) {
-      parts.push({ type: 'text', content: text });
+      parts.push({ type: 'text', content: normalizedText });
     }
     
     // Process each part: escape HTML for text, keep HTML for images/links
@@ -484,7 +494,7 @@ function renderEnhancedPostCard(post) {
   
   // Use November 23rd card design style (from post-feed-v2.js)
   return `
-    <article class="feed-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || ''}" style="background: transparent; min-height: 520px; padding: 1.5rem; margin: 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease; display: grid; grid-template-rows: auto 1fr auto;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+    <article class="feed-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || ''}" style="background: transparent; min-height: 520px; padding: 1.5rem; margin: 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease; display: grid; grid-template-rows: auto 1fr auto; box-sizing: border-box;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
       <div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem; align-items: flex-start;">
         <!-- Avatar -->
         <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; text-decoration: none; display: block;">
@@ -505,7 +515,7 @@ function renderEnhancedPostCard(post) {
           </div>
           
           <!-- Post Text -->
-          <div style="color: rgb(231, 233, 234); font-size: 0.938rem; line-height: 1.375rem; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 0.75rem;">
+          <div style="color: rgb(231, 233, 234); font-size: 0.938rem; line-height: 1.375rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; margin: 0 0 0.75rem 0; padding: 0; text-align: left; text-indent: 0;">
             ${formatStory(postText)}
           </div>
       

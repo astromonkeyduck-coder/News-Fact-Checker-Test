@@ -12182,7 +12182,7 @@
             <nav class="main-nav" id="mainNav">
                 <ul>
                     <li><a href="#news-section" class="nav-link">News</a></li>
-                    <li><a href="#fact-checker-section" class="nav-link">Games</a></li>
+                    <li><a href="#geography-game-section" class="nav-link">Games</a></li>
                     <li><a href="#credibility-section" class="nav-link">Credibility</a></li>
                     <li><a href="#about-section" class="nav-link">About</a></li>
                     <li><a href="#ai-assistant-section" class="nav-link">AI Chat</a></li>
@@ -12822,7 +12822,7 @@
                         <h4>Quick Links</h4>
                         <ul>
                             <li><a href="#news-section">News</a></li>
-                            <li><a href="#fact-checker-section">Games</a></li>
+                            <li><a href="#geography-game-section">Games</a></li>
                             <li><a href="#credibility-section">Credibility</a></li>
                             <li><a href="#about-section">About</a></li>
                         </ul>
@@ -14268,17 +14268,15 @@
     <!-- Global Coverage Globe -->
     <script src="/src/components/CiaMissionGlobe-cdn.js"></script>
     <script>
-        // Initialize globe after page loads and posts are available
+        // Initialize globe after page loads (uses cached location data for instant display)
         document.addEventListener('DOMContentLoaded', function() {
-            // Wait a bit for posts to load, then initialize globe
-            setTimeout(function() {
-                if (typeof CiaMissionGlobe !== 'undefined') {
-                    const globe = new CiaMissionGlobe('cia-globe-container');
-                    console.log('[Globe] Initialized global coverage map');
-                } else {
-                    console.warn('[Globe] CiaMissionGlobe not available');
-                }
-            }, 2000); // Wait 2 seconds for posts to load
+            // Initialize immediately - globe will use cached location data if available
+            if (typeof CiaMissionGlobe !== 'undefined') {
+                const globe = new CiaMissionGlobe('cia-globe-container');
+                console.log('[Globe] Initialized global coverage map');
+            } else {
+                console.warn('[Globe] CiaMissionGlobe not available');
+            }
         });
     </script>
     <script>
@@ -16856,96 +16854,6 @@
                 }
                 
             });
-        })();
-    </script>
-    
-    <!-- Video player near bottom of page -->
-    <div id="bottom-video-container" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 400px; width: 90%; pointer-events: none; display: none;">
-        <video 
-            id="bottom-video"
-            src="NWvidddd.MOV" 
-            autoplay 
-            loop 
-            muted 
-            playsinline
-            style="width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); pointer-events: none;"
-            disablePictureInPicture
-            oncontextmenu="return false;">
-            Your browser does not support the video element.
-        </video>
-    </div>
-    <script>
-        // Prevent fullscreen and any interactions with the video
-        (function() {
-            const video = document.getElementById('bottom-video');
-            const container = document.getElementById('bottom-video-container');
-            if (video) {
-                // Hide container if video fails to load
-                video.addEventListener('error', function(e) {
-                    console.log('Video failed to load, hiding container');
-                    if (container) {
-                        container.style.display = 'none';
-                    }
-                });
-                
-                // Show container only when video successfully loads and can play
-                video.addEventListener('loadeddata', function() {
-                    if (container && video.readyState >= 2) {
-                        container.style.display = 'block';
-                    }
-                });
-                
-                // Also check if video loads successfully
-                video.addEventListener('canplay', function() {
-                    if (container) {
-                        container.style.display = 'block';
-                    }
-                });
-                // Prevent fullscreen attempts
-                video.addEventListener('webkitbeginfullscreen', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                });
-                video.addEventListener('webkitendfullscreen', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                });
-                video.addEventListener('fullscreenchange', function(e) {
-                    if (document.fullscreenElement === video) {
-                        document.exitFullscreen();
-                    }
-                });
-                video.addEventListener('webkitfullscreenchange', function(e) {
-                    if (document.webkitFullscreenElement === video) {
-                        document.webkitExitFullscreen();
-                    }
-                });
-                video.addEventListener('mozfullscreenchange', function(e) {
-                    if (document.mozFullScreenElement === video) {
-                        document.mozCancelFullScreen();
-                    }
-                });
-                video.addEventListener('MSFullscreenChange', function(e) {
-                    if (document.msFullscreenElement === video) {
-                        document.msExitFullscreen();
-                    }
-                });
-                
-                // Prevent right-click context menu
-                video.addEventListener('contextmenu', function(e) {
-                    e.preventDefault();
-                    return false;
-                });
-                
-                // Prevent double-click (which can trigger fullscreen on some browsers)
-                video.addEventListener('dblclick', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                });
-            }
         })();
     </script>
     

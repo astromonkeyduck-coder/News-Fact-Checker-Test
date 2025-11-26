@@ -37,6 +37,9 @@ class CiaMissionGlobe {
     
     if (!canvasEl || !hudEl) return;
 
+    // Store reference on element for close button
+    hudEl.__globeInstance = this;
+
     // Render HUD
     this.renderHUD(hudEl);
 
@@ -70,7 +73,7 @@ class CiaMissionGlobe {
       controls.enableZoom = true;
       controls.enablePan = true;
 
-      // Handle point clicks
+      // Handle point clicks - just show details, don't auto-open links
       this.globeInstance.onPointClick((point) => {
         if (point) {
           this.setActiveOp(point);
@@ -129,6 +132,11 @@ class CiaMissionGlobe {
     this.renderHUD(document.getElementById('cia-hud-overlay'));
   }
 
+  clearActiveOp() {
+    this.activeOp = null;
+    this.renderHUD(document.getElementById('cia-hud-overlay'));
+  }
+
   formatTimestamp(timestamp) {
     if (!timestamp) return 'N/A';
     try {
@@ -175,6 +183,7 @@ class CiaMissionGlobe {
       <!-- Active operation details -->
       ${this.activeOp ? `
         <div class="cia-hud-panel cia-active-op-panel">
+          <button class="cia-hud-close" title="Close details">&times;</button>
           <div class="hud-label">ACTIVE OPERATION</div>
           <div class="cia-active-op-details">
             <div><strong>LOCATION:</strong> ${this.activeOp.location}</div>
@@ -212,6 +221,14 @@ class CiaMissionGlobe {
         }
       });
     });
+
+    // Add close button handler
+    const closeBtn = container.querySelector('.cia-hud-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        this.clearActiveOp();
+      });
+    }
   }
 
   destroy() {

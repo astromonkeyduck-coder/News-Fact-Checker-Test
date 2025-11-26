@@ -39,6 +39,9 @@ class CiaMissionGlobe {
     this.totalPosts = 0;
     this.rootEl = null;
     this.loadingEl = null;
+    this.allPosts = []; // Store all posts for searching
+    this.searchQuery = '';
+    this.filteredPoints = null; // null = show all, array = filtered results
     
     this.loadLocationCache();
     
@@ -869,6 +872,24 @@ class CiaMissionGlobe {
 
   // Extract locations from posts and convert to coordinates
   async extractLocationsFromPosts() {
+    // Check for cached location data first (much faster)
+    const locationCacheKey = 'globe-locations-cache-v2';
+    try {
+      const cached = localStorage.getItem(locationCacheKey);
+      if (cached) {
+        const cacheData = JSON.parse(cached);
+        // Cache valid for 1 hour
+        if (cacheData.coveragePoints && Array.isArray(cacheData.coveragePoints) && 
+            cacheData.timestamp && (Date.now() - cacheData.timestamp < 3600000)) {
+          console.log('[Globe] Using cached location data:', cacheData.coveragePoints.length, 'points');
+          this.totalPosts = cacheData.totalPosts || cacheData.coveragePoints.length;
+          return cacheData.coveragePoints;
+        }
+      }
+    } catch (e) {
+      console.warn('[Globe] Failed to load cached locations:', e);
+    }
+
     const coveragePoints = [];
     const seenLocations = new Set();
 
@@ -902,6 +923,9 @@ class CiaMissionGlobe {
           console.warn('Failed to fetch posts for globe:', e);
         }
       }
+      
+      // Store all posts for searching
+      this.allPosts = posts;
 
       // Track how many posts per country to add slight randomization
       const countryCounts = new Map();
@@ -946,6 +970,18 @@ class CiaMissionGlobe {
       // Add extra locations from CSV analytics (posts-with-locations.json)
       await this.addExtraLocationsFromCSV(coveragePoints);
       
+      // Cache the results for faster future loads
+      try {
+        localStorage.setItem(locationCacheKey, JSON.stringify({
+          coveragePoints: coveragePoints,
+          totalPosts: posts.length,
+          timestamp: Date.now()
+        }));
+      } catch (e) {
+        console.warn('[Globe] Failed to cache locations:', e);
+      }
+      
+      this.totalPosts = posts.length;
       console.log(`[Globe] Extracted ${coveragePoints.length} locations from ${posts.length} posts + CSV data`);
       return coveragePoints;
     } catch (err) {
@@ -1230,15 +1266,9 @@ class CiaMissionGlobe {
       }
     }, 1500);
 
-    // Configure points - show all countries
+    // Configure points - show all countries (will be updated by updateGlobePoints)
+    this.updateGlobePoints();
     this.globeInstance
-      .pointsData(this.coveragePoints)
-      .pointLat(d => d.lat)
-      .pointLng(d => d.lng)
-      .pointLabel(d => this.getPointLabel(d, isMobile))
-      .pointColor(d => this.getPointGlowColor(d, 0.5))
-      .pointRadius(d => this.getPointBaseRadius(d, isMobile))
-      .pointAltitude(d => this.getPointBaseAltitude(d, isMobile))
       .pointResolution(isMobile ? 4 : 8)
       .pointsTransitionDuration(isMobile ? 500 : 1000);
     const plottedStories = this.totalPosts || this.coveragePoints.reduce((sum, point) => {
@@ -1325,6 +1355,17 @@ class CiaMissionGlobe {
 
     // Update point color with pulsating glow effect
     this.globeInstance.pointColor(d => {
+      // Highlight filtered points
+      if (this.filteredPoints && this.filteredPoints.includes(d)) {
+        const phase = this.getPointPhase(d);
+        const pulse = (Math.sin(this.t + phase) + 1) / 2;
+        return this.getPointGlowColor(d, pulse);
+      }
+      // Dim non-matching points when filtering
+      if (this.filteredPoints) {
+        return 'rgba(100, 100, 100, 0.2)';
+      }
+      // Normal color when not filtering
       const phase = this.getPointPhase(d);
       const pulse = (Math.sin(this.t + phase) + 1) / 2;
       return this.getPointGlowColor(d, pulse);
@@ -1369,6 +1410,94 @@ class CiaMissionGlobe {
     }
   }
 
+  searchPosts(query) {
+    if (!query || query.trim().length === 0) {
+      this.searchQuery = '';
+      this.filteredPoints = null;
+      this.updateGlobePoints();
+      this.renderHUD(document.getElementById('cia-hud-overlay'));
+      return;
+    }
+    
+    this.searchQuery = query.trim().toLowerCase();
+    const searchTerms = this.searchQuery.split(/\s+/).filter(t => t.length > 0);
+    
+    // Search through all posts
+    const matchingPostIds = new Set();
+    const matchingLocations = new Set();
+    
+    this.allPosts.forEach(post => {
+      const text = (post.text || post.story || post.title || '').toLowerCase();
+      const headline = (post.headline || '').toLowerCase();
+      const location = (post.location || '').toLowerCase();
+      const allText = `${text} ${headline} ${location}`;
+      
+      // Check if all search terms match
+      const allTermsMatch = searchTerms.every(term => allText.includes(term));
+      
+      if (allTermsMatch) {
+        matchingPostIds.add(post.id || post.postId);
+        
+        // Extract location from post
+        const locations = this.extractLocationsFromText(post.text || post.story || post.title || '');
+        locations.forEach(loc => matchingLocations.add(loc.toLowerCase()));
+      }
+    });
+    
+    // Filter points that have matching posts or locations
+    this.filteredPoints = this.coveragePoints.filter(point => {
+      // Check if point location matches
+      const pointLocation = (point.location || '').toLowerCase();
+      if (searchTerms.some(term => pointLocation.includes(term))) {
+        return true;
+      }
+      
+      // Check if any post in this point matches
+      if (Array.isArray(point.posts)) {
+        return point.posts.some(post => {
+          const postId = post.id || post.postId;
+          return matchingPostIds.has(postId);
+        });
+      }
+      
+      return false;
+    });
+    
+    this.updateGlobePoints();
+    this.renderHUD(document.getElementById('cia-hud-overlay'));
+  }
+  
+  updateGlobePoints() {
+    if (!this.globeInstance) return;
+    
+    const pointsToShow = this.filteredPoints || this.coveragePoints;
+    const isMobile = this.isMobile();
+    
+    this.globeInstance
+      .pointsData(pointsToShow)
+      .pointLat(d => d.lat)
+      .pointLng(d => d.lng)
+      .pointLabel(d => this.getPointLabel(d, isMobile))
+      .pointColor(d => {
+        // Highlight filtered points
+        if (this.filteredPoints && this.filteredPoints.includes(d)) {
+          const phase = this.getPointPhase(d);
+          const pulse = (Math.sin(this.t + phase) + 1) / 2;
+          return this.getPointGlowColor(d, pulse);
+        }
+        // Dim non-matching points when filtering
+        if (this.filteredPoints) {
+          return 'rgba(100, 100, 100, 0.2)';
+        }
+        // Normal color when not filtering
+        const phase = this.getPointPhase(d);
+        const pulse = (Math.sin(this.t + phase) + 1) / 2;
+        return this.getPointGlowColor(d, pulse);
+      })
+      .pointRadius(d => this.getPointBaseRadius(d, isMobile))
+      .pointAltitude(d => this.getPointBaseAltitude(d, isMobile));
+  }
+
   renderHUD(container) {
     if (!container) return;
 
@@ -1376,7 +1505,11 @@ class CiaMissionGlobe {
     const totalStories = this.totalPosts || this.coveragePoints.reduce((sum, point) => {
       return sum + (Array.isArray(point.posts) ? point.posts.length : 1);
     }, 0);
-    const statsLabel = this.statsLoaded ? `${totalLocations.toLocaleString()} Locations • ${totalStories.toLocaleString()} Posts` : `${totalLocations.toLocaleString()} Locations • ${totalStories.toLocaleString()} Posts • updating...`;
+    
+    const displayLocations = this.filteredPoints ? this.filteredPoints.length : totalLocations;
+    const statsLabel = this.statsLoaded 
+      ? `${displayLocations.toLocaleString()} ${this.filteredPoints ? 'matching' : ''} Locations • ${totalStories.toLocaleString()} Posts`
+      : `${displayLocations.toLocaleString()} ${this.filteredPoints ? 'matching' : ''} Locations • ${totalStories.toLocaleString()} Posts • updating...`;
     
     const activeMarkup = this.activeOp ? this.renderActiveLocationDetails(this.activeOp) : '<div class="globe-hud-active placeholder">Tap a pulse to preview posts</div>';
     
@@ -1387,6 +1520,15 @@ class CiaMissionGlobe {
         <div class="globe-hud-title">Global Coverage</div>
         <div class="globe-hud-count" ${statusAttr}>${statsLabel}</div>
       </div>
+      <div class="globe-search-container">
+        <input 
+          type="text" 
+          class="globe-search-input" 
+          placeholder="Search by location or keywords..." 
+          value="${this.searchQuery || ''}"
+        />
+        ${this.searchQuery ? `<button class="globe-search-clear" title="Clear search">&times;</button>` : ''}
+      </div>
       ${activeMarkup}
     `;
 
@@ -1394,6 +1536,33 @@ class CiaMissionGlobe {
     if (closeBtn) {
       closeBtn.addEventListener('click', () => {
         this.setActiveOp(null);
+      });
+    }
+    
+    const searchInput = container.querySelector('.globe-search-input');
+    if (searchInput) {
+      let searchTimeout;
+      searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          this.searchPosts(e.target.value);
+        }, 300); // Debounce search
+      });
+      
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          clearTimeout(searchTimeout);
+          this.searchPosts(e.target.value);
+        }
+      });
+    }
+    
+    const clearBtn = container.querySelector('.globe-search-clear');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        this.searchPosts('');
       });
     }
   }

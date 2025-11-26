@@ -278,6 +278,33 @@
   max-width: 320px;
 }
 
+.cia-hud-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 75, 75, 0.2);
+  border: 1px solid rgba(255, 75, 75, 0.5);
+  color: #ff4b4b;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-family: 'Courier New', monospace;
+  z-index: 1;
+}
+
+.cia-hud-close:hover {
+  background: rgba(255, 75, 75, 0.4);
+  border-color: #ff4b4b;
+  box-shadow: 0 0 12px rgba(255, 75, 75, 0.6);
+}
+
 .cia-active-op-panel .hud-label {
   margin-bottom: 8px;
 }
@@ -411,6 +438,72 @@
   color: rgba(255, 255, 255, 0.65);
 }
 
+/* Search Container */
+.globe-search-container {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+  pointer-events: auto;
+  width: 90%;
+  max-width: 500px;
+}
+
+.globe-search-input {
+  flex: 1;
+  padding: 12px 16px;
+  background: rgba(5, 10, 25, 0.94);
+  border: 1px solid rgba(74, 158, 255, 0.35);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: 0.05em;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(2, 5, 14, 0.5);
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.globe-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.1em;
+}
+
+.globe-search-input:focus {
+  border-color: rgba(74, 158, 255, 0.7);
+  box-shadow: 0 8px 32px rgba(2, 5, 14, 0.5), 0 0 0 3px rgba(74, 158, 255, 0.2);
+  background: rgba(5, 10, 25, 0.98);
+}
+
+.globe-search-clear {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(91, 201, 255, 0.4);
+  background: rgba(255, 75, 75, 0.15);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.globe-search-clear:hover {
+  background: rgba(255, 75, 75, 0.3);
+  border-color: rgba(255, 75, 75, 0.6);
+  color: #ff4b4b;
+  transform: scale(1.1);
+}
+
 .globe-hud-active {
   position: absolute;
   bottom: 16px;
@@ -540,6 +633,23 @@
   .globe-hud-count {
     font-size: 11px;
     letter-spacing: 0.16em;
+  }
+  
+  .globe-search-container {
+    top: 70px;
+    width: 95%;
+    max-width: 400px;
+  }
+  
+  .globe-search-input {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  
+  .globe-search-clear {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
   }
 
   .globe-hud-active {

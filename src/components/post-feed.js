@@ -593,10 +593,13 @@ function renderPosts(posts, container, originalContent = null) {
     if (!text) return '';
     
     // Normalize whitespace so posts don't show extra indent on first line
+    // Strip ALL leading whitespace (including tabs, spaces, newlines)
     let normalizedText = text
       .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
       .replace(/\u00a0/g, ' ')
-      .replace(/^\s+/, '');
+      .replace(/^[\s\u00a0]+/, '')
+      .replace(/\n[\s\u00a0]+/g, '\n');
     
     if (!normalizedText) {
       return '';
@@ -887,7 +890,7 @@ function renderPosts(posts, container, originalContent = null) {
       }
       
       return `
-        <article class="x-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || index}" style="background: transparent; padding: 1rem 1rem; margin-bottom: 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+        <article class="x-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || index}" style="background: transparent; padding: 1rem; margin-bottom: 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
           <div style="display: flex; gap: 0.75rem;">
             <!-- Avatar -->
             <div style="flex-shrink: 0;">
@@ -910,7 +913,7 @@ function renderPosts(posts, container, originalContent = null) {
               </div>
               
               <!-- Post Text -->
-              <div style="color: rgb(231, 233, 234); font-size: 0.938rem; line-height: 1.375rem; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 0.75rem; text-indent: 0; padding-left: 0; margin-left: 0;">
+              <div style="color: rgb(231, 233, 234); font-size: 0.938rem; line-height: 1.375rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; margin-bottom: 0.75rem; text-align: left; text-indent: 0; padding: 0; margin: 0 0 0.75rem 0;">
                 ${formatStory(titleText)}
               </div>
               

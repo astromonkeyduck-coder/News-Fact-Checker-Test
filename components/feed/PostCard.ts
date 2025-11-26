@@ -157,13 +157,17 @@ export function renderPostCard(post: Post, options: PostCardOptions = {}): strin
             line-height: 1.375rem;
             white-space: pre-wrap;
             word-wrap: break-word;
-            margin-bottom: 0.75rem;
+            overflow-wrap: break-word;
+            margin: 0 0 0.75rem 0;
+            padding: 0;
+            text-align: left;
+            text-indent: 0;
             display: -webkit-box;
             -webkit-line-clamp: 6;
             -webkit-box-orient: vertical;
             overflow: hidden;
           "
-        >${clampedText.replace(/\n/g, '<br>')}</div>
+        >${clampedText.replace(/^[\s\u00a0]+/, '').replace(/\n[\s\u00a0]+/g, '\n').replace(/\n/g, '<br>')}</div>
         
         ${post.media && post.media.length > 0 ? renderMedia(post.media) : ''}
       </div>

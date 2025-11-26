@@ -8853,7 +8853,7 @@ function initNewsletterSubscription() {
         }
     };
     
-    async function generateImage(prompt, retries = 10) {
+    async function generateImage(prompt, retries = 5) {
         // Prevent multiple concurrent requests for the same prompt
         if (imageRequestQueue.has(prompt)) {
             // Suppress duplicate request logs to reduce console noise
@@ -8868,9 +8868,23 @@ function initNewsletterSubscription() {
                 try {
                     // Create abort controller for timeout (fallback for browsers without AbortSignal.timeout)
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout (increased for reliability)
+                    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout (reduced for faster failure)
                     
-                    const response = await fetch('/.netlify/functions/generate-image', {
+                    // Handle localhost vs production endpoint
+                    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                    const endpoint = isLocalhost 
+                        ? 'http://localhost:8888/.netlify/functions/generate-image'
+                        : '/.netlify/functions/generate-image';
+                    
+                    if (attempt === 0) {
+                        console.log('[Image Generation] 🚀 Starting image generation:', {
+                            prompt: prompt.substring(0, 50) + '...',
+                            endpoint: endpoint,
+                            isLocalhost: isLocalhost
+                        });
+                    }
+                    
+                    const response = await fetch(endpoint, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -8897,14 +8911,22 @@ function initNewsletterSubscription() {
                         
                         lastError = { status: response.status, data: errorData || errorText };
                         
-                        // Log error details for debugging
-                        if (attempt === 0) {
-                            console.error('[Image Generation] ❌ API Error:', {
-                                status: response.status,
-                                statusText: response.statusText,
-                                error: errorData || errorText,
-                                prompt: prompt.substring(0, 50) + '...'
-                            });
+                        // Log error details for debugging - always log first attempt
+                        console.error('[Image Generation] ❌ API Error:', {
+                            status: response.status,
+                            statusText: response.statusText,
+                            error: errorData || errorText,
+                            prompt: prompt.substring(0, 50) + '...',
+                            attempt: attempt + 1,
+                            endpoint: endpoint,
+                            fullError: errorData
+                        });
+                        
+                        // Show user-friendly error for common issues
+                        if (response.status === 500 && errorData?.error?.includes('API key')) {
+                            console.error('[Image Generation] ⚠️ OPENAI_API_KEY not configured! Set it in Netlify environment variables or .env file for local development.');
+                        } else if (response.status === 429) {
+                            console.error('[Image Generation] ⚠️ Rate limit reached (30 images per hour). Please wait before generating more images.');
                         }
                         
                         // Retry on 502, 503, 504 (server errors) or 429 (rate limit)
@@ -9074,22 +9096,42 @@ function initNewsletterSubscription() {
     }
 
     function renderFallbackState(wrapper) {
+        if (!wrapper) {
+            console.error('[Spotlight] Cannot render fallback - wrapper is null');
+            return;
+        }
+        
         const fallbackSrc = getRandomFallbackImage();
         const fallbackMessage = getRandomFallbackMessage();
+        
+        // Ensure wrapper is visible
+        if (wrapper.style.display === 'none') {
+            wrapper.style.display = 'block';
+        }
+        
         wrapper.innerHTML = `
             <div class="image-fallback-state">
-                <img src="${fallbackSrc}" alt="Temporary visual placeholder" loading="lazy" />
+                <img src="${fallbackSrc}" alt="Temporary visual placeholder" loading="lazy" 
+                     onerror="this.onerror=null; this.src='/f41de8d1-cc13-41b2-815c-64e51598326a.png';" />
                 <div class="image-fallback-overlay">
                     <span class="image-fallback-title">AI image unavailable</span>
                     <span class="image-fallback-subtitle">${fallbackMessage}</span>
                 </div>
             </div>
         `;
+        
+        // Force a reflow to ensure the fallback is rendered
+        wrapper.offsetHeight;
+        
+        console.log(`[Spotlight] Fallback rendered for wrapper with fallback image: ${fallbackSrc}`);
     }
     
     function loadImageIntoWrapper(wrapperId, imageUrl) {
         const wrapper = document.getElementById(wrapperId);
-        if (!wrapper) return;
+        if (!wrapper) {
+            console.error(`[Spotlight] Wrapper not found: ${wrapperId}`);
+            return;
+        }
         
         if (imageUrl) {
             wrapper.innerHTML = `<img src="${imageUrl}" alt="Generated image" loading="lazy" />`;
@@ -9101,6 +9143,7 @@ function initNewsletterSubscription() {
                 }
             }
         } else {
+            console.log(`[Spotlight] Showing fallback for ${wrapperId}`);
             renderFallbackState(wrapper);
         }
     }
@@ -9504,47 +9547,59 @@ function initNewsletterSubscription() {
                 culture2Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
             }
             
+            // Check if mobile - only generate culture images on mobile
+            const isMobile = window.innerWidth <= 768;
+            
             // Generate only missing images in parallel
             const imagePromises = [];
             
-            if (!hasFlagImage) {
-                console.log('[Spotlight] Generating flag image for', currentCountry.name);
-                const flagPrompt = `generate an image of the flag of ${currentCountry.name}, official flag design, high quality`;
-                imagePromises.push(
-                    generateImage(flagPrompt).then(url => {
-                        if (url) {
-                            console.log('[Spotlight] ✅ Flag image generated successfully:', url.substring(0, 50) + '...');
-                            loadImageIntoWrapper('flag-image-wrapper', url);
-                        } else {
-                            console.error('[Spotlight] ❌ Flag image generation failed - no URL returned');
+            // Flag image - skip on mobile
+            if (!isMobile) {
+                if (!hasFlagImage) {
+                    console.log('[Spotlight] Generating flag image for', currentCountry.name);
+                    const flagPrompt = `generate an image of the flag of ${currentCountry.name}, official flag design, high quality`;
+                    imagePromises.push(
+                        generateImage(flagPrompt).then(url => {
+                            if (url) {
+                                console.log('[Spotlight] ✅ Flag image generated successfully:', url.substring(0, 50) + '...');
+                                loadImageIntoWrapper('flag-image-wrapper', url);
+                            } else {
+                                console.error('[Spotlight] ❌ Flag image generation failed - no URL returned');
+                                loadImageIntoWrapper('flag-image-wrapper', null);
+                                failedImageRequests.set(flagPrompt, {
+                                    wrapperId: 'flag-image-wrapper',
+                                    retryCount: 0,
+                                    lastAttempt: Date.now()
+                                });
+                            }
+                            return { type: 'flag', url };
+                        }).catch(error => {
+                            console.error('[Spotlight] ❌ Error generating flag image:', error);
+                            console.error('[Spotlight] Error details:', {
+                                message: error.message,
+                                stack: error.stack?.split('\n').slice(0, 3).join('\n')
+                            });
                             loadImageIntoWrapper('flag-image-wrapper', null);
                             failedImageRequests.set(flagPrompt, {
                                 wrapperId: 'flag-image-wrapper',
                                 retryCount: 0,
                                 lastAttempt: Date.now()
                             });
-                        }
-                        return { type: 'flag', url };
-                    }).catch(error => {
-                        console.error('[Spotlight] ❌ Error generating flag image:', error);
-                        console.error('[Spotlight] Error details:', {
-                            message: error.message,
-                            stack: error.stack?.split('\n').slice(0, 3).join('\n')
-                        });
-                        loadImageIntoWrapper('flag-image-wrapper', null);
-                        failedImageRequests.set(flagPrompt, {
-                            wrapperId: 'flag-image-wrapper',
-                            retryCount: 0,
-                            lastAttempt: Date.now()
-                        });
-                        return { type: 'flag', url: null };
-                    })
-                );
+                            return { type: 'flag', url: null };
+                        })
+                    );
+                } else {
+                    // Image already exists, return it
+                    console.log('Flag image already exists, skipping generation');
+                    const existingUrl = flagWrapper.querySelector('img').src;
+                    imagePromises.push(Promise.resolve({ type: 'flag', url: existingUrl }));
+                }
             } else {
-                // Image already exists, return it
-                console.log('Flag image already exists, skipping generation');
-                const existingUrl = flagWrapper.querySelector('img').src;
-                imagePromises.push(Promise.resolve({ type: 'flag', url: existingUrl }));
+                // On mobile, hide flag wrapper and skip generation
+                if (flagWrapper) {
+                    flagWrapper.style.display = 'none';
+                }
+                console.log('[Spotlight] Mobile detected - skipping flag image generation');
             }
             
             if (!hasCulture1Image) {
@@ -9628,12 +9683,17 @@ function initNewsletterSubscription() {
             }
             
             // Call AI API for text content (only if we don't already have it)
+            // Show cached text immediately if available, then update async
             let textResponse;
             if (hasExistingAIResponse) {
                 // Already have text, use it
                 console.log('Using existing AI response, skipping text generation');
                 textResponse = Promise.resolve(aiResponse.innerHTML);
             } else {
+                // Show loading state but don't block
+                if (aiResponse) {
+                    aiResponse.innerHTML = '<p style="color: rgba(255, 255, 255, 0.7);">Loading country information...</p>';
+                }
                 const textPrompt = `Tell me about ${currentCountry.name}. Please include:
 1. **Culture** - Interesting cultural aspects, traditions, or customs
 2. **Fun Facts** - Surprising or fascinating facts about the country
@@ -9680,75 +9740,85 @@ IMPORTANT REQUIREMENTS:
                 });
             }
             
-            // Wait for all images and text to complete (use allSettled so individual failures don't stop others)
+            // Don't wait - let images and text load asynchronously
+            // This allows the UI to be interactive immediately
+            // Save data as each piece completes
             const allPromises = [...imagePromises, textResponse];
-            const settledResults = await Promise.allSettled(allPromises);
             
-            // Process settled results
-            const results = settledResults.map((result, index) => {
-                if (result.status === 'fulfilled') {
-                    return result.value;
-                } else {
-                    // Handle rejected promises
-                    console.error(`Promise ${index} rejected:`, result.reason);
-                    // If it's an image promise (first 3), return null
-                    if (index < 3) {
-                        const imageTypes = ['flag', 'culture1', 'culture2'];
-                        loadImageIntoWrapper(`${imageTypes[index]}-image-wrapper`, null);
-                        return { type: imageTypes[index], url: null };
+            // Process results as they complete (non-blocking - don't await)
+            Promise.allSettled(allPromises).then(settledResults => {
+                // Process settled results
+                const results = settledResults.map((result, index) => {
+                    if (result.status === 'fulfilled') {
+                        return result.value;
+                    } else {
+                        // Handle rejected promises
+                        console.error(`Promise ${index} rejected:`, result.reason);
+                        // If it's an image promise (first 3), return null
+                        if (index < 3) {
+                            const imageTypes = ['flag', 'culture1', 'culture2'];
+                            loadImageIntoWrapper(`${imageTypes[index]}-image-wrapper`, null);
+                            return { type: imageTypes[index], url: null };
+                        }
+                        // If it's the text response, return empty string
+                        return '';
                     }
-                    // If it's the text response, return empty string
-                    return '';
+                });
+                
+                // Collect image URLs
+                const images = {};
+                results.forEach(result => {
+                    if (result && result.type && result.url) {
+                        images[result.type] = result.url;
+                    }
+                });
+                
+                // Get AI response HTML (last result should be the formatted response)
+                const aiResponseHtml = typeof results[results.length - 1] === 'string' ? results[results.length - 1] : aiResponse.innerHTML;
+                
+                // Save to localStorage
+                const dataToSave = {
+                    country: currentCountry,
+                    images: images,
+                    aiResponse: aiResponseHtml,
+                    timestamp: Date.now()
+                };
+                
+                console.log('Saving spotlight data:', {
+                    country: currentCountry.name,
+                    hasImages: Object.keys(images).length > 0,
+                    hasAiResponse: !!aiResponseHtml,
+                    aiResponseLength: aiResponseHtml ? aiResponseHtml.length : 0
+                });
+                
+                saveSpotlightData(dataToSave);
+                
+                // Increment rate limit counter after successful generation
+                incrementRateLimit();
+                
+                // Set 15-second cooldown
+                cooldownUntil = Date.now() + (15 * 1000);
+                startCooldownTimer();
+                
+                // Check if we've reached the limit - hide button but keep content visible
+                const newRateLimit = checkRateLimit();
+                if (!newRateLimit.allowed) {
+                    // Hide the generation button but keep the content visible
+                    if (refreshBtn) {
+                        refreshBtn.style.display = 'none';
+                    }
+                    if (retryBtn) {
+                        retryBtn.style.display = 'none';
+                    }
+                    // Don't hide the section - let them view their last generation
                 }
+            }).catch(err => {
+                console.error('[Spotlight] Error processing results:', err);
             });
             
-            // Collect image URLs
-            const images = {};
-            results.forEach(result => {
-                if (result && result.type && result.url) {
-                    images[result.type] = result.url;
-                }
-            });
-            
-            // Get AI response HTML (last result should be the formatted response)
-            const aiResponseHtml = typeof results[results.length - 1] === 'string' ? results[results.length - 1] : aiResponse.innerHTML;
-            
-            // Save to localStorage
-            const dataToSave = {
-                country: currentCountry,
-                images: images,
-                aiResponse: aiResponseHtml,
-                timestamp: Date.now()
-            };
-            
-            console.log('Saving spotlight data:', {
-                country: currentCountry.name,
-                hasImages: Object.keys(images).length > 0,
-                hasAiResponse: !!aiResponseHtml,
-                aiResponseLength: aiResponseHtml ? aiResponseHtml.length : 0
-            });
-            
-            saveSpotlightData(dataToSave);
-            
-                   // Increment rate limit counter after successful generation
-                   incrementRateLimit();
-                   
-                   // Set 15-second cooldown
-                   cooldownUntil = Date.now() + (15 * 1000);
-                   startCooldownTimer();
-                   
-                   // Check if we've reached the limit - hide button but keep content visible
-                   const newRateLimit = checkRateLimit();
-                   if (!newRateLimit.allowed) {
-                       // Hide the generation button but keep the content visible
-                       if (refreshBtn) {
-                           refreshBtn.style.display = 'none';
-                       }
-                       if (retryBtn) {
-                           retryBtn.style.display = 'none';
-                       }
-                       // Don't hide the section - let them view their last generation
-                   }
+            // Clear generating flag immediately so UI is responsive
+            isGenerating = false;
+            updateButtonStates();
             
         } catch (error) {
             console.error('Spotlight error:', error);
@@ -9757,8 +9827,7 @@ IMPORTANT REQUIREMENTS:
             if (aiResponse) {
                 aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Unable to load all content. Some images may be missing.</p>';
             }
-        } finally {
-            // Always clear generating flag and update button states
+            // Clear generating flag on error
             isGenerating = false;
             updateButtonStates();
         }
