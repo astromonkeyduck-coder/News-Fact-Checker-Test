@@ -8811,6 +8811,16 @@ function initNewsletterSubscription() {
                         
                         lastError = { status: response.status, data: errorData || errorText };
                         
+                        // Log error details for debugging
+                        if (attempt === 0) {
+                            console.error('[Image Generation] ❌ API Error:', {
+                                status: response.status,
+                                statusText: response.statusText,
+                                error: errorData || errorText,
+                                prompt: prompt.substring(0, 50) + '...'
+                            });
+                        }
+                        
                         // Retry on 502, 503, 504 (server errors) or 429 (rate limit)
                         // Also retry on 500 (internal server error) and 408 (timeout)
                         const isServerError = [500, 502, 503, 504, 408, 429].includes(response.status);
@@ -8820,52 +8830,76 @@ function initNewsletterSubscription() {
                             // Progressive backoff: start with 2s, increase gradually, max 30s
                             const baseDelay = 2000;
                             const delay = Math.min(baseDelay * Math.pow(1.5, attempt), 30000);
-                            // Only log retries for non-502 errors or on first attempt to reduce console spam
-                            if (response.status !== 502 || attempt === 0) {
-                                // Suppress most 502 retry logs to reduce console spam
-                            }
+                            console.warn(`[Image Generation] Retrying after ${delay}ms (attempt ${attempt + 1}/${retries})`);
                             await new Promise(resolve => setTimeout(resolve, delay));
                             continue; // Retry
                         } else if (attempt < retries - 1) {
                             // For other errors, still retry but with longer delay
                             const delay = Math.min(5000 * Math.pow(1.5, attempt), 30000);
-                            // Only log on first attempt for non-critical errors
-                            if (attempt === 0) {
-                                // Suppress retry logs to reduce console spam
-                            }
+                            console.warn(`[Image Generation] Retrying after ${delay}ms (attempt ${attempt + 1}/${retries})`);
                             await new Promise(resolve => setTimeout(resolve, delay));
                             continue;
                         } else {
-                            // Only log errors after all retries are exhausted, and suppress 502 errors
-                            if (response.status === 502) {
-                                // Suppress 502 errors - they're server-side issues and we're already retrying
-                            } else if (response.status >= 400 && response.status < 500 && response.status !== 429) {
-                                console.error('Image generation API error (client error):', response.status, errorData || errorText);
-                            } else if (attempt === retries - 1 && response.status !== 502) {
-                                // Only log final errors that aren't 502
-                                console.error(`Image generation API error after ${retries} attempts:`, response.status, errorData || errorText);
-                            }
+                            // Log final error after all retries exhausted
+                            console.error(`[Image Generation] ❌ Failed after ${retries} attempts:`, {
+                                status: response.status,
+                                error: errorData || errorText,
+                                prompt: prompt.substring(0, 50) + '...'
+                            });
                             return null;
                         }
                     }
                     
                     // Success! Parse and return the image URL
-                    const data = await response.json();
-                    const imageUrl = data.storedImageUrl || data.imageUrl || null;
-                    
-                    if (!imageUrl) {
-                        // Suppress "no URL" retry logs to reduce console spam
-                        // Always retry if no URL returned (unless we've exhausted all attempts)
+                    let data;
+                    try {
+                        data = await response.json();
+                    } catch (parseError) {
+                        console.error('[Image Generation] ❌ Failed to parse JSON response:', parseError);
+                        const responseText = await response.text().catch(() => 'Unable to read response');
+                        console.error('[Image Generation] Response text:', responseText.substring(0, 200));
                         if (attempt < retries - 1) {
                             const delay = Math.min(3000 * Math.pow(1.5, attempt), 30000);
                             await new Promise(resolve => setTimeout(resolve, delay));
                             continue;
                         }
-                        // Only log if it's not a 502-related issue
-                        if (!data?.error?.includes('502') && !data?.error?.includes('Bad Gateway')) {
-                            console.error('Image generation returned no URL after all retries:', data);
-                        }
                         return null;
+                    }
+                    
+                    // Debug logging to help diagnose issues
+                    if (attempt === 0) {
+                        console.log('[Image Generation] API Response:', {
+                            hasStoredImageUrl: !!data.storedImageUrl,
+                            hasImageUrl: !!data.imageUrl,
+                            storedImageUrl: data.storedImageUrl ? data.storedImageUrl.substring(0, 50) + '...' : null,
+                            imageUrl: data.imageUrl ? data.imageUrl.substring(0, 50) + '...' : null,
+                            error: data.error || null
+                        });
+                    }
+                    
+                    // Prefer storedImageUrl (permanent) but fallback to imageUrl (temporary, expires in 1 hour)
+                    const imageUrl = data.storedImageUrl || data.imageUrl || null;
+                    
+                    if (!imageUrl) {
+                        // Always retry if no URL returned (unless we've exhausted all attempts)
+                        if (attempt < retries - 1) {
+                            const delay = Math.min(3000 * Math.pow(1.5, attempt), 30000);
+                            console.warn(`[Image Generation] No URL returned, retrying in ${delay}ms (attempt ${attempt + 1}/${retries})`);
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        }
+                        // Log error with full details on final attempt
+                        console.error('[Image Generation] ❌ No URL returned after all retries:', {
+                            responseData: data,
+                            prompt: prompt.substring(0, 100),
+                            attempts: retries
+                        });
+                        return null;
+                    }
+                    
+                    // Log success with URL type
+                    if (attempt === 0) {
+                        console.log(`[Image Generation] ✅ Success: Using ${data.storedImageUrl ? 'stored (permanent)' : 'direct (temporary)'} URL`);
                     }
                     
                     // Success! Only log if we had to retry
@@ -9345,13 +9379,16 @@ function initNewsletterSubscription() {
             const imagePromises = [];
             
             if (!hasFlagImage) {
-                console.log('Generating flag image for', currentCountry.name);
+                console.log('[Spotlight] Generating flag image for', currentCountry.name);
                 const flagPrompt = `generate an image of the flag of ${currentCountry.name}, official flag design, high quality`;
                 imagePromises.push(
                     generateImage(flagPrompt).then(url => {
-                        console.log('Flag image generated:', url ? 'success' : 'failed');
-                        loadImageIntoWrapper('flag-image-wrapper', url);
-                        if (!url) {
+                        if (url) {
+                            console.log('[Spotlight] ✅ Flag image generated successfully:', url.substring(0, 50) + '...');
+                            loadImageIntoWrapper('flag-image-wrapper', url);
+                        } else {
+                            console.error('[Spotlight] ❌ Flag image generation failed - no URL returned');
+                            loadImageIntoWrapper('flag-image-wrapper', null);
                             failedImageRequests.set(flagPrompt, {
                                 wrapperId: 'flag-image-wrapper',
                                 retryCount: 0,
@@ -9360,7 +9397,11 @@ function initNewsletterSubscription() {
                         }
                         return { type: 'flag', url };
                     }).catch(error => {
-                        console.error('Error generating flag image:', error);
+                        console.error('[Spotlight] ❌ Error generating flag image:', error);
+                        console.error('[Spotlight] Error details:', {
+                            message: error.message,
+                            stack: error.stack?.split('\n').slice(0, 3).join('\n')
+                        });
                         loadImageIntoWrapper('flag-image-wrapper', null);
                         failedImageRequests.set(flagPrompt, {
                             wrapperId: 'flag-image-wrapper',
@@ -9378,13 +9419,16 @@ function initNewsletterSubscription() {
             }
             
             if (!hasCulture1Image) {
-                console.log('Generating culture1 image for', currentCountry.name);
+                console.log('[Spotlight] Generating culture1 image for', currentCountry.name);
                 const culture1Prompt = `generate an image showing the culture of ${currentCountry.name}, traditional customs, people, architecture, vibrant and colorful`;
                 imagePromises.push(
                     generateImage(culture1Prompt).then(url => {
-                        console.log('Culture1 image generated:', url ? 'success' : 'failed');
-                        loadImageIntoWrapper('culture1-image-wrapper', url);
-                        if (!url) {
+                        if (url) {
+                            console.log('[Spotlight] ✅ Culture1 image generated successfully:', url.substring(0, 50) + '...');
+                            loadImageIntoWrapper('culture1-image-wrapper', url);
+                        } else {
+                            console.error('[Spotlight] ❌ Culture1 image generation failed - no URL returned');
+                            loadImageIntoWrapper('culture1-image-wrapper', null);
                             failedImageRequests.set(culture1Prompt, {
                                 wrapperId: 'culture1-image-wrapper',
                                 retryCount: 0,
@@ -9393,7 +9437,11 @@ function initNewsletterSubscription() {
                         }
                         return { type: 'culture1', url };
                     }).catch(error => {
-                        console.error('Error generating culture1 image:', error);
+                        console.error('[Spotlight] ❌ Error generating culture1 image:', error);
+                        console.error('[Spotlight] Error details:', {
+                            message: error.message,
+                            stack: error.stack?.split('\n').slice(0, 3).join('\n')
+                        });
                         loadImageIntoWrapper('culture1-image-wrapper', null);
                         failedImageRequests.set(culture1Prompt, {
                             wrapperId: 'culture1-image-wrapper',
@@ -9411,13 +9459,16 @@ function initNewsletterSubscription() {
             }
             
             if (!hasCulture2Image) {
-                console.log('Generating culture2 image for', currentCountry.name);
+                console.log('[Spotlight] Generating culture2 image for', currentCountry.name);
                 const culture2Prompt = `generate an image of cultural aspects of ${currentCountry.name}, festivals, food, art, traditional scenes`;
                 imagePromises.push(
                     generateImage(culture2Prompt).then(url => {
-                        console.log('Culture2 image generated:', url ? 'success' : 'failed');
-                        loadImageIntoWrapper('culture2-image-wrapper', url);
-                        if (!url) {
+                        if (url) {
+                            console.log('[Spotlight] ✅ Culture2 image generated successfully:', url.substring(0, 50) + '...');
+                            loadImageIntoWrapper('culture2-image-wrapper', url);
+                        } else {
+                            console.error('[Spotlight] ❌ Culture2 image generation failed - no URL returned');
+                            loadImageIntoWrapper('culture2-image-wrapper', null);
                             failedImageRequests.set(culture2Prompt, {
                                 wrapperId: 'culture2-image-wrapper',
                                 retryCount: 0,
@@ -9426,7 +9477,11 @@ function initNewsletterSubscription() {
                         }
                         return { type: 'culture2', url };
                     }).catch(error => {
-                        console.error('Error generating culture2 image:', error);
+                        console.error('[Spotlight] ❌ Error generating culture2 image:', error);
+                        console.error('[Spotlight] Error details:', {
+                            message: error.message,
+                            stack: error.stack?.split('\n').slice(0, 3).join('\n')
+                        });
                         loadImageIntoWrapper('culture2-image-wrapper', null);
                         failedImageRequests.set(culture2Prompt, {
                             wrapperId: 'culture2-image-wrapper',

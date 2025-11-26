@@ -240,7 +240,7 @@ class CiaMissionGlobe {
       // Track how many posts per country to add slight randomization
       const countryCounts = new Map();
 
-      // Extract ALL posts with locations (not just unique countries)
+      // Extract ALL posts with locations - show every country mentioned
       for (const post of posts) {
         const country = this.extractCountryFromPost(post);
         if (country) {
@@ -318,42 +318,43 @@ class CiaMissionGlobe {
     // Render HUD (simplified on mobile)
     this.renderHUD(hudEl);
 
-    // Initialize globe with mobile optimizations
+    // Initialize globe with blue theme that blends with website
     this.globeInstance = Globe()(canvasEl)
-      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
-      .bumpImageUrl(isMobile ? null : '//unpkg.com/three-globe/example/img/earth-topology.png') // Skip bump map on mobile
-      .backgroundColor('#020617')
-      .showAtmosphere(!isMobile) // Disable atmosphere on mobile for performance
-      .atmosphereColor('#22d3ee')
-      .atmosphereAltitude(0.28);
+      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg') // Blue earth image
+      .bumpImageUrl(isMobile ? null : '//unpkg.com/three-globe/example/img/earth-topology.png')
+      .backgroundColor('#07152a') // Match website background
+      .showAtmosphere(true)
+      .atmosphereColor('#4A9EFF') // Blue atmosphere to match site
+      .atmosphereAltitude(0.15);
 
-    // Configure points (simpler on mobile)
+    // Configure points - show all countries
     this.globeInstance
       .pointsData(this.coveragePoints)
       .pointLat(d => d.lat)
       .pointLng(d => d.lng)
-      .pointLabel(isMobile ? d => d.location : d => `${d.location}\n${d.headline}`) // Simpler labels on mobile
-      .pointColor(() => '#ff3333')
-      .pointRadius(isMobile ? 0.5 : 0.6) // Smaller dots on mobile
+      .pointLabel(isMobile ? d => d.location : d => `${d.location}\n${d.headline}`)
+      .pointColor(() => '#4A9EFF') // Blue dots to match site theme
+      .pointRadius(isMobile ? 0.4 : 0.5)
       .pointAltitude(isMobile ? 0.02 : 0.03)
-      .pointResolution(isMobile ? 4 : 8) // Lower resolution on mobile
-      .pointsTransitionDuration(isMobile ? 500 : 1000); // Faster transitions on mobile
+      .pointResolution(isMobile ? 4 : 8)
+      .pointsTransitionDuration(isMobile ? 500 : 1000);
 
-    // Configure controls (simpler on mobile)
+    // Configure controls - ensure full globe is visible
     const controls = this.globeInstance.controls();
-    controls.autoRotate = !isMobile; // No auto-rotate on mobile (saves battery)
-    controls.autoRotateSpeed = 0.7;
+    controls.autoRotate = !isMobile;
+    controls.autoRotateSpeed = 0.5; // Slower rotation
     controls.enableZoom = true;
-    controls.enablePan = !isMobile; // Disable pan on mobile (touch conflicts)
-    controls.enableDamping = !isMobile; // Disable damping on mobile
+    controls.enablePan = !isMobile;
+    controls.enableDamping = !isMobile;
     
-    // Set camera distance limits to allow full globe view
-    controls.minDistance = 180;
-    controls.maxDistance = 600;
+    // Set camera distance to show entire globe
+    controls.minDistance = 200;
+    controls.maxDistance = 800;
     
-    // Set initial camera position to show entire globe
+    // Set initial camera position to show entire globe clearly
     setTimeout(() => {
-      this.globeInstance.pointOfView({ lat: 0, lng: 0, altitude: 2.5 }, 0);
+      // Higher altitude shows more of the globe
+      this.globeInstance.pointOfView({ lat: 0, lng: 0, altitude: 3.0 }, 0);
     }, 100);
 
     // Handle point clicks
@@ -446,93 +447,25 @@ class CiaMissionGlobe {
   renderHUD(container) {
     if (!container) return;
 
+    // Simple, clean HUD - no CIA styling
     const isMobile = this.isMobile();
-
-    // Simplified mobile HUD
-    if (isMobile) {
-      container.innerHTML = `
-        <!-- Mobile: Simple top bar -->
-        <div class="cia-hud-panel cia-hud-mobile-top">
-          <div class="hud-label">GLOBAL COVERAGE</div>
-          <div class="hud-sub">${this.coveragePoints.length} Locations</div>
-        </div>
-
-        <!-- Mobile: Active operation (if selected) -->
-        ${this.activeOp ? `
-          <div class="cia-hud-panel cia-hud-mobile-active">
-            <div class="hud-label">${this.activeOp.location}</div>
-            <div class="cia-active-op-details">${this.activeOp.headline}</div>
-          </div>
-        ` : ''}
-      `;
-      return;
-    }
-
-    // Desktop: Full HUD
+    const uniqueCountries = new Set(this.coveragePoints.map(p => p.location));
+    
     container.innerHTML = `
-      <!-- Top-left: Mission title -->
-      <div class="cia-hud-panel cia-hud-top-left">
-        <div class="hud-label">GLOBAL COVERAGE // NOTEWORTHY OPS</div>
-        <div class="hud-sub">LIVE FEED • RED CHANNEL</div>
+      <!-- Simple top bar -->
+      <div class="globe-hud-simple">
+        <div class="globe-hud-title">Global Coverage</div>
+        <div class="globe-hud-count">${uniqueCountries.size} Countries • ${this.coveragePoints.length} Stories</div>
       </div>
 
-      <!-- Top-right: Status panel -->
-      <div class="cia-hud-panel cia-hud-top-right">
-        <div class="hud-status-line">
-          <strong>SYSTEM STATUS:</strong> ONLINE
-          <span class="cia-live-dot"></span>
-        </div>
-        <div class="hud-status-line">
-          <strong>ACTIVE TARGETS:</strong> ${this.coveragePoints.length}
-        </div>
-        <div class="hud-status-line">
-          <strong>LATENCY:</strong> ${Math.floor(Math.random() * 20 + 30)} ms
-        </div>
-        <div class="hud-status-line">
-          <strong>LAST UPDATE:</strong> ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-        </div>
-      </div>
-
-      <!-- Active operation details -->
+      <!-- Active location (if selected) -->
       ${this.activeOp ? `
-        <div class="cia-hud-panel cia-active-op-panel">
-          <div class="hud-label">ACTIVE OPERATION</div>
-          <div class="cia-active-op-details">
-            <div><strong>LOCATION:</strong> ${this.activeOp.location}</div>
-            <div><strong>COORDINATES:</strong> ${this.activeOp.lat.toFixed(4)}°, ${this.activeOp.lng.toFixed(4)}°</div>
-            <div><strong>EVENT:</strong> ${this.activeOp.headline}</div>
-            <div><strong>TIMESTAMP:</strong> ${this.formatTimestamp(this.activeOp.timestamp)}</div>
-          </div>
+        <div class="globe-hud-active">
+          <div class="globe-hud-location">${this.activeOp.location}</div>
+          <div class="globe-hud-story">${this.activeOp.headline}</div>
         </div>
       ` : ''}
-
-      <!-- Bottom strip: Recent operations -->
-      <div class="cia-hud-bottom-strip">
-        ${this.coveragePoints.slice(0, 12).map((point) => `
-          <div
-            class="cia-op-item ${this.activeOp?.id === point.id ? 'active' : ''}"
-            data-op-id="${point.id}"
-          >
-            <div class="cia-op-location">${point.location}</div>
-            <div class="cia-op-headline">${point.headline}</div>
-            <div class="cia-op-coords">
-              ${point.lat.toFixed(2)}°, ${point.lng.toFixed(2)}°
-            </div>
-          </div>
-        `).join('')}
-      </div>
     `;
-
-    // Add click handlers for operation items
-    container.querySelectorAll('.cia-op-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const opId = item.getAttribute('data-op-id');
-        const point = this.coveragePoints.find(p => p.id === opId);
-        if (point) {
-          this.setActiveOp(point);
-        }
-      });
-    });
   }
 
   destroy() {

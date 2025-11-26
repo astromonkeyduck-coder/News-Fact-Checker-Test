@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="app-version" content="November 25, 2025">
+    <meta name="app-version" content="November 26, 2025">
     <title>Noteworthy News - Fact-Checked Journalism & Media Literacy Games | Trusted News Source</title>
     
     <!-- Favicon and Theme -->
@@ -197,7 +197,7 @@
                         track.play().catch(err => {
                             // Only log if it's not an AbortError (interrupted by load)
                             if (err.name !== 'AbortError') {
-                                console.error('Failed to play track:', err);
+                            console.error('Failed to play track:', err);
                             }
                             // If play fails, try loading first
                             if (track.readyState < 2) {
@@ -1140,7 +1140,9 @@
         }
     </script>
     <audio id="backgroundMusic" preload="metadata">
-                        <source src="goodtrumpmusic.wav" type="audio/wav">
+                        <source src="NWaudiongl.m4a" type="audio/mp4">
+                        <source src="NWaudiongl.m4a" type="audio/x-m4a">
+                        <source src="NWaudiongl.m4a" type="audio/aac">
         Your browser does not support the audio element.
     </audio>
     
@@ -12430,26 +12432,6 @@
             </div>
         </div>
 
-        <!-- Global Coverage Globe Section -->
-        <div class="globe-section" id="globe-section" style="padding: 3rem 1rem; background: rgba(7, 21, 42, 0.5); margin: 2rem 0;">
-            <h2 class="news-title" style="text-align: center; margin-bottom: 1rem;">Global Coverage Map</h2>
-            <p class="news-subtitle" style="text-align: center; margin-bottom: 2rem;">See all the places we've covered from around the world</p>
-            <div id="cia-globe-container" style="width: 100%; height: 600px; max-width: 1200px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: #020617;"></div>
-        </div>
-        <style>
-            @media (max-width: 768px) {
-                .globe-section {
-                    padding: 1.5rem 0.75rem !important;
-                    margin: 1rem 0 !important;
-                    background: transparent !important;
-                }
-                #cia-globe-container {
-                    height: 400px !important;
-                    border-radius: 8px !important;
-                }
-            }
-        </style>
-
         <!-- News Articles Section -->
         <div class="news-section" id="news-section">
             <h2 class="news-title">Breaking News & Analysis</h2>
@@ -12474,7 +12456,7 @@
             <div class="news-carousel" role="region" aria-label="News articles carousel">
                 <div class="articles-track" id="articlesTrack" role="list" aria-live="polite">
                     <!-- Skeleton loading animation will be shown here immediately, then replaced with actual posts -->
-                </div>
+            </div>
             
             <!-- In-Content Ad - After Articles -->
             <ins class="adsbygoogle"
@@ -12488,6 +12470,26 @@
             </script>
             </div>
         </div>
+
+        <!-- Global Coverage Globe Section - Below News Stories -->
+        <div class="globe-section" id="globe-section" style="padding: 3rem 1rem; background: rgba(7, 21, 42, 0.5); margin: 2rem 0;">
+            <h2 class="news-title" style="text-align: center; margin-bottom: 1rem;">Global Coverage Map</h2>
+            <p class="news-subtitle" style="text-align: center; margin-bottom: 2rem;">See all the places we've covered from around the world</p>
+            <div id="cia-globe-container" style="width: 100%; height: 600px; max-width: 1200px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);"></div>
+        </div>
+        <style>
+            @media (max-width: 768px) {
+                .globe-section {
+                    padding: 1.5rem 0.75rem !important;
+                    margin: 1rem 0 !important;
+                    background: transparent !important;
+                }
+                #cia-globe-container {
+                    height: 400px !important;
+                    border-radius: 8px !important;
+                }
+            }
+        </style>
         
         <!-- Sidebar Sticky Ad -->
         <div class="adsense-sidebar-sticky">
@@ -16826,6 +16828,74 @@
                 }
                 
             });
+        })();
+    </script>
+    
+    <!-- Video player near bottom of page -->
+    <div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 400px; width: 90%; pointer-events: none;">
+        <video 
+            id="bottom-video"
+            src="NWvidddd.MOV" 
+            autoplay 
+            loop 
+            muted 
+            playsinline
+            style="width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); pointer-events: none;"
+            disablePictureInPicture
+            oncontextmenu="return false;">
+            Your browser does not support the video element.
+        </video>
+    </div>
+    <script>
+        // Prevent fullscreen and any interactions with the video
+        (function() {
+            const video = document.getElementById('bottom-video');
+            if (video) {
+                // Prevent fullscreen attempts
+                video.addEventListener('webkitbeginfullscreen', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                });
+                video.addEventListener('webkitendfullscreen', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                });
+                video.addEventListener('fullscreenchange', function(e) {
+                    if (document.fullscreenElement === video) {
+                        document.exitFullscreen();
+                    }
+                });
+                video.addEventListener('webkitfullscreenchange', function(e) {
+                    if (document.webkitFullscreenElement === video) {
+                        document.webkitExitFullscreen();
+                    }
+                });
+                video.addEventListener('mozfullscreenchange', function(e) {
+                    if (document.mozFullScreenElement === video) {
+                        document.mozCancelFullScreen();
+                    }
+                });
+                video.addEventListener('MSFullscreenChange', function(e) {
+                    if (document.msFullscreenElement === video) {
+                        document.msExitFullscreen();
+                    }
+                });
+                
+                // Prevent right-click context menu
+                video.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    return false;
+                });
+                
+                // Prevent double-click (which can trigger fullscreen on some browsers)
+                video.addEventListener('dblclick', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                });
+            }
         })();
     </script>
     

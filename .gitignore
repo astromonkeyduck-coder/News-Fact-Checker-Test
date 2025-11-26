@@ -35,3 +35,6 @@ logs/
 .batch-progress.json
 
 netlify/functions/email-name-mapping.js
+
+# Large media files
+NWvidddd.MOV
