@@ -515,7 +515,8 @@
                 });
                 
                 audio.addEventListener('suspend', function() {
-                    console.warn('Audio suspended, attempting to resume...');
+                    // Suppress verbose audio suspend messages (browser handles this automatically)
+                    // console.warn('Audio suspended, attempting to resume...');
                     // Don't resume if maintenance mode is active
                     if (isMaintenanceModeActive()) {
                         return;
@@ -14880,7 +14881,16 @@
                 event.stopPropagation();
                 return false;
             }
-            console.error('Global error:', event.error);
+            // Only log if there's actually an error object
+            if (event.error) {
+                console.error('Global error:', event.error);
+            } else if (event.message) {
+                // Resource loading errors might not have event.error but have event.message
+                // Only log if it's not a known harmless error
+                if (!event.message.includes('favicon') && !event.message.includes('auth0.com')) {
+                    console.error('Global error:', event.message, event.filename || '');
+                }
+            }
         }, true);
         
         // Handle resource loading errors (like favicon 404s)
