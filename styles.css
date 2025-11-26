@@ -232,6 +232,53 @@ body {
     }
 }
 
+.image-fallback-state {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px dashed rgba(255, 255, 255, 0.35);
+    background: rgba(5, 12, 30, 0.85);
+}
+
+.image-fallback-state img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(0.5) contrast(0.9) brightness(0.9);
+    opacity: 0.55;
+    transform: scale(1.05);
+}
+
+.image-fallback-overlay {
+    position: absolute;
+    inset: 0;
+    padding: 1.25rem;
+    background: radial-gradient(circle at center, rgba(7, 15, 35, 0.8), rgba(2, 4, 12, 0.95));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.65rem;
+}
+
+.image-fallback-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #ff9f7c;
+}
+
+.image-fallback-subtitle {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.85);
+    letter-spacing: 0.08em;
+    line-height: 1.4;
+}
+
 /* Feed Controls */
 .feed-controls {
     position: sticky;
@@ -265,7 +312,8 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
     border-radius: 0 !important;
     box-shadow: none !important;
-    padding: 1rem;
+    padding: 1rem 1rem 1rem 0 !important;
+    margin-left: 0 !important;
     transition: background 0.2s ease;
     min-height: 360px;
     display: grid;
@@ -274,6 +322,16 @@ body {
 
 .feed-post-card:hover {
     background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.article-card,
+.article-card .article-content,
+.article-card .article-excerpt,
+.feed-post-card,
+.feed-post-card > div {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    text-indent: 0 !important;
 }
 
 /* Avatar */
@@ -1506,26 +1564,13 @@ html, body {
     }
     
     .auth-buttons-container {
-        display: flex !important;
-        align-items: center !important;
-        gap: 0.5rem !important;
-        flex-shrink: 0 !important;
+        display: none !important;
     }
     
     .auth-btn,
     .signin-btn,
     .signup-btn {
-        padding: 0.5rem 0.75rem !important;
-        font-size: 0.75rem !important;
-        min-height: 36px !important;
-        min-width: auto !important;
-        white-space: nowrap !important;
-        flex-shrink: 0 !important;
-        font-weight: 600 !important;
-        border-radius: 6px !important;
-        border: 1px solid rgba(74, 158, 255, 0.5) !important;
-        background: rgba(74, 158, 255, 0.15) !important;
-        color: white !important;
+        display: none !important;
     }
     
     .music-control-btn {
@@ -2115,10 +2160,26 @@ html, body {
         width: 100% !important;
     }
     
-    .fact-checker-title {
-        font-size: 1.5rem !important;
-        line-height: 1.3 !important;
-    }
+.fact-checker-title {
+    font-size: 1.5rem !important;
+    line-height: 1.3 !important;
+}
+
+.popular-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(42, 96, 176, 0.25));
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    color: #fefefe;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 15px 0;
+}
     
     .fact-checker-description {
         font-size: 0.938rem !important;

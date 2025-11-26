@@ -12478,6 +12478,22 @@
             <div id="cia-globe-container" style="width: 100%; height: 600px; max-width: 1200px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);"></div>
         </div>
         <style>
+            .cta-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 10px 18px;
+                border-radius: 999px;
+                background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(42, 96, 176, 0.3));
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+                color: #fff;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 1rem;
+            }
+            
             @media (max-width: 768px) {
                 .globe-section {
                     padding: 1.5rem 0.75rem !important;
@@ -12487,6 +12503,16 @@
                 #cia-globe-container {
                     height: 400px !important;
                     border-radius: 8px !important;
+                }
+
+                .cta-badge {
+                    width: 100%;
+                    justify-content: center;
+                    font-size: 0.85rem;
+                    padding: 8px 14px;
+                    letter-spacing: 0.04em;
+                    margin-bottom: 0.75rem;
+                    text-align: center;
                 }
             }
         </style>
@@ -12509,12 +12535,14 @@
             <div class="fact-checker-content">
                 <div class="fact-checker-text">
                     <h2 class="fact-checker-title"><span class="emoji" role="img" aria-label="World">🌍</span> Geography Challenge</h2>
+                    <div class="badge-highlight popular-badge">⭐ Most Popular & Recommended Game on Noteworthy</div>
                     <p class="fact-checker-description">
                         Test your knowledge of world geography! Find the 50 most populous countries on an interactive world map.
                         Click on countries as they're prompted - green means not answered, white is correct, and red is wrong.
                     </p>
             </div>
                 <div class="fact-checker-action">
+                    <div class="cta-badge">⭐ Most Popular & Recommended</div>
                     <a href="geography-game.html" class="play-button-large">Play Geography Game</a>
                     <p class="fact-checker-note">Free to play • Educational & Fun</p>
                 </div>

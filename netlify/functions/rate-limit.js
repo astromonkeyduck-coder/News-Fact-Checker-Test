@@ -110,9 +110,9 @@ const rateLimiters = {
   // API: 60 requests per minute
   api: createRateLimiter({ maxRequests: 60, windowMs: 60000 }),
   
-  // Image generation: 3 requests per hour (very strict)
+  // Image generation: allow enough calls for spotlight (3 images per country)
   imageGeneration: createRateLimiter({ 
-    maxRequests: 3, 
+    maxRequests: 30, 
     windowMs: 3600000, // 1 hour
     message: 'Image generation limit reached. Please try again in an hour.'
   }),

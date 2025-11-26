@@ -592,6 +592,16 @@ function renderPosts(posts, container, originalContent = null) {
   const formatStory = (text) => {
     if (!text) return '';
     
+    // Normalize whitespace so posts don't show extra indent on first line
+    let normalizedText = text
+      .replace(/\r\n/g, '\n')
+      .replace(/\u00a0/g, ' ')
+      .replace(/^\s+/, '');
+    
+    if (!normalizedText) {
+      return '';
+    }
+    
     // Split text into parts to handle URLs and plain text separately
     const parts = [];
     let lastIndex = 0;
@@ -600,10 +610,10 @@ function renderPosts(posts, container, originalContent = null) {
     const urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
     let match;
     
-    while ((match = urlRegex.exec(text)) !== null) {
+    while ((match = urlRegex.exec(normalizedText)) !== null) {
       // Add text before URL
       if (match.index > lastIndex) {
-        const beforeText = text.substring(lastIndex, match.index);
+        const beforeText = normalizedText.substring(lastIndex, match.index);
         if (beforeText) {
           parts.push({ type: 'text', content: beforeText });
         }
@@ -631,8 +641,8 @@ function renderPosts(posts, container, originalContent = null) {
     }
     
     // Add remaining text after last URL
-    if (lastIndex < text.length) {
-      const afterText = text.substring(lastIndex);
+    if (lastIndex < normalizedText.length) {
+      const afterText = normalizedText.substring(lastIndex);
       if (afterText) {
         parts.push({ type: 'text', content: afterText });
       }
@@ -640,7 +650,7 @@ function renderPosts(posts, container, originalContent = null) {
     
     // If no URLs found, just process the whole text
     if (parts.length === 0) {
-      parts.push({ type: 'text', content: text });
+      parts.push({ type: 'text', content: normalizedText });
     }
     
     // Process each part: escape HTML for text, keep HTML for images/links

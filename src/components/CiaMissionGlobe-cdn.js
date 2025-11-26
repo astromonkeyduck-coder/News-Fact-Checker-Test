@@ -36,6 +36,9 @@ class CiaMissionGlobe {
     this.cityMapCache = null;
     this.countryMapCache = null;
     this.extraLocationData = null;
+    this.totalPosts = 0;
+    this.rootEl = null;
+    this.loadingEl = null;
     
     this.loadLocationCache();
     
@@ -75,16 +78,23 @@ class CiaMissionGlobe {
     loadCSS('/src/styles/ciaGlobe.css');
     
     // Extract locations from posts
-    this.coveragePoints = await this.extractLocationsFromPosts();
+    const rawCoveragePoints = await this.extractLocationsFromPosts();
+    this.totalPosts = rawCoveragePoints.length;
+    this.coveragePoints = rawCoveragePoints.length > 0
+      ? this.aggregateCoveragePoints(rawCoveragePoints)
+      : [];
+    this.statsLoaded = this.coveragePoints.length > 0;
     
-    if (this.coveragePoints.length === 0) {
+    if (!this.statsLoaded) {
       // Fallback to default points if no posts found
-      this.coveragePoints = [
+      const fallbackPoints = [
         { id: "nyc-incident", lat: 40.7128, lng: -74.0060, location: "New York, USA", headline: "High-rise fire near Midtown", timestamp: "2025-11-21T18:32:00Z" },
         { id: "kyiv-strike", lat: 50.4501, lng: 30.5234, location: "Kyiv, Ukraine", headline: "Explosions reported in central Kyiv", timestamp: "2025-11-23T03:10:00Z" },
         { id: "buenos-aires-blast", lat: -34.6037, lng: -58.3816, location: "Buenos Aires, Argentina", headline: "Industrial-area explosion in Ezeiza", timestamp: "2025-11-20T14:05:00Z" },
         { id: "la-fire", lat: 34.0522, lng: -118.2437, location: "Los Angeles, USA", headline: "Large structure fire downtown", timestamp: "2025-11-19T09:47:00Z" }
       ];
+      this.totalPosts = fallbackPoints.length;
+      this.coveragePoints = this.aggregateCoveragePoints(fallbackPoints);
     }
     
     this.activeOp = this.coveragePoints[0] || null;
@@ -131,6 +141,140 @@ class CiaMissionGlobe {
     };
   }
 
+  getLocationKey(point) {
+    if (!point) return '';
+    if (point.location) {
+      return point.location.toLowerCase();
+    }
+    const lat = typeof point.lat === 'number' ? point.lat.toFixed(2) : '0';
+    const lng = typeof point.lng === 'number' ? point.lng.toFixed(2) : '0';
+    return `${lat}|${lng}`;
+  }
+
+  createPostSummary(point) {
+    return {
+      id: point.postId || point.id,
+      headline: point.headline || `Coverage from ${point.location || 'Unknown'}`,
+      timestamp: point.timestamp,
+      postLink: this.resolvePostLink(point)
+    };
+  }
+
+  aggregateCoveragePoints(points = []) {
+    const grouped = new Map();
+    
+    points.forEach((point) => {
+      const key = this.getLocationKey(point);
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          ...point,
+          lat: point.lat,
+          lng: point.lng,
+          posts: [this.createPostSummary(point)],
+          intensity: 1
+        });
+      } else {
+        const existing = grouped.get(key);
+        existing.posts.push(this.createPostSummary(point));
+        existing.intensity = existing.posts.length;
+        // Average lat/lng to keep cluster centered
+        const weight = existing.posts.length;
+        existing.lat = ((existing.lat * (weight - 1)) + point.lat) / weight;
+        existing.lng = ((existing.lng * (weight - 1)) + point.lng) / weight;
+      }
+    });
+    
+    return Array.from(grouped.values()).map((group, index) => {
+      group.posts.sort((a, b) => {
+        const aTime = new Date(a.timestamp || 0).getTime();
+        const bTime = new Date(b.timestamp || 0).getTime();
+        return bTime - aTime;
+      });
+      const latest = group.posts[0];
+      return {
+        ...group,
+        id: group.id || `coverage-${index}`,
+        headline: latest?.headline || group.headline,
+        timestamp: latest?.timestamp || group.timestamp,
+        latestTimestamp: latest?.timestamp,
+        posts: group.posts
+      };
+    });
+  }
+
+  resolvePostLink(post) {
+    if (!post) return null;
+    const directLink = post.postLink || post.link || '';
+    if (directLink && directLink.trim().length > 0) {
+      return directLink.startsWith('http') ? directLink : `https://x.com/newsnoteworthy/status/${directLink}`;
+    }
+    const id = post.postId || post.id;
+    return id ? `https://x.com/newsnoteworthy/status/${id}` : null;
+  }
+
+  getPointWeight(point) {
+    if (!point) return 1;
+    if (point.intensity) return Math.max(1, point.intensity);
+    if (Array.isArray(point.posts)) return Math.max(1, point.posts.length);
+    return 1;
+  }
+
+  getPointBaseRadius(point, isMobile = false) {
+    const weight = this.getPointWeight(point);
+    const scale = Math.min(1.5, Math.log2(weight + 1));
+    const base = isMobile ? 0.25 : 0.35;
+    const multiplier = isMobile ? 0.08 : 0.12;
+    return base + scale * multiplier;
+  }
+
+  getPointBaseAltitude(point, isMobile = false) {
+    const weight = this.getPointWeight(point);
+    const scale = Math.min(1.5, Math.log2(weight + 1));
+    const base = isMobile ? 0.015 : 0.02;
+    return base + scale * 0.012;
+  }
+
+  getPointPhase(point) {
+    const lat = typeof point.lat === 'number' ? point.lat : 0;
+    const lng = typeof point.lng === 'number' ? point.lng : 0;
+    return (lat + lng) * 0.05;
+  }
+
+  getPointGlowColor(point, pulse = 0.5) {
+    const weight = this.getPointWeight(point);
+    const red = 60 + Math.min(50, weight * 6);
+    const green = 150 + Math.min(90, weight * 10) + pulse * 40;
+    const blue = 255;
+    const alpha = Math.min(1, 0.45 + Math.min(0.4, weight * 0.08) + pulse * 0.25);
+    return `rgba(${Math.round(red)}, ${Math.round(Math.min(255, green))}, ${blue}, ${alpha})`;
+  }
+
+  getPointLabel(point, isMobile = false) {
+    const count = this.getPointWeight(point);
+    const label = `${point.location || 'Unknown'} • ${count} post${count === 1 ? '' : 's'}`;
+    if (isMobile) {
+      return label;
+    }
+    const latest = point.headline || point.posts?.[0]?.headline;
+    return latest ? `${label}\n${latest}` : label;
+  }
+
+  updateLoadingMessage(message) {
+    if (!this.loadingEl || !message) return;
+    const msgEl = this.loadingEl.querySelector('.cia-globe-loading-message');
+    if (msgEl) {
+      msgEl.textContent = message;
+    }
+  }
+
+  setLoadingState(isLoading, message = null) {
+    if (!this.rootEl || !this.loadingEl) return;
+    if (message) {
+      this.updateLoadingMessage(message);
+    }
+    this.rootEl.classList.toggle('is-loading', !!isLoading);
+  }
+
   async lookupGeocodedLocation(locationName) {
     const normalizedKey = locationName.toLowerCase();
     
@@ -161,11 +305,10 @@ class CiaMissionGlobe {
 
   async geocodeLocation(locationName) {
     try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(locationName)}`;
+      const url = `/.netlify/functions/geocode-proxy?q=${encodeURIComponent(locationName)}`;
       const response = await fetch(url, {
         headers: {
-          'Accept-Language': 'en',
-          'User-Agent': 'NoteworthyNewsGlobe/1.0 (contact@noteworthynews.co)'
+          'Cache-Control': 'no-cache'
         }
       });
       
@@ -793,7 +936,8 @@ class CiaMissionGlobe {
               location: location,
               headline: headline || `Coverage from ${location}`,
               timestamp: post.createdAt || post.datePosted || new Date().toISOString(),
-              postId: post.id
+              postId: post.id,
+              postLink: post.link || post.url || post.postLink || ''
             });
           }
         }
@@ -893,6 +1037,7 @@ class CiaMissionGlobe {
             headline: headline.substring(0, 140),
             timestamp,
             postId: post.postId,
+            postLink: post.postLink || '',
             source: 'csv'
           });
         } catch (err) {
@@ -1015,12 +1160,19 @@ class CiaMissionGlobe {
 
     // Create root structure with mobile class
     container.innerHTML = `
-      <div class="cia-globe-root ${isMobile ? 'mobile' : ''}">
+      <div class="cia-globe-root ${isMobile ? 'mobile' : ''} is-loading">
+        <div class="cia-globe-loading" id="cia-globe-loading" role="status" aria-live="polite">
+          <div class="cia-globe-loading-spinner"></div>
+          <p class="cia-globe-loading-message">Preparing global coverage...</p>
+        </div>
         <div class="cia-globe-canvas" id="cia-globe-canvas"></div>
         <div class="cia-hud-overlay ${isMobile ? 'mobile-simple' : ''}" id="cia-hud-overlay"></div>
       </div>
     `;
 
+    this.rootEl = container.querySelector('.cia-globe-root');
+    this.loadingEl = document.getElementById('cia-globe-loading');
+    this.setLoadingState(true, 'Charging orbital sensors...');
     const canvasEl = document.getElementById('cia-globe-canvas');
     const hudEl = document.getElementById('cia-hud-overlay');
     
@@ -1034,12 +1186,12 @@ class CiaMissionGlobe {
     // This texture shows detailed land features, coastlines, mountains, and terrain
     // The bump map adds 3D relief and depth to show mountains, valleys, and topography
     this.globeInstance = Globe()(canvasEl)
-      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg') // High-res NASA Blue Marble texture (detailed)
-      .bumpImageUrl(isMobile ? null : '//unpkg.com/three-globe/example/img/earth-topology.png') // Detailed topography/bump map for 3D relief
-      .backgroundColor('#07152a') // Match website background
+      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+      .bumpImageUrl(isMobile ? null : '//unpkg.com/three-globe/example/img/earth-topology.png')
+      .backgroundColor('#020617')
       .showAtmosphere(true)
-      .atmosphereColor('#4A9EFF') // Blue atmosphere to match site
-      .atmosphereAltitude(0.15);
+      .atmosphereColor('#3ec9ff')
+      .atmosphereAltitude(0.22);
     
     // Enhance texture quality for maximum detail after globe loads
     setTimeout(() => {
@@ -1083,22 +1235,27 @@ class CiaMissionGlobe {
       .pointsData(this.coveragePoints)
       .pointLat(d => d.lat)
       .pointLng(d => d.lng)
-      .pointLabel(isMobile ? d => d.location : d => `${d.location}\n${d.headline}`)
-      .pointColor(() => '#4A9EFF') // Blue dots to match site theme
-      .pointRadius(isMobile ? 0.4 : 0.5)
-      .pointAltitude(isMobile ? 0.02 : 0.03)
+      .pointLabel(d => this.getPointLabel(d, isMobile))
+      .pointColor(d => this.getPointGlowColor(d, 0.5))
+      .pointRadius(d => this.getPointBaseRadius(d, isMobile))
+      .pointAltitude(d => this.getPointBaseAltitude(d, isMobile))
       .pointResolution(isMobile ? 4 : 8)
       .pointsTransitionDuration(isMobile ? 500 : 1000);
+    const plottedStories = this.totalPosts || this.coveragePoints.reduce((sum, point) => {
+      return sum + (Array.isArray(point.posts) ? point.posts.length : 1);
+    }, 0);
+    this.updateLoadingMessage(`Mapping ${plottedStories.toLocaleString()} story signals...`);
 
-    // Configure controls - ensure globe starts centered and zoomed appropriately
+    // Configure controls - cinematic camera motion
     const controls = this.globeInstance.controls();
-    controls.autoRotate = !isMobile;
-    controls.autoRotateSpeed = 0.5; // Slower rotation
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = isMobile ? 0.35 : 0.25;
     controls.enableZoom = true;
     controls.enablePan = !isMobile;
     controls.enableDamping = !isMobile;
-    controls.zoomSpeed = 0.5;
-    controls.minDistance = isMobile ? 160 : 200;
+    controls.zoomSpeed = 0.4;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = isMobile ? 140 : 180;
     controls.maxDistance = isMobile ? 420 : 520;
     controls.target.set(0, 0, 0);
     controls.update();
@@ -1106,7 +1263,8 @@ class CiaMissionGlobe {
     // Set initial camera position to start over the Americas, zoomed in
     setTimeout(() => {
       this.globeInstance.pointOfView(initialView, 0);
-    }, 150);
+      this.setLoadingState(false);
+    }, 250);
 
     // Handle point clicks
     this.globeInstance.onPointClick((point) => {
@@ -1146,34 +1304,30 @@ class CiaMissionGlobe {
     } else {
       this.t += 0.03;
     }
-    
-    const baseAltitude = isMobile ? 0.02 : 0.03;
-    const pulseAmplitude = isMobile ? 0.0125 : 0.03; // More visible pulse
 
     this.globeInstance.pointAltitude(d => {
-      const phase = (d.lat + d.lng) * 0.1;
-      const scale = (Math.sin(this.t + phase) + 1) / 2;
-      return baseAltitude + scale * pulseAmplitude;
+      const phase = this.getPointPhase(d);
+      const pulse = (Math.sin(this.t + phase) + 1) / 2;
+      const base = this.getPointBaseAltitude(d, isMobile);
+      const weight = this.getPointWeight(d);
+      const lift = pulse * 0.02 * (0.6 + Math.min(1.2, weight * 0.2));
+      return base + lift;
     });
 
     this.globeInstance.pointRadius(d => {
-      const phase = (d.lat + d.lng) * 0.1;
-      const scale = (Math.sin(this.t + phase) + 1) / 2;
-      const baseRadius = isMobile ? 0.45 : 0.6;
-      const pulseSize = isMobile ? 0.25 : 0.45; // More dramatic pulse
-      return baseRadius + scale * pulseSize;
+      const phase = this.getPointPhase(d);
+      const pulse = (Math.sin(this.t + phase) + 1) / 2;
+      const base = this.getPointBaseRadius(d, isMobile);
+      const weight = this.getPointWeight(d);
+      const pulseSize = pulse * 0.08 * (0.5 + Math.min(1.5, weight * 0.15));
+      return base + pulseSize;
     });
 
     // Update point color with pulsating glow effect
     this.globeInstance.pointColor(d => {
-      const phase = (d.lat + d.lng) * 0.1;
-      const scale = (Math.sin(this.t + phase) + 1) / 2;
-      const glow = 0.5 + scale * 0.5;
-      const alpha = 0.65 + scale * 0.35;
-      const r = Math.min(255, Math.floor(74 + scale * 120));
-      const g = Math.min(255, Math.floor(158 + scale * 40));
-      const b = 255;
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      const phase = this.getPointPhase(d);
+      const pulse = (Math.sin(this.t + phase) + 1) / 2;
+      return this.getPointGlowColor(d, pulse);
     });
 
     // Throttle on mobile - skip every other frame
@@ -1187,6 +1341,14 @@ class CiaMissionGlobe {
   }
 
   setActiveOp(point) {
+    if (!point) {
+      this.activeOp = null;
+      this.renderHUD(document.getElementById('cia-hud-overlay'));
+      return;
+    }
+    if (!Array.isArray(point.posts) || point.posts.length === 0) {
+      point.posts = [this.createPostSummary(point)];
+    }
     this.activeOp = point;
     this.renderHUD(document.getElementById('cia-hud-overlay'));
   }
@@ -1210,24 +1372,54 @@ class CiaMissionGlobe {
   renderHUD(container) {
     if (!container) return;
 
-    // Simple, clean HUD - no CIA styling
-    const isMobile = this.isMobile();
-    const uniqueCountries = new Set(this.coveragePoints.map(p => p.location));
+    const totalLocations = this.coveragePoints.length;
+    const totalStories = this.totalPosts || this.coveragePoints.reduce((sum, point) => {
+      return sum + (Array.isArray(point.posts) ? point.posts.length : 1);
+    }, 0);
+    const statsLabel = this.statsLoaded ? `${totalLocations.toLocaleString()} Locations • ${totalStories.toLocaleString()} Posts` : `${totalLocations.toLocaleString()} Locations • ${totalStories.toLocaleString()} Posts • updating...`;
+    
+    const activeMarkup = this.activeOp ? this.renderActiveLocationDetails(this.activeOp) : '<div class="globe-hud-active placeholder">Tap a pulse to preview posts</div>';
+    
+    const statusAttr = this.statsLoaded ? '' : 'data-subtext="Still loading live data..."';
     
     container.innerHTML = `
-      <!-- Simple top bar -->
       <div class="globe-hud-simple">
         <div class="globe-hud-title">Global Coverage</div>
-        <div class="globe-hud-count">${uniqueCountries.size} Countries • ${this.coveragePoints.length} Stories</div>
+        <div class="globe-hud-count" ${statusAttr}>${statsLabel}</div>
       </div>
+      ${activeMarkup}
+    `;
 
-      <!-- Active location (if selected) -->
-      ${this.activeOp ? `
-        <div class="globe-hud-active">
-          <div class="globe-hud-location">${this.activeOp.location}</div>
-          <div class="globe-hud-story">${this.activeOp.headline}</div>
+    const closeBtn = container.querySelector('.globe-hud-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        this.setActiveOp(null);
+      });
+    }
+  }
+
+  renderActiveLocationDetails(point) {
+    const posts = Array.isArray(point.posts) && point.posts.length
+      ? point.posts
+      : [this.createPostSummary(point)];
+    const postItems = posts.map(post => `
+      <div class="globe-hud-post">
+        <div class="post-headline">${post.headline || 'Coverage update'}</div>
+        <div class="post-meta">
+          <span>${this.formatTimestamp(post.timestamp)}</span>
+          ${post.postLink ? `<a href="${post.postLink}" target="_blank" rel="noopener noreferrer">Open</a>` : ''}
         </div>
-      ` : ''}
+      </div>
+    `).join('');
+    
+    return `
+        <div class="globe-hud-active">
+        <button class="globe-hud-close" title="Close details">&times;</button>
+        <div class="globe-hud-location">${point.location || 'Unknown'} • ${posts.length} post${posts.length === 1 ? '' : 's'}</div>
+        <div class="globe-hud-posts">
+          ${postItems}
+        </div>
+      </div>
     `;
   }
 

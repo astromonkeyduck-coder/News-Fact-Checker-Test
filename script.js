@@ -8152,6 +8152,20 @@ function initNewsletterSubscription() {
     const RATE_LIMIT_KEY = 'spotlight_rate_limit';
     const RATE_LIMIT_COUNT = 3; // 3 spotlights per day
     const RATE_LIMIT_DAY_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+    // Fallback imagery for failed AI generations
+    const FALLBACK_IMAGES = [
+        '/f41de8d1-cc13-41b2-815c-64e51598326a.png',
+        '/f64a69de-e4a1-4ac1-9626-c9ada52df776.png',
+        '/ab9518fb-3db7-4f3b-bedb-6332e0c42f2c.png',
+        '/9c606b8d-2cb4-4fbf-afab-9032102e2814.png'
+    ];
+    const FALLBACK_MESSAGES = [
+        'AI image failed — spinning up a fresh shot...',
+        'Still generating visuals — hang tight!',
+        'Our illustrator bot missed — trying again automatically.',
+        'Visual feed dropped — relaunching render...'
+    ];
     
     // Map country names to audio file names
     const countryMusicMap = {
@@ -8250,6 +8264,30 @@ function initNewsletterSubscription() {
             return;
         }
         
+        // Ensure we have the latest background music state saved
+        if (!savedBackgroundMusicState) {
+            saveBackgroundMusicState();
+        }
+        
+        // If global music system is available, use it to pause everything cleanly
+        if (typeof window.pauseAllMusicTracks === 'function') {
+            try {
+                const musicState = window.pauseAllMusicTracks();
+                if (musicState && musicState.wasPlaying && musicState.currentTrack) {
+                    const element = musicState.currentTrack;
+                    const originalVolume = element.dataset?.originalVolume ? parseFloat(element.dataset.originalVolume) : (element.volume || 0.5);
+                    savedBackgroundMusicState = {
+                        element,
+                        time: musicState.currentTime || 0,
+                        originalVolume
+                    };
+                    return;
+                }
+            } catch (err) {
+                console.warn('Failed to pause music via global music system:', err);
+            }
+        }
+        
         const music = getBackgroundMusicElements();
         const audioElementsToFade = [];
         
@@ -8308,7 +8346,8 @@ function initNewsletterSubscription() {
     
     // Resume background music from saved state with fade in
     function resumeBackgroundMusic() {
-        if (!savedBackgroundMusicState || !savedBackgroundMusicState.element) {
+        const stateToResume = savedBackgroundMusicState;
+        if (!stateToResume || !stateToResume.element) {
             console.log('No saved background music state to resume');
             return;
         }
@@ -8319,7 +8358,7 @@ function initNewsletterSubscription() {
             return;
         }
         
-        const musicElement = savedBackgroundMusicState.element;
+        const musicElement = stateToResume.element;
         if (!musicElement) {
             console.log('Saved music element not found');
             return;
@@ -8337,10 +8376,10 @@ function initNewsletterSubscription() {
             music.loop.pause();
         }
         
-        musicElement.currentTime = savedBackgroundMusicState.time;
+        musicElement.currentTime = stateToResume.time;
         
         // Use the saved original volume, or get from dataset, or default to 0.5
-        const targetVolume = savedBackgroundMusicState.originalVolume || 
+        const targetVolume = stateToResume.originalVolume || 
                             (musicElement.dataset.originalVolume ? 
                                 parseFloat(musicElement.dataset.originalVolume) : 0.5);
         
@@ -8369,6 +8408,9 @@ function initNewsletterSubscription() {
                 });
             }
         }
+        
+        // Clear saved state after scheduling resume to avoid duplicate resumes
+        savedBackgroundMusicState = null;
     }
     
     // Load and play country music
@@ -9022,6 +9064,28 @@ function initNewsletterSubscription() {
     // Load image into a wrapper element
     // Track failed image requests for background retry
     const failedImageRequests = new Map(); // prompt -> { wrapperId, retryCount, lastAttempt }
+
+    function getRandomFallbackImage() {
+        return FALLBACK_IMAGES[Math.floor(Math.random() * FALLBACK_IMAGES.length)];
+    }
+
+    function getRandomFallbackMessage() {
+        return FALLBACK_MESSAGES[Math.floor(Math.random() * FALLBACK_MESSAGES.length)];
+    }
+
+    function renderFallbackState(wrapper) {
+        const fallbackSrc = getRandomFallbackImage();
+        const fallbackMessage = getRandomFallbackMessage();
+        wrapper.innerHTML = `
+            <div class="image-fallback-state">
+                <img src="${fallbackSrc}" alt="Temporary visual placeholder" loading="lazy" />
+                <div class="image-fallback-overlay">
+                    <span class="image-fallback-title">AI image unavailable</span>
+                    <span class="image-fallback-subtitle">${fallbackMessage}</span>
+                </div>
+            </div>
+        `;
+    }
     
     function loadImageIntoWrapper(wrapperId, imageUrl) {
         const wrapper = document.getElementById(wrapperId);
@@ -9037,8 +9101,7 @@ function initNewsletterSubscription() {
                 }
             }
         } else {
-            // Keep showing loading state, don't show failure message
-            wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating... (retrying)</p></div>';
+            renderFallbackState(wrapper);
         }
     }
     
