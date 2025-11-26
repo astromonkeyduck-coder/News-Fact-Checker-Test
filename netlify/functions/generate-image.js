@@ -176,12 +176,29 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
       }
       
       console.error("OpenAI DALL-E API error:", r.status, errorData);
+      
+      // Provide more helpful error messages
+      let errorMessage = errorData.error?.message || errorData.message || `OpenAI API error (${r.status})`;
+      
+      // Common error cases
+      if (r.status === 401) {
+        errorMessage = "Invalid API key. Please check OPENAI_API_KEY configuration.";
+      } else if (r.status === 429) {
+        errorMessage = "Rate limit exceeded. Please try again in a moment.";
+      } else if (r.status === 400) {
+        errorMessage = errorData.error?.message || "Invalid request. The prompt may contain content that violates OpenAI's policy.";
+      } else if (r.status >= 500) {
+        errorMessage = "OpenAI service error. Please try again later.";
+      }
+      
       return {
-        statusCode: r.status,
+        statusCode: r.status >= 500 ? 502 : r.status, // Convert 5xx to 502 for retry logic
         headers,
         body: JSON.stringify({ 
-          error: errorData.error?.message || errorData.message || `OpenAI API error (${r.status})`,
-          details: errorData
+          error: errorMessage,
+          status: r.status,
+          details: errorData,
+          retryable: r.status >= 500 || r.status === 429
         }),
       };
     }
@@ -191,14 +208,27 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
     const revisedPrompt = data?.data?.[0]?.revised_prompt || null;
 
     if (!imageUrl) {
+      console.error("OpenAI returned success but no image URL:", JSON.stringify(data, null, 2));
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({ 
-          error: "No image URL returned from API"
+          error: "No image URL returned from API",
+          details: {
+            hasData: !!data,
+            dataKeys: data ? Object.keys(data) : [],
+            dataArrayLength: data?.data?.length || 0,
+            fullResponse: data
+          }
         }),
       };
     }
+    
+    console.log("✅ Image generated successfully:", {
+      hasUrl: !!imageUrl,
+      urlPreview: imageUrl.substring(0, 50) + '...',
+      revisedPrompt: revisedPrompt || 'none'
+    });
 
     // Check timeout before blob storage
     const remainingBeforeBlob = checkTimeout("Blob storage");

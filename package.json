@@ -38,7 +38,7 @@
     "@types/node-fetch": "^2.6.9",
     "@types/react": "^18.2.45",
     "dotenv": "^17.2.3",
-    "netlify-cli": "^23.9.5",
+    "netlify-cli": "^23.11.1",
     "node-fetch": "^2.7.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

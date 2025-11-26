@@ -8767,6 +8767,50 @@ function initNewsletterSubscription() {
     let imageGenerationInProgress = false;
     const imageRequestQueue = new Map(); // Track requests by prompt to avoid duplicates
     
+    // Diagnostic function - expose to window for console testing
+    window.testImageGeneration = async function(testPrompt = "a simple red circle on white background") {
+        console.log('🧪 Testing image generation with prompt:', testPrompt);
+        console.log('📡 Calling API endpoint: /.netlify/functions/generate-image');
+        
+        try {
+            const response = await fetch('/.netlify/functions/generate-image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    prompt: testPrompt,
+                    size: '1024x1024',
+                    quality: 'standard',
+                    style: 'vivid'
+                })
+            });
+            
+            console.log('📥 Response status:', response.status, response.statusText);
+            console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()));
+            
+            const data = await response.json();
+            console.log('📦 Response data:', data);
+            
+            if (data.error) {
+                console.error('❌ Error from API:', data.error);
+                console.error('📋 Error details:', data.details);
+                return { success: false, error: data.error, details: data };
+            }
+            
+            if (data.imageUrl || data.storedImageUrl) {
+                console.log('✅ Success! Image URL:', data.storedImageUrl || data.imageUrl);
+                return { success: true, url: data.storedImageUrl || data.imageUrl, data };
+            } else {
+                console.error('❌ No image URL in response');
+                return { success: false, error: 'No URL returned', data };
+            }
+        } catch (error) {
+            console.error('❌ Network/Parse error:', error);
+            return { success: false, error: error.message, stack: error.stack };
+        }
+    };
+    
     async function generateImage(prompt, retries = 10) {
         // Prevent multiple concurrent requests for the same prompt
         if (imageRequestQueue.has(prompt)) {
@@ -8866,13 +8910,35 @@ function initNewsletterSubscription() {
                         return null;
                     }
                     
+                    // Check for error in response
+                    if (data.error) {
+                        console.error('[Image Generation] ❌ API returned error:', {
+                            error: data.error,
+                            status: data.status,
+                            details: data.details,
+                            retryable: data.retryable
+                        });
+                        
+                        // If it's a retryable error and we have attempts left, retry
+                        if (data.retryable && attempt < retries - 1) {
+                            const delay = Math.min(3000 * Math.pow(1.5, attempt), 30000);
+                            console.warn(`[Image Generation] Retrying after ${delay}ms due to retryable error`);
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        }
+                        
+                        // Non-retryable error or out of attempts
+                        return null;
+                    }
+                    
                     // Debug logging to help diagnose issues
                     if (attempt === 0) {
-                        console.log('[Image Generation] API Response:', {
+                        console.log('[Image Generation] ✅ API Response:', {
                             hasStoredImageUrl: !!data.storedImageUrl,
                             hasImageUrl: !!data.imageUrl,
                             storedImageUrl: data.storedImageUrl ? data.storedImageUrl.substring(0, 50) + '...' : null,
                             imageUrl: data.imageUrl ? data.imageUrl.substring(0, 50) + '...' : null,
+                            stored: data.stored || false,
                             error: data.error || null
                         });
                     }

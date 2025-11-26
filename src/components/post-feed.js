@@ -900,7 +900,7 @@ function renderPosts(posts, container, originalContent = null) {
               </div>
               
               <!-- Post Text -->
-              <div style="color: rgb(231, 233, 234); font-size: 0.938rem; line-height: 1.375rem; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 0.75rem;">
+              <div style="color: rgb(231, 233, 234); font-size: 0.938rem; line-height: 1.375rem; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 0.75rem; text-indent: 0; padding-left: 0; margin-left: 0;">
                 ${formatStory(titleText)}
               </div>
               

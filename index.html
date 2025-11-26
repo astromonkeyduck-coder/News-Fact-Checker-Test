@@ -16832,7 +16832,7 @@
     </script>
     
     <!-- Video player near bottom of page -->
-    <div style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 400px; width: 90%; pointer-events: none;">
+    <div id="bottom-video-container" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; max-width: 400px; width: 90%; pointer-events: none; display: none;">
         <video 
             id="bottom-video"
             src="NWvidddd.MOV" 
@@ -16850,7 +16850,29 @@
         // Prevent fullscreen and any interactions with the video
         (function() {
             const video = document.getElementById('bottom-video');
+            const container = document.getElementById('bottom-video-container');
             if (video) {
+                // Hide container if video fails to load
+                video.addEventListener('error', function(e) {
+                    console.log('Video failed to load, hiding container');
+                    if (container) {
+                        container.style.display = 'none';
+                    }
+                });
+                
+                // Show container only when video successfully loads and can play
+                video.addEventListener('loadeddata', function() {
+                    if (container && video.readyState >= 2) {
+                        container.style.display = 'block';
+                    }
+                });
+                
+                // Also check if video loads successfully
+                video.addEventListener('canplay', function() {
+                    if (container) {
+                        container.style.display = 'block';
+                    }
+                });
                 // Prevent fullscreen attempts
                 video.addEventListener('webkitbeginfullscreen', function(e) {
                     e.preventDefault();
