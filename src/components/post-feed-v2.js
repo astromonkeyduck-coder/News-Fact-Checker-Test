@@ -630,9 +630,12 @@ function formatPostText(text, postMedia = []) {
   
   // Clean up extra whitespace after removing URLs
   // Strip ALL leading whitespace to prevent indentation
-  cleanedText = cleanedText
-    .replace(/^[\s\u00a0]+/, '')
-    .replace(/\n[\s\u00a0]+/g, '\n')
+  cleanedText = String(cleanedText)
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/\u00a0/g, ' ')  // Non-breaking space to regular space
+    .replace(/^[\s\u00a0\u2000-\u200B\u2028\u2029]+/, '')  // Strip all leading whitespace including various unicode spaces
+    .replace(/\n[\s\u00a0\u2000-\u200B]+/g, '\n')  // Strip leading whitespace from each line
     .replace(/\s+/g, ' ')
     .trim();
   
@@ -688,12 +691,17 @@ function formatPostText(text, postMedia = []) {
     parts.push({ type: 'text', content: cleanedText });
   }
   
-  return parts.map(part => {
+  const processed = parts.map(part => {
     if (part.type === 'text') {
-      return escapeHtml(part.content).replace(/\n/g, '<br>');
+      // Strip any remaining leading/trailing whitespace from text parts
+      let content = part.content.trim();
+      return escapeHtml(content).replace(/\n/g, '<br>');
     }
     return part.content;
   }).join('');
+  
+  // Final cleanup - remove any leading whitespace from the entire result
+  return processed.replace(/^[\s\u00a0\u2000-\u200B]+/, '').trim();
 }
 
 /**

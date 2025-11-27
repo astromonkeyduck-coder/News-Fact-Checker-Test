@@ -194,15 +194,29 @@
             </div>
             
             <div class="form-group">
-                <label for="html">HTML Content *</label>
-                <textarea id="html" name="html" required placeholder="Enter your HTML newsletter content..."></textarea>
-                <p class="help-text">Personalization: Use {{FIRST_NAME}}, {{LAST_NAME}}, {{FULL_NAME}}, {{EMAIL}}, or {{UNSUBSCRIBE_URL}} as placeholders</p>
+                <label for="html">HTML Content (Optional if "Include Recent Posts" is checked)</label>
+                <textarea id="html" name="html" placeholder="Enter your HTML newsletter content... Or leave empty to use auto-generated template with recent posts. Use {{RECENT_POSTS}} placeholder to insert posts in custom HTML."></textarea>
+                <p class="help-text">Personalization: Use {{FIRST_NAME}}, {{LAST_NAME}}, {{FULL_NAME}}, {{EMAIL}}, {{UNSUBSCRIBE_URL}}, or {{RECENT_POSTS}} as placeholders</p>
             </div>
             
             <div class="form-group">
                 <label for="text">Plain Text Content (Optional)</label>
                 <textarea id="text" name="text" placeholder="Enter plain text version (optional)..."></textarea>
                 <p class="help-text">Plain text version for email clients that don't support HTML</p>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="includeRecentPosts" name="includeRecentPosts" checked style="margin-right: 8px;">
+                    Include Recent Posts (automatically fetches latest 10 posts)
+                </label>
+                <p class="help-text">When checked, the newsletter will automatically include your 10 most recent posts. Leave HTML/Text fields empty to use the auto-generated template, or use {{RECENT_POSTS}} placeholder in custom HTML.</p>
+            </div>
+            
+            <div class="form-group">
+                <label for="testEmail">Test Email Address</label>
+                <input type="email" id="testEmail" name="testEmail" placeholder="mr.pangolinman@gmail.com" value="mr.pangolinman@gmail.com">
+                <p class="help-text">Send a test email to this address before sending to your full audience</p>
             </div>
             
             <div>
@@ -288,16 +302,90 @@ To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
             showStatus('Default template loaded. Customize it as needed!', 'info');
         });
         
+        testBtn.addEventListener('click', async () => {
+            const subject = document.getElementById('subject').value;
+            const html = document.getElementById('html').value;
+            const text = document.getElementById('text').value;
+            const testEmail = document.getElementById('testEmail').value;
+            const includeRecentPosts = document.getElementById('includeRecentPosts').checked;
+            
+            if (!testEmail) {
+                showStatus('Please enter a test email address', 'error');
+                return;
+            }
+            
+            if (!subject) {
+                showStatus('Please fill in subject before sending test email', 'error');
+                return;
+            }
+            
+            // If includeRecentPosts is checked and no custom HTML, we'll let the server generate it
+            if (!html && !includeRecentPosts) {
+                showStatus('Please fill in HTML content or check "Include Recent Posts"', 'error');
+                return;
+            }
+            
+            testBtn.disabled = true;
+            testBtn.textContent = 'Sending Test...';
+            showStatus(`Sending test email to ${testEmail}...`, 'info');
+            
+            try {
+                const response = await fetch('/.netlify/functions/send-newsletter', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        subject,
+                        html: html || undefined,
+                        text: text || undefined,
+                        testEmail: testEmail, // This tells the function to send only to this email
+                        includeRecentPosts: includeRecentPosts,
+                    }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showStatus(
+                        `✓ Test email sent successfully to ${testEmail}! Check your inbox.`,
+                        'success'
+                    );
+                } else {
+                    showStatus(data.error || data.message || 'Failed to send test email', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus('An error occurred while sending the test email. Please try again.', 'error');
+            } finally {
+                testBtn.disabled = false;
+                testBtn.textContent = 'Send Test Email';
+            }
+        });
+        
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const subject = document.getElementById('subject').value;
-            const html = document.getElementById('html').value;
-            const text = document.getElementById('text').value;
+            let html = document.getElementById('html').value.trim();
+            const text = document.getElementById('text').value.trim();
+            const includeRecentPosts = document.getElementById('includeRecentPosts').checked;
             
-            if (!subject || !html) {
-                showStatus('Please fill in all required fields', 'error');
+            if (!subject) {
+                showStatus('Please fill in subject', 'error');
                 return;
+            }
+            
+            // If includeRecentPosts is checked, allow empty HTML (server will generate it)
+            // If includeRecentPosts is NOT checked, HTML is required
+            if (!includeRecentPosts && !html) {
+                showStatus('Please fill in HTML content or check "Include Recent Posts"', 'error');
+                return;
+            }
+            
+            // If includeRecentPosts is checked and HTML is empty, send undefined to let server generate it
+            if (includeRecentPosts && !html) {
+                html = undefined;
             }
             
             sendBtn.disabled = true;
@@ -312,8 +400,9 @@ To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
                     },
                     body: JSON.stringify({
                         subject,
-                        html,
+                        html: html,
                         text: text || undefined,
+                        includeRecentPosts: includeRecentPosts,
                     }),
                 });
                 

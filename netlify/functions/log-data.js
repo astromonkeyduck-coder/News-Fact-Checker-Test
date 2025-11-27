@@ -630,39 +630,48 @@ async function logData(dataType, data, event = null) {
         // Send email notification for page views from these locations (non-blocking)
         if (dataType === 'page-view') {
           try {
-            // Check if Resend API key is configured before initializing
-            if (!process.env.RESEND_API_KEY) {
-              console.warn('[Data Log] RESEND_API_KEY not configured. Skipping location alert email notification.');
+            // Exclude Ashburn, Virginia from email notifications
+            const cityLower = (location.city || '').toLowerCase();
+            const regionLower = (location.region || '').toLowerCase();
+            const isAshburnVA = cityLower.includes('ashburn') && 
+                               (regionLower.includes('virginia') || regionLower === 'va' || regionLower === 'virginia');
+            
+            if (isAshburnVA) {
+              console.log(`[Data Log] Skipping email notification for Ashburn, Virginia visitor`);
             } else {
-              const { Resend } = require('resend');
-              const resend = new Resend(process.env.RESEND_API_KEY);
-            
-            // Get notification emails from environment variable
-            let notificationEmails = [];
-            if (process.env.AI_NOTIFICATION_EMAILS) {
-              try {
-                notificationEmails = JSON.parse(process.env.AI_NOTIFICATION_EMAILS);
-                if (!Array.isArray(notificationEmails)) {
-                  throw new Error('Not an array');
+              // Check if Resend API key is configured before initializing
+              if (!process.env.RESEND_API_KEY) {
+                console.warn('[Data Log] RESEND_API_KEY not configured. Skipping location alert email notification.');
+              } else {
+                const { Resend } = require('resend');
+                const resend = new Resend(process.env.RESEND_API_KEY);
+              
+                // Get notification emails from environment variable
+                let notificationEmails = [];
+                if (process.env.AI_NOTIFICATION_EMAILS) {
+                  try {
+                    notificationEmails = JSON.parse(process.env.AI_NOTIFICATION_EMAILS);
+                    if (!Array.isArray(notificationEmails)) {
+                      throw new Error('Not an array');
+                    }
+                  } catch {
+                    notificationEmails = process.env.AI_NOTIFICATION_EMAILS.split(',').map(e => e.trim()).filter(e => e);
+                  }
                 }
-              } catch {
-                notificationEmails = process.env.AI_NOTIFICATION_EMAILS.split(',').map(e => e.trim()).filter(e => e);
-              }
-            }
-            
-            if (notificationEmails.length === 0) {
-              notificationEmails = [process.env.ADMIN_NOTIFICATION_EMAIL || 'richard@noteworthynews.co'];
-            }
-            
-            const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
-            
-            const locationStr = `${location.city || ''}${location.region ? ', ' + location.region : ''}${location.country ? ', ' + location.country : ''}`.trim();
-            const pageUrl = data.url || data.path || 'Unknown page';
-            const pageTitle = data.title || 'Unknown page';
-            
-            // Send to all notification emails
-            Promise.all(notificationEmails.map(email =>
-              resend.emails.send({
+                
+                if (notificationEmails.length === 0) {
+                  notificationEmails = [process.env.ADMIN_NOTIFICATION_EMAIL || 'richard@noteworthynews.co'];
+                }
+                
+                const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
+                
+                const locationStr = `${location.city || ''}${location.region ? ', ' + location.region : ''}${location.country ? ', ' + location.country : ''}`.trim();
+                const pageUrl = data.url || data.path || 'Unknown page';
+                const pageTitle = data.title || 'Unknown page';
+                
+                // Send to all notification emails
+                Promise.all(notificationEmails.map(email =>
+                  resend.emails.send({
                 from: fromEmail,
                 to: email,
                 subject: `📍 Visitor from ${alertType}`,
@@ -730,12 +739,13 @@ ${data.referrer ? `Referrer: ${data.referrer}\n` : ''}
 
 ---
 This is an automated notification from your website.`,
-              }).catch(err => {
-                console.error(`[Data Log] Failed to send location alert email to ${email}:`, err);
-              })
-            )).catch(err => {
-              console.error("[Data Log] Error sending location alert emails:", err);
-            });
+                  }).catch(err => {
+                    console.error(`[Data Log] Failed to send location alert email to ${email}:`, err);
+                  })
+                )).catch(err => {
+                  console.error("[Data Log] Error sending location alert emails:", err);
+                });
+              }
             }
           } catch (emailErr) {
             console.error("[Data Log] Error setting up location alert emails:", emailErr);
@@ -754,13 +764,22 @@ This is an automated notification from your website.`,
       
       // Check if visitor is NOT from Florida
       if (!isFlorida && location.city && location.city !== 'Unknown' && location.city !== 'Local') {
-        try {
-          // Check if Resend API key is configured
-          if (!process.env.RESEND_API_KEY) {
-            console.warn('[Data Log] RESEND_API_KEY not configured. Skipping non-Florida visitor email notification.');
-          } else {
-            const { Resend } = require('resend');
-            const resend = new Resend(process.env.RESEND_API_KEY);
+        // Exclude Ashburn, Virginia from email notifications
+        const cityLower = (location.city || '').toLowerCase();
+        const regionLower = (location.region || '').toLowerCase();
+        const isAshburnVA = cityLower.includes('ashburn') && 
+                           (regionLower.includes('virginia') || regionLower === 'va' || regionLower === 'virginia');
+        
+        if (isAshburnVA) {
+          console.log(`[Data Log] Skipping email notification for Ashburn, Virginia visitor`);
+        } else {
+          try {
+            // Check if Resend API key is configured
+            if (!process.env.RESEND_API_KEY) {
+              console.warn('[Data Log] RESEND_API_KEY not configured. Skipping non-Florida visitor email notification.');
+            } else {
+              const { Resend } = require('resend');
+              const resend = new Resend(process.env.RESEND_API_KEY);
             
             // Get notification emails from environment variable
             let notificationEmails = [];
@@ -936,6 +955,7 @@ This is an automated notification from your website.`,
           }
         } catch (emailErr) {
           console.error("[Data Log] Error setting up non-Florida visitor email notification:", emailErr);
+        }
         }
       }
     }

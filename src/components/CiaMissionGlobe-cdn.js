@@ -71,11 +71,50 @@ class CiaMissionGlobe {
   }
 
   async loadDependencies() {
-    // Load Three.js first (required by globe.gl)
-    await loadScript('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js');
+    // Suppress Three.js deprecation warnings during loading
+    const originalWarn = console.warn;
+    let warnSuppressed = false;
     
-    // Load globe.gl
-    await loadScript('https://cdn.jsdelivr.net/npm/globe.gl@2.32.0/dist/globe.gl.min.js');
+    const suppressWarnings = function(...args) {
+      const message = args[0] ? String(args[0]) : '';
+      // Suppress deprecation warnings about build/three.js
+      if (message.includes('build/three.js') || message.includes('build/three.min.js') || 
+          message.includes('deprecated with r150') || message.includes('will be removed with r160')) {
+        return; // Suppress this warning
+      }
+      // Suppress "Multiple instances of Three.js" warning
+      if (message.includes('Multiple instances of Three.js')) {
+        return; // Suppress this warning
+      }
+      // Pass through all other warnings
+      originalWarn.apply(console, args);
+    };
+    
+    // Temporarily override console.warn during script loading
+    console.warn = suppressWarnings;
+    warnSuppressed = true;
+    
+    try {
+      // Load Three.js first (required by globe.gl)
+      // Check if Three.js is already loaded to avoid multiple instances
+      if (typeof THREE === 'undefined') {
+        await loadScript('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js');
+      } else {
+        console.log('[Globe] Three.js already loaded, skipping');
+      }
+      
+      // Load globe.gl
+      await loadScript('https://cdn.jsdelivr.net/npm/globe.gl@2.32.0/dist/globe.gl.min.js');
+    } finally {
+      // Always restore console.warn after loading completes
+      if (warnSuppressed) {
+        // Wait a bit for any delayed warnings from the scripts
+        setTimeout(() => {
+          console.warn = originalWarn;
+          warnSuppressed = false;
+        }, 1000);
+      }
+    }
     
     // Load CSS
     loadCSS('/src/styles/ciaGlobe.css');

@@ -593,13 +593,15 @@ function renderPosts(posts, container, originalContent = null) {
     if (!text) return '';
     
     // Normalize whitespace so posts don't show extra indent on first line
-    // Strip ALL leading whitespace (including tabs, spaces, newlines)
-    let normalizedText = text
+    // Strip ALL leading whitespace (including tabs, spaces, newlines, non-breaking spaces)
+    // Also strip any leading HTML entities or whitespace that might cause indentation
+    let normalizedText = String(text)
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n')
-      .replace(/\u00a0/g, ' ')
-      .replace(/^[\s\u00a0]+/, '')
-      .replace(/\n[\s\u00a0]+/g, '\n');
+      .replace(/\u00a0/g, ' ')  // Non-breaking space to regular space
+      .replace(/^[\s\u00a0\u2000-\u200B\u2028\u2029]+/, '')  // Strip all leading whitespace including various unicode spaces
+      .replace(/\n[\s\u00a0\u2000-\u200B]+/g, '\n')  // Strip leading whitespace from each line
+      .trim();  // Final trim to be absolutely sure
     
     if (!normalizedText) {
       return '';
@@ -659,8 +661,10 @@ function renderPosts(posts, container, originalContent = null) {
     // Process each part: escape HTML for text, keep HTML for images/links
     const processed = parts.map(part => {
       if (part.type === 'text') {
+        // Strip any remaining leading/trailing whitespace from text parts
+        let content = part.content.trim();
         // Escape HTML and convert newlines to <br>
-        return part.content
+        return content
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;')
@@ -673,7 +677,8 @@ function renderPosts(posts, container, originalContent = null) {
       }
     }).join('');
     
-    return processed;
+    // Final cleanup - remove any leading whitespace from the entire result
+    return processed.replace(/^[\s\u00a0\u2000-\u200B]+/, '').trim();
   };
 
   // Validate posts before rendering

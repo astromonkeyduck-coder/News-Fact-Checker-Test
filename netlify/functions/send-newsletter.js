@@ -15,12 +15,14 @@ const NEWSLETTER_AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID || null;
 /**
  * Fetch recent posts from the posts-read API
  */
-async function fetchRecentPosts(limit = 10) {
+async function fetchRecentPosts(limit = 10, startDate = null, endDate = null) {
   try {
     const siteUrl = process.env.URL || 'https://noteworthynews.co';
-    const url = `${siteUrl}/.netlify/functions/posts-read?limit=${limit}`;
+    // Fetch more posts if filtering by date to ensure we have enough
+    const fetchLimit = startDate && endDate ? Math.max(limit * 5, 50) : limit;
+    const url = `${siteUrl}/.netlify/functions/posts-read?limit=${fetchLimit}`;
     
-    console.log(`[fetchRecentPosts] Fetching from: ${url}`);
+    console.log(`[fetchRecentPosts] Fetching from: ${url}${startDate && endDate ? ` (filtering to ${startDate} - ${endDate})` : ''}`);
     
     // Use fetch if available (Node 18+), otherwise fall back to http/https
     if (typeof fetch !== 'undefined') {
@@ -31,8 +33,60 @@ async function fetchRecentPosts(limit = 10) {
       }
       const posts = await response.json();
       console.log(`[fetchRecentPosts] Received ${Array.isArray(posts) ? posts.length : 0} posts`);
+      
+      // Sort posts by date (newest first) and optionally filter by date range
       if (Array.isArray(posts) && posts.length > 0) {
-        console.log(`[fetchRecentPosts] First post sample:`, JSON.stringify(posts[0]).substring(0, 200));
+        let filteredPosts = posts;
+        
+        // Filter by date range if provided
+        if (startDate && endDate) {
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+          
+          filteredPosts = posts.filter(post => {
+            const dateValue = post.datePosted || post.createdAt || post.created_at || post.Date || '';
+            const dateStr = String(dateValue);
+            
+            // Check if date string contains Nov 25 or Nov 26 (for CSV format like "Sun, Nov 25, 2025")
+            if (dateStr.includes('Nov 25') || dateStr.includes('Nov 26') || 
+                dateStr.includes('11/25') || dateStr.includes('11/26') ||
+                dateStr.includes('2025-11-25') || dateStr.includes('2025-11-26')) {
+              return true;
+            }
+            
+            // Try parsing as Date object
+            const postDate = new Date(dateValue);
+            if (!isNaN(postDate.getTime())) {
+              // Check if date falls within range (accounting for timezone)
+              const postDateUTC = new Date(postDate.getUTCFullYear(), postDate.getUTCMonth(), postDate.getUTCDate());
+              const startUTC = new Date(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
+              const endUTC = new Date(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate());
+              return postDateUTC >= startUTC && postDateUTC <= endUTC;
+            }
+            
+            return false;
+          });
+          console.log(`[fetchRecentPosts] Filtered ${filteredPosts.length} posts from Nov 25-26, 2025 out of ${posts.length} total posts`);
+        }
+        
+        // Sort by date (newest first)
+        const sortedPosts = filteredPosts.sort((a, b) => {
+          const dateA = new Date(a.datePosted || a.createdAt || a.created_at || 0);
+          const dateB = new Date(b.datePosted || b.createdAt || b.created_at || 0);
+          return dateB - dateA; // Newest first
+        });
+        
+        // Take only the most recent posts (up to limit)
+        const recentPosts = sortedPosts.slice(0, limit);
+        console.log(`[fetchRecentPosts] Returning ${recentPosts.length} posts${startDate && endDate ? ' from Nov 25-26, 2025' : ''}`);
+        if (recentPosts.length > 0) {
+          console.log(`[fetchRecentPosts] First post (newest):`, JSON.stringify({
+            id: recentPosts[0].id,
+            date: recentPosts[0].datePosted || recentPosts[0].createdAt,
+            text: (recentPosts[0].story || recentPosts[0].text || '').substring(0, 100)
+          }));
+        }
+        return recentPosts;
       }
       return Array.isArray(posts) ? posts : [];
     } else {
@@ -99,7 +153,7 @@ function formatNumber(num) {
 function formatPostsForNewsletter(posts) {
   if (!posts || posts.length === 0) {
     console.log('[formatPostsForNewsletter] No posts to format');
-    return '<p style="color: #888; font-style: italic; text-align: center; padding: 40px 0;">No recent posts to display.</p>';
+    return '<div style="text-align: center; padding: 60px 40px; background: rgba(96, 165, 250, 0.05); border-radius: 16px; border: 1px solid rgba(96, 165, 250, 0.2);"><p style="color: #888; font-size: 16px; margin: 0; line-height: 1.6;">No posts found for the selected date range. Check back soon for new stories!</p></div>';
   }
   
   console.log(`[formatPostsForNewsletter] Formatting ${posts.length} posts`);
@@ -135,7 +189,10 @@ function formatPostsForNewsletter(posts) {
       image = post.image;
     }
     
-    console.log(`[formatPostsForNewsletter] Post ${index + 1}: id=${post.id}, text="${text.substring(0, 50)}...", textLength=${text.length}, hasImage=${!!image}, link=${link.substring(0, 50)}...`);
+    // Check if it's a BREAKING news story - check BEFORE escaping HTML
+    const isBreaking = text.toUpperCase().includes('BREAKING');
+    
+    console.log(`[formatPostsForNewsletter] Post ${index + 1}: id=${post.id}, text="${text.substring(0, 50)}...", textLength=${text.length}, isBreaking=${isBreaking}, hasImage=${!!image}, link=${link.substring(0, 50)}...`);
     
     if (!text || text.length === 0) {
       console.warn(`[formatPostsForNewsletter] Post ${index + 1} (id: ${post.id}) has no text content. Available fields:`, Object.keys(post));
@@ -158,44 +215,41 @@ function formatPostsForNewsletter(posts) {
       }
     }
     
-    // Check if it's a BREAKING news story
-    const isBreaking = safeText.toUpperCase().includes('BREAKING');
-    
     // Get engagement stats if available (handle both camelCase and lowercase)
     const impressions = post.Impressions || post.impressions || post.views || 0;
     const likes = post.Likes || post.likes || 0;
     const engagements = post.Engagements || post.engagements || 0;
     
     html += `
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 50px;" class="post-card">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 50px; background-color: transparent !important;" class="post-card">
         <tr>
-          <td style="background: linear-gradient(135deg, rgba(96, 165, 250, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%); border-radius: 16px; padding: 30px; border: 1px solid rgba(255,255,255,0.08);">
+          <td style="background: linear-gradient(135deg, rgba(96, 165, 250, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%) !important; background-color: rgba(15, 15, 35, 0.8) !important; border-radius: 16px; padding: 30px; border: 1px solid rgba(255,255,255,0.08);">
             ${isBreaking ? `
-              <div style="display: inline-block; margin-bottom: 16px; padding: 6px 12px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius: 20px;">
-                <span style="color: #ffffff; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;" class="breaking-badge">⚡ BREAKING</span>
+              <div style="display: inline-block; margin-bottom: 16px; padding: 6px 12px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important; background-color: #ef4444 !important; border-radius: 20px;">
+                <span style="color: #ffffff !important; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; background-color: transparent !important;" class="breaking-badge">⚡ BREAKING</span>
               </div>
             ` : ''}
             ${safeImage ? `
-              <a href="${safeLink}" style="display: block; margin-bottom: 24px; text-decoration: none; border-radius: 12px; overflow: hidden;">
+              <a href="${safeLink}" style="display: block; margin-bottom: 24px; text-decoration: none; border-radius: 12px; overflow: hidden; background-color: transparent !important;">
                 <img src="${safeImage}" alt="Post image" style="width: 100%; max-width: 100%; height: auto; border-radius: 12px; display: block; border: none; box-shadow: 0 8px 24px rgba(0,0,0,0.4); transition: transform 0.3s ease;" />
               </a>
             ` : ''}
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: transparent !important;">
               <tr>
-                <td style="padding: 0;">
+                <td style="padding: 0; background-color: transparent !important;">
                   ${dateStr ? `
-                    <p style="margin: 0 0 12px 0; color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">${dateStr}</p>
+                    <p style="margin: 0 0 12px 0; color: #888 !important; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; background-color: transparent !important;">${dateStr}</p>
                   ` : ''}
-                  <h2 style="margin: 0 0 20px 0; color: #ffffff; font-size: 24px; line-height: 1.5; font-weight: 700; letter-spacing: -0.3px;">
-                    <a href="${safeLink}" class="post-link" style="color: #ffffff; text-decoration: none; display: block;">${safeText}</a>
+                  <h2 style="margin: 0 0 20px 0; color: #ffffff !important; font-size: 24px; line-height: 1.5; font-weight: 700; letter-spacing: -0.3px; background-color: transparent !important;">
+                    <a href="${safeLink}" class="post-link" style="color: #ffffff !important; text-decoration: none; display: block; background-color: transparent !important;">${safeText}</a>
                   </h2>
                   ${impressions > 0 || likes > 0 ? `
-                    <div style="display: flex; gap: 20px; margin-bottom: 20px; color: #888; font-size: 12px;">
-                      ${impressions > 0 ? `<span>👁️ ${formatNumber(impressions)} views</span>` : ''}
-                      ${likes > 0 ? `<span>❤️ ${formatNumber(likes)} likes</span>` : ''}
+                    <div style="display: flex; gap: 20px; margin-bottom: 20px; color: #888 !important; font-size: 12px; background-color: transparent !important;">
+                      ${impressions > 0 ? `<span style="background-color: transparent !important;">👁️ ${formatNumber(impressions)} views</span>` : ''}
+                      ${likes > 0 ? `<span style="background-color: transparent !important;">❤️ ${formatNumber(likes)} likes</span>` : ''}
                     </div>
                   ` : ''}
-                  <a href="${safeLink}" class="cta-button" style="display: inline-block; color: #60a5fa; text-decoration: none; font-size: 15px; font-weight: 600; padding: 12px 24px; background: linear-gradient(135deg, rgba(96, 165, 250, 0.1) 0%, rgba(96, 165, 250, 0.05) 100%); border-radius: 8px; border: 1px solid rgba(96, 165, 250, 0.3); transition: all 0.2s ease;">Read Story →</a>
+                  <a href="${safeLink}" class="cta-button" style="display: inline-block; color: #60a5fa !important; text-decoration: none; font-size: 15px; font-weight: 600; padding: 12px 24px; background: linear-gradient(135deg, rgba(96, 165, 250, 0.1) 0%, rgba(96, 165, 250, 0.05) 100%) !important; background-color: rgba(96, 165, 250, 0.1) !important; border-radius: 8px; border: 1px solid rgba(96, 165, 250, 0.3); transition: all 0.2s ease;">Read Story →</a>
                 </td>
               </tr>
             </table>
@@ -247,21 +301,6 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Check if audience ID is configured
-    if (!NEWSLETTER_AUDIENCE_ID) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ 
-          error: 'RESEND_AUDIENCE_ID not configured. Please set it in Netlify environment variables.',
-          hint: 'Get your Audience ID from https://resend.com/audiences'
-        }),
-      };
-    }
-
-    // Initialize Resend
-    const resend = new Resend(process.env.RESEND_API_KEY);
-
     // Get newsletter content from request body (if POST) or use defaults
     let newsletterData = {};
     if (event.httpMethod === 'POST' && event.body) {
@@ -272,18 +311,46 @@ exports.handler = async (event, context) => {
       }
     }
 
+    const testEmail = newsletterData.testEmail; // Check early if this is a test
+    
+    // Check if audience ID is configured (only required for non-test sends)
+    if (!NEWSLETTER_AUDIENCE_ID && !testEmail) {
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          error: 'RESEND_AUDIENCE_ID not configured. Please set it in Netlify environment variables.',
+          hint: 'Get your Audience ID from https://resend.com/audiences',
+          note: 'Test emails (with testEmail parameter) can be sent without RESEND_AUDIENCE_ID'
+        }),
+      };
+    }
+
+    // Initialize Resend
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
     const subject = newsletterData.subject || 'Noteworthy News - Latest Stories';
     let htmlContent = newsletterData.html;
     let textContent = newsletterData.text;
-    const testEmail = newsletterData.testEmail; // Optional: send to single email for testing
+    // testEmail already declared above
     const includeRecentPosts = newsletterData.includeRecentPosts !== false; // Default to true
     
     // Always fetch posts if includeRecentPosts is true (even if custom HTML provided)
     let recentPosts = [];
     if (includeRecentPosts) {
       console.log('📰 Fetching recent posts for newsletter...');
-      recentPosts = await fetchRecentPosts(10); // Get 10 most recent posts
-      console.log(`✅ Found ${recentPosts.length} recent posts`);
+      // Filter to Nov 25-26, 2025 (if no posts found, fall back to most recent)
+      const startDate = '2025-11-25T00:00:00.000Z';
+      const endDate = '2025-11-26T23:59:59.999Z';
+      recentPosts = await fetchRecentPosts(10, startDate, endDate); // Get 10 posts from Nov 25-26
+      console.log(`✅ Found ${recentPosts.length} posts from Nov 25-26, 2025`);
+      
+      // If no posts found in date range, get most recent posts instead
+      if (recentPosts.length === 0) {
+        console.log('⚠️ No posts found for Nov 25-26, fetching most recent posts instead');
+        recentPosts = await fetchRecentPosts(10); // Get 10 most recent posts without date filter
+        console.log(`✅ Found ${recentPosts.length} most recent posts (fallback)`);
+      }
       if (recentPosts.length > 0) {
         console.log(`📝 First post sample:`, JSON.stringify({
           id: recentPosts[0].id,
@@ -339,23 +406,26 @@ exports.handler = async (event, context) => {
       console.log(`🧪 TEST MODE: Sending to ${testEmail} only - WILL NOT SEND TO AUDIENCE`);
       
       const unsubscribeUrl = `https://noteworthynews.co/unsubscribe.html?email=${encodeURIComponent(Buffer.from(testEmail).toString('base64'))}`;
-      const personalizedHtml = htmlContent.replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl);
-      const personalizedText = textContent.replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl);
+      const personalizedHtml = htmlContent.replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl).replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl);
+      const personalizedText = textContent.replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl).replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl);
       
       try {
         // Replace personalization placeholders with default values for test email
         // This makes it look exactly like what subscribers will receive
+        const emailUsername = testEmail.split('@')[0];
         const testHtml = personalizedHtml
-          .replace(/\{\{FIRST_NAME\}\}/g, 'there')
+          .replace(/\{\{FIRST_NAME\}\}/g, emailUsername)
           .replace(/\{\{LAST_NAME\}\}/g, '')
-          .replace(/\{\{FULL_NAME\}\}/g, testEmail.split('@')[0])
-          .replace(/\{\{EMAIL\}\}/g, testEmail);
+          .replace(/\{\{FULL_NAME\}\}/g, emailUsername)
+          .replace(/\{\{EMAIL\}\}/g, testEmail)
+          .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername);
         
         const testText = personalizedText
-          .replace(/\{\{FIRST_NAME\}\}/g, 'there')
+          .replace(/\{\{FIRST_NAME\}\}/g, emailUsername)
           .replace(/\{\{LAST_NAME\}\}/g, '')
-          .replace(/\{\{FULL_NAME\}\}/g, testEmail.split('@')[0])
-          .replace(/\{\{EMAIL\}\}/g, testEmail);
+          .replace(/\{\{FULL_NAME\}\}/g, emailUsername)
+          .replace(/\{\{EMAIL\}\}/g, testEmail)
+          .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername);
         
         const result = await resend.emails.send({
           from: fromEmail,
@@ -364,7 +434,8 @@ exports.handler = async (event, context) => {
           subject: subject, // No [TEST] prefix - looks exactly like mass email
           html: testHtml,
           text: testText,
-          clickTracking: false,
+          clickTracking: true, // Track link clicks
+          openTracking: true, // Track email opens
         });
 
         if (result.error) {
@@ -467,21 +538,26 @@ exports.handler = async (event, context) => {
       const firstName = contact.firstName || contact.first_name || '';
       const lastName = contact.lastName || contact.last_name || '';
       const fullName = contact.name || `${firstName} ${lastName}`.trim() || email.split('@')[0];
+      const emailUsername = email.split('@')[0];
       
       // Replace personalization placeholders
       let personalizedHtml = htmlContent
+        .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl)
         .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl)
-        .replace(/\{\{FIRST_NAME\}\}/g, firstName || 'there')
+        .replace(/\{\{FIRST_NAME\}\}/g, firstName || emailUsername)
         .replace(/\{\{LAST_NAME\}\}/g, lastName || '')
         .replace(/\{\{FULL_NAME\}\}/g, fullName)
-        .replace(/\{\{EMAIL\}\}/g, email);
+        .replace(/\{\{EMAIL\}\}/g, email)
+        .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername);
       
       let personalizedText = textContent
+        .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl)
         .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl)
-        .replace(/\{\{FIRST_NAME\}\}/g, firstName || 'there')
+        .replace(/\{\{FIRST_NAME\}\}/g, firstName || emailUsername)
         .replace(/\{\{LAST_NAME\}\}/g, lastName || '')
         .replace(/\{\{FULL_NAME\}\}/g, fullName)
-        .replace(/\{\{EMAIL\}\}/g, email);
+        .replace(/\{\{EMAIL\}\}/g, email)
+        .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername);
       
       return {
         email,
@@ -509,7 +585,8 @@ exports.handler = async (event, context) => {
             subject: subject,
             html: html,
             text: text,
-            clickTracking: false,
+            clickTracking: true, // Track link clicks
+            openTracking: true, // Track email opens
           });
 
           if (result.error) {
@@ -634,112 +711,100 @@ The Noteworthy News Team
 To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
 }
 
-// Newsletter HTML template with recent posts - ADVANCED DARK THEME with professional features
+// Newsletter HTML template - Professional Briefing Format
 function getNewsletterHTMLWithPosts(posts) {
   console.log(`[getNewsletterHTMLWithPosts] Received ${posts ? posts.length : 0} posts`);
-  const postsHTML = formatPostsForNewsletter(posts);
   
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="dark">
-  <meta name="supported-color-schemes" content="dark">
+  <meta name="color-scheme" content="dark only">
+  <meta name="supported-color-schemes" content="dark only">
   <style>
-    /* Advanced CSS for email clients that support it */
-    @media (prefers-color-scheme: dark) {
-      .dark-mode-bg { background-color: #0a0a0a !important; }
-      .dark-mode-text { color: #e0e0e0 !important; }
-    }
-    
-    /* Smooth transitions for supported clients */
-    .post-card {
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    
-    /* Hover effects for desktop email clients */
-    @media (hover: hover) {
-      .post-link:hover {
-        opacity: 0.8;
-        transform: translateX(4px);
-      }
-      .cta-button:hover {
-        background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%) !important;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(96, 165, 250, 0.3) !important;
-      }
-    }
-    
-    /* Animation for breaking news badge */
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
-    .breaking-badge {
-      animation: pulse 2s ease-in-out infinite;
-    }
+    body,html{background-color:#0b1020!important;color:#f9fafb!important;margin:0;padding:0}
+    table,td,tr,div,p,h1,h2,h3,a,span{background-color:inherit!important;color:inherit!important}
+    table[role="presentation"]{background-color:#0b1020!important}
+    u+.body .gmail-blend-screen,u+.body .gmail-blend-difference,.gmail-blend-screen,.gmail-blend-difference{background-color:#0b1020!important}
+    .ii a[href]{color:#60a5fa!important}
+    [data-ogsc] body,[data-ogsc] table{background-color:#0b1020!important}
+    @media (prefers-color-scheme:light){body,html,table,td{background-color:#0b1020!important;color:#f9fafb!important}}
   </style>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #0a0a0a;">
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#0b1020!important;color-scheme:dark only">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#0b1020!important">
     <tr>
-      <td style="padding: 0;">
-        <!-- Header with gradient and glow effect -->
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); position: relative;">
+      <td style="padding:40px 20px">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:650px;margin:0 auto;background-color:#050814!important">
           <tr>
-            <td style="padding: 60px 40px; text-align: center; position: relative;">
-              <!-- Glow effect behind logo -->
-              <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 120px; height: 120px; background: radial-gradient(circle, rgba(96, 165, 250, 0.2) 0%, transparent 70%); border-radius: 50%;"></div>
-              <img src="https://noteworthynews.co/IMG_5992.PNG" alt="Noteworthy News" style="max-width: 90px; height: auto; border-radius: 50%; display: block; margin: 0 auto 24px; border: 3px solid rgba(96, 165, 250, 0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 40px rgba(96, 165, 250, 0.1); position: relative; z-index: 1;" />
-              <h1 style="margin: 0; color: #ffffff; font-size: 36px; font-weight: 800; letter-spacing: -1px; text-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 20px rgba(96, 165, 250, 0.2); position: relative; z-index: 1;">Noteworthy News</h1>
-              <p style="margin: 12px 0 0 0; color: rgba(255,255,255,0.7); font-size: 15px; font-weight: 400; letter-spacing: 0.3px; position: relative; z-index: 1;">Fact-checked stories you need to know</p>
+            <td style="padding:30px 40px;background-color:#050814!important;border-bottom:1px solid rgba(96,165,250,0.2)">
+              <img src="https://noteworthynews.co/IMG_5992.PNG" alt="Noteworthy News" style="max-width:60px;height:auto;display:block;margin:0 0 16px 0" />
+              <h1 style="margin:0;font-size:26px;font-weight:700;color:#fff!important">Noteworthy News</h1>
+              <p style="margin:4px 0 0;color:#9ca3af!important;font-size:11px;letter-spacing:0.12em;text-transform:uppercase">Weekly Briefing</p>
             </td>
           </tr>
         </table>
-        
-        <!-- Main Content - DARK BACKGROUND with subtle texture -->
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #0f0f23; background-image: radial-gradient(circle at 20% 50%, rgba(96, 165, 250, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.03) 0%, transparent 50%);">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:650px;margin:0 auto;background-color:#141b2b!important">
           <tr>
-            <td style="padding: 60px 40px;">
-              <p style="margin: 0 0 50px 0; color: #e0e0e0; font-size: 18px; line-height: 1.7; font-weight: 400;">Hi {{FIRST_NAME}},</p>
-              <p style="margin: 0 0 60px 0; color: #b0b0b0; font-size: 16px; line-height: 1.8;">Here's what's happening in the world of fact-checked news:</p>
+            <td style="padding:50px 40px;background-color:#141b2b!important">
+              <p style="margin:0 0 30px 0;color:#9ca3af!important;font-size:14px">Wednesday, November 26, 2025</p>
+              <p style="margin:0 0 30px 0;color:#f9fafb!important;font-size:16px;line-height:1.5">Hi {{EMAIL_USERNAME}},</p>
+              <p style="margin:0 0 50px 0;color:#f9fafb!important;font-size:16px;line-height:1.5">Today there was a shooting downtown in Washington DC. Below is a summary of our coverage.</p>
+              <p style="margin:0 0 12px 0;font-size:11px;letter-spacing:0.14em;color:#3b82f6!important;text-transform:uppercase;font-weight:600"><strong>BREAKING:</strong></p>
+              <p style="margin:0 0 20px 0;color:#f9fafb!important;font-size:15px;line-height:1.6">President Trump has delivered a live statement blaming the Washington, D.C. shooting on the Biden administration's security failures and on what he described as "refugee mismanagement," specifically referencing Somali immigrant communities in Minnesota.</p>
+              <p style="margin:0 0 20px 0;color:#f9fafb!important;font-size:15px;line-height:1.6">According to Trump, the suspected shooter entered the United States from Afghanistan in 2021.</p>
+              <p style="margin:0 0 20px 0;color:#f9fafb!important;font-size:15px;line-height:1.6">Trump also announced he is ordering 500 additional National Guard soldiers to be deployed to Washington, D.C.</p>
+              <img src="https://noteworthynews.co/trumpspeech.png" alt="President Trump delivering a statement regarding the Washington, D.C. shooting and announcing additional National Guard deployment" width="100%" style="display:block;width:100%;max-width:100%;border-radius:8px;margin:14px 0 30px 0" />
+              <p style="margin:0 0 12px 0;font-size:11px;letter-spacing:0.14em;color:#3b82f6!important;text-transform:uppercase;font-weight:600"><strong>UPDATE:</strong></p>
+              <p style="margin:0 0 50px 0;color:#f9fafb!important;font-size:15px;line-height:1.6">WASHINGTON (@AP) — Trump calls for reinvestigation of all Afghan refugees who entered under Biden admin after National Guard shooting.</p>
+              <p style="margin:0 0 12px 0;font-size:11px;letter-spacing:0.14em;color:#3b82f6!important;text-transform:uppercase;font-weight:600">Snapshot</p>
+              <p style="margin:0 0 20px 0;color:#9ca3af!important;font-size:13px;font-weight:600">Key developments</p>
+              <ul style="list-style:none;margin:8px 0 40px 0;padding:0">
+                <li style="margin:6px 0;display:flex;align-items:flex-start"><span style="color:#3b82f6!important;font-size:14px;line-height:1;margin-top:3px">★</span><span style="margin-left:8px;font-size:15px;color:#f9fafb!important;line-height:1.6">Two members of the West Virginia National Guard were ambushed and shot in downtown Washington, D.C. while on duty.</span></li>
+                <li style="margin:6px 0;display:flex;align-items:flex-start"><span style="color:#3b82f6!important;font-size:14px;line-height:1;margin-top:3px">★</span><span style="margin-left:8px;font-size:15px;color:#f9fafb!important;line-height:1.6">Governor Morrisey announced earlier today that both Guardsmen have reportedly died, but quickly made another announcement saying that there is conflicting information and federal officials have not confirmed this.</span></li>
+                <li style="margin:6px 0;display:flex;align-items:flex-start"><span style="color:#3b82f6!important;font-size:14px;line-height:1;margin-top:3px">★</span><span style="margin-left:8px;font-size:15px;color:#f9fafb!important;line-height:1.6">The suspect was shot by responding personnel and is hospitalized with serious but non–life-threatening injuries.</span></li>
+                <li style="margin:6px 0;display:flex;align-items:flex-start"><span style="color:#3b82f6!important;font-size:14px;line-height:1;margin-top:3px">★</span><span style="margin-left:8px;font-size:15px;color:#f9fafb!important;line-height:1.6">Conflicting statements from state and federal officials have created uncertainty about the soldiers' current status.</span></li>
+                <li style="margin:6px 0;display:flex;align-items:flex-start"><span style="color:#3b82f6!important;font-size:14px;line-height:1;margin-top:3px">★</span><span style="margin-left:8px;font-size:15px;color:#f9fafb!important;line-height:1.6">Motive is unknown; investigators have not released a timeline.</span></li>
+                <li style="margin:6px 0;display:flex;align-items:flex-start"><span style="color:#3b82f6!important;font-size:14px;line-height:1;margin-top:3px">★</span><span style="margin-left:8px;font-size:15px;color:#f9fafb!important;line-height:1.6">Information remains fluid.</span></li>
+              </ul>
               
-              ${postsHTML}
-              
+              <p style="margin:50px 0 12px 0;font-size:11px;letter-spacing:0.14em;color:#3b82f6!important;text-transform:uppercase;font-weight:600">Governor's statement</p>
+              <img src="https://noteworthynews.co/G6tYeskW8AIyhTl.jpeg" alt="Statement by West Virginia Governor Patrick Morrisey regarding the shooting in Washington, D.C." width="100%" style="display:block;width:100%;max-width:100%;border-radius:8px;margin:10px 0" />
+              <p style="margin:20px 0 8px 0;color:#3b82f6!important;font-size:13px;font-weight:600">What this shows</p>
+              <p style="margin:0 0 50px 0;color:#f9fafb!important;font-size:15px;line-height:1.6">Governor Morrisey's statement reflects the information as he understands it, but federal officials have not confirmed his claim about the soldiers' deaths. His messaging focuses on grief and service, not investigative detail.</p>
+              <p style="margin:0 0 50px 0;color:#f9fafb!important;font-size:15px;line-height:1.6">Notably, no operational timeline or warning-sign discussion has been released yet, which leaves major gaps in understanding what actually unfolded.</p>
+              <p style="margin:50px 0 12px 0;font-size:11px;letter-spacing:0.14em;color:#3b82f6!important;text-transform:uppercase;font-weight:600">President Trump's statement</p>
+              <img src="https://noteworthynews.co/G6tTciHXcAApR3V.jpeg" alt="Statement by President Donald Trump responding to the shooting of two National Guardsmen" width="100%" style="display:block;width:100%;max-width:100%;border-radius:8px;margin:10px 0 50px 0" />
+              <p style="margin:50px 0 12px 0;font-size:11px;letter-spacing:0.14em;color:#3b82f6!important;text-transform:uppercase;font-weight:600">Scene documentation</p>
+              <div style="margin:18px 0 10px 0;padding:10px 12px;border-radius:6px;background:rgba(220,38,38,0.12)!important;border:1px solid rgba(248,113,113,0.5)">
+                <p style="margin:0;font-size:12px;color:#fecaca!important;font-weight:600;text-transform:uppercase;letter-spacing:0.13em">Graphic content</p>
+                <p style="margin:4px 0 0;font-size:13px;color:#f9fafb!important;line-height:1.5">The image below shows a wounded National Guard soldier receiving medical aid at the scene. Viewer discretion is advised.</p>
+              </div>
+              <img src="https://noteworthynews.co/G6tam5dX0AAZELx.jpeg" alt="Wounded National Guard soldier receiving medical aid after the shooting in Washington, D.C." width="100%" style="display:block;width:100%;max-width:100%;border-radius:8px;margin:10px 0 50px 0" />
+              <p style="margin:50px 0 12px 0;font-size:11px;letter-spacing:0.14em;color:#3b82f6!important;text-transform:uppercase;font-weight:600">Suspect & emerging details</p>
+              <img src="https://noteworthynews.co/G6uOL1PaUAASlxA.jpeg" alt="Photo of the alleged suspect in the Washington, D.C. National Guard shooting." width="100%" style="display:block;width:100%;max-width:100%;border-radius:8px;margin:10px 0" />
+              <p style="margin:20px 0 50px 0;color:#f9fafb!important;font-size:15px;line-height:1.6">Authorities have identified the suspect as Rahmanullah Lakanwal, a 29-year-old Afghan national. Early reporting from U.S. outlets indicates he was in the United States without legal status and is now hospitalized after being shot by responding personnel. Investigators have not yet publicly released a full timeline of his movements, prior contacts with law enforcement, or any manifesto or formal statement of motive.</p>
+              <img src="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg" alt="Preview image" width="100%" style="display:block;width:100%;max-width:100%;border-radius:8px;margin:50px 0 20px 0" />
+              <p style="margin:0 0 12px 0;font-size:11px;letter-spacing:0.14em;color:#3b82f6!important;text-transform:uppercase;font-weight:600">What we're watching next</p>
+              <ul style="list-style:none;margin:8px 0 50px 0;padding:0">
+                <li style="margin:6px 0;display:flex;align-items:flex-start"><span style="color:#3b82f6!important;font-size:14px;line-height:1;margin-top:3px">★</span><span style="margin-left:8px;font-size:15px;color:#f9fafb!important;line-height:1.6"><strong>Timeline reconstruction:</strong> When and how the suspect first appeared on law-enforcement radar, and whether any red flags were missed.</span></li>
+                <li style="margin:6px 0;display:flex;align-items:flex-start"><span style="color:#3b82f6!important;font-size:14px;line-height:1;margin-top:3px">★</span><span style="margin-left:8px;font-size:15px;color:#f9fafb!important;line-height:1.6"><strong>Force-protection changes:</strong> Whether the attack leads to new rules of engagement, armor, or posture for Guard deployments in D.C. and other cities.</span></li>
+                <li style="margin:6px 0;display:flex;align-items:flex-start"><span style="color:#3b82f6!important;font-size:14px;line-height:1;margin-top:3px">★</span><span style="margin-left:8px;font-size:15px;color:#f9fafb!important;line-height:1.6"><strong>Federal–state friction:</strong> How federal agencies, D.C. officials, and state leaders like Governor Morrisey coordinate—or clash—over messaging and next steps.</span></li>
+                <li style="margin:6px 0;display:flex;align-items:flex-start"><span style="color:#3b82f6!important;font-size:14px;line-height:1;margin-top:3px">★</span><span style="margin-left:8px;font-size:15px;color:#f9fafb!important;line-height:1.6"><strong>Political framing:</strong> Whether this incident is used primarily to argue for changes in immigration policy, urban security, or both.</span></li>
+                <li style="margin:6px 0;display:flex;align-items:flex-start"><span style="color:#3b82f6!important;font-size:14px;line-height:1;margin-top:3px">★</span><span style="margin-left:8px;font-size:15px;color:#f9fafb!important;line-height:1.6"><strong>Motive and affiliation:</strong> Any evidence that clarifies whether this was a lone-actor attack or connected to a broader network or ideology.</span></li>
+              </ul>
+              <p style="margin:50px 0 20px 0;color:#f9fafb!important;font-size:16px;line-height:1.5">Thank you for reading Noteworthy News.</p>
+              <p style="margin:0;color:#f9fafb!important;font-size:16px;line-height:1.5">Stay informed,<br />The Noteworthy News Team</p>
             </td>
           </tr>
         </table>
-        
-        <!-- Footer - DARK BACKGROUND with seal -->
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #0f0f23;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:650px;margin:0 auto;background-color:#050814!important">
           <tr>
-            <td style="padding: 0 40px 60px 40px; border-top: 1px solid rgba(255,255,255,0.1);">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-                <tr>
-                  <td style="text-align: center; padding: 50px 0 30px 0;">
-                    <img src="https://noteworthynews.co/sealofapp.png" alt="Seal" style="max-width: 80px; height: auto; display: block; margin: 0 auto; opacity: 0.9; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));" />
-                  </td>
-                </tr>
-                <tr>
-                  <td style="text-align: center;">
-                    <p style="margin: 0 0 24px 0; color: #ffffff; font-size: 17px; font-weight: 600; letter-spacing: 0.2px;">Stay informed, stay curious.</p>
-                    <p style="margin: 0 0 40px 0; color: #888; font-size: 14px; line-height: 1.6;">— The Noteworthy News Team</p>
-                    <p style="margin: 0; text-align: center;">
-                      <a href="{{{UNSUBSCRIBE_URL}}}" style="color: #666; font-size: 12px; text-decoration: underline;">Unsubscribe</a>
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-        
-        <!-- Bottom Spacer -->
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-          <tr>
-            <td style="padding: 40px 20px; text-align: center; background-color: #0a0a0a;">
-              <p style="margin: 0; color: #555; font-size: 12px;">Noteworthy News · <a href="https://noteworthynews.co" style="color: #60a5fa; text-decoration: none;">noteworthynews.co</a></p>
+            <td style="padding:30px 20px;text-align:center;background-color:#050814!important;width:100%">
+              <img src="https://noteworthynews.co/nw-logo.GIF" alt="Noteworthy News Logo" style="width:100%;max-width:100%;height:auto;display:block;margin:0 auto 30px;opacity:0.95" />
+              <p style="margin:0 0 6px 0;font-size:11px;color:#6b7280!important;line-height:1.5">You're receiving this email because you subscribed to Noteworthy News.</p>
+              <p style="margin:0;font-size:11px;color:#6b7280!important;line-height:1.5"><a href="{{{UNSUBSCRIBE_URL}}}" style="color:#3b82f6!important;text-decoration:underline;font-weight:500">Unsubscribe</a> · noteworthynews.co</p>
             </td>
           </tr>
         </table>
