@@ -8152,7 +8152,7 @@ function initNewsletterSubscription() {
     const RATE_LIMIT_KEY = 'spotlight_rate_limit';
     const RATE_LIMIT_COUNT = 3; // 3 spotlights per day
     const RATE_LIMIT_DAY_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-
+    
     // Fallback imagery for failed AI generations
     const FALLBACK_IMAGES = [
         '/f41de8d1-cc13-41b2-815c-64e51598326a.png',
@@ -8434,7 +8434,7 @@ function initNewsletterSubscription() {
         // Ensure spotlight music is fully faded out before starting background fade in
         // This creates a smoother transition
         const resumePlayback = () => {
-            // Double-check spotlight is not visible before resuming
+                // Double-check spotlight is not visible before resuming
             if (isSpotlightVisible || isTransitioning) {
                 console.log('Spotlight became visible during resume, aborting');
                 return;
@@ -8453,8 +8453,8 @@ function initNewsletterSubscription() {
             });
             
             // Fade in the background music
-            fadeInAudio(musicElement, targetVolume, () => {
-                // Music has faded in at original volume
+                    fadeInAudio(musicElement, targetVolume, () => {
+                        // Music has faded in at original volume
                 console.log('Background music resumed and faded in');
             });
         };
@@ -8743,14 +8743,14 @@ function initNewsletterSubscription() {
                                 pauseBackgroundMusic();
                                 // Small delay to ensure background fade has started
                                 setTimeout(() => {
-                                    // Try to resume from saved state, otherwise start fresh
-                                    playCountryMusic(currentCountry.name, true);
-                                    
-                                    // Unlock after transition completes
-                                    setTimeout(() => {
-                                        isTransitioning = false;
-                                        window.spotlightTransitioning = false;
-                                    }, 600); // Wait for fade transitions
+                                // Try to resume from saved state, otherwise start fresh
+                                playCountryMusic(currentCountry.name, true);
+                                
+                                // Unlock after transition completes
+                                setTimeout(() => {
+                                    isTransitioning = false;
+                                    window.spotlightTransitioning = false;
+                                }, 600); // Wait for fade transitions
                                 }, 100);
                             } else {
                                 console.log('[Spotlight] No country music available for current country');
@@ -8968,13 +8968,22 @@ function initNewsletterSubscription() {
                         });
                     }
                     
+                    // Ensure prompt is valid and sanitized
+                    const sanitizedPrompt = prompt.trim();
+                    if (!sanitizedPrompt || sanitizedPrompt.length < 3) {
+                        throw new Error('Prompt is too short or empty');
+                    }
+                    if (sanitizedPrompt.length > 500) {
+                        throw new Error('Prompt is too long (max 500 characters)');
+                    }
+                    
                     const response = await fetch(endpoint, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            prompt: prompt,
+                            prompt: sanitizedPrompt,
                             size: '1024x1024',
                             quality: 'standard',
                             style: 'vivid'
@@ -8983,15 +8992,15 @@ function initNewsletterSubscription() {
                     });
                     
                     clearTimeout(timeoutId); // Clear timeout on success
-                    
-                    if (!response.ok) {
-                        const errorText = await response.text().catch(() => 'Unknown error');
-                        let errorData = null;
-                        try {
-                            errorData = JSON.parse(errorText);
-                        } catch {
-                            // Not JSON, use text as is
-                        }
+            
+            if (!response.ok) {
+                const errorText = await response.text().catch(() => 'Unknown error');
+                let errorData = null;
+                try {
+                    errorData = JSON.parse(errorText);
+                } catch {
+                    // Not JSON, use text as is
+                }
                         
                         lastError = { status: response.status, data: errorData || errorText };
                         
@@ -9013,31 +9022,53 @@ function initNewsletterSubscription() {
                             console.error('[Image Generation] ⚠️ Rate limit reached (30 images per hour). Please wait before generating more images.');
                         }
                         
+                        // Don't retry on 400 (Bad Request) - these are client errors, not server errors
                         // Retry on 502, 503, 504 (server errors) or 429 (rate limit)
                         // Also retry on 500 (internal server error) and 408 (timeout)
+                        const isClientError = [400, 401, 403, 404].includes(response.status);
                         const isServerError = [500, 502, 503, 504, 408, 429].includes(response.status);
                         const shouldRetry = isServerError && attempt < retries - 1;
                         
-                        if (shouldRetry) {
+                        if (isClientError) {
+                            // Client errors (400, 401, 403, 404) should not be retried
+                            // Suppress detailed logging for 400 errors to reduce console noise
+                            if (response.status !== 400) {
+                                console.error(`[Image Generation] ❌ Client error (${response.status}):`, {
+                                    error: errorData || errorText,
+                                    prompt: prompt.substring(0, 50) + '...'
+                                });
+                            }
+                            return null; // Don't retry client errors
+                        } else if (shouldRetry) {
                             // Progressive backoff: start with 2s, increase gradually, max 30s
                             const baseDelay = 2000;
                             const delay = Math.min(baseDelay * Math.pow(1.5, attempt), 30000);
-                            console.warn(`[Image Generation] Retrying after ${delay}ms (attempt ${attempt + 1}/${retries})`);
+                            // Suppress retry logs to reduce console noise
                             await new Promise(resolve => setTimeout(resolve, delay));
                             continue; // Retry
-                        } else if (attempt < retries - 1) {
-                            // For other errors, still retry but with longer delay
-                            const delay = Math.min(5000 * Math.pow(1.5, attempt), 30000);
-                            console.warn(`[Image Generation] Retrying after ${delay}ms (attempt ${attempt + 1}/${retries})`);
-                            await new Promise(resolve => setTimeout(resolve, delay));
-                            continue;
                         } else {
-                            // Log final error after all retries exhausted
-                            console.error(`[Image Generation] ❌ Failed after ${retries} attempts:`, {
-                                status: response.status,
-                                error: errorData || errorText,
-                                prompt: prompt.substring(0, 50) + '...'
-                            });
+                            // Log final error after all retries exhausted (only for non-400 errors)
+                            if (response.status !== 400) {
+                                console.error(`[Image Generation] ❌ Failed after ${retries} attempts:`, {
+                                    status: response.status,
+                                    error: errorData || errorText,
+                                    prompt: prompt.substring(0, 50) + '...'
+                                });
+                            }
+                            // For 400 errors, log the actual OpenAI error message for debugging
+                            if (response.status === 400) {
+                                const openAIError = errorData?.error?.message || errorData?.message || errorText || 'Bad Request';
+                                console.error('[Image Generation] OpenAI rejected prompt:', {
+                                    status: 400,
+                                    error: openAIError,
+                                    prompt: prompt.substring(0, 100),
+                                    fullError: errorData
+                                });
+                                const error = new Error(`Image generation failed: ${openAIError}`);
+                                error.status = 400;
+                                error.openAIError = openAIError;
+                                throw error;
+                            }
                             return null;
                         }
                     }
@@ -9092,7 +9123,7 @@ function initNewsletterSubscription() {
                     }
                     
                     // Prefer storedImageUrl (permanent) but fallback to imageUrl (temporary, expires in 1 hour)
-                    const imageUrl = data.storedImageUrl || data.imageUrl || null;
+            const imageUrl = data.storedImageUrl || data.imageUrl || null;
                     
                     // Log what we received
                     if (attempt === 0) {
@@ -9105,7 +9136,7 @@ function initNewsletterSubscription() {
                         });
                     }
                     
-                    if (!imageUrl) {
+            if (!imageUrl) {
                         // Always retry if no URL returned (unless we've exhausted all attempts)
                         if (attempt < retries - 1) {
                             const delay = Math.min(3000 * Math.pow(1.5, attempt), 30000);
@@ -9130,10 +9161,10 @@ function initNewsletterSubscription() {
                     // Success! Only log if we had to retry
                     if (attempt > 0) {
                         // Suppress success logs to reduce console noise
-                    }
-                    return imageUrl;
+            }
+            return imageUrl;
                     
-                } catch (error) {
+        } catch (error) {
                     lastError = error;
                     
                     // Retry on network errors or timeout - always retry unless we've exhausted all attempts
@@ -9149,16 +9180,23 @@ function initNewsletterSubscription() {
                         if (error.name !== 'AbortError' && !error.message?.includes('502')) {
                             console.error(`Image generation error after ${retries} attempts:`, error);
                         }
-                        return null;
+            return null;
                     }
                 }
             }
             
-            // All retries exhausted - but don't give up! Queue for background retry
+            // All retries exhausted
+            // Don't queue 400 errors for background retry (client errors shouldn't be retried)
+            if (lastError && lastError.status === 400) {
+                // 400 errors are client errors - don't retry
+                return null;
+            }
+            
             if (lastError) {
-                // Suppress background retry warnings for 502 errors to reduce console spam
+                // Suppress background retry warnings for 502 and 400 errors to reduce console spam
                 const is502Error = lastError.status === 502 || lastError.message?.includes('502') || lastError.message?.includes('Bad Gateway');
-                if (!is502Error) {
+                const is400Error = lastError.status === 400;
+                if (!is502Error && !is400Error) {
                     console.warn(`Image generation failed after ${retries} attempts, will retry in background:`, lastError);
                 }
                 // Note: We can't queue here because we don't have wrapperId in this scope
@@ -9342,7 +9380,7 @@ function initNewsletterSubscription() {
                         };
                         verifyWrapper.appendChild(retryImg);
                     }
-                } else {
+        } else {
                     console.log(`[Spotlight] ✅ Image element verified in DOM for ${wrapperId}`);
                 }
             }, 100);
@@ -9361,7 +9399,12 @@ function initNewsletterSubscription() {
         for (const [prompt, data] of failedImageRequests.entries()) {
             // Skip if we've retried too many times
             if (data.retryCount >= maxRetries) {
-                console.log(`Stopped retrying image for prompt after ${maxRetries} attempts`);
+                failedImageRequests.delete(prompt);
+                continue;
+            }
+            
+            // Skip if this was a 400 error (client error - don't retry)
+            if (data.status === 400) {
                 failedImageRequests.delete(prompt);
                 continue;
             }
@@ -9371,8 +9414,7 @@ function initNewsletterSubscription() {
                 continue;
             }
             
-            // Try again
-            console.log(`Background retry ${data.retryCount + 1}/${maxRetries} for image: ${prompt.substring(0, 50)}...`);
+            // Try again (suppress logs to reduce console noise)
             data.lastAttempt = now;
             data.retryCount++;
             
@@ -9386,7 +9428,7 @@ function initNewsletterSubscription() {
                     failedImageRequests.set(prompt, data);
                 }
             } catch (error) {
-                console.error('Background retry failed:', error);
+                // Suppress error logs for background retries to reduce console noise
                 // Keep in queue for next retry cycle
                 failedImageRequests.set(prompt, data);
             }
@@ -9773,7 +9815,7 @@ function initNewsletterSubscription() {
                 // Only set placeholder if wrapper doesn't already have an img element loading
                 const existingImg = flagWrapper.querySelector('img');
                 if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
-                    flagWrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                flagWrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
                 } else {
                     console.log('[Spotlight] Flag image wrapper already has an image, skipping placeholder');
                 }
@@ -9781,7 +9823,7 @@ function initNewsletterSubscription() {
             if (!hasCulture1Image && culture1Wrapper) {
                 const existingImg = culture1Wrapper.querySelector('img');
                 if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
-                    culture1Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                culture1Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
                 } else {
                     console.log('[Spotlight] Culture1 image wrapper already has an image, skipping placeholder');
                 }
@@ -9789,7 +9831,7 @@ function initNewsletterSubscription() {
             if (!hasCulture2Image && culture2Wrapper) {
                 const existingImg = culture2Wrapper.querySelector('img');
                 if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
-                    culture2Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                culture2Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
                 } else {
                     console.log('[Spotlight] Culture2 image wrapper already has an image, skipping placeholder');
                 }
@@ -9803,48 +9845,51 @@ function initNewsletterSubscription() {
             
             // Flag image - skip on mobile
             if (!isMobile) {
-                if (!hasFlagImage) {
+            if (!hasFlagImage) {
                     console.log('[Spotlight] Generating flag image for', currentCountry.name);
-                    const flagPrompt = `generate an image of the flag of ${currentCountry.name}, official flag design, high quality`;
-                    imagePromises.push(
+                    // More specific prompt to avoid content policy violations - use descriptive, safe language
+                    const flagPrompt = `A beautiful photograph of the official national flag of ${currentCountry.name}, waving gently in a clear blue sky, high quality and detailed`;
+                imagePromises.push(
                         generateImage(flagPrompt).then(url => {
                             if (url) {
                                 console.log('[Spotlight] ✅ Flag image generated successfully!');
                                 console.log('[Spotlight] Full URL:', url);
                                 console.log('[Spotlight] URL length:', url.length);
                                 console.log('[Spotlight] URL starts with http:', url.startsWith('http'));
-                                loadImageIntoWrapper('flag-image-wrapper', url);
+                        loadImageIntoWrapper('flag-image-wrapper', url);
                             } else {
-                                console.error('[Spotlight] ❌ Flag image generation failed - no URL returned');
-                                console.error('[Spotlight] generateImage returned null/undefined');
+                                // Don't add to retry queue - generateImage already handled retries
+                                // Only server errors should be retried, not client errors (400)
                                 loadImageIntoWrapper('flag-image-wrapper', null);
+                            }
+                        return { type: 'flag', url };
+                    }).catch(error => {
+                            // Suppress error logs for 400 errors to reduce console noise
+                            if (error.status !== 400) {
+                                console.error('[Spotlight] ❌ Error generating flag image:', error);
+                                console.error('[Spotlight] Error details:', {
+                                    message: error.message,
+                                    stack: error.stack?.split('\n').slice(0, 3).join('\n')
+                                });
+                            }
+                        loadImageIntoWrapper('flag-image-wrapper', null);
+                            // Only add to retry queue if it's not a 400 error (client errors shouldn't be retried)
+                            if (error.status !== 400) {
                                 failedImageRequests.set(flagPrompt, {
                                     wrapperId: 'flag-image-wrapper',
                                     retryCount: 0,
-                                    lastAttempt: Date.now()
+                                    lastAttempt: Date.now(),
+                                    status: error.status || null
                                 });
                             }
-                            return { type: 'flag', url };
-                        }).catch(error => {
-                            console.error('[Spotlight] ❌ Error generating flag image:', error);
-                            console.error('[Spotlight] Error details:', {
-                                message: error.message,
-                                stack: error.stack?.split('\n').slice(0, 3).join('\n')
-                            });
-                            loadImageIntoWrapper('flag-image-wrapper', null);
-                            failedImageRequests.set(flagPrompt, {
-                                wrapperId: 'flag-image-wrapper',
-                                retryCount: 0,
-                                lastAttempt: Date.now()
-                            });
-                            return { type: 'flag', url: null };
-                        })
-                    );
-                } else {
-                    // Image already exists, return it
-                    console.log('Flag image already exists, skipping generation');
-                    const existingUrl = flagWrapper.querySelector('img').src;
-                    imagePromises.push(Promise.resolve({ type: 'flag', url: existingUrl }));
+                        return { type: 'flag', url: null };
+                    })
+                );
+            } else {
+                // Image already exists, return it
+                console.log('Flag image already exists, skipping generation');
+                const existingUrl = flagWrapper.querySelector('img').src;
+                imagePromises.push(Promise.resolve({ type: 'flag', url: existingUrl }));
                 }
             } else {
                 // On mobile, hide flag wrapper and skip generation
@@ -9856,35 +9901,38 @@ function initNewsletterSubscription() {
             
             if (!hasCulture1Image) {
                 console.log('[Spotlight] Generating culture1 image for', currentCountry.name);
-                const culture1Prompt = `generate an image showing the culture of ${currentCountry.name}, traditional customs, people, architecture, vibrant and colorful`;
+                // More specific prompt to avoid content policy violations - focus on positive cultural aspects
+                const culture1Prompt = `A vibrant and colorful photograph showcasing the beautiful traditional culture and architecture of ${currentCountry.name}, featuring traditional clothing and scenic landscapes`;
                 imagePromises.push(
                     generateImage(culture1Prompt).then(url => {
                         if (url) {
                             console.log('[Spotlight] ✅ Culture1 image generated successfully!');
                             console.log('[Spotlight] Full URL:', url);
-                            loadImageIntoWrapper('culture1-image-wrapper', url);
+                        loadImageIntoWrapper('culture1-image-wrapper', url);
                         } else {
-                            console.error('[Spotlight] ❌ Culture1 image generation failed - no URL returned');
+                            // Don't add to retry queue - generateImage already handled retries
                             loadImageIntoWrapper('culture1-image-wrapper', null);
-                            failedImageRequests.set(culture1Prompt, {
-                                wrapperId: 'culture1-image-wrapper',
-                                retryCount: 0,
-                                lastAttempt: Date.now()
-                            });
                         }
                         return { type: 'culture1', url };
                     }).catch(error => {
-                        console.error('[Spotlight] ❌ Error generating culture1 image:', error);
-                        console.error('[Spotlight] Error details:', {
-                            message: error.message,
-                            stack: error.stack?.split('\n').slice(0, 3).join('\n')
-                        });
+                        // Suppress error logs for 400 errors to reduce console noise
+                        if (error.status !== 400) {
+                            console.error('[Spotlight] ❌ Error generating culture1 image:', error);
+                            console.error('[Spotlight] Error details:', {
+                                message: error.message,
+                                stack: error.stack?.split('\n').slice(0, 3).join('\n')
+                            });
+                        }
                         loadImageIntoWrapper('culture1-image-wrapper', null);
-                        failedImageRequests.set(culture1Prompt, {
-                            wrapperId: 'culture1-image-wrapper',
-                            retryCount: 0,
-                            lastAttempt: Date.now()
-                        });
+                        // Only add to retry queue if it's not a 400 error (client errors shouldn't be retried)
+                        if (error.status !== 400) {
+                            failedImageRequests.set(culture1Prompt, {
+                                wrapperId: 'culture1-image-wrapper',
+                                retryCount: 0,
+                                lastAttempt: Date.now(),
+                                status: error.status || null
+                            });
+                        }
                         return { type: 'culture1', url: null };
                     })
                 );
@@ -9897,35 +9945,38 @@ function initNewsletterSubscription() {
             
             if (!hasCulture2Image) {
                 console.log('[Spotlight] Generating culture2 image for', currentCountry.name);
-                const culture2Prompt = `generate an image of cultural aspects of ${currentCountry.name}, festivals, food, art, traditional scenes`;
+                // More specific prompt to avoid content policy violations - emphasize positive cultural elements
+                const culture2Prompt = `A beautiful and colorful photograph showcasing cultural festivals, traditional cuisine, and artistic traditions from ${currentCountry.name}, highlighting the rich cultural heritage`;
                 imagePromises.push(
                     generateImage(culture2Prompt).then(url => {
                         if (url) {
                             console.log('[Spotlight] ✅ Culture2 image generated successfully!');
                             console.log('[Spotlight] Full URL:', url);
-                            loadImageIntoWrapper('culture2-image-wrapper', url);
+                        loadImageIntoWrapper('culture2-image-wrapper', url);
                         } else {
-                            console.error('[Spotlight] ❌ Culture2 image generation failed - no URL returned');
+                            // Don't add to retry queue - generateImage already handled retries
                             loadImageIntoWrapper('culture2-image-wrapper', null);
-                            failedImageRequests.set(culture2Prompt, {
-                                wrapperId: 'culture2-image-wrapper',
-                                retryCount: 0,
-                                lastAttempt: Date.now()
-                            });
                         }
                         return { type: 'culture2', url };
                     }).catch(error => {
-                        console.error('[Spotlight] ❌ Error generating culture2 image:', error);
-                        console.error('[Spotlight] Error details:', {
-                            message: error.message,
-                            stack: error.stack?.split('\n').slice(0, 3).join('\n')
-                        });
+                        // Suppress error logs for 400 errors to reduce console noise
+                        if (error.status !== 400) {
+                            console.error('[Spotlight] ❌ Error generating culture2 image:', error);
+                            console.error('[Spotlight] Error details:', {
+                                message: error.message,
+                                stack: error.stack?.split('\n').slice(0, 3).join('\n')
+                            });
+                        }
                         loadImageIntoWrapper('culture2-image-wrapper', null);
-                        failedImageRequests.set(culture2Prompt, {
-                            wrapperId: 'culture2-image-wrapper',
-                            retryCount: 0,
-                            lastAttempt: Date.now()
-                        });
+                        // Only add to retry queue if it's not a 400 error (client errors shouldn't be retried)
+                        if (error.status !== 400) {
+                            failedImageRequests.set(culture2Prompt, {
+                                wrapperId: 'culture2-image-wrapper',
+                                retryCount: 0,
+                                lastAttempt: Date.now(),
+                                status: error.status || null
+                            });
+                        }
                         return { type: 'culture2', url: null };
                     })
                 );
@@ -9985,10 +10036,18 @@ IMPORTANT REQUIREMENTS:
                         throw new Error('No reply from AI');
                     }
                 }).catch(error => {
+                    // Suppress 429 (rate limit) errors - expected behavior
+                    const isRateLimit = error.message?.includes('429') || error.message?.includes('rate limit');
+                    if (!isRateLimit) {
                     console.error('Error fetching AI text content:', error);
+                    }
                     aiThinking.style.display = 'none';
                     if (aiResponse) {
+                        if (isRateLimit) {
+                            aiResponse.innerHTML = '<p style="color: rgba(255, 200, 100, 0.9);">⚠️ Rate limit reached. Please try again in a moment.</p>';
+                        } else {
                         aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Unable to load AI content. Please try again later.</p>';
+                        }
                     }
                     return ''; // Return empty string so Promise.allSettled doesn't fail
                 });
@@ -10001,71 +10060,71 @@ IMPORTANT REQUIREMENTS:
             
             // Process results as they complete (non-blocking - don't await)
             Promise.allSettled(allPromises).then(settledResults => {
-                // Process settled results
-                const results = settledResults.map((result, index) => {
-                    if (result.status === 'fulfilled') {
-                        return result.value;
-                    } else {
-                        // Handle rejected promises
-                        console.error(`Promise ${index} rejected:`, result.reason);
-                        // If it's an image promise (first 3), return null
-                        if (index < 3) {
-                            const imageTypes = ['flag', 'culture1', 'culture2'];
-                            loadImageIntoWrapper(`${imageTypes[index]}-image-wrapper`, null);
-                            return { type: imageTypes[index], url: null };
-                        }
-                        // If it's the text response, return empty string
-                        return '';
+            // Process settled results
+            const results = settledResults.map((result, index) => {
+                if (result.status === 'fulfilled') {
+                    return result.value;
+                } else {
+                    // Handle rejected promises
+                    console.error(`Promise ${index} rejected:`, result.reason);
+                    // If it's an image promise (first 3), return null
+                    if (index < 3) {
+                        const imageTypes = ['flag', 'culture1', 'culture2'];
+                        loadImageIntoWrapper(`${imageTypes[index]}-image-wrapper`, null);
+                        return { type: imageTypes[index], url: null };
                     }
-                });
-                
-                // Collect image URLs
-                const images = {};
-                results.forEach(result => {
-                    if (result && result.type && result.url) {
-                        images[result.type] = result.url;
-                    }
-                });
-                
-                // Get AI response HTML (last result should be the formatted response)
-                const aiResponseHtml = typeof results[results.length - 1] === 'string' ? results[results.length - 1] : aiResponse.innerHTML;
-                
-                // Save to localStorage
-                const dataToSave = {
-                    country: currentCountry,
-                    images: images,
-                    aiResponse: aiResponseHtml,
-                    timestamp: Date.now()
-                };
-                
-                console.log('Saving spotlight data:', {
-                    country: currentCountry.name,
-                    hasImages: Object.keys(images).length > 0,
-                    hasAiResponse: !!aiResponseHtml,
-                    aiResponseLength: aiResponseHtml ? aiResponseHtml.length : 0
-                });
-                
-                saveSpotlightData(dataToSave);
-                
-                // Increment rate limit counter after successful generation
-                incrementRateLimit();
-                
-                // Set 15-second cooldown
-                cooldownUntil = Date.now() + (15 * 1000);
-                startCooldownTimer();
-                
-                // Check if we've reached the limit - hide button but keep content visible
-                const newRateLimit = checkRateLimit();
-                if (!newRateLimit.allowed) {
-                    // Hide the generation button but keep the content visible
-                    if (refreshBtn) {
-                        refreshBtn.style.display = 'none';
-                    }
-                    if (retryBtn) {
-                        retryBtn.style.display = 'none';
-                    }
-                    // Don't hide the section - let them view their last generation
+                    // If it's the text response, return empty string
+                    return '';
                 }
+            });
+            
+            // Collect image URLs
+            const images = {};
+            results.forEach(result => {
+                if (result && result.type && result.url) {
+                    images[result.type] = result.url;
+                }
+            });
+            
+            // Get AI response HTML (last result should be the formatted response)
+            const aiResponseHtml = typeof results[results.length - 1] === 'string' ? results[results.length - 1] : aiResponse.innerHTML;
+            
+            // Save to localStorage
+            const dataToSave = {
+                country: currentCountry,
+                images: images,
+                aiResponse: aiResponseHtml,
+                timestamp: Date.now()
+            };
+            
+            console.log('Saving spotlight data:', {
+                country: currentCountry.name,
+                hasImages: Object.keys(images).length > 0,
+                hasAiResponse: !!aiResponseHtml,
+                aiResponseLength: aiResponseHtml ? aiResponseHtml.length : 0
+            });
+            
+            saveSpotlightData(dataToSave);
+            
+                   // Increment rate limit counter after successful generation
+                   incrementRateLimit();
+                   
+                   // Set 15-second cooldown
+                   cooldownUntil = Date.now() + (15 * 1000);
+                   startCooldownTimer();
+                   
+                   // Check if we've reached the limit - hide button but keep content visible
+                   const newRateLimit = checkRateLimit();
+                   if (!newRateLimit.allowed) {
+                       // Hide the generation button but keep the content visible
+                       if (refreshBtn) {
+                           refreshBtn.style.display = 'none';
+                       }
+                       if (retryBtn) {
+                           retryBtn.style.display = 'none';
+                       }
+                       // Don't hide the section - let them view their last generation
+                   }
             }).catch(err => {
                 console.error('[Spotlight] Error processing results:', err);
             });

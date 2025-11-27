@@ -1871,96 +1871,88 @@
             height: 64px;
         }
         
-        /* Global Coverage Search Bar in Header */
-        .globe-search-container-header {
+        /* Global Coverage Search Bar in Posts Area */
+        .globe-search-container-posts {
             display: flex;
             align-items: center;
             position: relative;
-            margin-left: 1.5rem;
-            min-width: 250px;
-            max-width: 400px;
-            flex: 0 1 auto;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
         }
         
-        .globe-search-icon-header {
+        .globe-search-icon-posts {
             position: absolute;
-            left: 0.75rem;
+            left: 1rem;
             top: 50%;
             transform: translateY(-50%);
             color: rgba(255, 255, 255, 0.5);
-            font-size: 0.875rem;
+            font-size: 1rem;
             pointer-events: none;
             z-index: 1;
         }
         
-        .globe-search-input-header {
+        .globe-search-input-posts {
             width: 100%;
-            height: 36px;
-            padding: 0.5rem 2.5rem 0.5rem 2.5rem;
+            height: 48px;
+            padding: 0.75rem 3rem 0.75rem 3rem;
             background: rgba(255, 255, 255, 0.08);
-            border: 1.5px solid rgba(255, 255, 255, 0.15);
-            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
             color: #fff;
-            font-size: 0.875rem;
+            font-size: 1rem;
             font-weight: 400;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             outline: none;
             box-sizing: border-box;
         }
         
-        .globe-search-input-header::placeholder {
+        .globe-search-input-posts::placeholder {
             color: rgba(255, 255, 255, 0.5);
         }
         
-        .globe-search-input-header:focus {
+        .globe-search-input-posts:focus {
             background: rgba(255, 255, 255, 0.12);
             border-color: #4A90E2;
-            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2), 0 2px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3);
         }
         
-        .globe-search-clear-header {
+        .globe-search-clear-posts {
             position: absolute;
-            right: 0.5rem;
+            right: 0.75rem;
             top: 50%;
             transform: translateY(-50%);
             background: transparent;
             border: none;
             color: rgba(255, 255, 255, 0.6);
-            font-size: 1.25rem;
+            font-size: 1.5rem;
             line-height: 1;
             cursor: pointer;
             padding: 0.25rem;
-            width: 24px;
-            height: 24px;
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 4px;
+            border-radius: 6px;
             transition: all 0.2s ease;
         }
         
-        .globe-search-clear-header:hover {
+        .globe-search-clear-posts:hover {
             background: rgba(255, 107, 107, 0.2);
             color: #ff6b6b;
             transform: translateY(-50%) scale(1.1);
         }
         
-        @media (max-width: 1024px) {
-            .globe-search-container-header {
-                min-width: 200px;
-                max-width: 300px;
-                margin-left: 1rem;
-            }
-        }
-        
         @media (max-width: 768px) {
-            .globe-search-container-header {
-                order: 3;
-                width: 100%;
-                min-width: 100%;
-                max-width: 100%;
-                margin-left: 0;
-                margin-top: 0.5rem;
+            .globe-search-container-posts {
+                margin-bottom: 1rem;
+                padding: 0 1rem;
+            }
+            
+            .globe-search-input-posts {
+                height: 44px;
+                font-size: 0.9375rem;
             }
         }
         
@@ -12402,17 +12394,6 @@
                     <h1><span class="brand-name">Noteworthy News</span></h1>
                     <p>Trusted Journalism & Digital Literacy</p>
                 </div>
-                <!-- Global Coverage Search Bar -->
-                <div class="globe-search-container-header" id="globeSearchContainerHeader" style="display: none;">
-                    <span class="globe-search-icon-header">🔍</span>
-                    <input 
-                        type="text" 
-                        class="globe-search-input-header" 
-                        id="globeSearchInputHeader"
-                        placeholder="Search global coverage..." 
-                    />
-                    <button class="globe-search-clear-header" id="globeSearchClearHeader" title="Clear search" style="display: none;">&times;</button>
-                </div>
             </div>
             
             <!-- Main Navigation -->
@@ -12691,6 +12672,18 @@
             </div>
             
             <div class="news-carousel" role="region" aria-label="News articles carousel">
+            <!-- Global Coverage Search Bar -->
+            <div class="globe-search-container-posts" id="globeSearchContainerPosts" style="display: none; margin-bottom: 1.5rem;">
+                <span class="globe-search-icon-posts">🔍</span>
+                <input 
+                    type="text" 
+                    class="globe-search-input-posts" 
+                    id="globeSearchInputPosts"
+                    placeholder="Search global coverage..." 
+                />
+                <button class="globe-search-clear-posts" id="globeSearchClearPosts" title="Clear search" style="display: none;">&times;</button>
+            </div>
+            
                 <div class="articles-track" id="articlesTrack" role="list" aria-live="polite">
                     <!-- Skeleton loading animation will be shown here immediately, then replaced with actual posts -->
             </div>
@@ -14474,7 +14467,8 @@
         // Verify SDK loaded
         window.addEventListener('load', function() {
             if (typeof createAuth0Client === 'undefined') {
-                console.error('[Auth0] SDK failed to load from CDN. Trying fallback...');
+                // Suppress this warning - fallback will handle it
+                // console.error('[Auth0] SDK failed to load from CDN. Trying fallback...');
                 const script = document.createElement('script');
                 script.src = 'https://unpkg.com/@auth0/auth0-spa-js@2.4/dist/auth0-spa-js.production.js';
                 script.onload = function() {

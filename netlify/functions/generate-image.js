@@ -186,7 +186,15 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
       } else if (r.status === 429) {
         errorMessage = "Rate limit exceeded. Please try again in a moment.";
       } else if (r.status === 400) {
-        errorMessage = errorData.error?.message || "Invalid request. The prompt may contain content that violates OpenAI's policy.";
+        // Log the actual error from OpenAI for debugging
+        console.error("OpenAI 400 error details:", JSON.stringify(errorData, null, 2));
+        errorMessage = errorData.error?.message || errorData.message || "Invalid request. The prompt may contain content that violates OpenAI's policy.";
+        // Include more details in the response for debugging
+        console.error("Full OpenAI 400 error response:", {
+          status: r.status,
+          errorData: errorData,
+          prompt: prompt.substring(0, 100)
+        });
       } else if (r.status >= 500) {
         errorMessage = "OpenAI service error. Please try again later.";
       }

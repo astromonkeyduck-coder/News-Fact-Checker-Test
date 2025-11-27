@@ -1562,36 +1562,36 @@ class CiaMissionGlobe {
       ${activeMarkup}
     `;
     
-    // Connect to header search bar if it exists
-    const headerSearchInput = document.getElementById('globeSearchInputHeader');
-    const headerSearchContainer = document.getElementById('globeSearchContainerHeader');
-    const headerClearBtn = document.getElementById('globeSearchClearHeader');
+    // Connect to posts area search bar if it exists
+    const postsSearchInput = document.getElementById('globeSearchInputPosts');
+    const postsSearchContainer = document.getElementById('globeSearchContainerPosts');
+    const postsClearBtn = document.getElementById('globeSearchClearPosts');
     
-    if (headerSearchInput && headerSearchContainer) {
-      // Show the header search container
-      headerSearchContainer.style.display = 'flex';
+    if (postsSearchInput && postsSearchContainer) {
+      // Show the posts search container
+      postsSearchContainer.style.display = 'flex';
       
-      // Sync value with header input
-      headerSearchInput.value = this.searchQuery || '';
+      // Sync value with posts input
+      postsSearchInput.value = this.searchQuery || '';
       
       // Show/hide clear button
-      if (headerClearBtn) {
-        headerClearBtn.style.display = this.searchQuery ? 'flex' : 'none';
+      if (postsClearBtn) {
+        postsClearBtn.style.display = this.searchQuery ? 'flex' : 'none';
       }
       
       // Sync search functionality
       let searchTimeout;
-      headerSearchInput.addEventListener('input', (e) => {
+      postsSearchInput.addEventListener('input', (e) => {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
           this.searchPosts(e.target.value);
-          if (headerClearBtn) {
-            headerClearBtn.style.display = e.target.value ? 'flex' : 'none';
+          if (postsClearBtn) {
+            postsClearBtn.style.display = e.target.value ? 'flex' : 'none';
           }
         }, 300);
       });
       
-      headerSearchInput.addEventListener('keydown', (e) => {
+      postsSearchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
           clearTimeout(searchTimeout);
@@ -1599,11 +1599,11 @@ class CiaMissionGlobe {
         }
       });
       
-      if (headerClearBtn) {
-        headerClearBtn.addEventListener('click', () => {
-          headerSearchInput.value = '';
+      if (postsClearBtn) {
+        postsClearBtn.addEventListener('click', () => {
+          postsSearchInput.value = '';
           this.searchPosts('');
-          headerClearBtn.style.display = 'none';
+          postsClearBtn.style.display = 'none';
         });
       }
     }
