@@ -9720,8 +9720,7 @@ function initNewsletterSubscription() {
             spotlightLoading.style.display = 'none';
             spotlightContent.style.display = 'block';
             
-            // Ensure images container is visible when content is shown
-            const imagesContainer = document.getElementById('spotlight-images-container');
+            // Ensure images container is visible when content is shown (reuse existing variable)
             if (imagesContainer) {
                 imagesContainer.style.display = 'block';
                 const imagesGrid = imagesContainer.querySelector('.spotlight-images-grid');
