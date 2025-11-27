@@ -472,44 +472,55 @@ exports.handler = async (event, context) => {
     // SAFETY CHECK: If we get here, testEmail was NOT provided, so we're sending to audience
     console.log('📧 PRODUCTION MODE: Sending to full audience (testEmail was not provided)');
 
-    // SAFETY: Check for recent send to prevent spam
+    // SAFETY: Check for recent send to prevent spam (but allow override)
     const { getStore } = require("@netlify/blobs");
     let lastSendTime = null;
     const COOLDOWN_HOURS = 24; // Minimum 24 hours between sends
+    const forceSend = newsletterData.forceSend === true; // Allow bypassing cooldown
     
-    try {
-      const store = getStore({
-        name: "newsletter-data",
-        siteID: process.env.NETLIFY_SITE_ID,
-        token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
-      });
-      
-      const lastSendData = await store.get("last-send-time", { type: "json" });
-      if (lastSendData && lastSendData.timestamp) {
-        lastSendTime = new Date(lastSendData.timestamp);
-        const hoursSinceLastSend = (Date.now() - lastSendTime.getTime()) / (1000 * 60 * 60);
+    if (!forceSend) {
+      try {
+        const store = getStore({
+          name: "newsletter-data",
+          siteID: process.env.NETLIFY_SITE_ID,
+          token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+        });
         
-        if (hoursSinceLastSend < COOLDOWN_HOURS) {
-          const remainingHours = Math.ceil(COOLDOWN_HOURS - hoursSinceLastSend);
-          return {
-            statusCode: 429,
-            headers,
-            body: JSON.stringify({
-              error: 'Cooldown period active',
-              message: `Cannot send newsletter yet. Last send was ${Math.floor(hoursSinceLastSend)} hours ago. Please wait ${remainingHours} more hour(s) before sending again.`,
-              lastSendTime: lastSendTime.toISOString(),
-              hoursSinceLastSend: Math.floor(hoursSinceLastSend),
-              remainingHours: remainingHours,
-            }),
-          };
+        const lastSendData = await store.get("last-send-time", { type: "json" });
+        if (lastSendData && lastSendData.timestamp) {
+          lastSendTime = new Date(lastSendData.timestamp);
+          const hoursSinceLastSend = (Date.now() - lastSendTime.getTime()) / (1000 * 60 * 60);
+          
+          if (hoursSinceLastSend < COOLDOWN_HOURS) {
+            const remainingHours = Math.ceil(COOLDOWN_HOURS - hoursSinceLastSend);
+            return {
+              statusCode: 429,
+              headers,
+              body: JSON.stringify({
+                error: 'Cooldown period active',
+                message: `Cannot send newsletter yet. Last send was ${Math.floor(hoursSinceLastSend)} hours ago. Please wait ${remainingHours} more hour(s) before sending again. Add "forceSend: true" to bypass.`,
+                lastSendTime: lastSendTime.toISOString(),
+                hoursSinceLastSend: Math.floor(hoursSinceLastSend),
+                remainingHours: remainingHours,
+              }),
+            };
+          }
+          
+          console.log(`⏰ Last newsletter was sent ${Math.floor(hoursSinceLastSend)} hours ago (cooldown: ${COOLDOWN_HOURS} hours)`);
         }
-        
-        console.log(`⏰ Last newsletter was sent ${Math.floor(hoursSinceLastSend)} hours ago (cooldown: ${COOLDOWN_HOURS} hours)`);
+      } catch (cooldownError) {
+        console.warn('⚠️ Could not check last send time (continuing anyway):', cooldownError.message);
+        // Don't block sending if we can't check - might be first time
       }
-    } catch (cooldownError) {
-      console.warn('⚠️ Could not check last send time (continuing anyway):', cooldownError.message);
-      // Don't block sending if we can't check - might be first time
+    } else {
+      console.log('⚠️ FORCE SEND enabled - bypassing cooldown check');
     }
+    
+    // Get list of emails to skip (those who already received it)
+    const skipEmails = newsletterData.skipEmails || [];
+    const alwaysIncludeEmails = newsletterData.alwaysIncludeEmails || ['mr.pangolinman@gmail.com']; // Always include test email
+    console.log(`📋 Skipping ${skipEmails.length} emails that already received it:`, skipEmails);
+    console.log(`📋 Always including ${alwaysIncludeEmails.length} emails:`, alwaysIncludeEmails);
 
     console.log('Fetching contacts from audience:', NEWSLETTER_AUDIENCE_ID);
 
@@ -631,8 +642,11 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Validate email addresses before sending
+    // Validate email addresses before sending and filter out skipped emails
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const skipEmailsLower = skipEmails.map(e => e.toLowerCase().trim());
+    const alwaysIncludeEmailsLower = alwaysIncludeEmails.map(e => e.toLowerCase().trim());
+    
     const validContacts = allContacts.filter(contact => {
       if (!contact.email) {
         console.warn(`⚠️ Contact missing email:`, contact);
@@ -642,14 +656,30 @@ exports.handler = async (event, context) => {
         console.warn(`⚠️ Invalid email format: ${contact.email}`);
         return false;
       }
+      
+      const emailLower = contact.email.toLowerCase().trim();
+      
+      // Always include emails in the alwaysIncludeEmails list
+      if (alwaysIncludeEmailsLower.includes(emailLower)) {
+        console.log(`✅ Always including: ${contact.email}`);
+        return true;
+      }
+      
+      // Skip emails that already received it
+      if (skipEmailsLower.includes(emailLower)) {
+        console.log(`⏭️  Skipping ${contact.email} (already received)`);
+        return false;
+      }
+      
       return true;
     });
 
     if (validContacts.length < allContacts.length) {
-      console.warn(`⚠️ Filtered out ${allContacts.length - validContacts.length} contacts with invalid emails`);
+      const filtered = allContacts.length - validContacts.length;
+      console.warn(`⚠️ Filtered out ${filtered} contacts (invalid emails or already sent)`);
     }
 
-    console.log(`\n📧 Sending to ${validContacts.length} valid email addresses`);
+    console.log(`\n📧 Sending to ${validContacts.length} valid email addresses (skipped ${skipEmails.length} that already received it)`);
 
     // Send newsletter to all valid contacts
     // Resend allows sending to multiple recipients, but we'll send individually

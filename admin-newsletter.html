@@ -502,6 +502,26 @@ To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
             showStatus('Sending newsletter to all subscribers. This may take a few minutes...', 'info');
             
             try {
+                // Get skip emails from user input (emails that already received it)
+                const skipEmailsInput = prompt(
+                    'Enter emails to SKIP (already received it), separated by commas:\n\n' +
+                    'Example: charlie.desena2007@gmail.com, desenach@lhprep.org, heshso@lhprep.org\n\n' +
+                    'Leave empty if none, or type "default" to use: charlie.desena2007@gmail.com, desenach@lhprep.org, heshso@lhprep.org, adkinsri@lhprep.org, adkinsra@lhprep.org'
+                );
+                
+                let skipEmails = [];
+                if (skipEmailsInput && skipEmailsInput.trim().toLowerCase() === 'default') {
+                    skipEmails = [
+                        'charlie.desena2007@gmail.com',
+                        'desenach@lhprep.org',
+                        'heshso@lhprep.org',
+                        'adkinsri@lhprep.org',
+                        'adkinsra@lhprep.org'
+                    ];
+                } else if (skipEmailsInput && skipEmailsInput.trim()) {
+                    skipEmails = skipEmailsInput.split(',').map(e => e.trim()).filter(e => e);
+                }
+                
                 const response = await fetch('/.netlify/functions/send-newsletter', {
                     method: 'POST',
                     headers: {
@@ -512,6 +532,9 @@ To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
                         html: html,
                         text: text || undefined,
                         includeRecentPosts: includeRecentPosts,
+                        forceSend: true, // Bypass cooldown
+                        skipEmails: skipEmails,
+                        alwaysIncludeEmails: ['mr.pangolinman@gmail.com'], // Always include test email
                     }),
                 });
                 
