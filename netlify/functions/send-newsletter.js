@@ -472,6 +472,45 @@ exports.handler = async (event, context) => {
     // SAFETY CHECK: If we get here, testEmail was NOT provided, so we're sending to audience
     console.log('📧 PRODUCTION MODE: Sending to full audience (testEmail was not provided)');
 
+    // SAFETY: Check for recent send to prevent spam
+    const { getStore } = require("@netlify/blobs");
+    let lastSendTime = null;
+    const COOLDOWN_HOURS = 24; // Minimum 24 hours between sends
+    
+    try {
+      const store = getStore({
+        name: "newsletter-data",
+        siteID: process.env.NETLIFY_SITE_ID,
+        token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+      });
+      
+      const lastSendData = await store.get("last-send-time", { type: "json" });
+      if (lastSendData && lastSendData.timestamp) {
+        lastSendTime = new Date(lastSendData.timestamp);
+        const hoursSinceLastSend = (Date.now() - lastSendTime.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursSinceLastSend < COOLDOWN_HOURS) {
+          const remainingHours = Math.ceil(COOLDOWN_HOURS - hoursSinceLastSend);
+          return {
+            statusCode: 429,
+            headers,
+            body: JSON.stringify({
+              error: 'Cooldown period active',
+              message: `Cannot send newsletter yet. Last send was ${Math.floor(hoursSinceLastSend)} hours ago. Please wait ${remainingHours} more hour(s) before sending again.`,
+              lastSendTime: lastSendTime.toISOString(),
+              hoursSinceLastSend: Math.floor(hoursSinceLastSend),
+              remainingHours: remainingHours,
+            }),
+          };
+        }
+        
+        console.log(`⏰ Last newsletter was sent ${Math.floor(hoursSinceLastSend)} hours ago (cooldown: ${COOLDOWN_HOURS} hours)`);
+      }
+    } catch (cooldownError) {
+      console.warn('⚠️ Could not check last send time (continuing anyway):', cooldownError.message);
+      // Don't block sending if we can't check - might be first time
+    }
+
     console.log('Fetching contacts from audience:', NEWSLETTER_AUDIENCE_ID);
 
     // Get all contacts from the audience
@@ -759,6 +798,29 @@ exports.handler = async (event, context) => {
       errors.forEach(e => console.log(`     - ${e.email}: ${e.error}`));
     }
 
+    // SAFETY: Store the send time to prevent spam
+    if (successCount > 0) {
+      try {
+        const { getStore } = require("@netlify/blobs");
+        const store = getStore({
+          name: "newsletter-data",
+          siteID: process.env.NETLIFY_SITE_ID,
+          token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+        });
+        
+        await store.set("last-send-time", JSON.stringify({
+          timestamp: new Date().toISOString(),
+          emailsSent: successCount,
+          totalContacts: validContacts.length,
+          subject: subject,
+        }));
+        console.log('💾 Saved send time to prevent duplicate sends');
+      } catch (saveError) {
+        console.warn('⚠️ Could not save send time:', saveError.message);
+        // Don't fail the request if we can't save
+      }
+    }
+
     return {
       statusCode: 200,
       headers,
@@ -777,6 +839,7 @@ exports.handler = async (event, context) => {
         }).map(e => e.email),
         successfulEmails: successfulEmails,
         failedEmails: errors.map(e => e.email),
+        sendTime: new Date().toISOString(),
       }),
     };
 

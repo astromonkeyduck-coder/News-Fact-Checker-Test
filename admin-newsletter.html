@@ -471,6 +471,32 @@ To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
                 html = undefined;
             }
             
+            // SAFETY: Confirmation dialog before sending to full audience
+            const confirmed = confirm(
+                '⚠️ WARNING: This will send an email to ALL subscribers in your audience.\n\n' +
+                `Subject: "${subject}"\n\n` +
+                'Are you absolutely sure you want to send this newsletter?\n\n' +
+                'Click OK to proceed, or Cancel to go back.'
+            );
+            
+            if (!confirmed) {
+                showStatus('Send cancelled', 'info');
+                return;
+            }
+            
+            // Double confirmation
+            const doubleConfirmed = confirm(
+                '⚠️ FINAL CONFIRMATION\n\n' +
+                'This will send the newsletter to your entire audience.\n\n' +
+                'This action cannot be undone.\n\n' +
+                'Click OK one more time to send.'
+            );
+            
+            if (!doubleConfirmed) {
+                showStatus('Send cancelled', 'info');
+                return;
+            }
+            
             sendBtn.disabled = true;
             sendBtn.textContent = 'Sending...';
             showStatus('Sending newsletter to all subscribers. This may take a few minutes...', 'info');
