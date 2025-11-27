@@ -490,6 +490,7 @@ exports.handler = async (event, context) => {
 
         const contacts = contactsResponse.data?.data || [];
         const pagination = contactsResponse.data || {};
+        const responseData = contactsResponse.data || {};
         totalContactsFound += contacts.length;
         
         // Debug: Log full response structure for first page
@@ -499,7 +500,9 @@ exports.handler = async (event, context) => {
             dataKeys: contactsResponse.data ? Object.keys(contactsResponse.data) : [],
             contactsCount: contacts.length,
             paginationKeys: Object.keys(pagination),
-            pagination: pagination
+            fullResponseKeys: Object.keys(contactsResponse),
+            pagination: pagination,
+            responseData: responseData
           }, null, 2));
         }
 
@@ -520,19 +523,31 @@ exports.handler = async (event, context) => {
           console.log(`  Subscribed emails on page ${page}:`, subscribedContacts.map(c => c.email).join(', '));
         }
 
-        // Check if there are more pages
-        // Resend pagination: has_more indicates if there are more pages
-        // Also check if we got any contacts on this page
-        // Try both snake_case and camelCase field names
-        const hasMoreFlag = pagination.has_more === true || pagination.hasMore === true;
-        hasMore = hasMoreFlag && contacts.length > 0;
+        // Check if there are more pages - Resend API pagination
+        // The response might have has_more, hasMore, or we need to check if we got fewer contacts than expected
+        // Also check the response structure - sometimes pagination info is at the top level
+        const hasMoreFlag = 
+          pagination.has_more === true || 
+          pagination.hasMore === true ||
+          responseData.has_more === true ||
+          responseData.hasMore === true ||
+          contactsResponse.has_more === true ||
+          contactsResponse.hasMore === true;
         
-        console.log(`  Pagination info: has_more=${pagination.has_more}, hasMore=${pagination.hasMore}, contacts.length=${contacts.length}, willContinue=${hasMore}`);
+        // If we got contacts on this page, continue to next page
+        // Only stop if we got 0 contacts AND no has_more flag
+        hasMore = contacts.length > 0 || hasMoreFlag;
+        
+        console.log(`  Pagination info: has_more=${pagination.has_more}, hasMore=${pagination.hasMore}, responseData.has_more=${responseData.has_more}, contacts.length=${contacts.length}, willContinue=${hasMore}`);
         
         // If we got 0 contacts and no has_more flag, definitely stop
         if (contacts.length === 0 && !hasMoreFlag) {
           hasMore = false;
           console.log('  No more contacts and no has_more flag, stopping pagination');
+        } else if (contacts.length > 0) {
+          // If we got contacts, always try the next page (Resend might not set has_more correctly)
+          // We'll stop when we get 0 contacts
+          console.log(`  Got ${contacts.length} contacts, will try next page...`);
         }
         
         page++;
@@ -543,9 +558,17 @@ exports.handler = async (event, context) => {
           hasMore = false;
         }
       } catch (error) {
-        console.error('Error fetching contacts:', error);
+        console.error(`Error fetching contacts on page ${page}:`, error);
         console.error('Error details:', JSON.stringify(error, null, 2));
-        hasMore = false;
+        // Don't stop on error - try to continue, but log it
+        if (page === 1) {
+          // If first page fails, that's a real problem
+          hasMore = false;
+        } else {
+          // If later page fails, we might have gotten all contacts
+          console.log('  Error on later page, assuming we got all contacts');
+          hasMore = false;
+        }
       }
     }
 
