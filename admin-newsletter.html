@@ -232,7 +232,7 @@
             
             <div class="form-group">
                 <label for="testEmail">Test Email Address</label>
-                <input type="email" id="testEmail" name="testEmail" placeholder="mr.pangolinman@gmail.com" value="mr.pangolinman@gmail.com">
+                <input type="email" id="testEmail" name="testEmail" placeholder="Enter test email address">
                 <p class="help-text">Send a test email to this address before sending to your full audience</p>
             </div>
             
@@ -510,20 +510,12 @@ To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
                 // Get skip emails from user input (emails that already received it)
                 const skipEmailsInput = prompt(
                     'Enter emails to SKIP (already received it), separated by commas:\n\n' +
-                    'Example: charlie.desena2007@gmail.com, desenach@lhprep.org, heshso@lhprep.org\n\n' +
-                    'Leave empty if none, or type "default" to use: charlie.desena2007@gmail.com, desenach@lhprep.org, heshso@lhprep.org, adkinsri@lhprep.org, adkinsra@lhprep.org'
+                    'Example: email1@example.com, email2@example.com\n\n' +
+                    'Leave empty if none.'
                 );
                 
                 let skipEmails = [];
-                if (skipEmailsInput && skipEmailsInput.trim().toLowerCase() === 'default') {
-                    skipEmails = [
-                        'charlie.desena2007@gmail.com',
-                        'desenach@lhprep.org',
-                        'heshso@lhprep.org',
-                        'adkinsri@lhprep.org',
-                        'adkinsra@lhprep.org'
-                    ];
-                } else if (skipEmailsInput && skipEmailsInput.trim()) {
+                if (skipEmailsInput && skipEmailsInput.trim()) {
                     skipEmails = skipEmailsInput.split(',').map(e => e.trim()).filter(e => e);
                 }
                 
@@ -543,7 +535,7 @@ To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
                         includeRecentPosts: includeRecentPosts,
                         forceSend: true, // Bypass cooldown
                         skipEmails: skipEmails,
-                        alwaysIncludeEmails: ['mr.pangolinman@gmail.com'], // Always include test email
+                        alwaysIncludeEmails: [], // No default emails to always include
                         token: adminToken || '', // Also send in body for compatibility
                     }),
                 });

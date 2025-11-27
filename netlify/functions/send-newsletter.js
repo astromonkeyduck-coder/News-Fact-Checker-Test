@@ -434,7 +434,7 @@ exports.handler = async (event, context) => {
     const emailsToSend = newsletterData.sendToEmails || (testEmail ? [testEmail] : null);
     
     if (emailsToSend && emailsToSend.length > 0) {
-      console.log(`📧 SENDING TO SPECIFIC EMAILS: ${emailsToSend.join(', ')} - WILL NOT SEND TO AUDIENCE`);
+      console.log(`📧 SENDING TO SPECIFIC EMAILS: ${emailsToSend.length} email(s) - WILL NOT SEND TO AUDIENCE`);
       
       const results = [];
       let successCount = 0;
@@ -564,9 +564,15 @@ exports.handler = async (event, context) => {
     
     // Get list of emails to skip (those who already received it)
     const skipEmails = newsletterData.skipEmails || [];
-    const alwaysIncludeEmails = newsletterData.alwaysIncludeEmails || ['mr.pangolinman@gmail.com']; // Always include test email
-    console.log(`📋 Skipping ${skipEmails.length} emails that already received it:`, skipEmails);
-    console.log(`📋 Always including ${alwaysIncludeEmails.length} emails:`, alwaysIncludeEmails);
+    const alwaysIncludeEmails = newsletterData.alwaysIncludeEmails || [];
+    console.log(`📋 Skipping ${skipEmails.length} emails that already received it`);
+    if (skipEmails.length > 0) {
+      console.log(`📋 Skip list contains ${skipEmails.length} email(s)`);
+    }
+    console.log(`📋 Always including ${alwaysIncludeEmails.length} emails`);
+    if (alwaysIncludeEmails.length > 0) {
+      console.log(`📋 Always-include list contains ${alwaysIncludeEmails.length} email(s)`);
+    }
 
     console.log('Fetching contacts from audience:', NEWSLETTER_AUDIENCE_ID);
 
@@ -614,9 +620,9 @@ exports.handler = async (event, context) => {
         allContacts = allContacts.concat(subscribedContacts);
         console.log(`Page ${page}: Found ${subscribedContacts.length} subscribed contacts (${contacts.length} total on this page, ${totalUnsubscribed} unsubscribed so far)`);
         
-        // Log email addresses for debugging
+        // Log count only (don't expose email addresses in logs)
         if (subscribedContacts.length > 0) {
-          console.log(`  Subscribed emails on page ${page}:`, subscribedContacts.map(c => c.email).join(', '));
+          console.log(`  Found ${subscribedContacts.length} subscribed contact(s) on page ${page}`);
         }
 
         // Check if there are more pages - Resend API pagination
@@ -707,13 +713,13 @@ exports.handler = async (event, context) => {
       
       // Always include emails in the alwaysIncludeEmails list
       if (alwaysIncludeEmailsLower.includes(emailLower)) {
-        console.log(`✅ Always including: ${contact.email}`);
+        console.log(`✅ Always including 1 contact (email in always-include list)`);
         return true;
       }
       
       // Skip emails that already received it
       if (skipEmailsLower.includes(emailLower)) {
-        console.log(`⏭️  Skipping ${contact.email} (already received)`);
+        console.log(`⏭️  Skipping 1 contact (already received)`);
         return false;
       }
       
@@ -795,7 +801,7 @@ exports.handler = async (event, context) => {
         
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
           try {
-            console.log(`  [${batchNumber}-${index + 1}] Attempt ${attempt}/${maxRetries}: Sending to ${email}...`);
+            console.log(`  [${batchNumber}-${index + 1}] Attempt ${attempt}/${maxRetries}: Sending email...`);
             
             const result = await resend.emails.send({
               from: fromEmail,
@@ -812,7 +818,7 @@ exports.handler = async (event, context) => {
               throw new Error(result.error.message || 'Unknown error');
             }
 
-            console.log(`  ✅ [${batchNumber}-${index + 1}] Successfully sent to ${email} (ID: ${result.data?.id})`);
+            console.log(`  ✅ [${batchNumber}-${index + 1}] Successfully sent (ID: ${result.data?.id})`);
             return { success: true, email, id: result.data?.id };
           } catch (error) {
             lastError = error;
@@ -826,15 +832,15 @@ exports.handler = async (event, context) => {
             
             if (isBounce && attempt === 1) {
               // Don't retry bounces - they're permanent failures
-              console.log(`  ❌ [${batchNumber}-${index + 1}] BOUNCE/SUPPRESSION for ${email}: ${errorMsg}`);
+              console.log(`  ❌ [${batchNumber}-${index + 1}] BOUNCE/SUPPRESSION: ${errorMsg}`);
               break;
             }
             
             if (attempt < maxRetries) {
-              console.log(`  ⚠️  [${batchNumber}-${index + 1}] Attempt ${attempt} failed for ${email}, retrying... (${errorMsg})`);
+              console.log(`  ⚠️  [${batchNumber}-${index + 1}] Attempt ${attempt} failed, retrying... (${errorMsg.substring(0, 50)})`);
               await new Promise(resolve => setTimeout(resolve, 2000 * attempt)); // Exponential backoff
             } else {
-              console.log(`  ❌ [${batchNumber}-${index + 1}] Failed to send to ${email} after ${maxRetries} attempts: ${errorMsg}`);
+              console.log(`  ❌ [${batchNumber}-${index + 1}] Failed after ${maxRetries} attempts: ${errorMsg.substring(0, 50)}`);
             }
           }
         }
@@ -867,12 +873,21 @@ exports.handler = async (event, context) => {
     console.log(`  Subscribed contacts: ${validContacts.length}`);
     console.log(`  Successfully sent: ${successCount}`);
     console.log(`  Failed: ${errorCount}`);
+    // Don't log email addresses in summary
     if (successfulEmails.length > 0) {
-      console.log(`  ✅ Successfully sent to: ${successfulEmails.join(', ')}`);
+      console.log(`  ✅ Successfully sent to ${successfulEmails.length} email(s)`);
     }
     if (errors.length > 0) {
-      console.log(`  ❌ Failed emails:`);
-      errors.forEach(e => console.log(`     - ${e.email}: ${e.error}`));
+      console.log(`  ❌ Failed: ${errors.length} email(s)`);
+      // Only log error types, not email addresses
+      const errorTypes = {};
+      errors.forEach(e => {
+        const errorType = e.error?.substring(0, 50) || 'Unknown error';
+        errorTypes[errorType] = (errorTypes[errorType] || 0) + 1;
+      });
+      Object.entries(errorTypes).forEach(([type, count]) => {
+        console.log(`     - ${count} error(s): ${type}`);
+      });
     }
 
     // SAFETY: Store the send time to prevent spam

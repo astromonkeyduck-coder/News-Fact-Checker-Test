@@ -12,7 +12,7 @@ const mockEvent = {
   httpMethod: 'POST',
   body: JSON.stringify({
     subject: 'Test Newsletter - Local',
-    testEmail: 'mr.pangolinman@gmail.com',
+    testEmail: process.env.TEST_EMAIL || 'test@example.com',
     includeRecentPosts: true
   }),
   headers: {},
