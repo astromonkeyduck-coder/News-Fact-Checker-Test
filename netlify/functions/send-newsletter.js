@@ -290,6 +290,29 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    // SECURITY: Require admin token for sending newsletters (protects email addresses)
+    const adminToken = process.env.ADMIN_ANALYTICS_TOKEN;
+    const providedToken = event.queryStringParameters?.token || 
+                         event.headers['x-admin-token'] || 
+                         (event.body ? (() => {
+                           try {
+                             return JSON.parse(event.body || '{}').token;
+                           } catch {
+                             return null;
+                           }
+                         })() : null);
+    
+    if (adminToken && providedToken !== adminToken) {
+      return {
+        statusCode: 401,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Unauthorized - Admin token required',
+          message: 'This endpoint requires admin authentication. Please provide a valid admin token.'
+        }),
+      };
+    }
+    
     // Check if API key is configured
     if (!process.env.RESEND_API_KEY) {
       return {
@@ -305,23 +328,28 @@ exports.handler = async (event, context) => {
     let newsletterData = {};
     if (event.httpMethod === 'POST' && event.body) {
       try {
-        newsletterData = JSON.parse(event.body);
+        const bodyData = JSON.parse(event.body);
+        // Remove token from newsletterData (don't pass it through)
+        const { token, ...rest } = bodyData;
+        newsletterData = rest;
       } catch (e) {
         // Invalid JSON, use defaults
       }
     }
 
     const testEmail = newsletterData.testEmail; // Check early if this is a test
+    const sendToEmails = newsletterData.sendToEmails; // Check if sending to specific emails
     
-    // Check if audience ID is configured (only required for non-test sends)
-    if (!NEWSLETTER_AUDIENCE_ID && !testEmail) {
+    // Check if audience ID is configured (only required for mass audience sends)
+    // sendToEmails and testEmail don't need audience ID
+    if (!NEWSLETTER_AUDIENCE_ID && !testEmail && !sendToEmails) {
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({ 
           error: 'RESEND_AUDIENCE_ID not configured. Please set it in Netlify environment variables.',
           hint: 'Get your Audience ID from https://resend.com/audiences',
-          note: 'Test emails (with testEmail parameter) can be sent without RESEND_AUDIENCE_ID'
+          note: 'Test emails (with testEmail or sendToEmails parameter) can be sent without RESEND_AUDIENCE_ID'
         }),
       };
     }
@@ -401,73 +429,91 @@ exports.handler = async (event, context) => {
     }
     console.log(`📧 Using from email: ${fromEmail}`);
 
-    // If testEmail is provided, send only to that email and STOP HERE
-    if (testEmail) {
-      console.log(`🧪 TEST MODE: Sending to ${testEmail} only - WILL NOT SEND TO AUDIENCE`);
+    // If testEmail or sendToEmails is provided, send only to those emails and STOP HERE
+    // sendToEmails can be an array of emails to send to specific recipients
+    const emailsToSend = newsletterData.sendToEmails || (testEmail ? [testEmail] : null);
+    
+    if (emailsToSend && emailsToSend.length > 0) {
+      console.log(`📧 SENDING TO SPECIFIC EMAILS: ${emailsToSend.join(', ')} - WILL NOT SEND TO AUDIENCE`);
       
-      const unsubscribeUrl = `https://noteworthynews.co/unsubscribe.html?email=${encodeURIComponent(Buffer.from(testEmail).toString('base64'))}`;
-      const personalizedHtml = htmlContent.replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl).replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl);
-      const personalizedText = textContent.replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl).replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl);
+      const results = [];
+      let successCount = 0;
+      let errorCount = 0;
       
-      try {
-        // Replace personalization placeholders with default values for test email
-        // This makes it look exactly like what subscribers will receive
-        const emailUsername = testEmail.split('@')[0];
-        const testHtml = personalizedHtml
-          .replace(/\{\{FIRST_NAME\}\}/g, emailUsername)
-          .replace(/\{\{LAST_NAME\}\}/g, '')
-          .replace(/\{\{FULL_NAME\}\}/g, emailUsername)
-          .replace(/\{\{EMAIL\}\}/g, testEmail)
-          .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername);
-        
-        const testText = personalizedText
-          .replace(/\{\{FIRST_NAME\}\}/g, emailUsername)
-          .replace(/\{\{LAST_NAME\}\}/g, '')
-          .replace(/\{\{FULL_NAME\}\}/g, emailUsername)
-          .replace(/\{\{EMAIL\}\}/g, testEmail)
-          .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername);
-        
-        const result = await resend.emails.send({
-          from: fromEmail,
-          to: testEmail,
-          replyTo: 'richard@noteworthynews.co',
-          subject: subject, // No [TEST] prefix - looks exactly like mass email
-          html: testHtml,
-          text: testText,
-          clickTracking: true, // Track link clicks
-          openTracking: true, // Track email opens
-        });
+      for (const email of emailsToSend) {
+        try {
+          const unsubscribeUrl = `https://noteworthynews.co/unsubscribe.html?email=${encodeURIComponent(Buffer.from(email).toString('base64'))}`;
+          let personalizedHtml = htmlContent.replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl).replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl);
+          let personalizedText = textContent.replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl).replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl);
+          
+          // Get custom data for this email (if provided as array or object)
+          let customData = {};
+          if (newsletterData.customData) {
+            if (Array.isArray(newsletterData.customData)) {
+              // Find matching email in array
+              const match = newsletterData.customData.find(d => d.email === email);
+              if (match) customData = match;
+            } else if (newsletterData.customData.email === email) {
+              customData = newsletterData.customData;
+            }
+          }
+          
+          const firstName = customData.firstName || email.split('@')[0];
+          const fullName = customData.fullName || firstName;
+          const emailUsername = email.split('@')[0];
+          
+          // For sendToEmails, use full name in greeting
+          personalizedHtml = personalizedHtml
+            .replace(/\{\{FIRST_NAME\}\}/g, firstName)
+            .replace(/\{\{LAST_NAME\}\}/g, '')
+            .replace(/\{\{FULL_NAME\}\}/g, fullName)
+            .replace(/\{\{EMAIL\}\}/g, email)
+            .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername);
+          
+          personalizedText = personalizedText
+            .replace(/\{\{FIRST_NAME\}\}/g, firstName)
+            .replace(/\{\{LAST_NAME\}\}/g, '')
+            .replace(/\{\{FULL_NAME\}\}/g, fullName)
+            .replace(/\{\{EMAIL\}\}/g, email)
+            .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername);
+          
+          const result = await resend.emails.send({
+            from: fromEmail,
+            to: email,
+            replyTo: 'richard@noteworthynews.co',
+            subject: subject, // Same subject as mass email
+            html: personalizedHtml,
+            text: personalizedText,
+            clickTracking: true,
+            openTracking: true,
+          });
 
-        if (result.error) {
-          throw new Error(result.error.message || 'Unknown error');
+          if (result.error) {
+            throw new Error(result.error.message || 'Unknown error');
+          }
+
+          console.log(`✅ Email sent successfully to ${email}`);
+          successCount++;
+          results.push({ email, success: true, id: result.data?.id });
+        } catch (error) {
+          console.error(`❌ Failed to send to ${email}:`, error.message);
+          errorCount++;
+          results.push({ email, success: false, error: error.message });
         }
+      }
 
-        console.log(`✅ TEST MODE: Email sent successfully to ${testEmail} only`);
         return {
           statusCode: 200,
           headers,
           body: JSON.stringify({
             success: true,
-            message: `Test email sent successfully to ${testEmail} only (not sent to audience)`,
-            emailId: result.data?.id,
-            testMode: true,
-          }),
-        };
-      } catch (error) {
-        console.error('❌ TEST MODE ERROR: Failed to send test email:', error);
-        // IMPORTANT: Return error and DO NOT continue to audience sending
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({
-            error: 'Failed to send test email',
-            message: error.message,
-            testMode: true,
-            note: 'No emails were sent to the audience',
+            message: `Sent to ${successCount} of ${emailsToSend.length} specific email(s) (not sent to audience)`,
+            emailsSent: successCount,
+            errors: errorCount,
+            results: results,
           }),
         };
       }
-    }
     
     // SAFETY CHECK: If we get here, testEmail was NOT provided, so we're sending to audience
     console.log('📧 PRODUCTION MODE: Sending to full audience (testEmail was not provided)');
@@ -701,6 +747,7 @@ exports.handler = async (event, context) => {
       const emailUsername = email.split('@')[0];
       
       // Replace personalization placeholders
+      // Use fullName in greeting (template uses {{FULL_NAME}})
       let personalizedHtml = htmlContent
         .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl)
         .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl)
@@ -991,7 +1038,7 @@ function getNewsletterHTMLWithPosts(posts) {
           <tr>
             <td style="padding:50px 40px;background-color:#141b2b!important">
               <p style="margin:0 0 30px 0;color:#9ca3af!important;font-size:14px">Wednesday, November 26, 2025</p>
-              <p style="margin:0 0 30px 0;color:#f9fafb!important;font-size:16px;line-height:1.5">Hi {{EMAIL_USERNAME}},</p>
+              <p style="margin:0 0 30px 0;color:#f9fafb!important;font-size:16px;line-height:1.5">Hey {{FULL_NAME}},</p>
               <p style="margin:0 0 50px 0;color:#f9fafb!important;font-size:16px;line-height:1.5">Today there was a shooting downtown in Washington DC. Below is a summary of our coverage.</p>
               <p style="margin:0 0 12px 0;font-size:11px;letter-spacing:0.14em;color:#3b82f6!important;text-transform:uppercase;font-weight:600"><strong>BREAKING:</strong></p>
               <p style="margin:0 0 20px 0;color:#f9fafb!important;font-size:15px;line-height:1.6">President Trump has delivered a live statement blaming the Washington, D.C. shooting on the Biden administration's security failures and on what he described as "refugee mismanagement," specifically referencing Somali immigrant communities in Minnesota.</p>

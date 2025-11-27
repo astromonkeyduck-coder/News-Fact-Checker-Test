@@ -413,10 +413,14 @@ To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
             showStatus(`Sending test email to ${testEmail}...`, 'info');
             
             try {
+                // Get admin token from session storage
+                const adminToken = sessionStorage.getItem('adminNewsletterToken') || sessionStorage.getItem('adminAnalyticsToken');
+                
                 const response = await fetch('/.netlify/functions/send-newsletter', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'x-admin-token': adminToken || '', // Send token in header
                     },
                     body: JSON.stringify({
                         subject,
@@ -424,6 +428,7 @@ To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
                         text: text || undefined,
                         testEmail: testEmail, // This tells the function to send only to this email
                         includeRecentPosts: includeRecentPosts,
+                        token: adminToken || '', // Also send in body for compatibility
                     }),
                 });
                 
@@ -522,10 +527,14 @@ To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
                     skipEmails = skipEmailsInput.split(',').map(e => e.trim()).filter(e => e);
                 }
                 
+                // Get admin token from session storage
+                const adminToken = sessionStorage.getItem('adminNewsletterToken') || sessionStorage.getItem('adminAnalyticsToken');
+                
                 const response = await fetch('/.netlify/functions/send-newsletter', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'x-admin-token': adminToken || '', // Send token in header
                     },
                     body: JSON.stringify({
                         subject,
@@ -535,6 +544,7 @@ To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
                         forceSend: true, // Bypass cooldown
                         skipEmails: skipEmails,
                         alwaysIncludeEmails: ['mr.pangolinman@gmail.com'], // Always include test email
+                        token: adminToken || '', // Also send in body for compatibility
                     }),
                 });
                 
