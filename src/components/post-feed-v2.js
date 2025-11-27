@@ -1019,8 +1019,8 @@ function renderFeedControls(totalPosts) {
   sortButtonText.className = 'feed-sort-button-text';
   const currentSortText = {
     'recent': 'Most Recent',
-    'nearby': '📍 Near Me',
     'views': 'Most Views',
+    'nearby': '📍 By Relevant Location',
     'likes': 'Most Likes',
     'comments': 'Most Comments',
     'reposts': 'Most Reposts'
@@ -1064,8 +1064,8 @@ function renderFeedControls(totalPosts) {
   
   const options = [
     { value: 'recent', text: 'Most Recent', icon: '🕐' },
-    { value: 'nearby', text: 'Near Me', icon: '📍' },
     { value: 'views', text: 'Most Views', icon: '👁️' },
+    { value: 'nearby', text: 'By Relevant Location', icon: '📍' },
     { value: 'likes', text: 'Most Likes', icon: '❤️' },
     { value: 'comments', text: 'Most Comments', icon: '💬' },
     { value: 'reposts', text: 'Most Reposts', icon: '🔄' }

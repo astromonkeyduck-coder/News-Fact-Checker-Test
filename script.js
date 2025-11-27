@@ -8204,6 +8204,33 @@ function initNewsletterSubscription() {
     
     // Save current background music state
     function saveBackgroundMusicState() {
+        // First, try to get state from global music system if available
+        if (typeof window.getCurrentMusicState === 'function') {
+            try {
+                const globalState = window.getCurrentMusicState();
+                if (globalState && globalState.currentTrack) {
+                    const element = globalState.currentTrack;
+                    const originalVolume = element.dataset?.originalVolume ? 
+                        parseFloat(element.dataset.originalVolume) : 
+                        (globalState.volume || element.volume || 0.5);
+                    
+                    savedBackgroundMusicState = {
+                        element,
+                        time: globalState.currentTime || element.currentTime || 0,
+                        originalVolume
+                    };
+                    console.log('[Spotlight] Saved background music state from global system:', {
+                        track: element.id,
+                        time: savedBackgroundMusicState.time,
+                        volume: originalVolume
+                    });
+                    return;
+                }
+            } catch (err) {
+                console.warn('[Spotlight] Failed to get state from global music system:', err);
+            }
+        }
+        
         const music = getBackgroundMusicElements();
         let currentTrack = null;
         let currentTime = 0;
@@ -8221,20 +8248,21 @@ function initNewsletterSubscription() {
             return vol;
         };
         
-        if (music.track1 && !music.track1.paused) {
+        // Check playing tracks first
+        if (music.track1 && !music.track1.paused && music.track1.volume > 0.01) {
             currentTrack = music.track1;
             currentTime = music.track1.currentTime;
             originalVolume = getOriginalVolume(music.track1);
-        } else if (music.track2 && !music.track2.paused) {
+        } else if (music.track2 && !music.track2.paused && music.track2.volume > 0.01) {
             currentTrack = music.track2;
             currentTime = music.track2.currentTime;
             originalVolume = getOriginalVolume(music.track2);
-        } else if (music.loop && !music.loop.paused) {
+        } else if (music.loop && !music.loop.paused && music.loop.volume > 0.01) {
             currentTrack = music.loop;
             currentTime = music.loop.currentTime;
             originalVolume = getOriginalVolume(music.loop);
         } else {
-            // Get from paused track
+            // Get from paused track (most recent one with time > 0)
             if (music.track1 && music.track1.currentTime > 0) {
                 currentTrack = music.track1;
                 currentTime = music.track1.currentTime;
@@ -8255,6 +8283,16 @@ function initNewsletterSubscription() {
             time: currentTime,
             originalVolume: originalVolume
         } : null;
+        
+        if (savedBackgroundMusicState) {
+            console.log('[Spotlight] Saved background music state:', {
+                track: currentTrack.id,
+                time: currentTime,
+                volume: originalVolume
+            });
+        } else {
+            console.log('[Spotlight] No background music state to save');
+        }
     }
     
     // Pause all background music with fade out
@@ -8361,6 +8399,7 @@ function initNewsletterSubscription() {
         const musicElement = stateToResume.element;
         if (!musicElement) {
             console.log('Saved music element not found');
+            savedBackgroundMusicState = null;
             return;
         }
         
@@ -8376,6 +8415,7 @@ function initNewsletterSubscription() {
             music.loop.pause();
         }
         
+        // Set the time before playing
         musicElement.currentTime = stateToResume.time;
         
         // Use the saved original volume, or get from dataset, or default to 0.5
@@ -8388,38 +8428,75 @@ function initNewsletterSubscription() {
             musicElement.dataset.originalVolume = targetVolume.toString();
         }
         
+        // Set volume to 0 initially for fade-in
+        musicElement.volume = 0;
+        
         // Ensure spotlight music is fully faded out before starting background fade in
         // This creates a smoother transition
+        const resumePlayback = () => {
+            // Double-check spotlight is not visible before resuming
+            if (isSpotlightVisible || isTransitioning) {
+                console.log('Spotlight became visible during resume, aborting');
+                return;
+            }
+            
+            // Actually play the audio
+            musicElement.play().catch(err => {
+                console.error('Error resuming background music:', err);
+                // If autoplay is blocked, try again after user interaction
+                document.addEventListener('click', function playOnce() {
+                    if (musicElement && musicElement.paused && !isSpotlightVisible) {
+                        musicElement.play().catch(() => {});
+                    }
+                    document.removeEventListener('click', playOnce);
+                }, { once: true });
+            });
+            
+            // Fade in the background music
+            fadeInAudio(musicElement, targetVolume, () => {
+                // Music has faded in at original volume
+                console.log('Background music resumed and faded in');
+            });
+        };
+        
         if (spotlightMusic && !spotlightMusic.paused) {
             // Wait a bit for spotlight to finish fading, then start background
             setTimeout(() => {
-                // Double-check spotlight is not visible before resuming
-                if (!isSpotlightVisible && !isTransitioning) {
-                    fadeInAudio(musicElement, targetVolume, () => {
-                        // Music has faded in at original volume
-                    });
-                }
+                resumePlayback();
             }, 200); // Slightly longer wait for smoother transition
         } else {
             // Fade in the background music immediately
-            if (!isSpotlightVisible && !isTransitioning) {
-                fadeInAudio(musicElement, targetVolume, () => {
-                    // Music has faded in at original volume
-                });
-            }
+            resumePlayback();
         }
         
         // Clear saved state after scheduling resume to avoid duplicate resumes
-        savedBackgroundMusicState = null;
+        // But only clear after we've actually started the resume process
+        setTimeout(() => {
+            savedBackgroundMusicState = null;
+        }, 100);
     }
     
     // Load and play country music
     function playCountryMusic(countryName, resumeFromSaved = false) {
-        // Don't play if not visible or transitioning
-        if (!isSpotlightVisible || isTransitioning) {
-            console.log('Spotlight not visible or transitioning, skipping country music play');
+        // Don't play if not visible (unless we're explicitly resuming from saved state)
+        if (!isSpotlightVisible && !resumeFromSaved) {
+            console.log('[Spotlight] Spotlight not visible, skipping country music play');
             return;
         }
+        
+        // If we're resuming from saved state, we're likely in a transition - that's okay
+        // Otherwise, if transitioning, wait a bit
+        if (isTransitioning && !resumeFromSaved) {
+            console.log('[Spotlight] Transitioning, will retry country music play');
+            setTimeout(() => {
+                if (isSpotlightVisible) {
+                    playCountryMusic(countryName, resumeFromSaved);
+                }
+            }, 200);
+            return;
+        }
+        
+        console.log(`[Spotlight] Playing country music for ${countryName}${resumeFromSaved ? ' (resuming from saved state)' : ''}`);
         
         const audioFile = countryMusicMap[countryName];
         if (!audioFile) {
@@ -8658,24 +8735,31 @@ function initNewsletterSubscription() {
                         
                         if (isSpotlightVisible) {
                             // Spotlight is now visible - pause background, play/resume country music
+                            console.log('[Spotlight] Section became visible, switching to country music');
                             if (currentCountry && countryMusicMap[currentCountry.name]) {
+                                // Save background music state BEFORE pausing
                                 saveBackgroundMusicState();
+                                // Pause background music with fade out
                                 pauseBackgroundMusic();
-                                // Try to resume from saved state, otherwise start fresh
-                                playCountryMusic(currentCountry.name, true);
-                                
-                                // Unlock after transition completes
+                                // Small delay to ensure background fade has started
                                 setTimeout(() => {
-                                    isTransitioning = false;
-                                    window.spotlightTransitioning = false;
-                                    window.spotlightTransitioning = false;
-                                }, 600); // Wait for fade transitions
+                                    // Try to resume from saved state, otherwise start fresh
+                                    playCountryMusic(currentCountry.name, true);
+                                    
+                                    // Unlock after transition completes
+                                    setTimeout(() => {
+                                        isTransitioning = false;
+                                        window.spotlightTransitioning = false;
+                                    }, 600); // Wait for fade transitions
+                                }, 100);
                             } else {
+                                console.log('[Spotlight] No country music available for current country');
                                 isTransitioning = false;
                                 window.spotlightTransitioning = false;
                             }
                         } else {
                             // Spotlight is not visible - stop country music (save position), resume background
+                            console.log('[Spotlight] Section no longer visible, resuming background music');
                             // Use a coordinated fade for smoother transition
                             stopCountryMusic();
                             stopMusicMonitor(); // Stop monitoring
@@ -9010,6 +9094,17 @@ function initNewsletterSubscription() {
                     // Prefer storedImageUrl (permanent) but fallback to imageUrl (temporary, expires in 1 hour)
                     const imageUrl = data.storedImageUrl || data.imageUrl || null;
                     
+                    // Log what we received
+                    if (attempt === 0) {
+                        console.log('[Image Generation] Response data:', {
+                            hasStoredImageUrl: !!data.storedImageUrl,
+                            hasImageUrl: !!data.imageUrl,
+                            storedImageUrl: data.storedImageUrl ? data.storedImageUrl.substring(0, 80) + '...' : null,
+                            imageUrl: data.imageUrl ? data.imageUrl.substring(0, 80) + '...' : null,
+                            finalImageUrl: imageUrl ? imageUrl.substring(0, 80) + '...' : null
+                        });
+                    }
+                    
                     if (!imageUrl) {
                         // Always retry if no URL returned (unless we've exhausted all attempts)
                         if (attempt < retries - 1) {
@@ -9133,17 +9228,126 @@ function initNewsletterSubscription() {
             return;
         }
         
-        if (imageUrl) {
-            wrapper.innerHTML = `<img src="${imageUrl}" alt="Generated image" loading="lazy" />`;
-            // Remove from failed requests if it was there
-            for (const [prompt, data] of failedImageRequests.entries()) {
-                if (data.wrapperId === wrapperId) {
-                    failedImageRequests.delete(prompt);
-                    break;
+        // Ensure wrapper and parent containers are visible
+        if (wrapper.style.display === 'none') {
+            wrapper.style.display = 'block';
+        }
+        
+        // Ensure parent containers are visible
+        let parent = wrapper.parentElement;
+        while (parent && parent !== document.body) {
+            if (parent.id === 'spotlight-images-container' || parent.classList.contains('spotlight-images-grid')) {
+                if (window.getComputedStyle(parent).display === 'none') {
+                    parent.style.display = parent.classList.contains('spotlight-images-grid') ? 'flex' : 'block';
                 }
             }
+            parent = parent.parentElement;
+        }
+        
+        if (imageUrl) {
+            // Validate URL format
+            if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+                console.error(`[Spotlight] ❌ Invalid URL format for ${wrapperId}:`, imageUrl);
+                renderFallbackState(wrapper);
+                return;
+            }
+            
+            console.log(`[Spotlight] Loading image into ${wrapperId}`);
+            console.log(`[Spotlight] Full URL:`, imageUrl);
+            console.log(`[Spotlight] URL length:`, imageUrl.length);
+            console.log(`[Spotlight] Wrapper element:`, wrapper);
+            console.log(`[Spotlight] Wrapper display:`, window.getComputedStyle(wrapper).display);
+            console.log(`[Spotlight] Wrapper visibility:`, window.getComputedStyle(wrapper).visibility);
+            
+            // Create img element with error handling
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.alt = 'Generated image';
+            img.loading = 'lazy';
+            img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 0.3s ease;';
+            
+            // Track loading state
+            img.onload = function() {
+                console.log(`[Spotlight] ✅ Image loaded successfully in ${wrapperId}`);
+                console.log(`[Spotlight] Image dimensions:`, this.naturalWidth, 'x', this.naturalHeight);
+                this.style.opacity = '1';
+                // Remove from failed requests if it was there
+                for (const [prompt, data] of failedImageRequests.entries()) {
+                    if (data.wrapperId === wrapperId) {
+                        failedImageRequests.delete(prompt);
+                        break;
+                    }
+                }
+            };
+            
+            img.onerror = function() {
+                console.error(`[Spotlight] ❌ Image failed to load in ${wrapperId}`);
+                console.error(`[Spotlight] Failed URL:`, imageUrl);
+                console.error(`[Spotlight] Image element:`, this);
+                console.error(`[Spotlight] Error event details:`, {
+                    type: 'error',
+                    target: this,
+                    src: this.src
+                });
+                // Show fallback instead
+                renderFallbackState(wrapper);
+            };
+            
+            // Clear wrapper and add image
+            // IMPORTANT: Check if wrapper was already modified (race condition protection)
+            const currentWrapper = document.getElementById(wrapperId);
+            if (!currentWrapper) {
+                console.error(`[Spotlight] ❌ Wrapper ${wrapperId} not found when trying to insert image`);
+                return;
+            }
+            
+            // Check if there's already a valid image loading
+            const existingImg = currentWrapper.querySelector('img');
+            if (existingImg && existingImg.src && existingImg.src === imageUrl) {
+                console.log(`[Spotlight] Image already exists in ${wrapperId} with same URL, skipping insertion`);
+                return;
+            }
+            
+            // Clear wrapper and add image
+            currentWrapper.innerHTML = '';
+            currentWrapper.appendChild(img);
+            
+            // Verify image was added after a short delay
+            setTimeout(() => {
+                const verifyWrapper = document.getElementById(wrapperId);
+                if (!verifyWrapper) {
+                    console.error(`[Spotlight] ❌ Wrapper ${wrapperId} was removed after image insertion`);
+                    return;
+                }
+                const verifyImg = verifyWrapper.querySelector('img');
+                if (!verifyImg || verifyImg.src !== imageUrl) {
+                    console.error(`[Spotlight] ❌ Image was not properly inserted into ${wrapperId} - wrapper may have been cleared`);
+                    console.error(`[Spotlight] Wrapper innerHTML:`, verifyWrapper.innerHTML.substring(0, 100));
+                    // Try one more time if image is missing
+                    if (!verifyImg) {
+                        console.log(`[Spotlight] Retrying image insertion for ${wrapperId}`);
+                        verifyWrapper.innerHTML = '';
+                        const retryImg = document.createElement('img');
+                        retryImg.src = imageUrl;
+                        retryImg.alt = 'Generated image';
+                        retryImg.loading = 'lazy';
+                        retryImg.style.cssText = 'width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 0.3s ease;';
+                        retryImg.onload = function() {
+                            console.log(`[Spotlight] ✅ Retry image loaded successfully in ${wrapperId}`);
+                            this.style.opacity = '1';
+                        };
+                        retryImg.onerror = function() {
+                            console.error(`[Spotlight] ❌ Retry image failed to load in ${wrapperId}`);
+                            renderFallbackState(verifyWrapper);
+                        };
+                        verifyWrapper.appendChild(retryImg);
+                    }
+                } else {
+                    console.log(`[Spotlight] ✅ Image element verified in DOM for ${wrapperId}`);
+                }
+            }, 100);
         } else {
-            console.log(`[Spotlight] Showing fallback for ${wrapperId}`);
+            console.log(`[Spotlight] No image URL provided for ${wrapperId}, showing fallback`);
             renderFallbackState(wrapper);
         }
     }
@@ -9476,6 +9680,16 @@ function initNewsletterSubscription() {
             spotlightContent.style.display = 'none';
             spotlightError.style.display = 'none';
             
+            // Ensure images container is visible (in case it was hidden)
+            const imagesContainer = document.getElementById('spotlight-images-container');
+            if (imagesContainer) {
+                imagesContainer.style.display = 'block';
+                const imagesGrid = imagesContainer.querySelector('.spotlight-images-grid');
+                if (imagesGrid) {
+                    imagesGrid.style.display = 'flex';
+                }
+            }
+            
             // Stop any existing country music before generating new country
             stopCountryMusic();
             
@@ -9505,6 +9719,24 @@ function initNewsletterSubscription() {
             // Show content area
             spotlightLoading.style.display = 'none';
             spotlightContent.style.display = 'block';
+            
+            // Ensure images container is visible when content is shown
+            const imagesContainer = document.getElementById('spotlight-images-container');
+            if (imagesContainer) {
+                imagesContainer.style.display = 'block';
+                const imagesGrid = imagesContainer.querySelector('.spotlight-images-grid');
+                if (imagesGrid) {
+                    imagesGrid.style.display = 'flex';
+                }
+                
+                // Ensure all image wrappers are visible
+                const wrappers = imagesContainer.querySelectorAll('.spotlight-image-wrapper');
+                wrappers.forEach(wrapper => {
+                    if (wrapper.style.display === 'none') {
+                        wrapper.style.display = 'block';
+                    }
+                });
+            }
             
             // Check if we already have AI response (from restore)
             const hasExistingAIResponse = aiResponse && aiResponse.innerHTML && aiResponse.innerHTML.trim() !== '';
@@ -9537,14 +9769,31 @@ function initNewsletterSubscription() {
             });
             
             // Reset placeholders only for missing images
+            // BUT: Check if image is currently loading to avoid race conditions
             if (!hasFlagImage && flagWrapper) {
-                flagWrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                // Only set placeholder if wrapper doesn't already have an img element loading
+                const existingImg = flagWrapper.querySelector('img');
+                if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
+                    flagWrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                } else {
+                    console.log('[Spotlight] Flag image wrapper already has an image, skipping placeholder');
+                }
             }
             if (!hasCulture1Image && culture1Wrapper) {
-                culture1Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                const existingImg = culture1Wrapper.querySelector('img');
+                if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
+                    culture1Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                } else {
+                    console.log('[Spotlight] Culture1 image wrapper already has an image, skipping placeholder');
+                }
             }
             if (!hasCulture2Image && culture2Wrapper) {
-                culture2Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                const existingImg = culture2Wrapper.querySelector('img');
+                if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
+                    culture2Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                } else {
+                    console.log('[Spotlight] Culture2 image wrapper already has an image, skipping placeholder');
+                }
             }
             
             // Check if mobile - only generate culture images on mobile
@@ -9561,10 +9810,14 @@ function initNewsletterSubscription() {
                     imagePromises.push(
                         generateImage(flagPrompt).then(url => {
                             if (url) {
-                                console.log('[Spotlight] ✅ Flag image generated successfully:', url.substring(0, 50) + '...');
+                                console.log('[Spotlight] ✅ Flag image generated successfully!');
+                                console.log('[Spotlight] Full URL:', url);
+                                console.log('[Spotlight] URL length:', url.length);
+                                console.log('[Spotlight] URL starts with http:', url.startsWith('http'));
                                 loadImageIntoWrapper('flag-image-wrapper', url);
                             } else {
                                 console.error('[Spotlight] ❌ Flag image generation failed - no URL returned');
+                                console.error('[Spotlight] generateImage returned null/undefined');
                                 loadImageIntoWrapper('flag-image-wrapper', null);
                                 failedImageRequests.set(flagPrompt, {
                                     wrapperId: 'flag-image-wrapper',
@@ -9608,7 +9861,8 @@ function initNewsletterSubscription() {
                 imagePromises.push(
                     generateImage(culture1Prompt).then(url => {
                         if (url) {
-                            console.log('[Spotlight] ✅ Culture1 image generated successfully:', url.substring(0, 50) + '...');
+                            console.log('[Spotlight] ✅ Culture1 image generated successfully!');
+                            console.log('[Spotlight] Full URL:', url);
                             loadImageIntoWrapper('culture1-image-wrapper', url);
                         } else {
                             console.error('[Spotlight] ❌ Culture1 image generation failed - no URL returned');
@@ -9648,7 +9902,8 @@ function initNewsletterSubscription() {
                 imagePromises.push(
                     generateImage(culture2Prompt).then(url => {
                         if (url) {
-                            console.log('[Spotlight] ✅ Culture2 image generated successfully:', url.substring(0, 50) + '...');
+                            console.log('[Spotlight] ✅ Culture2 image generated successfully!');
+                            console.log('[Spotlight] Full URL:', url);
                             loadImageIntoWrapper('culture2-image-wrapper', url);
                         } else {
                             console.error('[Spotlight] ❌ Culture2 image generation failed - no URL returned');

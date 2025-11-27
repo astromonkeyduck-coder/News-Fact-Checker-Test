@@ -867,13 +867,14 @@ class NoteworthyChat extends HTMLElement {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.75);
-          backdrop-filter: blur(4px);
+          background: rgba(0, 0, 0, 0.85);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           z-index: 2147483001;
           align-items: center;
           justify-content: center;
           padding: 20px;
-          animation: fadeIn 0.3s ease;
+          animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .tutorial-overlay.show {
@@ -881,174 +882,376 @@ class NoteworthyChat extends HTMLElement {
         }
         
         .tutorial-modal {
-          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-          border: 2px solid rgba(74, 144, 226, 0.4);
-          border-radius: 20px;
-          max-width: 600px;
+          background: linear-gradient(135deg, 
+            rgba(18, 24, 38, 0.98) 0%, 
+            rgba(15, 23, 42, 0.96) 50%,
+            rgba(12, 19, 35, 0.98) 100%);
+          border: 1.5px solid rgba(74, 144, 226, 0.3);
+          border-radius: 24px;
+          max-width: 680px;
           width: 100%;
-          max-height: 85vh;
+          max-height: 90vh;
           overflow-y: auto;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
-                      0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-          animation: slideUp 0.3s ease;
+          overflow-x: hidden;
+          box-shadow: 
+            0 24px 64px rgba(0, 0, 0, 0.5),
+            0 8px 24px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05),
+            0 0 0 1px rgba(74, 144, 226, 0.1);
+          animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+        }
+        
+        .tutorial-modal::-webkit-scrollbar {
+          width: 8px;
+        }
+        
+        .tutorial-modal::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        .tutorial-modal::-webkit-scrollbar-thumb {
+          background: rgba(74, 144, 226, 0.3);
+          border-radius: 4px;
+        }
+        
+        .tutorial-modal::-webkit-scrollbar-thumb:hover {
+          background: rgba(74, 144, 226, 0.5);
         }
         
         .tutorial-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 24px 28px;
-          border-bottom: 1px solid rgba(74, 144, 226, 0.2);
+          padding: 28px 32px;
+          border-bottom: 1px solid rgba(74, 144, 226, 0.15);
+          background: linear-gradient(135deg, 
+            rgba(30, 41, 59, 0.95) 0%, 
+            rgba(15, 23, 42, 0.98) 50%,
+            rgba(30, 41, 59, 0.95) 100%);
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          border-radius: 24px 24px 0 0;
         }
         
         .tutorial-header h2 {
           margin: 0;
           color: #fff;
-          font-size: 24px;
+          font-size: 26px;
           font-weight: 700;
+          letter-spacing: -0.5px;
+          background: linear-gradient(135deg, #ffffff 0%, rgba(74, 144, 226, 0.9) 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        
+        .tutorial-header h2::before {
+          content: '✨';
+          font-size: 28px;
+          -webkit-text-fill-color: initial;
+          filter: drop-shadow(0 2px 4px rgba(74, 144, 226, 0.3));
         }
         
         .tutorial-close {
-          background: transparent;
-          border: none;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           color: rgba(255, 255, 255, 0.7);
-          font-size: 32px;
+          font-size: 24px;
           line-height: 1;
           cursor: pointer;
           padding: 0;
-          width: 32px;
-          height: 32px;
+          width: 36px;
+          height: 36px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 8px;
+          border-radius: 10px;
           transition: all 0.2s ease;
         }
         
         .tutorial-close:hover {
           background: rgba(255, 107, 107, 0.2);
+          border-color: rgba(255, 107, 107, 0.4);
           color: #ff6b6b;
-          transform: rotate(90deg);
+          transform: rotate(90deg) scale(1.1);
+        }
+        
+        .tutorial-close:active {
+          transform: rotate(90deg) scale(0.95);
         }
         
         .tutorial-content {
-          padding: 24px 28px;
+          padding: 32px;
+        }
+        
+        .tutorial-intro {
+          margin-bottom: 32px;
+          padding: 20px 24px;
+          background: linear-gradient(135deg, 
+            rgba(74, 144, 226, 0.12) 0%, 
+            rgba(74, 144, 226, 0.08) 100%);
+          border: 1px solid rgba(74, 144, 226, 0.2);
+          border-radius: 16px;
+          border-left: 4px solid rgba(74, 144, 226, 0.6);
+        }
+        
+        .tutorial-intro p {
+          margin: 0;
+          color: rgba(255, 255, 255, 0.9);
+          font-size: 15px;
+          line-height: 1.7;
+        }
+        
+        .tutorial-steps {
+          display: grid;
+          gap: 20px;
         }
         
         .tutorial-step {
-          margin-bottom: 28px;
-          padding: 20px;
-          background: rgba(74, 144, 226, 0.08);
+          padding: 24px;
+          background: linear-gradient(135deg, 
+            rgba(74, 144, 226, 0.08) 0%, 
+            rgba(74, 144, 226, 0.05) 100%);
           border: 1px solid rgba(74, 144, 226, 0.2);
-          border-radius: 12px;
-          transition: all 0.3s ease;
+          border-radius: 16px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .tutorial-step::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, 
+            transparent 0%, 
+            rgba(74, 144, 226, 0.6) 50%, 
+            transparent 100%);
+          transform: scaleX(0);
+          transition: transform 0.3s ease;
         }
         
         .tutorial-step:hover {
-          background: rgba(74, 144, 226, 0.12);
+          background: linear-gradient(135deg, 
+            rgba(74, 144, 226, 0.15) 0%, 
+            rgba(74, 144, 226, 0.1) 100%);
           border-color: rgba(74, 144, 226, 0.4);
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+          transform: translateY(-3px);
+          box-shadow: 
+            0 8px 24px rgba(74, 144, 226, 0.2),
+            0 0 0 1px rgba(74, 144, 226, 0.1);
         }
         
-        .tutorial-step:last-of-type {
-          margin-bottom: 0;
+        .tutorial-step:hover::before {
+          transform: scaleX(1);
+        }
+        
+        .tutorial-step-header {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin-bottom: 14px;
         }
         
         .tutorial-icon {
-          font-size: 36px;
-          margin-bottom: 12px;
-          display: inline-block;
+          font-size: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 56px;
+          height: 56px;
+          background: linear-gradient(135deg, 
+            rgba(74, 144, 226, 0.2) 0%, 
+            rgba(74, 144, 226, 0.1) 100%);
+          border-radius: 14px;
+          border: 1px solid rgba(74, 144, 226, 0.3);
+          flex-shrink: 0;
+          filter: drop-shadow(0 2px 8px rgba(74, 144, 226, 0.2));
         }
         
         .tutorial-step h3 {
-          margin: 0 0 10px 0;
+          margin: 0;
           color: #fff;
-          font-size: 18px;
-          font-weight: 600;
+          font-size: 20px;
+          font-weight: 700;
+          letter-spacing: -0.3px;
         }
         
         .tutorial-step p {
-          margin: 0 0 12px 0;
+          margin: 0 0 16px 0;
           color: rgba(255, 255, 255, 0.85);
-          font-size: 14px;
-          line-height: 1.6;
+          font-size: 15px;
+          line-height: 1.7;
+        }
+        
+        .tutorial-step p:last-child {
+          margin-bottom: 0;
         }
         
         .tutorial-example {
-          background: rgba(46, 204, 113, 0.1);
-          border-left: 3px solid rgba(46, 204, 113, 0.5);
-          padding: 10px 14px;
-          border-radius: 6px;
-          margin-top: 10px;
-          font-size: 13px;
-          color: rgba(255, 255, 255, 0.9);
+          background: linear-gradient(135deg, 
+            rgba(46, 204, 113, 0.15) 0%, 
+            rgba(46, 204, 113, 0.08) 100%);
+          border-left: 4px solid rgba(46, 204, 113, 0.6);
+          border: 1px solid rgba(46, 204, 113, 0.2);
+          padding: 16px 20px;
+          border-radius: 10px;
+          margin-top: 14px;
+          font-size: 14px;
+          color: rgba(255, 255, 255, 0.95);
+          line-height: 1.7;
         }
         
         .tutorial-example strong {
-          color: rgba(46, 204, 113, 0.9);
+          color: rgba(46, 204, 113, 1);
+          font-weight: 700;
+          display: block;
+          margin-bottom: 10px;
+          font-size: 13px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
         
-        .tutorial-tip {
-          background: rgba(74, 144, 226, 0.15);
-          border: 1px solid rgba(74, 144, 226, 0.3);
-          border-radius: 12px;
-          padding: 16px 20px;
-          margin-top: 20px;
+        .tutorial-example code {
+          display: block;
+          background: rgba(0, 0, 0, 0.25);
+          padding: 8px 12px;
+          border-radius: 6px;
+          font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+          font-size: 12.5px;
+          color: rgba(46, 204, 113, 0.95);
+          margin: 6px 0;
+          border: 1px solid rgba(46, 204, 113, 0.2);
+          white-space: pre-wrap;
+          word-break: break-word;
+        }
+        
+        .tutorial-example code:first-of-type {
+          margin-top: 0;
+        }
+        
+        .tutorial-example code:last-of-type {
+          margin-bottom: 0;
+        }
+        
+        .tutorial-tips {
+          margin-top: 28px;
+          padding: 20px 24px;
+          background: linear-gradient(135deg, 
+            rgba(74, 144, 226, 0.12) 0%, 
+            rgba(74, 144, 226, 0.08) 100%);
+          border: 1px solid rgba(74, 144, 226, 0.25);
+          border-radius: 16px;
+          border-left: 4px solid rgba(74, 144, 226, 0.6);
+        }
+        
+        .tutorial-tips h4 {
+          margin: 0 0 12px 0;
+          color: rgba(74, 144, 226, 1);
+          font-size: 16px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        
+        .tutorial-tips ul {
+          margin: 0;
+          padding-left: 20px;
+          color: rgba(255, 255, 255, 0.85);
           font-size: 14px;
-          color: rgba(255, 255, 255, 0.9);
-          line-height: 1.6;
+          line-height: 1.8;
         }
         
-        .tutorial-tip strong {
-          color: rgba(74, 144, 226, 0.9);
+        .tutorial-tips li {
+          margin-bottom: 8px;
+        }
+        
+        .tutorial-tips li:last-child {
+          margin-bottom: 0;
         }
         
         .tutorial-footer {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 20px 28px;
-          border-top: 1px solid rgba(74, 144, 226, 0.2);
-          gap: 16px;
+          padding: 24px 32px;
+          border-top: 1px solid rgba(74, 144, 226, 0.15);
+          background: linear-gradient(180deg, 
+            transparent 0%,
+            rgba(15, 23, 42, 0.5) 100%);
+          gap: 20px;
+          position: sticky;
+          bottom: 0;
+          border-radius: 0 0 24px 24px;
         }
         
         .tutorial-checkbox {
           display: flex;
           align-items: center;
-          gap: 8px;
-          color: rgba(255, 255, 255, 0.7);
-          font-size: 13px;
+          gap: 10px;
+          color: rgba(255, 255, 255, 0.75);
+          font-size: 14px;
           cursor: pointer;
+          user-select: none;
+          transition: color 0.2s ease;
+        }
+        
+        .tutorial-checkbox:hover {
+          color: rgba(255, 255, 255, 0.9);
         }
         
         .tutorial-checkbox input[type="checkbox"] {
-          width: 18px;
-          height: 18px;
+          width: 20px;
+          height: 20px;
           cursor: pointer;
           accent-color: rgba(74, 144, 226, 0.8);
+          flex-shrink: 0;
         }
         
         .tutorial-btn-primary {
-          background: linear-gradient(135deg, rgba(74, 144, 226, 0.9), rgba(46, 204, 113, 0.9));
-          border: none;
+          background: linear-gradient(135deg, 
+            rgba(74, 144, 226, 0.95) 0%, 
+            rgba(46, 204, 113, 0.9) 100%);
+          border: 1px solid rgba(74, 144, 226, 0.3);
           color: #fff;
-          padding: 12px 28px;
-          border-radius: 10px;
+          padding: 14px 32px;
+          border-radius: 12px;
           font-size: 15px;
-          font-weight: 600;
+          font-weight: 700;
           cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 
+            0 4px 12px rgba(74, 144, 226, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+          letter-spacing: 0.3px;
         }
         
         .tutorial-btn-primary:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(74, 144, 226, 0.4);
+          box-shadow: 
+            0 6px 20px rgba(74, 144, 226, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.25);
+          background: linear-gradient(135deg, 
+            rgba(91, 160, 242, 1) 0%, 
+            rgba(56, 214, 126, 0.95) 100%);
         }
         
         .tutorial-btn-primary:active {
           transform: translateY(0);
+        }
+        
+        .tutorial-btn-primary:focus {
+          outline: 2px solid rgba(74, 144, 226, 0.5);
+          outline-offset: 3px;
         }
         
         @keyframes fadeIn {
@@ -1059,13 +1262,35 @@ class NoteworthyChat extends HTMLElement {
         @keyframes slideUp {
           from {
             opacity: 0;
-            transform: translateY(20px) scale(0.95);
+            transform: translateY(30px) scale(0.96);
           }
           to {
             opacity: 1;
             transform: translateY(0) scale(1);
           }
         }
+        
+        @keyframes stepFadeIn {
+          from {
+            opacity: 0;
+            transform: translateX(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        .tutorial-step {
+          animation: stepFadeIn 0.4s ease backwards;
+        }
+        
+        .tutorial-step:nth-child(1) { animation-delay: 0.1s; }
+        .tutorial-step:nth-child(2) { animation-delay: 0.2s; }
+        .tutorial-step:nth-child(3) { animation-delay: 0.3s; }
+        .tutorial-step:nth-child(4) { animation-delay: 0.4s; }
+        .tutorial-step:nth-child(5) { animation-delay: 0.5s; }
+        .tutorial-step:nth-child(6) { animation-delay: 0.6s; }
         
         @media (max-width: 768px) {
           .tutorial-overlay {
@@ -1075,13 +1300,83 @@ class NoteworthyChat extends HTMLElement {
           .tutorial-modal {
             max-width: 100%;
             width: 100%;
-            border-radius: 16px;
-            max-height: 90vh;
+            border-radius: 20px;
+            max-height: 92vh;
             margin: 0;
           }
           
           .tutorial-header {
+            padding: 20px 24px;
+          }
+          
+          .tutorial-header h2 {
+            font-size: 22px;
+          }
+          
+          .tutorial-header h2::before {
+            font-size: 24px;
+          }
+          
+          .tutorial-content {
+            padding: 24px;
+          }
+          
+          .tutorial-intro {
+            padding: 16px 20px;
+            margin-bottom: 24px;
+          }
+          
+          .tutorial-steps {
+            gap: 16px;
+          }
+          
+          .tutorial-step {
             padding: 20px;
+          }
+          
+          .tutorial-step-header {
+            gap: 12px;
+          }
+          
+          .tutorial-icon {
+            width: 48px;
+            height: 48px;
+            font-size: 32px;
+          }
+          
+          .tutorial-step h3 {
+            font-size: 18px;
+          }
+          
+          .tutorial-step p {
+            font-size: 14px;
+          }
+          
+          .tutorial-footer {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 20px 24px;
+            gap: 16px;
+          }
+          
+          .tutorial-btn-primary {
+            width: 100%;
+            padding: 14px 24px;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .tutorial-overlay {
+            padding: 12px;
+          }
+          
+          .tutorial-modal {
+            max-height: 90vh;
+            border-radius: 16px;
+          }
+          
+          .tutorial-header {
+            padding: 18px 20px;
           }
           
           .tutorial-header h2 {
@@ -1092,52 +1387,41 @@ class NoteworthyChat extends HTMLElement {
             padding: 20px;
           }
           
-          .tutorial-step {
-            padding: 16px;
+          .tutorial-intro {
+            padding: 14px 18px;
             margin-bottom: 20px;
           }
           
-          .tutorial-footer {
-            flex-direction: column;
-            align-items: stretch;
-            padding: 16px 20px;
-          }
-          
-          .tutorial-btn-primary {
-            width: 100%;
-            margin-top: 8px;
-          }
-        }
-        
-        @media (max-width: 480px) {
-          .tutorial-overlay {
-            padding: 12px;
-          }
-          
-          .tutorial-modal {
-            max-height: 85vh;
-            border-radius: 12px;
-          }
-          
-          .tutorial-header {
-            padding: 16px;
-          }
-          
-          .tutorial-header h2 {
-            font-size: 18px;
-          }
-          
-          .tutorial-content {
-            padding: 16px;
+          .tutorial-steps {
+            gap: 14px;
           }
           
           .tutorial-step {
-            padding: 12px;
-            margin-bottom: 16px;
+            padding: 16px;
+          }
+          
+          .tutorial-step-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+          }
+          
+          .tutorial-icon {
+            width: 44px;
+            height: 44px;
+            font-size: 28px;
+          }
+          
+          .tutorial-step h3 {
+            font-size: 17px;
+          }
+          
+          .tutorial-step p {
+            font-size: 13px;
           }
           
           .tutorial-footer {
-            padding: 12px 16px;
+            padding: 16px 20px;
           }
         }
       </style>
@@ -1189,59 +1473,90 @@ class NoteworthyChat extends HTMLElement {
       <div class="tutorial-overlay" id="tutorialOverlay" role="dialog" aria-label="Tutorial" aria-modal="true">
         <div class="tutorial-modal">
           <div class="tutorial-header">
-            <h2>🎓 Welcome to Noteworthy AI!</h2>
+            <h2>Welcome to Noteworthy AI!</h2>
             <button class="tutorial-close" aria-label="Close tutorial">×</button>
           </div>
           <div class="tutorial-content">
-            <div class="tutorial-step">
-              <div class="tutorial-icon">💬</div>
-              <h3>Chat & Questions</h3>
-              <p>Ask questions about news, headlines, or get fact-checks. The AI will automatically respond to your questions.</p>
-              <div class="tutorial-example">
-                <strong>Try:</strong> "What's the latest on the breaking news about..."
+            <div class="tutorial-intro">
+              <p>Your intelligent assistant for fact-checking, media literacy, and staying informed. Get instant answers, verify information, and explore news with AI-powered insights.</p>
+            </div>
+            
+            <div class="tutorial-steps">
+              <div class="tutorial-step">
+                <div class="tutorial-step-header">
+                  <div class="tutorial-icon">💬</div>
+                  <h3>Ask Questions & Get Answers</h3>
+                </div>
+                <p>Ask about breaking news, headlines, or request fact-checks. The AI provides instant, accurate responses to help you stay informed.</p>
+                <div class="tutorial-example">
+                  <strong>Example prompts:</strong>
+                  <code>"What's the latest on [breaking news topic]?"</code>
+                  <code>"Can you fact-check this headline?"</code>
+                  <code>"Explain the context behind this news story"</code>
+                </div>
+              </div>
+              
+              <div class="tutorial-step">
+                <div class="tutorial-step-header">
+                  <div class="tutorial-icon">🎨</div>
+                  <h3>Generate Images Instantly</h3>
+                </div>
+                <p>Simply describe what you want to see! The AI automatically detects image requests and generates visuals for you.</p>
+                <div class="tutorial-example">
+                  <strong>Example prompts:</strong>
+                  <code>"Generate an image of a futuristic cityscape at sunset"</code>
+                  <code>"Create a picture of a news anchor in a modern studio"</code>
+                  <code>"Show me an illustration of breaking news"</code>
+                </div>
+              </div>
+              
+              <div class="tutorial-step">
+                <div class="tutorial-step-header">
+                  <div class="tutorial-icon">📎</div>
+                  <h3>Upload & Analyze Files</h3>
+                </div>
+                <p>Upload images, PDFs, or documents for AI analysis. Click the paperclip button or drag and drop files directly into the chat. Perfect for verifying screenshots, analyzing documents, or understanding complex content.</p>
+                <div class="tutorial-example">
+                  <strong>Try this:</strong>
+                  <code>Upload a news screenshot and ask "Is this headline accurate?"</code>
+                  <code>Upload a document and ask "What are the key points?"</code>
+                </div>
+              </div>
+              
+              <div class="tutorial-step">
+                <div class="tutorial-step-header">
+                  <div class="tutorial-icon">🔊</div>
+                  <h3>Audio Responses</h3>
+                </div>
+                <p>Toggle the audio button (🔊) in the header to hear AI responses read aloud. Perfect for multitasking or accessibility needs.</p>
+              </div>
+              
+              <div class="tutorial-step">
+                <div class="tutorial-step-header">
+                  <div class="tutorial-icon">🎤</div>
+                  <h3>Voice Input</h3>
+                </div>
+                <p>Click the microphone button (🎤) to speak your questions instead of typing. Great for hands-free use and faster interactions!</p>
               </div>
             </div>
             
-            <div class="tutorial-step">
-              <div class="tutorial-icon">🎨</div>
-              <h3>Image Generation</h3>
-              <p>Just describe what you want to see! The AI automatically detects when you want an image and generates it for you.</p>
-              <div class="tutorial-example">
-                <strong>Try:</strong> "Generate an image of a futuristic cityscape at sunset" or "Create a picture of..."
-              </div>
-            </div>
-            
-            <div class="tutorial-step">
-              <div class="tutorial-icon">📎</div>
-              <h3>File Upload & Analysis</h3>
-              <p>Upload images or documents for AI analysis! Click the paperclip (📎) button or drag and drop files into the chat. The AI can analyze images, PDFs, and text documents to help you understand content, verify information, or answer questions about what you've uploaded.</p>
-              <div class="tutorial-example">
-                <strong>Try:</strong> Upload a news screenshot and ask "Is this headline accurate?" or upload a document and ask "What are the key points?"
-              </div>
-            </div>
-            
-            <div class="tutorial-step">
-              <div class="tutorial-icon">🔊</div>
-              <h3>Audio Feature</h3>
-              <p>Toggle audio (🔊) to hear AI responses read aloud. Click to turn audio on or off.</p>
-            </div>
-            
-            <div class="tutorial-step">
-              <div class="tutorial-icon">🎤</div>
-              <h3>Voice Input</h3>
-              <p>Click the microphone (🎤) to speak your questions instead of typing. Great for hands-free use!</p>
-            </div>
-            
-            <div class="tutorial-tip">
-              <strong>💡 Pro Tip:</strong> You can resize the chat window by dragging the bottom-right corner!
+            <div class="tutorial-tips">
+              <h4>💡 Pro Tips</h4>
+              <ul>
+                <li><strong>Resize the window:</strong> Drag the bottom-right corner to adjust the chat size</li>
+                <li><strong>Drag to move:</strong> Click and drag the header to reposition the chat window</li>
+                <li><strong>Keyboard shortcuts:</strong> Press <code>Escape</code> to close the chat or tutorial</li>
+                <li><strong>Multiple files:</strong> You can upload multiple files at once for comprehensive analysis</li>
+                <li><strong>Context matters:</strong> The AI remembers your conversation, so you can ask follow-up questions</li>
+              </ul>
             </div>
           </div>
           <div class="tutorial-footer">
             <label class="tutorial-checkbox">
               <input type="checkbox" id="dontShowAgain" />
-              <span>Don't show this again</span>
+              <span>Don't show this tutorial again</span>
             </label>
-            <button class="tutorial-btn-primary" id="tutorialGotIt">Got it!</button>
+            <button class="tutorial-btn-primary" id="tutorialGotIt">Start Chatting!</button>
           </div>
         </div>
       </div>

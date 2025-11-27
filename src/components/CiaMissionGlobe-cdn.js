@@ -1559,17 +1559,54 @@ class CiaMissionGlobe {
         <div class="globe-hud-title">Global Coverage</div>
         <div class="globe-hud-count" ${statusAttr}>${statsLabel}</div>
       </div>
-      <div class="globe-search-container">
-        <input 
-          type="text" 
-          class="globe-search-input" 
-          placeholder="Search by location or keywords..." 
-          value="${this.searchQuery || ''}"
-        />
-        ${this.searchQuery ? `<button class="globe-search-clear" title="Clear search">&times;</button>` : ''}
-      </div>
       ${activeMarkup}
     `;
+    
+    // Connect to header search bar if it exists
+    const headerSearchInput = document.getElementById('globeSearchInputHeader');
+    const headerSearchContainer = document.getElementById('globeSearchContainerHeader');
+    const headerClearBtn = document.getElementById('globeSearchClearHeader');
+    
+    if (headerSearchInput && headerSearchContainer) {
+      // Show the header search container
+      headerSearchContainer.style.display = 'flex';
+      
+      // Sync value with header input
+      headerSearchInput.value = this.searchQuery || '';
+      
+      // Show/hide clear button
+      if (headerClearBtn) {
+        headerClearBtn.style.display = this.searchQuery ? 'flex' : 'none';
+      }
+      
+      // Sync search functionality
+      let searchTimeout;
+      headerSearchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          this.searchPosts(e.target.value);
+          if (headerClearBtn) {
+            headerClearBtn.style.display = e.target.value ? 'flex' : 'none';
+          }
+        }, 300);
+      });
+      
+      headerSearchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          clearTimeout(searchTimeout);
+          this.searchPosts(e.target.value);
+        }
+      });
+      
+      if (headerClearBtn) {
+        headerClearBtn.addEventListener('click', () => {
+          headerSearchInput.value = '';
+          this.searchPosts('');
+          headerClearBtn.style.display = 'none';
+        });
+      }
+    }
 
     const closeBtn = container.querySelector('.globe-hud-close');
     if (closeBtn) {

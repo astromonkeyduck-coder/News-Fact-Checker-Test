@@ -1871,6 +1871,99 @@
             height: 64px;
         }
         
+        /* Global Coverage Search Bar in Header */
+        .globe-search-container-header {
+            display: flex;
+            align-items: center;
+            position: relative;
+            margin-left: 1.5rem;
+            min-width: 250px;
+            max-width: 400px;
+            flex: 0 1 auto;
+        }
+        
+        .globe-search-icon-header {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.875rem;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .globe-search-input-header {
+            width: 100%;
+            height: 36px;
+            padding: 0.5rem 2.5rem 0.5rem 2.5rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1.5px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.875rem;
+            font-weight: 400;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            box-sizing: border-box;
+        }
+        
+        .globe-search-input-header::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .globe-search-input-header:focus {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: #4A90E2;
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2), 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .globe-search-clear-header {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.25rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0.25rem;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .globe-search-clear-header:hover {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        @media (max-width: 1024px) {
+            .globe-search-container-header {
+                min-width: 200px;
+                max-width: 300px;
+                margin-left: 1rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .globe-search-container-header {
+                order: 3;
+                width: 100%;
+                min-width: 100%;
+                max-width: 100%;
+                margin-left: 0;
+                margin-top: 0.5rem;
+            }
+        }
+        
         /* Ensure anchored sections aren't hidden under fixed header */
         #news-section, #fact-checker-section, #geography-game-section, #country-spotlight-section, #sudan-section, #credibility-section, #about-section, #ai-assistant-section {
             scroll-margin-top: 90px;
@@ -12037,6 +12130,123 @@
             }
         }
 
+        /* Mobile Desktop Notice Popup Styles */
+        .mobile-desktop-notice {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .mobile-desktop-notice.active {
+            display: flex;
+        }
+
+        .mobile-notice-content {
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+            border: 2px solid rgba(74, 158, 255, 0.3);
+            border-radius: 16px;
+            padding: 2rem 1.5rem;
+            max-width: 90%;
+            width: 100%;
+            max-width: 400px;
+            position: relative;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.3s ease;
+        }
+
+        .mobile-notice-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.5rem;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .mobile-notice-close:hover,
+        .mobile-notice-close:active {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            transform: scale(1.1);
+        }
+
+        .mobile-notice-icon {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .mobile-notice-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-align: center;
+            margin: 0 0 1rem 0;
+        }
+
+        .mobile-notice-text {
+            font-size: 0.938rem;
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            line-height: 1.5;
+            margin: 0 0 0.75rem 0;
+        }
+
+        .mobile-notice-subtext {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .mobile-desktop-notice {
+                display: none !important;
+            }
+        }
+
         /* ========================================
            MOBILE LANDING PAGE - CLEAN & SIMPLE
            Complete redesign for mobile devices
@@ -12123,6 +12333,21 @@
 <body>
     <!-- Mobile block overlay completely removed - site is now fully mobile-friendly -->
     
+    <!-- Mobile Desktop Notice Popup -->
+    <div class="mobile-desktop-notice" id="mobileDesktopNotice" style="display: none;">
+        <div class="mobile-notice-content">
+            <button class="mobile-notice-close" id="mobileNoticeClose" aria-label="Close">&times;</button>
+            <div class="mobile-notice-icon">💻</div>
+            <h3 class="mobile-notice-title">Best Experience on Desktop</h3>
+            <p class="mobile-notice-text">
+                This website is optimized for desktop viewing. Mobile improvements are currently being worked on.
+            </p>
+            <p class="mobile-notice-subtext">
+                For the best experience, please visit on a desktop or laptop computer.
+            </p>
+        </div>
+    </div>
+    
     <style>
         /* Allow chatbox and tip modal to work on mobile */
         noteworthy-chat,
@@ -12176,6 +12401,17 @@
                 <div class="brand-info">
                     <h1><span class="brand-name">Noteworthy News</span></h1>
                     <p>Trusted Journalism & Digital Literacy</p>
+                </div>
+                <!-- Global Coverage Search Bar -->
+                <div class="globe-search-container-header" id="globeSearchContainerHeader" style="display: none;">
+                    <span class="globe-search-icon-header">🔍</span>
+                    <input 
+                        type="text" 
+                        class="globe-search-input-header" 
+                        id="globeSearchInputHeader"
+                        placeholder="Search global coverage..." 
+                    />
+                    <button class="globe-search-clear-header" id="globeSearchClearHeader" title="Clear search" style="display: none;">&times;</button>
                 </div>
             </div>
             
