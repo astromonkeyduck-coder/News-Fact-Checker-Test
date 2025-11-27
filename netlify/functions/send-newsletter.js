@@ -510,7 +510,12 @@ exports.handler = async (event, context) => {
             message: `Sent to ${successCount} of ${emailsToSend.length} specific email(s) (not sent to audience)`,
             emailsSent: successCount,
             errors: errorCount,
-            results: results,
+            // Don't expose email addresses in response - only success/failure counts
+            results: results.map(r => ({
+              success: r.success,
+              id: r.id,
+              error: r.error ? r.error.substring(0, 100) : undefined // Truncate error, no email
+            })),
           }),
         };
       }
@@ -924,13 +929,17 @@ exports.handler = async (event, context) => {
         unsubscribedCount: totalUnsubscribed,
         emailsSent: successCount,
         errors: errorCount,
-        errorDetails: errors.length > 0 ? errors.slice(0, 20) : [], // Show more error details
-        bouncedEmails: errors.filter(e => {
+        errorDetails: errors.length > 0 ? errors.slice(0, 20).map(e => ({
+          error: e.error?.substring(0, 100) || 'Unknown error'
+          // Don't include email address
+        })) : [],
+        bouncedCount: errors.filter(e => {
           const err = e.error?.toLowerCase() || '';
           return err.includes('bounce') || err.includes('suppressed') || err.includes('invalid');
-        }).map(e => e.email),
-        successfulEmails: successfulEmails,
-        failedEmails: errors.map(e => e.email),
+        }).length,
+        // Don't expose email addresses in response
+        successfulCount: successfulEmails.length,
+        failedCount: errors.length,
         sendTime: new Date().toISOString(),
       }),
     };
