@@ -9283,23 +9283,38 @@ function initNewsletterSubscription() {
         }
         
         if (imageUrl) {
-            // Validate URL format
+            // Convert relative URLs to absolute URLs
+            let absoluteUrl = imageUrl;
             if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-                console.error(`[Spotlight] ❌ Invalid URL format for ${wrapperId}:`, imageUrl);
+                // It's a relative URL - convert to absolute
+                if (imageUrl.startsWith('/')) {
+                    // Absolute path - prepend origin
+                    absoluteUrl = window.location.origin + imageUrl;
+                } else {
+                    // Relative path - prepend origin and current path
+                    const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+                    absoluteUrl = window.location.origin + basePath + imageUrl;
+                }
+                console.log(`[Spotlight] Converted relative URL to absolute: ${imageUrl} -> ${absoluteUrl}`);
+            }
+            
+            // Validate URL format
+            if (!absoluteUrl.startsWith('http://') && !absoluteUrl.startsWith('https://')) {
+                console.error(`[Spotlight] ❌ Invalid URL format for ${wrapperId}:`, absoluteUrl);
                 renderFallbackState(wrapper);
                 return;
             }
             
             console.log(`[Spotlight] Loading image into ${wrapperId}`);
-            console.log(`[Spotlight] Full URL:`, imageUrl);
-            console.log(`[Spotlight] URL length:`, imageUrl.length);
+            console.log(`[Spotlight] Full URL:`, absoluteUrl);
+            console.log(`[Spotlight] URL length:`, absoluteUrl.length);
             console.log(`[Spotlight] Wrapper element:`, wrapper);
             console.log(`[Spotlight] Wrapper display:`, window.getComputedStyle(wrapper).display);
             console.log(`[Spotlight] Wrapper visibility:`, window.getComputedStyle(wrapper).visibility);
             
             // Create img element with error handling
             const img = document.createElement('img');
-            img.src = imageUrl;
+            img.src = absoluteUrl;
             img.alt = 'Generated image';
             img.loading = 'lazy';
             img.style.cssText = 'width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 0.3s ease;';
@@ -9320,7 +9335,7 @@ function initNewsletterSubscription() {
             
             img.onerror = function() {
                 console.error(`[Spotlight] ❌ Image failed to load in ${wrapperId}`);
-                console.error(`[Spotlight] Failed URL:`, imageUrl);
+                console.error(`[Spotlight] Failed URL:`, absoluteUrl);
                 console.error(`[Spotlight] Image element:`, this);
                 console.error(`[Spotlight] Error event details:`, {
                     type: 'error',
@@ -9341,7 +9356,7 @@ function initNewsletterSubscription() {
             
             // Check if there's already a valid image loading
             const existingImg = currentWrapper.querySelector('img');
-            if (existingImg && existingImg.src && existingImg.src === imageUrl) {
+            if (existingImg && existingImg.src && existingImg.src === absoluteUrl) {
                 console.log(`[Spotlight] Image already exists in ${wrapperId} with same URL, skipping insertion`);
                 return;
             }

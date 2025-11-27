@@ -918,9 +918,7 @@ function renderPosts(posts, container, originalContent = null) {
               </div>
               
               <!-- Post Text -->
-              <div style="color: rgb(231, 233, 234); font-size: 0.938rem; line-height: 1.375rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; margin-bottom: 0.75rem; text-align: left; text-indent: 0; padding: 0; margin: 0 0 0.75rem 0;">
-                ${formatStory(titleText)}
-              </div>
+              <div style="color: rgb(231, 233, 234); font-size: 0.938rem; line-height: 1.375rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; margin-bottom: 0.75rem; text-align: left; text-indent: 0; padding: 0; margin: 0 0 0.75rem 0;">${formatStory(titleText)}</div>
               
               <!-- Media -->
               ${renderMedia(post)}

@@ -302,7 +302,12 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
         
         storedImageKey = imageKey;
         // Generate URL to retrieve the stored image
-        storedImageUrl = `/.netlify/functions/get-dalle-image?key=${encodeURIComponent(imageKey)}`;
+        // Construct absolute URL from request headers
+        const protocol = event.headers['x-forwarded-proto'] || 'https';
+        const host = event.headers.host || event.headers['x-forwarded-host'] || 'noteworthynews.co';
+        const baseUrl = `${protocol}://${host}`;
+        
+        storedImageUrl = `${baseUrl}/.netlify/functions/get-dalle-image?key=${encodeURIComponent(imageKey)}`;
         console.log("[Generate Image] ✅ Image stored in Netlify Blobs with key:", imageKey);
         console.log("[Generate Image] ✅ Stored image URL:", storedImageUrl);
         

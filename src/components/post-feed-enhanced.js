@@ -519,9 +519,7 @@ function renderEnhancedPostCard(post) {
           </div>
           
           <!-- Post Text -->
-          <div style="color: rgb(231, 233, 234); font-size: 0.938rem; line-height: 1.375rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; margin: 0 0 0.75rem 0; padding: 0; text-align: left; text-indent: 0;">
-            ${formatStory(postText)}
-          </div>
+          <div style="color: rgb(231, 233, 234); font-size: 0.938rem; line-height: 1.375rem; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; margin: 0 0 0.75rem 0; padding: 0; text-align: left; text-indent: 0;">${formatStory(postText)}</div>
       
           <!-- Media -->
           ${renderMedia(post)}
