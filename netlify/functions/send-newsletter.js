@@ -478,6 +478,8 @@ exports.handler = async (event, context) => {
     let allContacts = [];
     let page = 1;
     let hasMore = true;
+    let totalContactsFound = 0;
+    let totalUnsubscribed = 0;
 
     while (hasMore) {
       try {
@@ -488,23 +490,45 @@ exports.handler = async (event, context) => {
 
         const contacts = contactsResponse.data?.data || [];
         const pagination = contactsResponse.data || {};
+        totalContactsFound += contacts.length;
 
         // Filter out unsubscribed contacts
-        const subscribedContacts = contacts.filter(contact => 
-          contact.unsubscribed !== true
-        );
+        const subscribedContacts = contacts.filter(contact => {
+          if (contact.unsubscribed === true) {
+            totalUnsubscribed++;
+            return false;
+          }
+          return true;
+        });
 
         allContacts = allContacts.concat(subscribedContacts);
-        console.log(`Page ${page}: Found ${subscribedContacts.length} subscribed contacts (${contacts.length} total)`);
+        console.log(`Page ${page}: Found ${subscribedContacts.length} subscribed contacts (${contacts.length} total on this page, ${totalUnsubscribed} unsubscribed so far)`);
+        
+        // Log email addresses for debugging
+        if (subscribedContacts.length > 0) {
+          console.log(`  Subscribed emails on page ${page}:`, subscribedContacts.map(c => c.email).join(', '));
+        }
 
         // Check if there are more pages
         hasMore = pagination.has_more === true && contacts.length > 0;
         page++;
+        
+        // Safety limit to prevent infinite loops
+        if (page > 100) {
+          console.warn('⚠️ Reached page limit (100), stopping pagination');
+          hasMore = false;
+        }
       } catch (error) {
         console.error('Error fetching contacts:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         hasMore = false;
       }
     }
+
+    console.log(`\n📊 Contact Summary:`);
+    console.log(`  Total contacts in audience: ${totalContactsFound}`);
+    console.log(`  Unsubscribed: ${totalUnsubscribed}`);
+    console.log(`  Subscribed (will receive email): ${allContacts.length}`);
 
     if (allContacts.length === 0) {
       return {
@@ -514,20 +538,40 @@ exports.handler = async (event, context) => {
           success: true,
           message: 'No subscribed contacts found in audience',
           contactsCount: 0,
+          totalContactsFound: totalContactsFound,
+          unsubscribedCount: totalUnsubscribed,
           emailsSent: 0,
         }),
       };
     }
 
-    console.log(`Total subscribed contacts: ${allContacts.length}`);
+    // Validate email addresses before sending
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const validContacts = allContacts.filter(contact => {
+      if (!contact.email) {
+        console.warn(`⚠️ Contact missing email:`, contact);
+        return false;
+      }
+      if (!emailRegex.test(contact.email)) {
+        console.warn(`⚠️ Invalid email format: ${contact.email}`);
+        return false;
+      }
+      return true;
+    });
 
-    // Send newsletter to all contacts
+    if (validContacts.length < allContacts.length) {
+      console.warn(`⚠️ Filtered out ${allContacts.length - validContacts.length} contacts with invalid emails`);
+    }
+
+    console.log(`\n📧 Sending to ${validContacts.length} valid email addresses`);
+
+    // Send newsletter to all valid contacts
     // Resend allows sending to multiple recipients, but we'll send individually
     // to ensure proper unsubscribe handling and avoid rate limits
-    const emailAddresses = allContacts.map(contact => contact.email).filter(Boolean);
+    const emailAddresses = validContacts.map(contact => contact.email).filter(Boolean);
     
     // Generate personalized emails for each contact
-    const emailsWithPersonalization = allContacts.map(contact => {
+    const emailsWithPersonalization = validContacts.map(contact => {
       const email = contact.email;
       if (!email) return null;
       
@@ -624,10 +668,13 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         success: true,
         message: `Newsletter sent to ${successCount} subscribers`,
-        contactsCount: allContacts.length,
+        contactsCount: validContacts.length,
+        totalContactsFound: totalContactsFound,
+        unsubscribedCount: totalUnsubscribed,
         emailsSent: successCount,
         errors: errorCount,
         errorDetails: errors.length > 0 ? errors.slice(0, 10) : [], // Limit error details
+        bouncedEmails: errors.filter(e => e.error && e.error.toLowerCase().includes('bounce')).map(e => e.email),
       }),
     };
 
