@@ -491,6 +491,17 @@ exports.handler = async (event, context) => {
         const contacts = contactsResponse.data?.data || [];
         const pagination = contactsResponse.data || {};
         totalContactsFound += contacts.length;
+        
+        // Debug: Log full response structure for first page
+        if (page === 1) {
+          console.log('📋 First page response structure:', JSON.stringify({
+            hasData: !!contactsResponse.data,
+            dataKeys: contactsResponse.data ? Object.keys(contactsResponse.data) : [],
+            contactsCount: contacts.length,
+            paginationKeys: Object.keys(pagination),
+            pagination: pagination
+          }, null, 2));
+        }
 
         // Filter out unsubscribed contacts
         const subscribedContacts = contacts.filter(contact => {
@@ -510,7 +521,20 @@ exports.handler = async (event, context) => {
         }
 
         // Check if there are more pages
-        hasMore = pagination.has_more === true && contacts.length > 0;
+        // Resend pagination: has_more indicates if there are more pages
+        // Also check if we got any contacts on this page
+        // Try both snake_case and camelCase field names
+        const hasMoreFlag = pagination.has_more === true || pagination.hasMore === true;
+        hasMore = hasMoreFlag && contacts.length > 0;
+        
+        console.log(`  Pagination info: has_more=${pagination.has_more}, hasMore=${pagination.hasMore}, contacts.length=${contacts.length}, willContinue=${hasMore}`);
+        
+        // If we got 0 contacts and no has_more flag, definitely stop
+        if (contacts.length === 0 && !hasMoreFlag) {
+          hasMore = false;
+          console.log('  No more contacts and no has_more flag, stopping pagination');
+        }
+        
         page++;
         
         // Safety limit to prevent infinite loops
@@ -615,32 +639,68 @@ exports.handler = async (event, context) => {
     let successCount = 0;
     let errorCount = 0;
     const errors = [];
+    const successfulEmails = [];
+
+    console.log(`\n📤 Starting to send ${emailsWithPersonalization.length} emails in batches of ${batchSize}...\n`);
 
     for (let i = 0; i < emailsWithPersonalization.length; i += batchSize) {
       const batch = emailsWithPersonalization.slice(i, i + batchSize);
+      const batchNumber = Math.floor(i / batchSize) + 1;
       
-      // Send emails in parallel within each batch
-      const batchPromises = batch.map(async ({ email, html, text }) => {
-        try {
-          const result = await resend.emails.send({
-            from: fromEmail,
-            to: email,
-            replyTo: 'richard@noteworthynews.co',
-            subject: subject,
-            html: html,
-            text: text,
-            clickTracking: true, // Track link clicks
-            openTracking: true, // Track email opens
-          });
+      console.log(`📦 Batch ${batchNumber}/${Math.ceil(emailsWithPersonalization.length / batchSize)}: Sending to ${batch.length} recipients...`);
+      
+      // Send emails in parallel within each batch with retry logic
+      const batchPromises = batch.map(async ({ email, html, text }, index) => {
+        const maxRetries = 2;
+        let lastError = null;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            console.log(`  [${batchNumber}-${index + 1}] Attempt ${attempt}/${maxRetries}: Sending to ${email}...`);
+            
+            const result = await resend.emails.send({
+              from: fromEmail,
+              to: email,
+              replyTo: 'richard@noteworthynews.co',
+              subject: subject,
+              html: html,
+              text: text,
+              clickTracking: true, // Track link clicks
+              openTracking: true, // Track email opens
+            });
 
-          if (result.error) {
-            throw new Error(result.error.message || 'Unknown error');
+            if (result.error) {
+              throw new Error(result.error.message || 'Unknown error');
+            }
+
+            console.log(`  ✅ [${batchNumber}-${index + 1}] Successfully sent to ${email} (ID: ${result.data?.id})`);
+            return { success: true, email, id: result.data?.id };
+          } catch (error) {
+            lastError = error;
+            const errorMsg = error.message || String(error);
+            
+            // Check if it's a bounce/suppression error
+            const isBounce = errorMsg.toLowerCase().includes('bounce') || 
+                           errorMsg.toLowerCase().includes('suppressed') ||
+                           errorMsg.toLowerCase().includes('invalid') ||
+                           errorMsg.toLowerCase().includes('rejected');
+            
+            if (isBounce && attempt === 1) {
+              // Don't retry bounces - they're permanent failures
+              console.log(`  ❌ [${batchNumber}-${index + 1}] BOUNCE/SUPPRESSION for ${email}: ${errorMsg}`);
+              break;
+            }
+            
+            if (attempt < maxRetries) {
+              console.log(`  ⚠️  [${batchNumber}-${index + 1}] Attempt ${attempt} failed for ${email}, retrying... (${errorMsg})`);
+              await new Promise(resolve => setTimeout(resolve, 2000 * attempt)); // Exponential backoff
+            } else {
+              console.log(`  ❌ [${batchNumber}-${index + 1}] Failed to send to ${email} after ${maxRetries} attempts: ${errorMsg}`);
+            }
           }
-
-          return { success: true, email, id: result.data?.id };
-        } catch (error) {
-          return { success: false, email, error: error.message };
         }
+        
+        return { success: false, email, error: lastError?.message || 'Unknown error' };
       });
 
       const batchResults = await Promise.all(batchPromises);
@@ -648,18 +708,32 @@ exports.handler = async (event, context) => {
       batchResults.forEach(result => {
         if (result.success) {
           successCount++;
+          successfulEmails.push(result.email);
         } else {
           errorCount++;
           errors.push({ email: result.email, error: result.error });
         }
       });
 
-      console.log(`Batch ${Math.floor(i / batchSize) + 1}: ${successCount} sent, ${errorCount} errors`);
+      console.log(`\n📊 Batch ${batchNumber} Summary: ${successCount} sent, ${errorCount} errors (Total progress: ${successCount + errorCount}/${emailsWithPersonalization.length})\n`);
 
       // Small delay between batches to avoid rate limits
       if (i + batchSize < emailsWithPersonalization.length) {
         await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
       }
+    }
+    
+    console.log(`\n✅ FINAL SUMMARY:`);
+    console.log(`  Total contacts in audience: ${totalContactsFound}`);
+    console.log(`  Subscribed contacts: ${validContacts.length}`);
+    console.log(`  Successfully sent: ${successCount}`);
+    console.log(`  Failed: ${errorCount}`);
+    if (successfulEmails.length > 0) {
+      console.log(`  ✅ Successfully sent to: ${successfulEmails.join(', ')}`);
+    }
+    if (errors.length > 0) {
+      console.log(`  ❌ Failed emails:`);
+      errors.forEach(e => console.log(`     - ${e.email}: ${e.error}`));
     }
 
     return {
@@ -667,14 +741,19 @@ exports.handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         success: true,
-        message: `Newsletter sent to ${successCount} subscribers`,
+        message: `Newsletter sent to ${successCount} of ${validContacts.length} subscribers`,
         contactsCount: validContacts.length,
         totalContactsFound: totalContactsFound,
         unsubscribedCount: totalUnsubscribed,
         emailsSent: successCount,
         errors: errorCount,
-        errorDetails: errors.length > 0 ? errors.slice(0, 10) : [], // Limit error details
-        bouncedEmails: errors.filter(e => e.error && e.error.toLowerCase().includes('bounce')).map(e => e.email),
+        errorDetails: errors.length > 0 ? errors.slice(0, 20) : [], // Show more error details
+        bouncedEmails: errors.filter(e => {
+          const err = e.error?.toLowerCase() || '';
+          return err.includes('bounce') || err.includes('suppressed') || err.includes('invalid');
+        }).map(e => e.email),
+        successfulEmails: successfulEmails,
+        failedEmails: errors.map(e => e.email),
       }),
     };
 

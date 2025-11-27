@@ -180,6 +180,23 @@
     </style>
 </head>
 <body>
+    <!-- Login Screen -->
+    <div id="loginScreen" style="display: flex; justify-content: center; align-items: center; min-height: 100vh; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1000; background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%);">
+        <div style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(46, 204, 113, 0.15)); padding: 50px; border-radius: 24px; border: 2px solid rgba(74, 144, 226, 0.4); max-width: 450px; width: 100%; backdrop-filter: blur(20px); box-shadow: 0 20px 60px rgba(74, 144, 226, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset; position: relative; overflow: hidden; margin: 20px;">
+            <div style="position: absolute; top: -50%; right: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(74, 144, 226, 0.15) 0%, transparent 70%); pointer-events: none;"></div>
+            <h2 style="margin-bottom: 25px; text-align: center; font-size: 2rem; font-weight: 800; color: #4A90E2; text-shadow: 0 2px 10px rgba(74, 144, 226, 0.3); position: relative; z-index: 1;">
+                <span style="font-size: 2.5rem; display: block; margin-bottom: 10px;">🔒</span>
+                <span>Admin Access Required</span>
+            </h2>
+            <p style="margin-bottom: 30px; color: rgba(255,255,255,0.85); text-align: center; font-size: 1.05rem; font-weight: 400; position: relative; z-index: 1;">Enter admin password to access newsletter controls</p>
+            <input type="password" id="adminPassword" placeholder="Admin Password" style="width: 100%; padding: 16px 20px; border: 2px solid rgba(74, 144, 226, 0.4); border-radius: 12px; background: rgba(15, 15, 35, 0.9); color: white; font-size: 1.1rem; margin-bottom: 20px; font-weight: 500; transition: all 0.3s ease; position: relative; z-index: 1; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);" onkeypress="if(event.key==='Enter') checkPassword()" onfocus="this.style.borderColor='#4A90E2'; this.style.boxShadow='0 0 0 4px rgba(74, 144, 226, 0.2), 0 4px 20px rgba(74, 144, 226, 0.3)';" onblur="this.style.borderColor='rgba(74, 144, 226, 0.4)'; this.style.boxShadow='0 4px 15px rgba(0, 0, 0, 0.2)';">
+            <button class="btn" onclick="checkPassword()" style="width: 100%; font-size: 1rem; padding: 16px; position: relative; z-index: 1;">Login</button>
+            <p id="loginError" style="color: #f44336; margin-top: 20px; text-align: center; display: none; font-weight: 600; padding: 12px; background: rgba(244, 67, 54, 0.15); border-radius: 8px; border: 1px solid rgba(244, 67, 54, 0.3); position: relative; z-index: 1;"></p>
+        </div>
+    </div>
+    
+    <!-- Main Content (hidden until login) -->
+    <div id="mainContent" style="display: none;">
     <div class="container">
         <a href="index.html" class="back-link">← Back to Home</a>
         <h1>Send Newsletter</h1>
@@ -226,8 +243,74 @@
             </div>
         </form>
     </div>
+    </div>
     
     <script>
+        // Check if already authenticated
+        let adminToken = sessionStorage.getItem('adminNewsletterToken');
+        if (adminToken) {
+            // Verify token is still valid
+            fetch(`/.netlify/functions/log-data?token=${encodeURIComponent(adminToken)}&limit=1`)
+                .then(response => {
+                    if (response.ok || response.status === 200) {
+                        showMainContent();
+                    } else {
+                        sessionStorage.removeItem('adminNewsletterToken');
+                    }
+                })
+                .catch(() => {
+                    sessionStorage.removeItem('adminNewsletterToken');
+                });
+        }
+
+        async function checkPassword() {
+            const password = document.getElementById('adminPassword').value;
+            const errorEl = document.getElementById('loginError');
+            
+            if (!password) {
+                errorEl.textContent = 'Please enter a password';
+                errorEl.style.display = 'block';
+                return;
+            }
+            
+            // Try to authenticate by making a test request
+            try {
+                const testUrl = `/.netlify/functions/log-data?token=${encodeURIComponent(password)}&limit=1`;
+                const response = await fetch(testUrl);
+                
+                if (response.ok || response.status === 200) {
+                    // Password is correct
+                    adminToken = password;
+                    sessionStorage.setItem('adminNewsletterToken', password);
+                    showMainContent();
+                } else if (response.status === 401) {
+                    errorEl.textContent = 'Incorrect password';
+                    errorEl.style.display = 'block';
+                } else {
+                    // If no token is configured, allow access (for development)
+                    const data = await response.json().catch(() => ({}));
+                    if (data.error && data.error.includes('token')) {
+                        // Token is required but not set up - allow access for now
+                        adminToken = password;
+                        sessionStorage.setItem('adminNewsletterToken', password);
+                        showMainContent();
+                    } else {
+                        errorEl.textContent = 'Authentication failed';
+                        errorEl.style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                console.error('Auth error:', error);
+                errorEl.textContent = 'Connection error. Please try again.';
+                errorEl.style.display = 'block';
+            }
+        }
+        
+        function showMainContent() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+        }
+
         const form = document.getElementById('newsletterForm');
         const statusMessage = document.getElementById('statusMessage');
         const sendBtn = document.getElementById('sendBtn');
