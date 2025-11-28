@@ -27,6 +27,12 @@
   status = 200
   force = false
 
+[[redirects]]
+  from = "/adminnewsletter"
+  to = "/admin-newsletter.html"
+  status = 200
+  force = false
+
 [functions]
   # Use esbuild to automatically compile TypeScript functions
   node_bundler = "esbuild"

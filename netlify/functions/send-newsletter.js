@@ -290,8 +290,8 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // SECURITY: Require admin token for sending newsletters (protects email addresses)
-    const adminToken = process.env.ADMIN_ANALYTICS_TOKEN;
+    // SECURITY: Require newsletter key for sending newsletters (protects email addresses)
+    const newsletterKey = process.env.NEWSLETTER_KEY;
     const providedToken = event.queryStringParameters?.token || 
                          event.headers['x-admin-token'] || 
                          (event.body ? (() => {
@@ -302,13 +302,13 @@ exports.handler = async (event, context) => {
                            }
                          })() : null);
     
-    if (adminToken && providedToken !== adminToken) {
+    if (newsletterKey && providedToken !== newsletterKey) {
       return {
         statusCode: 401,
         headers,
         body: JSON.stringify({ 
-          error: 'Unauthorized - Admin token required',
-          message: 'This endpoint requires admin authentication. Please provide a valid admin token.'
+          error: 'Unauthorized - Newsletter key required',
+          message: 'This endpoint requires newsletter authentication. Please provide a valid newsletter key.'
         }),
       };
     }
@@ -477,20 +477,20 @@ exports.handler = async (event, context) => {
             .replace(/\{\{EMAIL\}\}/g, email)
             .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername);
           
-          const result = await resend.emails.send({
-            from: fromEmail,
+        const result = await resend.emails.send({
+          from: fromEmail,
             to: email,
-            replyTo: 'richard@noteworthynews.co',
+          replyTo: 'richard@noteworthynews.co',
             subject: subject, // Same subject as mass email
-            html: personalizedHtml,
-            text: personalizedText,
+          html: personalizedHtml,
+          text: personalizedText,
             clickTracking: true,
             openTracking: true,
-          });
+        });
 
-          if (result.error) {
-            throw new Error(result.error.message || 'Unknown error');
-          }
+        if (result.error) {
+          throw new Error(result.error.message || 'Unknown error');
+        }
 
           console.log(`✅ Email sent successfully to ${email}`);
           successCount++;
@@ -518,7 +518,7 @@ exports.handler = async (event, context) => {
             })),
           }),
         };
-      }
+    }
     
     // SAFETY CHECK: If we get here, testEmail was NOT provided, so we're sending to audience
     console.log('📧 PRODUCTION MODE: Sending to full audience (testEmail was not provided)');
@@ -674,7 +674,7 @@ exports.handler = async (event, context) => {
         } else {
           // If later page fails, we might have gotten all contacts
           console.log('  Error on later page, assuming we got all contacts');
-          hasMore = false;
+        hasMore = false;
         }
       }
     }
@@ -808,24 +808,24 @@ exports.handler = async (event, context) => {
           try {
             console.log(`  [${batchNumber}-${index + 1}] Attempt ${attempt}/${maxRetries}: Sending email...`);
             
-            const result = await resend.emails.send({
-              from: fromEmail,
-              to: email,
-              replyTo: 'richard@noteworthynews.co',
-              subject: subject,
-              html: html,
-              text: text,
+          const result = await resend.emails.send({
+            from: fromEmail,
+            to: email,
+            replyTo: 'richard@noteworthynews.co',
+            subject: subject,
+            html: html,
+            text: text,
               clickTracking: true, // Track link clicks
               openTracking: true, // Track email opens
-            });
+          });
 
-            if (result.error) {
-              throw new Error(result.error.message || 'Unknown error');
-            }
+          if (result.error) {
+            throw new Error(result.error.message || 'Unknown error');
+          }
 
             console.log(`  ✅ [${batchNumber}-${index + 1}] Successfully sent (ID: ${result.data?.id})`);
-            return { success: true, email, id: result.data?.id };
-          } catch (error) {
+          return { success: true, email, id: result.data?.id };
+        } catch (error) {
             lastError = error;
             const errorMsg = error.message || String(error);
             
@@ -835,9 +835,25 @@ exports.handler = async (event, context) => {
                            errorMsg.toLowerCase().includes('invalid') ||
                            errorMsg.toLowerCase().includes('rejected');
             
+            // Check for specific iCloud CS01 error (transient bounce)
+            const isIcloudCS01 = errorMsg.includes('CS01') || 
+                                errorMsg.includes('local policy') ||
+                                (errorMsg.includes('apple.com') && errorMsg.includes('rejected'));
+            
             if (isBounce && attempt === 1) {
-              // Don't retry bounces - they're permanent failures
-              console.log(`  ❌ [${batchNumber}-${index + 1}] BOUNCE/SUPPRESSION: ${errorMsg}`);
+              const isIcloud = contact.email.toLowerCase().includes('icloud.com') || isIcloudCS01;
+              const bounceType = isIcloudCS01 ? 'TRANSIENT (iCloud CS01)' : isIcloud ? 'iCloud' : 'PERMANENT';
+              console.log(`  ❌ [${batchNumber}-${index + 1}] BOUNCE (${bounceType}): ${errorMsg.substring(0, 150)}`);
+              
+              if (isIcloudCS01) {
+                console.log(`     ⚠️  iCloud CS01: Message rejected due to local policy (spam filter)`);
+                console.log(`     💡 This is a TRANSIENT bounce - emails may work in the future`);
+                console.log(`     🔧 Fix: Verify domain at resend.com/domains (SPF/DKIM/DMARC must be green)`);
+                console.log(`     📖 More info: https://support.apple.com/en-us/HT204137`);
+              } else if (isIcloud) {
+                console.log(`     💡 iCloud bounce detected. Check domain authentication at resend.com/domains`);
+              }
+              // Don't retry bounces - they're permanent failures (even transient ones need domain fixes first)
               break;
             }
             
@@ -896,6 +912,7 @@ exports.handler = async (event, context) => {
     }
 
     // SAFETY: Store the send time to prevent spam
+    // Also save newsletter history for admin preview
     if (successCount > 0) {
       try {
         const { getStore } = require("@netlify/blobs");
@@ -905,13 +922,50 @@ exports.handler = async (event, context) => {
           token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
         });
         
-        await store.set("last-send-time", JSON.stringify({
+        const sendRecord = {
           timestamp: new Date().toISOString(),
           emailsSent: successCount,
           totalContacts: validContacts.length,
           subject: subject,
-        }));
+          errors: errorCount,
+        };
+        
+        await store.set("last-send-time", JSON.stringify(sendRecord));
         console.log('💾 Saved send time to prevent duplicate sends');
+        
+        // Save to newsletter history
+        try {
+          const historyKey = `newsletter-history-${Date.now()}`;
+          await store.set(historyKey, JSON.stringify(sendRecord));
+          
+          // Also maintain a list of all newsletter IDs
+          let historyList = [];
+          try {
+            const existing = await store.get("newsletter-history-list");
+            if (existing) {
+              historyList = JSON.parse(existing);
+            }
+          } catch (e) {
+            historyList = [];
+          }
+          
+          historyList.push({
+            id: historyKey,
+            subject: subject,
+            timestamp: sendRecord.timestamp,
+            emailsSent: successCount,
+          });
+          
+          // Keep only last 100 newsletters
+          if (historyList.length > 100) {
+            historyList = historyList.slice(-100);
+          }
+          
+          await store.set("newsletter-history-list", JSON.stringify(historyList));
+          console.log('💾 Saved newsletter to history');
+        } catch (historyError) {
+          console.warn('⚠️ Could not save newsletter history:', historyError.message);
+        }
       } catch (saveError) {
         console.warn('⚠️ Could not save send time:', saveError.message);
         // Don't fail the request if we can't save

@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Send Newsletter - Noteworthy News Admin</title>
-    <!-- Favicon and Theme -->
+    <title>Newsletter Control Center — Noteworthy News Admin</title>
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="192x192">
     <link rel="shortcut icon" type="image/png" href="IMG_5794.PNG">
     <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
     <link rel="mask-icon" href="IMG_5794.PNG" color="#0f234a">
-    <meta name="theme-color" content="#0f234a">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#0a0e1a">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -19,241 +18,940 @@
             box-sizing: border-box;
         }
         
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --primary-light: #60a5fa;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #0f172a;
+            --bg-tertiary: #1e293b;
+            --border: rgba(255, 255, 255, 0.1);
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+        }
+        
         html {
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            background: var(--bg-primary);
             min-height: 100vh;
             overflow-x: hidden;
-            overscroll-behavior: none !important;
-            overscroll-behavior-x: none !important;
-            overscroll-behavior-y: none !important;
-            -webkit-overflow-scrolling: touch;
         }
         
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%);
-            color: white;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, #1a1f3a 100%);
+            color: var(--text-primary);
             min-height: 100vh;
-            padding: 40px 20px;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
         
-        .container {
-            max-width: 800px;
+        /* Login Screen */
+        #loginScreen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            backdrop-filter: blur(20px);
+        }
+        
+        .login-container {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            padding: 3rem;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            max-width: 420px;
+            width: 100%;
+            margin: 20px;
+            box-shadow: var(--shadow-xl), 0 0 0 1px rgba(59, 130, 246, 0.1) inset;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+            animation: pulse 4s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 0.8; }
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .login-icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.4));
+        }
+        
+        .login-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, var(--primary-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+        
+        .login-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 400;
+        }
+        
+        .login-input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.6);
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 1.25rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .login-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15), var(--shadow-md);
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 1;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .login-error {
+            color: var(--error);
+            margin-top: 1rem;
+            text-align: center;
+            display: none;
+            font-weight: 600;
+            padding: 0.75rem;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Main Dashboard */
+        #mainContent {
+            display: none;
+            min-height: 100vh;
+            padding: 0;
+        }
+        
+        .dashboard-header {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .header-content {
+            max-width: 1400px;
             margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
-        h1 {
-            font-size: 2.5rem;
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
             font-weight: 900;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
+            background: linear-gradient(135deg, #ffffff 0%, var(--primary-light) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
         
-        .subtitle {
-            color: #aaaaaa;
-            margin-bottom: 40px;
-            font-size: 1.1rem;
+        .header-badge {
+            padding: 0.375rem 0.75rem;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--primary-light);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         
+        .header-nav {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .nav-link:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #ffffff 0%, var(--primary-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 2.5rem;
+            font-weight: 400;
+        }
+        
+        /* Cards */
+        .card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .card:hover {
+            border-color: rgba(59, 130, 246, 0.3);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+        
+        .card-icon {
+            font-size: 1.5rem;
+        }
+        
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        /* Grid Layouts */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .preview-card {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .preview-card:hover {
+            background: rgba(15, 23, 42, 0.6);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        
+        .preview-card.selected {
+            border-color: var(--primary);
+            background: rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        
+        .preview-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .preview-subject {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+        
+        .preview-date {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .preview-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 4px;
+            font-size: 0.7rem;
+            color: var(--success);
+            margin-top: 0.5rem;
+        }
+        
+        /* Form Elements */
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 1.5rem;
         }
         
         label {
             display: block;
-            margin-bottom: 8px;
-            color: #cccccc;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
             font-weight: 600;
             font-size: 0.95rem;
         }
         
-        input[type="text"],
-        textarea {
+        input[type="email"] {
             width: 100%;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 0.875rem 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1.5px solid var(--border);
             border-radius: 10px;
-            color: white;
-            font-family: 'Inter', sans-serif;
-            font-size: 1rem;
-            transition: all 0.3s ease;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        input[type="text"]:focus,
-        textarea:focus {
+        input[type="email"]:focus {
             outline: none;
-            border-color: #4A90E2;
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+            border-color: var(--primary);
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
         }
         
-        textarea {
-            min-height: 300px;
-            resize: vertical;
+        .help-text {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            line-height: 1.5;
+        }
+        
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 2rem;
         }
         
         .btn {
-            padding: 15px 40px;
-            background: linear-gradient(135deg, #4A90E2 0%, #2A60B0 100%);
-            color: white;
+            padding: 0.875rem 1.75rem;
             border: none;
-            border-radius: 50px;
+            border-radius: 10px;
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.95rem;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-right: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: var(--shadow-sm);
         }
         
-        .btn:hover {
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(74, 144, 226, 0.3);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1.5px solid var(--border);
+            color: var(--text-primary);
+        }
+        
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(59, 130, 246, 0.5);
         }
         
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
+            transform: none !important;
         }
         
-        .btn-secondary {
-            background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-        
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
+        /* Status Messages */
         .status-message {
-            padding: 20px;
-            border-radius: 10px;
-            margin: 20px 0;
-            font-size: 1rem;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            font-size: 0.95rem;
             line-height: 1.6;
             display: none;
+            border: 1.5px solid;
+            backdrop-filter: blur(10px);
         }
         
         .status-message.show {
             display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         
         .status-message.success {
-            background: rgba(46, 204, 113, 0.2);
-            border: 2px solid rgba(46, 204, 113, 0.5);
-            color: #2ecc71;
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #10b981;
         }
         
         .status-message.error {
-            background: rgba(231, 76, 60, 0.2);
-            border: 2px solid rgba(231, 76, 60, 0.5);
-            color: #e74c3c;
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.4);
+            color: var(--error);
         }
         
         .status-message.info {
-            background: rgba(74, 144, 226, 0.2);
-            border: 2px solid rgba(74, 144, 226, 0.5);
-            color: #4a90e2;
+            background: rgba(59, 130, 246, 0.15);
+            border-color: rgba(59, 130, 246, 0.4);
+            color: var(--primary-light);
         }
         
-        .help-text {
-            color: #999999;
-            font-size: 0.85rem;
-            margin-top: 5px;
-        }
-        
-        .back-link {
+        /* Loading Spinner */
+        .spinner {
             display: inline-block;
-            margin-bottom: 30px;
-            color: #4a90e2;
-            text-decoration: none;
-            font-weight: 600;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
         }
         
-        .back-link:hover {
-            text-decoration: underline;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted);
+        }
+        
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        /* Nuclear Warning Modal */
+        .warning-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10000;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .warning-modal.show {
+            display: flex;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        .warning-container {
+            background: linear-gradient(135deg, #1a0000 0%, #2d0000 50%, #1a0000 100%);
+            border: 3px solid #ff0000;
+            border-radius: 16px;
+            padding: 3rem;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 
+                0 0 40px rgba(255, 0, 0, 0.6),
+                0 0 80px rgba(255, 0, 0, 0.4),
+                inset 0 0 20px rgba(255, 0, 0, 0.2);
+            position: relative;
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        .warning-container::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(45deg, #ff0000, #ff4444, #ff0000);
+            border-radius: 16px;
+            z-index: -1;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .warning-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .warning-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: pulse 1s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.8));
+        }
+        
+        .warning-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #ff0000;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 0.5rem;
+            text-shadow: 
+                0 0 10px rgba(255, 0, 0, 0.8),
+                0 0 20px rgba(255, 0, 0, 0.6),
+                0 0 30px rgba(255, 0, 0, 0.4);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .warning-subtitle {
+            font-size: 1.1rem;
+            color: #ff6666;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        
+        .warning-content {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 0, 0, 0.5);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .warning-text {
+            color: #ffffff;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+        
+        .warning-text strong {
+            color: #ff0000;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .warning-details {
+            background: rgba(255, 0, 0, 0.1);
+            border-left: 4px solid #ff0000;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 4px;
+        }
+        
+        .warning-details p {
+            color: #ffcccc;
+            font-size: 0.95rem;
+            margin: 0.5rem 0;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+        
+        .warning-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        
+        .warning-btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        
+        .warning-btn-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+        }
+        
+        .warning-btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.05);
+        }
+        
+        .warning-btn-confirm {
+            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+            border: 2px solid #ff4444;
+            color: #ffffff;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
+        
+        .warning-btn-confirm:hover {
+            background: linear-gradient(135deg, #ff2222 0%, #ff0000 100%);
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.7);
+            transform: scale(1.05);
+        }
+        
+        .warning-btn-confirm:active {
+            transform: scale(0.98);
+        }
+        
+        .code-display {
+            font-family: 'Monaco', 'Menlo', monospace;
+            color: #00ff00;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            text-align: center;
+            font-size: 1.2rem;
+            letter-spacing: 0.2em;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        
+        /* Confetti Canvas */
+        #confettiCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
         }
     </style>
 </head>
 <body>
     <!-- Login Screen -->
-    <div id="loginScreen" style="display: flex; justify-content: center; align-items: center; min-height: 100vh; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1000; background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%);">
-        <div style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(46, 204, 113, 0.15)); padding: 50px; border-radius: 24px; border: 2px solid rgba(74, 144, 226, 0.4); max-width: 450px; width: 100%; backdrop-filter: blur(20px); box-shadow: 0 20px 60px rgba(74, 144, 226, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset; position: relative; overflow: hidden; margin: 20px;">
-            <div style="position: absolute; top: -50%; right: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(74, 144, 226, 0.15) 0%, transparent 70%); pointer-events: none;"></div>
-            <h2 style="margin-bottom: 25px; text-align: center; font-size: 2rem; font-weight: 800; color: #4A90E2; text-shadow: 0 2px 10px rgba(74, 144, 226, 0.3); position: relative; z-index: 1;">
-                <span style="font-size: 2.5rem; display: block; margin-bottom: 10px;">🔒</span>
-                <span>Admin Access Required</span>
-            </h2>
-            <p style="margin-bottom: 30px; color: rgba(255,255,255,0.85); text-align: center; font-size: 1.05rem; font-weight: 400; position: relative; z-index: 1;">Enter admin password to access newsletter controls</p>
-            <input type="password" id="adminPassword" placeholder="Admin Password" style="width: 100%; padding: 16px 20px; border: 2px solid rgba(74, 144, 226, 0.4); border-radius: 12px; background: rgba(15, 15, 35, 0.9); color: white; font-size: 1.1rem; margin-bottom: 20px; font-weight: 500; transition: all 0.3s ease; position: relative; z-index: 1; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);" onkeypress="if(event.key==='Enter') checkPassword()" onfocus="this.style.borderColor='#4A90E2'; this.style.boxShadow='0 0 0 4px rgba(74, 144, 226, 0.2), 0 4px 20px rgba(74, 144, 226, 0.3)';" onblur="this.style.borderColor='rgba(74, 144, 226, 0.4)'; this.style.boxShadow='0 4px 15px rgba(0, 0, 0, 0.2)';">
-            <button class="btn" onclick="checkPassword()" style="width: 100%; font-size: 1rem; padding: 16px; position: relative; z-index: 1;">Login</button>
-            <p id="loginError" style="color: #f44336; margin-top: 20px; text-align: center; display: none; font-weight: 600; padding: 12px; background: rgba(244, 67, 54, 0.15); border-radius: 8px; border: 1px solid rgba(244, 67, 54, 0.3); position: relative; z-index: 1;"></p>
+    <div id="loginScreen">
+        <div class="login-container">
+            <div class="login-header">
+                <span class="login-icon">🔐</span>
+                <h2 class="login-title">Admin Access</h2>
+                <p class="login-subtitle">Enter newsletter key to continue</p>
+            </div>
+            <input type="password" id="adminPassword" class="login-input" placeholder="Newsletter Key" onkeypress="if(event.key==='Enter') checkPassword()">
+            <button class="login-btn" onclick="checkPassword()">Authenticate</button>
+            <p id="loginError" class="login-error"></p>
         </div>
     </div>
     
-    <!-- Main Content (hidden until login) -->
-    <div id="mainContent" style="display: none;">
-    <div class="container">
-        <a href="index.html" class="back-link">← Back to Home</a>
-        <h1>Send Newsletter</h1>
-        <p class="subtitle">Send a weekly newsletter to all subscribers in your audience</p>
+    <!-- Main Dashboard -->
+    <div id="mainContent">
+        <div class="dashboard-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="logo">Noteworthy News</div>
+                    <div class="header-badge">Admin Control</div>
+                </div>
+                <div class="header-nav">
+                    <a href="index.html" class="nav-link">← Home</a>
+                </div>
+            </div>
+        </div>
         
-        <div id="statusMessage" class="status-message"></div>
-        
-        <form id="newsletterForm">
-            <div class="form-group">
-                <label for="subject">Subject Line *</label>
-                <input type="text" id="subject" name="subject" required placeholder="Weekly Newsletter - Noteworthy News" value="Weekly Newsletter - Noteworthy News">
+        <div class="container">
+            <h1 class="page-title">Newsletter Control Center</h1>
+            <p class="page-subtitle">Select a template and send to your audience</p>
+            
+            <div id="statusMessage" class="status-message"></div>
+            
+            <!-- Template Selection Card -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-icon">📋</span>
+                    <h3 class="card-title">Select Newsletter Template</h3>
+                </div>
+                <div id="templatesGrid" class="grid">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⏳</div>
+                        <p>Loading templates...</p>
+                    </div>
+                </div>
             </div>
             
-            <div class="form-group">
-                <label for="html">HTML Content (Optional if "Include Recent Posts" is checked)</label>
-                <textarea id="html" name="html" placeholder="Enter your HTML newsletter content... Or leave empty to use auto-generated template with recent posts. Use {{RECENT_POSTS}} placeholder to insert posts in custom HTML."></textarea>
-                <p class="help-text">Personalization: Use {{FIRST_NAME}}, {{LAST_NAME}}, {{FULL_NAME}}, {{EMAIL}}, {{UNSUBSCRIBE_URL}}, or {{RECENT_POSTS}} as placeholders</p>
+            <!-- Past Newsletters Card -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-icon">📧</span>
+                    <h3 class="card-title">Past Newsletters Sent</h3>
+                </div>
+                <div id="newslettersGrid" class="grid">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⏳</div>
+                        <p>Loading newsletter history...</p>
+                    </div>
+                </div>
             </div>
             
-            <div class="form-group">
-                <label for="text">Plain Text Content (Optional)</label>
-                <textarea id="text" name="text" placeholder="Enter plain text version (optional)..."></textarea>
-                <p class="help-text">Plain text version for email clients that don't support HTML</p>
+            <!-- Send Newsletter Card -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-icon">✉️</span>
+                    <h3 class="card-title">Send Newsletter</h3>
+                </div>
+                <form id="newsletterForm">
+                    <div class="form-group">
+                        <label for="testEmail">Test Email Address (Optional)</label>
+                        <input type="email" id="testEmail" name="testEmail" placeholder="Enter test email address to preview before sending">
+                        <p class="help-text">Send a test email to preview before sending to your full audience</p>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" id="testBtn">
+                            <span>✉️</span>
+                            <span>Send Test Email</span>
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="sendBtn">
+                            <span>📧</span>
+                            <span>Send to Full Audience</span>
+                        </button>
+                    </div>
+                </form>
             </div>
-            
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" id="includeRecentPosts" name="includeRecentPosts" checked style="margin-right: 8px;">
-                    Include Recent Posts (automatically fetches latest 10 posts)
-                </label>
-                <p class="help-text">When checked, the newsletter will automatically include your 10 most recent posts. Leave HTML/Text fields empty to use the auto-generated template, or use {{RECENT_POSTS}} placeholder in custom HTML.</p>
-            </div>
-            
-            <div class="form-group">
-                <label for="testEmail">Test Email Address</label>
-                <input type="email" id="testEmail" name="testEmail" placeholder="Enter test email address">
-                <p class="help-text">Send a test email to this address before sending to your full audience</p>
-            </div>
-            
-            <div>
-                <button type="submit" class="btn" id="sendBtn">Send Newsletter to Audience</button>
-                <button type="button" class="btn btn-secondary" id="testBtn">Send Test Email</button>
-                <button type="button" class="btn btn-secondary" id="previewBtn">Preview Default Template</button>
-            </div>
-        </form>
+        </div>
     </div>
+    
+    <!-- Confetti Canvas -->
+    <canvas id="confettiCanvas"></canvas>
+    
+    <!-- Background Music -->
+    <audio id="backgroundMusic" preload="auto" loop>
+        <source src="ScreenRecording_11-27-2025 19-01-42_1.m4a" type="audio/mp4">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Warning Music (plays during nuclear warning) -->
+    <audio id="warningMusic" preload="auto">
+        <source src="ScreenRecording_11-27-2025 18-56-45_1.m4a" type="audio/mp4">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <!-- Nuclear Warning Modal -->
+    <div id="warningModal" class="warning-modal">
+        <div class="warning-container">
+            <div class="warning-header">
+                <div class="warning-icon">⚠️</div>
+                <h2 class="warning-title">WARNING</h2>
+                <p class="warning-subtitle">Mass Email Launch Protocol</p>
+            </div>
+            <div class="warning-content">
+                <div class="warning-text">
+                    <strong>CRITICAL ALERT:</strong> You are about to initiate a <strong>MASS EMAIL DEPLOYMENT</strong> to your entire newsletter audience.
+                </div>
+                <div class="warning-text">
+                    This action will send the selected newsletter template to <strong>ALL SUBSCRIBERS</strong> in your audience. This operation <strong>CANNOT BE UNDONE</strong>.
+                </div>
+                <div class="warning-details">
+                    <p>📧 Target: Full Newsletter Audience</p>
+                    <p>📋 Template: <span id="warningTemplateName">-</span></p>
+                    <p>📅 Timestamp: <span id="warningTimestamp">-</span></p>
+                </div>
+                <div class="code-display" id="warningCode">AUTHORIZATION REQUIRED</div>
+                <div class="warning-text" style="text-align: center; margin-top: 1.5rem;">
+                    <strong>DO YOU AUTHORIZE THIS MASS EMAIL DEPLOYMENT?</strong>
+                </div>
+            </div>
+            <div class="warning-buttons">
+                <button class="warning-btn warning-btn-cancel" onclick="cancelMassEmail()">ABORT</button>
+                <button class="warning-btn warning-btn-confirm" onclick="confirmMassEmail()">AUTHORIZE & LAUNCH</button>
+            </div>
+        </div>
     </div>
     
     <script>
-        // Check if already authenticated
+        let selectedTemplateId = null;
         let adminToken = sessionStorage.getItem('adminNewsletterToken');
+        let backgroundMusic = null;
+        let warningMusic = null;
+        let backgroundMusicCurrentTime = 0;
+        
+        // Initialize audio when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            backgroundMusic = document.getElementById('backgroundMusic');
+            warningMusic = document.getElementById('warningMusic');
+            
+            // Start background music when main content is shown
+            if (adminToken) {
+                startBackgroundMusic();
+            }
+            
+            // When warning music ends, resume background music
+            warningMusic.addEventListener('ended', () => {
+                resumeBackgroundMusic();
+            });
+        });
+        
+        function startBackgroundMusic() {
+            if (backgroundMusic) {
+                backgroundMusic.volume = 0.5; // Set volume to 50%
+                backgroundMusic.play().catch(err => {
+                    console.log('Background music autoplay prevented:', err);
+                    // User interaction required - will start on first user action
+                });
+            }
+        }
+        
+        function pauseBackgroundMusic() {
+            if (backgroundMusic && !backgroundMusic.paused) {
+                backgroundMusicCurrentTime = backgroundMusic.currentTime;
+                backgroundMusic.pause();
+            }
+        }
+        
+        function resumeBackgroundMusic() {
+            if (backgroundMusic) {
+                backgroundMusic.currentTime = backgroundMusicCurrentTime;
+                backgroundMusic.play().catch(err => {
+                    console.log('Error resuming background music:', err);
+                });
+            }
+        }
+        
+        function playWarningMusic() {
+            if (warningMusic) {
+                warningMusic.volume = 0.7; // Set volume to 70%
+                warningMusic.currentTime = 0; // Start from beginning
+                warningMusic.play().catch(err => {
+                    console.log('Error playing warning music:', err);
+                });
+            }
+        }
+        
+        // Authentication
         if (adminToken) {
-            // Verify token is still valid
-            fetch(`/.netlify/functions/log-data?token=${encodeURIComponent(adminToken)}&limit=1`)
+            fetch(`/.netlify/functions/newsletter-templates?token=${encodeURIComponent(adminToken)}`)
                 .then(response => {
                     if (response.ok || response.status === 200) {
                         showMainContent();
+                        loadTemplates();
+                        loadNewsletterHistory();
                     } else {
                         sessionStorage.removeItem('adminNewsletterToken');
                     }
@@ -273,27 +971,29 @@
                 return;
             }
             
-            // Try to authenticate by making a test request
             try {
-                const testUrl = `/.netlify/functions/log-data?token=${encodeURIComponent(password)}&limit=1`;
+                const testUrl = `/.netlify/functions/newsletter-templates?token=${encodeURIComponent(password)}`;
                 const response = await fetch(testUrl);
                 
                 if (response.ok || response.status === 200) {
-                    // Password is correct
                     adminToken = password;
                     sessionStorage.setItem('adminNewsletterToken', password);
                     showMainContent();
+                    startBackgroundMusic();
+                    loadTemplates();
+                    loadNewsletterHistory();
                 } else if (response.status === 401) {
                     errorEl.textContent = 'Incorrect password';
                     errorEl.style.display = 'block';
                 } else {
-                    // If no token is configured, allow access (for development)
                     const data = await response.json().catch(() => ({}));
                     if (data.error && data.error.includes('token')) {
-                        // Token is required but not set up - allow access for now
                         adminToken = password;
                         sessionStorage.setItem('adminNewsletterToken', password);
                         showMainContent();
+                        startBackgroundMusic();
+                        loadTemplates();
+                        loadNewsletterHistory();
                     } else {
                         errorEl.textContent = 'Authentication failed';
                         errorEl.style.display = 'block';
@@ -311,134 +1011,254 @@
             document.getElementById('mainContent').style.display = 'block';
         }
 
+        // Load templates
+        async function loadTemplates() {
+            try {
+                const response = await fetch(`/.netlify/functions/newsletter-templates?token=${encodeURIComponent(adminToken || '')}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const grid = document.getElementById('templatesGrid');
+                    
+                    if (data.templates && data.templates.length > 0) {
+                        grid.innerHTML = data.templates.map(template => `
+                            <div class="preview-card" data-template-id="${template.id}" onclick="selectTemplate('${template.id}', this)">
+                                <div class="preview-title">${escapeHtml(template.name)}</div>
+                                <div class="preview-subject">${escapeHtml(template.subject)}</div>
+                                <div class="preview-date">${formatDate(template.updatedAt)}</div>
+                            </div>
+                        `).join('');
+                    } else {
+                        grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No templates available</p></div>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading templates:', error);
+                document.getElementById('templatesGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading templates</p></div>';
+            }
+        }
+        
+        // Load newsletter history
+        async function loadNewsletterHistory() {
+            try {
+                const response = await fetch(`/.netlify/functions/newsletter-templates?history=true&token=${encodeURIComponent(adminToken || '')}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const grid = document.getElementById('newslettersGrid');
+                    
+                    if (data.newsletters && data.newsletters.length > 0) {
+                        grid.innerHTML = data.newsletters.map(newsletter => `
+                            <div class="preview-card">
+                                <div class="preview-title">${escapeHtml(newsletter.subject)}</div>
+                                <div class="preview-date">${formatDate(newsletter.timestamp)}</div>
+                                <div class="preview-badge">Sent to ${newsletter.emailsSent} subscribers</div>
+                            </div>
+                        `).join('');
+                    } else {
+                        grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No newsletters sent yet</p></div>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading newsletter history:', error);
+                document.getElementById('newslettersGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading history</p></div>';
+            }
+        }
+        
+        function selectTemplate(templateId, element) {
+            selectedTemplateId = templateId;
+            
+            // Update UI
+            document.querySelectorAll('.preview-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            if (element) {
+                element.classList.add('selected');
+            } else if (event && event.currentTarget) {
+                event.currentTarget.classList.add('selected');
+            }
+            
+            showStatus('Template selected. Ready to send.', 'info');
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown date';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function showStatus(message, type) {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type} show`;
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusMessage.classList.remove('show');
+                }, 10000);
+            }
+        }
+        
+        // Confetti Animation
+        function triggerConfetti() {
+            const canvas = document.getElementById('confettiCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const confetti = [];
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+            const confettiCount = 200;
+            
+            // Create confetti particles
+            for (let i = 0; i < confettiCount; i++) {
+                confetti.push({
+                    x: Math.random() * canvas.width,
+                    y: -Math.random() * canvas.height,
+                    width: Math.random() * 10 + 5,
+                    height: Math.random() * 10 + 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rotation: Math.random() * 360,
+                    rotationSpeed: (Math.random() - 0.5) * 10,
+                    speedX: (Math.random() - 0.5) * 4,
+                    speedY: Math.random() * 5 + 2,
+                    opacity: Math.random() * 0.5 + 0.5,
+                });
+            }
+            
+            let animationId;
+            let startTime = Date.now();
+            const duration = 4000; // 4 seconds
+            
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                
+                if (elapsed > duration) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    cancelAnimationFrame(animationId);
+                    return;
+                }
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                confetti.forEach(particle => {
+                    // Update position
+                    particle.x += particle.speedX;
+                    particle.y += particle.speedY;
+                    particle.rotation += particle.rotationSpeed;
+                    
+                    // Apply gravity
+                    particle.speedY += 0.1;
+                    
+                    // Fade out over time
+                    const progress = elapsed / duration;
+                    particle.opacity = Math.max(0, (1 - progress) * 0.8);
+                    
+                    // Draw confetti
+                    ctx.save();
+                    ctx.translate(particle.x, particle.y);
+                    ctx.rotate((particle.rotation * Math.PI) / 180);
+                    ctx.globalAlpha = particle.opacity;
+                    ctx.fillStyle = particle.color;
+                    
+                    // Draw rectangle (some will be squares, some rectangles for variety)
+                    if (Math.random() > 0.5) {
+                        // Square
+                        ctx.fillRect(-particle.width / 2, -particle.height / 2, particle.width, particle.height);
+                    } else {
+                        // Circle for variety
+                        ctx.beginPath();
+                        ctx.arc(0, 0, particle.width / 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    ctx.restore();
+                    
+                    // Reset if off screen
+                    if (particle.y > canvas.height + 50) {
+                        particle.y = -10;
+                        particle.x = Math.random() * canvas.width;
+                        particle.speedY = Math.random() * 5 + 2;
+                    }
+                });
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+            
+            animate();
+        }
+
+        // Form handling
         const form = document.getElementById('newsletterForm');
-        const statusMessage = document.getElementById('statusMessage');
         const sendBtn = document.getElementById('sendBtn');
         const testBtn = document.getElementById('testBtn');
-        const previewBtn = document.getElementById('previewBtn');
-        
-        // Default template
-        const defaultHTML = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
-    <tr>
-      <td style="padding: 40px 20px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          <tr>
-            <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(46, 204, 113, 0.1) 100%); border-radius: 10px 10px 0 0;">
-              <img src="https://noteworthynews.co/IMG_5992.PNG" alt="Noteworthy News Logo" style="max-width: 150px; height: auto; border-radius: 50%; display: block; margin: 0 auto 20px; border: 3px solid #4a90e2; box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);" />
-              <h2 style="color: #4a90e2; margin: 0; font-size: 24px; font-weight: bold;">Weekly Newsletter</h2>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 30px; background-color: #ffffff;">
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Hi {{FIRST_NAME}},</p>
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Welcome to your weekly Noteworthy News newsletter! Here's what's happening this week:</p>
-              
-              <div style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-left: 4px solid #4a90e2; padding: 20px; margin: 20px 0; border-radius: 5px;">
-                <h3 style="color: #4a90e2; margin: 0 0 15px 0; font-size: 20px;">📰 This Week's Highlights</h3>
-                <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0;">Stay tuned for fact-checked news stories, media literacy tips, and updates from Noteworthy News!</p>
-              </div>
-              
-              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 25px 0 0 0;"><strong>Stay informed and stay curious!</strong></p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 25px 30px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-top: 2px solid #4a90e2; border-radius: 0 0 10px 10px;">
-              <p style="color: #333333; font-size: 16px; margin: 0 0 8px 0; line-height: 1.5;"><strong>The Noteworthy News Team</strong></p>
-              <p style="text-align: center; margin: 20px 0 0 0; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-                <a href="{{{UNSUBSCRIBE_URL}}}" style="color: #999999; font-size: 12px; text-decoration: underline;">Unsubscribe from this newsletter</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
-        
-        const defaultText = `Weekly Newsletter - Noteworthy News
-
-Hi {{FIRST_NAME}},
-
-Welcome to your weekly Noteworthy News newsletter! Here's what's happening this week:
-
-📰 This Week's Highlights
-Stay tuned for fact-checked news stories, media literacy tips, and updates from Noteworthy News!
-
-Stay informed and stay curious!
-
-The Noteworthy News Team
-
----
-To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
-        
-        previewBtn.addEventListener('click', () => {
-            document.getElementById('html').value = defaultHTML;
-            document.getElementById('text').value = defaultText;
-            showStatus('Default template loaded. Customize it as needed!', 'info');
-        });
         
         testBtn.addEventListener('click', async () => {
-            const subject = document.getElementById('subject').value;
-            const html = document.getElementById('html').value;
-            const text = document.getElementById('text').value;
-            const testEmail = document.getElementById('testEmail').value;
-            const includeRecentPosts = document.getElementById('includeRecentPosts').checked;
+            if (!selectedTemplateId) {
+                showStatus('Please select a template first', 'error');
+                return;
+            }
             
+            const testEmail = document.getElementById('testEmail').value;
             if (!testEmail) {
                 showStatus('Please enter a test email address', 'error');
                 return;
             }
             
-            if (!subject) {
-                showStatus('Please fill in subject before sending test email', 'error');
-                return;
-            }
-            
-            // If includeRecentPosts is checked and no custom HTML, we'll let the server generate it
-            if (!html && !includeRecentPosts) {
-                showStatus('Please fill in HTML content or check "Include Recent Posts"', 'error');
-                return;
-            }
-            
             testBtn.disabled = true;
-            testBtn.textContent = 'Sending Test...';
+            testBtn.innerHTML = '<span class="spinner"></span> <span>Sending...</span>';
             showStatus(`Sending test email to ${testEmail}...`, 'info');
             
             try {
-                // Get admin token from session storage
-                const adminToken = sessionStorage.getItem('adminNewsletterToken') || sessionStorage.getItem('adminAnalyticsToken');
+                // Load template
+                const templateResponse = await fetch(`/.netlify/functions/newsletter-templates?id=${selectedTemplateId}&token=${encodeURIComponent(adminToken || '')}`);
+                if (!templateResponse.ok) {
+                    throw new Error('Failed to load template');
+                }
+                
+                const template = JSON.parse(await templateResponse.text());
                 
                 const response = await fetch('/.netlify/functions/send-newsletter', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-admin-token': adminToken || '', // Send token in header
+                        'x-admin-token': adminToken || '',
                     },
                     body: JSON.stringify({
-                        subject,
-                        html: html || undefined,
-                        text: text || undefined,
-                        testEmail: testEmail, // This tells the function to send only to this email
-                        includeRecentPosts: includeRecentPosts,
-                        token: adminToken || '', // Also send in body for compatibility
+                        subject: template.subject,
+                        html: template.html,
+                        text: template.text,
+                        testEmail: testEmail,
+                        token: adminToken || '',
                     }),
                 });
                 
                 const data = await response.json();
                 
                 if (response.ok && data.success) {
-                    showStatus(
-                        `✓ Test email sent successfully to ${testEmail}! Check your inbox.`,
-                        'success'
-                    );
+                    // Trigger confetti for test email too!
+                    triggerConfetti();
+                    
+                    showStatus(`✓ Test email sent successfully to ${testEmail}! Check your inbox.`, 'success');
                 } else {
                     showStatus(data.error || data.message || 'Failed to send test email', 'error');
                 }
@@ -447,67 +1267,97 @@ To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
                 showStatus('An error occurred while sending the test email. Please try again.', 'error');
             } finally {
                 testBtn.disabled = false;
-                testBtn.textContent = 'Send Test Email';
+                testBtn.innerHTML = '<span>✉️</span> <span>Send Test Email</span>';
             }
         });
         
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        let pendingSend = false;
+        let pendingTemplate = null;
+        
+        function generateAuthCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = '';
+            for (let i = 0; i < 8; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+        
+        function showNuclearWarning(templateName) {
+            const modal = document.getElementById('warningModal');
+            const templateNameEl = document.getElementById('warningTemplateName');
+            const timestampEl = document.getElementById('warningTimestamp');
+            const codeEl = document.getElementById('warningCode');
             
-            const subject = document.getElementById('subject').value;
-            let html = document.getElementById('html').value.trim();
-            const text = document.getElementById('text').value.trim();
-            const includeRecentPosts = document.getElementById('includeRecentPosts').checked;
+            templateNameEl.textContent = templateName || 'Unknown Template';
+            timestampEl.textContent = new Date().toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
             
-            if (!subject) {
-                showStatus('Please fill in subject', 'error');
+            const authCode = generateAuthCode();
+            codeEl.textContent = `AUTH CODE: ${authCode}`;
+            
+            // Pause background music and play warning music
+            pauseBackgroundMusic();
+            playWarningMusic();
+            
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function cancelMassEmail() {
+            const modal = document.getElementById('warningModal');
+            modal.classList.remove('show');
+            document.body.style.overflow = '';
+            pendingSend = false;
+            pendingTemplate = null;
+            
+            // Stop warning music and resume background music
+            if (warningMusic) {
+                warningMusic.pause();
+                warningMusic.currentTime = 0;
+            }
+            resumeBackgroundMusic();
+            
+            showStatus('Mass email deployment ABORTED', 'info');
+        }
+        
+        async function confirmMassEmail() {
+            const modal = document.getElementById('warningModal');
+            modal.classList.remove('show');
+            document.body.style.overflow = '';
+            
+            if (!pendingSend || !pendingTemplate) {
+                showStatus('Error: Send operation not properly initialized', 'error');
+                // Resume background music if error
+                if (warningMusic && !warningMusic.paused) {
+                    warningMusic.pause();
+                    warningMusic.currentTime = 0;
+                }
+                resumeBackgroundMusic();
                 return;
             }
             
-            // If includeRecentPosts is checked, allow empty HTML (server will generate it)
-            // If includeRecentPosts is NOT checked, HTML is required
-            if (!includeRecentPosts && !html) {
-                showStatus('Please fill in HTML content or check "Include Recent Posts"', 'error');
-                return;
-            }
+            // Warning music will continue playing and resume background when it ends
+            // (handled by the 'ended' event listener)
             
-            // If includeRecentPosts is checked and HTML is empty, send undefined to let server generate it
-            if (includeRecentPosts && !html) {
-                html = undefined;
-            }
-            
-            // SAFETY: Confirmation dialog before sending to full audience
-            const confirmed = confirm(
-                '⚠️ WARNING: This will send an email to ALL subscribers in your audience.\n\n' +
-                `Subject: "${subject}"\n\n` +
-                'Are you absolutely sure you want to send this newsletter?\n\n' +
-                'Click OK to proceed, or Cancel to go back.'
-            );
-            
-            if (!confirmed) {
-                showStatus('Send cancelled', 'info');
-                return;
-            }
-            
-            // Double confirmation
-            const doubleConfirmed = confirm(
-                '⚠️ FINAL CONFIRMATION\n\n' +
-                'This will send the newsletter to your entire audience.\n\n' +
-                'This action cannot be undone.\n\n' +
-                'Click OK one more time to send.'
-            );
-            
-            if (!doubleConfirmed) {
-                showStatus('Send cancelled', 'info');
-                return;
-            }
-            
+            // Proceed with sending
+            await executeMassEmail(pendingTemplate);
+            pendingSend = false;
+            pendingTemplate = null;
+        }
+        
+        async function executeMassEmail(template) {
             sendBtn.disabled = true;
-            sendBtn.textContent = 'Sending...';
-            showStatus('Sending newsletter to all subscribers. This may take a few minutes...', 'info');
+            sendBtn.innerHTML = '<span class="spinner"></span> <span>DEPLOYING...</span>';
+            showStatus('🚀 Mass email deployment initiated. This may take several minutes...', 'info');
             
             try {
-                // Get skip emails from user input (emails that already received it)
                 const skipEmailsInput = prompt(
                     'Enter emails to SKIP (already received it), separated by commas:\n\n' +
                     'Example: email1@example.com, email2@example.com\n\n' +
@@ -519,76 +1369,72 @@ To unsubscribe from future emails, visit: {{{UNSUBSCRIBE_URL}}}`;
                     skipEmails = skipEmailsInput.split(',').map(e => e.trim()).filter(e => e);
                 }
                 
-                // Get admin token from session storage
-                const adminToken = sessionStorage.getItem('adminNewsletterToken') || sessionStorage.getItem('adminAnalyticsToken');
-                
                 const response = await fetch('/.netlify/functions/send-newsletter', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-admin-token': adminToken || '', // Send token in header
+                        'x-admin-token': adminToken || '',
                     },
                     body: JSON.stringify({
-                        subject,
-                        html: html,
-                        text: text || undefined,
-                        includeRecentPosts: includeRecentPosts,
-                        forceSend: true, // Bypass cooldown
+                        subject: template.subject,
+                        html: template.html,
+                        text: template.text,
+                        forceSend: true,
                         skipEmails: skipEmails,
-                        alwaysIncludeEmails: [], // No default emails to always include
-                        token: adminToken || '', // Also send in body for compatibility
+                        alwaysIncludeEmails: [],
+                        token: adminToken || '',
                     }),
                 });
                 
                 const data = await response.json();
                 
                 if (response.ok && data.success) {
+                    // Trigger confetti celebration!
+                    triggerConfetti();
+                    
                     showStatus(
-                        `✓ Newsletter sent successfully! Sent to ${data.emailsSent} subscribers.${data.errors > 0 ? ` (${data.errors} errors)` : ''}`,
+                        `✅ MASS EMAIL DEPLOYMENT SUCCESSFUL! Sent to ${data.emailsSent} subscribers.${data.errors > 0 ? ` (${data.errors} errors)` : ''}`,
                         'success'
                     );
+                    loadNewsletterHistory(); // Refresh history
                 } else {
-                    showStatus(data.error || 'Failed to send newsletter', 'error');
+                    showStatus(data.error || '❌ Mass email deployment FAILED', 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showStatus('An error occurred while sending the newsletter. Please try again.', 'error');
+                showStatus('❌ An error occurred during mass email deployment. Please try again.', 'error');
             } finally {
                 sendBtn.disabled = false;
-                sendBtn.textContent = 'Send Newsletter';
-            }
-        });
-        
-        function showStatus(message, type) {
-            statusMessage.textContent = message;
-            statusMessage.className = `status-message ${type} show`;
-            
-            // Auto-hide success messages after 10 seconds
-            if (type === 'success') {
-                setTimeout(() => {
-                    statusMessage.classList.remove('show');
-                }, 10000);
+                sendBtn.innerHTML = '<span>📧</span> <span>Send to Full Audience</span>';
             }
         }
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!selectedTemplateId) {
+                showStatus('Please select a template first', 'error');
+                return;
+            }
+            
+            // Load template first
+            try {
+                const templateResponse = await fetch(`/.netlify/functions/newsletter-templates?id=${selectedTemplateId}&token=${encodeURIComponent(adminToken || '')}`);
+                if (!templateResponse.ok) {
+                    throw new Error('Failed to load template');
+                }
+                
+                const template = JSON.parse(await templateResponse.text());
+                pendingTemplate = template;
+                pendingSend = true;
+                
+                // Show nuclear warning
+                showNuclearWarning(template.name || template.subject);
+            } catch (error) {
+                console.error('Error loading template:', error);
+                showStatus('Error loading template. Please try again.', 'error');
+            }
+        });
     </script>
-    
-    <!-- Background Music - Shared across all pages -->
-    <audio id="backgroundMusic" preload="metadata">
-        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-    
-    <audio id="backgroundMusicSecond" preload="metadata">
-        <source src="YEAHHHHHH.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
-    
-    <audio id="backgroundMusicLoop" preload="metadata" loop>
-        <source src="Audiolandingpage.m4a" type="audio/mp4">
-        Your browser does not support the audio element.
-    </audio>
-    
-    <script src="music-system.js"></script>
 </body>
 </html>
-

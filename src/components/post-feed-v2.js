@@ -14,6 +14,7 @@ let isLoading = false;
 let currentSort = localStorage.getItem('feed-sort') || 'recent';
 let currentSearch = localStorage.getItem('feed-search') || '';
 let currentPosts = [];
+let coveragePoints = []; // Global coverage map points
 let commentDrawerOpen = false;
 let commentDrawerPostId = null;
 let userLocation = null; // { lat, lng } or null
@@ -432,20 +433,158 @@ function sortPosts(posts, mode) {
 }
 
 /**
- * Search posts
+ * Load coverage points from the global coverage map
+ */
+async function loadCoveragePoints() {
+  if (coveragePoints.length > 0) return coveragePoints; // Already loaded
+  
+  // Try to load as JSON first (preferred method)
+  try {
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const jsonPath = isLocalhost 
+      ? 'http://localhost:8888/src/data/coveragePoints.json'
+      : '/src/data/coveragePoints.json';
+    
+    const jsonResponse = await fetch(jsonPath);
+    if (jsonResponse.ok) {
+      coveragePoints = await jsonResponse.json();
+      console.log('[PostFeed v2] Loaded', coveragePoints.length, 'coverage points');
+      return coveragePoints;
+    }
+  } catch (error) {
+    console.warn('[PostFeed v2] Could not load coverage points as JSON:', error);
+  }
+  
+  // Fallback: try to load from the JS module file
+  try {
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const jsPath = isLocalhost 
+      ? 'http://localhost:8888/src/data/coveragePoints.js'
+      : '/src/data/coveragePoints.js';
+    
+    const response = await fetch(jsPath);
+    if (response.ok) {
+      const text = await response.text();
+      // Extract the array from the module export
+      const match = text.match(/const coveragePoints = (\[[\s\S]*?\]);/);
+      if (match) {
+        // Use Function constructor instead of eval for safer parsing
+        coveragePoints = new Function('return ' + match[1])();
+        console.log('[PostFeed v2] Loaded', coveragePoints.length, 'coverage points from JS file');
+        return coveragePoints;
+      }
+    }
+  } catch (error) {
+    console.warn('[PostFeed v2] Could not load coverage points from JS file:', error);
+  }
+  
+  // Hardcoded fallback with the known coverage points
+  coveragePoints = [
+    {
+      id: "nyc-incident",
+      lat: 40.7128,
+      lng: -74.0060,
+      location: "New York, USA",
+      headline: "High-rise fire near Midtown",
+      timestamp: "2025-11-21T18:32:00Z"
+    },
+    {
+      id: "kyiv-strike",
+      lat: 50.4501,
+      lng: 30.5234,
+      location: "Kyiv, Ukraine",
+      headline: "Explosions reported in central Kyiv",
+      timestamp: "2025-11-23T03:10:00Z"
+    },
+    {
+      id: "buenos-aires-blast",
+      lat: -34.6037,
+      lng: -58.3816,
+      location: "Buenos Aires, Argentina",
+      headline: "Industrial-area explosion in Ezeiza",
+      timestamp: "2025-11-20T14:05:00Z"
+    },
+    {
+      id: "la-fire",
+      lat: 34.0522,
+      lng: -118.2437,
+      location: "Los Angeles, USA",
+      headline: "Large structure fire downtown",
+      timestamp: "2025-11-19T09:47:00Z"
+    }
+  ];
+  
+  console.log('[PostFeed v2] Using fallback coverage points:', coveragePoints.length);
+  return coveragePoints;
+}
+
+/**
+ * Search posts and coverage points
+ * Returns posts that match the query, including those that match coverage point locations
  */
 function searchPosts(posts, query) {
   if (!query.trim()) return posts;
   
-  const lowerQuery = query.toLowerCase();
+  const lowerQuery = query.toLowerCase().trim();
   
+  // First, find matching coverage points
+  const matchingCoveragePoints = coveragePoints.filter(point => {
+    const locationMatch = point.location.toLowerCase().includes(lowerQuery);
+    const headlineMatch = point.headline.toLowerCase().includes(lowerQuery);
+    // Also check individual words in location (e.g., "New York" matches "york")
+    const locationWords = point.location.toLowerCase().split(/[,\s]+/);
+    const headlineWords = point.headline.toLowerCase().split(/\s+/);
+    const wordMatch = locationWords.some(word => word.includes(lowerQuery)) ||
+                     headlineWords.some(word => word.includes(lowerQuery));
+    return locationMatch || headlineMatch || wordMatch;
+  });
+  
+  // Get locations and headlines from matching coverage points for enhanced matching
+  const matchingLocations = matchingCoveragePoints.map(p => p.location.toLowerCase());
+  const matchingHeadlines = matchingCoveragePoints.map(p => p.headline.toLowerCase());
+  
+  // Extract city/country names from locations for better matching
+  const locationKeywords = new Set();
+  matchingCoveragePoints.forEach(point => {
+    const parts = point.location.toLowerCase().split(',');
+    parts.forEach(part => locationKeywords.add(part.trim()));
+    // Also add individual words
+    parts.forEach(part => {
+      part.trim().split(/\s+/).forEach(word => {
+        if (word.length > 2) locationKeywords.add(word);
+      });
+    });
+  });
+  
+  // Filter posts
   return posts.filter(post => {
-    const textMatch = post.text.toLowerCase().includes(lowerQuery);
+    const postText = post.text.toLowerCase();
     const handleMatch = post.author.handle.toLowerCase().includes(lowerQuery);
     const tagMatch = post.tags?.some(tag => tag.toLowerCase().includes(lowerQuery));
-    const hashtagMatch = post.text.toLowerCase().includes(`#${lowerQuery}`);
+    const hashtagMatch = postText.includes(`#${lowerQuery}`);
     
-    return textMatch || handleMatch || tagMatch || hashtagMatch;
+    // Direct text match
+    const textMatch = postText.includes(lowerQuery);
+    
+    // Check if post mentions any location from matching coverage points
+    const locationMatch = matchingLocations.some(loc => 
+      postText.includes(loc) || 
+      post.tags?.some(tag => tag.toLowerCase().includes(loc))
+    );
+    
+    // Check if post mentions any headline keywords from matching coverage points
+    const headlineMatch = matchingHeadlines.some(headline => 
+      postText.includes(headline) ||
+      post.tags?.some(tag => tag.toLowerCase().includes(headline))
+    );
+    
+    // Check if post mentions any location keywords
+    const keywordMatch = Array.from(locationKeywords).some(keyword =>
+      postText.includes(keyword) ||
+      post.tags?.some(tag => tag.toLowerCase().includes(keyword))
+    );
+    
+    return textMatch || handleMatch || tagMatch || hashtagMatch || locationMatch || headlineMatch || keywordMatch;
   });
 }
 
@@ -952,7 +1091,7 @@ function renderFeedControls(totalPosts) {
   const searchInput = document.createElement('input');
   searchInput.id = searchId;
   searchInput.type = 'text';
-  searchInput.placeholder = 'Search posts, tags, @handles...';
+  searchInput.placeholder = 'Search posts, tags, @handles, locations...';
   searchInput.value = currentSearch;
   searchInput.className = 'feed-search-input';
   searchInput.style.cssText = `
@@ -1734,6 +1873,9 @@ async function renderPostFeedV2(
   
   // Read URL params
   readURLParams();
+  
+  // Load coverage points
+  await loadCoveragePoints();
   
   // Load cached user location if available
   try {

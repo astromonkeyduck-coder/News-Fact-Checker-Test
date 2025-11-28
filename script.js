@@ -8383,28 +8383,61 @@ function initNewsletterSubscription() {
     }
     
     // Resume background music from saved state with fade in
-    function resumeBackgroundMusic() {
+    function resumeBackgroundMusic(forceResume = false) {
         const stateToResume = savedBackgroundMusicState;
         if (!stateToResume || !stateToResume.element) {
-            console.log('No saved background music state to resume');
+            console.log('[Spotlight] No saved background music state to resume');
             return;
         }
         
-        // Don't resume if spotlight is visible or transitioning
-        if (isSpotlightVisible || isTransitioning) {
-            console.log('Spotlight visible or transitioning, skipping background music resume');
+        // Don't resume if spotlight is visible (unless forced)
+        // Allow resume during transition if explicitly called (forceResume = true)
+        if (isSpotlightVisible) {
+            console.log('[Spotlight] Spotlight visible, skipping background music resume');
             return;
         }
         
-        const musicElement = stateToResume.element;
+        // If transitioning and not forced, wait a bit
+        if (isTransitioning && !forceResume) {
+            console.log('[Spotlight] Transitioning, will retry resume in 200ms');
+            setTimeout(() => {
+                if (!isSpotlightVisible) {
+                    resumeBackgroundMusic(true); // Force resume on retry
+                }
+            }, 200);
+            return;
+        }
+        
+        // Re-validate the element by ID to ensure it's still valid
+        const music = getBackgroundMusicElements();
+        let musicElement = null;
+        const savedElementId = stateToResume.element.id;
+        
+        // Find the element by ID to ensure it's still valid
+        if (music.track1 && music.track1.id === savedElementId) {
+            musicElement = music.track1;
+        } else if (music.track2 && music.track2.id === savedElementId) {
+            musicElement = music.track2;
+        } else if (music.loop && music.loop.id === savedElementId) {
+            musicElement = music.loop;
+        } else {
+            // Fallback: try to use the saved element directly
+            musicElement = stateToResume.element;
+        }
+        
         if (!musicElement) {
-            console.log('Saved music element not found');
+            console.error('[Spotlight] Saved music element not found:', savedElementId);
             savedBackgroundMusicState = null;
             return;
         }
         
+        console.log('[Spotlight] Resuming background music:', {
+            track: musicElement.id,
+            time: stateToResume.time,
+            volume: stateToResume.originalVolume
+        });
+        
         // Ensure all other background tracks are paused before resuming
-        const music = getBackgroundMusicElements();
         if (music.track1 && music.track1 !== musicElement && !music.track1.paused) {
             music.track1.pause();
         }
@@ -8434,29 +8467,64 @@ function initNewsletterSubscription() {
         // Ensure spotlight music is fully faded out before starting background fade in
         // This creates a smoother transition
         const resumePlayback = () => {
-                // Double-check spotlight is not visible before resuming
-            if (isSpotlightVisible || isTransitioning) {
-                console.log('Spotlight became visible during resume, aborting');
+            // Double-check spotlight is not visible before resuming (always check this)
+            if (isSpotlightVisible) {
+                console.log('[Spotlight] Spotlight became visible during resume, aborting');
                 return;
             }
             
-            // Actually play the audio
-            musicElement.play().catch(err => {
-                console.error('Error resuming background music:', err);
-                // If autoplay is blocked, try again after user interaction
-                document.addEventListener('click', function playOnce() {
-                    if (musicElement && musicElement.paused && !isSpotlightVisible) {
-                        musicElement.play().catch(() => {});
-                    }
-                    document.removeEventListener('click', playOnce);
-                }, { once: true });
-            });
+            // Only check transition if not forcing resume
+            if (isTransitioning && !forceResume) {
+                console.log('[Spotlight] Still transitioning during resume, aborting');
+                return;
+            }
             
-            // Fade in the background music
+            // Verify element is still valid
+            if (!musicElement || !document.contains(musicElement)) {
+                console.error('[Spotlight] Music element no longer in DOM');
+                savedBackgroundMusicState = null;
+                return;
+            }
+            
+            console.log('[Spotlight] Attempting to play background music:', musicElement.id);
+            
+            // Actually play the audio
+            const playPromise = musicElement.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log('[Spotlight] Background music started playing successfully');
+                    // Fade in the background music after it starts playing
                     fadeInAudio(musicElement, targetVolume, () => {
                         // Music has faded in at original volume
-                console.log('Background music resumed and faded in');
-            });
+                        console.log('[Spotlight] Background music resumed and faded in');
+                        // Clear saved state only after music has successfully started and faded in
+                        savedBackgroundMusicState = null;
+                    });
+                }).catch(err => {
+                    console.error('[Spotlight] Error resuming background music:', err);
+                    // If autoplay is blocked, try again after user interaction
+                    const playOnce = () => {
+                        if (musicElement && musicElement.paused && !isSpotlightVisible) {
+                            musicElement.play().then(() => {
+                                fadeInAudio(musicElement, targetVolume, () => {
+                                    console.log('[Spotlight] Background music resumed after user interaction');
+                                    savedBackgroundMusicState = null;
+                                });
+                            }).catch(() => {});
+                        }
+                        document.removeEventListener('click', playOnce);
+                    };
+                    document.addEventListener('click', playOnce, { once: true });
+                });
+            } else {
+                // Fallback for older browsers
+                console.log('[Spotlight] Play promise not available, using fallback');
+                fadeInAudio(musicElement, targetVolume, () => {
+                    console.log('[Spotlight] Background music faded in (fallback)');
+                    savedBackgroundMusicState = null;
+                });
+            }
         };
         
         if (spotlightMusic && !spotlightMusic.paused) {
@@ -8468,12 +8536,6 @@ function initNewsletterSubscription() {
             // Fade in the background music immediately
             resumePlayback();
         }
-        
-        // Clear saved state after scheduling resume to avoid duplicate resumes
-        // But only clear after we've actually started the resume process
-        setTimeout(() => {
-            savedBackgroundMusicState = null;
-        }, 100);
     }
     
     // Load and play country music
@@ -8765,7 +8827,8 @@ function initNewsletterSubscription() {
                             stopMusicMonitor(); // Stop monitoring
                             // Wait for country music to start fading out before resuming background
                             setTimeout(() => {
-                                resumeBackgroundMusic();
+                                // Force resume even during transition since we're explicitly leaving spotlight
+                                resumeBackgroundMusic(true);
                                 // Unlock after transition completes
                                 setTimeout(() => {
                                     isTransitioning = false;
