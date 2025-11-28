@@ -458,19 +458,22 @@
         
         .email-preview {
             width: 100%;
-            height: 400px;
+            min-height: 400px;
+            height: 600px;
             border: 1px solid var(--terminal-border);
             background: var(--terminal-bg);
             margin-top: 1rem;
             border-radius: 4px;
             overflow: hidden;
+            display: block;
         }
         
         .email-preview iframe {
             width: 100%;
             height: 100%;
+            min-height: 400px;
             border: none;
-            background: #fff;
+            background: var(--terminal-bg);
         }
         
         .preview-card.expanded {
@@ -1312,23 +1315,33 @@
                 const token = getAdminToken();
                 const response = await fetch(`/.netlify/functions/newsletter-templates?token=${encodeURIComponent(token || '')}`);
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    const grid = document.getElementById('templatesGrid');
-                    
-                    if (data.templates && data.templates.length > 0) {
+                if (!response.ok) {
+                    console.error('Failed to load templates:', response.status, response.statusText);
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
+                    document.getElementById('templatesGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading templates: ' + response.status + '</p></div>';
+                    return;
+                }
+                
+                const data = await response.json();
+                console.log('Templates loaded:', data.templates?.length || 0, 'templates');
+                const grid = document.getElementById('templatesGrid');
+                
+                if (data.templates && data.templates.length > 0) {
                         grid.innerHTML = data.templates.map((template, index) => {
                             const previewId = `template-preview-${index}`;
-                            const hasPreview = template.previewHtml && template.previewHtml.trim().length > 0;
+                            // Check for previewHtml or html field
+                            const previewHtml = template.previewHtml || template.html || '';
+                            const hasPreview = previewHtml && previewHtml.trim().length > 0;
                             return `
                             <div class="preview-card expanded" data-template-id="${template.id}" onclick="selectTemplate('${template.id}', this)">
-                                <div class="preview-title">${escapeHtml(template.name)}</div>
-                                <div class="preview-subject">${escapeHtml(template.subject)}</div>
+                                <div class="preview-title">${escapeHtml(template.name || 'Unnamed Template')}</div>
+                                <div class="preview-subject">${escapeHtml(template.subject || 'No subject')}</div>
                                 <div class="preview-date">${formatDate(template.updatedAt)}</div>
                                 ${hasPreview ? `
                                 <button class="preview-toggle" onclick="event.stopPropagation(); togglePreview('${previewId}')">Hide Preview</button>
-                                <div id="${previewId}" class="email-preview" data-html="${escapeHtml(template.previewHtml.replace(/"/g, '&quot;'))}"></div>
-                                ` : ''}
+                                <div id="${previewId}" class="email-preview" data-html="${escapeHtml(previewHtml.replace(/"/g, '&quot;'))}"></div>
+                                ` : '<div style="margin-top:1rem;color:var(--terminal-amber);font-size:0.8rem;">No preview available</div>'}
                             </div>
                         `;
                         }).join('');
@@ -1336,14 +1349,19 @@
                         // Setup preview iframes after DOM is updated
                         data.templates.forEach((template, index) => {
                             const previewId = `template-preview-${index}`;
-                            if (template.previewHtml && template.previewHtml.trim().length > 0) {
-                                setTimeout(() => setupPreviewIframe(previewId, template.previewHtml), 100);
+                            const previewHtml = template.previewHtml || template.html || '';
+                            if (previewHtml && previewHtml.trim().length > 0) {
+                                // Use longer delay to ensure DOM is ready
+                                setTimeout(() => {
+                                    setupPreviewIframe(previewId, previewHtml);
+                                }, 300);
+                            } else {
+                                console.warn('Template missing previewHtml/html:', template.name, template.id);
                             }
                         });
                     } else {
                         grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No templates available</p></div>';
                     }
-                }
             } catch (error) {
                 console.error('Error loading templates:', error);
                 document.getElementById('templatesGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading templates</p></div>';
@@ -1356,23 +1374,33 @@
                 const token = getAdminToken();
                 const response = await fetch(`/.netlify/functions/newsletter-templates?history=true&token=${encodeURIComponent(token || '')}`);
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    const grid = document.getElementById('newslettersGrid');
-                    
-                    if (data.newsletters && data.newsletters.length > 0) {
+                if (!response.ok) {
+                    console.error('Failed to load newsletter history:', response.status, response.statusText);
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
+                    document.getElementById('newslettersGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading history: ' + response.status + '</p></div>';
+                    return;
+                }
+                
+                const data = await response.json();
+                console.log('Newsletter history loaded:', data.newsletters?.length || 0, 'newsletters');
+                const grid = document.getElementById('newslettersGrid');
+                
+                if (data.newsletters && data.newsletters.length > 0) {
                         grid.innerHTML = data.newsletters.map((newsletter, index) => {
                             const previewId = `newsletter-preview-${index}`;
-                            const hasPreview = newsletter.previewHtml && newsletter.previewHtml.trim().length > 0;
+                            // Check for previewHtml or html field
+                            const previewHtml = newsletter.previewHtml || newsletter.html || '';
+                            const hasPreview = previewHtml && previewHtml.trim().length > 0;
                             return `
                             <div class="preview-card expanded">
-                                <div class="preview-title">${escapeHtml(newsletter.subject)}</div>
+                                <div class="preview-title">${escapeHtml(newsletter.subject || 'No subject')}</div>
                                 <div class="preview-date">${formatDate(newsletter.timestamp)}</div>
-                                <div class="preview-badge">Sent to ${newsletter.emailsSent} subscribers</div>
+                                <div class="preview-badge">Sent to ${newsletter.emailsSent || 0} subscribers</div>
                                 ${hasPreview ? `
                                 <button class="preview-toggle" onclick="togglePreview('${previewId}')">Hide Preview</button>
-                                <div id="${previewId}" class="email-preview" data-html="${escapeHtml(newsletter.previewHtml.replace(/"/g, '&quot;'))}"></div>
-                                ` : ''}
+                                <div id="${previewId}" class="email-preview" data-html="${escapeHtml(previewHtml.replace(/"/g, '&quot;'))}"></div>
+                                ` : '<div style="margin-top:1rem;color:var(--terminal-amber);font-size:0.8rem;">No preview available</div>'}
                             </div>
                         `;
                         }).join('');
@@ -1380,14 +1408,19 @@
                         // Setup preview iframes after DOM is updated
                         data.newsletters.forEach((newsletter, index) => {
                             const previewId = `newsletter-preview-${index}`;
-                            if (newsletter.previewHtml && newsletter.previewHtml.trim().length > 0) {
-                                setTimeout(() => setupPreviewIframe(previewId, newsletter.previewHtml), 100);
+                            const previewHtml = newsletter.previewHtml || newsletter.html || '';
+                            if (previewHtml && previewHtml.trim().length > 0) {
+                                // Use longer delay to ensure DOM is ready
+                                setTimeout(() => {
+                                    setupPreviewIframe(previewId, previewHtml);
+                                }, 300);
+                            } else {
+                                console.warn('Newsletter missing previewHtml/html:', newsletter.subject, newsletter.id);
                             }
                         });
                     } else {
                         grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No newsletters sent yet</p></div>';
                     }
-                }
             } catch (error) {
                 console.error('Error loading newsletter history:', error);
                 document.getElementById('newslettersGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading history</p></div>';
@@ -1452,9 +1485,40 @@
         }
         
         function setupPreviewIframe(previewId, html) {
-            if (!html) return;
-            const previewDiv = document.getElementById(previewId);
-            if (!previewDiv) return;
+            // Try to find the preview div, with retry logic
+            let previewDiv = document.getElementById(previewId);
+            if (!previewDiv) {
+                // Retry after a short delay
+                setTimeout(() => {
+                    previewDiv = document.getElementById(previewId);
+                    if (previewDiv) {
+                        // Try to get HTML from data attribute if not provided
+                        const htmlToUse = html || previewDiv.getAttribute('data-html') || '';
+                        if (htmlToUse) {
+                            renderPreview(previewDiv, previewId, htmlToUse);
+                        } else {
+                            console.warn('No HTML content available for preview:', previewId);
+                        }
+                    } else {
+                        console.error('Preview element not found after retry:', previewId);
+                    }
+                }, 200);
+                return;
+            }
+            
+            // Try to get HTML from data attribute if not provided
+            const htmlToUse = html || previewDiv.getAttribute('data-html') || '';
+            if (!htmlToUse || !htmlToUse.trim()) {
+                console.warn('No HTML content provided for preview:', previewId);
+                return;
+            }
+            
+            renderPreview(previewDiv, previewId, htmlToUse);
+        }
+        
+        function renderPreview(previewDiv, previewId, html) {
+            // Clear any existing content
+            previewDiv.innerHTML = '';
             
             // Create blob URL for the HTML
             const blob = new Blob([html], { type: 'text/html' });
@@ -1464,14 +1528,23 @@
             if (!window.previewBlobUrls) {
                 window.previewBlobUrls = {};
             }
+            // Clean up old URL if it exists
+            if (window.previewBlobUrls[previewId]) {
+                URL.revokeObjectURL(window.previewBlobUrls[previewId]);
+            }
             window.previewBlobUrls[previewId] = url;
             
-            // Create iframe
+            // Create iframe with proper styling
             const iframe = document.createElement('iframe');
             iframe.src = url;
             iframe.style.width = '100%';
-            iframe.style.height = '100%';
+            iframe.style.height = '600px';
             iframe.style.border = 'none';
+            iframe.style.display = 'block';
+            iframe.style.marginTop = '12px';
+            iframe.style.borderRadius = '8px';
+            iframe.style.backgroundColor = '#0b1020';
+            
             previewDiv.appendChild(iframe);
         }
         
@@ -1829,5 +1902,8 @@
             }
         });
     </script>
+    
+    <!-- Cookie Consent Banner -->
+    <script src="src/components/cookie-banner.js"></script>
 </body>
 </html>

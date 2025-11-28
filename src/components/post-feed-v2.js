@@ -12,6 +12,11 @@ const CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
 
 let isLoading = false;
 let currentSort = localStorage.getItem('feed-sort') || 'recent';
+// Normalize old 'nearby' to 'nearMe'
+if (currentSort === 'nearby') {
+  currentSort = 'nearMe';
+  localStorage.setItem('feed-sort', 'nearMe');
+}
 let currentSearch = localStorage.getItem('feed-search') || '';
 let currentPosts = [];
 let coveragePoints = []; // Global coverage map points
@@ -408,7 +413,7 @@ function sortPosts(posts, mode) {
         return dateB - dateA;
       });
       break;
-    case 'nearby':
+    case 'nearMe':
       // Sort by location relevance (requires user location)
       if (userLocation) {
         sorted.sort((a, b) => {
@@ -416,13 +421,15 @@ function sortPosts(posts, mode) {
           const relevanceB = calculateLocationRelevance(b, userLocation);
           if (relevanceB !== relevanceA) return relevanceB - relevanceA;
           // Tie-breaker: most recent first
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          const dateA = new Date(a.createdAt || a.datePosted || 0).getTime();
+          const dateB = new Date(b.createdAt || b.datePosted || 0).getTime();
+          return dateB - dateA;
         });
       } else {
         // If no location, fall back to recent
         sorted.sort((a, b) => {
-          const dateA = new Date(a.createdAt).getTime();
-          const dateB = new Date(b.createdAt).getTime();
+          const dateA = new Date(a.createdAt || a.datePosted || 0).getTime();
+          const dateB = new Date(b.createdAt || b.datePosted || 0).getTime();
           return dateB - dateA;
         });
       }
@@ -1048,357 +1055,305 @@ function renderEngagementBar(post) {
 }
 
 /**
- * Render feed controls
+ * Render feed controls - Premium search + sort strip design
  */
 function renderFeedControls(totalPosts) {
   const searchId = 'feed-search-' + Date.now();
   const sortId = 'feed-sort-' + Date.now();
   
+  // Main container - pill-shaped premium design
   const controlsDiv = document.createElement('div');
-  controlsDiv.className = 'feed-controls';
-  // Styles are handled by CSS class, but we set critical inline styles for reliability
+  controlsDiv.className = 'feed-controls-premium';
+  controlsDiv.setAttribute('role', 'search');
+  controlsDiv.setAttribute('aria-label', 'Search and sort news posts');
   controlsDiv.style.cssText = `
-    position: sticky !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 100 !important;
-    width: 100% !important;
-    max-width: 100% !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    max-width: 960px;
+    margin: 1.5rem auto 2.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 999px;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 10;
+    flex-wrap: wrap;
   `;
   
-  // Create a horizontal flex container to align search and sort on same line
-  const inputRow = document.createElement('div');
-  inputRow.style.cssText = 'display: flex; align-items: center; gap: 1rem; flex: 1; min-width: 0;';
-  
-  // Search input with icon
+  // Search container - left side, grows to fill space
   const searchContainer = document.createElement('div');
-  searchContainer.style.cssText = 'flex: 1; min-width: 0; position: relative; display: flex; align-items: center;';
-  
-  const searchIcon = document.createElement('div');
-  searchIcon.style.cssText = `
-    position: absolute;
-    left: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 1.125rem;
-    pointer-events: none;
-    z-index: 1;
+  searchContainer.style.cssText = `
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   `;
-  searchIcon.textContent = '🔍';
+  
+  // SVG Search Icon
+  const searchIconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  searchIconSvg.setAttribute('width', '18');
+  searchIconSvg.setAttribute('height', '18');
+  searchIconSvg.setAttribute('viewBox', '0 0 24 24');
+  searchIconSvg.setAttribute('fill', 'none');
+  searchIconSvg.setAttribute('stroke', 'currentColor');
+  searchIconSvg.setAttribute('stroke-width', '2');
+  searchIconSvg.setAttribute('stroke-linecap', 'round');
+  searchIconSvg.setAttribute('stroke-linejoin', 'round');
+  searchIconSvg.style.cssText = `
+    color: rgba(255, 255, 255, 0.5);
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+  `;
+  const searchPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  searchPath.setAttribute('d', 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z');
+  searchIconSvg.appendChild(searchPath);
   
   const searchInput = document.createElement('input');
   searchInput.id = searchId;
   searchInput.type = 'text';
-  searchInput.placeholder = 'Search posts, tags, @handles, locations...';
+  searchInput.setAttribute('aria-label', 'Search news');
+  searchInput.placeholder = 'Search global coverage…';
   searchInput.value = currentSearch;
-  searchInput.className = 'feed-search-input';
+  searchInput.className = 'feed-search-input-premium';
   searchInput.style.cssText = `
-    width: 100%;
-    height: 48px;
-    padding: 0.875rem 1rem 0.875rem 3rem;
-    background: rgba(255, 255, 255, 0.08);
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
+    flex: 1;
+    min-width: 0;
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    border: none;
+    border-radius: 999px;
     color: #fff;
-    font-size: 1rem;
+    font-size: 0.938rem;
     font-weight: 400;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: inherit;
     outline: none;
-    box-sizing: border-box;
+    transition: all 0.2s ease;
   `;
   
   searchInput.addEventListener('focus', function() {
-    this.style.background = 'rgba(255, 255, 255, 0.12)';
-    this.style.borderColor = '#4A90E2';
-    this.style.boxShadow = '0 0 0 4px rgba(74, 144, 226, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3)';
-    searchIcon.style.color = '#4A90E2';
+    this.style.boxShadow = '0 0 0 2px rgba(79, 172, 254, 0.4)';
+    searchIconSvg.style.color = '#4FACFE';
   });
   
   searchInput.addEventListener('blur', function() {
-    this.style.background = 'rgba(255, 255, 255, 0.08)';
-    this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
     this.style.boxShadow = 'none';
-    searchIcon.style.color = 'rgba(255, 255, 255, 0.5)';
+    searchIconSvg.style.color = 'rgba(255, 255, 255, 0.5)';
   });
   
-  searchContainer.appendChild(searchIcon);
+  searchContainer.appendChild(searchIconSvg);
   searchContainer.appendChild(searchInput);
   
-  // Professional custom sort dropdown
+  // Sort controls - right side, segmented buttons on desktop
   const sortContainer = document.createElement('div');
-  sortContainer.style.cssText = 'position: relative; min-width: 220px; height: 48px;';
-  
-  const sortButton = document.createElement('button');
-  sortButton.id = sortId + '-button';
-  sortButton.type = 'button';
-  sortButton.className = 'feed-sort-button';
-  sortButton.style.cssText = `
-    width: 100%;
-    height: 48px;
-    padding: 0.875rem 3rem 0.875rem 1rem;
-    background: rgba(255, 255, 255, 0.08);
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    color: #fff;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    outline: none;
+  sortContainer.setAttribute('role', 'group');
+  sortContainer.setAttribute('aria-label', 'Sort results');
+  sortContainer.className = 'feed-sort-controls';
+  sortContainer.style.cssText = `
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    text-align: left;
-    box-sizing: border-box;
+    gap: 0.5rem;
+    flex-shrink: 0;
   `;
   
-  const sortButtonText = document.createElement('span');
-  sortButtonText.className = 'feed-sort-button-text';
-  const currentSortText = {
-    'recent': 'Most Recent',
-    'views': 'Most Views',
-    'nearby': '📍 By Relevant Location',
-    'likes': 'Most Likes',
-    'comments': 'Most Comments',
-    'reposts': 'Most Reposts'
-  }[currentSort] || 'Most Recent';
-  sortButtonText.textContent = currentSortText;
-  sortButtonText.style.cssText = 'flex: 1;';
-  
-  const sortButtonIcon = document.createElement('span');
-  sortButtonIcon.className = 'feed-sort-button-icon';
-  sortButtonIcon.textContent = '▼';
-  sortButtonIcon.style.cssText = `
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.6);
-    transition: transform 0.3s ease;
-    margin-left: 0.5rem;
-  `;
-  
-  sortButton.appendChild(sortButtonText);
-  sortButton.appendChild(sortButtonIcon);
-  
-  // Custom dropdown menu
-  const sortDropdown = document.createElement('div');
-  sortDropdown.id = sortId + '-dropdown';
-  sortDropdown.className = 'feed-sort-dropdown';
-  sortDropdown.style.cssText = `
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    left: 0;
-    right: 0;
-    background: rgba(15, 15, 35, 0.98);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    z-index: 1000;
-    display: none;
-    overflow: hidden;
-    max-height: 400px;
-    overflow-y: auto;
-  `;
-  
-  const options = [
-    { value: 'recent', text: 'Most Recent', icon: '🕐' },
-    { value: 'views', text: 'Most Views', icon: '👁️' },
-    { value: 'nearby', text: 'By Relevant Location', icon: '📍' },
-    { value: 'likes', text: 'Most Likes', icon: '❤️' },
-    { value: 'comments', text: 'Most Comments', icon: '💬' },
-    { value: 'reposts', text: 'Most Reposts', icon: '🔄' }
+  // Sort options - only 4: Recent, Views, Likes, Near Me
+  const sortOptions = [
+    { value: 'recent', text: 'Recent', shortText: 'Recent' },
+    { value: 'views', text: 'Views', shortText: 'Views' },
+    { value: 'likes', text: 'Likes', shortText: 'Likes' },
+    { value: 'nearMe', text: 'Near Me', shortText: 'Near Me' }
   ];
   
-  options.forEach(opt => {
-    const option = document.createElement('button');
-    option.type = 'button';
-    option.className = 'feed-sort-option';
-    option.dataset.value = opt.value;
-    option.style.cssText = `
-      width: 100%;
-      padding: 0.875rem 1rem;
-      background: ${opt.value === currentSort ? 'rgba(74, 144, 226, 0.15)' : 'transparent'};
-      border: none;
-      color: ${opt.value === currentSort ? '#4A90E2' : 'rgba(255, 255, 255, 0.9)'};
-      font-size: 1rem;
-      font-weight: ${opt.value === currentSort ? '600' : '400'};
+  sortOptions.forEach((opt, idx) => {
+    const sortBtn = document.createElement('button');
+    sortBtn.type = 'button';
+    sortBtn.className = 'feed-sort-btn';
+    sortBtn.dataset.value = opt.value;
+    sortBtn.setAttribute('aria-label', `Sort by ${opt.text}`);
+    sortBtn.setAttribute('aria-pressed', currentSort === opt.value ? 'true' : 'false');
+    
+    const isActive = currentSort === opt.value;
+    sortBtn.style.cssText = `
+      padding: 0.5rem 1rem;
+      background: ${isActive ? 'rgba(79, 172, 254, 0.2)' : 'transparent'};
+      border: 1px solid ${isActive ? 'rgba(79, 172, 254, 0.4)' : 'rgba(255, 255, 255, 0.1)'};
+      border-radius: 999px;
+      color: ${isActive ? '#4FACFE' : 'rgba(255, 255, 255, 0.8)'};
+      font-size: 0.875rem;
+      font-weight: ${isActive ? '600' : '500'};
       cursor: pointer;
-      text-align: left;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
       transition: all 0.2s ease;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      white-space: nowrap;
+      font-family: inherit;
+      outline: none;
     `;
     
-    const optionIcon = document.createElement('span');
-    optionIcon.textContent = opt.icon;
-    optionIcon.style.cssText = 'font-size: 1.125rem; flex-shrink: 0;';
+    // Use short text for buttons
+    sortBtn.textContent = opt.shortText;
     
-    const optionText = document.createElement('span');
-    optionText.textContent = opt.text;
-    
-    option.appendChild(optionIcon);
-    option.appendChild(optionText);
-    
-    option.addEventListener('mouseenter', function() {
-      if (opt.value !== currentSort) {
+    // Hover effects
+    sortBtn.addEventListener('mouseenter', function() {
+      if (!isActive) {
         this.style.background = 'rgba(255, 255, 255, 0.08)';
+        this.style.borderColor = 'rgba(255, 255, 255, 0.2)';
         this.style.color = '#fff';
       }
     });
     
-    option.addEventListener('mouseleave', function() {
-      if (opt.value !== currentSort) {
+    sortBtn.addEventListener('mouseleave', function() {
+      if (!isActive) {
         this.style.background = 'transparent';
-        this.style.color = 'rgba(255, 255, 255, 0.9)';
+        this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        this.style.color = 'rgba(255, 255, 255, 0.8)';
       }
     });
     
-    option.addEventListener('click', async function() {
+    sortBtn.addEventListener('click', async function() {
       const newSort = this.dataset.value;
-      currentSort = newSort;
-      localStorage.setItem('feed-sort', currentSort);
-      
-      // Update button text
-      sortButtonText.textContent = opt.text;
-      
-      // Update option styles
-      options.forEach((o, idx) => {
-        const optEl = sortDropdown.children[idx];
-        if (optEl) {
-          optEl.style.background = o.value === newSort ? 'rgba(74, 144, 226, 0.15)' : 'transparent';
-          optEl.style.color = o.value === newSort ? '#4A90E2' : 'rgba(255, 255, 255, 0.9)';
-          optEl.style.fontWeight = o.value === newSort ? '600' : '400';
-        }
-      });
-      
-      // Close dropdown
-      sortDropdown.style.display = 'none';
-      sortButtonIcon.style.transform = 'rotate(0deg)';
-      dropdownOpen = false;
       
       // If "Near Me" is selected, request location
-      if (newSort === 'nearby' && !userLocation) {
+      if (newSort === 'nearMe' && !userLocation) {
         const loc = await getUserLocation();
         if (!loc) {
-          // Location failed, switch back to recent
-          alert('Unable to determine your location. Switching to "Most Recent".');
-          currentSort = 'recent';
-          localStorage.setItem('feed-sort', 'recent');
-          sortButtonText.textContent = 'Most Recent';
-          // Update to recent option
-          const recentOption = sortDropdown.querySelector('[data-value="recent"]');
-          if (recentOption) recentOption.click();
+          // Location failed, show subtle notification and keep current sort
+          const notification = document.createElement('div');
+          notification.textContent = 'Location unavailable. Showing recent posts.';
+          notification.style.cssText = `
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.75rem 1.5rem;
+            background: rgba(15, 15, 35, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.875rem;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          `;
+          document.body.appendChild(notification);
+          setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transition = 'opacity 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+          }, 3000);
           return;
         }
       }
+      
+      // Update sort
+      currentSort = newSort;
+      localStorage.setItem('feed-sort', currentSort);
+      
+      // Update all button states
+      sortOptions.forEach((o, i) => {
+        const btn = sortContainer.children[i];
+        if (btn) {
+          const active = o.value === newSort;
+          btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+          btn.style.background = active ? 'rgba(79, 172, 254, 0.2)' : 'transparent';
+          btn.style.borderColor = active ? 'rgba(79, 172, 254, 0.4)' : 'rgba(255, 255, 255, 0.1)';
+          btn.style.color = active ? '#4FACFE' : 'rgba(255, 255, 255, 0.8)';
+          btn.style.fontWeight = active ? '600' : '500';
+        }
+      });
       
       updateURLParams();
       renderFeed();
       
       // Visual feedback
-      sortButton.style.transform = 'scale(0.98)';
+      this.style.transform = 'scale(0.95)';
       setTimeout(() => {
-        sortButton.style.transform = 'scale(1)';
+        this.style.transform = 'scale(1)';
       }, 150);
     });
     
-    sortDropdown.appendChild(option);
+    sortContainer.appendChild(sortBtn);
   });
   
-  // Toggle dropdown
-  let dropdownOpen = false;
-  sortButton.addEventListener('click', function(e) {
-    e.stopPropagation();
-    dropdownOpen = !dropdownOpen;
-    sortDropdown.style.display = dropdownOpen ? 'block' : 'none';
-    sortButtonIcon.style.transform = dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+  // Mobile: Stack search and sort vertically, make sort scrollable
+  const mobileStyles = document.createElement('style');
+  mobileStyles.textContent = `
+    @media (max-width: 768px) {
+      .feed-controls-premium {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0.75rem;
+        border-radius: 16px;
+      }
+      
+      .feed-controls-premium > div:first-child {
+        width: 100%;
+        margin-bottom: 0.75rem;
+      }
+      
+      .feed-sort-controls {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 0.25rem;
+      }
+      
+      .feed-sort-controls::-webkit-scrollbar {
+        display: none;
+      }
+      
+      .feed-sort-btn {
+        flex-shrink: 0;
+        font-size: 0.813rem;
+        padding: 0.5rem 0.875rem;
+      }
+    }
     
-    if (dropdownOpen) {
-      sortButton.style.background = 'rgba(255, 255, 255, 0.12)';
-      sortButton.style.borderColor = '#4A90E2';
-      sortButton.style.boxShadow = '0 0 0 4px rgba(74, 144, 226, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3)';
-    } else {
-      sortButton.style.background = 'rgba(255, 255, 255, 0.08)';
-      sortButton.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-      sortButton.style.boxShadow = 'none';
+    @media (max-width: 480px) {
+      .feed-controls-premium {
+        margin: 1rem auto 1.5rem;
+        padding: 0.625rem;
+      }
+      
+      .feed-search-input-premium {
+        font-size: 0.875rem;
+      }
+      
+      .feed-sort-btn {
+        font-size: 0.75rem;
+        padding: 0.5rem 0.75rem;
+      }
     }
-  });
-  
-  // Close dropdown when clicking outside
-  const outsideClickHandler = function(e) {
-    if (!sortContainer.contains(e.target) && dropdownOpen) {
-      dropdownOpen = false;
-      sortDropdown.style.display = 'none';
-      sortButtonIcon.style.transform = 'rotate(0deg)';
-      sortButton.style.background = 'rgba(255, 255, 255, 0.08)';
-      sortButton.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-      sortButton.style.boxShadow = 'none';
-    }
-  };
-  document.addEventListener('click', outsideClickHandler);
-  
-  sortContainer.appendChild(sortButton);
-  sortContainer.appendChild(sortDropdown);
-  
-  // Post count badge
-  const countDiv = document.createElement('div');
-  countDiv.className = 'feed-post-count';
-  countDiv.style.cssText = `
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.625rem 1rem;
-    background: linear-gradient(135deg, rgba(74, 144, 226, 0.2) 0%, rgba(74, 144, 226, 0.15) 100%);
-    border: 1px solid rgba(74, 144, 226, 0.3);
-    border-radius: 10px;
-    color: rgba(255, 255, 255, 0.95);
-    font-size: 0.875rem;
-    font-weight: 600;
-    margin-left: auto;
-    white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.15);
   `;
+  document.head.appendChild(mobileStyles);
   
-  const countNumber = document.createElement('span');
-  countNumber.style.cssText = 'color: #4A90E2; font-size: 1rem;';
-  countNumber.textContent = totalPosts.toLocaleString();
-  
-  const countLabel = document.createElement('span');
-  countLabel.textContent = totalPosts === 1 ? 'post loaded' : 'posts loaded';
-  countLabel.style.cssText = 'opacity: 0.8;';
-  
-  countDiv.appendChild(countNumber);
-  countDiv.appendChild(countLabel);
-  
-  // Add both to input row
-  inputRow.appendChild(searchContainer);
-  inputRow.appendChild(sortContainer);
-  
-  // Append everything to controls
-  controlsDiv.appendChild(inputRow);
-  controlsDiv.appendChild(countDiv);
+  // Append to container
+  controlsDiv.appendChild(searchContainer);
+  controlsDiv.appendChild(sortContainer);
   
   // If "Near Me" is selected and we don't have location yet, request it
-  if (currentSort === 'nearby' && !userLocation && !locationPermissionRequested) {
+  if (currentSort === 'nearMe' && !userLocation && !locationPermissionRequested) {
     getUserLocation().then(loc => {
       if (loc) {
-        // Re-render feed with location-based sorting
         renderFeed();
       } else {
         // Location failed, switch back to recent
         currentSort = 'recent';
         localStorage.setItem('feed-sort', 'recent');
-        sortButtonText.textContent = 'Most Recent';
-        // Update dropdown option styles
-        options.forEach((o, idx) => {
-          const optEl = sortDropdown.children[idx];
-          if (optEl) {
-            optEl.style.background = o.value === 'recent' ? 'rgba(74, 144, 226, 0.15)' : 'transparent';
-            optEl.style.color = o.value === 'recent' ? '#4A90E2' : 'rgba(255, 255, 255, 0.9)';
-            optEl.style.fontWeight = o.value === 'recent' ? '600' : '400';
+        // Update button states
+        sortOptions.forEach((o, i) => {
+          const btn = sortContainer.children[i];
+          if (btn) {
+            const active = o.value === 'recent';
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+            btn.style.background = active ? 'rgba(79, 172, 254, 0.2)' : 'transparent';
+            btn.style.borderColor = active ? 'rgba(79, 172, 254, 0.4)' : 'rgba(255, 255, 255, 0.1)';
+            btn.style.color = active ? '#4FACFE' : 'rgba(255, 255, 255, 0.8)';
+            btn.style.fontWeight = active ? '600' : '500';
           }
         });
         renderFeed();
@@ -1406,7 +1361,7 @@ function renderFeedControls(totalPosts) {
     });
   }
   
-  // Event listeners
+  // Search event listener with debounce
   let searchTimeout;
   searchInput.addEventListener('input', function(e) {
     clearTimeout(searchTimeout);
@@ -1419,7 +1374,7 @@ function renderFeedControls(totalPosts) {
   });
   
   // Keyboard shortcut: / to focus search
-  document.addEventListener('keydown', function(e) {
+  const keydownHandler = function(e) {
     if (e.key === '/' && !e.ctrlKey && !e.metaKey && 
         document.activeElement && 
         document.activeElement.tagName !== 'INPUT' && 
@@ -1427,7 +1382,11 @@ function renderFeedControls(totalPosts) {
       e.preventDefault();
       searchInput.focus();
     }
-  });
+  };
+  document.addEventListener('keydown', keydownHandler);
+  
+  // Store handler for cleanup if needed
+  searchInput._keydownHandler = keydownHandler;
   
   return controlsDiv;
 }
@@ -1456,7 +1415,8 @@ function readURLParams() {
   const search = params.get('q');
   
   if (sort) {
-    currentSort = sort;
+    // Normalize old 'nearby' to 'nearMe'
+    currentSort = sort === 'nearby' ? 'nearMe' : sort;
     localStorage.setItem('feed-sort', currentSort);
   }
   if (search) {

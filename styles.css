@@ -4,6 +4,7 @@ html, body {
     background-color: #07152a !important;
     margin: 0;
     padding: 0;
+    padding-top: 80px; /* Space for fixed header */
     min-height: 100vh;
     color: white;
     width: 100%;
@@ -1143,7 +1144,7 @@ body {
    DESKTOP HEADER STYLES
    ======================================== */
 
-/* Desktop Header - Base Styles */
+/* Desktop Header - Refined Professional Layout */
 header.main-header,
 .main-header {
     position: fixed;
@@ -1154,26 +1155,38 @@ header.main-header,
     background: rgba(7, 21, 42, 0.98);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     z-index: 1000;
-    padding: 1rem 0;
+    padding: 0.6rem 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 0;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+}
+
+/* Add padding-top to body to account for fixed header */
+body {
+    padding-top: 80px; /* Adjust based on header height */
 }
 
 .header-container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 2rem;
+    padding: 0 1.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 2rem;
+    width: 100%;
+    min-height: 64px;
 }
 
+/* Left Group: Logo + Brand */
 .header-left {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.6rem;
     flex: 0 1 auto;
     min-width: 0;
 }
@@ -1196,8 +1209,9 @@ header.main-header,
 .brand-info {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.125rem;
     min-width: 0;
+    justify-content: center;
 }
 
 .brand-info h1,
@@ -1210,7 +1224,8 @@ header.main-header,
     white-space: nowrap;
 }
 
-.brand-info p {
+.brand-info p,
+.brand-info .brand-tagline {
     font-size: 0.813rem;
     color: rgba(255, 255, 255, 0.7);
     margin: 0;
@@ -1218,11 +1233,14 @@ header.main-header,
     white-space: nowrap;
 }
 
+/* Center Group: Navigation Links */
 .main-nav {
     display: flex;
     align-items: center;
     flex: 1;
     justify-content: center;
+    min-width: 0;
+    margin: 0 auto;
 }
 
 .main-nav ul {
@@ -1230,7 +1248,7 @@ header.main-header,
     list-style: none;
     margin: 0;
     padding: 0;
-    gap: 1.5rem;
+    gap: 1.75rem;
     align-items: center;
 }
 
@@ -1241,17 +1259,21 @@ header.main-header,
     font-weight: 500;
     transition: color 0.2s ease;
     white-space: nowrap;
+    line-height: 1.5;
+    padding: 0.25rem 0;
 }
 
 .main-nav .nav-link:hover {
     color: #4A90E2;
 }
 
+/* Right Group: Auth Buttons + Audio */
 .header-right {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
     flex: 0 0 auto;
+    flex-shrink: 0;
 }
 
 .last-update {
@@ -1260,27 +1282,139 @@ header.main-header,
     white-space: nowrap;
 }
 
+/* Maintenance Banner - Professional styling */
+.maintenance-banner {
+    width: 100%;
+    background: rgba(255, 204, 0, 0.08);
+    border-bottom: 1px solid rgba(255, 204, 0, 0.5);
+    color: #f8e08a;
+    font-size: 0.85rem;
+    display: none; /* Hidden by default, shown via JS if needed */
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.25rem;
+    position: relative;
+    z-index: 999;
+}
+
+.maintenance-banner-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.maintenance-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.maintenance-text {
+    flex: 1;
+    text-align: center;
+    font-weight: 500;
+}
+
+.maintenance-banner-close {
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+    padding: 0.25rem 0.5rem;
+    flex-shrink: 0;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.maintenance-banner-close:hover {
+    opacity: 1;
+}
+
+.maintenance-banner-close:focus {
+    outline: 2px solid rgba(255, 204, 0, 0.5);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* Mobile styles for maintenance banner */
+@media (max-width: 768px) {
+    .maintenance-banner {
+        padding: 0.5rem 1rem;
+        font-size: 0.75rem;
+    }
+    
+    .maintenance-banner-content {
+        gap: 0.5rem;
+    }
+    
+    .maintenance-icon {
+        font-size: 0.875rem;
+    }
+    
+    .maintenance-text {
+        font-size: 0.75rem;
+    }
+    
+    .maintenance-banner-close {
+        font-size: 1.125rem;
+        padding: 0.125rem 0.375rem;
+    }
+    
+    /* Adjust body padding for mobile header */
+    html, body {
+        padding-top: 70px; /* Smaller header on mobile */
+    }
+    
+    /* Ensure hero section has proper spacing */
+    .hero-section {
+        margin-top: 1rem !important;
+        padding-top: 1.5rem !important;
+    }
+    
+    /* Ensure proper spacing between maintenance banner and hero */
+    .maintenance-banner {
+        margin-bottom: 0.5rem !important;
+    }
+    
+    /* Hero stats container spacing */
+    .hero-stats-container {
+        margin-top: 1.5rem !important;
+        margin-bottom: 1rem !important;
+    }
+}
+
 .auth-buttons-container {
     display: flex;
     gap: 0.75rem;
     align-items: center;
 }
 
+/* Header Buttons - Unified Height & Alignment */
 .auth-btn {
-    padding: 0.625rem 1.25rem;
-    border-radius: 6px;
-    font-size: 0.875rem;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
     border: 1px solid transparent;
-    min-height: 36px;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
 }
 
 .signin-btn {
     background: transparent;
     color: rgba(255, 255, 255, 0.9);
-    border-color: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .signin-btn:hover {
@@ -1301,20 +1435,21 @@ header.main-header,
 }
 
 .music-control-btn {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    min-height: 36px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
     padding: 0;
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
+    border-radius: 999px;
     color: white;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
+    flex-shrink: 0;
 }
 
 .music-control-btn:hover {
@@ -1322,8 +1457,57 @@ header.main-header,
     border-color: rgba(255, 255, 255, 0.3);
 }
 
+/* Separation from flags/globe row - ensure hero section has proper spacing */
+.hero-section {
+    margin-top: 0.75rem;
+}
+
 .mobile-menu-toggle {
     display: none;
+}
+
+/* ========================================
+   TABLET RESPONSIVE HEADER (768px - 1024px)
+   ======================================== */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .header-container {
+        padding: 0 1.25rem;
+        gap: 1.5rem;
+    }
+    
+    /* Slightly reduce nav link gap if needed */
+    .main-nav ul {
+        gap: 1.5rem;
+    }
+    
+    /* Optionally hide tagline on smaller tablets */
+    .brand-info p,
+    .brand-info .brand-tagline {
+        display: none;
+    }
+    
+    /* Ensure buttons don't wrap */
+    .header-right {
+        flex-shrink: 0;
+    }
+    
+    /* Slightly smaller nav font if needed */
+    .main-nav .nav-link {
+        font-size: 0.875rem;
+    }
+}
+
+/* ========================================
+   DESKTOP LARGE (≥ 1280px)
+   ======================================== */
+@media (min-width: 1280px) {
+    .header-container {
+        padding: 0 2rem;
+    }
+    
+    .main-nav ul {
+        gap: 1.75rem;
+    }
 }
 
 /* Add padding to body to account for fixed header on desktop */
@@ -1380,23 +1564,29 @@ html, body {
        Clean, Simple, Minimal Design
        ======================================== */
     
-    /* Hero Section - Complete Redesign */
+    /* Hero Section - Mobile-First Polish */
     .hero-section {
         position: relative !important;
         width: 100% !important;
         max-width: 100vw !important;
-        min-height: 70vh !important;
-        padding: 1rem 1.5rem 2rem !important; /* Reduced top padding to move content up */
+        min-height: auto !important;
+        padding: 1rem !important;
         margin: 0 !important;
-        margin-top: 0.5rem !important; /* Additional margin to move up */
         background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
         display: flex !important;
         flex-direction: column !important;
-        justify-content: flex-start !important; /* Start from top instead of center */
+        justify-content: flex-start !important;
         align-items: center !important;
         text-align: center !important;
         overflow: hidden !important;
-        padding-top: 1rem !important; /* Ensure welcome text is visible */
+    }
+    
+    /* Mobile-First Container Wrapper */
+    .hero-section > * {
+        max-width: 420px !important;
+        width: 100% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
     }
 
     /* Hide ALL decorative elements on mobile */
@@ -1427,23 +1617,22 @@ html, body {
         letter-spacing: -0.02em !important;
     }
 
-    /* Welcome Text Container - Simplified */
+    /* Welcome Text Container - Mobile Polish */
     .welcome-text-container {
         display: block !important;
         width: 100% !important;
         max-width: 100% !important;
         padding: 0 !important;
-        margin: 0 !important;
-        margin-top: 1rem !important; /* Move up to avoid header */
+        margin: 0.5rem auto 0.75rem !important;
         min-height: auto !important;
     }
 
     .welcome-text {
         display: block !important;
-        font-size: 2rem !important;
+        font-size: 1.75rem !important; /* text-3xl equivalent */
         font-weight: 600 !important;
         color: #ffffff !important;
-        line-height: 1.2 !important;
+        line-height: 1.3 !important;
         white-space: normal !important;
         overflow: visible !important;
         text-align: center !important;
@@ -1453,6 +1642,14 @@ html, body {
         text-shadow: none !important;
         padding: 0 !important;
         margin: 0 !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+    }
+    
+    @media (max-width: 480px) {
+        .welcome-text {
+            font-size: 1.5rem !important; /* text-2xl equivalent */
+        }
     }
 
     /* Welcome Location - Minimal */
@@ -1465,20 +1662,25 @@ html, body {
         text-align: center !important;
     }
 
-    /* Hero Subtitle - Clean Typography */
+    /* Hero Subtitle - Blue Card Styling */
     .hero-subtitle-container {
         width: 100% !important;
         max-width: 100% !important;
-        margin: 0 auto 2rem !important;
-        padding: 0 !important;
+        margin: 0 auto 1.5rem !important;
+        padding: 1.25rem 1.5rem !important;
+        background: linear-gradient(135deg, rgba(79, 172, 254, 0.15) 0%, rgba(74, 144, 226, 0.2) 100%) !important;
+        border: 1px solid rgba(79, 172, 254, 0.3) !important;
+        border-radius: 16px !important;
+        box-sizing: border-box !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
     }
 
     .hero-subtitle {
-        font-size: 1rem !important;
-        line-height: 1.6 !important;
-        color: rgba(255, 255, 255, 0.85) !important;
+        font-size: 0.938rem !important;
+        line-height: 1.5 !important;
+        color: rgba(255, 255, 255, 0.95) !important;
         text-align: center !important;
-        font-weight: 400 !important;
+        font-weight: 500 !important;
         margin: 0 !important;
         padding: 0 !important;
     }
@@ -1487,28 +1689,68 @@ html, body {
     .hero-subtitle .subtitle-line-2,
     .hero-subtitle .subtitle-line-3 {
         display: block !important;
-        margin-bottom: 0.25rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .hero-subtitle .subtitle-line-3 {
+        margin-bottom: 0 !important;
     }
 
-    /* Hero Stats - Minimal Grid */
+    /* Hero Stats - Compact Grid with 29.4M+ Featured (MOBILE ONLY) */
     .hero-stats-container {
-        display: grid !important;
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 1rem !important;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 0.75rem !important;
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 auto !important;
         padding: 0 !important;
     }
-
-    .hero-stat-card {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    
+    /* Hide Engagements card on mobile */
+    .hero-stat-card[data-number="857.4K+"] {
+        display: none !important;
+    }
+    
+    /* Featured Total Impressions Card (29.4M+) - Full width at top */
+    .hero-stat-card[data-number="29.4M+"] {
+        order: -1 !important;
+        flex: 0 0 100% !important;
+        width: 100% !important;
+        background: rgba(79, 172, 254, 0.12) !important;
+        border: 1px solid rgba(79, 172, 254, 0.3) !important;
         border-radius: 12px !important;
         padding: 1rem !important;
         text-align: center !important;
         backdrop-filter: blur(10px) !important;
+        box-shadow: 0 2px 8px rgba(79, 172, 254, 0.2) !important;
+        margin-bottom: 0 !important;
+    }
+    
+    .hero-stat-card[data-number="29.4M+"] .hero-stat-number-small {
+        font-size: 1.5rem !important;
+        font-weight: 700 !important;
+        color: #4FACFE !important;
+    }
+    
+    .hero-stat-card[data-number="29.4M+"] .hero-stat-label-small {
+        font-size: 0.813rem !important;
+        font-weight: 600 !important;
+    }
+    
+    /* 2x2 Grid for Other Metrics (Likes, Shares, Reposts, Followers) */
+    .hero-stat-card:not([data-number="29.4M+"]):not([data-number="857.4K+"]) {
+        flex: 0 0 calc(50% - 0.375rem) !important;
+        width: calc(50% - 0.375rem) !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 12px !important;
+        padding: 0.75rem !important;
+        text-align: center !important;
+        backdrop-filter: blur(10px) !important;
         transition: transform 0.2s ease, background 0.2s ease !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
     }
 
     .hero-stat-card:active {
@@ -1517,40 +1759,49 @@ html, body {
     }
 
     .hero-stat-number-small {
-        font-size: 1.25rem !important;
+        font-size: 1.125rem !important;
         font-weight: 600 !important;
         color: #ffffff !important;
         margin-bottom: 0.25rem !important;
+        line-height: 1.2 !important;
     }
 
     .hero-stat-label-small {
-        font-size: 0.75rem !important;
+        font-size: 0.688rem !important;
         color: rgba(255, 255, 255, 0.7) !important;
         text-transform: uppercase !important;
         letter-spacing: 0.5px !important;
+        line-height: 1.2 !important;
     }
 
-    /* Globe Section - Simplified for Mobile */
+    /* Globe Section - Keep same as desktop on mobile */
     .globe-section {
-        padding: 1.5rem 0.75rem !important;
-        margin: 1rem 0 !important;
-        background: transparent !important;
+        padding: 3rem 1rem !important;
+        margin: 2rem 0 !important;
+        background: rgba(7, 21, 42, 0.5) !important;
     }
 
     .globe-section .news-title {
-        font-size: 1.25rem !important;
-        margin-bottom: 0.5rem !important;
+        font-size: 1.75rem !important;
+        margin-bottom: 1rem !important;
+        text-align: center !important;
     }
 
     .globe-section .news-subtitle {
-        font-size: 0.875rem !important;
-        margin-bottom: 1rem !important;
-        opacity: 0.8;
+        font-size: 1rem !important;
+        margin-bottom: 2rem !important;
+        text-align: center !important;
+        opacity: 1 !important;
     }
 
     #cia-globe-container {
-        height: 400px !important;
-        border-radius: 8px !important;
+        height: 600px !important;
+        max-width: 1200px !important;
+        margin: 0 auto !important;
+        border-radius: 12px !important;
+        overflow: hidden !important;
+        background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
+        width: 100% !important;
     }
 
     /* Additional Mobile Cleanup - Hide any remaining decorative elements */
@@ -1559,16 +1810,84 @@ html, body {
         display: none !important;
     }
 
-    /* Remove any animations on mobile for performance */
+    /* Remove any animations on mobile for performance (except rotating text) */
     .hero-section * {
         animation: none !important;
     }
+    
+    /* Keep rotating text animation */
+    .welcome-text {
+        animation: inherit !important;
+    }
 
-    .welcome-text,
     .hero-title,
     .hero-subtitle {
         animation: none !important;
         transition: none !important;
+    }
+    
+    /* Global spacing between sections */
+    .hero-section + * {
+        margin-top: 2rem !important;
+    }
+    
+    /* Prevent horizontal overflow */
+    .hero-section,
+    .hero-section * {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* Hide Feature Cards on Mobile */
+    .fact-checker-features-grid,
+    .fact-checker-features-grid .feature-card {
+        display: none !important;
+    }
+    
+    /* Floating Action Buttons - Bottom Right Stack */
+    .tip-submit-btn {
+        position: fixed !important;
+        right: 1rem !important;
+        bottom: 5rem !important; /* Above Noteworthy AI */
+        z-index: 50 !important;
+        padding: 0.75rem 1rem !important;
+        font-size: 0.813rem !important;
+        border-radius: 24px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        min-width: auto !important;
+        width: auto !important;
+        height: auto !important;
+    }
+    
+    /* Noteworthy AI Chat Launcher - Position below Submit */
+    noteworthy-chat-widget::part(launcher),
+    .launcher {
+        position: fixed !important;
+        right: 1rem !important;
+        bottom: 1.5rem !important;
+        z-index: 49 !important;
+        padding: 0.75rem 1rem !important;
+        font-size: 0.813rem !important;
+        border-radius: 24px !important;
+    }
+    
+    @media (max-width: 480px) {
+        .tip-submit-btn {
+            right: 0.75rem !important;
+            bottom: 4.5rem !important;
+            padding: 0.625rem 0.875rem !important;
+            font-size: 0.75rem !important;
+        }
+        
+        noteworthy-chat-widget::part(launcher),
+        .launcher {
+            right: 0.75rem !important;
+            bottom: 1rem !important;
+            padding: 0.625rem 0.875rem !important;
+            font-size: 0.75rem !important;
+        }
     }
     
     /* Fix header on mobile - COMPLETE OVERHAUL - HIGHEST PRIORITY */
@@ -1576,7 +1895,8 @@ html, body {
     .main-header {
         width: 100% !important;
         max-width: 100vw !important;
-        padding: 0.75rem 1rem !important;
+        padding: 0.5rem 1rem !important;
+        margin-bottom: 0 !important;
         box-sizing: border-box !important;
         position: fixed !important;
         top: 0 !important;
@@ -1773,14 +2093,21 @@ html, body {
         display: none !important;
     }
     
-    .auth-buttons-container {
-        display: none !important;
-    }
-    
+    /* Hide all auth buttons and containers on mobile */
+    .auth-buttons-container,
+    .header-right .auth-buttons-container,
     .auth-btn,
     .signin-btn,
-    .signup-btn {
+    .signup-btn,
+    #signinBtn,
+    #signupBtn {
         display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
     
     .music-control-btn {
@@ -2100,6 +2427,39 @@ html, body {
         font-size: 0.8rem !important;
     }
     
+    /* Fix hero stat numbers - prevent line breaks */
+    .hero-stat-number-small {
+        white-space: nowrap !important;
+        word-break: keep-all !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }
+    
+    /* Fix brand info truncation on mobile */
+    .brand-info h1,
+    .brand-info .brand-name {
+        overflow: visible !important;
+        text-overflow: clip !important;
+        max-width: 140px !important;
+    }
+    
+    .brand-info .brand-tagline {
+        overflow: visible !important;
+        text-overflow: clip !important;
+        max-width: 140px !important;
+    }
+    
+    @media (max-width: 360px) {
+        .brand-info .brand-tagline {
+            display: none !important;
+        }
+        
+        .brand-info h1 {
+            max-width: 100px !important;
+            font-size: 0.75rem !important;
+        }
+    }
+    
     .feed-post-card {
         padding: 0.5rem !important;
     }
@@ -2370,44 +2730,108 @@ html, body {
         width: 100% !important;
     }
     
-.fact-checker-title {
-    font-size: 1.5rem !important;
-    line-height: 1.3 !important;
-}
-
-.popular-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 18px;
-    border-radius: 999px;
-    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(42, 96, 176, 0.25));
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
-    color: #fefefe;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin: 15px 0;
-}
+    .fact-checker-title {
+        font-size: 1.5rem !important;
+        line-height: 1.3 !important;
+    }
     
-    .fact-checker-description {
+    /* Geography Game Card - Mobile Polish (MOBILE ONLY) */
+    #geography-game-section .fact-checker-section {
+        max-width: 420px !important;
+        margin: 1rem auto !important;
+        padding: 1.25rem 1.5rem 1.75rem !important;
+        border-radius: 18px !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+    }
+    
+    #geography-game-section .fact-checker-content {
+        gap: 1rem !important;
+    }
+    
+    #geography-game-section .fact-checker-title {
+        font-size: 1.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    /* Badge styling for mobile */
+    #geography-game-section .popular-badge {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.4rem !important;
+        padding: 0.2rem 0.6rem !important;
+        border-radius: 999px !important;
+        background: rgba(255, 215, 0, 0.1) !important;
+        border: 1px solid rgba(255, 215, 0, 0.4) !important;
+        color: #ffd700 !important;
+        font-weight: 600 !important;
+        font-size: 0.75rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        margin: 0.25rem 0 0.75rem 0 !important;
+        align-self: flex-start !important;
+    }
+    
+    #geography-game-section .fact-checker-description {
         font-size: 0.938rem !important;
         line-height: 1.6 !important;
-    }
-    
-    .fact-checker-action {
-        width: 100% !important;
-    }
-    
-    .play-button-large {
-        width: 100% !important;
-        padding: 1rem !important;
-        font-size: 1.125rem !important;
-        min-height: 50px !important;
+        max-width: 34rem !important;
+        margin: 0 auto 1rem !important;
         text-align: center !important;
     }
     
+    #geography-game-section .fact-checker-action {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 0.75rem !important;
+    }
+    
+    /* Hide duplicate CTA badge on mobile */
+    #geography-game-section .fact-checker-action .cta-badge {
+        display: none !important;
+    }
+    
+    #geography-game-section .play-button-large {
+        width: 100% !important;
+        max-width: 320px !important;
+        padding: 0.875rem 1.5rem !important;
+        font-size: 1rem !important;
+        min-height: 44px !important;
+        text-align: center !important;
+        margin-top: 0.5rem !important;
+    }
+}
+
+/* Desktop: Ensure Geography Game Card looks correct on large screens */
+@media (min-width: 769px) {
+    #geography-game-section .fact-checker-section {
+        max-width: 1200px !important;
+        margin: 2rem auto !important;
+        padding: 2rem 2.5rem !important;
+    }
+    
+    #geography-game-section .fact-checker-description {
+        max-width: none !important;
+        margin: 0 0 1.5rem 0 !important;
+        text-align: left !important;
+        font-size: 1rem !important;
+        line-height: 1.6 !important;
+    }
+    
+    #geography-game-section .fact-checker-action {
+        align-items: flex-start !important;
+    }
+    
+    #geography-game-section .play-button-large {
+        max-width: 280px !important;
+        margin-top: 0 !important;
+    }
+}
+
     /* Fix leaderboards */
     .homepage-leaderboards-container {
         flex-direction: column !important;

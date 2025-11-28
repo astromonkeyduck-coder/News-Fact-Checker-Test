@@ -447,10 +447,20 @@ export class NoteworthyChat extends HTMLElement {
           }
           
           .launcher {
-            right: 12px;
-            bottom: 12px;
-            padding: 12px 18px;
-            font-size: 13px;
+            right: 1rem;
+            bottom: 1.5rem;
+            padding: 0.75rem 1rem;
+            font-size: 0.813rem;
+            border-radius: 24px;
+          }
+          
+          @media (max-width: 480px) {
+            .launcher {
+              right: 0.75rem;
+              bottom: 1rem;
+              padding: 0.625rem 0.875rem;
+              font-size: 0.75rem;
+            }
           }
           
           .resize-handle {

@@ -2635,6 +2635,243 @@
             min-width: 80px;
             text-align: right;
         }
+        
+        /* ========================================
+           MOBILE-FIRST GEOGRAPHY GAME POLISH
+           Clean, compact, professional mobile layout
+           ======================================== */
+        
+        @media (max-width: 768px) {
+            /* Mobile-First Container */
+            .geography-game-container {
+                max-width: 420px !important;
+                margin: 0 auto !important;
+                padding: 1rem 1rem 2rem !important;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 1rem !important;
+                padding-top: 0.5rem !important;
+            }
+            
+            /* Compact Header */
+            .main-header {
+                height: 56px !important;
+                padding: 0 !important;
+            }
+            
+            .header-container {
+                height: 56px !important;
+                padding: 0 1rem !important;
+            }
+            
+            .brand-info h1 {
+                font-size: 0.875rem !important;
+            }
+            
+            .brand-info p {
+                font-size: 0.688rem !important;
+                margin-top: 0.125rem !important;
+            }
+            
+            .home-btn-geo {
+                padding: 0.5rem 0.875rem !important;
+                font-size: 0.813rem !important;
+                border-radius: 20px !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 0.375rem !important;
+            }
+            
+            /* Hero Block: Title + Modes + Instructions */
+            .game-header {
+                margin-bottom: 1rem !important;
+                text-align: center !important;
+            }
+            
+            .game-header h1 {
+                font-size: 1.5rem !important;
+                font-weight: 700 !important;
+                margin-bottom: 0.75rem !important;
+                line-height: 1.3 !important;
+            }
+            
+            /* Short instruction in info card */
+            .game-header p {
+                font-size: 0.813rem !important;
+                line-height: 1.4 !important;
+                margin: 0 auto 1rem !important;
+                padding: 0.625rem 0.875rem !important;
+                background: rgba(74, 144, 226, 0.15) !important;
+                border: 1px solid rgba(74, 144, 226, 0.3) !important;
+                border-radius: 8px !important;
+                max-width: 100% !important;
+                color: rgba(255, 255, 255, 0.9) !important;
+            }
+            
+            /* Mode Buttons - Segmented Control */
+            #gameModeSelector {
+                display: flex !important;
+                gap: 0.5rem !important;
+                justify-content: center !important;
+                margin-bottom: 1rem !important;
+                flex-wrap: wrap !important;
+            }
+            
+            #gameModeSelector .btn-mode {
+                padding: 0.4rem 0.8rem !important;
+                font-size: 0.813rem !important;
+                border-radius: 20px !important;
+                border-width: 1.5px !important;
+                font-weight: 600 !important;
+                min-height: 36px !important;
+            }
+            
+            /* Progress Bar - Compact Card */
+            .progress-bar-container {
+                border-radius: 12px !important;
+                padding: 0.75rem 1rem !important;
+                background: rgba(0, 0, 0, 0.35) !important;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 0.25rem !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            .progress-bar-label {
+                font-size: 0.813rem !important;
+                color: rgba(255, 255, 255, 0.9) !important;
+                margin-bottom: 0 !important;
+            }
+            
+            .progress-bar {
+                width: 100% !important;
+                height: 6px !important;
+                border-radius: 3px !important;
+                overflow: hidden !important;
+            }
+            
+            /* Stats - 2x3 Grid */
+            .game-stats-geo {
+                display: grid !important;
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 0.75rem !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            .stat-item-geo {
+                padding: 0.75rem 0.5rem !important;
+                min-width: auto !important;
+                border-width: 1.5px !important;
+                border-radius: 12px !important;
+            }
+            
+            .stat-item-geo.stat-timer {
+                border-color: rgba(255, 215, 0, 0.4) !important;
+                border-width: 1.5px !important;
+            }
+            
+            .stat-label-geo {
+                font-size: 0.75rem !important;
+                margin-bottom: 0.375rem !important;
+            }
+            
+            .stat-value-geo {
+                font-size: 1.25rem !important;
+                line-height: 1.2 !important;
+            }
+            
+            /* Hide Combo Stat on Mobile (or show if space allows) */
+            .stat-combo {
+                display: none !important;
+            }
+            
+            /* Country Prompt - Compact */
+            .country-prompt {
+                font-size: 1rem !important;
+                padding: 0.75rem 1rem !important;
+                margin-bottom: 1rem !important;
+                text-align: center !important;
+            }
+            
+            /* Game Controls - Compact */
+            .game-controls {
+                display: flex !important;
+                gap: 0.5rem !important;
+                flex-wrap: wrap !important;
+                justify-content: center !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            .btn-geo,
+            .btn-leaderboard {
+                padding: 0.625rem 1rem !important;
+                font-size: 0.813rem !important;
+                border-radius: 20px !important;
+                min-height: 40px !important;
+            }
+            
+            /* Map Container - Compact */
+            .world-map-container {
+                margin-bottom: 1rem !important;
+            }
+            
+            .world-map {
+                border-radius: 12px !important;
+                overflow: hidden !important;
+            }
+            
+            /* Short instruction above map (if duplicate exists) */
+            .world-map-container::before {
+                content: 'Tap the prompted country on the map below.' !important;
+                display: block !important;
+                font-size: 0.75rem !important;
+                color: rgba(255, 255, 255, 0.6) !important;
+                text-align: center !important;
+                margin-bottom: 0.5rem !important;
+                font-style: italic !important;
+            }
+            
+            /* Feedback Message - Compact */
+            .feedback-message {
+                font-size: 0.875rem !important;
+                padding: 0.625rem 0.875rem !important;
+                border-radius: 8px !important;
+            }
+            
+            /* Noteworthy AI - Fixed Bottom Right */
+            noteworthy-chat-widget::part(launcher),
+            .launcher {
+                position: fixed !important;
+                right: 1rem !important;
+                bottom: 1.5rem !important;
+                z-index: 49 !important;
+                padding: 0.75rem 1rem !important;
+                font-size: 0.813rem !important;
+                border-radius: 24px !important;
+            }
+            
+            @media (max-width: 480px) {
+                .geography-game-container {
+                    padding: 0.75rem 0.75rem 1.5rem !important;
+                }
+                
+                .game-header h1 {
+                    font-size: 1.25rem !important;
+                }
+                
+                .stat-value-geo {
+                    font-size: 1.125rem !important;
+                }
+                
+                noteworthy-chat-widget::part(launcher),
+                .launcher {
+                    right: 0.75rem !important;
+                    bottom: 1rem !important;
+                    padding: 0.625rem 0.875rem !important;
+                    font-size: 0.75rem !important;
+                }
+            }
+        }
     </style>
     <!-- Analytics Tracker - Comprehensive visitor tracking -->
     <script src="src/utils/analytics-tracker.js"></script>
@@ -2668,7 +2905,7 @@
         <div class="geography-game-container">
                 <div class="game-header">
                 <h1>🌍 50 Most Populous Countries</h1>
-                <p>Click on the country that's prompted. Green = not answered, White = correct, Red = incorrect | <span id="directionsCount">0 / 50</span> correct</p>
+                <p>Click the prompted country. Green = not answered, White = correct, Red = incorrect</p>
             </div>
             
             <!-- Progress Bar -->
@@ -3168,6 +3405,9 @@
             }
         })();
     </script>
+    
+    <!-- Cookie Consent Banner -->
+    <script src="src/components/cookie-banner.js"></script>
 </body>
 </html>
 

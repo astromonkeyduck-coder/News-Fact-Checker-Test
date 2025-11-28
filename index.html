@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="app-version" content="November 27, 2025">
+    <meta name="app-version" content="November 28, 2025">
     <title>Noteworthy News - Fact-Checked Journalism & Media Literacy Games | Trusted News Source</title>
     
     <!-- Favicon and Theme -->
@@ -17253,5 +17253,177 @@
             });
         })();
     </script>
+    <!-- Geography Game Mobile Detection -->
+    <script>
+        (function() {
+            'use strict';
+            
+            // Detect mobile devices
+            const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isSmallScreen = window.innerWidth <= 768;
+            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            const isMobile = isMobileDevice || (isSmallScreen && isTouchDevice);
+            
+            // Function to create and show error modal
+            function showMobileErrorModal() {
+                // Create modal overlay
+                const overlay = document.createElement('div');
+                overlay.id = 'geography-mobile-error-overlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.75);
+                    backdrop-filter: blur(8px);
+                    -webkit-backdrop-filter: blur(8px);
+                    z-index: 10000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 1rem;
+                    animation: fadeIn 0.3s ease;
+                `;
+                
+                // Create modal content
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    background: linear-gradient(135deg, rgba(7, 21, 42, 0.98) 0%, rgba(13, 31, 58, 0.98) 100%);
+                    border: 2px solid rgba(74, 144, 226, 0.4);
+                    border-radius: 16px;
+                    padding: 2rem;
+                    max-width: 400px;
+                    width: 100%;
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+                    text-align: center;
+                    color: white;
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    animation: slideUp 0.3s ease;
+                `;
+                
+                modal.innerHTML = `
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🌍</div>
+                    <h2 style="margin: 0 0 1rem 0; font-size: 1.5rem; font-weight: 700; color: #4A90E2;">
+                        Mobile Not Supported
+                    </h2>
+                    <p style="margin: 0 0 1.5rem 0; font-size: 1rem; line-height: 1.5; color: rgba(255, 255, 255, 0.9);">
+                        The Geography Challenge game requires a desktop or laptop computer with a mouse for the best experience. Please visit us on a desktop device to play!
+                    </p>
+                    <button id="geography-error-close-btn" style="
+                        background: linear-gradient(135deg, #4A90E2, #2A60B0);
+                        color: white;
+                        border: none;
+                        padding: 0.875rem 2rem;
+                        border-radius: 8px;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+                        min-height: 44px;
+                        touch-action: manipulation;
+                    ">
+                        Got it
+                    </button>
+                `;
+                
+                overlay.appendChild(modal);
+                document.body.appendChild(overlay);
+                
+                // Add animations
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                    @keyframes slideUp {
+                        from { 
+                            opacity: 0;
+                            transform: translateY(20px);
+                        }
+                        to { 
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                    }
+                    #geography-error-close-btn:hover {
+                        background: linear-gradient(135deg, #5BA0F2, #3A70C0);
+                        transform: translateY(-2px);
+                        box-shadow: 0 6px 20px rgba(74, 144, 226, 0.5);
+                    }
+                    #geography-error-close-btn:active {
+                        transform: translateY(0);
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                // Close button handler
+                const closeBtn = document.getElementById('geography-error-close-btn');
+                const closeModal = function() {
+                    overlay.style.animation = 'fadeOut 0.3s ease';
+                    modal.style.animation = 'slideDown 0.3s ease';
+                    setTimeout(() => {
+                        if (overlay.parentNode) {
+                            overlay.parentNode.removeChild(overlay);
+                        }
+                        if (style.parentNode) {
+                            style.parentNode.removeChild(style);
+                        }
+                    }, 300);
+                };
+                
+                closeBtn.addEventListener('click', closeModal);
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === overlay) {
+                        closeModal();
+                    }
+                });
+                
+                // Add fadeOut and slideDown animations
+                const closeStyle = document.createElement('style');
+                closeStyle.textContent = `
+                    @keyframes fadeOut {
+                        from { opacity: 1; }
+                        to { opacity: 0; }
+                    }
+                    @keyframes slideDown {
+                        from { 
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
+                        to { 
+                            opacity: 0;
+                            transform: translateY(20px);
+                        }
+                    }
+                `;
+                document.head.appendChild(closeStyle);
+            }
+            
+            // Wait for DOM to be ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+            
+            function init() {
+                // Find the geography game link
+                const geographyLink = document.querySelector('a[href="geography-game.html"]');
+                
+                if (geographyLink && isMobile) {
+                    geographyLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        showMobileErrorModal();
+                        return false;
+                    });
+                }
+            }
+        })();
+    </script>
+
 </body>
 </html>
