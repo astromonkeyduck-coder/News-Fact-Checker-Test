@@ -302,15 +302,31 @@ exports.handler = async (event, context) => {
                            }
                          })() : null);
     
-    if (newsletterKey && providedToken !== newsletterKey) {
-      return {
-        statusCode: 401,
-        headers,
-        body: JSON.stringify({ 
-          error: 'Unauthorized - Newsletter key required',
-          message: 'This endpoint requires newsletter authentication. Please provide a valid newsletter key.'
-        }),
-      };
+    // Timing-safe comparison to prevent timing attacks
+    function secureCompare(a, b) {
+      if (!a || !b || a.length !== b.length) {
+        return false;
+      }
+      let result = 0;
+      for (let i = 0; i < a.length; i++) {
+        result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+      }
+      return result === 0;
+    }
+    
+    if (newsletterKey) {
+      if (!providedToken || !secureCompare(newsletterKey, providedToken)) {
+        // Log failed attempt (without exposing the token or email addresses)
+        console.log('[Security] Failed newsletter send authentication attempt');
+        return {
+          statusCode: 401,
+          headers,
+          body: JSON.stringify({ 
+            error: 'Unauthorized - Newsletter key required',
+            message: 'This endpoint requires newsletter authentication. Please provide a valid newsletter key.'
+          }),
+        };
+      }
     }
     
     // Check if API key is configured
@@ -922,12 +938,21 @@ exports.handler = async (event, context) => {
           token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
         });
         
+        // Create preview HTML (with placeholder values, not personalized)
+        const previewHtml = htmlContent
+          .replace(/\{\{FULL_NAME\}\}/g, 'Preview User')
+          .replace(/\{\{FIRST_NAME\}\}/g, 'Preview')
+          .replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview')
+          .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#')
+          .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#');
+        
         const sendRecord = {
           timestamp: new Date().toISOString(),
           emailsSent: successCount,
           totalContacts: validContacts.length,
           subject: subject,
           errors: errorCount,
+          previewHtml: previewHtml, // Save preview HTML
         };
         
         await store.set("last-send-time", JSON.stringify(sendRecord));
@@ -962,7 +987,7 @@ exports.handler = async (event, context) => {
           }
           
           await store.set("newsletter-history-list", JSON.stringify(historyList));
-          console.log('💾 Saved newsletter to history');
+          console.log('💾 Saved newsletter to history with preview');
         } catch (historyError) {
           console.warn('⚠️ Could not save newsletter history:', historyError.message);
         }

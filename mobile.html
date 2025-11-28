@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="app-version" content="Mobile v1.0 - December 2025">
+    <title>Noteworthy News Mobile - Fact-Checked Journalism On The Go</title>
+    
+    <!-- Favicon and Theme -->
+    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
+    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="192x192">
+    <link rel="shortcut icon" type="image/png" href="IMG_5794.PNG">
+    <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
+    <meta name="theme-color" content="#07152a">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Noteworthy News Mobile - Your trusted source for fact-checked journalism and media literacy education, optimized for mobile devices.">
+    <meta name="keywords" content="Noteworthy News, mobile news, fact checking, journalism, media literacy">
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://noteworthynews.co/mobile.html">
+    <meta property="og:title" content="Noteworthy News Mobile - Fact-Checked Journalism On The Go">
+    <meta property="og:description" content="Your trusted source for fact-checked journalism, optimized for mobile devices.">
+    <meta property="og:image" content="https://noteworthynews.co/IMG_5794.PNG">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+    <!-- Skip to content link for accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <!-- Mobile Desktop Notice Modal -->
+    <div class="mobile-desktop-notice" id="mobileDesktopNotice">
+        <div class="mobile-notice-content">
+            <button class="mobile-notice-close" id="mobileNoticeClose" aria-label="Close notice">&times;</button>
+            <div class="mobile-notice-icon">📱</div>
+            <h3 class="mobile-notice-title">Mobile Experience</h3>
+            <p class="mobile-notice-text">
+                You're viewing our mobile site, which offers a streamlined experience with core features.
+            </p>
+            <p class="mobile-notice-subtext">
+                For the full Noteworthy News experience (including all features and games), please visit us on desktop.
+            </p>
+            <button class="mobile-notice-btn" id="mobileNoticeBtn">Got it</button>
+        </div>
+    </div>
+    
+    <!-- Header -->
+    <header class="mobile-header">
+        <div class="mobile-header-container">
+            <div class="mobile-header-left">
+                <a href="index.html" class="mobile-logo-link" aria-label="Noteworthy News">
+                    <img src="IMG_5794.PNG" alt="Noteworthy News Logo" class="mobile-logo">
+                </a>
+                <div class="mobile-brand-info">
+                    <h1 class="mobile-brand-name">Noteworthy News</h1>
+                    <p class="mobile-brand-tagline">Trusted Journalism</p>
+                </div>
+            </div>
+            <div class="mobile-header-right">
+                <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu" aria-expanded="false">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Mobile Navigation Overlay -->
+    <nav class="mobile-nav" id="mobileNav" aria-hidden="true">
+        <div class="mobile-nav-header">
+            <h2>Menu</h2>
+            <button class="mobile-nav-close" id="mobileNavClose" aria-label="Close menu">&times;</button>
+        </div>
+        <ul class="mobile-nav-list">
+            <li><a href="#news-section" class="mobile-nav-link">📰 News</a></li>
+            <li><a href="#games-section" class="mobile-nav-link">🎮 Games</a></li>
+            <li><a href="#credibility-section" class="mobile-nav-link">✅ Credibility</a></li>
+            <li><a href="#about-section" class="mobile-nav-link">ℹ️ About</a></li>
+            <li><a href="index.html" class="mobile-nav-link">💻 Desktop Site</a></li>
+            <li><a href="profile.html" class="mobile-nav-link">👤 Profile</a></li>
+            <li><a href="#" class="mobile-nav-link" id="mobileTipBtn">💡 Submit Tip</a></li>
+        </ul>
+    </nav>
+    
+    <!-- Main Content -->
+    <main id="main-content" class="mobile-main">
+        <!-- Hero Section -->
+        <section class="mobile-hero">
+            <div class="mobile-hero-content">
+                <h2 class="mobile-hero-title">Fact-Checked News & Media Literacy On The Go</h2>
+                <p class="mobile-hero-subtitle">Reliable, Neutral Coverage You Can Trust</p>
+                <div class="mobile-hero-stats">
+                    <div class="mobile-stat-card">
+                        <div class="mobile-stat-number">857K+</div>
+                        <div class="mobile-stat-label">Engagements</div>
+                    </div>
+                    <div class="mobile-stat-card">
+                        <div class="mobile-stat-number">92K+</div>
+                        <div class="mobile-stat-label">Likes</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Latest News Section -->
+        <section id="news-section" class="mobile-section">
+            <div class="mobile-section-header">
+                <h2 class="mobile-section-title">📰 Latest News</h2>
+                <a href="index.html" class="mobile-section-link">View All →</a>
+            </div>
+            <div class="mobile-news-feed" id="mobileNewsFeed">
+                <!-- News items will be loaded here -->
+                <div class="mobile-news-item">
+                    <div class="mobile-news-content">
+                        <h3 class="mobile-news-title">Breaking: Stay Updated</h3>
+                        <p class="mobile-news-excerpt">Follow us on <a href="https://twitter.com/newsnoteworthy" target="_blank" rel="noopener">Twitter/X</a> for real-time breaking news updates.</p>
+                        <div class="mobile-news-meta">
+                            <span class="mobile-news-time">Just now</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mobile-news-item">
+                    <div class="mobile-news-content">
+                        <h3 class="mobile-news-title">Fact-Checked Journalism</h3>
+                        <p class="mobile-news-excerpt">Every story is verified before publication. Visit our desktop site for full articles and in-depth analysis.</p>
+                        <div class="mobile-news-meta">
+                            <span class="mobile-news-time">Always</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mobile-cta-box">
+                <p class="mobile-cta-text">📱 Mobile-optimized feed</p>
+                <a href="index.html" class="mobile-cta-button">Visit Desktop for Full Experience</a>
+            </div>
+        </section>
+        
+        <!-- Games Section -->
+        <section id="games-section" class="mobile-section mobile-section-alt">
+            <div class="mobile-section-header">
+                <h2 class="mobile-section-title">🎮 Media Literacy Games</h2>
+            </div>
+            <div class="mobile-games-grid">
+                <div class="mobile-game-card">
+                    <div class="mobile-game-icon">🌍</div>
+                    <h3 class="mobile-game-title">Geography Challenge</h3>
+                    <p class="mobile-game-desc">Test your knowledge of world geography. Find countries on the map!</p>
+                    <a href="geography-game.html" class="mobile-game-button">Play Now</a>
+                    <p class="mobile-game-note">💡 Best on desktop for full map experience</p>
+                </div>
+                <div class="mobile-game-card">
+                    <div class="mobile-game-icon">✅</div>
+                    <h3 class="mobile-game-title">Breaking News Fact Checker</h3>
+                    <p class="mobile-game-desc">Learn to distinguish real from fake headlines in this fast-paced challenge.</p>
+                    <a href="game.html" class="mobile-game-button">Play Now</a>
+                    <p class="mobile-game-note">💡 Mobile-friendly with touch controls</p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Credibility Section -->
+        <section id="credibility-section" class="mobile-section">
+            <div class="mobile-section-header">
+                <h2 class="mobile-section-title">✅ Our Credibility</h2>
+            </div>
+            <div class="mobile-credibility-content">
+                <div class="mobile-credibility-item">
+                    <div class="mobile-credibility-icon">🔍</div>
+                    <h3 class="mobile-credibility-title">Fact-Checked</h3>
+                    <p class="mobile-credibility-text">Every story is verified before publication</p>
+                </div>
+                <div class="mobile-credibility-item">
+                    <div class="mobile-credibility-icon">⚖️</div>
+                    <h3 class="mobile-credibility-title">Neutral Coverage</h3>
+                    <p class="mobile-credibility-text">Unbiased reporting you can trust</p>
+                </div>
+                <div class="mobile-credibility-item">
+                    <div class="mobile-credibility-icon">📚</div>
+                    <h3 class="mobile-credibility-title">Media Literacy</h3>
+                    <p class="mobile-credibility-text">Educational games to improve critical thinking</p>
+                </div>
+            </div>
+            <a href="how-we-verify.html" class="mobile-link-button">Learn How We Verify →</a>
+        </section>
+        
+        <!-- About Section -->
+        <section id="about-section" class="mobile-section mobile-section-alt">
+            <div class="mobile-section-header">
+                <h2 class="mobile-section-title">ℹ️ About Noteworthy News</h2>
+            </div>
+            <div class="mobile-about-content">
+                <p class="mobile-about-text">
+                    Noteworthy News is your trusted source for fact-checked journalism and media literacy education. 
+                    We deliver reliable, neutral coverage and interactive games to help you think critically about the news.
+                </p>
+                <div class="mobile-about-links">
+                    <a href="our-mission.html" class="mobile-link-button">Our Mission</a>
+                    <a href="editorial-policy.html" class="mobile-link-button">Editorial Policy</a>
+                    <a href="contact.html" class="mobile-link-button">Contact Us</a>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Subscribe Section -->
+        <section class="mobile-section mobile-subscribe">
+            <div class="mobile-subscribe-content">
+                <h2 class="mobile-subscribe-title">📧 Stay Informed</h2>
+                <p class="mobile-subscribe-text">Get fact-checked news delivered to your inbox</p>
+                <form class="mobile-subscribe-form" id="mobileSubscribeForm">
+                    <input type="email" class="mobile-subscribe-input" placeholder="Enter your email" required aria-label="Email address">
+                    <button type="submit" class="mobile-subscribe-button">Subscribe</button>
+                </form>
+                <p class="mobile-subscribe-note">Visit desktop site for newsletter management</p>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="mobile-footer">
+        <div class="mobile-footer-content">
+            <div class="mobile-footer-section">
+                <h3 class="mobile-footer-title">Quick Links</h3>
+                <ul class="mobile-footer-links">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="index.html">News</a></li>
+                    <li><a href="index.html">Games</a></li>
+                    <li><a href="about.html">About</a></li>
+                </ul>
+            </div>
+            <div class="mobile-footer-section">
+                <h3 class="mobile-footer-title">Resources</h3>
+                <ul class="mobile-footer-links">
+                    <li><a href="media-literacy-guide.html">Media Literacy Guide</a></li>
+                    <li><a href="fact-checking-tips.html">Fact-Checking Tips</a></li>
+                    <li><a href="how-we-verify.html">How We Verify</a></li>
+                </ul>
+            </div>
+            <div class="mobile-footer-section">
+                <h3 class="mobile-footer-title">Legal</h3>
+                <ul class="mobile-footer-links">
+                    <li><a href="privacy.html">Privacy Policy</a></li>
+                    <li><a href="terms.html">Terms of Service</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="mobile-footer-bottom">
+            <p class="mobile-footer-copyright">&copy; 2025 Noteworthy News. All rights reserved.</p>
+            <p class="mobile-footer-note">📱 Mobile Site | <a href="index.html">Visit Desktop Version</a></p>
+        </div>
+    </footer>
+    
+    <!-- Tip Submission Modal -->
+    <div class="mobile-modal" id="mobileTipModal">
+        <div class="mobile-modal-content">
+            <div class="mobile-modal-header">
+                <h2>💡 Submit a Tip</h2>
+                <button class="mobile-modal-close" id="mobileTipModalClose" aria-label="Close">&times;</button>
+            </div>
+            <div class="mobile-modal-body">
+                <p>Have a news tip? Submit it below. For the full tip submission form, visit our desktop site.</p>
+                <form id="mobileTipForm">
+                    <div class="mobile-form-group">
+                        <label for="mobileTipEmail">Your Email</label>
+                        <input type="email" id="mobileTipEmail" name="email" placeholder="your@email.com" required>
+                    </div>
+                    <div class="mobile-form-group">
+                        <label for="mobileTipContent">Tip Details</label>
+                        <textarea id="mobileTipContent" name="tip" placeholder="Describe your tip..." required rows="5"></textarea>
+                    </div>
+                    <button type="submit" class="mobile-form-button">Submit Tip</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="mobile.js"></script>
+</body>
+</html>
+

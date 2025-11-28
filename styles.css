@@ -1140,6 +1140,198 @@ body {
 }
 
 /* ========================================
+   DESKTOP HEADER STYLES
+   ======================================== */
+
+/* Desktop Header - Base Styles */
+header.main-header,
+.main-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background: rgba(7, 21, 42, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 1000;
+    padding: 1rem 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+.header-logo {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+}
+
+.header-logo img {
+    height: 40px;
+    width: 40px;
+    max-width: 40px;
+    max-height: 40px;
+    display: block;
+    object-fit: contain;
+}
+
+.brand-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.brand-info h1,
+.brand-info .brand-name {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #4A90E2;
+    margin: 0;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.brand-info p {
+    font-size: 0.813rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.main-nav {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    justify-content: center;
+}
+
+.main-nav ul {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.main-nav .nav-link {
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    font-size: 0.938rem;
+    font-weight: 500;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+}
+
+.main-nav .nav-link:hover {
+    color: #4A90E2;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 0 0 auto;
+}
+
+.last-update {
+    font-size: 0.813rem;
+    color: rgba(255, 255, 255, 0.6);
+    white-space: nowrap;
+}
+
+.auth-buttons-container {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.auth-btn {
+    padding: 0.625rem 1.25rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    min-height: 36px;
+}
+
+.signin-btn {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.signin-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.signup-btn {
+    background: linear-gradient(135deg, #4FACFE 0%, #4A90E2 100%);
+    color: white;
+    border: none;
+}
+
+.signup-btn:hover {
+    background: linear-gradient(135deg, #5FB8FF 0%, #5AA0F2 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+}
+
+.music-control-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.music-control-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.mobile-menu-toggle {
+    display: none;
+}
+
+/* Add padding to body to account for fixed header on desktop */
+body {
+    padding-top: 80px;
+}
+
+/* ========================================
    COMPREHENSIVE MOBILE FIXES
    ======================================== */
 
@@ -1167,6 +1359,7 @@ html, body {
         width: 100% !important;
         max-width: 100vw !important;
         position: relative;
+        padding-top: 0 !important; /* Reset desktop padding-top for mobile */
     }
     
     /* Fix all containers */
@@ -3244,6 +3437,211 @@ html, body {
     
     .tip-modal-content {
         padding: 1rem 0.75rem !important;
+    }
+}
+
+/* Cookie Consent Banner Styles - Professional Design */
+.cookie-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, rgba(7, 21, 42, 0.98) 0%, rgba(13, 31, 58, 0.98) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(79, 172, 254, 0.3);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+    z-index: 10000;
+    padding: 0;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 100%;
+}
+
+.cookie-banner.cookie-banner-visible {
+    transform: translateY(0);
+}
+
+.cookie-banner.cookie-banner-hidden {
+    transform: translateY(100%);
+}
+
+.cookie-banner-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    align-items: flex-start;
+}
+
+.cookie-banner-text {
+    flex: 1;
+    width: 100%;
+}
+
+.cookie-banner-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin: 0 0 0.75rem 0;
+    color: #ffffff;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+}
+
+.cookie-banner-text p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.6;
+    font-size: 0.938rem;
+    font-weight: 400;
+}
+
+.cookie-banner-text a {
+    color: #4A90E2;
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(74, 144, 226, 0.3);
+    transition: all 0.2s ease;
+}
+
+.cookie-banner-text a:hover {
+    color: #4FACFE;
+    border-bottom-color: #4FACFE;
+}
+
+.cookie-banner-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    width: 100%;
+    align-items: center;
+}
+
+.cookie-btn {
+    padding: 0.875rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.938rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    white-space: nowrap;
+}
+
+.cookie-btn-accept {
+    background: linear-gradient(135deg, #4FACFE 0%, #4A90E2 100%);
+    color: white;
+    border-color: rgba(79, 172, 254, 0.3);
+    flex: 1;
+    min-width: 140px;
+}
+
+.cookie-btn-accept:hover {
+    background: linear-gradient(135deg, #5FB8FF 0%, #5AA0F2 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+}
+
+.cookie-btn-accept:active {
+    transform: translateY(0);
+}
+
+.cookie-btn-reject {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.2);
+    flex: 1;
+    min-width: 140px;
+}
+
+.cookie-btn-reject:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.cookie-btn-reject:active {
+    transform: translateY(0);
+}
+
+.cookie-btn-learn {
+    background: transparent;
+    color: #4A90E2;
+    border-color: rgba(74, 144, 226, 0.3);
+    padding: 0.875rem 1.25rem;
+    min-width: auto;
+}
+
+.cookie-btn-learn:hover {
+    background: rgba(74, 144, 226, 0.1);
+    color: #4FACFE;
+    border-color: rgba(79, 172, 254, 0.4);
+}
+
+/* Mobile styles for cookie banner */
+@media (max-width: 768px) {
+    .cookie-banner {
+        padding: 0;
+    }
+    
+    .cookie-banner-content {
+        padding: 1.25rem;
+        gap: 1rem;
+    }
+    
+    .cookie-banner-title {
+        font-size: 1.063rem;
+        margin-bottom: 0.625rem;
+    }
+    
+    .cookie-banner-text p {
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+    
+    .cookie-banner-buttons {
+        flex-direction: column;
+        width: 100%;
+        gap: 0.625rem;
+    }
+    
+    .cookie-btn {
+        width: 100%;
+        padding: 0.875rem 1.25rem;
+        min-width: auto;
+    }
+    
+    .cookie-btn-learn {
+        order: 3;
+        font-size: 0.875rem;
+        padding: 0.75rem 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .cookie-banner-content {
+        padding: 1rem;
+    }
+    
+    .cookie-banner-title {
+        font-size: 1rem;
+    }
+    
+    .cookie-banner-text p {
+        font-size: 0.813rem;
+    }
+    
+    .cookie-btn {
+        font-size: 0.875rem;
+        padding: 0.75rem 1rem;
     }
 }
 

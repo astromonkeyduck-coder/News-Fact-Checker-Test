@@ -130,7 +130,7 @@ function renderCards(cards, container, originalContent) {
         </div>
         <div class="article-content">
           <h3 class="article-headline">
-            <a href="${card.link || '#'}" target="_blank" rel="noopener noreferrer">${(card.title || 'Untitled').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</a>
+            <a href="/article.html?id=${card.id || ''}">${(card.title || 'Untitled').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</a>
           </h3>
           <p class="article-excerpt">${formatStory(card.story || '')}</p>
           <div class="article-meta">

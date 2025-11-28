@@ -802,57 +802,76 @@ function renderPosts(posts, container, originalContent = null) {
     };
     
     // Render engagement bar (Twitter/X style with icons and counts)
-    const renderEngagementBar = (post, link) => {
+    const renderEngagementBar = (post, articleLink, twitterLink) => {
       const replies = post.replies !== undefined && post.replies !== null ? post.replies : null;
       const reposts = post.reposts !== undefined && post.reposts !== null ? post.reposts : null;
       const likes = post.likes !== undefined && post.likes !== null ? post.likes : null;
       const views = post.views !== undefined && post.views !== null ? post.views : null;
       
-      // Twitter-style engagement buttons
+      // Engagement buttons - link to article page (not Twitter)
       const buttons = [];
       
-      // Reply button
+      // Reply button - link to article page
       buttons.push({
         icon: '💬',
         count: replies,
         label: 'Reply',
         color: 'rgb(113, 118, 123)',
         hoverColor: 'rgb(29, 155, 240)',
-        href: link
+        href: articleLink,
+        external: false
       });
       
-      // Repost button
+      // Repost button - link to article page
       buttons.push({
         icon: '🔄',
         count: reposts,
         label: 'Repost',
         color: 'rgb(113, 118, 123)',
         hoverColor: 'rgb(0, 186, 124)',
-        href: link
+        href: articleLink,
+        external: false
       });
       
-      // Like button
+      // Like button - link to article page
       buttons.push({
         icon: '❤️',
         count: likes,
         label: 'Like',
         color: 'rgb(113, 118, 123)',
         hoverColor: 'rgb(249, 24, 128)',
-        href: link
+        href: articleLink,
+        external: false
       });
       
-      // Views button
+      // Views button - link to article page
       buttons.push({
         icon: '👁️',
         count: views,
         label: 'Views',
         color: 'rgb(113, 118, 123)',
         hoverColor: 'rgb(29, 155, 240)',
-        href: link
+        href: articleLink,
+        external: false
       });
       
-      return buttons.map(btn => `
-        <a href="${btn.href}" target="_blank" rel="noopener noreferrer" 
+      // Add "View on Twitter" button if twitterLink exists
+      let twitterButton = '';
+      if (twitterLink && (twitterLink.includes('x.com') || twitterLink.includes('twitter.com'))) {
+        twitterButton = `
+          <a href="${twitterLink}" target="_blank" rel="noopener noreferrer" 
+             class="x-engagement-btn" 
+             style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; color: rgb(113, 118, 123); text-decoration: none; border-radius: 50%; transition: all 0.2s ease; min-width: 36px; justify-content: flex-start;" 
+             onmouseover="this.style.color='rgb(29, 155, 240)'; this.style.backgroundColor='rgba(29, 155, 240, 0.1)'" 
+             onmouseout="this.style.color='rgb(113, 118, 123)'; this.style.backgroundColor='transparent'"
+             title="View on Twitter">
+            <span style="font-size: 1.25rem; line-height: 1;">𝕏</span>
+          </a>
+        `;
+      }
+      
+      const buttonsHtml = buttons.map(btn => `
+        <a href="${btn.href}" ${btn.external ? 'target="_blank" rel="noopener noreferrer"' : ''} 
            class="x-engagement-btn" 
            style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; color: ${btn.color}; text-decoration: none; border-radius: 50%; transition: all 0.2s ease; min-width: 36px; justify-content: flex-start;" 
            onmouseover="this.style.color='${btn.hoverColor}'; this.style.backgroundColor='rgba(29, 155, 240, 0.1)'" 
@@ -862,6 +881,8 @@ function renderPosts(posts, container, originalContent = null) {
           ${btn.count !== null && btn.count !== undefined ? `<span style="font-size: 0.813rem; line-height: 1; font-weight: 400;">${formatNumber(btn.count)}</span>` : ''}
         </a>
       `).join('');
+      
+      return buttonsHtml + twitterButton;
     };
     
     const postsHtml = filteredPosts.map((post, index) => {
@@ -873,7 +894,26 @@ function renderPosts(posts, container, originalContent = null) {
       
       // Extract fields with multiple fallbacks
       const fullStory = post.story || post.text || post.html?.replace(/<[^>]*>/g, '') || '';
-      const link = post.link || post.url || `https://x.com/newsnoteworthy/status/${post.id || ''}`;
+      // Link to article page instead of Twitter
+      // Generate stable ID: use post.id if available, otherwise create hash from content
+      let stableId = post.id;
+      if (!stableId && fullStory) {
+        // Create a simple hash from the story content for stable IDs
+        let hash = 0;
+        const str = fullStory.substring(0, 100); // Use first 100 chars for hash
+        for (let i = 0; i < str.length; i++) {
+          const char = str.charCodeAt(i);
+          hash = ((hash << 5) - hash) + char;
+          hash = hash & hash; // Convert to 32-bit integer
+        }
+        stableId = `post-${Math.abs(hash)}`;
+      } else if (!stableId) {
+        // Last resort: use timestamp-based ID (less ideal but better than index)
+        stableId = `post-${Date.now()}-${index}`;
+      }
+      const articleLink = `/article.html?id=${encodeURIComponent(stableId)}`;
+      // Only create Twitter link if we have a valid post.id or valid link
+      const twitterLink = post.link || post.url || (post.id ? `https://x.com/newsnoteworthy/status/${post.id}` : null);
       const datePosted = post.datePosted || post.created_at || new Date().toISOString();
       
       // Title is the full content (displayed as big bold heading)
@@ -914,7 +954,7 @@ function renderPosts(posts, container, originalContent = null) {
                 <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="font-weight: 700; font-size: 0.938rem; color: rgb(231, 233, 234); text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Noteworthy News</a>
                 <span style="color: rgb(113, 118, 123); font-size: 0.938rem; line-height: 1.25rem;">@newsnoteworthy</span>
                 <span style="color: rgb(113, 118, 123); font-size: 0.938rem; line-height: 1.25rem;">·</span>
-                <a href="${link}" target="_blank" rel="noopener noreferrer" style="color: rgb(113, 118, 123); font-size: 0.938rem; text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${formatRelativeTime(datePosted)}</a>
+                <a href="${articleLink}" style="color: rgb(113, 118, 123); font-size: 0.938rem; text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${formatRelativeTime(datePosted)}</a>
               </div>
               
               <!-- Post Text -->
@@ -925,7 +965,7 @@ function renderPosts(posts, container, originalContent = null) {
               
               <!-- Engagement Bar (Twitter-style) -->
               <div style="display: flex; align-items: center; justify-content: space-between; max-width: 425px; margin-top: 0.75rem; padding-top: 0.5rem;">
-                ${renderEngagementBar(post, link)}
+                ${renderEngagementBar(post, articleLink, twitterLink)}
               </div>
               
               <!-- Comment Section -->

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Article Archive - Noteworthy News</title>
+    <meta name="description" content="Browse all articles from Noteworthy News. Search and filter by category, date, or topic.">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Favicon and Theme -->
+    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
+    <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
+    <meta name="theme-color" content="#07152a">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5427142458403577"
+            crossorigin="anonymous"></script>
+    
+    <style>
+        .archive-page {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+            color: white;
+            padding-top: 80px;
+        }
+        
+        .archive-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .archive-header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding: 40px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(74, 144, 226, 0.2);
+        }
+        
+        .archive-header h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .archive-header p {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.8;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .archive-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            background: rgba(15, 35, 58, 0.6);
+            color: white;
+            font-size: 1rem;
+        }
+        
+        .search-box::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .filter-select {
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            background: rgba(15, 35, 58, 0.6);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        
+        .articles-list {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .article-item {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid rgba(74, 144, 226, 0.2);
+            transition: all 0.3s ease;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .article-item:hover {
+            transform: translateX(5px);
+            border-color: rgba(74, 144, 226, 0.5);
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+        }
+        
+        .article-date {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            white-space: nowrap;
+        }
+        
+        .article-content h3 {
+            margin: 0 0 10px 0;
+        }
+        
+        .article-content h3 a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.3rem;
+            transition: color 0.2s ease;
+        }
+        
+        .article-content h3 a:hover {
+            color: #4A90E2;
+        }
+        
+        .article-content p {
+            color: rgba(255, 255, 255, 0.7);
+            margin: 0;
+            line-height: 1.6;
+        }
+        
+        .article-meta-info {
+            text-align: right;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+            white-space: nowrap;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+        
+        .pagination button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            background: rgba(15, 35, 58, 0.6);
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .pagination button:hover:not(:disabled) {
+            background: rgba(74, 144, 226, 0.2);
+            border-color: #4A90E2;
+        }
+        
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .pagination button.active {
+            background: rgba(74, 144, 226, 0.3);
+            border-color: #4A90E2;
+        }
+        
+        .breadcrumbs {
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .breadcrumbs a {
+            color: #4A90E2;
+            text-decoration: none;
+        }
+        
+        .breadcrumbs a:hover {
+            color: #2ECC71;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        @media (max-width: 768px) {
+            .archive-header h1 {
+                font-size: 2rem;
+            }
+            
+            .article-item {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .article-date,
+            .article-meta-info {
+                text-align: left;
+            }
+            
+            .archive-controls {
+                flex-direction: column;
+            }
+            
+            .search-box,
+            .filter-select {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="archive-page">
+    <!-- Header -->
+    <header class="main-header" style="position: fixed; top: 0; left: 0; right: 0; background: rgba(15, 15, 35, 0.95); backdrop-filter: blur(15px); border-bottom: 1px solid rgba(74, 144, 226, 0.3); z-index: 1000; padding: 15px 20px;">
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
+            <a href="index.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+                <span style="font-size: 2rem; font-weight: 900; color: #4A90E2;">N</span><span style="font-size: 2rem; font-weight: 900; color: white;">W</span>
+                <span style="font-weight: 700; color: white; margin-left: 5px;">Noteworthy News</span>
+            </a>
+            <nav>
+                <a href="index.html" style="color: #4A90E2; text-decoration: none; font-weight: 600;">← Back to Home</a>
+            </nav>
+        </div>
+    </header>
+    
+    <main class="archive-container">
+        <nav class="breadcrumbs">
+            <a href="index.html">Home</a> / <span>Archive</span>
+        </nav>
+        
+        <div class="archive-header">
+            <h1>Article Archive</h1>
+            <p>Browse all articles from Noteworthy News. Use the search and filters below to find specific stories, or browse by category.</p>
+        </div>
+        
+        <div class="archive-controls">
+            <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search articles by title or keywords...">
+            <select id="categoryFilter" class="filter-select">
+                <option value="">All Categories</option>
+                <option value="breaking-news">Breaking News</option>
+                <option value="analysis">Analysis</option>
+                <option value="fact-checks">Fact-Checks</option>
+            </select>
+            <select id="sortFilter" class="filter-select">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="title">Title A-Z</option>
+            </select>
+        </div>
+        
+        <div class="articles-list" id="articlesList">
+            <div class="no-results">
+                <p>Loading articles...</p>
+            </div>
+        </div>
+        
+        <div class="pagination" id="pagination" style="display: none;">
+            <!-- Pagination buttons will be generated here -->
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer style="background: rgba(15, 15, 35, 0.8); padding: 40px 20px; margin-top: 60px; border-top: 1px solid rgba(74, 144, 226, 0.3);">
+        <div style="max-width: 1200px; margin: 0 auto; text-align: center; color: rgba(255, 255, 255, 0.7);">
+            <p>&copy; 2025 Noteworthy News. All rights reserved.</p>
+            <nav style="margin-top: 20px;">
+                <a href="privacy.html" style="color: #4A90E2; text-decoration: none; margin: 0 15px;">Privacy Policy</a>
+                <a href="terms.html" style="color: #4A90E2; text-decoration: none; margin: 0 15px;">Terms of Service</a>
+                <a href="contact.html" style="color: #4A90E2; text-decoration: none; margin: 0 15px;">Contact</a>
+            </nav>
+        </div>
+    </footer>
+    
+    <script>
+        let allArticles = [];
+        let currentPage = 1;
+        const articlesPerPage = 20;
+        
+        // Load articles
+        async function loadArticles() {
+            const container = document.getElementById('articlesList');
+            container.innerHTML = '<div class="no-results"><p>Loading articles...</p></div>';
+            
+            try {
+                const response = await fetch('/.netlify/functions/posts-read?limit=200');
+                const posts = await response.json();
+                
+                if (!posts || posts.length === 0) {
+                    container.innerHTML = '<div class="no-results"><p>No articles available at this time.</p></div>';
+                    return;
+                }
+                
+                allArticles = posts.map(post => ({
+                    id: post.id || '',
+                    title: post.title || post.text || 'Untitled',
+                    excerpt: (post.story || post.text || '').substring(0, 200),
+                    date: post.datePosted ? new Date(post.datePosted) : new Date(),
+                    readTime: post.readTime || 1,
+                    category: post.category || 'breaking-news',
+                    link: post.link || '#'
+                }));
+                
+                applyFilters();
+            } catch (error) {
+                container.innerHTML = '<div class="no-results"><p>Error loading articles. Please try again later.</p></div>';
+            }
+        }
+        
+        // Filter and display articles
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const sortFilter = document.getElementById('sortFilter').value;
+            
+            let filtered = allArticles.filter(article => {
+                const matchesSearch = !searchTerm || 
+                    article.title.toLowerCase().includes(searchTerm) ||
+                    article.excerpt.toLowerCase().includes(searchTerm);
+                const matchesCategory = !categoryFilter || article.category === categoryFilter;
+                return matchesSearch && matchesCategory;
+            });
+            
+            // Sort
+            if (sortFilter === 'newest') {
+                filtered.sort((a, b) => b.date - a.date);
+            } else if (sortFilter === 'oldest') {
+                filtered.sort((a, b) => a.date - b.date);
+            } else if (sortFilter === 'title') {
+                filtered.sort((a, b) => a.title.localeCompare(b.title));
+            }
+            
+            displayArticles(filtered);
+        }
+        
+        // Display articles with pagination
+        function displayArticles(articles) {
+            const container = document.getElementById('articlesList');
+            const startIndex = (currentPage - 1) * articlesPerPage;
+            const endIndex = startIndex + articlesPerPage;
+            const pageArticles = articles.slice(startIndex, endIndex);
+            const totalPages = Math.ceil(articles.length / articlesPerPage);
+            
+            if (pageArticles.length === 0) {
+                container.innerHTML = '<div class="no-results"><p>No articles found matching your criteria.</p></div>';
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+            
+            const articlesHtml = pageArticles.map(article => {
+                const dateStr = article.date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+                
+                return `
+                    <div class="article-item">
+                        <div class="article-date">${dateStr}</div>
+                        <div class="article-content">
+                            <h3><a href="article.html?id=${article.id}">${article.title}</a></h3>
+                            <p>${article.excerpt}${article.excerpt.length >= 200 ? '...' : ''}</p>
+                        </div>
+                        <div class="article-meta-info">
+                            ${article.readTime} min read<br>
+                            <a href="category/${article.category}.html" style="color: #4A90E2; text-decoration: none; font-size: 0.8rem;">${article.category}</a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = articlesHtml;
+            
+            // Update pagination
+            updatePagination(totalPages);
+        }
+        
+        // Update pagination controls
+        function updatePagination(totalPages) {
+            const pagination = document.getElementById('pagination');
+            if (totalPages <= 1) {
+                pagination.style.display = 'none';
+                return;
+            }
+            
+            pagination.style.display = 'flex';
+            let html = '';
+            
+            // Previous button
+            html += `<button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>← Previous</button>`;
+            
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += `<button onclick="goToPage(${i})" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += `<span style="padding: 10px; color: rgba(255,255,255,0.5);">...</span>`;
+                }
+            }
+            
+            // Next button
+            html += `<button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next →</button>`;
+            
+            pagination.innerHTML = html;
+        }
+        
+        // Go to specific page
+        function goToPage(page) {
+            currentPage = page;
+            applyFilters();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            loadArticles();
+            
+            document.getElementById('searchInput').addEventListener('input', function() {
+                currentPage = 1;
+                applyFilters();
+            });
+            
+            document.getElementById('categoryFilter').addEventListener('change', function() {
+                currentPage = 1;
+                applyFilters();
+            });
+            
+            document.getElementById('sortFilter').addEventListener('change', function() {
+                currentPage = 1;
+                applyFilters();
+            });
+        });
+        
+        // Make goToPage available globally
+        window.goToPage = goToPage;
+    </script>
+    
+    <!-- Cookie Consent Banner -->
+    <script src="src/components/cookie-banner.js"></script>
+</body>
+</html>
+

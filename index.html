@@ -1521,6 +1521,77 @@
             width: 100%;
         }
         
+        /* Navigation Dropdown Styles */
+        .nav-dropdown {
+            position: relative;
+        }
+        
+        .nav-dropdown .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: rgba(15, 15, 35, 0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            border-radius: 8px;
+            padding: 10px 0;
+            margin-top: 5px;
+            min-width: 180px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+        
+        .nav-dropdown:hover .dropdown-menu,
+        .nav-dropdown:focus-within .dropdown-menu,
+        .nav-dropdown.active .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        /* Mobile touch support */
+        @media (max-width: 768px) {
+            .nav-dropdown .dropdown-menu {
+                position: static;
+                display: none;
+                margin-top: 0;
+                transform: none;
+                opacity: 1;
+                visibility: visible;
+                box-shadow: none;
+                border: none;
+                background: transparent;
+            }
+            
+            .nav-dropdown.active .dropdown-menu {
+                display: block;
+            }
+        }
+        
+        .nav-dropdown .dropdown-menu li {
+            list-style: none;
+            margin: 0;
+        }
+        
+        .nav-dropdown .dropdown-menu a {
+            display: block;
+            padding: 10px 20px;
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+        }
+        
+        .nav-dropdown .dropdown-menu a:hover {
+            background: rgba(74, 144, 226, 0.2);
+            color: #4A90E2;
+            padding-left: 25px;
+        }
+        
         /* Advanced Button Glow Effects */
         .play-button-large {
             position: relative;
@@ -12389,7 +12460,7 @@
                     <a href="index.html" class="logo-link" aria-label="Go to Noteworthy News homepage">
                         <img src="IMG_5794.PNG" alt="Noteworthy News Logo" style="height: 32px !important; width: 32px !important; max-width: 32px !important; max-height: 32px !important; display: block !important;">
                     </a>
-        </div>
+                </div>
                 <div class="brand-info">
                     <h1><span class="brand-name">Noteworthy News</span></h1>
                     <p>Trusted Journalism & Digital Literacy</p>
@@ -12400,6 +12471,15 @@
             <nav class="main-nav" id="mainNav">
                 <ul>
                     <li><a href="#news-section" class="nav-link">News</a></li>
+                    <li class="nav-dropdown">
+                        <a href="#" class="nav-link">Categories <span style="font-size: 0.8em;">▼</span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="category/breaking-news.html">Breaking News</a></li>
+                            <li><a href="category/analysis.html">Analysis</a></li>
+                            <li><a href="category/fact-checks.html">Fact-Checks</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="archive.html" class="nav-link">Archive</a></li>
                     <li><a href="#geography-game-section" class="nav-link">Games</a></li>
                     <li><a href="#credibility-section" class="nav-link">Credibility</a></li>
                     <li><a href="#about-section" class="nav-link">About</a></li>
@@ -12426,7 +12506,7 @@
                 <span></span>
                 <span></span>
             </button>
-            </div>
+        </div>
     </header>
     
     <!-- Top Banner Ad -->
@@ -12489,6 +12569,10 @@
         <nav class="mobile-nav-content">
             <ul>
                 <li><a href="#news-section" class="nav-link">News</a></li>
+                <li><a href="category/breaking-news.html" class="nav-link">Breaking News</a></li>
+                <li><a href="category/analysis.html" class="nav-link">Analysis</a></li>
+                <li><a href="category/fact-checks.html" class="nav-link">Fact-Checks</a></li>
+                <li><a href="archive.html" class="nav-link">Archive</a></li>
                 <li><a href="#fact-checker-section" class="nav-link">Game</a></li>
                 <li><a href="#credibility-section" class="nav-link">Credibility</a></li>
                 <li><a href="#about-section" class="nav-link">About</a></li>
@@ -17098,5 +17182,76 @@
         })();
     </script>
     
+    <!-- Cookie Consent Banner -->
+    <script src="/src/components/cookie-banner.js"></script>
+    
+    <!-- Mobile Navigation Dropdown Handler -->
+    <script>
+        (function() {
+            'use strict';
+            
+            // Handle mobile dropdown toggle
+            const navDropdowns = document.querySelectorAll('.nav-dropdown');
+            
+            // Register click-outside handler once (not in loop)
+            let clickOutsideHandler = null;
+            if (window.innerWidth <= 768) {
+                clickOutsideHandler = function(e) {
+                    navDropdowns.forEach(dropdown => {
+                        if (!dropdown.contains(e.target)) {
+                            dropdown.classList.remove('active');
+                        }
+                    });
+                };
+                document.addEventListener('click', clickOutsideHandler);
+            }
+            
+            navDropdowns.forEach(dropdown => {
+                const trigger = dropdown.querySelector('> a');
+                const menu = dropdown.querySelector('.dropdown-menu');
+                
+                if (!trigger || !menu) return;
+                
+                // Mobile: Toggle on click
+                if (window.innerWidth <= 768) {
+                    trigger.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation(); // Prevent triggering click-outside handler
+                        dropdown.classList.toggle('active');
+                    });
+                }
+                
+                // Desktop: Keep hover behavior
+                // Touch devices: Add touch support
+                if ('ontouchstart' in window) {
+                    let touchTimer;
+                    trigger.addEventListener('touchstart', function(e) {
+                        e.preventDefault();
+                        clearTimeout(touchTimer);
+                        dropdown.classList.add('active');
+                    });
+                    
+                    trigger.addEventListener('touchend', function(e) {
+                        e.preventDefault();
+                        touchTimer = setTimeout(function() {
+                            dropdown.classList.remove('active');
+                        }, 300);
+                    });
+                }
+            });
+            
+            // Handle window resize
+            let resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() {
+                    // Close all dropdowns on resize
+                    navDropdowns.forEach(dropdown => {
+                        dropdown.classList.remove('active');
+                    });
+                }, 250);
+            });
+        })();
+    </script>
 </body>
 </html>

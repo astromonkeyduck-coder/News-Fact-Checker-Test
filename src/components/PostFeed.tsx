@@ -74,7 +74,7 @@ function PostCard({ post }: { post: CardPost }) {
       )}
       <div className="article-content">
         <h3 className="article-headline">
-          <a href={post.link} target="_blank" rel="noopener noreferrer">
+          <a href={`/article.html?id=${post.id || ''}`}>
             {post.title}
           </a>
         </h3>
@@ -134,7 +134,7 @@ export function renderPostFeed(containerId: string, endpoint = "/.netlify/functi
               ${imageHtml}
               <div class="article-content">
                 <h3 class="article-headline">
-                  <a href="${post.link}" target="_blank" rel="noopener noreferrer">${post.title.replace(/"/g, "&quot;")}</a>
+                  <a href="/article.html?id=${post.id || ''}">${post.title.replace(/"/g, "&quot;")}</a>
                 </h3>
                 <p class="article-excerpt">${formatStory(post.story)}</p>
                 <div class="article-meta">

@@ -416,7 +416,7 @@
         
         <div class="contact-section">
             <h2>📧 Email Us</h2>
-            <p>For inquiries, feedback, or general questions, please contact us via email:</p>
+            <p>For inquiries, feedback, or general questions, please contact us via email. We aim to respond to all inquiries within 24-48 hours during business days (Monday-Friday). For urgent news tips, we may respond faster.</p>
             
             <div class="contact-btn-container">
                 <a href="mailto:richard@noteworthynews.co" class="contact-btn">
@@ -427,15 +427,104 @@
         </div>
         
         <div class="contact-section">
+            <h2>📝 Contact Form</h2>
+            <p>Fill out the form below and we'll get back to you as soon as possible. All fields marked with an asterisk (*) are required.</p>
+            
+            <form id="contactForm" action="/.netlify/functions/send-email" method="POST" style="margin-top: 20px;">
+                <div style="margin-bottom: 20px;">
+                    <label for="contactName" style="display: block; margin-bottom: 8px; color: rgba(255, 255, 255, 0.9); font-weight: 600;">Your Name *</label>
+                    <input type="text" id="contactName" name="name" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(74, 144, 226, 0.3); background: rgba(15, 35, 58, 0.6); color: white; font-size: 1rem;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label for="contactEmail" style="display: block; margin-bottom: 8px; color: rgba(255, 255, 255, 0.9); font-weight: 600;">Your Email *</label>
+                    <input type="email" id="contactEmail" name="email" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(74, 144, 226, 0.3); background: rgba(15, 35, 58, 0.6); color: white; font-size: 1rem;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label for="contactSubject" style="display: block; margin-bottom: 8px; color: rgba(255, 255, 255, 0.9); font-weight: 600;">Subject *</label>
+                    <select id="contactSubject" name="subject" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(74, 144, 226, 0.3); background: rgba(15, 35, 58, 0.6); color: white; font-size: 1rem;">
+                        <option value="">Select a subject...</option>
+                        <option value="general">General Inquiry</option>
+                        <option value="tip">News Tip</option>
+                        <option value="correction">Correction Request</option>
+                        <option value="partnership">Partnership Inquiry</option>
+                        <option value="media">Media Inquiry</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label for="contactMessage" style="display: block; margin-bottom: 8px; color: rgba(255, 255, 255, 0.9); font-weight: 600;">Message *</label>
+                    <textarea id="contactMessage" name="message" rows="6" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(74, 144, 226, 0.3); background: rgba(15, 35, 58, 0.6); color: white; font-size: 1rem; font-family: 'Inter', sans-serif; resize: vertical;"></textarea>
+                </div>
+                
+                <button type="submit" class="contact-btn" style="width: 100%; margin-top: 10px;">
+                    <span>📧</span>
+                    <span>Send Message</span>
+                </button>
+            </form>
+            
+            <div id="contactFormMessage" style="margin-top: 20px; padding: 15px; border-radius: 8px; display: none;"></div>
+        </div>
+        
+        <div class="contact-section">
+            <h2>❓ Frequently Asked Questions</h2>
+            
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: #4A90E2; margin-bottom: 10px; font-size: 1.2rem;">How quickly do you respond to inquiries?</h3>
+                <p style="color: rgba(255, 255, 255, 0.9); line-height: 1.8;">We aim to respond to all inquiries within 24-48 hours during business days (Monday-Friday). For urgent news tips, we may respond faster, often within a few hours. During major breaking news events, response times may be slightly longer as our team focuses on coverage.</p>
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: #4A90E2; margin-bottom: 10px; font-size: 1.2rem;">Can I submit a news tip anonymously?</h3>
+                <p style="color: rgba(255, 255, 255, 0.9); line-height: 1.8;">Yes, you can submit tips anonymously through our tip submission form on the homepage. We take source protection seriously and will not share your information without consent. However, providing contact information (even if anonymous) helps us follow up if we need clarification or additional details.</p>
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: #4A90E2; margin-bottom: 10px; font-size: 1.2rem;">Do you accept guest articles or op-eds?</h3>
+                <p style="color: rgba(255, 255, 255, 0.9); line-height: 1.8;">We occasionally accept guest contributions from verified experts, journalists, and subject matter specialists. Please contact us with your credentials, article pitch, and writing samples. We prioritize fact-checked, well-researched content that aligns with our editorial standards.</p>
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: #4A90E2; margin-bottom: 10px; font-size: 1.2rem;">How can I report an error or request a correction?</h3>
+                <p style="color: rgba(255, 255, 255, 0.9); line-height: 1.8;">Please use the contact form above and select "Correction Request" as the subject. Include the URL of the article, the specific error, and any supporting information. We take accuracy seriously and will investigate and correct verified errors promptly. Corrections are noted at the bottom of articles when made.</p>
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: #4A90E2; margin-bottom: 10px; font-size: 1.2rem;">Do you offer media interviews or expert commentary?</h3>
+                <p style="color: rgba(255, 255, 255, 0.9); line-height: 1.8;">Yes, our team is available for media interviews and expert commentary on fact-checking, media literacy, and news verification. Please select "Media Inquiry" in the contact form and provide details about your publication, topic, and deadline. We'll respond as quickly as possible.</p>
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: #4A90E2; margin-bottom: 10px; font-size: 1.2rem;">Can I partner with Noteworthy News?</h3>
+                <p style="color: rgba(255, 255, 255, 0.9); line-height: 1.8;">We're open to partnerships with educational institutions, media organizations, and fact-checking networks. Please select "Partnership Inquiry" in the contact form and describe your organization and proposed collaboration. We're particularly interested in partnerships that advance media literacy and fact-checking education.</p>
+            </div>
+        </div>
+        
+        <div class="contact-section">
+            <h2>🕒 Response Times</h2>
+            <p>Here's what you can expect for different types of inquiries:</p>
+            <ul style="margin-top: 15px; padding-left: 30px; line-height: 2;">
+                <li><strong>General Inquiries:</strong> 24-48 hours during business days</li>
+                <li><strong>News Tips:</strong> As soon as possible (often within hours)</li>
+                <li><strong>Correction Requests:</strong> 24-48 hours</li>
+                <li><strong>Partnership Inquiries:</strong> 2-3 business days</li>
+                <li><strong>Media Inquiries:</strong> 24-48 hours (urgent requests may be faster)</li>
+            </ul>
+            <p style="margin-top: 15px; font-style: italic; color: rgba(255, 255, 255, 0.7);">Note: Response times may be longer during holidays or major news events when our team is focused on breaking news coverage. We appreciate your patience.</p>
+        </div>
+        
+        <div class="contact-section">
             <h2>🌐 Connect on Social Media</h2>
-            <p>Follow us and stay updated with the latest news and updates:</p>
+            <p>Follow us and stay updated with the latest news and updates. We post breaking news, fact-checks, and media literacy content regularly.</p>
             
             <div class="social-links">
                 <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" class="social-link">
                     <span class="social-icon">𝕏</span>
                     <div class="social-info">
                         <h3>Follow us on X (Twitter)</h3>
-                        <p>Get breaking news updates and fact-checks in real-time</p>
+                        <p>Get breaking news updates and fact-checks in real-time. We post multiple times daily with verified information and analysis.</p>
                     </div>
                 </a>
             </div>
@@ -483,6 +572,60 @@
         document.addEventListener('DOMContentLoaded', function() {
             createParticles();
             createMatrixRain();
+            
+            // Handle contact form submission
+            const contactForm = document.getElementById('contactForm');
+            const formMessage = document.getElementById('contactFormMessage');
+            
+            if (contactForm) {
+                contactForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const submitBtn = contactForm.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<span>⏳</span> <span>Sending...</span>';
+                    submitBtn.disabled = true;
+                    
+                    // Convert FormData to JSON object for backend compatibility
+                    const formData = new FormData(contactForm);
+                    const jsonData = {};
+                    for (const [key, value] of formData.entries()) {
+                        jsonData[key] = value;
+                    }
+                    
+                    try {
+                        const response = await fetch('/.netlify/functions/send-email', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(jsonData)
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (response.ok) {
+                            formMessage.style.display = 'block';
+                            formMessage.style.background = 'rgba(46, 204, 113, 0.2)';
+                            formMessage.style.border = '1px solid rgba(46, 204, 113, 0.5)';
+                            formMessage.style.color = '#2ECC71';
+                            formMessage.textContent = '✓ Message sent successfully! We\'ll get back to you soon.';
+                            contactForm.reset();
+                        } else {
+                            throw new Error(result.error || 'Failed to send message');
+                        }
+                    } catch (error) {
+                        formMessage.style.display = 'block';
+                        formMessage.style.background = 'rgba(231, 76, 60, 0.2)';
+                        formMessage.style.border = '1px solid rgba(231, 76, 60, 0.5)';
+                        formMessage.style.color = '#E74C3C';
+                        formMessage.textContent = '✗ Error sending message. Please try emailing us directly or try again later.';
+                    } finally {
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                    }
+                });
+            }
         });
     </script>
     

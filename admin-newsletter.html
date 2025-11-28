@@ -10,7 +10,7 @@
     <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
     <link rel="mask-icon" href="IMG_5794.PNG" color="#0f234a">
     <meta name="theme-color" content="#0a0e1a">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -19,23 +19,35 @@
         }
         
         :root {
-            --primary: #3b82f6;
-            --primary-dark: #2563eb;
-            --primary-light: #60a5fa;
-            --success: #10b981;
-            --error: #ef4444;
-            --warning: #f59e0b;
+            --terminal-bg: #0a0e1a;
+            --terminal-bg-dark: #050814;
+            --terminal-text: #00ff41;
+            --terminal-text-dim: #00cc33;
+            --terminal-amber: #ffb000;
+            --terminal-red: #ff4444;
+            --terminal-blue: #00aaff;
+            --terminal-border: #1a3a2a;
+            --terminal-green: #00ff41;
+            --glow-green: rgba(0, 255, 65, 0.3);
+            --glow-amber: rgba(255, 176, 0, 0.3);
+            --glow-red: rgba(255, 68, 68, 0.3);
+            --primary: #00ff41;
+            --primary-dark: #00cc33;
+            --primary-light: #33ff66;
+            --success: #00ff41;
+            --error: #ff4444;
+            --warning: #ffb000;
             --bg-primary: #0a0e1a;
             --bg-secondary: #0f172a;
-            --bg-tertiary: #1e293b;
-            --border: rgba(255, 255, 255, 0.1);
-            --text-primary: #f8fafc;
-            --text-secondary: #cbd5e1;
-            --text-muted: #94a3b8;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+            --bg-tertiary: #1a2a1a;
+            --border: rgba(0, 255, 65, 0.2);
+            --text-primary: #00ff41;
+            --text-secondary: #00cc33;
+            --text-muted: #66ff88;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.8);
         }
         
         html {
@@ -45,16 +57,16 @@
         }
         
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, #1a1f3a 100%);
-            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--terminal-bg);
+            color: var(--terminal-text);
             min-height: 100vh;
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
         
-        /* Login Screen */
+        /* Login Screen - Terminal Style */
         #loginScreen {
             display: flex;
             justify-content: center;
@@ -66,39 +78,39 @@
             right: 0;
             bottom: 0;
             z-index: 1000;
-            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-            backdrop-filter: blur(20px);
+            background: var(--terminal-bg);
+            font-family: 'JetBrains Mono', monospace;
         }
         
         .login-container {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(20px);
-            padding: 3rem;
-            border-radius: 24px;
-            border: 1px solid var(--border);
-            max-width: 420px;
+            background: var(--terminal-bg-dark);
+            padding: 2.5rem;
+            border: 2px solid var(--terminal-border);
+            max-width: 500px;
             width: 100%;
             margin: 20px;
-            box-shadow: var(--shadow-xl), 0 0 0 1px rgba(59, 130, 246, 0.1) inset;
             position: relative;
             overflow: hidden;
+            box-shadow: 
+                0 0 20px var(--glow-green),
+                inset 0 0 20px rgba(0, 255, 65, 0.05);
         }
         
         .login-container::before {
             content: '';
             position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
-            pointer-events: none;
-            animation: pulse 4s ease-in-out infinite;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--terminal-green);
+            box-shadow: 0 0 10px var(--terminal-green);
+            animation: pulse-border 2s ease-in-out infinite;
         }
         
-        @keyframes pulse {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 0.8; }
+        @keyframes pulse-border {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
         
         .login-header {
@@ -106,84 +118,120 @@
             margin-bottom: 2rem;
             position: relative;
             z-index: 1;
+            border-bottom: 1px solid var(--terminal-border);
+            padding-bottom: 1.5rem;
         }
         
         .login-icon {
-            font-size: 3rem;
+            font-size: 2.5rem;
             display: block;
             margin-bottom: 1rem;
-            filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.4));
+            color: var(--terminal-amber);
+            text-shadow: 0 0 10px var(--terminal-amber);
+            font-family: 'Orbitron', monospace;
         }
         
         .login-title {
-            font-size: 1.75rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #ffffff 0%, var(--primary-light) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--terminal-green);
             margin-bottom: 0.5rem;
+            font-family: 'Orbitron', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            text-shadow: 0 0 10px var(--terminal-green);
         }
         
         .login-subtitle {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
+            color: var(--terminal-text-dim);
+            font-size: 0.75rem;
             font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .security-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-red);
+            color: var(--terminal-red);
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-top: 0.5rem;
+            box-shadow: 0 0 5px var(--terminal-red);
+            font-family: 'JetBrains Mono', monospace;
         }
         
         .login-input {
             width: 100%;
-            padding: 1rem 1.25rem;
-            border: 1.5px solid var(--border);
-            border-radius: 12px;
-            background: rgba(15, 23, 42, 0.6);
-            color: var(--text-primary);
-            font-size: 1rem;
+            padding: 0.875rem 1rem;
+            border: 1px solid var(--terminal-border);
+            background: var(--terminal-bg);
+            color: var(--terminal-text);
+            font-size: 0.9rem;
             font-weight: 500;
             margin-bottom: 1.25rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s;
             position: relative;
             z-index: 1;
+            font-family: 'JetBrains Mono', monospace;
+            text-shadow: 0 0 3px var(--terminal-green);
         }
         
         .login-input:focus {
             outline: none;
-            border-color: var(--primary);
-            background: rgba(15, 23, 42, 0.8);
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15), var(--shadow-md);
+            border-color: var(--terminal-green);
+            background: var(--terminal-bg-dark);
+            box-shadow: 0 0 10px var(--glow-green), inset 0 0 10px rgba(0, 255, 65, 0.1);
         }
         
         .login-btn {
             width: 100%;
-            padding: 1rem;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
+            padding: 0.875rem;
+            background: var(--terminal-bg);
+            color: var(--terminal-green);
+            border: 1px solid var(--terminal-green);
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.9rem;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s;
             position: relative;
             z-index: 1;
-            box-shadow: var(--shadow-md);
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            text-shadow: 0 0 5px var(--terminal-green);
         }
         
-        .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+        .login-btn:hover:not(:disabled) {
+            background: var(--terminal-green);
+            color: var(--terminal-bg);
+            box-shadow: 0 0 20px var(--terminal-green);
+            text-shadow: none;
+        }
+        
+        .login-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
         
         .login-error {
-            color: var(--error);
+            color: var(--terminal-red);
             margin-top: 1rem;
             text-align: center;
             display: none;
             font-weight: 600;
             padding: 0.75rem;
-            background: rgba(239, 68, 68, 0.1);
-            border-radius: 8px;
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-red);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            text-shadow: 0 0 5px var(--terminal-red);
+            box-shadow: 0 0 10px rgba(255, 0, 64, 0.3);
             position: relative;
             z-index: 1;
         }
@@ -196,14 +244,14 @@
         }
         
         .dashboard-header {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border);
-            padding: 1.5rem 2rem;
+            background: var(--terminal-bg-dark);
+            border-bottom: 2px solid var(--terminal-border);
+            padding: 1rem 2rem;
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: var(--shadow-sm);
+            box-shadow: 0 2px 10px var(--glow-green);
+            font-family: 'JetBrains Mono', monospace;
         }
         
         .header-content {
@@ -221,24 +269,33 @@
         }
         
         .logo {
-            font-size: 1.5rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, #ffffff 0%, var(--primary-light) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--terminal-green);
+            font-family: 'Orbitron', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            text-shadow: 0 0 10px var(--terminal-green);
         }
         
         .header-badge {
-            padding: 0.375rem 0.75rem;
-            background: rgba(59, 130, 246, 0.15);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            border-radius: 6px;
-            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-green);
+            font-size: 0.7rem;
             font-weight: 600;
-            color: var(--primary-light);
+            color: var(--terminal-green);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.1em;
+            font-family: 'JetBrains Mono', monospace;
+            box-shadow: 0 0 5px var(--glow-green);
+        }
+        
+        .header-badge::before {
+            content: '●';
+            color: var(--terminal-green);
+            margin-right: 0.5rem;
+            animation: pulse-border 2s ease-in-out infinite;
         }
         
         .header-nav {
@@ -248,18 +305,22 @@
         }
         
         .nav-link {
-            color: var(--text-secondary);
+            color: var(--terminal-text-dim);
             text-decoration: none;
             font-weight: 500;
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             padding: 0.5rem 1rem;
-            border-radius: 8px;
+            border: 1px solid transparent;
             transition: all 0.2s;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         
         .nav-link:hover {
-            color: var(--text-primary);
-            background: rgba(255, 255, 255, 0.05);
+            color: var(--terminal-green);
+            border-color: var(--terminal-border);
+            box-shadow: 0 0 5px var(--glow-green);
         }
         
         .container {
@@ -269,37 +330,40 @@
         }
         
         .page-title {
-            font-size: 2.5rem;
-            font-weight: 900;
+            font-size: 2rem;
+            font-weight: 700;
             margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, #ffffff 0%, var(--primary-light) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--terminal-green);
+            font-family: 'Orbitron', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            text-shadow: 0 0 10px var(--terminal-green);
         }
         
         .page-subtitle {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
+            color: var(--terminal-text-dim);
+            font-size: 0.85rem;
             margin-bottom: 2.5rem;
             font-weight: 400;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
         }
         
-        /* Cards */
+        /* Cards - Terminal Style */
         .card {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
-            border-radius: 16px;
+            background: var(--terminal-bg-dark);
+            border: 1px solid var(--terminal-border);
             padding: 1.5rem;
             margin-bottom: 1.5rem;
-            box-shadow: var(--shadow-md);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            transition: all 0.2s;
+            font-family: 'JetBrains Mono', monospace;
         }
         
         .card:hover {
-            border-color: rgba(59, 130, 246, 0.3);
-            box-shadow: var(--shadow-lg);
+            border-color: var(--terminal-green);
+            box-shadow: 0 0 15px var(--glow-green);
         }
         
         .card-header {
@@ -307,16 +371,23 @@
             align-items: center;
             gap: 0.75rem;
             margin-bottom: 1.25rem;
+            border-bottom: 1px solid var(--terminal-border);
+            padding-bottom: 1rem;
         }
         
         .card-icon {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
+            color: var(--terminal-amber);
+            text-shadow: 0 0 5px var(--terminal-amber);
         }
         
         .card-title {
-            font-size: 1.25rem;
+            font-size: 1rem;
             font-weight: 700;
-            color: var(--text-primary);
+            color: var(--terminal-green);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-family: 'Orbitron', monospace;
         }
         
         /* Grid Layouts */
@@ -328,53 +399,102 @@
         }
         
         .preview-card {
-            background: rgba(15, 23, 42, 0.4);
-            border: 1px solid var(--border);
-            border-radius: 12px;
+            background: var(--terminal-bg-dark);
+            border: 1px solid var(--terminal-border);
             padding: 1.25rem;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            font-family: 'JetBrains Mono', monospace;
         }
         
         .preview-card:hover {
-            background: rgba(15, 23, 42, 0.6);
-            border-color: var(--primary);
-            transform: translateY(-2px);
+            background: var(--terminal-bg);
+            border-color: var(--terminal-green);
+            box-shadow: 0 0 10px var(--glow-green);
         }
         
         .preview-card.selected {
-            border-color: var(--primary);
-            background: rgba(59, 130, 246, 0.1);
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+            border-color: var(--terminal-green);
+            background: var(--terminal-bg);
+            box-shadow: 0 0 15px var(--glow-green), inset 0 0 10px rgba(0, 255, 65, 0.1);
         }
         
         .preview-title {
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 600;
-            color: var(--text-primary);
+            color: var(--terminal-green);
             margin-bottom: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            text-shadow: 0 0 5px var(--terminal-green);
         }
         
         .preview-subject {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
+            font-size: 0.8rem;
+            color: var(--terminal-text-dim);
             margin-bottom: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
         }
         
         .preview-date {
-            font-size: 0.75rem;
-            color: var(--text-muted);
+            font-size: 0.7rem;
+            color: var(--terminal-text-dim);
+            font-family: 'JetBrains Mono', monospace;
+            opacity: 0.7;
         }
         
         .preview-badge {
             display: inline-block;
             padding: 0.25rem 0.5rem;
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 4px;
-            font-size: 0.7rem;
-            color: var(--success);
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-green);
+            font-size: 0.65rem;
+            color: var(--terminal-green);
             margin-top: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            box-shadow: 0 0 5px var(--glow-green);
+        }
+        
+        .email-preview {
+            width: 100%;
+            height: 400px;
+            border: 1px solid var(--terminal-border);
+            background: var(--terminal-bg);
+            margin-top: 1rem;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .email-preview iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #fff;
+        }
+        
+        .preview-card.expanded {
+            padding-bottom: 1.5rem;
+        }
+        
+        .preview-toggle {
+            margin-top: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-border);
+            color: var(--terminal-text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
+        }
+        
+        .preview-toggle:hover {
+            border-color: var(--terminal-green);
+            color: var(--terminal-green);
+            box-shadow: 0 0 5px var(--glow-green);
         }
         
         /* Form Elements */
@@ -385,35 +505,40 @@
         label {
             display: block;
             margin-bottom: 0.5rem;
-            color: var(--text-primary);
+            color: var(--terminal-text);
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         
         input[type="email"] {
             width: 100%;
             padding: 0.875rem 1rem;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1.5px solid var(--border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 0.95rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-border);
+            color: var(--terminal-text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            text-shadow: 0 0 3px var(--terminal-green);
         }
         
         input[type="email"]:focus {
             outline: none;
-            border-color: var(--primary);
-            background: rgba(15, 23, 42, 0.8);
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            border-color: var(--terminal-green);
+            background: var(--terminal-bg-dark);
+            box-shadow: 0 0 10px var(--glow-green), inset 0 0 10px rgba(0, 255, 65, 0.1);
         }
         
         .help-text {
-            color: var(--text-muted);
-            font-size: 0.85rem;
+            color: var(--terminal-text-dim);
+            font-size: 0.75rem;
             margin-top: 0.5rem;
             line-height: 1.5;
+            font-family: 'JetBrains Mono', monospace;
+            opacity: 0.8;
         }
         
         /* Buttons */
@@ -439,24 +564,34 @@
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-            color: white;
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-green);
+            color: var(--terminal-green);
+            font-family: 'Orbitron', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            box-shadow: 0 0 10px var(--glow-green);
         }
         
         .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+            background: var(--terminal-green);
+            color: var(--terminal-bg);
+            box-shadow: 0 0 20px var(--terminal-green);
         }
         
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1.5px solid var(--border);
-            color: var(--text-primary);
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-border);
+            color: var(--terminal-text);
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         
         .btn-secondary:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(59, 130, 246, 0.5);
+            border-color: var(--terminal-green);
+            color: var(--terminal-green);
+            box-shadow: 0 0 10px var(--glow-green);
         }
         
         .btn:disabled {
@@ -475,6 +610,7 @@
             display: none;
             border: 1.5px solid;
             backdrop-filter: blur(10px);
+            font-family: 'JetBrains Mono', monospace;
         }
         
         .status-message.show {
@@ -494,21 +630,27 @@
         }
         
         .status-message.success {
-            background: rgba(16, 185, 129, 0.15);
-            border-color: rgba(16, 185, 129, 0.4);
-            color: #10b981;
+            background: var(--terminal-bg-dark);
+            border-color: var(--terminal-green);
+            color: var(--terminal-green);
+            text-shadow: 0 0 5px var(--terminal-green);
+            box-shadow: 0 0 10px var(--glow-green);
         }
         
         .status-message.error {
-            background: rgba(239, 68, 68, 0.15);
-            border-color: rgba(239, 68, 68, 0.4);
-            color: var(--error);
+            background: var(--terminal-bg-dark);
+            border-color: var(--terminal-red);
+            color: var(--terminal-red);
+            text-shadow: 0 0 5px var(--terminal-red);
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.3);
         }
         
         .status-message.info {
-            background: rgba(59, 130, 246, 0.15);
-            border-color: rgba(59, 130, 246, 0.4);
-            color: var(--primary-light);
+            background: var(--terminal-bg-dark);
+            border-color: var(--terminal-blue);
+            color: var(--terminal-blue);
+            text-shadow: 0 0 5px var(--terminal-blue);
+            box-shadow: 0 0 10px rgba(0, 170, 255, 0.3);
         }
         
         /* Loading Spinner */
@@ -529,13 +671,22 @@
         .empty-state {
             text-align: center;
             padding: 3rem 1rem;
-            color: var(--text-muted);
+            color: var(--terminal-text-dim);
+            font-family: 'JetBrains Mono', monospace;
         }
         
         .empty-state-icon {
             font-size: 3rem;
             margin-bottom: 1rem;
             opacity: 0.5;
+            filter: grayscale(100%);
+        }
+        
+        .empty-state p {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
         }
         
         /* Nuclear Warning Modal */
@@ -682,39 +833,41 @@
         
         .warning-btn {
             padding: 1rem 2rem;
-            border: none;
-            border-radius: 8px;
+            border: 2px solid;
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 0.9rem;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             text-transform: uppercase;
             letter-spacing: 0.1em;
+            font-family: 'JetBrains Mono', monospace;
         }
         
         .warning-btn-cancel {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: #ffffff;
+            background: var(--terminal-bg);
+            border-color: var(--terminal-text-dim);
+            color: var(--terminal-text-dim);
         }
         
         .warning-btn-cancel:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.5);
-            transform: scale(1.05);
+            border-color: var(--terminal-green);
+            color: var(--terminal-green);
+            box-shadow: 0 0 10px var(--glow-green);
         }
         
         .warning-btn-confirm {
-            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
-            border: 2px solid #ff4444;
-            color: #ffffff;
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            background: var(--terminal-bg);
+            border-color: var(--terminal-red);
+            color: var(--terminal-red);
+            box-shadow: 0 0 20px var(--glow-red);
+            text-shadow: 0 0 5px var(--terminal-red);
         }
         
         .warning-btn-confirm:hover {
-            background: linear-gradient(135deg, #ff2222 0%, #ff0000 100%);
-            box-shadow: 0 0 30px rgba(255, 0, 0, 0.7);
-            transform: scale(1.05);
+            background: var(--terminal-red);
+            color: var(--terminal-bg);
+            text-shadow: none;
+            box-shadow: 0 0 30px var(--terminal-red);
         }
         
         .warning-btn-confirm:active {
@@ -722,17 +875,20 @@
         }
         
         .code-display {
-            font-family: 'Monaco', 'Menlo', monospace;
-            color: #00ff00;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--terminal-green);
             background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(0, 255, 65, 0.3);
             padding: 1rem;
+            margin: 1.5rem 0;
             border-radius: 6px;
-            margin: 1rem 0;
-            border: 1px solid rgba(0, 255, 0, 0.3);
             text-align: center;
             font-size: 1.2rem;
+            font-weight: 700;
+            text-transform: uppercase;
             letter-spacing: 0.2em;
-            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+            box-shadow: 0 0 20px var(--glow-green), inset 0 0 10px rgba(0, 255, 65, 0.1);
         }
         
         /* Confetti Canvas */
@@ -754,7 +910,8 @@
             <div class="login-header">
                 <span class="login-icon">🔐</span>
                 <h2 class="login-title">Admin Access</h2>
-                <p class="login-subtitle">Enter newsletter key to continue</p>
+                <p class="login-subtitle">SECURE LOGIN PROTOCOL</p>
+                <span class="security-badge">SYSTEM ACCESS REQUIRED</span>
             </div>
             <input type="password" id="adminPassword" class="login-input" placeholder="Newsletter Key" onkeypress="if(event.key==='Enter') checkPassword()">
             <button class="login-btn" onclick="checkPassword()">Authenticate</button>
@@ -766,9 +923,9 @@
     <div id="mainContent">
         <div class="dashboard-header">
             <div class="header-content">
-                <div class="header-left">
+                    <div class="header-left">
                     <div class="logo">Noteworthy News</div>
-                    <div class="header-badge">Admin Control</div>
+                    <div class="header-badge">SYSTEM STATUS: OPERATIONAL</div>
                 </div>
                 <div class="header-nav">
                     <a href="index.html" class="nav-link">← Home</a>
@@ -776,12 +933,12 @@
             </div>
         </div>
         
-        <div class="container">
+    <div class="container">
             <h1 class="page-title">Newsletter Control Center</h1>
             <p class="page-subtitle">Select a template and send to your audience</p>
-            
-            <div id="statusMessage" class="status-message"></div>
-            
+        
+        <div id="statusMessage" class="status-message"></div>
+        
             <!-- Template Selection Card -->
             <div class="card">
                 <div class="card-header">
@@ -817,12 +974,12 @@
                     <h3 class="card-title">Send Newsletter</h3>
                 </div>
                 <form id="newsletterForm">
-                    <div class="form-group">
+            <div class="form-group">
                         <label for="testEmail">Test Email Address (Optional)</label>
                         <input type="email" id="testEmail" name="testEmail" placeholder="Enter test email address to preview before sending">
                         <p class="help-text">Send a test email to preview before sending to your full audience</p>
-                    </div>
-                    
+            </div>
+            
                     <div class="btn-group">
                         <button type="button" class="btn btn-secondary" id="testBtn">
                             <span>✉️</span>
@@ -832,8 +989,8 @@
                             <span>📧</span>
                             <span>Send to Full Audience</span>
                         </button>
-                    </div>
-                </form>
+            </div>
+        </form>
             </div>
         </div>
     </div>
@@ -892,13 +1049,62 @@
         let warningMusic = null;
         let backgroundMusicCurrentTime = 0;
         
+        // Security: Rate limiting for login attempts
+        const MAX_LOGIN_ATTEMPTS = 5;
+        const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
+        const ATTEMPT_WINDOW = 5 * 60 * 1000; // 5 minutes
+        
+        function getLoginAttempts() {
+            const attempts = localStorage.getItem('newsletterLoginAttempts');
+            if (!attempts) return { count: 0, lockoutUntil: null, attempts: [] };
+            try {
+                return JSON.parse(attempts);
+            } catch {
+                return { count: 0, lockoutUntil: null, attempts: [] };
+            }
+        }
+        
+        function saveLoginAttempt(failed = false) {
+            const data = getLoginAttempts();
+            const now = Date.now();
+            
+            // Clean old attempts outside the window
+            data.attempts = data.attempts.filter(timestamp => now - timestamp < ATTEMPT_WINDOW);
+            
+            if (failed) {
+                data.attempts.push(now);
+                data.count = data.attempts.length;
+                
+                if (data.count >= MAX_LOGIN_ATTEMPTS) {
+                    data.lockoutUntil = now + LOCKOUT_DURATION;
+                }
+            } else {
+                // Reset on successful login
+                data.count = 0;
+                data.attempts = [];
+                data.lockoutUntil = null;
+            }
+            
+            localStorage.setItem('newsletterLoginAttempts', JSON.stringify(data));
+            return data;
+        }
+        
+        function isLockedOut() {
+            const data = getLoginAttempts();
+            if (data.lockoutUntil && Date.now() < data.lockoutUntil) {
+                const minutesLeft = Math.ceil((data.lockoutUntil - Date.now()) / 60000);
+                return minutesLeft;
+            }
+            return false;
+        }
+        
         // Initialize audio when page loads
         document.addEventListener('DOMContentLoaded', () => {
             backgroundMusic = document.getElementById('backgroundMusic');
             warningMusic = document.getElementById('warningMusic');
             
             // Start background music when main content is shown
-            if (adminToken) {
+            if (getAdminToken()) {
                 startBackgroundMusic();
             }
             
@@ -944,9 +1150,10 @@
             }
         }
         
-        // Authentication
-        if (adminToken) {
-            fetch(`/.netlify/functions/newsletter-templates?token=${encodeURIComponent(adminToken)}`)
+        // Authentication with session expiration check
+        const storedToken = getAdminToken();
+        if (storedToken) {
+            fetch(`/.netlify/functions/newsletter-templates?token=${encodeURIComponent(storedToken)}`)
                 .then(response => {
                     if (response.ok || response.status === 200) {
                         showMainContent();
@@ -964,6 +1171,28 @@
         async function checkPassword() {
             const password = document.getElementById('adminPassword').value;
             const errorEl = document.getElementById('loginError');
+            const passwordInput = document.getElementById('adminPassword');
+            
+            // Check for lockout
+            const lockoutMinutes = isLockedOut();
+            if (lockoutMinutes) {
+                errorEl.textContent = `Too many failed attempts. Please try again in ${lockoutMinutes} minute${lockoutMinutes > 1 ? 's' : ''}.`;
+                errorEl.style.display = 'block';
+                passwordInput.disabled = true;
+                
+                // Calculate actual milliseconds remaining (not rounded minutes)
+                const data = getLoginAttempts();
+                const actualMsRemaining = data.lockoutUntil ? Math.max(0, data.lockoutUntil - Date.now()) : 0;
+                
+                setTimeout(() => {
+                    passwordInput.disabled = false;
+                    const checkData = getLoginAttempts();
+                    if (Date.now() >= (checkData.lockoutUntil || 0)) {
+                        saveLoginAttempt(false); // Reset on unlock
+                    }
+                }, actualMsRemaining);
+                return;
+            }
             
             if (!password) {
                 errorEl.textContent = 'Please enter a password';
@@ -971,38 +1200,88 @@
                 return;
             }
             
+            // Check attempt count
+            const attempts = getLoginAttempts();
+            if (attempts.count >= MAX_LOGIN_ATTEMPTS) {
+                errorEl.textContent = 'Too many failed attempts. Please wait before trying again.';
+                errorEl.style.display = 'block';
+                return;
+            }
+            
             try {
+                // Use timing-safe comparison by always making the API call
+                // The server will handle the actual comparison securely
                 const testUrl = `/.netlify/functions/newsletter-templates?token=${encodeURIComponent(password)}`;
-                const response = await fetch(testUrl);
+                const response = await fetch(testUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
                 
                 if (response.ok || response.status === 200) {
+                    // Successful login - reset attempts
+                    saveLoginAttempt(false);
+                    
                     adminToken = password;
-                    sessionStorage.setItem('adminNewsletterToken', password);
+                    // Store with expiration (24 hours)
+                    const sessionData = {
+                        token: password,
+                        expires: Date.now() + (24 * 60 * 60 * 1000),
+                    };
+                    sessionStorage.setItem('adminNewsletterToken', JSON.stringify(sessionData));
+                    
+                    // Clear password field
+                    passwordInput.value = '';
+                    
                     showMainContent();
                     startBackgroundMusic();
                     loadTemplates();
                     loadNewsletterHistory();
                 } else if (response.status === 401) {
-                    errorEl.textContent = 'Incorrect password';
+                    // Failed login - increment attempts
+                    const attemptData = saveLoginAttempt(true);
+                    const remaining = MAX_LOGIN_ATTEMPTS - attemptData.count;
+                    
+                    if (attemptData.count >= MAX_LOGIN_ATTEMPTS) {
+                        const lockoutMinutes = Math.ceil(LOCKOUT_DURATION / 60000);
+                        errorEl.textContent = `Too many failed attempts. Account locked for ${lockoutMinutes} minutes.`;
+                        passwordInput.disabled = true;
+                    } else {
+                        errorEl.textContent = `Incorrect password. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`;
+                    }
                     errorEl.style.display = 'block';
+                    
+                    // Clear password field
+                    passwordInput.value = '';
                 } else {
                     const data = await response.json().catch(() => ({}));
                     if (data.error && data.error.includes('token')) {
-                        adminToken = password;
-                        sessionStorage.setItem('adminNewsletterToken', password);
+                        // Token required but not configured - allow for development
+                        saveLoginAttempt(false);
+                        const sessionData = {
+                            token: password,
+                            expires: Date.now() + (24 * 60 * 60 * 1000),
+                        };
+                        sessionStorage.setItem('adminNewsletterToken', JSON.stringify(sessionData));
+                        adminToken = password; // Keep for backward compatibility
+                        passwordInput.value = '';
                         showMainContent();
                         startBackgroundMusic();
                         loadTemplates();
                         loadNewsletterHistory();
                     } else {
-                        errorEl.textContent = 'Authentication failed';
+                        const attemptData = saveLoginAttempt(true);
+                        errorEl.textContent = 'Authentication failed. Please try again.';
                         errorEl.style.display = 'block';
+                        passwordInput.value = '';
                     }
                 }
             } catch (error) {
                 console.error('Auth error:', error);
                 errorEl.textContent = 'Connection error. Please try again.';
                 errorEl.style.display = 'block';
+                passwordInput.value = '';
             }
         }
         
@@ -1011,23 +1290,56 @@
             document.getElementById('mainContent').style.display = 'block';
         }
 
+        // Helper to get token from session storage
+        function getAdminToken() {
+            const stored = sessionStorage.getItem('adminNewsletterToken');
+            if (!stored) return null;
+            try {
+                const data = JSON.parse(stored);
+                if (data.expires && Date.now() > data.expires) {
+                    sessionStorage.removeItem('adminNewsletterToken');
+                    return null;
+                }
+                return data.token || stored;
+            } catch {
+                return stored; // Old format
+            }
+        }
+        
         // Load templates
         async function loadTemplates() {
             try {
-                const response = await fetch(`/.netlify/functions/newsletter-templates?token=${encodeURIComponent(adminToken || '')}`);
+                const token = getAdminToken();
+                const response = await fetch(`/.netlify/functions/newsletter-templates?token=${encodeURIComponent(token || '')}`);
                 
                 if (response.ok) {
                     const data = await response.json();
                     const grid = document.getElementById('templatesGrid');
                     
                     if (data.templates && data.templates.length > 0) {
-                        grid.innerHTML = data.templates.map(template => `
-                            <div class="preview-card" data-template-id="${template.id}" onclick="selectTemplate('${template.id}', this)">
+                        grid.innerHTML = data.templates.map((template, index) => {
+                            const previewId = `template-preview-${index}`;
+                            const hasPreview = template.previewHtml && template.previewHtml.trim().length > 0;
+                            return `
+                            <div class="preview-card expanded" data-template-id="${template.id}" onclick="selectTemplate('${template.id}', this)">
                                 <div class="preview-title">${escapeHtml(template.name)}</div>
                                 <div class="preview-subject">${escapeHtml(template.subject)}</div>
                                 <div class="preview-date">${formatDate(template.updatedAt)}</div>
+                                ${hasPreview ? `
+                                <button class="preview-toggle" onclick="event.stopPropagation(); togglePreview('${previewId}')">Hide Preview</button>
+                                <div id="${previewId}" class="email-preview" data-html="${escapeHtml(template.previewHtml.replace(/"/g, '&quot;'))}"></div>
+                                ` : ''}
                             </div>
-                        `).join('');
+                        `;
+                        }).join('');
+                        
+                        // Setup preview iframes after DOM is updated
+                        data.templates.forEach((template, index) => {
+                            const previewId = `template-preview-${index}`;
+                            if (template.previewHtml && template.previewHtml.trim().length > 0) {
+                                setTimeout(() => setupPreviewIframe(previewId, template.previewHtml), 100);
+                            }
+                        });
                     } else {
                         grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No templates available</p></div>';
                     }
@@ -1041,20 +1353,37 @@
         // Load newsletter history
         async function loadNewsletterHistory() {
             try {
-                const response = await fetch(`/.netlify/functions/newsletter-templates?history=true&token=${encodeURIComponent(adminToken || '')}`);
+                const token = getAdminToken();
+                const response = await fetch(`/.netlify/functions/newsletter-templates?history=true&token=${encodeURIComponent(token || '')}`);
                 
                 if (response.ok) {
                     const data = await response.json();
                     const grid = document.getElementById('newslettersGrid');
                     
                     if (data.newsletters && data.newsletters.length > 0) {
-                        grid.innerHTML = data.newsletters.map(newsletter => `
-                            <div class="preview-card">
+                        grid.innerHTML = data.newsletters.map((newsletter, index) => {
+                            const previewId = `newsletter-preview-${index}`;
+                            const hasPreview = newsletter.previewHtml && newsletter.previewHtml.trim().length > 0;
+                            return `
+                            <div class="preview-card expanded">
                                 <div class="preview-title">${escapeHtml(newsletter.subject)}</div>
                                 <div class="preview-date">${formatDate(newsletter.timestamp)}</div>
                                 <div class="preview-badge">Sent to ${newsletter.emailsSent} subscribers</div>
+                                ${hasPreview ? `
+                                <button class="preview-toggle" onclick="togglePreview('${previewId}')">Hide Preview</button>
+                                <div id="${previewId}" class="email-preview" data-html="${escapeHtml(newsletter.previewHtml.replace(/"/g, '&quot;'))}"></div>
+                                ` : ''}
                             </div>
-                        `).join('');
+                        `;
+                        }).join('');
+                        
+                        // Setup preview iframes after DOM is updated
+                        data.newsletters.forEach((newsletter, index) => {
+                            const previewId = `newsletter-preview-${index}`;
+                            if (newsletter.previewHtml && newsletter.previewHtml.trim().length > 0) {
+                                setTimeout(() => setupPreviewIframe(previewId, newsletter.previewHtml), 100);
+                            }
+                        });
                     } else {
                         grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No newsletters sent yet</p></div>';
                     }
@@ -1062,6 +1391,40 @@
             } catch (error) {
                 console.error('Error loading newsletter history:', error);
                 document.getElementById('newslettersGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading history</p></div>';
+            }
+        }
+        
+        function togglePreview(previewId) {
+            const preview = document.getElementById(previewId);
+            if (!preview) {
+                console.error('Preview element not found:', previewId);
+                return;
+            }
+            
+            const button = preview.previousElementSibling;
+            if (!button) {
+                console.error('Button element not found for preview:', previewId);
+                return;
+            }
+            
+            // Use getComputedStyle to check actual visibility, not just inline styles
+            const computedStyle = window.getComputedStyle(preview);
+            const isCurrentlyHidden = computedStyle.display === 'none' || preview.style.display === 'none';
+            
+            if (isCurrentlyHidden) {
+                preview.style.display = 'block';
+                button.textContent = 'Hide Preview';
+                const previewCard = preview.closest('.preview-card');
+                if (previewCard) {
+                    previewCard.classList.add('expanded');
+                }
+            } else {
+                preview.style.display = 'none';
+                button.textContent = 'Show Preview';
+                const previewCard = preview.closest('.preview-card');
+                if (previewCard) {
+                    previewCard.classList.remove('expanded');
+                }
             }
         }
         
@@ -1082,9 +1445,34 @@
         }
         
         function escapeHtml(text) {
+            if (!text) return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+        
+        function setupPreviewIframe(previewId, html) {
+            if (!html) return;
+            const previewDiv = document.getElementById(previewId);
+            if (!previewDiv) return;
+            
+            // Create blob URL for the HTML
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            
+            // Store URL for cleanup
+            if (!window.previewBlobUrls) {
+                window.previewBlobUrls = {};
+            }
+            window.previewBlobUrls[previewId] = url;
+            
+            // Create iframe
+            const iframe = document.createElement('iframe');
+            iframe.src = url;
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.border = 'none';
+            previewDiv.appendChild(iframe);
         }
         
         function formatDate(dateString) {
@@ -1100,7 +1488,7 @@
         }
         
         function showStatus(message, type) {
-            const statusMessage = document.getElementById('statusMessage');
+        const statusMessage = document.getElementById('statusMessage');
             statusMessage.textContent = message;
             statusMessage.className = `status-message ${type} show`;
             
@@ -1230,7 +1618,8 @@
             
             try {
                 // Load template
-                const templateResponse = await fetch(`/.netlify/functions/newsletter-templates?id=${selectedTemplateId}&token=${encodeURIComponent(adminToken || '')}`);
+                const token = getAdminToken();
+                const templateResponse = await fetch(`/.netlify/functions/newsletter-templates?id=${selectedTemplateId}&token=${encodeURIComponent(token || '')}`);
                 if (!templateResponse.ok) {
                     throw new Error('Failed to load template');
                 }
@@ -1241,14 +1630,14 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-admin-token': adminToken || '',
+                        'x-admin-token': getAdminToken() || '',
                     },
                     body: JSON.stringify({
                         subject: template.subject,
                         html: template.html,
                         text: template.text,
                         testEmail: testEmail,
-                        token: adminToken || '',
+                        token: getAdminToken() || '',
                     }),
                 });
                 
@@ -1373,7 +1762,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-admin-token': adminToken || '',
+                        'x-admin-token': getAdminToken() || '',
                     },
                     body: JSON.stringify({
                         subject: template.subject,
@@ -1382,7 +1771,7 @@
                         forceSend: true,
                         skipEmails: skipEmails,
                         alwaysIncludeEmails: [],
-                        token: adminToken || '',
+                        token: getAdminToken() || '',
                     }),
                 });
                 
@@ -1396,7 +1785,10 @@
                         `✅ MASS EMAIL DEPLOYMENT SUCCESSFUL! Sent to ${data.emailsSent} subscribers.${data.errors > 0 ? ` (${data.errors} errors)` : ''}`,
                         'success'
                     );
-                    loadNewsletterHistory(); // Refresh history
+                    // Refresh history after a short delay to ensure it's saved
+                    setTimeout(() => {
+                        loadNewsletterHistory();
+                    }, 1500);
                 } else {
                     showStatus(data.error || '❌ Mass email deployment FAILED', 'error');
                 }
@@ -1419,7 +1811,8 @@
             
             // Load template first
             try {
-                const templateResponse = await fetch(`/.netlify/functions/newsletter-templates?id=${selectedTemplateId}&token=${encodeURIComponent(adminToken || '')}`);
+                const token = getAdminToken();
+                const templateResponse = await fetch(`/.netlify/functions/newsletter-templates?id=${selectedTemplateId}&token=${encodeURIComponent(token || '')}`);
                 if (!templateResponse.ok) {
                     throw new Error('Failed to load template');
                 }
