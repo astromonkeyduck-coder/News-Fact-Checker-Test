@@ -74,3 +74,4 @@ function WeatherAlertEmail({
 
 module.exports = WeatherAlertEmail;
 
+
