@@ -1328,6 +1328,166 @@
             }
         }
         
+        // Selection functions - defined early so they're available
+        function selectTemplate(templateId, element) {
+            console.log('selectTemplate called with:', templateId, element);
+            if (!templateId) {
+                console.error('No templateId provided to selectTemplate');
+                return;
+            }
+            
+            selectedTemplateId = templateId;
+            
+            // Update UI
+            document.querySelectorAll('.preview-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            if (element) {
+                element.classList.add('selected');
+                console.log('Template card selected:', templateId);
+                
+                // Cool effects when selecting!
+                playSelectionSound();
+                triggerSelectionConfetti(element);
+            } else {
+                console.warn('No element provided to selectTemplate');
+            }
+            
+            showStatus('Template selected. Ready to send.', 'info');
+        }
+        
+        // Function to select a past newsletter as a template
+        function selectNewsletterTemplate(templateId, element) {
+            console.log('selectNewsletterTemplate called with:', templateId, element);
+            if (!templateId) {
+                console.error('No templateId provided to selectNewsletterTemplate');
+                return;
+            }
+            
+            selectedTemplateId = templateId;
+            
+            // Update UI
+            document.querySelectorAll('.preview-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            if (element) {
+                element.classList.add('selected');
+                console.log('Newsletter card selected:', templateId);
+                
+                // Cool effects when selecting!
+                playSelectionSound();
+                triggerSelectionConfetti(element);
+            } else {
+                console.warn('No element provided to selectNewsletterTemplate');
+            }
+            
+            const newsletterData = window.newsletterTemplates && window.newsletterTemplates[templateId];
+            const newsletterName = newsletterData ? newsletterData.subject : 'Past Newsletter';
+            showStatus(`Past newsletter "${newsletterName}" selected. Ready to send.`, 'info');
+        }
+        
+        // Play a selection sound effect
+        function playSelectionSound() {
+            try {
+                // Create a short beep sound using Web Audio API
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800; // Higher pitch for selection
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.1);
+            } catch (e) {
+                console.log('Could not play selection sound:', e.message);
+            }
+        }
+        
+        // Trigger mini confetti at the selected card
+        function triggerSelectionConfetti(element) {
+            try {
+                const rect = element.getBoundingClientRect();
+                const canvas = document.getElementById('confettiCanvas');
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                
+                const confetti = [];
+                const colors = ['#00ff41', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
+                const confettiCount = 30; // Smaller burst for selection
+                
+                // Create confetti particles at card position
+                for (let i = 0; i < confettiCount; i++) {
+                    confetti.push({
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2,
+                        width: Math.random() * 8 + 4,
+                        height: Math.random() * 8 + 4,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        rotation: Math.random() * 360,
+                        rotationSpeed: (Math.random() - 0.5) * 15,
+                        speedX: (Math.random() - 0.5) * 6,
+                        speedY: Math.random() * -8 - 2, // Upward burst
+                        opacity: 1,
+                    });
+                }
+                
+                let animationId;
+                let startTime = Date.now();
+                const duration = 1500; // Shorter duration
+                
+                function animate() {
+                    const elapsed = Date.now() - startTime;
+                    
+                    if (elapsed > duration) {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        cancelAnimationFrame(animationId);
+                        return;
+                    }
+                    
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    confetti.forEach(particle => {
+                        particle.x += particle.speedX;
+                        particle.y += particle.speedY;
+                        particle.rotation += particle.rotationSpeed;
+                        particle.speedY += 0.2; // Gravity
+                        
+                        const progress = elapsed / duration;
+                        particle.opacity = Math.max(0, 1 - progress);
+                        
+                        ctx.save();
+                        ctx.translate(particle.x, particle.y);
+                        ctx.rotate((particle.rotation * Math.PI) / 180);
+                        ctx.globalAlpha = particle.opacity;
+                        ctx.fillStyle = particle.color;
+                        ctx.fillRect(-particle.width / 2, -particle.height / 2, particle.width, particle.height);
+                        ctx.restore();
+                    });
+                    
+                    animationId = requestAnimationFrame(animate);
+                }
+                
+                animate();
+            } catch (e) {
+                console.log('Could not trigger selection confetti:', e.message);
+            }
+        }
+        
+        // Make selection functions globally accessible
+        window.selectTemplate = selectTemplate;
+        window.selectNewsletterTemplate = selectNewsletterTemplate;
+        console.log('Selection functions defined and made globally accessible');
+        
         // Missing function stubs - add implementations
         function filterTemplates() {
             const searchTerm = document.getElementById('templateSearch')?.value?.toLowerCase() || '';
@@ -1387,12 +1547,12 @@
                             const previewHtml = template.previewHtml || template.html || '';
                             const hasPreview = previewHtml && previewHtml.trim().length > 0;
                             return `
-                            <div class="preview-card expanded" data-template-id="${template.id}" onclick="selectTemplate('${template.id}', this)">
+                            <div class="preview-card expanded" data-template-id="${template.id}" data-is-template="true">
                                 <div class="preview-title">${escapeHtml(template.name || 'Unnamed Template')}</div>
                                 <div class="preview-subject">${escapeHtml(template.subject || 'No subject')}</div>
                                 <div class="preview-date">${formatDate(template.updatedAt)}</div>
                                 ${hasPreview ? `
-                                <button class="preview-toggle" onclick="event.stopPropagation(); togglePreview('${previewId}')">Hide Preview</button>
+                                <button class="preview-toggle" data-preview-id="${previewId}">Hide Preview</button>
                                 <div id="${previewId}" class="email-preview" data-html="${escapeHtml(previewHtml.replace(/"/g, '&quot;'))}"></div>
                                 ` : '<div style="margin-top:1rem;color:var(--terminal-amber);font-size:0.8rem;">No preview available</div>'}
                             </div>
@@ -1418,6 +1578,39 @@
                                 console.warn('Template missing previewHtml/html:', template.name, template.id);
                             }
                         });
+                        
+                        // Setup click handlers for template cards using event delegation on the grid
+                        setTimeout(() => {
+                            const templatesGrid = document.getElementById('templatesGrid');
+                            if (templatesGrid) {
+                                // Use event delegation - attach to grid, works for all cards
+                                templatesGrid.addEventListener('click', function(e) {
+                                    const card = e.target.closest('[data-is-template="true"]');
+                                    if (!card) return;
+                                    
+                                    // Don't trigger if clicking on preview toggle, preview, or iframe
+                                    if (e.target.closest('.preview-toggle') || 
+                                        e.target.closest('.email-preview') || 
+                                        e.target.closest('iframe') ||
+                                        e.target.tagName === 'BUTTON') {
+                                        return;
+                                    }
+                                    
+                                    const templateId = card.getAttribute('data-template-id');
+                                    if (templateId) {
+                                        console.log('Selecting template:', templateId);
+                                        if (typeof selectTemplate === 'function') {
+                                            selectTemplate(templateId, card);
+                                        } else {
+                                            console.error('selectTemplate function not available');
+                                        }
+                                    }
+                                });
+                                console.log('Template selection handlers attached to grid');
+                            } else {
+                                console.error('templatesGrid element not found');
+                            }
+                        }, 200);
                     } else {
                         grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No templates available</p></div>';
                     }
@@ -1471,12 +1664,12 @@
                             };
                             
                             return `
-                            <div class="preview-card expanded" data-template-id="${templateId}" data-newsletter-id="${templateId}" onclick="selectNewsletterTemplate('${templateId}', this)">
+                            <div class="preview-card expanded" data-template-id="${templateId}" data-newsletter-id="${templateId}" data-is-newsletter="true">
                                 <div class="preview-title">${escapeHtml(newsletter.subject || 'No subject')}</div>
                                 <div class="preview-date">${formatDate(newsletter.timestamp)}</div>
                                 <div class="preview-badge">Sent to ${newsletter.emailsSent || 0} subscribers</div>
                                 ${hasPreview ? `
-                                <button class="preview-toggle" onclick="event.stopPropagation(); togglePreview('${previewId}')">Hide Preview</button>
+                                <button class="preview-toggle" data-preview-id="${previewId}">Hide Preview</button>
                                 <div id="${previewId}" class="email-preview" data-html="${escapeHtml(previewHtml.replace(/"/g, '&quot;'))}"></div>
                                 ` : '<div style="margin-top:1rem;color:var(--terminal-amber);font-size:0.8rem;">No preview available</div>'}
                             </div>
@@ -1503,6 +1696,39 @@
                                 console.log('Newsletter without preview HTML (this is okay for old newsletters):', newsletter.subject);
                             }
                         });
+                        
+                        // Setup click handlers for newsletter cards using event delegation on the grid
+                        setTimeout(() => {
+                            const newslettersGrid = document.getElementById('newslettersGrid');
+                            if (newslettersGrid) {
+                                // Use event delegation - attach to grid, works for all cards
+                                newslettersGrid.addEventListener('click', function(e) {
+                                    const card = e.target.closest('[data-is-newsletter="true"]');
+                                    if (!card) return;
+                                    
+                                    // Don't trigger if clicking on preview toggle, preview, or iframe
+                                    if (e.target.closest('.preview-toggle') || 
+                                        e.target.closest('.email-preview') || 
+                                        e.target.closest('iframe') ||
+                                        e.target.tagName === 'BUTTON') {
+                                        return;
+                                    }
+                                    
+                                    const templateId = card.getAttribute('data-template-id');
+                                    if (templateId) {
+                                        console.log('Selecting newsletter:', templateId);
+                                        if (typeof selectNewsletterTemplate === 'function') {
+                                            selectNewsletterTemplate(templateId, card);
+                                        } else {
+                                            console.error('selectNewsletterTemplate function not available');
+                                        }
+                                    }
+                                });
+                                console.log('Newsletter selection handlers attached to grid');
+                            } else {
+                                console.error('newslettersGrid element not found');
+                            }
+                        }, 200);
                     } else {
                         grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No newsletters sent yet</p></div>';
                     }
@@ -1512,6 +1738,17 @@
             }
         }
         
+        // Setup event delegation for preview toggle buttons
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('preview-toggle')) {
+                e.stopPropagation();
+                const previewId = e.target.getAttribute('data-preview-id');
+                if (previewId) {
+                    togglePreview(previewId);
+                }
+            }
+        });
+        
         function togglePreview(previewId) {
             const preview = document.getElementById(previewId);
             if (!preview) {
@@ -1520,7 +1757,32 @@
             }
             
             const button = preview.previousElementSibling;
-            if (!button) {
+            if (!button || !button.classList.contains('preview-toggle')) {
+                // Try to find button by data attribute
+                const buttons = document.querySelectorAll('.preview-toggle');
+                for (const btn of buttons) {
+                    if (btn.getAttribute('data-preview-id') === previewId) {
+                        const computedStyle = window.getComputedStyle(preview);
+                        const isCurrentlyHidden = computedStyle.display === 'none' || preview.style.display === 'none';
+                        
+                        if (isCurrentlyHidden) {
+                            preview.style.display = 'block';
+                            btn.textContent = 'Hide Preview';
+                            const previewCard = preview.closest('.preview-card');
+                            if (previewCard) {
+                                previewCard.classList.add('expanded');
+                            }
+                        } else {
+                            preview.style.display = 'none';
+                            btn.textContent = 'Show Preview';
+                            const previewCard = preview.closest('.preview-card');
+                            if (previewCard) {
+                                previewCard.classList.remove('expanded');
+                            }
+                        }
+                        return;
+                    }
+                }
                 console.error('Button element not found for preview:', previewId);
                 return;
             }
@@ -1546,38 +1808,6 @@
             }
         }
         
-        function selectTemplate(templateId, element) {
-            selectedTemplateId = templateId;
-            
-            // Update UI
-            document.querySelectorAll('.preview-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-            if (element) {
-                element.classList.add('selected');
-            } else if (event && event.currentTarget) {
-                event.currentTarget.classList.add('selected');
-            }
-            
-            showStatus('Template selected. Ready to send.', 'info');
-        }
-        
-        // Function to select a past newsletter as a template
-        function selectNewsletterTemplate(templateId, element) {
-            selectedTemplateId = templateId;
-            
-            // Update UI
-            document.querySelectorAll('.preview-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-            if (element) {
-                element.classList.add('selected');
-            }
-            
-            const newsletterData = window.newsletterTemplates && window.newsletterTemplates[templateId];
-            const newsletterName = newsletterData ? newsletterData.subject : 'Past Newsletter';
-            showStatus(`Past newsletter "${newsletterName}" selected. Ready to send.`, 'info');
-        }
         
         function escapeHtml(text) {
             if (!text) return '';

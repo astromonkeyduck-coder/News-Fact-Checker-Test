@@ -115,6 +115,450 @@ function escapeHtml(text) {
 }
 
 /**
+ * Truncate text to specified length
+ */
+function truncateText(text, maxLength) {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+
+/**
+ * Copy post link to clipboard
+ */
+async function copyPostLink(postUrl) {
+  try {
+    await navigator.clipboard.writeText(postUrl);
+    
+    // Ensure toast animations are available
+    if (!document.getElementById('feed-toast-animations')) {
+      const style = document.createElement('style');
+      style.id = 'feed-toast-animations';
+      style.textContent = `
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        @keyframes slideOut {
+          from {
+            transform: translateX(0);
+            opacity: 1;
+          }
+          to {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    // Show toast notification
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      z-index: 10000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      animation: slideIn 0.3s ease;
+    `;
+    toast.textContent = '✓ Link copied to clipboard!';
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.animation = 'slideOut 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }, 2000);
+  } catch (err) {
+    console.error('Failed to copy link:', err);
+  }
+}
+
+/**
+ * Show professional share menu with multiple options
+ */
+function showShareMenu(post, buttonElement) {
+  // Close any existing share menu
+  const existingMenu = document.getElementById('feed-share-menu');
+  if (existingMenu) {
+    existingMenu.remove();
+    return;
+  }
+
+  const postUrl = post.url || post.link || `https://x.com/newsnoteworthy/status/${post.id}`;
+  const postText = truncateText(post.text || post.story || '', 100);
+  const shareMessage = `Check out this new post from Noteworthy News! ${postUrl}`;
+  
+  // Get button position for menu placement
+  const rect = buttonElement ? buttonElement.getBoundingClientRect() : { bottom: window.innerHeight / 2, left: window.innerWidth / 2 };
+  let menuTop = rect.bottom + 8;
+  let menuLeft = rect.left;
+  
+  // Adjust if menu would go off-screen
+  const menuWidth = 320;
+  const menuHeight = 400; // approximate
+  if (menuLeft + menuWidth > window.innerWidth) {
+    menuLeft = window.innerWidth - menuWidth - 16;
+  }
+  if (menuTop + menuHeight > window.innerHeight) {
+    menuTop = rect.top - menuHeight - 8;
+  }
+  if (menuLeft < 16) {
+    menuLeft = 16;
+  }
+  if (menuTop < 16) {
+    menuTop = 16;
+  }
+  
+  // Create share menu
+  const menu = document.createElement('div');
+  menu.id = 'feed-share-menu';
+  menu.style.cssText = `
+    position: fixed;
+    top: ${menuTop}px;
+    left: ${menuLeft}px;
+    background: rgba(15, 15, 35, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    padding: 0.75rem;
+    min-width: 280px;
+    max-width: 320px;
+    animation: slideDown 0.2s ease;
+  `;
+  
+  // Ensure animations are available
+  if (!document.getElementById('feed-share-menu-animations')) {
+    const style = document.createElement('style');
+    style.id = 'feed-share-menu-animations';
+    style.textContent = `
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes slideOut {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  // Generate article page URL with music parameter
+  const siteUrl = window.location.origin || 'https://noteworthynews.co';
+  // Use post ID, or create a stable ID from post content if ID is missing
+  let postId = post.id;
+  if (!postId) {
+    // Create a simple hash from the post text for stable IDs
+    const postText = post.text || post.story || post.title || '';
+    let hash = 0;
+    const str = postText.substring(0, 100);
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    postId = `post-${Math.abs(hash)}`;
+  }
+  const articlePageUrl = `${siteUrl}/article.html?id=${encodeURIComponent(postId)}&music=true`;
+  const shareWithFriendMessage = `Check out this new post from Noteworthy News! ${articlePageUrl}`;
+  
+  const shareOptions = [
+    {
+      icon: '👥',
+      label: 'Share with a friend!',
+      highlight: true,
+      action: async () => {
+        // Try native share first (mobile), then fallback to copy
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: `Check out this post from Noteworthy News!`,
+              text: `Check out this new post from Noteworthy News!`,
+              url: articlePageUrl
+            });
+          } catch (err) {
+            if (err.name !== 'AbortError') {
+              // Fallback to copy
+              await copyPostLink(articlePageUrl);
+            }
+          }
+        } else {
+          // Copy the link with music parameter
+          await copyPostLink(articlePageUrl);
+        }
+        menu.remove();
+      }
+    },
+    {
+      icon: '🐦',
+      label: 'Twitter/X',
+      action: () => {
+        const url = `https://twitter.com/intent/tweet?url=${encodeURIComponent(postUrl)}&text=${encodeURIComponent(`Check out this post from Noteworthy News! ${postText}`)}`;
+        window.open(url, '_blank', 'width=600,height=400');
+        menu.remove();
+      }
+    },
+    {
+      icon: '📘',
+      label: 'Facebook',
+      action: () => {
+        const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`;
+        window.open(url, '_blank', 'width=600,height=400');
+        menu.remove();
+      }
+    },
+    {
+      icon: '💼',
+      label: 'LinkedIn',
+      action: () => {
+        const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}`;
+        window.open(url, '_blank', 'width=600,height=400');
+        menu.remove();
+      }
+    },
+    {
+      icon: '📧',
+      label: 'Email',
+      action: () => {
+        const subject = encodeURIComponent('Check out this post from Noteworthy News!');
+        const body = encodeURIComponent(shareWithFriendMessage);
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+        menu.remove();
+      }
+    },
+    {
+      icon: '💬',
+      label: 'Messages',
+      action: () => {
+        // Try SMS first, fallback to generic messaging
+        const smsUrl = `sms:?body=${encodeURIComponent(shareWithFriendMessage)}`;
+        window.location.href = smsUrl;
+        menu.remove();
+      }
+    },
+    {
+      icon: '📋',
+      label: 'Copy Link',
+      action: async () => {
+        await copyPostLink(postUrl);
+        menu.remove();
+      }
+    }
+  ];
+  
+  // Add native share option if available (mobile)
+  if (navigator.share) {
+    shareOptions.unshift({
+      icon: '📤',
+      label: 'Share...',
+      action: async () => {
+        try {
+          await navigator.share({
+            title: `Noteworthy News: ${postText}`,
+            text: shareMessage,
+            url: postUrl
+          });
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            console.error('Share failed:', err);
+          }
+        }
+        menu.remove();
+      }
+    });
+  }
+  
+  // Create menu items
+  shareOptions.forEach((option, index) => {
+    const item = document.createElement('button');
+    
+    // Special styling for highlighted "Share with a friend!" option
+    const isHighlighted = option.highlight === true;
+    
+    item.style.cssText = `
+      width: 100%;
+      padding: ${isHighlighted ? '1rem' : '0.875rem'} 1rem;
+      background: ${isHighlighted ? 'linear-gradient(135deg, rgba(74, 144, 226, 0.2) 0%, rgba(74, 144, 226, 0.15) 100%)' : 'transparent'};
+      border: ${isHighlighted ? '1px solid rgba(74, 144, 226, 0.3)' : 'none'};
+      color: ${isHighlighted ? '#4A90E2' : 'rgba(255, 255, 255, 0.9)'};
+      font-size: ${isHighlighted ? '1rem' : '0.938rem'};
+      font-weight: ${isHighlighted ? '600' : '500'};
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: all 0.2s ease;
+      border-radius: 8px;
+      margin-bottom: ${isHighlighted ? '0.5rem' : '0.25rem'};
+      ${isHighlighted ? 'box-shadow: 0 2px 8px rgba(74, 144, 226, 0.15);' : ''}
+    `;
+    
+    item.innerHTML = `
+      <span style="font-size: ${isHighlighted ? '1.5rem' : '1.25rem'}; line-height: 1;">${option.icon}</span>
+      <span>${option.label}</span>
+    `;
+    
+    item.addEventListener('mouseenter', function() {
+      if (isHighlighted) {
+        this.style.background = 'linear-gradient(135deg, rgba(74, 144, 226, 0.3) 0%, rgba(74, 144, 226, 0.25) 100%)';
+        this.style.borderColor = 'rgba(74, 144, 226, 0.5)';
+        this.style.transform = 'translateY(-1px)';
+        this.style.boxShadow = '0 4px 12px rgba(74, 144, 226, 0.25)';
+      } else {
+        this.style.background = 'rgba(255, 255, 255, 0.1)';
+        this.style.color = '#fff';
+      }
+    });
+    
+    item.addEventListener('mouseleave', function() {
+      if (isHighlighted) {
+        this.style.background = 'linear-gradient(135deg, rgba(74, 144, 226, 0.2) 0%, rgba(74, 144, 226, 0.15) 100%)';
+        this.style.borderColor = 'rgba(74, 144, 226, 0.3)';
+        this.style.transform = 'translateY(0)';
+        this.style.boxShadow = '0 2px 8px rgba(74, 144, 226, 0.15)';
+      } else {
+        this.style.background = 'transparent';
+        this.style.color = 'rgba(255, 255, 255, 0.9)';
+      }
+    });
+    
+    item.addEventListener('click', function(e) {
+      e.stopPropagation();
+      option.action();
+    });
+    
+    menu.appendChild(item);
+    
+    // Add divider after highlighted option
+    if (isHighlighted && index < shareOptions.length - 1) {
+      const divider = document.createElement('div');
+      divider.style.cssText = `
+        height: 1px;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 0.5rem 0;
+      `;
+      menu.appendChild(divider);
+    }
+  });
+  
+  // Add divider before copy link (only if not already added)
+  const lastItem = menu.lastElementChild;
+  if (lastItem && lastItem.tagName !== 'DIV') {
+    const divider = document.createElement('div');
+    divider.style.cssText = `
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 0.5rem 0;
+    `;
+    menu.insertBefore(divider, lastItem);
+  }
+  
+  document.body.appendChild(menu);
+  
+  // Close menu when clicking outside
+  const closeMenu = (e) => {
+    if (!menu.contains(e.target) && e.target !== buttonElement) {
+      menu.remove();
+      document.removeEventListener('click', closeMenu);
+    }
+  };
+  
+  // Use setTimeout to avoid immediate close
+  setTimeout(() => {
+    document.addEventListener('click', closeMenu);
+  }, 100);
+  
+  // Close on ESC key
+  const escHandler = (e) => {
+    if (e.key === 'Escape') {
+      menu.remove();
+      document.removeEventListener('keydown', escHandler);
+      document.removeEventListener('click', closeMenu);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
+}
+
+/**
+ * Share post by ID (called from button onclick)
+ */
+window.feedSharePostById = function(postId, event) {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+  
+  // Find the post in currentPosts
+  const post = currentPosts.find(p => p.id === postId);
+  if (post) {
+    // Get the button element from the event
+    const buttonElement = event?.target?.closest?.('.feed-engagement-btn') || event?.target || event?.currentTarget;
+    showShareMenu(post, buttonElement);
+  } else {
+    console.error('Post not found:', postId);
+  }
+  return false;
+};
+
+// Make sharePost available globally (for backward compatibility)
+window.feedSharePost = async function(post) {
+  const shareData = {
+    title: `Noteworthy News: ${truncateText(post.text || post.story || '', 100)}`,
+    text: `Check out this new post from Noteworthy News! ${post.url || post.link || `https://x.com/newsnoteworthy/status/${post.id}`}`,
+    url: post.url || post.link || `https://x.com/newsnoteworthy/status/${post.id}`,
+  };
+  
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData);
+    } else {
+      // Fallback: show share menu
+      showShareMenu(post, null);
+    }
+  } catch (err) {
+    if (err.name !== 'AbortError') {
+      console.error('Share failed:', err);
+      showShareMenu(post, null);
+    }
+  }
+};
+
+/**
  * Map raw post to normalized Post structure
  */
 function mapRawPostToPost(raw) {
@@ -855,6 +1299,15 @@ function renderEngagementBar(post) {
       href: post.url,
     },
     {
+      icon: '📤',
+      count: null,
+      label: 'Share',
+      color: 'rgb(113, 118, 123)',
+      hoverColor: 'rgb(29, 155, 240)',
+      onClick: `window.feedSharePostById('${post.id}', event)`,
+      showCount: false,
+    },
+    {
       icon: '👁️',
       count: stats.views,
       label: 'Views',
@@ -885,13 +1338,13 @@ function renderEngagementBar(post) {
             cursor: pointer;
             font-size: inherit;
           "
-          title="${btn.label}: ${formatCount(btn.count)}"
+          title="${btn.label}${btn.count !== null && btn.count !== undefined ? ': ' + formatCount(btn.count) : ''}"
           aria-label="${btn.label}"
           onmouseover="this.style.color='${btn.hoverColor}'; this.style.backgroundColor='rgba(29, 155, 240, 0.1)'"
           onmouseout="this.style.color='${btn.color}'; this.style.backgroundColor='transparent'"
         >
           <span style="font-size: 1.25rem; line-height: 1;">${btn.icon}</span>
-          <span style="font-size: 0.813rem; line-height: 1; font-weight: 400;">${formatCount(btn.count)}</span>
+          ${btn.showCount !== false && btn.count !== null && btn.count !== undefined ? `<span style="font-size: 0.813rem; line-height: 1; font-weight: 400;">${formatCount(btn.count)}</span>` : ''}
         </button>
       `;
     } else {
@@ -913,13 +1366,13 @@ function renderEngagementBar(post) {
             min-width: 36px;
             justify-content: flex-start;
           "
-          title="${btn.label}: ${formatCount(btn.count)}"
+          title="${btn.label}${btn.count !== null && btn.count !== undefined ? ': ' + formatCount(btn.count) : ''}"
           aria-label="${btn.label}"
           onmouseover="this.style.color='${btn.hoverColor}'; this.style.backgroundColor='rgba(29, 155, 240, 0.1)'"
           onmouseout="this.style.color='${btn.color}'; this.style.backgroundColor='transparent'"
         >
           <span style="font-size: 1.25rem; line-height: 1;">${btn.icon}</span>
-          <span style="font-size: 0.813rem; line-height: 1; font-weight: 400;">${formatCount(btn.count)}</span>
+          ${btn.showCount !== false && btn.count !== null && btn.count !== undefined ? `<span style="font-size: 0.813rem; line-height: 1; font-weight: 400;">${formatCount(btn.count)}</span>` : ''}
         </a>
       `;
     }
@@ -1467,9 +1920,17 @@ async function renderFeed() {
   }
   
   if (currentPosts.length === 0) {
-    container.innerHTML = '<div style="padding: 2rem; text-align: center; color: rgba(255,255,255,0.7);">Loading posts...</div>';
+    // If user is searching but no posts loaded yet, show appropriate message
+    if (currentSearch && currentSearch.trim()) {
+      container.innerHTML = '<div style="padding: 2rem; text-align: center; color: rgba(255,255,255,0.7);">Loading posts... Search will filter results once loaded.</div>';
+    } else {
+      container.innerHTML = '<div style="padding: 2rem; text-align: center; color: rgba(255,255,255,0.7);">Loading posts...</div>';
+    }
+    console.log('[Feed] No posts loaded yet, showing loading message');
     return;
   }
+  
+  console.log('[Feed] Rendering feed with', currentPosts.length, 'posts, search:', currentSearch, 'sort:', currentSort);
   
   // Apply search
   let filtered = searchPosts(currentPosts, currentSearch);
@@ -1488,23 +1949,45 @@ async function renderFeed() {
   const parent = container.parentElement;
   const originalContent = container.innerHTML;
   
-  const controlsElement = renderFeedControls(currentPosts.length);
-  const postsHtml = sorted.map(post => renderPostCard(post)).join('');
+  // Check if existing HTML controls exist (globeSearchInputPosts, feed-sort-btn)
+  const existingSearchInput = document.getElementById('globeSearchInputPosts');
+  const existingSortButtons = document.querySelectorAll('.feed-sort-btn');
+  const hasExistingControls = existingSearchInput && existingSortButtons.length > 0;
   
-  // Update controls
-  let existingControls = parent?.querySelector('.feed-controls');
-  if (existingControls) {
-    existingControls.replaceWith(controlsElement);
-  } else if (parent) {
-    parent.insertBefore(controlsElement, container);
+  // Only create new controls if existing ones don't exist
+  if (!hasExistingControls) {
+    const controlsElement = renderFeedControls(currentPosts.length);
+    const postsHtml = sorted.map(post => renderPostCard(post)).join('');
+    
+    // Update controls
+    let existingControls = parent?.querySelector('.feed-controls');
+    if (existingControls) {
+      existingControls.replaceWith(controlsElement);
+    } else if (parent) {
+      parent.insertBefore(controlsElement, container);
+    }
+    
+    // Re-attach event listeners after controls are replaced
+    attachFeedControlListeners(controlsElement);
+    
+    // Update posts
+    container.innerHTML = postsHtml;
+  } else {
+    // Use existing controls - just update button states and render posts
+    const postsHtml = sorted.map(post => renderPostCard(post)).join('');
+    
+    // Update sort button states
+    existingSortButtons.forEach(btn => {
+      const active = btn.dataset.sort === currentSort;
+      btn.style.background = active ? 'rgba(79, 172, 254, 0.2)' : 'transparent';
+      btn.style.borderColor = active ? 'rgba(79, 172, 254, 0.4)' : 'rgba(255, 255, 255, 0.1)';
+      btn.style.color = active ? '#4FACFE' : 'rgba(255, 255, 255, 0.8)';
+      btn.style.fontWeight = active ? '600' : '500';
+    });
+    
+    // Update posts
+    container.innerHTML = postsHtml;
   }
-  
-  // Re-attach event listeners after controls are replaced
-  // This is necessary because replaceWith() removes all event listeners
-  attachFeedControlListeners(controlsElement);
-  
-  // Update posts
-  container.innerHTML = postsHtml;
   
   // Track analytics
   if (typeof window !== 'undefined' && window.track) {
@@ -1941,6 +2424,9 @@ async function renderPostFeedV2(
       timestamp: Date.now(),
     }));
     
+    // Initialize existing controls if they exist
+    initializeExistingControls();
+    
     await renderFeed();
     console.log('[PostFeed v2] Feed rendered successfully');
     
@@ -1970,3 +2456,208 @@ async function renderPostFeedV2(
 
 // Export
 window.renderPostFeedV2 = renderPostFeedV2;
+
+/**
+ * Initialize existing controls in HTML (if they exist)
+ * This is called immediately on page load to make controls work before feed loads
+ */
+function initializeExistingControls() {
+  console.log('[Feed] Initializing existing controls...');
+  const searchInput = document.getElementById('globeSearchInputPosts');
+  const searchClearBtn = document.getElementById('globeSearchClearPosts');
+  const sortButtons = document.querySelectorAll('.feed-sort-btn');
+  
+  // Initialize search input
+  if (searchInput) {
+    console.log('[Feed] Found search input, initializing...');
+    // Set initial value from localStorage
+    searchInput.value = currentSearch;
+    
+    // Show/hide clear button
+    if (searchClearBtn) {
+      searchClearBtn.style.display = currentSearch ? 'block' : 'none';
+    }
+    
+    // Remove existing listeners by cloning
+    const newInput = searchInput.cloneNode(true);
+    searchInput.parentNode.replaceChild(newInput, searchInput);
+    
+    // Search event listener with debounce
+    let searchTimeout;
+    newInput.addEventListener('input', function(e) {
+      console.log('[Feed] Search input changed:', e.target.value);
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(function() {
+        currentSearch = e.target.value;
+        localStorage.setItem('feed-search', currentSearch);
+        updateURLParams();
+        
+        // Show/hide clear button
+        const clearBtn = document.getElementById('globeSearchClearPosts');
+        if (clearBtn) {
+          clearBtn.style.display = currentSearch ? 'block' : 'none';
+        }
+        
+        console.log('[Feed] Executing search with query:', currentSearch);
+        renderFeed();
+      }, 300);
+    });
+    
+    // Also handle Enter key for immediate search
+    newInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        clearTimeout(searchTimeout);
+        currentSearch = e.target.value;
+        localStorage.setItem('feed-search', currentSearch);
+        updateURLParams();
+        
+        const clearBtn = document.getElementById('globeSearchClearPosts');
+        if (clearBtn) {
+          clearBtn.style.display = currentSearch ? 'block' : 'none';
+        }
+        
+        console.log('[Feed] Enter pressed, executing search:', currentSearch);
+        renderFeed();
+      }
+    });
+    
+    // Clear button handler
+    if (searchClearBtn) {
+      const newClearBtn = searchClearBtn.cloneNode(true);
+      searchClearBtn.parentNode.replaceChild(newClearBtn, searchClearBtn);
+      
+      newClearBtn.addEventListener('click', function() {
+        console.log('[Feed] Clear button clicked');
+        newInput.value = '';
+        currentSearch = '';
+        localStorage.setItem('feed-search', '');
+        updateURLParams();
+        newClearBtn.style.display = 'none';
+        newInput.focus();
+        renderFeed();
+      });
+    }
+    
+    console.log('[Feed] Search input initialized successfully');
+  } else {
+    console.warn('[Feed] Search input not found!');
+  }
+  
+  // Initialize sort buttons
+  if (sortButtons.length > 0) {
+    console.log('[Feed] Found', sortButtons.length, 'sort buttons, initializing...');
+    sortButtons.forEach(btn => {
+      // Clone to remove old listeners
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+      
+      const sortValue = newBtn.dataset.sort;
+      const isActive = currentSort === sortValue;
+      
+      // Update button styles
+      if (isActive) {
+        newBtn.style.background = 'rgba(79, 172, 254, 0.2)';
+        newBtn.style.borderColor = 'rgba(79, 172, 254, 0.4)';
+        newBtn.style.color = '#4FACFE';
+        newBtn.style.fontWeight = '600';
+      } else {
+        newBtn.style.background = 'transparent';
+        newBtn.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        newBtn.style.color = 'rgba(255, 255, 255, 0.8)';
+        newBtn.style.fontWeight = '500';
+      }
+      
+      // Click handler
+      newBtn.addEventListener('click', async function() {
+        const newSort = this.dataset.sort;
+        console.log('[Feed] Sort button clicked:', newSort);
+        
+        // If "Near Me" is selected, request location
+        if (newSort === 'nearMe' && !userLocation) {
+          const loc = await getUserLocation();
+          if (!loc) {
+            // Location failed, show notification
+            const notification = document.createElement('div');
+            notification.textContent = 'Location unavailable. Showing recent posts.';
+            notification.style.cssText = `
+              position: fixed;
+              bottom: 2rem;
+              left: 50%;
+              transform: translateX(-50%);
+              padding: 0.75rem 1.5rem;
+              background: rgba(15, 15, 35, 0.95);
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              border-radius: 8px;
+              color: rgba(255, 255, 255, 0.9);
+              font-size: 0.875rem;
+              z-index: 10000;
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+              notification.style.opacity = '0';
+              notification.style.transition = 'opacity 0.3s ease';
+              setTimeout(() => notification.remove(), 300);
+            }, 3000);
+            return;
+          }
+        }
+        
+        // Update sort
+        currentSort = newSort;
+        localStorage.setItem('feed-sort', currentSort);
+        
+        // Update all button states
+        const allSortButtons = document.querySelectorAll('.feed-sort-btn');
+        allSortButtons.forEach(b => {
+          const active = b.dataset.sort === newSort;
+          b.style.background = active ? 'rgba(79, 172, 254, 0.2)' : 'transparent';
+          b.style.borderColor = active ? 'rgba(79, 172, 254, 0.4)' : 'rgba(255, 255, 255, 0.1)';
+          b.style.color = active ? '#4FACFE' : 'rgba(255, 255, 255, 0.8)';
+          b.style.fontWeight = active ? '600' : '500';
+        });
+        
+        updateURLParams();
+        console.log('[Feed] Executing sort:', currentSort);
+        renderFeed();
+        
+        // Visual feedback
+        this.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          this.style.transform = 'scale(1)';
+        }, 150);
+      });
+    });
+    console.log('[Feed] Sort buttons initialized successfully');
+  } else {
+    console.warn('[Feed] No sort buttons found!');
+  }
+  
+  console.log('[Feed] Control initialization complete');
+}
+
+// Initialize existing controls immediately when DOM is ready
+if (typeof document !== 'undefined') {
+  function tryInitialize() {
+    const searchInput = document.getElementById('globeSearchInputPosts');
+    if (searchInput) {
+      console.log('[Feed] DOM ready, initializing controls...');
+      initializeExistingControls();
+    } else {
+      // Retry after a short delay if controls aren't ready yet
+      console.log('[Feed] Controls not found yet, retrying...');
+      setTimeout(tryInitialize, 200);
+    }
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      // Try immediately, then retry if needed
+      setTimeout(tryInitialize, 100);
+    });
+  } else {
+    // DOM already loaded
+    setTimeout(tryInitialize, 100);
+  }
+}

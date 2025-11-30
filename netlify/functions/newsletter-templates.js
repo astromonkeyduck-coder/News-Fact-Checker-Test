@@ -143,6 +143,7 @@ exports.handler = async (event, context) => {
                         const entry = await historyStore.get(blob.key, { type: "json" });
                         if (entry && entry.subject === lastSend.subject && entry.timestamp === lastSend.timestamp) {
                           previewHtml = entry.previewHtml || entry.html || previewHtml;
+                          console.log(`Found preview HTML in history entry: ${blob.key}`);
                           break;
                         }
                       }
@@ -152,12 +153,23 @@ exports.handler = async (event, context) => {
                   }
                 }
                 
+                // If still no previewHtml, try to get html from lastSend and create preview
+                if ((!previewHtml || previewHtml.trim() === '') && lastSend.html) {
+                  previewHtml = lastSend.html
+                    .replace(/\{\{FULL_NAME\}\}/g, 'Preview User')
+                    .replace(/\{\{FIRST_NAME\}\}/g, 'Preview')
+                    .replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview')
+                    .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#')
+                    .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#');
+                  console.log('Generated preview HTML from lastSend.html');
+                }
+                
                 newsletters.push({
                   id: 'last-send-time',
                   subject: lastSend.subject,
                   timestamp: lastSend.timestamp,
                   emailsSent: lastSend.emailsSent || 0,
-                  previewHtml: previewHtml, // Include preview HTML
+                  previewHtml: previewHtml || '', // Include preview HTML (empty string if not available)
                 });
               }
             }
@@ -337,21 +349,46 @@ exports.handler = async (event, context) => {
           console.log('No templates in blob store, loading from email templates directory...');
           try {
             const path = require('path');
-            const templatesDir = path.resolve(__dirname, '../../emails/templates');
+            // Try multiple possible paths
+            const possiblePaths = [
+              path.resolve(__dirname, '../../emails/templates'),
+              path.resolve(process.cwd(), 'emails/templates'),
+              path.join(__dirname, '../../emails/templates'),
+            ];
+            
+            let templatesDir = null;
             const fs = require('fs');
             
+            for (const dirPath of possiblePaths) {
+              if (fs.existsSync(dirPath)) {
+                templatesDir = dirPath;
+                console.log(`Found templates directory at: ${dirPath}`);
+                break;
+              }
+            }
+            
             // Check if templates directory exists
-            if (fs.existsSync(templatesDir)) {
+            if (templatesDir && fs.existsSync(templatesDir)) {
               const templateFiles = fs.readdirSync(templatesDir).filter(f => 
                 f.endsWith('.js') && f !== 'index.js'
               );
-              console.log(`Found ${templateFiles.length} template files in directory`);
+              console.log(`Found ${templateFiles.length} template files in directory: ${templatesDir}`);
               
               for (const file of templateFiles) {
                 try {
                   const templatePath = path.join(templatesDir, file);
+                  console.log(`Attempting to load template: ${templatePath}`);
+                  
+                  // Clear require cache to ensure fresh load
+                  delete require.cache[require.resolve(templatePath)];
+                  
                   const templateModule = require(templatePath);
                   const templateFn = templateModule.default || templateModule;
+                  
+                  if (typeof templateFn !== 'function') {
+                    console.log(`Template ${file} is not a function, skipping`);
+                    continue;
+                  }
                   
                   if (typeof templateFn === 'function') {
                     // Generate sample data based on template type
@@ -500,10 +537,12 @@ exports.handler = async (event, context) => {
               }
               console.log(`Total templates loaded from directory: ${templates.length}`);
             } else {
-              console.log('Templates directory does not exist:', templatesDir);
+              console.log('Templates directory does not exist. Tried paths:', possiblePaths);
             }
           } catch (e) {
-            console.log('Error loading templates from directory:', e.message);
+            console.error('Error loading templates from directory:', e.message);
+            console.error('Stack trace:', e.stack);
+            // Continue - return empty templates array rather than failing
           }
         } else {
           console.log(`Loaded ${templates.length} templates from blob store`);
@@ -515,6 +554,8 @@ exports.handler = async (event, context) => {
           const dateB = new Date(b.updatedAt || 0);
           return dateB - dateA;
         });
+        
+        console.log(`Returning ${templates.length} templates to client`);
         
         return {
           statusCode: 200,

@@ -9771,7 +9771,8 @@ function initNewsletterSubscription() {
             }
             
             // Check if we already have AI response (from restore)
-            const hasExistingAIResponse = aiResponse && aiResponse.innerHTML && aiResponse.innerHTML.trim() !== '';
+            // If forceNew is true, always regenerate
+            const hasExistingAIResponse = !forceNew && aiResponse && aiResponse.innerHTML && aiResponse.innerHTML.trim() !== '';
             if (!hasExistingAIResponse) {
                 aiThinking.style.display = 'block';
                 aiResponse.innerHTML = '';
@@ -9784,29 +9785,39 @@ function initNewsletterSubscription() {
             const culture1Wrapper = document.getElementById('culture1-image-wrapper');
             const culture2Wrapper = document.getElementById('culture2-image-wrapper');
             
+            // If forceNew is true, clear existing images and force regeneration
+            if (forceNew) {
+                console.log('[Spotlight] Force new country - clearing existing images and content');
+                if (flagWrapper) flagWrapper.innerHTML = '';
+                if (culture1Wrapper) culture1Wrapper.innerHTML = '';
+                if (culture2Wrapper) culture2Wrapper.innerHTML = '';
+            }
+            
             // Check if images exist and are valid (not just placeholders)
+            // If forceNew is true, always treat as missing (force regeneration)
             const flagImg = flagWrapper && flagWrapper.querySelector('img');
             const culture1Img = culture1Wrapper && culture1Wrapper.querySelector('img');
             const culture2Img = culture2Wrapper && culture2Wrapper.querySelector('img');
             
-            const hasFlagImage = flagImg && flagImg.src && !flagImg.src.includes('data:') && flagImg.complete && !flagImg.src.includes('placeholder');
-            const hasCulture1Image = culture1Img && culture1Img.src && !culture1Img.src.includes('data:') && culture1Img.complete && !culture1Img.src.includes('placeholder');
-            const hasCulture2Image = culture2Img && culture2Img.src && !culture2Img.src.includes('data:') && culture2Img.complete && !culture2Img.src.includes('placeholder');
+            const hasFlagImage = !forceNew && flagImg && flagImg.src && !flagImg.src.includes('data:') && flagImg.complete && !flagImg.src.includes('placeholder');
+            const hasCulture1Image = !forceNew && culture1Img && culture1Img.src && !culture1Img.src.includes('data:') && culture1Img.complete && !culture1Img.src.includes('placeholder');
+            const hasCulture2Image = !forceNew && culture2Img && culture2Img.src && !culture2Img.src.includes('data:') && culture2Img.complete && !culture2Img.src.includes('placeholder');
             
             console.log('Image status check:', {
+                forceNew: forceNew,
                 flag: hasFlagImage ? 'exists' : 'missing',
                 culture1: hasCulture1Image ? 'exists' : 'missing',
                 culture2: hasCulture2Image ? 'exists' : 'missing',
                 aiResponse: hasExistingAIResponse ? 'exists' : 'missing'
             });
             
-            // Reset placeholders only for missing images
-            // BUT: Check if image is currently loading to avoid race conditions
+            // Reset placeholders for missing images (or all if forceNew)
+            // When forceNew is true, we already cleared the wrappers above, so set placeholders
             if (!hasFlagImage && flagWrapper) {
-                // Only set placeholder if wrapper doesn't already have an img element loading
+                // Set placeholder if wrapper is empty or doesn't have a valid image
                 const existingImg = flagWrapper.querySelector('img');
                 if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
-                flagWrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                    flagWrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
                 } else {
                     console.log('[Spotlight] Flag image wrapper already has an image, skipping placeholder');
                 }
@@ -9814,7 +9825,7 @@ function initNewsletterSubscription() {
             if (!hasCulture1Image && culture1Wrapper) {
                 const existingImg = culture1Wrapper.querySelector('img');
                 if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
-                culture1Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                    culture1Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
                 } else {
                     console.log('[Spotlight] Culture1 image wrapper already has an image, skipping placeholder');
                 }
@@ -9822,7 +9833,7 @@ function initNewsletterSubscription() {
             if (!hasCulture2Image && culture2Wrapper) {
                 const existingImg = culture2Wrapper.querySelector('img');
                 if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
-                culture2Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                    culture2Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
                 } else {
                     console.log('[Spotlight] Culture2 image wrapper already has an image, skipping placeholder');
                 }
