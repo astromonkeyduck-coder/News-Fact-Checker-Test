@@ -2304,7 +2304,6 @@ class BreakingNewsGame {
         this.createParticles();
         this.setupGlitchEffects();
         this.initMatrixRain();
-        this.initTheme();
         this.initLogoAnimation(); // Initialize logo animation with puzzle piece sound
         this.showStartScreen();
         
@@ -2870,7 +2869,7 @@ class BreakingNewsGame {
     
     setupHoverSounds() {
         // Get all buttons and add hover sound effects
-        const buttons = document.querySelectorAll('.btn, .tips-toggle-btn, .how-to-play-toggle-btn, .sound-toggle-btn, .music-toggle-btn, .theme-toggle-btn, .pause-toggle-btn, .ai-toggle-btn, .sidebar-toggle');
+        const buttons = document.querySelectorAll('.btn, .tips-toggle-btn, .how-to-play-toggle-btn, .sound-toggle-btn, .music-toggle-btn, .pause-toggle-btn, .ai-toggle-btn, .sidebar-toggle');
         
         buttons.forEach(button => {
             // Desktop hover effect
@@ -5291,15 +5290,6 @@ class BreakingNewsGame {
         this.updateMusicButton();
     }
     
-    initTheme() {
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
-            this.enableDarkMode();
-        } else {
-            this.enableLightMode();
-        }
-    }
-    
     // Initialize logo animation with puzzle piece sound
     initLogoAnimation() {
         console.log('initLogoAnimation called!');
@@ -5310,36 +5300,6 @@ class BreakingNewsGame {
         //     console.log('Playing puzzle piece sound!');
         //     playPuzzlePiece();
         // }, 2500);
-    }
-    
-    toggleTheme() {
-        if (document.body.classList.contains('dark-mode')) {
-            this.enableLightMode();
-        } else {
-            this.enableDarkMode();
-        }
-    }
-    
-    enableDarkMode() {
-        document.body.classList.add('dark-mode');
-        const themeBtn = document.getElementById('themeToggleBtn');
-        if (themeBtn) {
-            themeBtn.classList.add('dark-mode');
-            themeBtn.querySelector('.btn-icon').textContent = '☀️';
-            themeBtn.querySelector('.btn-text').textContent = 'Light';
-        }
-        localStorage.setItem('theme', 'dark');
-    }
-    
-    enableLightMode() {
-        document.body.classList.remove('dark-mode');
-        const themeBtn = document.getElementById('themeToggleBtn');
-        if (themeBtn) {
-            themeBtn.classList.remove('dark-mode');
-            themeBtn.querySelector('.btn-icon').textContent = '🌙';
-            themeBtn.querySelector('.btn-text').textContent = 'Dark';
-        }
-        localStorage.setItem('theme', 'light');
     }
     
     togglePause() {

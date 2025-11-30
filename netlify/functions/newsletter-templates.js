@@ -130,12 +130,34 @@ exports.handler = async (event, context) => {
                 n.timestamp === lastSend.timestamp && n.subject === lastSend.subject
               );
               if (!exists) {
+                // Try to get preview HTML - check multiple possible fields
+                let previewHtml = lastSend.previewHtml || lastSend.html || '';
+                
+                // If still empty, try to find it in a history entry
+                if (!previewHtml || previewHtml.trim() === '') {
+                  try {
+                    // Look for a matching history entry
+                    const { blobs } = await historyStore.list();
+                    for (const blob of blobs) {
+                      if (blob.key.startsWith('newsletter-history-')) {
+                        const entry = await historyStore.get(blob.key, { type: "json" });
+                        if (entry && entry.subject === lastSend.subject && entry.timestamp === lastSend.timestamp) {
+                          previewHtml = entry.previewHtml || entry.html || previewHtml;
+                          break;
+                        }
+                      }
+                    }
+                  } catch (e) {
+                    console.log('Error searching for preview HTML:', e.message);
+                  }
+                }
+                
                 newsletters.push({
                   id: 'last-send-time',
                   subject: lastSend.subject,
                   timestamp: lastSend.timestamp,
                   emailsSent: lastSend.emailsSent || 0,
-                  previewHtml: lastSend.previewHtml || lastSend.html || '', // Include preview HTML
+                  previewHtml: previewHtml, // Include preview HTML
                 });
               }
             }
@@ -283,10 +305,11 @@ exports.handler = async (event, context) => {
           if (templateData) {
             try {
               const parsed = JSON.parse(templateData);
-              // Create preview HTML with placeholder values
-              let previewHtml = parsed.html || '';
-              if (previewHtml) {
-                previewHtml = previewHtml
+              // Use saved previewHtml if available, otherwise generate from html
+              let previewHtml = parsed.previewHtml || '';
+              if (!previewHtml && parsed.html) {
+                // Generate preview HTML with placeholder values if not saved
+                previewHtml = parsed.html
                   .replace(/\{\{FULL_NAME\}\}/g, 'Preview User')
                   .replace(/\{\{FIRST_NAME\}\}/g, 'Preview')
                   .replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview')
@@ -311,6 +334,7 @@ exports.handler = async (event, context) => {
         
         // If no templates found, try to load from email templates directory
         if (templates.length === 0) {
+          console.log('No templates in blob store, loading from email templates directory...');
           try {
             const path = require('path');
             const templatesDir = path.resolve(__dirname, '../../emails/templates');
@@ -321,6 +345,7 @@ exports.handler = async (event, context) => {
               const templateFiles = fs.readdirSync(templatesDir).filter(f => 
                 f.endsWith('.js') && f !== 'index.js'
               );
+              console.log(`Found ${templateFiles.length} template files in directory`);
               
               for (const file of templateFiles) {
                 try {
@@ -444,13 +469,14 @@ exports.handler = async (event, context) => {
                     const templateId = `template-${file.replace('.js', '').toLowerCase()}`;
                     const now = new Date().toISOString();
                     
-                    // Save to blob store for future use
+                    // Save to blob store for future use (include previewHtml for faster loading)
                     const templateData = {
                       id: templateId,
                       name: templateName,
                       subject: subject,
                       html: html,
                       text: text,
+                      previewHtml: previewHtml, // Save preview HTML so we don't have to regenerate it
                       createdAt: now,
                       updatedAt: now,
                     };
@@ -466,15 +492,21 @@ exports.handler = async (event, context) => {
                       html: html,
                       text: text,
                     });
+                    console.log(`✅ Loaded template: ${templateName} (${templateId})`);
                   }
                 } catch (e) {
-                  console.log(`Error loading template ${file}:`, e.message);
+                  console.log(`❌ Error loading template ${file}:`, e.message);
                 }
               }
+              console.log(`Total templates loaded from directory: ${templates.length}`);
+            } else {
+              console.log('Templates directory does not exist:', templatesDir);
             }
           } catch (e) {
             console.log('Error loading templates from directory:', e.message);
           }
+        } else {
+          console.log(`Loaded ${templates.length} templates from blob store`);
         }
         
         // Sort by updatedAt (newest first)

@@ -405,18 +405,37 @@
             cursor: pointer;
             transition: all 0.2s;
             font-family: 'JetBrains Mono', monospace;
+            position: relative;
         }
         
         .preview-card:hover {
             background: var(--terminal-bg);
             border-color: var(--terminal-green);
             box-shadow: 0 0 10px var(--glow-green);
+            transform: translateY(-2px);
         }
         
         .preview-card.selected {
             border-color: var(--terminal-green);
             background: var(--terminal-bg);
             box-shadow: 0 0 15px var(--glow-green), inset 0 0 10px rgba(0, 255, 65, 0.1);
+            border-width: 2px;
+        }
+        
+        .preview-card.selected::before {
+            content: '✓ SELECTED';
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--terminal-green);
+            color: var(--terminal-bg);
+            padding: 0.25rem 0.5rem;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-family: 'JetBrains Mono', monospace;
+            box-shadow: 0 0 10px var(--glow-green);
         }
         
         .preview-title {
@@ -1387,8 +1406,14 @@
                             if (previewHtml && previewHtml.trim().length > 0) {
                                 // Use longer delay to ensure DOM is ready
                                 setTimeout(() => {
-                                    setupPreviewIframe(previewId, previewHtml);
-                                }, 300);
+                                    const previewDiv = document.getElementById(previewId);
+                                    if (previewDiv) {
+                                        console.log('Setting up preview for template:', template.name, previewId);
+                                        setupPreviewIframe(previewId, previewHtml);
+                                    } else {
+                                        console.error('Preview div not found:', previewId);
+                                    }
+                                }, 500);
                             } else {
                                 console.warn('Template missing previewHtml/html:', template.name, template.id);
                             }
@@ -1421,18 +1446,37 @@
                 const grid = document.getElementById('newslettersGrid');
                 
                 if (data.newsletters && data.newsletters.length > 0) {
+                        // Store newsletter data for selection
+                        if (!window.newsletterTemplates) {
+                            window.newsletterTemplates = {};
+                        }
+                        
                         grid.innerHTML = data.newsletters.map((newsletter, index) => {
                             const previewId = `newsletter-preview-${index}`;
                             // Check for previewHtml or html field
                             const previewHtml = newsletter.previewHtml || newsletter.html || '';
                             const hasPreview = previewHtml && previewHtml.trim().length > 0;
+                            // Create a template ID from the newsletter ID or generate one
+                            const templateId = newsletter.id || `newsletter-${index}-${Date.now()}`;
+                            
+                            // Store newsletter data for later use when sending
+                            window.newsletterTemplates[templateId] = {
+                                id: templateId,
+                                name: newsletter.subject || 'Past Newsletter',
+                                subject: newsletter.subject || 'No subject',
+                                html: previewHtml || newsletter.html || '',
+                                text: newsletter.text || '',
+                                timestamp: newsletter.timestamp,
+                                emailsSent: newsletter.emailsSent || 0
+                            };
+                            
                             return `
-                            <div class="preview-card expanded">
+                            <div class="preview-card expanded" data-template-id="${templateId}" data-newsletter-id="${templateId}" onclick="selectNewsletterTemplate('${templateId}', this)">
                                 <div class="preview-title">${escapeHtml(newsletter.subject || 'No subject')}</div>
                                 <div class="preview-date">${formatDate(newsletter.timestamp)}</div>
                                 <div class="preview-badge">Sent to ${newsletter.emailsSent || 0} subscribers</div>
                                 ${hasPreview ? `
-                                <button class="preview-toggle" onclick="togglePreview('${previewId}')">Hide Preview</button>
+                                <button class="preview-toggle" onclick="event.stopPropagation(); togglePreview('${previewId}')">Hide Preview</button>
                                 <div id="${previewId}" class="email-preview" data-html="${escapeHtml(previewHtml.replace(/"/g, '&quot;'))}"></div>
                                 ` : '<div style="margin-top:1rem;color:var(--terminal-amber);font-size:0.8rem;">No preview available</div>'}
                             </div>
@@ -1446,10 +1490,17 @@
                             if (previewHtml && previewHtml.trim().length > 0) {
                                 // Use longer delay to ensure DOM is ready
                                 setTimeout(() => {
-                                    setupPreviewIframe(previewId, previewHtml);
-                                }, 300);
+                                    const previewDiv = document.getElementById(previewId);
+                                    if (previewDiv) {
+                                        console.log('Setting up preview for newsletter:', newsletter.subject, previewId);
+                                        setupPreviewIframe(previewId, previewHtml);
+                                    } else {
+                                        console.error('Preview div not found:', previewId);
+                                    }
+                                }, 500);
                             } else {
-                                console.warn('Newsletter missing previewHtml/html:', newsletter.subject, newsletter.id);
+                                // Don't show warning for newsletters without preview - just skip rendering
+                                console.log('Newsletter without preview HTML (this is okay for old newsletters):', newsletter.subject);
                             }
                         });
                     } else {
@@ -1511,6 +1562,23 @@
             showStatus('Template selected. Ready to send.', 'info');
         }
         
+        // Function to select a past newsletter as a template
+        function selectNewsletterTemplate(templateId, element) {
+            selectedTemplateId = templateId;
+            
+            // Update UI
+            document.querySelectorAll('.preview-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            if (element) {
+                element.classList.add('selected');
+            }
+            
+            const newsletterData = window.newsletterTemplates && window.newsletterTemplates[templateId];
+            const newsletterName = newsletterData ? newsletterData.subject : 'Past Newsletter';
+            showStatus(`Past newsletter "${newsletterName}" selected. Ready to send.`, 'info');
+        }
+        
         function escapeHtml(text) {
             if (!text) return '';
             const div = document.createElement('div');
@@ -1527,8 +1595,15 @@
                     previewDiv = document.getElementById(previewId);
                     if (previewDiv) {
                         // Try to get HTML from data attribute if not provided
-                        const htmlToUse = html || previewDiv.getAttribute('data-html') || '';
-                        if (htmlToUse) {
+                        let htmlToUse = html;
+                        if (!htmlToUse) {
+                            const dataHtml = previewDiv.getAttribute('data-html');
+                            if (dataHtml) {
+                                // Decode HTML entities
+                                htmlToUse = decodeHtmlEntities(dataHtml);
+                            }
+                        }
+                        if (htmlToUse && htmlToUse.trim()) {
                             renderPreview(previewDiv, previewId, htmlToUse);
                         } else {
                             console.warn('No HTML content available for preview:', previewId);
@@ -1541,7 +1616,14 @@
             }
             
             // Try to get HTML from data attribute if not provided
-            const htmlToUse = html || previewDiv.getAttribute('data-html') || '';
+            let htmlToUse = html;
+            if (!htmlToUse) {
+                const dataHtml = previewDiv.getAttribute('data-html');
+                if (dataHtml) {
+                    // Decode HTML entities
+                    htmlToUse = decodeHtmlEntities(dataHtml);
+                }
+            }
             if (!htmlToUse || !htmlToUse.trim()) {
                 console.warn('No HTML content provided for preview:', previewId);
                 return;
@@ -1550,36 +1632,99 @@
             renderPreview(previewDiv, previewId, htmlToUse);
         }
         
+        // Helper function to decode HTML entities
+        function decodeHtmlEntities(text) {
+            if (!text) return '';
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = text;
+            return textarea.value;
+        }
+        
         function renderPreview(previewDiv, previewId, html) {
-            // Clear any existing content
-            previewDiv.innerHTML = '';
-            
-            // Create blob URL for the HTML
-            const blob = new Blob([html], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            
-            // Store URL for cleanup
-            if (!window.previewBlobUrls) {
-                window.previewBlobUrls = {};
+            try {
+                // Clear any existing content
+                previewDiv.innerHTML = '';
+                
+                // Ensure HTML is a string and not empty
+                if (!html || typeof html !== 'string' || !html.trim()) {
+                    console.error('Invalid HTML for preview:', previewId);
+                    previewDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--terminal-amber);">Preview not available</div>';
+                    return;
+                }
+                
+                // Create a complete HTML document with proper structure
+                const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Preview</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        /* Ensure email styles are preserved */
+        * {
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    ${html}
+</body>
+</html>`;
+                
+                // Create blob URL for the HTML
+                const blob = new Blob([fullHtml], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                
+                // Store URL for cleanup
+                if (!window.previewBlobUrls) {
+                    window.previewBlobUrls = {};
+                }
+                // Clean up old URL if it exists
+                if (window.previewBlobUrls[previewId]) {
+                    URL.revokeObjectURL(window.previewBlobUrls[previewId]);
+                }
+                window.previewBlobUrls[previewId] = url;
+                
+                // Create iframe with proper styling
+                const iframe = document.createElement('iframe');
+                iframe.src = url;
+                iframe.style.width = '100%';
+                iframe.style.height = '600px';
+                iframe.style.border = 'none';
+                iframe.style.display = 'block';
+                iframe.style.marginTop = '12px';
+                iframe.style.borderRadius = '8px';
+                iframe.style.backgroundColor = '#ffffff';
+                iframe.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                
+                // Handle iframe load errors
+                iframe.onerror = function() {
+                    console.error('Error loading preview iframe:', previewId);
+                    previewDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--terminal-red);">Error loading preview</div>';
+                };
+                
+                // Show loading state
+                previewDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--terminal-text-dim);">Loading preview...</div>';
+                
+                iframe.onload = function() {
+                    console.log('Preview loaded successfully:', previewId);
+                };
+                
+                // Small delay to show loading state, then add iframe
+                setTimeout(() => {
+                    previewDiv.innerHTML = '';
+                    previewDiv.appendChild(iframe);
+                }, 100);
+            } catch (error) {
+                console.error('Error rendering preview:', error, previewId);
+                previewDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--terminal-red);">Error rendering preview</div>';
             }
-            // Clean up old URL if it exists
-            if (window.previewBlobUrls[previewId]) {
-                URL.revokeObjectURL(window.previewBlobUrls[previewId]);
-            }
-            window.previewBlobUrls[previewId] = url;
-            
-            // Create iframe with proper styling
-            const iframe = document.createElement('iframe');
-            iframe.src = url;
-            iframe.style.width = '100%';
-            iframe.style.height = '600px';
-            iframe.style.border = 'none';
-            iframe.style.display = 'block';
-            iframe.style.marginTop = '12px';
-            iframe.style.borderRadius = '8px';
-            iframe.style.backgroundColor = '#0b1020';
-            
-            previewDiv.appendChild(iframe);
         }
         
         function formatDate(dateString) {
@@ -1726,20 +1871,33 @@
             try {
                 // Load template
                 const token = getAdminToken();
-                const templateResponse = await fetch(`/.netlify/functions/newsletter-templates?id=${selectedTemplateId}&token=${encodeURIComponent(token || '')}`);
-                if (!templateResponse.ok) {
-                    throw new Error('Failed to load template');
+                let template;
+                
+                // Check if it's a past newsletter template (stored in window.newsletterTemplates)
+                if (window.newsletterTemplates && window.newsletterTemplates[selectedTemplateId]) {
+                    template = window.newsletterTemplates[selectedTemplateId];
+                    console.log('Using past newsletter as template for test:', template.subject);
+                } else {
+                    // Try to load from blob store
+                    const templateResponse = await fetch(`/.netlify/functions/newsletter-templates?id=${selectedTemplateId}&token=${encodeURIComponent(token || '')}`);
+                    if (!templateResponse.ok) {
+                        throw new Error('Failed to load template');
+                    }
+                    template = JSON.parse(await templateResponse.text());
                 }
                 
-                const template = JSON.parse(await templateResponse.text());
+                // For past newsletters, we might not have text, so generate it from html
+                if (!template.text && template.html) {
+                    template.text = template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+                }
                 
                 // Validate template before using
                 if (!template || typeof template !== 'object') {
                     throw new Error('Invalid template data received');
                 }
                 
-                if (!template.subject || !template.html || !template.text) {
-                    throw new Error('Template missing required fields (subject, html, or text)');
+                if (!template.subject || !template.html) {
+                    throw new Error('Template missing required fields (subject or html)');
                 }
                 
                 const response = await fetch('/.netlify/functions/send-newsletter', {
@@ -1933,15 +2091,28 @@
             // Load template first
             try {
                 const token = getAdminToken();
-                const templateResponse = await fetch(`/.netlify/functions/newsletter-templates?id=${selectedTemplateId}&token=${encodeURIComponent(token || '')}`);
-                if (!templateResponse.ok) {
-                    throw new Error('Failed to load template');
+                let template;
+                
+                // Check if it's a past newsletter template (stored in window.newsletterTemplates)
+                if (window.newsletterTemplates && window.newsletterTemplates[selectedTemplateId]) {
+                    template = window.newsletterTemplates[selectedTemplateId];
+                    console.log('Using past newsletter as template:', template.subject);
+                } else {
+                    // Try to load from blob store
+                    const templateResponse = await fetch(`/.netlify/functions/newsletter-templates?id=${selectedTemplateId}&token=${encodeURIComponent(token || '')}`);
+                    if (!templateResponse.ok) {
+                        throw new Error('Failed to load template');
+                    }
+                    template = JSON.parse(await templateResponse.text());
                 }
                 
-                const template = JSON.parse(await templateResponse.text());
+                // For past newsletters, we might not have text, so generate it from html
+                if (!template.text && template.html) {
+                    template.text = template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+                }
                 
                 // Validate template before using
-                if (!template || typeof template !== 'object' || !template.subject || !template.html || !template.text) {
+                if (!template || typeof template !== 'object' || !template.subject || !template.html) {
                     throw new Error('Invalid template: missing required fields');
                 }
                 

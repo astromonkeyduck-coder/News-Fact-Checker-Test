@@ -1135,59 +1135,8 @@ function renderFeedControls(totalPosts) {
       }
     });
     
-    option.addEventListener('click', async function() {
-      const newSort = this.dataset.value;
-      currentSort = newSort;
-      localStorage.setItem('feed-sort', currentSort);
-      
-      // Update button text
-      sortButtonText.textContent = opt.text;
-      
-      // Update option styles
-      options.forEach((o, idx) => {
-        const optEl = sortDropdown.children[idx];
-        if (optEl) {
-          optEl.style.background = o.value === newSort ? 'rgba(74, 144, 226, 0.15)' : 'transparent';
-          optEl.style.color = o.value === newSort ? '#4A90E2' : 'rgba(255, 255, 255, 0.9)';
-          optEl.style.fontWeight = o.value === newSort ? '600' : '400';
-        }
-      });
-      
-      // Close dropdown
-      sortDropdown.style.display = 'none';
-      sortButtonIcon.style.transform = 'rotate(0deg)';
-      dropdownOpen = false;
-      
-      // Normalize 'nearMe' to 'nearby' for consistency
-      if (newSort === 'nearMe') {
-        newSort = 'nearby';
-      }
-      
-      // If "Near Me" is selected, request location
-      if (newSort === 'nearby' && !userLocation) {
-        const loc = await getUserLocation();
-        if (!loc) {
-          // Location failed, switch back to recent
-          alert('Unable to determine your location. Switching to "Most Recent".');
-          currentSort = 'recent';
-          localStorage.setItem('feed-sort', 'recent');
-          sortButtonText.textContent = 'Most Recent';
-          // Update to recent option
-          const recentOption = sortDropdown.querySelector('[data-value="recent"]');
-          if (recentOption) recentOption.click();
-          return;
-        }
-      }
-      
-      updateURLParams();
-      renderFeed();
-      
-      // Visual feedback
-      sortButton.style.transform = 'scale(0.98)';
-      setTimeout(() => {
-        sortButton.style.transform = 'scale(1)';
-      }, 150);
-    });
+    // Event listeners will be attached by attachFeedControlListeners() after controls are inserted
+    // This prevents duplicate listeners and ensures they persist after controls are replaced
     
     sortDropdown.appendChild(option);
   });
@@ -1293,9 +1242,26 @@ function renderFeedControls(totalPosts) {
     });
   }
   
-  // Event listeners
+  return controlsDiv;
+}
+
+/**
+ * Attach event listeners to feed controls
+ * This function is called after controls are replaced to re-attach listeners
+ */
+function attachFeedControlListeners(controlsElement) {
+  if (!controlsElement) return;
+  
+  // Find search input
+  const searchInput = controlsElement.querySelector('.feed-search-input');
+  if (searchInput) {
+    // Remove any existing listeners by cloning (clean slate)
+    const newInput = searchInput.cloneNode(true);
+    searchInput.parentNode.replaceChild(newInput, searchInput);
+    
+    // Attach search input listener
   let searchTimeout;
-  searchInput.addEventListener('input', function(e) {
+    newInput.addEventListener('input', function(e) {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(function() {
       currentSearch = e.target.value;
@@ -1306,17 +1272,155 @@ function renderFeedControls(totalPosts) {
   });
   
   // Keyboard shortcut: / to focus search
-  document.addEventListener('keydown', function(e) {
+  const keydownHandler = function(e) {
     if (e.key === '/' && !e.ctrlKey && !e.metaKey && 
         document.activeElement && 
         document.activeElement.tagName !== 'INPUT' && 
         document.activeElement.tagName !== 'TEXTAREA') {
       e.preventDefault();
-      searchInput.focus();
-    }
-  });
+        newInput.focus();
+      }
+    };
+    
+    // Remove old listener if it exists
+    document.removeEventListener('keydown', window._feedSearchKeydownHandler);
+    window._feedSearchKeydownHandler = keydownHandler;
+    document.addEventListener('keydown', keydownHandler);
+  }
   
-  return controlsDiv;
+  // Find sort button and dropdown
+  const sortButton = controlsElement.querySelector('.feed-sort-button');
+  const sortDropdown = controlsElement.querySelector('.feed-sort-dropdown');
+  const sortButtonIcon = controlsElement.querySelector('.feed-sort-button-icon');
+  
+  if (sortButton && sortDropdown && sortButtonIcon) {
+    // Remove old outside click handler
+    if (window._feedOutsideClickHandler) {
+      document.removeEventListener('click', window._feedOutsideClickHandler);
+    }
+    
+    let dropdownOpen = false;
+    
+    // Toggle dropdown
+    sortButton.addEventListener('click', function(e) {
+      e.stopPropagation();
+      dropdownOpen = !dropdownOpen;
+      sortDropdown.style.display = dropdownOpen ? 'block' : 'none';
+      sortButtonIcon.style.transform = dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+      
+      if (dropdownOpen) {
+        sortButton.style.background = 'rgba(255, 255, 255, 0.12)';
+        sortButton.style.borderColor = '#4A90E2';
+        sortButton.style.boxShadow = '0 0 0 4px rgba(74, 144, 226, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3)';
+      } else {
+        sortButton.style.background = 'rgba(255, 255, 255, 0.08)';
+        sortButton.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        sortButton.style.boxShadow = 'none';
+      }
+    });
+    
+    // Close dropdown when clicking outside
+    const sortContainer = sortButton.closest('.feed-controls')?.querySelector('[style*="position: relative"]') || sortButton.parentElement;
+    const outsideClickHandler = function(e) {
+      if (!sortContainer.contains(e.target) && dropdownOpen) {
+        dropdownOpen = false;
+        sortDropdown.style.display = 'none';
+        sortButtonIcon.style.transform = 'rotate(0deg)';
+        sortButton.style.background = 'rgba(255, 255, 255, 0.08)';
+        sortButton.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        sortButton.style.boxShadow = 'none';
+      }
+    };
+    window._feedOutsideClickHandler = outsideClickHandler;
+    document.addEventListener('click', outsideClickHandler);
+    
+    // Re-attach sort option click handlers
+    const sortOptions = sortDropdown.querySelectorAll('.feed-sort-option');
+    const options = [
+      { value: 'recent', text: 'Most Recent', icon: '🕐' },
+      { value: 'nearby', text: 'Near Me', icon: '📍' },
+      { value: 'views', text: 'Most Views', icon: '👁️' },
+      { value: 'likes', text: 'Most Likes', icon: '❤️' },
+      { value: 'comments', text: 'Most Comments', icon: '💬' },
+      { value: 'reposts', text: 'Most Reposts', icon: '🔄' }
+    ];
+    
+    sortOptions.forEach((option, index) => {
+      const opt = options[index];
+      if (!opt) return;
+      
+      // Clone to remove old listeners
+      const newOption = option.cloneNode(true);
+      option.parentNode.replaceChild(newOption, option);
+      
+      newOption.addEventListener('click', async function() {
+        const newSort = this.dataset.value;
+        currentSort = newSort;
+        localStorage.setItem('feed-sort', currentSort);
+        
+        // Update button text
+        const sortButtonText = sortButton.querySelector('.feed-sort-button-text');
+        if (sortButtonText) {
+          const currentSortText = {
+            'recent': 'Most Recent',
+            'nearby': '📍 Near Me',
+            'views': 'Most Views',
+            'likes': 'Most Likes',
+            'comments': 'Most Comments',
+            'reposts': 'Most Reposts'
+          }[newSort] || 'Most Recent';
+          sortButtonText.textContent = currentSortText;
+        }
+        
+        // Update option styles
+        sortOptions.forEach((o, idx) => {
+          const optEl = sortDropdown.children[idx];
+          if (optEl) {
+            const optValue = options[idx]?.value;
+            optEl.style.background = optValue === newSort ? 'rgba(74, 144, 226, 0.15)' : 'transparent';
+            optEl.style.color = optValue === newSort ? '#4A90E2' : 'rgba(255, 255, 255, 0.9)';
+            optEl.style.fontWeight = optValue === newSort ? '600' : '400';
+          }
+        });
+        
+        // Close dropdown
+        dropdownOpen = false;
+        sortDropdown.style.display = 'none';
+        sortButtonIcon.style.transform = 'rotate(0deg)';
+        
+        // Normalize 'nearMe' to 'nearby' for consistency
+        let normalizedSort = newSort;
+        if (normalizedSort === 'nearMe') {
+          normalizedSort = 'nearby';
+        }
+        
+        // If "Near Me" is selected, request location
+        if (normalizedSort === 'nearby' && !userLocation) {
+          const loc = await getUserLocation();
+          if (!loc) {
+            // Location failed, switch back to recent
+            alert('Unable to determine your location. Switching to "Most Recent".');
+            currentSort = 'recent';
+            localStorage.setItem('feed-sort', 'recent');
+            if (sortButtonText) sortButtonText.textContent = 'Most Recent';
+            // Update to recent option
+            const recentOption = sortDropdown.querySelector('[data-value="recent"]');
+            if (recentOption) recentOption.click();
+            return;
+          }
+        }
+        
+        updateURLParams();
+        renderFeed();
+        
+        // Visual feedback
+        sortButton.style.transform = 'scale(0.98)';
+        setTimeout(() => {
+          sortButton.style.transform = 'scale(1)';
+        }, 150);
+      });
+    });
+  }
 }
 
 /**
@@ -1394,6 +1498,10 @@ async function renderFeed() {
   } else if (parent) {
     parent.insertBefore(controlsElement, container);
   }
+  
+  // Re-attach event listeners after controls are replaced
+  // This is necessary because replaceWith() removes all event listeners
+  attachFeedControlListeners(controlsElement);
   
   // Update posts
   container.innerHTML = postsHtml;
