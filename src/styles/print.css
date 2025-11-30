@@ -1,0 +1,244 @@
+/**
+ * Print Stylesheet for Noteworthy News
+ * Optimized for printing articles
+ */
+
+/* Hide non-essential elements when printing */
+@media print {
+  /* Hide navigation, headers, footers, sidebars */
+  header,
+  nav,
+  .header,
+  .navigation,
+  .sidebar,
+  .article-sidebar,
+  .related-articles,
+  footer,
+  .cookie-banner,
+  .security-check-container,
+  .matrix-rain,
+  .tips-sidebar,
+  .how-to-play-sidebar,
+  button,
+  .btn,
+  .article-share,
+  .social-share-buttons,
+  .ad-container,
+  ins.adsbygoogle,
+  iframe,
+  .comments-section,
+  .comment-section {
+    display: none !important;
+  }
+
+  /* Page setup */
+  @page {
+    margin: 1.5cm;
+    size: A4;
+  }
+
+  /* Body and container */
+  body,
+  .article-page {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    line-height: 1.6;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .article-container {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .article-main {
+    background: white !important;
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Typography */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: black !important;
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+
+  .article-header h1 {
+    font-size: 24pt !important;
+    margin-bottom: 12pt !important;
+    background: none !important;
+    -webkit-text-fill-color: black !important;
+    color: black !important;
+  }
+
+  .article-body {
+    font-size: 11pt !important;
+    line-height: 1.6 !important;
+    color: black !important;
+  }
+
+  .article-body p {
+    color: black !important;
+    margin-bottom: 12pt !important;
+  }
+
+  .article-body h2 {
+    font-size: 18pt !important;
+    color: black !important;
+    border-bottom: 1pt solid #333 !important;
+    margin-top: 18pt !important;
+    margin-bottom: 12pt !important;
+    padding-bottom: 6pt !important;
+  }
+
+  .article-body h3 {
+    font-size: 14pt !important;
+    color: #333 !important;
+    margin-top: 14pt !important;
+    margin-bottom: 10pt !important;
+  }
+
+  /* Article meta */
+  .article-meta {
+    border-bottom: 1pt solid #ccc !important;
+    padding-bottom: 8pt !important;
+    margin-bottom: 16pt !important;
+    color: #666 !important;
+    font-size: 10pt !important;
+  }
+
+  .article-meta .meta-label {
+    color: #333 !important;
+    font-weight: 600 !important;
+  }
+
+  /* Images */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid;
+  }
+
+  .article-image,
+  .article-image-main {
+    margin: 12pt 0 !important;
+    page-break-inside: avoid;
+  }
+
+  /* Links */
+  a {
+    color: #000 !important;
+    text-decoration: underline !important;
+  }
+
+  a[href^="http"]:after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    color: #666;
+  }
+
+  /* Lists */
+  ul,
+  ol {
+    margin: 12pt 0 !important;
+    padding-left: 24pt !important;
+  }
+
+  li {
+    margin-bottom: 6pt !important;
+    color: black !important;
+  }
+
+  /* Breadcrumbs */
+  .breadcrumbs {
+    font-size: 9pt !important;
+    color: #666 !important;
+    margin-bottom: 12pt !important;
+  }
+
+  .breadcrumbs a {
+    color: #333 !important;
+  }
+
+  /* Article intro */
+  .article-intro {
+    background: #f5f5f5 !important;
+    border-left: 3pt solid #333 !important;
+    padding: 12pt !important;
+    margin-bottom: 16pt !important;
+    font-size: 11pt !important;
+    color: #333 !important;
+  }
+
+  /* Timeline */
+  .timeline {
+    border-left: 2pt solid #ccc !important;
+  }
+
+  .timeline li {
+    color: black !important;
+  }
+
+  /* Sources section */
+  .sources,
+  .article-sources {
+    margin-top: 20pt !important;
+    padding-top: 12pt !important;
+    border-top: 1pt solid #ccc !important;
+    font-size: 10pt !important;
+  }
+
+  .sources h3,
+  .article-sources h3 {
+    font-size: 12pt !important;
+    color: black !important;
+  }
+
+  .sources ul {
+    list-style: none !important;
+    padding-left: 0 !important;
+  }
+
+  .sources li {
+    margin-bottom: 8pt !important;
+  }
+
+  /* Page breaks */
+  .article-body h2,
+  .article-body h3 {
+    page-break-after: avoid;
+  }
+
+  /* Avoid breaking inside important elements */
+  blockquote,
+  pre,
+  table {
+    page-break-inside: avoid;
+  }
+
+  /* Footer for print */
+  .article-main::after {
+    content: "Printed from Noteworthy News (noteworthynews.co)";
+    display: block;
+    margin-top: 24pt;
+    padding-top: 12pt;
+    border-top: 1pt solid #ccc;
+    font-size: 9pt;
+    color: #666;
+    text-align: center;
+  }
+}
+

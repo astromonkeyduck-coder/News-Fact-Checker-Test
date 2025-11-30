@@ -157,6 +157,7 @@ class GeographyGame {
         this.flashRight = document.getElementById('viewportFlashRight');
         this.startBtn = document.getElementById('startBtn');
         this.resetBtn = document.getElementById('resetBtn');
+        this.skipCountryBtn = document.getElementById('skipCountryBtn');
         this.directionsCountEl = document.getElementById('directionsCount');
         this.timerEl = document.getElementById('geoTimer');
         this.speedEl = document.getElementById('geoSpeed');
@@ -676,6 +677,25 @@ class GeographyGame {
         
         if (this.hintBtn) {
             this.hintBtn.addEventListener('click', () => this.showHint());
+        }
+        
+        if (this.skipCountryBtn) {
+            this.skipCountryBtn.addEventListener('click', () => {
+                try {
+                    if (this.gameActive && this.currentCountry) {
+                        // Mark current country as skipped (count as wrong)
+                        if (!this.wrongCountries.has(this.currentCountry.code)) {
+                            this.wrong++;
+                            this.wrongCountries.add(this.currentCountry.code);
+                        }
+                        this.answered.add(this.currentCountry.code);
+                        this.updateStats();
+                        this.getNextCountry();
+                    }
+                } catch (e) {
+                    console.error('Error skipping country:', e);
+                }
+            });
         }
         
         // Setup drag handlers - can be called multiple times
@@ -1344,6 +1364,10 @@ class GeographyGame {
             this.hintBtn.disabled = false;
             this.hintBtn.style.display = 'inline-flex';
         }
+        if (this.skipCountryBtn) {
+            this.skipCountryBtn.disabled = false;
+            this.skipCountryBtn.style.display = 'inline-flex';
+        }
         this.feedbackEl.textContent = '';
         this.feedbackEl.className = 'feedback-message';
         
@@ -1554,6 +1578,10 @@ class GeographyGame {
         if (this.hintBtn) {
             this.hintBtn.disabled = true;
             this.hintBtn.style.display = 'none';
+        }
+        if (this.skipCountryBtn) {
+            this.skipCountryBtn.disabled = true;
+            this.skipCountryBtn.style.display = 'none';
         }
         
         // Update stats display
@@ -1795,6 +1823,10 @@ class GeographyGame {
         // Re-enable hint button for new country
         if (this.hintBtn) {
             this.hintBtn.disabled = false;
+        }
+        // Re-enable skip button for new country
+        if (this.skipCountryBtn) {
+            this.skipCountryBtn.disabled = false;
         }
         
         // Remove any previous markers

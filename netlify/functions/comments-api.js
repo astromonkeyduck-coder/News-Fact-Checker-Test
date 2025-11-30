@@ -165,6 +165,10 @@ exports.handler = async (event, context) => {
         authorId: authorId,
         timestamp: Date.now(),
         date: new Date().toLocaleDateString(),
+        upvotes: 0,
+        downvotes: 0,
+        replies: [],
+        parentId: null, // null for top-level comments, comment ID for replies
       };
 
       // Add to beginning of array

@@ -891,8 +891,10 @@ class NoteworthyChat extends HTMLElement {
           max-width: 680px;
           width: 100%;
           max-height: 90vh;
-          overflow-y: auto;
-          overflow-x: hidden;
+          height: auto;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
           box-shadow: 
             0 24px 64px rgba(0, 0, 0, 0.5),
             0 8px 24px rgba(0, 0, 0, 0.4),
@@ -929,9 +931,7 @@ class NoteworthyChat extends HTMLElement {
             rgba(30, 41, 59, 0.95) 0%, 
             rgba(15, 23, 42, 0.98) 50%,
             rgba(30, 41, 59, 0.95) 100%);
-          position: sticky;
-          top: 0;
-          z-index: 10;
+          flex-shrink: 0;
           border-radius: 24px 24px 0 0;
         }
         
@@ -987,6 +987,11 @@ class NoteworthyChat extends HTMLElement {
         
         .tutorial-content {
           padding: 32px;
+          padding-bottom: 140px; /* Extra space to prevent footer overlap */
+          overflow-y: auto;
+          flex: 1 1 auto;
+          min-height: 0;
+          max-height: 100%;
         }
         
         .tutorial-intro {
@@ -1144,6 +1149,7 @@ class NoteworthyChat extends HTMLElement {
         
         .tutorial-tips {
           margin-top: 28px;
+          margin-bottom: 32px;
           padding: 20px 24px;
           background: linear-gradient(135deg, 
             rgba(74, 144, 226, 0.12) 0%, 
@@ -1186,12 +1192,13 @@ class NoteworthyChat extends HTMLElement {
           padding: 24px 32px;
           border-top: 1px solid rgba(74, 144, 226, 0.15);
           background: linear-gradient(180deg, 
-            transparent 0%,
-            rgba(15, 23, 42, 0.5) 100%);
+            rgba(15, 23, 42, 0.98) 0%,
+            rgba(12, 19, 35, 0.98) 100%);
           gap: 20px;
-          position: sticky;
-          bottom: 0;
+          flex-shrink: 0;
           border-radius: 0 0 24px 24px;
+          position: relative;
+          z-index: 10;
         }
         
         .tutorial-checkbox {
@@ -1319,6 +1326,10 @@ class NoteworthyChat extends HTMLElement {
           
           .tutorial-content {
             padding: 24px;
+            padding-bottom: 140px; /* Extra space to prevent footer overlap */
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
           }
           
           .tutorial-intro {
@@ -1385,6 +1396,10 @@ class NoteworthyChat extends HTMLElement {
           
           .tutorial-content {
             padding: 20px;
+            padding-bottom: 140px; /* Extra space to prevent footer overlap */
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
           }
           
           .tutorial-intro {

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Security Check - Noteworthy News</title>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="src/components/security-check.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Override body styles for security check page */
+        body {
+            padding: 0 !important;
+            padding-top: 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+        }
+        
+        /* Hide any existing headers/navigation */
+        header, nav, .header, .navigation {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Mount point for React component -->
+    <div id="security-check-root"></div>
+    
+    <!-- React and ReactDOM (CDN) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Security Config (load as regular script) -->
+    <script>
+        // Load security config
+        window.securityConfig = {
+            title: "Checking your browser before accessing Noteworthy News",
+            subtitle: "For security reasons, we're making sure this request is coming from a real person and not an automated system.",
+            loadingMessage: "This process usually takes just a few seconds.",
+            estimatedTime: 3,
+            logoUrl: "/nw-logo.GIF",
+            showContactLink: true
+        };
+    </script>
+    
+    <!-- Load SecurityCheck component -->
+    <script type="text/babel" src="src/components/SecurityCheck.jsx"></script>
+    
+    <!-- Initialize Security Check -->
+    <script type="text/babel">
+        const { createRoot } = ReactDOM;
+        
+        // Get return path from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnPath = urlParams.get('return') || '/';
+        
+        // Initialize component
+        function initSecurityCheck() {
+            const rootElement = document.getElementById('security-check-root');
+            if (!rootElement) {
+                console.error('Security check root element not found');
+                return;
+            }
+            
+            const root = createRoot(rootElement);
+            
+            // Handle verification completion
+            const handleVerified = () => {
+                console.log('[Security Check] Verification complete, redirecting to:', returnPath);
+                
+                // Store verification token in sessionStorage (for route protection)
+                sessionStorage.setItem('security-check-verified', 'true');
+                sessionStorage.setItem('security-check-timestamp', Date.now().toString());
+                
+                // Redirect to original path
+                window.location.href = returnPath;
+            };
+            
+            root.render(
+                React.createElement(SecurityCheck, {
+                    onVerified: handleVerified
+                })
+            );
+        }
+        
+        // Wait for React and component to load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(initSecurityCheck, 100);
+            });
+        } else {
+            setTimeout(initSecurityCheck, 100);
+        }
+    </script>
+</body>
+</html>
+

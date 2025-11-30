@@ -1309,6 +1309,40 @@
             }
         }
         
+        // Missing function stubs - add implementations
+        function filterTemplates() {
+            const searchTerm = document.getElementById('templateSearch')?.value?.toLowerCase() || '';
+            const templateCards = document.querySelectorAll('.template-card, .preview-card');
+            templateCards.forEach(card => {
+                const title = card.querySelector('.preview-title, .template-title')?.textContent?.toLowerCase() || '';
+                const matches = !searchTerm || title.includes(searchTerm);
+                card.style.display = matches ? 'block' : 'none';
+            });
+        }
+        
+        function filterNewsletters() {
+            const searchTerm = document.getElementById('newsletterSearch')?.value?.toLowerCase() || '';
+            const newsletterItems = document.querySelectorAll('.newsletter-item, .preview-card');
+            newsletterItems.forEach(item => {
+                const title = item.querySelector('.preview-title, .newsletter-title')?.textContent?.toLowerCase() || '';
+                const matches = !searchTerm || title.includes(searchTerm);
+                item.style.display = matches ? 'block' : 'none';
+            });
+        }
+        
+        function refreshData() {
+            if (typeof loadTemplates === 'function') loadTemplates();
+            if (typeof loadNewsletterHistory === 'function') loadNewsletterHistory();
+            showStatus('Data refreshed', 'success');
+        }
+        
+        function updateStats() {
+            // Update statistics display if stats elements exist
+            const statsElements = document.querySelectorAll('.stat-value, .stat-number');
+            // Stats would be updated from API data
+            // This is a placeholder - implement based on actual stats structure
+        }
+        
         // Load templates
         async function loadTemplates() {
             try {
@@ -1699,6 +1733,15 @@
                 
                 const template = JSON.parse(await templateResponse.text());
                 
+                // Validate template before using
+                if (!template || typeof template !== 'object') {
+                    throw new Error('Invalid template data received');
+                }
+                
+                if (!template.subject || !template.html || !template.text) {
+                    throw new Error('Template missing required fields (subject, html, or text)');
+                }
+                
                 const response = await fetch('/.netlify/functions/send-newsletter', {
                     method: 'POST',
                     headers: {
@@ -1831,6 +1874,11 @@
                     skipEmails = skipEmailsInput.split(',').map(e => e.trim()).filter(e => e);
                 }
                 
+                // Validate template before using
+                if (!template || typeof template !== 'object' || !template.subject || !template.html || !template.text) {
+                    throw new Error('Invalid template: missing required fields');
+                }
+                
                 const response = await fetch('/.netlify/functions/send-newsletter', {
                     method: 'POST',
                     headers: {
@@ -1891,6 +1939,12 @@
                 }
                 
                 const template = JSON.parse(await templateResponse.text());
+                
+                // Validate template before using
+                if (!template || typeof template !== 'object' || !template.subject || !template.html || !template.text) {
+                    throw new Error('Invalid template: missing required fields');
+                }
+                
                 pendingTemplate = template;
                 pendingSend = true;
                 

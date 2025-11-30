@@ -12,14 +12,8 @@ const CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
 
 let isLoading = false;
 let currentSort = localStorage.getItem('feed-sort') || 'recent';
-// Normalize old 'nearby' to 'nearMe'
-if (currentSort === 'nearby') {
-  currentSort = 'nearMe';
-  localStorage.setItem('feed-sort', 'nearMe');
-}
 let currentSearch = localStorage.getItem('feed-search') || '';
 let currentPosts = [];
-let coveragePoints = []; // Global coverage map points
 let commentDrawerOpen = false;
 let commentDrawerPostId = null;
 let userLocation = null; // { lat, lng } or null
@@ -413,7 +407,8 @@ function sortPosts(posts, mode) {
         return dateB - dateA;
       });
       break;
-    case 'nearMe':
+    case 'nearby':
+    case 'nearMe': // Support legacy 'nearMe' value for backward compatibility
       // Sort by location relevance (requires user location)
       if (userLocation) {
         sorted.sort((a, b) => {
@@ -421,15 +416,13 @@ function sortPosts(posts, mode) {
           const relevanceB = calculateLocationRelevance(b, userLocation);
           if (relevanceB !== relevanceA) return relevanceB - relevanceA;
           // Tie-breaker: most recent first
-          const dateA = new Date(a.createdAt || a.datePosted || 0).getTime();
-          const dateB = new Date(b.createdAt || b.datePosted || 0).getTime();
-          return dateB - dateA;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         });
       } else {
         // If no location, fall back to recent
         sorted.sort((a, b) => {
-          const dateA = new Date(a.createdAt || a.datePosted || 0).getTime();
-          const dateB = new Date(b.createdAt || b.datePosted || 0).getTime();
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
           return dateB - dateA;
         });
       }
@@ -440,158 +433,20 @@ function sortPosts(posts, mode) {
 }
 
 /**
- * Load coverage points from the global coverage map
- */
-async function loadCoveragePoints() {
-  if (coveragePoints.length > 0) return coveragePoints; // Already loaded
-  
-  // Try to load as JSON first (preferred method)
-  try {
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const jsonPath = isLocalhost 
-      ? 'http://localhost:8888/src/data/coveragePoints.json'
-      : '/src/data/coveragePoints.json';
-    
-    const jsonResponse = await fetch(jsonPath);
-    if (jsonResponse.ok) {
-      coveragePoints = await jsonResponse.json();
-      console.log('[PostFeed v2] Loaded', coveragePoints.length, 'coverage points');
-      return coveragePoints;
-    }
-  } catch (error) {
-    console.warn('[PostFeed v2] Could not load coverage points as JSON:', error);
-  }
-  
-  // Fallback: try to load from the JS module file
-  try {
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const jsPath = isLocalhost 
-      ? 'http://localhost:8888/src/data/coveragePoints.js'
-      : '/src/data/coveragePoints.js';
-    
-    const response = await fetch(jsPath);
-    if (response.ok) {
-      const text = await response.text();
-      // Extract the array from the module export
-      const match = text.match(/const coveragePoints = (\[[\s\S]*?\]);/);
-      if (match) {
-        // Use Function constructor instead of eval for safer parsing
-        coveragePoints = new Function('return ' + match[1])();
-        console.log('[PostFeed v2] Loaded', coveragePoints.length, 'coverage points from JS file');
-        return coveragePoints;
-      }
-    }
-  } catch (error) {
-    console.warn('[PostFeed v2] Could not load coverage points from JS file:', error);
-  }
-  
-  // Hardcoded fallback with the known coverage points
-  coveragePoints = [
-    {
-      id: "nyc-incident",
-      lat: 40.7128,
-      lng: -74.0060,
-      location: "New York, USA",
-      headline: "High-rise fire near Midtown",
-      timestamp: "2025-11-21T18:32:00Z"
-    },
-    {
-      id: "kyiv-strike",
-      lat: 50.4501,
-      lng: 30.5234,
-      location: "Kyiv, Ukraine",
-      headline: "Explosions reported in central Kyiv",
-      timestamp: "2025-11-23T03:10:00Z"
-    },
-    {
-      id: "buenos-aires-blast",
-      lat: -34.6037,
-      lng: -58.3816,
-      location: "Buenos Aires, Argentina",
-      headline: "Industrial-area explosion in Ezeiza",
-      timestamp: "2025-11-20T14:05:00Z"
-    },
-    {
-      id: "la-fire",
-      lat: 34.0522,
-      lng: -118.2437,
-      location: "Los Angeles, USA",
-      headline: "Large structure fire downtown",
-      timestamp: "2025-11-19T09:47:00Z"
-    }
-  ];
-  
-  console.log('[PostFeed v2] Using fallback coverage points:', coveragePoints.length);
-  return coveragePoints;
-}
-
-/**
- * Search posts and coverage points
- * Returns posts that match the query, including those that match coverage point locations
+ * Search posts
  */
 function searchPosts(posts, query) {
   if (!query.trim()) return posts;
   
-  const lowerQuery = query.toLowerCase().trim();
+  const lowerQuery = query.toLowerCase();
   
-  // First, find matching coverage points
-  const matchingCoveragePoints = coveragePoints.filter(point => {
-    const locationMatch = point.location.toLowerCase().includes(lowerQuery);
-    const headlineMatch = point.headline.toLowerCase().includes(lowerQuery);
-    // Also check individual words in location (e.g., "New York" matches "york")
-    const locationWords = point.location.toLowerCase().split(/[,\s]+/);
-    const headlineWords = point.headline.toLowerCase().split(/\s+/);
-    const wordMatch = locationWords.some(word => word.includes(lowerQuery)) ||
-                     headlineWords.some(word => word.includes(lowerQuery));
-    return locationMatch || headlineMatch || wordMatch;
-  });
-  
-  // Get locations and headlines from matching coverage points for enhanced matching
-  const matchingLocations = matchingCoveragePoints.map(p => p.location.toLowerCase());
-  const matchingHeadlines = matchingCoveragePoints.map(p => p.headline.toLowerCase());
-  
-  // Extract city/country names from locations for better matching
-  const locationKeywords = new Set();
-  matchingCoveragePoints.forEach(point => {
-    const parts = point.location.toLowerCase().split(',');
-    parts.forEach(part => locationKeywords.add(part.trim()));
-    // Also add individual words
-    parts.forEach(part => {
-      part.trim().split(/\s+/).forEach(word => {
-        if (word.length > 2) locationKeywords.add(word);
-      });
-    });
-  });
-  
-  // Filter posts
   return posts.filter(post => {
-    const postText = post.text.toLowerCase();
+    const textMatch = post.text.toLowerCase().includes(lowerQuery);
     const handleMatch = post.author.handle.toLowerCase().includes(lowerQuery);
     const tagMatch = post.tags?.some(tag => tag.toLowerCase().includes(lowerQuery));
-    const hashtagMatch = postText.includes(`#${lowerQuery}`);
+    const hashtagMatch = post.text.toLowerCase().includes(`#${lowerQuery}`);
     
-    // Direct text match
-    const textMatch = postText.includes(lowerQuery);
-    
-    // Check if post mentions any location from matching coverage points
-    const locationMatch = matchingLocations.some(loc => 
-      postText.includes(loc) || 
-      post.tags?.some(tag => tag.toLowerCase().includes(loc))
-    );
-    
-    // Check if post mentions any headline keywords from matching coverage points
-    const headlineMatch = matchingHeadlines.some(headline => 
-      postText.includes(headline) ||
-      post.tags?.some(tag => tag.toLowerCase().includes(headline))
-    );
-    
-    // Check if post mentions any location keywords
-    const keywordMatch = Array.from(locationKeywords).some(keyword =>
-      postText.includes(keyword) ||
-      post.tags?.some(tag => tag.toLowerCase().includes(keyword))
-    );
-    
-    return textMatch || handleMatch || tagMatch || hashtagMatch || locationMatch || headlineMatch || keywordMatch;
+    return textMatch || handleMatch || tagMatch || hashtagMatch;
   });
 }
 
@@ -609,6 +464,20 @@ function renderPostCard(post) {
   // Ensure we have text - check multiple fields
   const postText = post.text || post.story || post.title || '';
   const text = formatPostText(postText, post.media);
+  
+  // Calculate reading time (if utility is available)
+  let readingTime = '1 min read';
+  if (typeof window.calculateReadingTime === 'function') {
+    const readingTimeResult = window.calculateReadingTime(postText);
+    readingTime = readingTimeResult.text || readingTime;
+  } else if (post.readTime) {
+    readingTime = `${post.readTime} min read`;
+  } else {
+    // Fallback calculation: ~200 words per minute
+    const wordCount = postText.split(/\s+/).filter(w => w.length > 0).length;
+    const minutes = Math.max(1, Math.ceil(wordCount / 200));
+    readingTime = minutes === 1 ? '1 min read' : `${minutes} min read`;
+  }
   
   // Debug: log if text is missing
   if (!postText) {
@@ -706,6 +575,17 @@ function renderPostCard(post) {
               onmouseover="this.style.textDecoration='underline'; this.style.color='rgb(29, 155, 240)'"
               onmouseout="this.style.textDecoration='none'; this.style.color='rgb(113, 118, 123)'"
             >${timestamp || formatRelativeTime(post.createdAt)}</a>
+            
+            <span style="color: rgb(113, 118, 123); font-size: 0.938rem; line-height: 1.25rem;">·</span>
+            
+            <span 
+              style="
+                color: rgb(113, 118, 123);
+                font-size: 0.938rem;
+                line-height: 1.25rem;
+              "
+              title="Estimated reading time"
+            >${readingTime}</span>
           </div>
         </div>
       </div>
@@ -776,12 +656,9 @@ function formatPostText(text, postMedia = []) {
   
   // Clean up extra whitespace after removing URLs
   // Strip ALL leading whitespace to prevent indentation
-  cleanedText = String(cleanedText)
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .replace(/\u00a0/g, ' ')  // Non-breaking space to regular space
-    .replace(/^[\s\u00a0\u2000-\u200B\u2028\u2029]+/, '')  // Strip all leading whitespace including various unicode spaces
-    .replace(/\n[\s\u00a0\u2000-\u200B]+/g, '\n')  // Strip leading whitespace from each line
+  cleanedText = cleanedText
+    .replace(/^[\s\u00a0]+/, '')
+    .replace(/\n[\s\u00a0]+/g, '\n')
     .replace(/\s+/g, ' ')
     .trim();
   
@@ -837,17 +714,12 @@ function formatPostText(text, postMedia = []) {
     parts.push({ type: 'text', content: cleanedText });
   }
   
-  const processed = parts.map(part => {
+  return parts.map(part => {
     if (part.type === 'text') {
-      // Strip any remaining leading/trailing whitespace from text parts
-      let content = part.content.trim();
-      return escapeHtml(content).replace(/\n/g, '<br>');
+      return escapeHtml(part.content).replace(/\n/g, '<br>');
     }
     return part.content;
   }).join('');
-  
-  // Final cleanup - remove any leading whitespace from the entire result
-  return processed.replace(/^[\s\u00a0\u2000-\u200B]+/, '').trim();
 }
 
 /**
@@ -1055,305 +927,365 @@ function renderEngagementBar(post) {
 }
 
 /**
- * Render feed controls - Premium search + sort strip design
+ * Render feed controls
  */
 function renderFeedControls(totalPosts) {
   const searchId = 'feed-search-' + Date.now();
   const sortId = 'feed-sort-' + Date.now();
   
-  // Main container - pill-shaped premium design
   const controlsDiv = document.createElement('div');
-  controlsDiv.className = 'feed-controls-premium';
-  controlsDiv.setAttribute('role', 'search');
-  controlsDiv.setAttribute('aria-label', 'Search and sort news posts');
+  controlsDiv.className = 'feed-controls';
+  // Styles are handled by CSS class, but we set critical inline styles for reliability
   controlsDiv.style.cssText = `
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    max-width: 960px;
-    margin: 1.5rem auto 2.5rem;
-    padding: 0.75rem 1rem;
-    background: rgba(0, 0, 0, 0.25);
-    border-radius: 999px;
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    position: relative;
-    z-index: 10;
-    flex-wrap: wrap;
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 100 !important;
+    width: 100% !important;
+    max-width: 100% !important;
   `;
   
-  // Search container - left side, grows to fill space
+  // Create a horizontal flex container to align search and sort on same line
+  const inputRow = document.createElement('div');
+  inputRow.style.cssText = 'display: flex; align-items: center; gap: 1rem; flex: 1; min-width: 0;';
+  
+  // Search input with icon
   const searchContainer = document.createElement('div');
-  searchContainer.style.cssText = `
-    flex: 1;
-    min-width: 200px;
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  `;
+  searchContainer.style.cssText = 'flex: 1; min-width: 0; position: relative; display: flex; align-items: center;';
   
-  // SVG Search Icon
-  const searchIconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  searchIconSvg.setAttribute('width', '18');
-  searchIconSvg.setAttribute('height', '18');
-  searchIconSvg.setAttribute('viewBox', '0 0 24 24');
-  searchIconSvg.setAttribute('fill', 'none');
-  searchIconSvg.setAttribute('stroke', 'currentColor');
-  searchIconSvg.setAttribute('stroke-width', '2');
-  searchIconSvg.setAttribute('stroke-linecap', 'round');
-  searchIconSvg.setAttribute('stroke-linejoin', 'round');
-  searchIconSvg.style.cssText = `
+  const searchIcon = document.createElement('div');
+  searchIcon.style.cssText = `
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
     color: rgba(255, 255, 255, 0.5);
-    flex-shrink: 0;
-    transition: color 0.2s ease;
+    font-size: 1.125rem;
+    pointer-events: none;
+    z-index: 1;
   `;
-  const searchPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  searchPath.setAttribute('d', 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z');
-  searchIconSvg.appendChild(searchPath);
+  searchIcon.textContent = '🔍';
   
   const searchInput = document.createElement('input');
   searchInput.id = searchId;
   searchInput.type = 'text';
-  searchInput.setAttribute('aria-label', 'Search news');
-  searchInput.placeholder = 'Search global coverage…';
+  searchInput.placeholder = 'Search posts, tags, @handles...';
   searchInput.value = currentSearch;
-  searchInput.className = 'feed-search-input-premium';
+  searchInput.className = 'feed-search-input';
   searchInput.style.cssText = `
-    flex: 1;
-    min-width: 0;
-    padding: 0.5rem 0.75rem;
-    background: transparent;
-    border: none;
-    border-radius: 999px;
+    width: 100%;
+    height: 48px;
+    padding: 0.875rem 1rem 0.875rem 3rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
     color: #fff;
-    font-size: 0.938rem;
+    font-size: 1rem;
     font-weight: 400;
-    font-family: inherit;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     outline: none;
-    transition: all 0.2s ease;
+    box-sizing: border-box;
   `;
   
   searchInput.addEventListener('focus', function() {
-    this.style.boxShadow = '0 0 0 2px rgba(79, 172, 254, 0.4)';
-    searchIconSvg.style.color = '#4FACFE';
+    this.style.background = 'rgba(255, 255, 255, 0.12)';
+    this.style.borderColor = '#4A90E2';
+    this.style.boxShadow = '0 0 0 4px rgba(74, 144, 226, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3)';
+    searchIcon.style.color = '#4A90E2';
   });
   
   searchInput.addEventListener('blur', function() {
+    this.style.background = 'rgba(255, 255, 255, 0.08)';
+    this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
     this.style.boxShadow = 'none';
-    searchIconSvg.style.color = 'rgba(255, 255, 255, 0.5)';
+    searchIcon.style.color = 'rgba(255, 255, 255, 0.5)';
   });
   
-  searchContainer.appendChild(searchIconSvg);
+  searchContainer.appendChild(searchIcon);
   searchContainer.appendChild(searchInput);
   
-  // Sort controls - right side, segmented buttons on desktop
+  // Professional custom sort dropdown
   const sortContainer = document.createElement('div');
-  sortContainer.setAttribute('role', 'group');
-  sortContainer.setAttribute('aria-label', 'Sort results');
-  sortContainer.className = 'feed-sort-controls';
-  sortContainer.style.cssText = `
+  sortContainer.style.cssText = 'position: relative; min-width: 220px; height: 48px;';
+  
+  const sortButton = document.createElement('button');
+  sortButton.id = sortId + '-button';
+  sortButton.type = 'button';
+  sortButton.className = 'feed-sort-button';
+  sortButton.style.cssText = `
+    width: 100%;
+    height: 48px;
+    padding: 0.875rem 3rem 0.875rem 1rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    flex-shrink: 0;
+    justify-content: space-between;
+    text-align: left;
+    box-sizing: border-box;
   `;
   
-  // Sort options - only 4: Recent, Views, Likes, Near Me
-  const sortOptions = [
-    { value: 'recent', text: 'Recent', shortText: 'Recent' },
-    { value: 'views', text: 'Views', shortText: 'Views' },
-    { value: 'likes', text: 'Likes', shortText: 'Likes' },
-    { value: 'nearMe', text: 'Near Me', shortText: 'Near Me' }
+  const sortButtonText = document.createElement('span');
+  sortButtonText.className = 'feed-sort-button-text';
+  const currentSortText = {
+    'recent': 'Most Recent',
+    'nearby': '📍 Near Me',
+    'views': 'Most Views',
+    'likes': 'Most Likes',
+    'comments': 'Most Comments',
+    'reposts': 'Most Reposts'
+  }[currentSort] || 'Most Recent';
+  sortButtonText.textContent = currentSortText;
+  sortButtonText.style.cssText = 'flex: 1;';
+  
+  const sortButtonIcon = document.createElement('span');
+  sortButtonIcon.className = 'feed-sort-button-icon';
+  sortButtonIcon.textContent = '▼';
+  sortButtonIcon.style.cssText = `
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    transition: transform 0.3s ease;
+    margin-left: 0.5rem;
+  `;
+  
+  sortButton.appendChild(sortButtonText);
+  sortButton.appendChild(sortButtonIcon);
+  
+  // Custom dropdown menu
+  const sortDropdown = document.createElement('div');
+  sortDropdown.id = sortId + '-dropdown';
+  sortDropdown.className = 'feed-sort-dropdown';
+  sortDropdown.style.cssText = `
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    right: 0;
+    background: rgba(15, 15, 35, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: none;
+    overflow: hidden;
+    max-height: 400px;
+    overflow-y: auto;
+  `;
+  
+  const options = [
+    { value: 'recent', text: 'Most Recent', icon: '🕐' },
+    { value: 'nearby', text: 'Near Me', icon: '📍' },
+    { value: 'views', text: 'Most Views', icon: '👁️' },
+    { value: 'likes', text: 'Most Likes', icon: '❤️' },
+    { value: 'comments', text: 'Most Comments', icon: '💬' },
+    { value: 'reposts', text: 'Most Reposts', icon: '🔄' }
   ];
   
-  sortOptions.forEach((opt, idx) => {
-    const sortBtn = document.createElement('button');
-    sortBtn.type = 'button';
-    sortBtn.className = 'feed-sort-btn';
-    sortBtn.dataset.value = opt.value;
-    sortBtn.setAttribute('aria-label', `Sort by ${opt.text}`);
-    sortBtn.setAttribute('aria-pressed', currentSort === opt.value ? 'true' : 'false');
-    
-    const isActive = currentSort === opt.value;
-    sortBtn.style.cssText = `
-      padding: 0.5rem 1rem;
-      background: ${isActive ? 'rgba(79, 172, 254, 0.2)' : 'transparent'};
-      border: 1px solid ${isActive ? 'rgba(79, 172, 254, 0.4)' : 'rgba(255, 255, 255, 0.1)'};
-      border-radius: 999px;
-      color: ${isActive ? '#4FACFE' : 'rgba(255, 255, 255, 0.8)'};
-      font-size: 0.875rem;
-      font-weight: ${isActive ? '600' : '500'};
+  options.forEach(opt => {
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.className = 'feed-sort-option';
+    option.dataset.value = opt.value;
+    option.style.cssText = `
+      width: 100%;
+      padding: 0.875rem 1rem;
+      background: ${opt.value === currentSort ? 'rgba(74, 144, 226, 0.15)' : 'transparent'};
+      border: none;
+      color: ${opt.value === currentSort ? '#4A90E2' : 'rgba(255, 255, 255, 0.9)'};
+      font-size: 1rem;
+      font-weight: ${opt.value === currentSort ? '600' : '400'};
       cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
       transition: all 0.2s ease;
-      white-space: nowrap;
-      font-family: inherit;
-      outline: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     `;
     
-    // Use short text for buttons
-    sortBtn.textContent = opt.shortText;
+    const optionIcon = document.createElement('span');
+    optionIcon.textContent = opt.icon;
+    optionIcon.style.cssText = 'font-size: 1.125rem; flex-shrink: 0;';
     
-    // Hover effects
-    sortBtn.addEventListener('mouseenter', function() {
-      if (!isActive) {
+    const optionText = document.createElement('span');
+    optionText.textContent = opt.text;
+    
+    option.appendChild(optionIcon);
+    option.appendChild(optionText);
+    
+    option.addEventListener('mouseenter', function() {
+      if (opt.value !== currentSort) {
         this.style.background = 'rgba(255, 255, 255, 0.08)';
-        this.style.borderColor = 'rgba(255, 255, 255, 0.2)';
         this.style.color = '#fff';
       }
     });
     
-    sortBtn.addEventListener('mouseleave', function() {
-      if (!isActive) {
+    option.addEventListener('mouseleave', function() {
+      if (opt.value !== currentSort) {
         this.style.background = 'transparent';
-        this.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-        this.style.color = 'rgba(255, 255, 255, 0.8)';
+        this.style.color = 'rgba(255, 255, 255, 0.9)';
       }
     });
     
-    sortBtn.addEventListener('click', async function() {
+    option.addEventListener('click', async function() {
       const newSort = this.dataset.value;
-      
-      // If "Near Me" is selected, request location
-      if (newSort === 'nearMe' && !userLocation) {
-        const loc = await getUserLocation();
-        if (!loc) {
-          // Location failed, show subtle notification and keep current sort
-          const notification = document.createElement('div');
-          notification.textContent = 'Location unavailable. Showing recent posts.';
-          notification.style.cssText = `
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 0.75rem 1.5rem;
-            background: rgba(15, 15, 35, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.875rem;
-            z-index: 10000;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-          `;
-          document.body.appendChild(notification);
-          setTimeout(() => {
-            notification.style.opacity = '0';
-            notification.style.transition = 'opacity 0.3s ease';
-            setTimeout(() => notification.remove(), 300);
-          }, 3000);
-          return;
-        }
-      }
-      
-      // Update sort
       currentSort = newSort;
       localStorage.setItem('feed-sort', currentSort);
       
-      // Update all button states
-      sortOptions.forEach((o, i) => {
-        const btn = sortContainer.children[i];
-        if (btn) {
-          const active = o.value === newSort;
-          btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-          btn.style.background = active ? 'rgba(79, 172, 254, 0.2)' : 'transparent';
-          btn.style.borderColor = active ? 'rgba(79, 172, 254, 0.4)' : 'rgba(255, 255, 255, 0.1)';
-          btn.style.color = active ? '#4FACFE' : 'rgba(255, 255, 255, 0.8)';
-          btn.style.fontWeight = active ? '600' : '500';
+      // Update button text
+      sortButtonText.textContent = opt.text;
+      
+      // Update option styles
+      options.forEach((o, idx) => {
+        const optEl = sortDropdown.children[idx];
+        if (optEl) {
+          optEl.style.background = o.value === newSort ? 'rgba(74, 144, 226, 0.15)' : 'transparent';
+          optEl.style.color = o.value === newSort ? '#4A90E2' : 'rgba(255, 255, 255, 0.9)';
+          optEl.style.fontWeight = o.value === newSort ? '600' : '400';
         }
       });
+      
+      // Close dropdown
+      sortDropdown.style.display = 'none';
+      sortButtonIcon.style.transform = 'rotate(0deg)';
+      dropdownOpen = false;
+      
+      // Normalize 'nearMe' to 'nearby' for consistency
+      if (newSort === 'nearMe') {
+        newSort = 'nearby';
+      }
+      
+      // If "Near Me" is selected, request location
+      if (newSort === 'nearby' && !userLocation) {
+        const loc = await getUserLocation();
+        if (!loc) {
+          // Location failed, switch back to recent
+          alert('Unable to determine your location. Switching to "Most Recent".');
+          currentSort = 'recent';
+          localStorage.setItem('feed-sort', 'recent');
+          sortButtonText.textContent = 'Most Recent';
+          // Update to recent option
+          const recentOption = sortDropdown.querySelector('[data-value="recent"]');
+          if (recentOption) recentOption.click();
+          return;
+        }
+      }
       
       updateURLParams();
       renderFeed();
       
       // Visual feedback
-      this.style.transform = 'scale(0.95)';
+      sortButton.style.transform = 'scale(0.98)';
       setTimeout(() => {
-        this.style.transform = 'scale(1)';
+        sortButton.style.transform = 'scale(1)';
       }, 150);
     });
     
-    sortContainer.appendChild(sortBtn);
+    sortDropdown.appendChild(option);
   });
   
-  // Mobile: Stack search and sort vertically, make sort scrollable
-  const mobileStyles = document.createElement('style');
-  mobileStyles.textContent = `
-    @media (max-width: 768px) {
-      .feed-controls-premium {
-        flex-direction: column;
-        align-items: stretch;
-        padding: 0.75rem;
-        border-radius: 16px;
-      }
-      
-      .feed-controls-premium > div:first-child {
-        width: 100%;
-        margin-bottom: 0.75rem;
-      }
-      
-      .feed-sort-controls {
-        width: 100%;
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        padding-bottom: 0.25rem;
-      }
-      
-      .feed-sort-controls::-webkit-scrollbar {
-        display: none;
-      }
-      
-      .feed-sort-btn {
-        flex-shrink: 0;
-        font-size: 0.813rem;
-        padding: 0.5rem 0.875rem;
-      }
-    }
+  // Toggle dropdown
+  let dropdownOpen = false;
+  sortButton.addEventListener('click', function(e) {
+    e.stopPropagation();
+    dropdownOpen = !dropdownOpen;
+    sortDropdown.style.display = dropdownOpen ? 'block' : 'none';
+    sortButtonIcon.style.transform = dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)';
     
-    @media (max-width: 480px) {
-      .feed-controls-premium {
-        margin: 1rem auto 1.5rem;
-        padding: 0.625rem;
-      }
-      
-      .feed-search-input-premium {
-        font-size: 0.875rem;
-      }
-      
-      .feed-sort-btn {
-        font-size: 0.75rem;
-        padding: 0.5rem 0.75rem;
-      }
+    if (dropdownOpen) {
+      sortButton.style.background = 'rgba(255, 255, 255, 0.12)';
+      sortButton.style.borderColor = '#4A90E2';
+      sortButton.style.boxShadow = '0 0 0 4px rgba(74, 144, 226, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3)';
+    } else {
+      sortButton.style.background = 'rgba(255, 255, 255, 0.08)';
+      sortButton.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+      sortButton.style.boxShadow = 'none';
     }
-  `;
-  document.head.appendChild(mobileStyles);
+  });
   
-  // Append to container
-  controlsDiv.appendChild(searchContainer);
-  controlsDiv.appendChild(sortContainer);
+  // Close dropdown when clicking outside
+  const outsideClickHandler = function(e) {
+    if (!sortContainer.contains(e.target) && dropdownOpen) {
+      dropdownOpen = false;
+      sortDropdown.style.display = 'none';
+      sortButtonIcon.style.transform = 'rotate(0deg)';
+      sortButton.style.background = 'rgba(255, 255, 255, 0.08)';
+      sortButton.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+      sortButton.style.boxShadow = 'none';
+    }
+  };
+  document.addEventListener('click', outsideClickHandler);
+  
+  sortContainer.appendChild(sortButton);
+  sortContainer.appendChild(sortDropdown);
+  
+  // Post count badge
+  const countDiv = document.createElement('div');
+  countDiv.className = 'feed-post-count';
+  countDiv.style.cssText = `
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.2) 0%, rgba(74, 144, 226, 0.15) 100%);
+    border: 1px solid rgba(74, 144, 226, 0.3);
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-left: auto;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.15);
+  `;
+  
+  const countNumber = document.createElement('span');
+  countNumber.style.cssText = 'color: #4A90E2; font-size: 1rem;';
+  countNumber.textContent = totalPosts.toLocaleString();
+  
+  const countLabel = document.createElement('span');
+  countLabel.textContent = totalPosts === 1 ? 'post loaded' : 'posts loaded';
+  countLabel.style.cssText = 'opacity: 0.8;';
+  
+  countDiv.appendChild(countNumber);
+  countDiv.appendChild(countLabel);
+  
+  // Add both to input row
+  inputRow.appendChild(searchContainer);
+  inputRow.appendChild(sortContainer);
+  
+  // Append everything to controls
+  controlsDiv.appendChild(inputRow);
+  controlsDiv.appendChild(countDiv);
+  
+  // Normalize sort value for comparison
+  const normalizedSort = currentSort === 'nearMe' ? 'nearby' : currentSort;
   
   // If "Near Me" is selected and we don't have location yet, request it
-  if (currentSort === 'nearMe' && !userLocation && !locationPermissionRequested) {
+  if (normalizedSort === 'nearby' && !userLocation && !locationPermissionRequested) {
     getUserLocation().then(loc => {
       if (loc) {
+        // Re-render feed with location-based sorting
         renderFeed();
       } else {
         // Location failed, switch back to recent
         currentSort = 'recent';
         localStorage.setItem('feed-sort', 'recent');
-        // Update button states
-        sortOptions.forEach((o, i) => {
-          const btn = sortContainer.children[i];
-          if (btn) {
-            const active = o.value === 'recent';
-            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-            btn.style.background = active ? 'rgba(79, 172, 254, 0.2)' : 'transparent';
-            btn.style.borderColor = active ? 'rgba(79, 172, 254, 0.4)' : 'rgba(255, 255, 255, 0.1)';
-            btn.style.color = active ? '#4FACFE' : 'rgba(255, 255, 255, 0.8)';
-            btn.style.fontWeight = active ? '600' : '500';
+        sortButtonText.textContent = 'Most Recent';
+        // Update dropdown option styles
+        options.forEach((o, idx) => {
+          const optEl = sortDropdown.children[idx];
+          if (optEl) {
+            optEl.style.background = o.value === 'recent' ? 'rgba(74, 144, 226, 0.15)' : 'transparent';
+            optEl.style.color = o.value === 'recent' ? '#4A90E2' : 'rgba(255, 255, 255, 0.9)';
+            optEl.style.fontWeight = o.value === 'recent' ? '600' : '400';
           }
         });
         renderFeed();
@@ -1361,7 +1293,7 @@ function renderFeedControls(totalPosts) {
     });
   }
   
-  // Search event listener with debounce
+  // Event listeners
   let searchTimeout;
   searchInput.addEventListener('input', function(e) {
     clearTimeout(searchTimeout);
@@ -1374,7 +1306,7 @@ function renderFeedControls(totalPosts) {
   });
   
   // Keyboard shortcut: / to focus search
-  const keydownHandler = function(e) {
+  document.addEventListener('keydown', function(e) {
     if (e.key === '/' && !e.ctrlKey && !e.metaKey && 
         document.activeElement && 
         document.activeElement.tagName !== 'INPUT' && 
@@ -1382,11 +1314,7 @@ function renderFeedControls(totalPosts) {
       e.preventDefault();
       searchInput.focus();
     }
-  };
-  document.addEventListener('keydown', keydownHandler);
-  
-  // Store handler for cleanup if needed
-  searchInput._keydownHandler = keydownHandler;
+  });
   
   return controlsDiv;
 }
@@ -1415,8 +1343,7 @@ function readURLParams() {
   const search = params.get('q');
   
   if (sort) {
-    // Normalize old 'nearby' to 'nearMe'
-    currentSort = sort === 'nearby' ? 'nearMe' : sort;
+    currentSort = sort;
     localStorage.setItem('feed-sort', currentSort);
   }
   if (search) {
@@ -1834,9 +1761,6 @@ async function renderPostFeedV2(
   // Read URL params
   readURLParams();
   
-  // Load coverage points
-  await loadCoveragePoints();
-  
   // Load cached user location if available
   try {
     const cachedLocation = localStorage.getItem('user-location');
@@ -1938,4 +1862,3 @@ async function renderPostFeedV2(
 
 // Export
 window.renderPostFeedV2 = renderPostFeedV2;
-

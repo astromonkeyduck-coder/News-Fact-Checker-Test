@@ -293,6 +293,27 @@
                 }
             }
             
+            // Update sources section if it exists
+            const sourcesList = document.getElementById('sources-list');
+            const verificationBadge = document.getElementById('verification-badge');
+            if (sourcesList) {
+                const sources = post.sources || post.sourceUrls || [];
+                if (sources.length > 0) {
+                    sourcesList.innerHTML = sources.map(source => {
+                        const url = typeof source === 'string' ? source : source.url;
+                        const title = typeof source === 'string' ? url : (source.title || url);
+                        return `<li><a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(title)}</a></li>`;
+                    }).join('');
+                } else {
+                    sourcesList.innerHTML = '<li>Sources are being verified and will be updated shortly.</li>';
+                }
+            }
+            if (verificationBadge) {
+                const status = post.verificationStatus || 'verified';
+                verificationBadge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+                verificationBadge.className = `verification-badge ${status}`;
+            }
+
             // Update article content - populate existing sections instead of replacing
             // This preserves the template structure and IDs
             const sections = {

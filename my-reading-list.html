@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Reading List - Noteworthy News</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="IMG_5794.PNG">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        .reading-list-page {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+            color: white;
+            padding: 120px 20px 60px;
+        }
+
+        .reading-list-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .reading-list-header {
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .reading-list-header h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .reading-list-header p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.1rem;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 2rem;
+            color: #4A90E2;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: #2ECC71;
+        }
+
+        .reading-list-content {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .bookmark-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(74, 144, 226, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 1.5rem;
+            align-items: start;
+            transition: all 0.3s ease;
+        }
+
+        .bookmark-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(74, 144, 226, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .bookmark-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(46, 204, 113, 0.2));
+        }
+
+        .bookmark-content {
+            flex: 1;
+        }
+
+        .bookmark-content h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .bookmark-content h3 a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .bookmark-content h3 a:hover {
+            color: #4A90E2;
+        }
+
+        .bookmark-excerpt {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 0.75rem;
+            line-height: 1.6;
+        }
+
+        .bookmark-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .bookmark-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .bookmark-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.4);
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .bookmark-btn:hover {
+            background: rgba(231, 76, 60, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 1.5rem;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .not-authenticated {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+        }
+
+        .not-authenticated h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .not-authenticated p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-primary {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: #4A90E2;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #357ABD;
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 768px) {
+            .bookmark-card {
+                grid-template-columns: 1fr;
+            }
+
+            .bookmark-image {
+                width: 100%;
+                height: 200px;
+            }
+
+            .bookmark-actions {
+                flex-direction: row;
+            }
+        }
+    </style>
+</head>
+<body class="reading-list-page">
+    <div class="reading-list-container">
+        <a href="index.html" class="back-link">← Back to Home</a>
+        
+        <div class="reading-list-header">
+            <h1>My Reading List</h1>
+            <p>Articles you've saved for later</p>
+        </div>
+
+        <div id="reading-list-content">
+            <div class="loading-state">Loading your reading list...</div>
+        </div>
+    </div>
+
+    <!-- Auth0 SDK -->
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.2/auth0-spa-js.production.js"></script>
+    <script src="/src/auth/auth0.js"></script>
+    
+    <!-- Bookmarks System -->
+    <script src="/src/utils/bookmarks.js"></script>
+    <script src="/src/components/bookmark-button.js"></script>
+
+    <script>
+        async function loadReadingList() {
+            const contentDiv = document.getElementById('reading-list-content');
+
+            // Check authentication
+            if (!window.auth0) {
+                contentDiv.innerHTML = `
+                    <div class="not-authenticated">
+                        <h2>Please Sign In</h2>
+                        <p>You need to be signed in to view your reading list.</p>
+                        <a href="index.html" class="btn-primary">Go to Homepage</a>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                // Wait for auth0 to initialize
+                let retries = 20;
+                while (!window.auth0 && retries > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    retries--;
+                }
+
+                if (!window.auth0) {
+                    throw new Error('Auth0 not initialized');
+                }
+
+                const isAuthenticated = window.auth0.isAuthenticated();
+
+                if (!isAuthenticated) {
+                    contentDiv.innerHTML = `
+                        <div class="not-authenticated">
+                            <h2>Please Sign In</h2>
+                            <p>You need to be signed in to view your reading list.</p>
+                            <button class="btn-primary" onclick="window.auth0.login()">Sign In</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Load bookmarks
+                if (!window.Bookmarks) {
+                    throw new Error('Bookmarks API not available');
+                }
+
+                const bookmarks = await window.Bookmarks.getAllBookmarks();
+
+                if (bookmarks.length === 0) {
+                    contentDiv.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📚</div>
+                            <h2>Your reading list is empty</h2>
+                            <p>Start saving articles to read them later!</p>
+                            <a href="index.html" class="btn-primary">Browse Articles</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Render bookmarks
+                contentDiv.innerHTML = `
+                    <div class="reading-list-content">
+                        ${bookmarks.map(bookmark => `
+                            <div class="bookmark-card" data-bookmark-id="${bookmark.id}">
+                                ${bookmark.image ? `
+                                    <img src="${bookmark.image}" alt="${bookmark.title}" class="bookmark-image" onerror="this.style.display='none'">
+                                ` : `
+                                    <div class="bookmark-image" style="display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 700; color: rgba(74, 144, 226, 0.8);">NW</div>
+                                `}
+                                <div class="bookmark-content">
+                                    <h3><a href="${bookmark.url}">${escapeHtml(bookmark.title)}</a></h3>
+                                    ${bookmark.excerpt ? `<p class="bookmark-excerpt">${escapeHtml(bookmark.excerpt.substring(0, 150))}${bookmark.excerpt.length > 150 ? '...' : ''}</p>` : ''}
+                                    <div class="bookmark-meta">
+                                        <span>Saved ${formatDate(bookmark.dateBookmarked)}</span>
+                                        ${bookmark.datePosted ? `<span>Published ${formatDate(bookmark.datePosted)}</span>` : ''}
+                                    </div>
+                                </div>
+                                <div class="bookmark-actions">
+                                    <a href="${bookmark.url}" class="btn-primary" style="text-align: center;">Read</a>
+                                    <button class="bookmark-btn" onclick="removeBookmark('${bookmark.id}')">Remove</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading reading list:', error);
+                contentDiv.innerHTML = `
+                    <div class="not-authenticated">
+                        <h2>Error Loading Reading List</h2>
+                        <p>${error.message || 'An error occurred. Please try again.'}</p>
+                        <button class="btn-primary" onclick="location.reload()">Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateString) {
+            try {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 0) return 'today';
+                if (diffDays === 1) return 'yesterday';
+                if (diffDays < 7) return `${diffDays} days ago`;
+                if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+
+                return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            } catch {
+                return dateString;
+            }
+        }
+
+        async function removeBookmark(articleId) {
+            if (!window.Bookmarks) {
+                alert('Bookmarks API not available');
+                return;
+            }
+
+            try {
+                await window.Bookmarks.removeBookmark(articleId);
+                // Remove card from DOM
+                const card = document.querySelector(`[data-bookmark-id="${articleId}"]`);
+                if (card) {
+                    card.style.animation = 'fadeOut 0.3s ease';
+                    setTimeout(() => card.remove(), 300);
+                }
+
+                // Reload if no bookmarks left
+                const remaining = document.querySelectorAll('.bookmark-card').length;
+                if (remaining === 0) {
+                    loadReadingList();
+                }
+            } catch (error) {
+                console.error('Error removing bookmark:', error);
+                alert('Failed to remove bookmark. Please try again.');
+            }
+        }
+
+        // Initialize when ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadReadingList);
+        } else {
+            // Wait for Auth0 to load
+            setTimeout(loadReadingList, 500);
+        }
+
+        // Add fade out animation
+        if (!document.querySelector('style[data-reading-list-animations]')) {
+            const style = document.createElement('style');
+            style.setAttribute('data-reading-list-animations', 'true');
+            style.textContent = `
+                @keyframes fadeOut {
+                    from { opacity: 1; transform: translateY(0); }
+                    to { opacity: 0; transform: translateY(-10px); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    </script>
+</body>
+</html>
+

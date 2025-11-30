@@ -276,7 +276,7 @@ exports.handler = async (event, context) => {
       } else {
         // List all templates
         const { blobs } = await store.list();
-        const templates = [];
+        let templates = [];
         
         for (const blob of blobs) {
           const templateData = await store.get(blob.key);
@@ -300,10 +300,180 @@ exports.handler = async (event, context) => {
                 createdAt: parsed.createdAt || blob.updatedAt,
                 updatedAt: parsed.updatedAt || blob.updatedAt,
                 previewHtml: previewHtml, // Include preview HTML with placeholders
+                html: parsed.html || '', // Include full HTML for sending
+                text: parsed.text || '', // Include text version
               });
             } catch (e) {
               // Skip invalid templates
             }
+          }
+        }
+        
+        // If no templates found, try to load from email templates directory
+        if (templates.length === 0) {
+          try {
+            const path = require('path');
+            const templatesDir = path.resolve(__dirname, '../../emails/templates');
+            const fs = require('fs');
+            
+            // Check if templates directory exists
+            if (fs.existsSync(templatesDir)) {
+              const templateFiles = fs.readdirSync(templatesDir).filter(f => 
+                f.endsWith('.js') && f !== 'index.js'
+              );
+              
+              for (const file of templateFiles) {
+                try {
+                  const templatePath = path.join(templatesDir, file);
+                  const templateModule = require(templatePath);
+                  const templateFn = templateModule.default || templateModule;
+                  
+                  if (typeof templateFn === 'function') {
+                    // Generate sample data based on template type
+                    const templateName = file.replace('.js', '').replace(/([A-Z])/g, ' $1').trim();
+                    let sampleData = {};
+                    let subject = `${templateName} - Noteworthy News`;
+                    
+                    // Generate appropriate sample data for each template type
+                    const today = new Date();
+                    const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                    
+                    if (file.includes('BreakingNews')) {
+                      sampleData = {
+                        headline: 'Breaking: Major News Event',
+                        dateline: dateStr + ' — Location',
+                        shortSummary: 'This is a sample breaking news story summary.',
+                        bodyBlocks: ['First paragraph of the breaking news story.', 'Second paragraph with more details.'],
+                        ctaLabel: 'Read Full Story',
+                        ctaUrl: '#',
+                        fullName: 'Preview User',
+                        unsubscribeUrl: '#'
+                      };
+                      subject = 'Breaking: Major News Event';
+                    } else if (file.includes('DailyBriefing')) {
+                      sampleData = {
+                        date: dateStr,
+                        fullName: 'Preview User',
+                        topStory: {
+                          headline: 'Top Story Headline',
+                          summary: 'Summary of the top story for today.',
+                          url: '#'
+                        },
+                        stories: [
+                          { headline: 'Story 1', summary: 'Summary 1', url: '#' },
+                          { headline: 'Story 2', summary: 'Summary 2', url: '#' },
+                          { headline: 'Story 3', summary: 'Summary 3', url: '#' }
+                        ],
+                        unsubscribeUrl: '#'
+                      };
+                      subject = `Daily Briefing - ${today.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
+                    } else if (file.includes('WeeklyRoundup')) {
+                      sampleData = {
+                        weekOf: `Week of ${today.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`,
+                        fullName: 'Preview User',
+                        topStories: [
+                          { headline: 'Top Story 1', summary: 'Summary', url: '#' },
+                          { headline: 'Top Story 2', summary: 'Summary', url: '#' }
+                        ],
+                        unsubscribeUrl: '#'
+                      };
+                      subject = `Weekly Roundup - Week of ${today.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
+                    } else if (file.includes('SpecialReport')) {
+                      sampleData = {
+                        title: 'Special Report: Important Topic',
+                        fullName: 'Preview User',
+                        introduction: 'This is a special report on an important topic.',
+                        sections: [
+                          { title: 'Section 1', content: 'Content for section 1.' },
+                          { title: 'Section 2', content: 'Content for section 2.' }
+                        ],
+                        unsubscribeUrl: '#'
+                      };
+                      subject = 'Special Report: Important Topic';
+                    } else if (file.includes('WeatherAlert')) {
+                      sampleData = {
+                        alertType: 'Severe Weather Warning',
+                        location: 'Your Area',
+                        fullName: 'Preview User',
+                        message: 'This is a sample weather alert message.',
+                        unsubscribeUrl: '#'
+                      };
+                      subject = 'Weather Alert: Severe Weather Warning';
+                    } else if (file.includes('SecurityAlert')) {
+                      sampleData = {
+                        alertType: 'Security Notice',
+                        fullName: 'Preview User',
+                        message: 'This is a sample security alert message.',
+                        unsubscribeUrl: '#'
+                      };
+                      subject = 'Security Alert: Important Notice';
+                    } else if (file.includes('SubscriberWelcome')) {
+                      sampleData = {
+                        fullName: 'Preview User',
+                        unsubscribeUrl: '#'
+                      };
+                      subject = 'Welcome to Noteworthy News!';
+                    } else if (file.includes('Holiday')) {
+                      sampleData = {
+                        fullName: 'Preview User',
+                        holidayName: file.includes('NewYear') ? 'New Year' : file.includes('Thanksgiving') ? 'Thanksgiving' : file.includes('Independence') ? 'Independence Day' : 'Holiday',
+                        unsubscribeUrl: '#'
+                      };
+                      subject = `Happy ${file.includes('NewYear') ? 'New Year' : file.includes('Thanksgiving') ? 'Thanksgiving' : file.includes('Independence') ? 'Independence Day' : 'Holidays'} from Noteworthy News!`;
+                    } else {
+                      // Generic template - try with minimal data
+                      sampleData = {
+                        fullName: 'Preview User',
+                        unsubscribeUrl: '#'
+                      };
+                      subject = `${templateName} - Noteworthy News`;
+                    }
+                    
+                    // Generate HTML with sample data
+                    const html = templateFn(sampleData);
+                    const text = html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+                    
+                    // Create preview HTML
+                    let previewHtml = html
+                      .replace(/\{\{FULL_NAME\}\}/g, 'Preview User')
+                      .replace(/\{\{FIRST_NAME\}\}/g, 'Preview')
+                      .replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview')
+                      .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#')
+                      .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#');
+                    
+                    const templateId = `template-${file.replace('.js', '').toLowerCase()}`;
+                    const now = new Date().toISOString();
+                    
+                    // Save to blob store for future use
+                    const templateData = {
+                      id: templateId,
+                      name: templateName,
+                      subject: subject,
+                      html: html,
+                      text: text,
+                      createdAt: now,
+                      updatedAt: now,
+                    };
+                    await store.set(templateId, JSON.stringify(templateData));
+                    
+                    templates.push({
+                      id: templateId,
+                      name: templateName,
+                      subject: subject,
+                      createdAt: now,
+                      updatedAt: now,
+                      previewHtml: previewHtml,
+                      html: html,
+                      text: text,
+                    });
+                  }
+                } catch (e) {
+                  console.log(`Error loading template ${file}:`, e.message);
+                }
+              }
+            }
+          } catch (e) {
+            console.log('Error loading templates from directory:', e.message);
           }
         }
         

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit for Fact-Check - Noteworthy News</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="IMG_5794.PNG">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        .submit-page {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+            color: white;
+            padding: 120px 20px 60px;
+        }
+
+        .submit-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 2rem;
+            color: #4A90E2;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: #2ECC71;
+        }
+
+        .submit-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .submit-header h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .submit-header p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .submit-form {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(74, 144, 226, 0.2);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #4A90E2;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4A90E2;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 0.5rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.875rem;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .submit-btn:hover {
+            background: #357ABD;
+            transform: translateY(-1px);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .success-message {
+            display: none;
+            padding: 1.5rem;
+            background: rgba(46, 204, 113, 0.2);
+            border: 1px solid rgba(46, 204, 113, 0.4);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            color: #2ECC71;
+        }
+
+        .error-message {
+            display: none;
+            padding: 1.5rem;
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.4);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            color: #E74C3C;
+        }
+
+        .info-box {
+            padding: 1rem;
+            background: rgba(74, 144, 226, 0.1);
+            border-left: 4px solid #4A90E2;
+            border-radius: 4px;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body class="submit-page">
+    <div class="submit-container">
+        <a href="index.html" class="back-link">← Back to Home</a>
+        
+        <div class="submit-header">
+            <h1>Submit for Fact-Check</h1>
+            <p>Have a claim or story you'd like us to verify? Submit it below and our team will review it.</p>
+        </div>
+
+        <div class="info-box">
+            <strong>What we fact-check:</strong> Breaking news claims, viral social media posts, political statements, scientific claims, and other newsworthy assertions. We prioritize claims that are widely shared or have significant public impact.
+        </div>
+
+        <div class="success-message" id="successMessage">
+            <strong>✓ Submission Received!</strong><br>
+            Thank you for your submission. Our team will review it and you'll receive an email update when we publish a fact-check.
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <form class="submit-form" id="factCheckForm">
+            <div class="form-group">
+                <label for="claim">Claim or Statement to Fact-Check *</label>
+                <textarea 
+                    id="claim" 
+                    name="claim" 
+                    required 
+                    placeholder="Paste the claim, quote, or statement you'd like us to verify..."
+                ></textarea>
+                <small>Be as specific as possible. Include the full quote or claim.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="source">Source URL (if available)</label>
+                <input 
+                    type="url" 
+                    id="source" 
+                    name="source" 
+                    placeholder="https://example.com/article"
+                >
+                <small>Link to where you saw this claim (article, social media post, etc.)</small>
+            </div>
+
+            <div class="form-group">
+                <label for="context">Additional Context</label>
+                <textarea 
+                    id="context" 
+                    name="context" 
+                    placeholder="Any additional information that might help us verify this claim..."
+                ></textarea>
+                <small>Optional: Provide context, background, or why you think this needs fact-checking.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category</label>
+                <select id="category" name="category">
+                    <option value="">Select a category</option>
+                    <option value="politics">Politics</option>
+                    <option value="health">Health</option>
+                    <option value="science">Science</option>
+                    <option value="breaking-news">Breaking News</option>
+                    <option value="social-media">Social Media</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Your Email (for updates)</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    placeholder="your@email.com"
+                >
+                <small>Optional: We'll email you when we publish a fact-check on this claim.</small>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                Submit for Fact-Check
+            </button>
+        </form>
+    </div>
+
+    <!-- Auth0 SDK (for getting user email if logged in) -->
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.2/auth0-spa-js.production.js"></script>
+    <script src="/src/auth/auth0.js"></script>
+
+    <script>
+        const form = document.getElementById('factCheckForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // Pre-fill email if user is logged in
+        async function prefillEmail() {
+            if (window.auth0) {
+                try {
+                    const isAuthenticated = await window.auth0.isAuthenticated();
+                    if (isAuthenticated) {
+                        const user = await window.auth0.getUser();
+                        if (user?.email) {
+                            document.getElementById('email').value = user.email;
+                        }
+                    }
+                } catch (error) {
+                    // Fail silently
+                }
+            }
+        }
+
+        // Wait for Auth0 to load
+        setTimeout(prefillEmail, 1000);
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = {
+                claim: document.getElementById('claim').value.trim(),
+                source: document.getElementById('source').value.trim(),
+                context: document.getElementById('context').value.trim(),
+                category: document.getElementById('category').value,
+                email: document.getElementById('email').value.trim()
+            };
+
+            if (!formData.claim || formData.claim.length < 10) {
+                showError('Please provide a claim or statement to fact-check (at least 10 characters).');
+                return;
+            }
+
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            errorMessage.style.display = 'none';
+
+            try {
+                // Submit to API
+                const response = await fetch('/.netlify/functions/submit-fact-check', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    successMessage.style.display = 'block';
+                    form.reset();
+                    form.style.display = 'none';
+                    
+                    // Scroll to success message
+                    successMessage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    throw new Error(result.error || 'Submission failed');
+                }
+            } catch (error) {
+                console.error('Error submitting:', error);
+                showError('Failed to submit. Please try again later.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit for Fact-Check';
+            }
+        });
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            errorMessage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    </script>
+</body>
+</html>
+

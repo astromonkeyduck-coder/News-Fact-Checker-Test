@@ -93,6 +93,8 @@ exports.handler = async (event, context) => {
                 comments: 0,
                 tipsSubmitted: 0,
               },
+              bookmarks: [],
+              readingHistory: [],
               preferences: {},
               createdAt: new Date().toISOString(),
             }),
@@ -152,6 +154,16 @@ exports.handler = async (event, context) => {
           };
         }
 
+        // Update bookmarks if provided
+        if (updates.bookmarks) {
+          userData.bookmarks = updates.bookmarks;
+        }
+
+        // Update reading history if provided
+        if (updates.readingHistory) {
+          userData.readingHistory = updates.readingHistory;
+        }
+
         // Update last modified
         userData.updatedAt = new Date().toISOString();
 
@@ -195,6 +207,8 @@ exports.handler = async (event, context) => {
     };
   }
 };
+
+
 
 
 

@@ -6,6 +6,166 @@ const { getStore } = require("@netlify/blobs");
  * Supports: CSV export, real-time streaming, comprehensive visitor tracking
  */
 
+// ANSI color codes for terminal output
+const colors = {
+  reset: '\x1b[0m',
+  bright: '\x1b[1m',
+  dim: '\x1b[2m',
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
+  cyan: '\x1b[36m',
+  white: '\x1b[37m',
+  gray: '\x1b[90m',
+};
+
+// Enhanced logging utilities
+const logFormatter = {
+  /**
+   * Format a log entry with colors and structure
+   */
+  formatEntry: (dataType, entry, duration = null, dataSize = null) => {
+    const timestamp = new Date().toISOString();
+    const timeStr = new Date().toLocaleTimeString('en-US', { 
+      hour12: false, 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit' 
+    });
+    
+    // Color based on data type
+    let typeColor = colors.cyan;
+    let icon = '📊';
+    switch(dataType) {
+      case 'ai-chat': typeColor = colors.magenta; icon = '💬'; break;
+      case 'image-generation': typeColor = colors.yellow; icon = '🎨'; break;
+      case 'game-score': typeColor = colors.green; icon = '🎮'; break;
+      case 'page-view': typeColor = colors.blue; icon = '👁️'; break;
+      case 'newsletter-signup': typeColor = colors.cyan; icon = '📧'; break;
+      case 'tip-submission': typeColor = colors.yellow; icon = '💡'; break;
+      case 'devtools-opened': typeColor = colors.magenta; icon = '🔍'; break;
+      case 'comment': typeColor = colors.blue; icon = '💭'; break;
+    }
+    
+    // Build formatted output
+    let output = `\n${colors.bright}${colors.gray}┌─${'─'.repeat(76)}─┐${colors.reset}\n`;
+    output += `${colors.gray}│${colors.reset} ${icon} ${typeColor}${colors.bright}${dataType.toUpperCase().padEnd(20)}${colors.reset} ${colors.gray}│${colors.reset} ${colors.dim}${timeStr}${colors.reset}\n`;
+    output += `${colors.gray}├─${'─'.repeat(76)}─┤${colors.reset}\n`;
+    
+    // Add key information
+    if (entry.userEmail) {
+      output += `${colors.gray}│${colors.reset} ${colors.cyan}👤 User:${colors.reset} ${entry.userEmail}${colors.gray}${' '.repeat(Math.max(0, 60 - entry.userEmail.length))}│${colors.reset}\n`;
+    }
+    if (entry.location && entry.location.city) {
+      const loc = `${entry.location.city}, ${entry.location.region || entry.location.country || ''}`;
+      output += `${colors.gray}│${colors.reset} ${colors.blue}📍 Location:${colors.reset} ${loc}${colors.gray}${' '.repeat(Math.max(0, 58 - loc.length))}│${colors.reset}\n`;
+    }
+    if (entry.ip && entry.ip !== 'unknown') {
+      output += `${colors.gray}│${colors.reset} ${colors.gray}🌐 IP:${colors.reset} ${entry.ip}${colors.gray}${' '.repeat(Math.max(0, 62 - entry.ip.length))}│${colors.reset}\n`;
+    }
+    
+    // Add data-specific info
+    if (entry.data) {
+      const data = entry.data;
+      if (dataType === 'ai-chat' && data.userMessage) {
+        const preview = data.userMessage.substring(0, 50) + (data.userMessage.length > 50 ? '...' : '');
+        output += `${colors.gray}│${colors.reset} ${colors.green}💬 Message:${colors.reset} ${preview}${colors.gray}${' '.repeat(Math.max(0, 55 - preview.length))}│${colors.reset}\n`;
+      }
+      if (dataType === 'image-generation' && data.userPrompt) {
+        const preview = data.userPrompt.substring(0, 50) + (data.userPrompt.length > 50 ? '...' : '');
+        output += `${colors.gray}│${colors.reset} ${colors.yellow}🎨 Prompt:${colors.reset} ${preview}${colors.gray}${' '.repeat(Math.max(0, 55 - preview.length))}│${colors.reset}\n`;
+      }
+      if (dataType === 'game-score' && data.score !== undefined) {
+        output += `${colors.gray}│${colors.reset} ${colors.green}🏆 Score:${colors.reset} ${data.score} points${colors.gray}${' '.repeat(Math.max(0, 58 - String(data.score).length))}│${colors.reset}\n`;
+      }
+      if (dataType === 'page-view' && data.path) {
+        const path = data.path.length > 50 ? data.path.substring(0, 47) + '...' : data.path;
+        output += `${colors.gray}│${colors.reset} ${colors.blue}📄 Page:${colors.reset} ${path}${colors.gray}${' '.repeat(Math.max(0, 58 - path.length))}│${colors.reset}\n`;
+      }
+    }
+    
+    // Add performance metrics
+    if (duration !== null || dataSize !== null) {
+      const metrics = [];
+      if (duration !== null) metrics.push(`${duration}ms`);
+      if (dataSize !== null) metrics.push(`${(dataSize / 1024).toFixed(1)}KB`);
+      output += `${colors.gray}│${colors.reset} ${colors.dim}⚡ ${metrics.join(' • ')}${colors.gray}${' '.repeat(Math.max(0, 70 - metrics.join(' • ').length))}│${colors.reset}\n`;
+    }
+    
+    output += `${colors.gray}└─${'─'.repeat(76)}─┘${colors.reset}\n`;
+    
+    return output;
+  },
+  
+  /**
+   * Format success message
+   */
+  success: (message, details = null) => {
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false });
+    let output = `${colors.green}${colors.bright}✓${colors.reset} ${colors.green}${message}${colors.reset}`;
+    if (details) {
+      output += ` ${colors.dim}${JSON.stringify(details)}${colors.reset}`;
+    }
+    return `${colors.dim}[${timeStr}]${colors.reset} ${output}`;
+  },
+  
+  /**
+   * Format error message
+   */
+  error: (message, error = null) => {
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false });
+    let output = `${colors.red}${colors.bright}✗${colors.reset} ${colors.red}${message}${colors.reset}`;
+    if (error) {
+      output += `\n${colors.red}  → ${error.message || error}${colors.reset}`;
+      if (error.stack && process.env.NETLIFY_DEV) {
+        output += `\n${colors.dim}  ${error.stack.split('\n').slice(1, 3).join('\n  ')}${colors.reset}`;
+      }
+    }
+    return `${colors.dim}[${timeStr}]${colors.reset} ${output}`;
+  },
+  
+  /**
+   * Format warning message
+   */
+  warn: (message, details = null) => {
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false });
+    let output = `${colors.yellow}${colors.bright}⚠${colors.reset} ${colors.yellow}${message}${colors.reset}`;
+    if (details) {
+      output += ` ${colors.dim}${JSON.stringify(details)}${colors.reset}`;
+    }
+    return `${colors.dim}[${timeStr}]${colors.reset} ${output}`;
+  },
+  
+  /**
+   * Format info message
+   */
+  info: (message, details = null) => {
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false });
+    let output = `${colors.blue}${colors.bright}ℹ${colors.reset} ${colors.blue}${message}${colors.reset}`;
+    if (details) {
+      output += ` ${colors.dim}${JSON.stringify(details)}${colors.reset}`;
+    }
+    return `${colors.dim}[${timeStr}]${colors.reset} ${output}`;
+  },
+  
+  /**
+   * Format alert message
+   */
+  alert: (type, location, details = null) => {
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false });
+    let output = `\n${colors.bright}${colors.red}🚨 ALERT: ${type}${colors.reset}\n`;
+    output += `${colors.red}   Location: ${location}${colors.reset}\n`;
+    if (details) {
+      Object.entries(details).forEach(([key, value]) => {
+        output += `${colors.dim}   ${key}: ${value}${colors.reset}\n`;
+      });
+    }
+    return `${colors.dim}[${timeStr}]${colors.reset} ${output}`;
+  }
+};
+
 // Get client IP address from request
 function getClientIP(event) {
   // Try various headers (Netlify, Cloudflare, etc.)
@@ -254,29 +414,28 @@ async function logData(dataType, data, event = null) {
   try {
     // Validate inputs
     if (!dataType || typeof dataType !== 'string') {
-      console.error("[Data Log] Invalid dataType:", dataType);
+      console.error(logFormatter.error("Invalid dataType", { dataType }));
       return { success: false, error: "Invalid dataType" };
     }
     
     if (!data || typeof data !== 'object') {
-      console.error("[Data Log] Invalid data object:", typeof data);
+      console.error(logFormatter.error("Invalid data object", { type: typeof data }));
       return { success: false, error: "Invalid data object" };
     }
     
     // Check if store is configured
     if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_BLOB_READ_WRITE_TOKEN) {
-      console.error("[Data Log] Missing environment variables:", {
+      console.error(logFormatter.error("Missing environment variables", {
         hasSiteId: !!process.env.NETLIFY_SITE_ID,
         hasToken: !!process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
         dataType: dataType
-      });
+      }));
       // In local dev, still log to console for debugging
       if (process.env.NETLIFY_DEV) {
-        console.log("[Data Log] Local dev mode - logging to console:", {
+        console.log(logFormatter.info("Local dev mode - logging to console", {
           dataType,
-          data: JSON.stringify(data).substring(0, 500),
-          timestamp: new Date().toISOString()
-        });
+          dataPreview: JSON.stringify(data).substring(0, 500),
+        }));
       }
       return { success: false, error: "Not configured" };
     }
@@ -364,7 +523,7 @@ async function logData(dataType, data, event = null) {
             }
           } catch (e) {
             // Continue to next date
-            console.error("[Data Log] Error reading logs for date:", dateKey, e);
+            console.error(logFormatter.error(`Error reading logs for date: ${dateKey}`, e));
           }
         }
         
@@ -385,14 +544,20 @@ async function logData(dataType, data, event = null) {
           if (isConfident) {
             userEmail = mostCommonEmail[0];
             identitySource = 'inferred';
-            console.log(`[Data Log] Inferred email from fingerprint match (${mostCommonEmail[1]} occurrences, exact fingerprint): ${userEmail}`);
+            console.log(logFormatter.info(`Inferred email from fingerprint match`, {
+              occurrences: mostCommonEmail[1],
+              email: userEmail
+            }));
           } else {
-            console.log(`[Data Log] Email found but not confident enough (${mostCommonEmail[1]} occurrences, ${sortedEmails.length} candidates) - not using. Multiple emails with same fingerprint suggests data issue.`);
+            console.log(logFormatter.warn(`Email found but not confident enough`, {
+              occurrences: mostCommonEmail[1],
+              candidates: sortedEmails.length
+            }));
           }
         }
       } catch (lookupErr) {
         // If lookup fails, continue without email
-        console.error("[Data Log] Error looking up email from previous logs:", lookupErr);
+        console.error(logFormatter.error("Error looking up email from previous logs", lookupErr));
       }
     }
     
@@ -407,7 +572,7 @@ async function logData(dataType, data, event = null) {
           new Promise(resolve => setTimeout(() => resolve(null), 2000))
         ]);
       } catch (err) {
-        console.error("[Data Log] Error getting location:", err);
+        console.error(logFormatter.error("Error getting location from IP", err));
       }
     }
 
@@ -476,7 +641,10 @@ async function logData(dataType, data, event = null) {
     // Calculate data size for monitoring
     const dataSize = JSON.stringify(sanitizedData).length;
     if (dataSize > 100000) { // 100KB limit
-      console.warn(`[Data Log] Large data object detected: ${dataSize} bytes for ${dataType}`);
+      console.warn(logFormatter.warn(`Large data object detected`, {
+        size: `${(dataSize / 1024).toFixed(1)}KB`,
+        dataType
+      }));
       // Truncate large fields
       if (sanitizedData.userMessage && sanitizedData.userMessage.length > 5000) {
         sanitizedData.userMessage = sanitizedData.userMessage.substring(0, 5000) + '... [truncated]';
@@ -538,7 +706,7 @@ async function logData(dataType, data, event = null) {
     
     // Skip alert check if IP is excluded
     if (shouldExcludeIP) {
-      console.log(`[Data Log] IP ${ip} is excluded from location alerts`);
+      console.log(logFormatter.info(`IP excluded from location alerts`, { ip }));
     } else if (location && location.city) {
       const cityLower = location.city.toLowerCase();
       const regionLower = (location.region || '').toLowerCase();
@@ -625,7 +793,10 @@ async function logData(dataType, data, event = null) {
           contentType: "application/json",
         });
         
-        console.log(`[Data Log] 🚨 ALERT: ${alertData.alertType} - ${location.city}, ${location.region || location.country}`);
+        console.log(logFormatter.alert(alertData.alertType, 
+          `${location.city}, ${location.region || location.country}`,
+          { ip, userEmail: userEmail || 'Unknown', dataType }
+        ));
         
         // Send email notification for page views from these locations (non-blocking)
         if (dataType === 'page-view') {
@@ -637,11 +808,11 @@ async function logData(dataType, data, event = null) {
                                (regionLower.includes('virginia') || regionLower === 'va' || regionLower === 'virginia');
             
             if (isAshburnVA) {
-              console.log(`[Data Log] Skipping email notification for Ashburn, Virginia visitor`);
+              console.log(logFormatter.info("Skipping email notification for Ashburn, Virginia visitor"));
             } else {
               // Check if Resend API key is configured before initializing
               if (!process.env.RESEND_API_KEY) {
-                console.warn('[Data Log] RESEND_API_KEY not configured. Skipping location alert email notification.');
+                console.warn(logFormatter.warn('RESEND_API_KEY not configured. Skipping location alert email notification.'));
               } else {
                 const { Resend } = require('resend');
                 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -740,19 +911,19 @@ ${data.referrer ? `Referrer: ${data.referrer}\n` : ''}
 ---
 This is an automated notification from your website.`,
                   }).catch(err => {
-                    console.error(`[Data Log] Failed to send location alert email to ${email}:`, err);
+                    console.error(logFormatter.error(`Failed to send location alert email to ${email}`, err));
                   })
                 )).catch(err => {
-                  console.error("[Data Log] Error sending location alert emails:", err);
+                  console.error(logFormatter.error("Error sending location alert emails", err));
                 });
               }
             }
           } catch (emailErr) {
-            console.error("[Data Log] Error setting up location alert emails:", emailErr);
+            console.error(logFormatter.error("Error setting up location alert emails", emailErr));
           }
         }
       } catch (alertErr) {
-        console.error("[Data Log] Error storing alert:", alertErr);
+        console.error(logFormatter.error("Error storing alert", alertErr));
       }
     }
     
@@ -771,12 +942,12 @@ This is an automated notification from your website.`,
                            (regionLower.includes('virginia') || regionLower === 'va' || regionLower === 'virginia');
         
         if (isAshburnVA) {
-          console.log(`[Data Log] Skipping email notification for Ashburn, Virginia visitor`);
+          console.log(logFormatter.info("Skipping email notification for Ashburn, Virginia visitor"));
         } else {
           try {
             // Check if Resend API key is configured
             if (!process.env.RESEND_API_KEY) {
-              console.warn('[Data Log] RESEND_API_KEY not configured. Skipping non-Florida visitor email notification.');
+              console.warn(logFormatter.warn('RESEND_API_KEY not configured. Skipping non-Florida visitor email notification.'));
             } else {
               const { Resend } = require('resend');
               const resend = new Resend(process.env.RESEND_API_KEY);
@@ -801,7 +972,7 @@ This is an automated notification from your website.`,
             );
             
             if (notificationEmails.length === 0) {
-              console.log('[Data Log] No notification emails configured for non-Florida visitor alerts');
+              console.log(logFormatter.info('No notification emails configured for non-Florida visitor alerts'));
             } else {
               const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
               
@@ -944,17 +1115,17 @@ ${metadata.userAgent && metadata.userAgent !== 'unknown' ? `User Agent: ${metada
 ---
 This is an automated notification from your website.`,
                 }).catch(err => {
-                  console.error(`[Data Log] Failed to send non-Florida visitor email to ${email}:`, err);
+                  console.error(logFormatter.error(`Failed to send non-Florida visitor email to ${email}`, err));
                 })
               )).catch(err => {
-                console.error("[Data Log] Error sending non-Florida visitor emails:", err);
+                console.error(logFormatter.error("Error sending non-Florida visitor emails", err));
               });
               
-              console.log(`[Data Log] 🌍 Non-Florida visitor alert sent: ${exactLocation}`);
+              console.log(logFormatter.success(`Non-Florida visitor alert sent`, { location: exactLocation }));
             }
           }
         } catch (emailErr) {
-          console.error("[Data Log] Error setting up non-Florida visitor email notification:", emailErr);
+          console.error(logFormatter.error("Error setting up non-Florida visitor email notification", emailErr));
         }
         }
       }
@@ -965,7 +1136,7 @@ This is an automated notification from your website.`,
       try {
         // Check if Resend API key is configured before initializing
         if (!process.env.RESEND_API_KEY) {
-          console.warn('[Data Log] RESEND_API_KEY not configured. Skipping DevTools detection email notification.');
+          console.warn(logFormatter.warn('RESEND_API_KEY not configured. Skipping DevTools detection email notification.'));
         } else {
           const { Resend } = require('resend');
           const resend = new Resend(process.env.RESEND_API_KEY);
@@ -993,7 +1164,10 @@ This is an automated notification from your website.`,
           const pageTitle = data.pageTitle || data.title || 'Unknown page';
           const detectionMethod = data.detectionMethod || 'unknown';
           
-          console.log(`[Data Log] 🔍 DevTools detected! Sending email notification...`);
+          console.log(logFormatter.info("DevTools detected! Sending email notification", {
+            page: pageTitle,
+            method: detectionMethod
+          }));
           
           // Send to all notification emails
           Promise.all(notificationEmails.map(email =>
@@ -1071,14 +1245,14 @@ ${location && location.city ? `Location: ${location.city}${location.region ? ', 
 ---
 This is an automated notification from your website.`,
             }).catch(err => {
-              console.error(`[Data Log] Failed to send DevTools detection email to ${email}:`, err);
+              console.error(logFormatter.error(`Failed to send DevTools detection email to ${email}`, err));
             })
           )).catch(err => {
-            console.error("[Data Log] Error sending DevTools detection emails:", err);
+            console.error(logFormatter.error("Error sending DevTools detection emails", err));
           });
         }
       } catch (emailErr) {
-        console.error("[Data Log] Error setting up DevTools detection emails:", emailErr);
+        console.error(logFormatter.error("Error setting up DevTools detection emails", emailErr));
       }
     }
     
@@ -1349,9 +1523,9 @@ This is an automated notification from your website.`,
           contentType: "application/json",
         });
         
-        console.log(`[Data Log] Also saved to user index: ${userEmail}`);
+        console.log(logFormatter.success(`Saved to user index`, { email: userEmail }));
       } catch (userErr) {
-        console.error("[Data Log] Error saving to user index:", userErr);
+        console.error(logFormatter.error("Error saving to user index", userErr));
         // Don't fail the main log if user index fails
       }
     }
@@ -1372,7 +1546,7 @@ This is an automated notification from your website.`,
       dailyLogs = existing || [];
     } catch (e) {
       if (e.message === 'Timeout') {
-        console.warn(`[Data Log] Timeout reading daily logs for ${dateKey}`);
+        console.warn(logFormatter.warn(`Timeout reading daily logs`, { dateKey }));
       }
       // First log of the day or error - start fresh
       dailyLogs = [];
@@ -1388,7 +1562,7 @@ This is an automated notification from your website.`,
       typeLogs = existing || [];
     } catch (e) {
       if (e.message === 'Timeout') {
-        console.warn(`[Data Log] Timeout reading type logs for ${typeKey}`);
+        console.warn(logFormatter.warn(`Timeout reading type logs`, { typeKey }));
       }
       typeLogs = [];
     }
@@ -1416,11 +1590,17 @@ This is an automated notification from your website.`,
     
     if (dailyLogs.length > MAX_LOGS_PER_DAY) {
       dailyLogs = dailyLogs.slice(-MAX_LOGS_PER_DAY);
-      console.warn(`[Data Log] Truncated daily logs to ${MAX_LOGS_PER_DAY} entries`);
+      console.warn(logFormatter.warn(`Truncated daily logs`, { 
+        maxEntries: MAX_LOGS_PER_DAY,
+        date 
+      }));
     }
     if (typeLogs.length > MAX_LOGS_PER_DAY) {
       typeLogs = typeLogs.slice(-MAX_LOGS_PER_DAY);
-      console.warn(`[Data Log] Truncated type logs to ${MAX_LOGS_PER_DAY} entries`);
+      console.warn(logFormatter.warn(`Truncated type logs`, { 
+        maxEntries: MAX_LOGS_PER_DAY,
+        dataType 
+      }));
     }
     if (hourlyLogs.length > MAX_LOGS_PER_HOUR) {
       hourlyLogs = hourlyLogs.slice(-MAX_LOGS_PER_HOUR);
@@ -1436,10 +1616,10 @@ This is an automated notification from your website.`,
           return true;
         } catch (err) {
           if (i === retries) {
-            console.error(`[Data Log] Failed to save ${key} after ${retries + 1} attempts:`, err);
+            console.error(logFormatter.error(`Failed to save ${key} after ${retries + 1} attempts`, err));
             throw err;
           }
-          console.warn(`[Data Log] Retry ${i + 1} saving ${key}`);
+          console.warn(logFormatter.warn(`Retry ${i + 1} saving ${key}`));
           await new Promise(resolve => setTimeout(resolve, 100 * (i + 1))); // Exponential backoff
         }
       }
@@ -1462,7 +1642,10 @@ This is an automated notification from your website.`,
         new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
       ]).catch(err => {
         if (err.message !== 'Timeout') {
-          console.warn(`[Data Log] Failed to save individual entry ${entryKey}:`, err.message);
+          console.warn(logFormatter.warn(`Failed to save individual entry`, { 
+            entryKey, 
+            error: err.message 
+          }));
         }
       })
     );
@@ -1470,20 +1653,17 @@ This is an automated notification from your website.`,
     await Promise.allSettled(savePromises);
 
     const duration = Date.now() - startTime;
-    console.log(`[Data Log] ✅ Logged ${dataType} entry: ${logEntry.id} (${duration}ms, ${dataSize} bytes)`);
+    console.log(logFormatter.formatEntry(dataType, logEntry, duration, dataSize));
     return { success: true, id: logEntry.id, entry: logEntry, duration, dataSize };
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`[Data Log] ❌ Error logging ${dataType} (${duration}ms):`, error);
-    console.error(`[Data Log] Error stack:`, error.stack);
-    console.error(`[Data Log] Error details:`, {
-      name: error.name,
-      message: error.message,
-      code: error.code,
+    console.error(logFormatter.error(`Error logging ${dataType}`, error));
+    console.error(logFormatter.error("Error details", {
+      duration: `${duration}ms`,
       dataType: dataType,
       hasData: !!data,
       dataKeys: data ? Object.keys(data).slice(0, 10) : [],
-    });
+    }));
     return { success: false, error: error.message, duration };
   }
 }
@@ -1655,7 +1835,7 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({ error: "Method not allowed" }),
     };
   } catch (error) {
-    console.error("[Data Log] Handler error:", error);
+    console.error(logFormatter.error("Handler error", error));
     return {
       statusCode: 500,
       headers,

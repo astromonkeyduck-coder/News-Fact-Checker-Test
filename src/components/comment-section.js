@@ -16,7 +16,8 @@ class CommentSection {
     this.user = null;
     if (window.auth0 && typeof window.auth0.isAuthenticated === 'function') {
       try {
-        const isAuth = await window.auth0.isAuthenticated();
+        // Wrapper returns boolean, not a promise
+        const isAuth = window.auth0.isAuthenticated();
         if (isAuth) {
           this.user = await window.auth0.getUser();
         }
@@ -350,7 +351,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let lastAuthState = false;
     setInterval(async () => {
       try {
-        const isAuth = await window.auth0.isAuthenticated();
+        // Wrapper returns boolean, not a promise
+        const isAuth = window.auth0.isAuthenticated();
         // Only refresh if auth state actually changed
         if (isAuth !== lastAuthState && Object.keys(window.commentSections).length > 0) {
           lastAuthState = isAuth;

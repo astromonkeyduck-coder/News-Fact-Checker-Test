@@ -25,6 +25,9 @@
     <!-- Sitemap -->
     <link rel="sitemap" type="application/xml" href="/sitemap.xml">
     
+    <!-- RSS Feed -->
+    <link rel="alternate" type="application/rss+xml" title="Noteworthy News RSS Feed" href="/.netlify/functions/rss-feed">
+    
     <!-- Performance Optimizations -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12556,10 +12559,14 @@
                     <li><a href="#about-section" class="nav-link">About</a></li>
                     <li><a href="#ai-assistant-section" class="nav-link">AI Chat</a></li>
                     <li><a href="profile.html" class="nav-link" id="profileLink" style="display: none;">Profile</a></li>
+                    <li><a href="my-reading-list.html" class="nav-link" id="readingListLink" style="display: none;">Reading List</a></li>
+                    <li><a href="submit-fact-check.html" class="nav-link">Submit Fact-Check</a></li>
                 </ul>
             </nav>
             
             <div class="header-right">
+                <!-- Theme Toggle Button -->
+                <div id="theme-toggle-container"></div>
                 <div class="last-update" title="Scheduled Maintenance: December 5, 2026">Scheduled Maintenance: December 5, 2026</div>
                 <!-- Auth Buttons -->
                 <div class="auth-buttons-container" id="authButtonsContainer">
@@ -14645,6 +14652,19 @@
     
     <!-- Auth0 Integration -->
     <script src="/src/auth/auth0.js"></script>
+    
+    <!-- Theme Toggle -->
+    <script src="/src/utils/theme-toggle.js"></script>
+    <script>
+        // Add theme toggle button to header
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('theme-toggle-container');
+            if (container && window.ThemeToggle) {
+                const button = window.ThemeToggle.createButton();
+                container.appendChild(button);
+            }
+        });
+    </script>
     
     <!-- Comment Section Component -->
     <script src="/src/components/comment-section.js"></script>

@@ -160,6 +160,7 @@ async function initAuth0() {
 
     // Check if user is authenticated
     isAuthenticated = await auth0Client.isAuthenticated();
+    window._auth0CachedState = isAuthenticated; // Update cache in global scope
     
     if (isAuthenticated) {
       const user = await auth0Client.getUser();
@@ -169,6 +170,28 @@ async function initAuth0() {
       updateAuthUI(null);
     }
 
+    // Cache authentication state for synchronous access
+    // Use global scope so logout() can access it
+    if (typeof window._auth0CachedState === 'undefined') {
+      window._auth0CachedState = false;
+    }
+    
+    // Update cached auth state
+    async function updateCachedAuthState() {
+      if (auth0Client) {
+        try {
+          window._auth0CachedState = await auth0Client.isAuthenticated();
+        } catch (error) {
+          window._auth0CachedState = false;
+        }
+      } else {
+        window._auth0CachedState = false;
+      }
+    }
+    
+    // Initial cache update
+    updateCachedAuthState();
+    
     // Make auth functions globally available
     window.auth0 = {
       login: login,
@@ -176,7 +199,21 @@ async function initAuth0() {
       logout: logout,
       getUser: getUser,
       getToken: getToken,
-      isAuthenticated: () => auth0Client?.isAuthenticated() || false,
+      // Return cached boolean state (synchronous)
+      // Note: This is cached and may be slightly stale. For real-time checks, use auth0Client.isAuthenticated() directly.
+      isAuthenticated: () => {
+        // Update cache if auth0Client is available (non-blocking)
+        if (auth0Client) {
+          auth0Client.isAuthenticated().then(state => {
+            window._auth0CachedState = state;
+          }).catch(() => {
+            window._auth0CachedState = false;
+          });
+        }
+        return window._auth0CachedState || false;
+      },
+      // Expose method to refresh cache
+      refreshAuthState: updateCachedAuthState,
     };
 
     console.log('[Auth0] Initialized successfully');
@@ -439,6 +476,7 @@ async function signup() {
 async function logout() {
   if (!auth0Client) return;
   try {
+    window._auth0CachedState = false; // Clear cache immediately
     await auth0Client.logout({
       logoutParams: {
         returnTo: window.location.origin,
@@ -446,6 +484,7 @@ async function logout() {
     });
   } catch (error) {
     console.error('[Auth0] Logout error:', error);
+    window._auth0CachedState = false; // Clear cache even on error
     // Error notification suppressed
   }
 }

@@ -25,6 +25,50 @@ const isDebugMode =
   (window.localStorage?.getItem('debug') === 'true' || 
    window.location.search.includes('debug=true'));
 
+// CSS styles for browser console (Chrome DevTools supports %c styling)
+const styles = {
+  reset: '',
+  bold: 'font-weight: bold;',
+  dim: 'opacity: 0.7;',
+  red: 'color: #ff4444;',
+  green: 'color: #44ff44;',
+  yellow: 'color: #ffaa00;',
+  blue: 'color: #4488ff;',
+  magenta: 'color: #ff44ff;',
+  cyan: 'color: #44ffff;',
+  gray: 'color: #888888;',
+  bgBlue: 'background-color: #1e3a5f; color: white; padding: 2px 6px; border-radius: 3px;',
+  bgGreen: 'background-color: #1e5f1e; color: white; padding: 2px 6px; border-radius: 3px;',
+  bgRed: 'background-color: #5f1e1e; color: white; padding: 2px 6px; border-radius: 3px;',
+  bgYellow: 'background-color: #5f5f1e; color: white; padding: 2px 6px; border-radius: 3px;',
+};
+
+// Helper to format timestamp
+const getTimestamp = () => {
+  const now = new Date();
+  return now.toLocaleTimeString('en-US', { 
+    hour12: false, 
+    hour: '2-digit', 
+    minute: '2-digit', 
+    second: '2-digit',
+    fractionalSecondDigits: 3
+  });
+};
+
+// Helper to format data objects nicely
+const formatData = (data) => {
+  if (!data) return '';
+  if (typeof data === 'string') return data;
+  if (data instanceof Error) {
+    return `${data.name}: ${data.message}`;
+  }
+  try {
+    return JSON.stringify(data, null, 2);
+  } catch {
+    return String(data);
+  }
+};
+
 /**
  * Logger utility with different log levels
  */
@@ -37,10 +81,22 @@ export const logger = {
   log: (message, data = null) => {
     if (isProduction && !isDebugMode) return;
     
+    const timestamp = getTimestamp();
     if (data !== null) {
-      console.log(`[Noteworthy News] ${message}`, data);
+      console.log(
+        `%c[${timestamp}]%c [Noteworthy News]%c ${message}`,
+        styles.gray + styles.dim,
+        styles.blue + styles.bold,
+        styles.reset,
+        data
+      );
     } else {
-      console.log(`[Noteworthy News] ${message}`);
+      console.log(
+        `%c[${timestamp}]%c [Noteworthy News]%c ${message}`,
+        styles.gray + styles.dim,
+        styles.blue + styles.bold,
+        styles.reset
+      );
     }
   },
 
@@ -52,10 +108,24 @@ export const logger = {
   warn: (message, data = null) => {
     if (isProduction && !isDebugMode) return;
     
+    const timestamp = getTimestamp();
     if (data !== null) {
-      console.warn(`[Noteworthy News] WARNING: ${message}`, data);
+      console.warn(
+        `%c[${timestamp}]%c ⚠%c [Noteworthy News] WARNING:%c ${message}`,
+        styles.gray + styles.dim,
+        styles.yellow + styles.bold,
+        styles.yellow + styles.bold,
+        styles.reset,
+        data
+      );
     } else {
-      console.warn(`[Noteworthy News] WARNING: ${message}`);
+      console.warn(
+        `%c[${timestamp}]%c ⚠%c [Noteworthy News] WARNING:%c ${message}`,
+        styles.gray + styles.dim,
+        styles.yellow + styles.bold,
+        styles.yellow + styles.bold,
+        styles.reset
+      );
     }
   },
 
@@ -66,15 +136,39 @@ export const logger = {
    */
   error: (message, error = null) => {
     // Errors are always logged, but with less detail in production
+    const timestamp = getTimestamp();
     if (error) {
       if (isProduction && !isDebugMode) {
         // In production, only log error message, not full stack
-        console.error(`[Noteworthy News] ERROR: ${message}`, error.message || error);
+        console.error(
+          `%c[${timestamp}]%c ✗%c [Noteworthy News] ERROR:%c ${message}`,
+          styles.gray + styles.dim,
+          styles.red + styles.bold,
+          styles.red + styles.bold,
+          styles.reset,
+          error.message || error
+        );
       } else {
-        console.error(`[Noteworthy News] ERROR: ${message}`, error);
+        console.error(
+          `%c[${timestamp}]%c ✗%c [Noteworthy News] ERROR:%c ${message}`,
+          styles.gray + styles.dim,
+          styles.red + styles.bold,
+          styles.red + styles.bold,
+          styles.reset,
+          error
+        );
+        if (error instanceof Error && error.stack) {
+          console.error(`%cStack trace:%c\n${error.stack}`, styles.gray, styles.reset);
+        }
       }
     } else {
-      console.error(`[Noteworthy News] ERROR: ${message}`);
+      console.error(
+        `%c[${timestamp}]%c ✗%c [Noteworthy News] ERROR:%c ${message}`,
+        styles.gray + styles.dim,
+        styles.red + styles.bold,
+        styles.red + styles.bold,
+        styles.reset
+      );
     }
   },
 
@@ -86,10 +180,24 @@ export const logger = {
   debug: (message, data = null) => {
     if (isProduction && !isDebugMode) return;
     
+    const timestamp = getTimestamp();
     if (data !== null) {
-      console.debug(`[Noteworthy News] DEBUG: ${message}`, data);
+      console.debug(
+        `%c[${timestamp}]%c 🔍%c [Noteworthy News] DEBUG:%c ${message}`,
+        styles.gray + styles.dim,
+        styles.cyan + styles.bold,
+        styles.cyan,
+        styles.reset,
+        data
+      );
     } else {
-      console.debug(`[Noteworthy News] DEBUG: ${message}`);
+      console.debug(
+        `%c[${timestamp}]%c 🔍%c [Noteworthy News] DEBUG:%c ${message}`,
+        styles.gray + styles.dim,
+        styles.cyan + styles.bold,
+        styles.cyan,
+        styles.reset
+      );
     }
   },
 
@@ -101,7 +209,16 @@ export const logger = {
   performance: (label, duration) => {
     if (isProduction && !isDebugMode) return;
     
-    console.log(`[Noteworthy News] PERFORMANCE: ${label} took ${duration.toFixed(2)}ms`);
+    const timestamp = getTimestamp();
+    const color = duration > 1000 ? styles.red : duration > 500 ? styles.yellow : styles.green;
+    console.log(
+      `%c[${timestamp}]%c ⚡%c [Noteworthy News] PERFORMANCE:%c ${label} took %c${duration.toFixed(2)}ms`,
+      styles.gray + styles.dim,
+      styles.magenta + styles.bold,
+      styles.magenta,
+      styles.reset,
+      color + styles.bold
+    );
   },
 
   /**
@@ -115,7 +232,13 @@ export const logger = {
       return;
     }
     
-    console.group(`[Noteworthy News] ${label}`);
+    const timestamp = getTimestamp();
+    console.group(
+      `%c[${timestamp}]%c 📦%c [Noteworthy News] ${label}`,
+      styles.gray + styles.dim,
+      styles.blue + styles.bold,
+      styles.reset
+    );
     try {
       callback();
     } finally {
@@ -132,10 +255,78 @@ export const logger = {
   api: (method, url, data = null) => {
     if (isProduction && !isDebugMode) return;
     
+    const timestamp = getTimestamp();
+    const methodColor = method === 'GET' ? styles.blue : 
+                       method === 'POST' ? styles.green : 
+                       method === 'PUT' ? styles.yellow : 
+                       method === 'DELETE' ? styles.red : styles.cyan;
+    
     if (data) {
-      console.log(`[Noteworthy News] API ${method} ${url}`, data);
+      console.log(
+        `%c[${timestamp}]%c 🌐%c [Noteworthy News] API%c ${method}%c ${url}`,
+        styles.gray + styles.dim,
+        styles.cyan + styles.bold,
+        styles.reset,
+        methodColor + styles.bold,
+        styles.reset,
+        data
+      );
     } else {
-      console.log(`[Noteworthy News] API ${method} ${url}`);
+      console.log(
+        `%c[${timestamp}]%c 🌐%c [Noteworthy News] API%c ${method}%c ${url}`,
+        styles.gray + styles.dim,
+        styles.cyan + styles.bold,
+        styles.reset,
+        methodColor + styles.bold,
+        styles.reset
+      );
+    }
+  },
+  
+  /**
+   * Log structured data in a table format
+   * @param {string} label - Table label
+   * @param {object|array} data - Data to display in table
+   */
+  table: (label, data) => {
+    if (isProduction && !isDebugMode) return;
+    
+    const timestamp = getTimestamp();
+    console.log(
+      `%c[${timestamp}]%c 📊%c [Noteworthy News] ${label}`,
+      styles.gray + styles.dim,
+      styles.blue + styles.bold,
+      styles.reset
+    );
+    console.table(data);
+  },
+  
+  /**
+   * Log a success message
+   * @param {string} message - Success message
+   * @param {any} data - Optional data to log
+   */
+  success: (message, data = null) => {
+    if (isProduction && !isDebugMode) return;
+    
+    const timestamp = getTimestamp();
+    if (data !== null) {
+      console.log(
+        `%c[${timestamp}]%c ✓%c [Noteworthy News] SUCCESS:%c ${message}`,
+        styles.gray + styles.dim,
+        styles.green + styles.bold,
+        styles.green + styles.bold,
+        styles.reset,
+        data
+      );
+    } else {
+      console.log(
+        `%c[${timestamp}]%c ✓%c [Noteworthy News] SUCCESS:%c ${message}`,
+        styles.gray + styles.dim,
+        styles.green + styles.bold,
+        styles.green + styles.bold,
+        styles.reset
+      );
     }
   }
 };
