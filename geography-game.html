@@ -24,6 +24,11 @@
             -webkit-overflow-scrolling: touch;
         }
         
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        
         .stars-background {
             position: fixed;
             top: 0;
@@ -31,48 +36,40 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 0;
+            z-index: -1;
             overflow: hidden;
         }
         
         .floating-star {
             position: absolute;
-            background: #FFFFFF;
-            border-radius: 50%;
-            box-shadow: 
+            color: #FFFFFF;
+            font-size: 12px;
+            line-height: 1;
+            text-shadow: 
                 0 0 6px rgba(255, 255, 255, 0.8),
                 0 0 12px rgba(255, 255, 255, 0.6),
                 0 0 18px rgba(255, 255, 255, 0.4),
                 0 0 24px rgba(74, 144, 226, 0.3);
-            animation: floatStar linear infinite;
-            opacity: 0.9;
+            animation: twinkleStar ease-in-out infinite;
+            opacity: 0.7;
+            display: inline-block;
+            width: auto;
+            height: auto;
         }
         
-        @keyframes floatStar {
-            0% {
-                transform: translate(0, 0) scale(1);
-                opacity: 0.9;
-            }
-            25% {
-                transform: translate(20px, -30px) scale(1.1);
-                opacity: 1;
+        @keyframes twinkleStar {
+            0%, 100% {
+                opacity: 0.5;
+                transform: scale(1);
             }
             50% {
-                transform: translate(-15px, -60px) scale(0.9);
-                opacity: 0.7;
-            }
-            75% {
-                transform: translate(30px, -90px) scale(1.05);
-                opacity: 0.8;
-            }
-            100% {
-                transform: translate(0, -120px) scale(1);
-                opacity: 0.9;
+                opacity: 1;
+                transform: scale(1.2);
             }
         }
         
         .geography-game-container {
-            padding-top: 100px;
+            padding-top: 60px;
             max-width: 1400px;
             margin: 0 auto;
             padding-left: 20px;
@@ -91,12 +88,13 @@
             top: 0;
             left: 0;
             right: 0;
-            background: rgba(15, 15, 35, 0.9);
+            background: rgba(15, 15, 35, 0.95);
             backdrop-filter: blur(15px);
             border-bottom: 1px solid rgba(74, 144, 226, 0.3);
             z-index: 1000;
             padding: 0;
-            height: 64px;
+            height: 60px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
         
         .header-container {
@@ -105,8 +103,8 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 2rem;
-            height: 64px;
+            padding: 0 1.5rem;
+            height: 60px;
             gap: 1rem;
         }
         
@@ -172,7 +170,26 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            padding-right: 20px;
+            padding-right: 0;
+        }
+        
+        .home-btn-geo {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            background: rgba(74, 144, 226, 0.2);
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        .home-btn-geo:hover {
+            background: rgba(74, 144, 226, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
         }
         
         .auth-btn {
@@ -209,33 +226,10 @@
             box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
         }
         
-        .home-btn-geo {
-            padding: 10px 20px;
-            font-size: 1rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #4A90E2, #2A60B0);
-            color: #FFFFFF;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            white-space: nowrap;
-        }
-        
-        .home-btn-geo:hover {
-            background: linear-gradient(135deg, #5BA0F2, #3A70C0);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(74, 144, 226, 0.5);
-        }
-        
-        .home-btn-geo:active {
-            transform: translateY(0);
-        }
-        
         .game-header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-top: 0;
+            margin-bottom: 20px;
         }
         
         .game-header h1 {
@@ -1563,14 +1557,18 @@
             
             /* Fix main header on mobile */
             .main-header {
-                height: 60px !important;
-                padding: 0.5rem 1rem !important;
+                height: 56px !important;
+                padding: 0 !important;
             }
             
             .header-container {
-                height: 60px !important;
+                height: 56px !important;
                 padding: 0 1rem !important;
-                gap: 0.75rem !important;
+                gap: 0.5rem !important;
+            }
+            
+            .geography-game-container {
+                padding-top: 70px !important;
             }
             
             .header-logo img {
@@ -2877,7 +2875,6 @@
     <script src="src/utils/analytics-tracker.js"></script>
 </head>
 <body>
-    <div class="matrix-rain"></div>
     <div class="stars-background" id="starsBackground"></div>
     
     <header class="main-header">
@@ -2885,7 +2882,7 @@
             <div class="header-left">
                 <div class="header-logo">
                     <a href="index.html" class="logo-link" aria-label="Go to Noteworthy News homepage">
-                        <span class="header-logo-n">N</span><span class="header-logo-w">W</span>
+                        <img src="IMG_5794.PNG" alt="Noteworthy News Logo" style="height: 32px; width: 32px; max-width: 32px; max-height: 32px; display: block;">
                     </a>
                 </div>
                 <div class="brand-info">
@@ -2965,6 +2962,10 @@
                     <span class="btn-icon">💡</span>
                     <span class="btn-text">Hint</span>
                 </button>
+                <button class="btn-geo" id="skipCountryBtn" disabled style="display: none;">
+                    <span class="btn-icon">🔄</span>
+                    <span class="btn-text">Generate New Country</span>
+                </button>
                 <button class="btn-geo" id="resetBtn" disabled>Reset Game</button>
             </div>
             
@@ -2991,7 +2992,6 @@
             <div class="game-over-container">
                 <!-- Celebration Section -->
                 <div class="game-over-celebration">
-                    <div class="celebration-badge">🎉</div>
                     <h2 class="game-over-title">Game Complete!</h2>
                     <p class="game-over-subtitle">Nice run! Here's how you did.</p>
                 </div>
@@ -3111,27 +3111,32 @@
         // Create floating glowing stars
         function createStars() {
             const starsContainer = document.getElementById('starsBackground');
-            const numStars = 50;
+            const numStars = 30; // Reduced from 50 for better performance
+            
+            // Star characters to choose from
+            const starChars = ['★', '✦', '✧', '✩', '✪', '✫', '✬', '✭', '✮', '✯', '✰'];
             
             for (let i = 0; i < numStars; i++) {
-                const star = document.createElement('div');
+                const star = document.createElement('span');
                 star.className = 'floating-star';
                 
-                // Random size (small to medium)
-                const size = Math.random() * 3 + 1; // 1px to 4px
-                star.style.width = size + 'px';
-                star.style.height = size + 'px';
+                // Use a random star character
+                star.textContent = starChars[Math.floor(Math.random() * starChars.length)];
                 
-                // Random position
+                // Random size (small to medium)
+                const size = Math.random() * 8 + 10; // 10px to 18px
+                star.style.fontSize = size + 'px';
+                
+                // Random position - ensure they stay within viewport
                 star.style.left = Math.random() * 100 + '%';
                 star.style.top = Math.random() * 100 + '%';
                 
-                // Random animation duration (slow drift)
-                const duration = Math.random() * 20 + 15; // 15s to 35s
+                // Random twinkle duration (gentle, slow twinkling)
+                const duration = Math.random() * 3 + 2; // 2s to 5s
                 star.style.animationDuration = duration + 's';
                 
-                // Random delay
-                star.style.animationDelay = Math.random() * 5 + 's';
+                // Random delay for variety
+                star.style.animationDelay = Math.random() * 2 + 's';
                 
                 starsContainer.appendChild(star);
             }
@@ -3408,6 +3413,14 @@
     
     <!-- Cookie Consent Banner -->
     <script src="src/components/cookie-banner.js"></script>
+    
+    <!-- Footer -->
+    <footer style="background: linear-gradient(135deg, rgba(15, 15, 35, 0.95) 0%, rgba(26, 26, 58, 0.95) 100%); border-top: 1px solid rgba(74, 144, 226, 0.3); text-align: center; padding: 40px 20px; margin-top: 80px; color: rgba(255, 255, 255, 0.7); font-size: 14px; line-height: 1.8; position: relative; z-index: 1;">
+        <div style="max-width: 800px; margin: 0 auto;">
+            <p style="margin: 0 0 12px 0; color: rgba(255, 255, 255, 0.8);">Website built and maintained by <a href="mailto:richard@noteworthynews.co" style="color: #4A9EFF; text-decoration: none; transition: color 0.3s ease; font-weight: 500;">richard@noteworthynews.co</a></p>
+            <p style="margin: 0; font-size: 13px; color: rgba(255, 255, 255, 0.6);">Press inquiries, partnerships and verified tips: <a href="mailto:richard@noteworthynews.co" style="color: #4A9EFF; text-decoration: none; transition: color 0.3s ease;">richard@noteworthynews.co</a></p>
+        </div>
+    </footer>
 </body>
 </html>
 

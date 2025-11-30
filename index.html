@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="app-version" content="November 28, 2025">
+    <meta name="app-version" content="November 30, 2025">
     <title>Noteworthy News - Fact-Checked Journalism & Media Literacy Games | Trusted News Source</title>
     
     <!-- Favicon and Theme -->
@@ -1947,9 +1947,11 @@
             display: flex;
             align-items: center;
             position: relative;
-            max-width: 600px;
+            max-width: 960px;
             margin: 0 auto;
             width: 100%;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
         
         .globe-search-icon-posts {
@@ -2015,15 +2017,93 @@
             transform: translateY(-50%) scale(1.1);
         }
         
+        /* Sort controls styling */
+        .feed-sort-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+        
+        .feed-sort-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 999px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            font-family: inherit;
+            outline: none;
+        }
+        
+        .feed-sort-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+        
+        .feed-sort-btn[data-sort="recent"] {
+            background: rgba(79, 172, 254, 0.2);
+            border-color: rgba(79, 172, 254, 0.4);
+            color: #4FACFE;
+            font-weight: 600;
+        }
+        
         @media (max-width: 768px) {
             .globe-search-container-posts {
                 margin-bottom: 1rem;
-                padding: 0 1rem;
+                padding: 0.75rem;
+                flex-direction: column;
+                align-items: stretch;
+                border-radius: 16px;
+            }
+            
+            .globe-search-container-posts > div:first-child {
+                width: 100%;
+                margin-bottom: 0.75rem;
             }
             
             .globe-search-input-posts {
                 height: 44px;
                 font-size: 0.9375rem;
+            }
+            
+            .feed-sort-controls {
+                width: 100%;
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                padding-bottom: 0.25rem;
+            }
+            
+            .feed-sort-controls::-webkit-scrollbar {
+                display: none;
+            }
+            
+            .feed-sort-btn {
+                flex-shrink: 0;
+                font-size: 0.813rem;
+                padding: 0.5rem 0.875rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .globe-search-container-posts {
+                padding: 0.625rem;
+            }
+            
+            .globe-search-input-posts {
+                font-size: 0.875rem;
+            }
+            
+            .feed-sort-btn {
+                font-size: 0.75rem;
+                padding: 0.5rem 0.75rem;
             }
         }
         
@@ -12471,15 +12551,6 @@
             <nav class="main-nav" id="mainNav">
                 <ul>
                     <li><a href="#news-section" class="nav-link">News</a></li>
-                    <li class="nav-dropdown">
-                        <a href="#" class="nav-link">Categories <span style="font-size: 0.8em;">▼</span></a>
-                        <ul class="dropdown-menu">
-                            <li><a href="category/breaking-news.html">Breaking News</a></li>
-                            <li><a href="category/analysis.html">Analysis</a></li>
-                            <li><a href="category/fact-checks.html">Fact-Checks</a></li>
-                        </ul>
-                    </li>
-                    <li><a href="archive.html" class="nav-link">Archive</a></li>
                     <li><a href="#geography-game-section" class="nav-link">Games</a></li>
                     <li><a href="#credibility-section" class="nav-link">Credibility</a></li>
                     <li><a href="#about-section" class="nav-link">About</a></li>
@@ -12489,7 +12560,7 @@
             </nav>
             
             <div class="header-right">
-                <div class="last-update">Scheduled Maintenance: November 28, 2025</div>
+                <div class="last-update" title="Scheduled Maintenance: December 5, 2026">Scheduled Maintenance: December 5, 2026</div>
                 <!-- Auth Buttons -->
                 <div class="auth-buttons-container" id="authButtonsContainer">
                     <button class="auth-btn signin-btn" id="signinBtn" aria-label="Sign In">Sign In</button>
@@ -12569,10 +12640,6 @@
         <nav class="mobile-nav-content">
             <ul>
                 <li><a href="#news-section" class="nav-link">News</a></li>
-                <li><a href="category/breaking-news.html" class="nav-link">Breaking News</a></li>
-                <li><a href="category/analysis.html" class="nav-link">Analysis</a></li>
-                <li><a href="category/fact-checks.html" class="nav-link">Fact-Checks</a></li>
-                <li><a href="archive.html" class="nav-link">Archive</a></li>
                 <li><a href="#fact-checker-section" class="nav-link">Game</a></li>
                 <li><a href="#credibility-section" class="nav-link">Credibility</a></li>
                 <li><a href="#about-section" class="nav-link">About</a></li>
@@ -12757,15 +12824,24 @@
             
             <div class="news-carousel" role="region" aria-label="News articles carousel">
             <!-- Global Coverage Search Bar -->
-            <div class="globe-search-container-posts" id="globeSearchContainerPosts" style="display: none; margin-bottom: 1.5rem;">
-                <span class="globe-search-icon-posts">🔍</span>
-                <input 
-                    type="text" 
-                    class="globe-search-input-posts" 
-                    id="globeSearchInputPosts"
-                    placeholder="Search global coverage..." 
-                />
-                <button class="globe-search-clear-posts" id="globeSearchClearPosts" title="Clear search" style="display: none;">&times;</button>
+            <div class="globe-search-container-posts" id="globeSearchContainerPosts" style="margin-bottom: 1.5rem; padding: 0.75rem 1rem; background: rgba(0, 0, 0, 0.25); border-radius: 999px; backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);">
+                <div style="flex: 1; min-width: 200px; position: relative; display: flex; align-items: center; gap: 0.5rem;">
+                    <input 
+                        type="text" 
+                        class="globe-search-input-posts" 
+                        id="globeSearchInputPosts"
+                        placeholder="Search global coverage..." 
+                        style="flex: 1; min-width: 0; padding: 0.5rem 0.75rem; background: transparent; border: none; border-radius: 999px; color: #fff; font-size: 0.938rem; font-weight: 400; font-family: inherit; outline: none; transition: all 0.2s ease;"
+                    />
+                    <button class="globe-search-clear-posts" id="globeSearchClearPosts" title="Clear search" style="display: none; background: transparent; border: none; color: rgba(255, 255, 255, 0.6); font-size: 1.5rem; cursor: pointer; padding: 0 0.5rem; line-height: 1;">&times;</button>
+                </div>
+                <!-- Sort Controls -->
+                <div class="feed-sort-controls" id="feedSortControls">
+                    <button class="feed-sort-btn" data-sort="recent">Recent</button>
+                    <button class="feed-sort-btn" data-sort="views">Views</button>
+                    <button class="feed-sort-btn" data-sort="likes">Likes</button>
+                    <button class="feed-sort-btn" data-sort="nearMe">Near Me</button>
+                </div>
             </div>
             
                 <div class="articles-track" id="articlesTrack" role="list" aria-live="polite">
@@ -12788,7 +12864,6 @@
         <!-- Global Coverage Globe Section - Below News Stories -->
         <div class="globe-section" id="globe-section" style="padding: 3rem 1rem; background: rgba(7, 21, 42, 0.5); margin: 2rem 0;">
             <h2 class="news-title" style="text-align: center; margin-bottom: 1rem;">Global Coverage Map</h2>
-            <p class="news-subtitle" style="text-align: center; margin-bottom: 2rem;">See all the places we've covered from around the world</p>
             <div id="cia-globe-container" style="width: 100%; height: 600px; max-width: 1200px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);"></div>
         </div>
         <style>
@@ -13167,6 +13242,8 @@
                 </div>
                 <div class="footer-bottom">
                     <p>Empowering critical thinking through trusted journalism.</p>
+                    <p style="margin-top: 15px; color: rgba(255, 255, 255, 0.7); font-size: 0.85rem;">Website built and maintained by <a href="mailto:richard@noteworthynews.co" style="color: #4A9EFF; text-decoration: none; transition: color 0.3s ease;">richard@noteworthynews.co</a></p>
+                    <p style="margin-top: 8px; color: rgba(255, 255, 255, 0.6); font-size: 0.8rem;">Press inquiries, partnerships and verified tips: <a href="mailto:richard@noteworthynews.co" style="color: #4A9EFF; text-decoration: none; transition: color 0.3s ease;">richard@noteworthynews.co</a></p>
             </div>
         </div>
     </footer>
@@ -17182,8 +17259,6 @@
         })();
     </script>
     
-    <!-- Cookie Consent Banner -->
-    <script src="/src/components/cookie-banner.js"></script>
     
     <!-- Mobile Navigation Dropdown Handler -->
     <script>
@@ -17424,6 +17499,6 @@
             }
         })();
     </script>
-
+    
 </body>
 </html>
