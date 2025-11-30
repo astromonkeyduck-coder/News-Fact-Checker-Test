@@ -12565,8 +12565,6 @@
             </nav>
             
             <div class="header-right">
-                <!-- Theme Toggle Button -->
-                <div id="theme-toggle-container"></div>
                 <div class="last-update" title="Scheduled Maintenance: December 5, 2026">Scheduled Maintenance: December 5, 2026</div>
                 <!-- Auth Buttons -->
                 <div class="auth-buttons-container" id="authButtonsContainer">
@@ -14652,19 +14650,6 @@
     
     <!-- Auth0 Integration -->
     <script src="/src/auth/auth0.js"></script>
-    
-    <!-- Theme Toggle -->
-    <script src="/src/utils/theme-toggle.js"></script>
-    <script>
-        // Add theme toggle button to header
-        document.addEventListener('DOMContentLoaded', function() {
-            const container = document.getElementById('theme-toggle-container');
-            if (container && window.ThemeToggle) {
-                const button = window.ThemeToggle.createButton();
-                container.appendChild(button);
-            }
-        });
-    </script>
     
     <!-- Comment Section Component -->
     <script src="/src/components/comment-section.js"></script>

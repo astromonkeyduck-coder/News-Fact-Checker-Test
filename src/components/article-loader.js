@@ -6,6 +6,11 @@
 (function() {
     'use strict';
 
+    // SEO Configuration
+    const SITE_URL = 'https://noteworthynews.co';
+    const DEFAULT_OG_IMAGE = `${SITE_URL}/PREVIEWIMAGEBRUH.jpg`;
+    const DEFAULT_DESCRIPTION = 'Noteworthy News: globally curious, teen-led reporting.';
+
     /**
      * Escape HTML to prevent XSS attacks
      */
@@ -14,6 +19,181 @@
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    /**
+     * Ensure an image URL is absolute
+     */
+    function ensureAbsoluteImageUrl(imageUrl) {
+        if (!imageUrl) return DEFAULT_OG_IMAGE;
+        
+        // If already absolute, return as-is
+        if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+            return imageUrl;
+        }
+        
+        // If relative, make it absolute
+        if (imageUrl.startsWith('/')) {
+            return `${SITE_URL}${imageUrl}`;
+        }
+        
+        // If no leading slash, add it
+        return `${SITE_URL}/${imageUrl}`;
+    }
+
+    /**
+     * Truncate text to a maximum length, preserving word boundaries
+     */
+    function truncateDescription(text, maxLength = 155) {
+        if (!text) return DEFAULT_DESCRIPTION;
+        if (text.length <= maxLength) return text;
+        
+        // Truncate at word boundary
+        const truncated = text.substring(0, maxLength);
+        const lastSpace = truncated.lastIndexOf(' ');
+        if (lastSpace > maxLength * 0.8) {
+            return truncated.substring(0, lastSpace) + '...';
+        }
+        return truncated + '...';
+    }
+
+    /**
+     * Helper to get or create meta element
+     */
+    function getOrCreateMeta(property, attribute = 'property') {
+        let element = document.querySelector(`meta[${attribute}="${property}"]`);
+        if (!element) {
+            element = document.createElement('meta');
+            element.setAttribute(attribute, property);
+            document.head.appendChild(element);
+        }
+        return element;
+    }
+
+    /**
+     * Helper to get or create link element
+     */
+    function getOrCreateLink(rel) {
+        let element = document.querySelector(`link[rel="${rel}"]`);
+        if (!element) {
+            element = document.createElement('link');
+            element.setAttribute('rel', rel);
+            document.head.appendChild(element);
+        }
+        return element;
+    }
+
+    /**
+     * Update all SEO meta tags for a post
+     */
+    function updatePostMetaTags(post, postId) {
+        const title = escapeHtml(post.title || post.story || post.text || 'Breaking News Story');
+        const story = post.story || post.text || post.title || '';
+        const description = truncateDescription(story);
+        const image = ensureAbsoluteImageUrl(post.image || post.images?.[0] || null);
+        const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
+        const url = `${SITE_URL}/article.html?id=${encodeURIComponent(postId)}`;
+
+        // Update page title
+        document.title = `${title} | Noteworthy News`;
+        const titleElement = document.getElementById('article-title');
+        if (titleElement) {
+            titleElement.textContent = `${title} - Noteworthy News`;
+        }
+
+        // Basic meta tags (by ID for backward compatibility)
+        const descElement = document.getElementById('article-description');
+        if (descElement) {
+            descElement.setAttribute('content', description);
+        } else {
+            getOrCreateMeta('description', 'name').setAttribute('content', description);
+        }
+
+        // Canonical URL
+        const canonicalElement = document.getElementById('article-canonical');
+        if (canonicalElement) {
+            canonicalElement.setAttribute('href', url);
+        } else {
+            getOrCreateLink('canonical').setAttribute('href', url);
+        }
+
+        // Open Graph tags (by ID for backward compatibility, then create if missing)
+        const ogUrlElement = document.getElementById('og-url');
+        if (ogUrlElement) {
+            ogUrlElement.setAttribute('content', url);
+        } else {
+            getOrCreateMeta('og:url').setAttribute('content', url);
+        }
+
+        const ogTitleElement = document.getElementById('og-title');
+        if (ogTitleElement) {
+            ogTitleElement.setAttribute('content', title);
+        } else {
+            getOrCreateMeta('og:title').setAttribute('content', title);
+        }
+
+        const ogDescElement = document.getElementById('og-description');
+        if (ogDescElement) {
+            ogDescElement.setAttribute('content', description);
+        } else {
+            getOrCreateMeta('og:description').setAttribute('content', description);
+        }
+
+        const ogImageElement = document.getElementById('og-image');
+        if (ogImageElement) {
+            ogImageElement.setAttribute('content', image);
+        } else {
+            getOrCreateMeta('og:image').setAttribute('content', image);
+        }
+
+        // Ensure OG image dimensions exist
+        getOrCreateMeta('og:image:width').setAttribute('content', '1200');
+        getOrCreateMeta('og:image:height').setAttribute('content', '630');
+        getOrCreateMeta('og:site_name').setAttribute('content', 'Noteworthy News');
+        getOrCreateMeta('og:locale').setAttribute('content', 'en_US');
+        getOrCreateMeta('og:type').setAttribute('content', 'article');
+
+        // Article-specific tags
+        const publishedElement = document.getElementById('article-published');
+        if (publishedElement) {
+            publishedElement.setAttribute('content', datePosted);
+        } else {
+            getOrCreateMeta('article:published_time').setAttribute('content', datePosted);
+        }
+        getOrCreateMeta('article:author').setAttribute('content', 'Noteworthy News');
+
+        // Twitter Card tags (using name attribute, not property)
+        const twitterUrlElement = document.getElementById('twitter-url');
+        if (twitterUrlElement) {
+            twitterUrlElement.setAttribute('content', url);
+        } else {
+            getOrCreateMeta('twitter:url', 'name').setAttribute('content', url);
+        }
+
+        const twitterTitleElement = document.getElementById('twitter-title');
+        if (twitterTitleElement) {
+            twitterTitleElement.setAttribute('content', title);
+        } else {
+            getOrCreateMeta('twitter:title', 'name').setAttribute('content', title);
+        }
+
+        const twitterDescElement = document.getElementById('twitter-description');
+        if (twitterDescElement) {
+            twitterDescElement.setAttribute('content', description);
+        } else {
+            getOrCreateMeta('twitter:description', 'name').setAttribute('content', description);
+        }
+
+        const twitterImageElement = document.getElementById('twitter-image');
+        if (twitterImageElement) {
+            twitterImageElement.setAttribute('content', image);
+        } else {
+            getOrCreateMeta('twitter:image', 'name').setAttribute('content', image);
+        }
+
+        getOrCreateMeta('twitter:card', 'name').setAttribute('content', 'summary_large_image');
+        getOrCreateMeta('twitter:site', 'name').setAttribute('content', '@NoteworthyNews');
+        getOrCreateMeta('twitter:creator', 'name').setAttribute('content', '@NoteworthyNews');
     }
 
     // Article content expansion templates
@@ -237,29 +417,39 @@
             const fullContent = story + '\n\n' + articleContent;
             const readTime = calculateReadTime(fullContent);
             
-            // Update page title and meta tags
-            titleElement.textContent = `${title} - Noteworthy News`;
-            document.title = `${title} - Noteworthy News`;
+            // Update all SEO meta tags (Open Graph, Twitter, etc.)
+            updatePostMetaTags(post, articleId);
             
-            const description = escapeHtml(story.length > 150 ? story.substring(0, 147) + '...' : story);
-            const descElement = document.getElementById('article-description');
-            const ogDescElement = document.getElementById('og-description');
-            const ogTitleElement = document.getElementById('og-title');
-            
-            if (descElement) descElement.setAttribute('content', description);
-            if (ogDescElement) ogDescElement.setAttribute('content', description);
-            if (ogTitleElement) ogTitleElement.setAttribute('content', title);
-            
-            // Update canonical URL (use relative URL for better portability)
-            const canonicalUrl = `${window.location.origin}/article.html?id=${encodeURIComponent(articleId)}`;
-            const canonicalElement = document.getElementById('article-canonical');
-            const ogUrlElement = document.getElementById('og-url');
-            if (canonicalElement) canonicalElement.setAttribute('href', canonicalUrl);
-            if (ogUrlElement) ogUrlElement.setAttribute('content', canonicalUrl);
-            
-            // Update published date
-            const publishedElement = document.getElementById('article-published');
-            if (publishedElement) publishedElement.setAttribute('content', datePosted);
+            // Update structured data (JSON-LD)
+            const structuredDataEl = document.getElementById('article-structured-data');
+            if (structuredDataEl) {
+                const structuredData = {
+                    "@context": "https://schema.org",
+                    "@type": "NewsArticle",
+                    "headline": title,
+                    "description": truncateDescription(story),
+                    "image": ensureAbsoluteImageUrl(image),
+                    "datePublished": datePosted,
+                    "dateModified": datePosted,
+                    "author": {
+                        "@type": "Organization",
+                        "name": "Noteworthy News"
+                    },
+                    "publisher": {
+                        "@type": "Organization",
+                        "name": "Noteworthy News",
+                        "logo": {
+                            "@type": "ImageObject",
+                            "url": `${SITE_URL}/IMG_5794.PNG`
+                        }
+                    },
+                    "mainEntityOfPage": {
+                        "@type": "WebPage",
+                        "@id": `${SITE_URL}/article.html?id=${encodeURIComponent(articleId)}`
+                    }
+                };
+                structuredDataEl.textContent = JSON.stringify(structuredData, null, 2);
+            }
             
             // Update article header
             const articleCategoryEl = document.getElementById('article-category');
@@ -285,11 +475,6 @@
                     imgElement.src = escapeHtml(image);
                     imgElement.alt = title;
                     imgElement.style.display = 'block';
-                }
-                // Also update OG image meta tag
-                const ogImageEl = document.getElementById('og-image');
-                if (ogImageEl) {
-                    ogImageEl.setAttribute('content', escapeHtml(image));
                 }
             }
             
@@ -364,16 +549,16 @@
             }
             
             // Update social sharing links
-            const shareUrl = encodeURIComponent(canonicalUrl);
+            const shareUrl = `${SITE_URL}/article.html?id=${encodeURIComponent(articleId)}`;
             const shareTitle = encodeURIComponent(title);
-            const shareText = encodeURIComponent(description);
+            const shareText = encodeURIComponent(truncateDescription(story));
             const shareButtons = document.querySelectorAll('.article-share a, .social-share-buttons a');
             
             if (shareButtons.length >= 4) {
-                shareButtons[0].href = `https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareTitle}`;
-                shareButtons[1].href = `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`;
-                shareButtons[2].href = `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`;
-                shareButtons[3].href = `mailto:?subject=${shareTitle}&body=${shareText}%20${shareUrl}`;
+                shareButtons[0].href = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${shareTitle}`;
+                shareButtons[1].href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+                shareButtons[2].href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+                shareButtons[3].href = `mailto:?subject=${shareTitle}&body=${shareText}%20${encodeURIComponent(shareUrl)}`;
             }
             
             // Load related articles (top 5 posts excluding current)
