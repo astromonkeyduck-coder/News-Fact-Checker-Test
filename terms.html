@@ -3,8 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terms of Service - Noteworthy News</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <title>Terms of Service - Noteworthy News | User Agreement & Terms</title>
+    
+    <!-- Enhanced SEO Meta Tags -->
+    <meta name="description" content="Noteworthy News Terms of Service: User agreement, intellectual property, acceptable use policy, and terms governing use of our website and services.">
+    <meta name="keywords" content="terms of service, user agreement, terms and conditions, website terms, Noteworthy News terms">
+    <meta name="author" content="Noteworthy News">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <link rel="canonical" href="https://noteworthynews.co/terms.html">
+    
+    <!-- Enhanced Open Graph for Social Media -->
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://noteworthynews.co/terms.html">
+    <meta property="og:site_name" content="Noteworthy News">
+    <meta property="og:title" content="Terms of Service - Noteworthy News">
+    <meta property="og:description" content="Noteworthy News Terms of Service: User agreement, intellectual property, acceptable use policy, and terms governing use of our website and services.">
+    <meta property="og:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg?v=2">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Enhanced Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://noteworthynews.co/terms.html">
+    <meta name="twitter:title" content="Terms of Service - Noteworthy News">
+    <meta name="twitter:description" content="Noteworthy News Terms of Service: User agreement, intellectual property, and terms governing use of our website.">
+    <meta name="twitter:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg?v=2">
+    <meta name="twitter:site" content="@NoteworthyNews">
+    <meta name="twitter:creator" content="@NoteworthyNews">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Favicon and Theme -->
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="192x192">
@@ -20,7 +50,9 @@
         }
         
         html {
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            scroll-behavior: smooth;
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
+            background-color: #07152a !important;
             min-height: 100vh;
             overflow-x: hidden;
             overscroll-behavior: none !important;
@@ -30,13 +62,15 @@
         }
         
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+            background-color: #07152a;
             color: white;
-            line-height: 1.6;
+            line-height: 1.7;
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
+            font-weight: 400;
         }
         
         body::before {
@@ -46,35 +80,97 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle at 20% 80%, rgba(74, 144, 226, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, rgba(46, 204, 113, 0.1) 0%, transparent 50%);
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(74, 158, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(46, 204, 113, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(91, 181, 255, 0.08) 0%, transparent 70%);
+            z-index: -2;
+            animation: backgroundPulse 20s ease-in-out infinite;
+        }
+        
+        @keyframes backgroundPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.9; transform: scale(1.05); }
+        }
+        
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
             z-index: -1;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(74, 158, 255, 0.6);
+            border-radius: 50%;
+            animation: floatParticle 15s infinite ease-in-out;
+        }
+        
+        @keyframes floatParticle {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+            25% { transform: translate(30px, -50px) scale(1.2); opacity: 0.8; }
+            50% { transform: translate(-20px, -100px) scale(0.8); opacity: 0.5; }
+            75% { transform: translate(40px, -70px) scale(1.1); opacity: 0.7; }
         }
         
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 60px 20px;
             position: relative;
             z-index: 1;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 50px;
-            padding: 40px 20px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            border: 1px solid rgba(74, 144, 226, 0.2);
+            margin-bottom: 60px;
+            padding: 60px 40px;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            border: 2px solid rgba(74, 158, 255, 0.3);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(74, 158, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease-out;
+        }
+        
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 30px;
             border-radius: 50%;
             overflow: hidden;
+            position: relative;
+            animation: logoFloat 6s ease-in-out infinite;
+            box-shadow: 0 10px 40px rgba(74, 158, 255, 0.4);
+            transition: transform 0.3s ease;
+        }
+        
+        .logo:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+        
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
         }
         
         .logo a {
@@ -88,99 +184,262 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            filter: brightness(1.1);
         }
         
         h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, #4A90E2, #2ECC71);
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #4A9EFF 0%, #2ECC71 50%, #5BB5FF 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
         }
         
         .last-updated {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.9rem;
-            margin-top: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.1rem;
+            margin-top: 15px;
+            font-weight: 400;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
         }
         
         .content {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            border: 1px solid rgba(74, 144, 226, 0.2);
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 50px;
+            border: 2px solid rgba(74, 158, 255, 0.3);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(74, 158, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            animation: fadeInUp 0.8s ease-out 0.6s both;
         }
         
         .content h2 {
-            font-size: 1.8rem;
-            margin-top: 40px;
+            font-size: clamp(1.6rem, 3.5vw, 2rem);
+            margin-top: 45px;
             margin-bottom: 20px;
-            color: #4A90E2;
-            border-bottom: 2px solid rgba(74, 144, 226, 0.3);
-            padding-bottom: 10px;
+            color: #4A9EFF;
+            border-bottom: 3px solid rgba(74, 158, 255, 0.4);
+            padding-bottom: 12px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            position: relative;
+            scroll-margin-top: 100px;
         }
         
         .content h2:first-child {
             margin-top: 0;
         }
         
+        .content h2::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #4A9EFF, #2ECC71);
+            border-radius: 2px;
+        }
+        
         .content p {
-            margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.9);
-            line-height: 1.8;
+            margin-bottom: 22px;
+            color: rgba(255, 255, 255, 0.92);
+            line-height: 1.85;
+            font-size: 1.05rem;
         }
         
         .content ul {
-            margin-left: 30px;
-            margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.9);
+            margin-left: 25px;
+            margin-bottom: 25px;
+            color: rgba(255, 255, 255, 0.92);
+            list-style: none;
+            padding-left: 0;
         }
         
-        .content li {
-            margin-bottom: 10px;
-            line-height: 1.8;
+        .content ul li {
+            margin-bottom: 12px;
+            line-height: 1.85;
+            padding-left: 30px;
+            position: relative;
+            font-size: 1.05rem;
+        }
+        
+        .content ul li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: #4A9EFF;
+            font-weight: 600;
         }
         
         .content strong {
-            color: #4A90E2;
+            color: #4A9EFF;
+            font-weight: 600;
+        }
+        
+        .content a {
+            color: #4A9EFF;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .content a:hover {
+            color: #2ECC71;
+            border-bottom-color: #2ECC71;
         }
         
         .footer-link {
             text-align: center;
-            margin-top: 50px;
-            padding: 30px;
+            margin-top: 60px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(74, 158, 255, 0.2);
         }
         
         .footer-link a {
-            color: #4A90E2;
+            color: #4A9EFF;
             text-decoration: none;
             font-weight: 600;
-            transition: all 0.3s;
+            padding: 12px 24px;
+            margin: 0 8px;
+            border-radius: 25px;
+            background: rgba(74, 158, 255, 0.1);
+            border: 2px solid rgba(74, 158, 255, 0.3);
+            display: inline-block;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
         }
         
         .footer-link a:hover {
             color: #2ECC71;
-            text-decoration: underline;
+            background: rgba(46, 204, 113, 0.15);
+            border-color: #2ECC71;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
         
         @media (max-width: 768px) {
+            .container {
+                padding: 40px 15px;
+            }
+            
+            .header {
+                padding: 40px 25px;
+                margin-bottom: 40px;
+            }
+            
             h1 {
                 font-size: 2rem;
             }
             
             .content {
-                padding: 25px;
+                padding: 30px 20px;
+                border-radius: 20px;
             }
             
             .content h2 {
                 font-size: 1.5rem;
+                margin-top: 35px;
+            }
+            
+            .footer-link a {
+                display: block;
+                margin: 8px 0;
+            }
+        }
+        
+        /* Scroll to Top Button */
+        .scroll-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #4A9EFF, #5BB5FF);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(74, 158, 255, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .scroll-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .scroll-to-top:hover {
+            transform: translateY(-5px) scale(1.1);
+            box-shadow: 0 8px 25px rgba(74, 158, 255, 0.6);
+        }
+        
+        .scroll-to-top svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+        
+        .scroll-to-top:focus {
+            outline: 2px solid rgba(255, 255, 255, 0.8);
+            outline-offset: 2px;
+        }
+        
+        /* Reading Progress Bar */
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #4A9EFF, #5BB5FF);
+            z-index: 1001;
+            transform-origin: left;
+            transition: transform 0.1s ease;
+            box-shadow: 0 2px 10px rgba(74, 158, 255, 0.5);
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
             }
         }
     </style>
 </head>
 <body>
+    <div class="particles" id="particles"></div>
+    <div class="reading-progress" id="readingProgress"></div>
+    
     <div class="container">
         <div class="header">
             <div class="logo">
@@ -193,12 +452,12 @@
         </div>
         
         <div class="content">
-            <h2>1. Acceptance of Terms</h2>
-            <p>By accessing and using Noteworthy News ("we," "us," or "our") website, services, and content, you agree to be bound by these Terms of Service. If you do not agree with any part of these terms, you must not use our services.</p>
+            <h2 class="fade-in">1. Acceptance of Terms</h2>
+            <p class="fade-in">By accessing and using Noteworthy News ("we," "us," or "our") website, services, and content, you agree to be bound by these Terms of Service. If you do not agree with any part of these terms, you must not use our services.</p>
             
-            <h2>2. Use of Our Services</h2>
-            <p>You may use our website and services for lawful purposes only. You agree not to:</p>
-            <ul>
+            <h2 class="fade-in">2. Use of Our Services</h2>
+            <p class="fade-in">You may use our website and services for lawful purposes only. You agree not to:</p>
+            <ul class="fade-in">
                 <li>Use our services in any way that violates applicable laws or regulations</li>
                 <li>Attempt to gain unauthorized access to our systems or networks</li>
                 <li>Interfere with or disrupt the operation of our website or services</li>
@@ -207,76 +466,249 @@
                 <li>Impersonate any person or entity or falsely state your affiliation with any person or entity</li>
             </ul>
             
-            <h2>3. Intellectual Property</h2>
-            <p>All content on Noteworthy News, including articles, graphics, logos, and software, is the property of Noteworthy News or its content suppliers and is protected by copyright, trademark, and other intellectual property laws. You may not use our content for commercial purposes without our express written permission.</p>
+            <h2 class="fade-in">3. Intellectual Property</h2>
+            <p class="fade-in">All content on Noteworthy News, including articles, graphics, logos, and software, is the property of Noteworthy News or its content suppliers and is protected by copyright, trademark, and other intellectual property laws. You may not use our content for commercial purposes without our express written permission.</p>
             
-            <h2>4. User-Generated Content</h2>
-            <p>If you submit comments, feedback, or other content to our website:</p>
-            <ul>
+            <h2 class="fade-in">4. User-Generated Content</h2>
+            <p class="fade-in">If you submit comments, feedback, or other content to our website:</p>
+            <ul class="fade-in">
                 <li>You retain ownership of your content</li>
                 <li>You grant us a worldwide, royalty-free license to use, reproduce, and display your content</li>
                 <li>You represent that your content does not violate any third-party rights</li>
                 <li>We reserve the right to remove any content that violates these terms</li>
             </ul>
             
-            <h2>5. Fact-Checking Games and Interactive Features</h2>
-            <p>Our fact-checking games and educational tools are provided for educational and entertainment purposes. While we strive for accuracy, these games are not intended as definitive fact-checking tools for current events. Always verify information through multiple credible sources.</p>
+            <h2 class="fade-in">5. Fact-Checking Games and Interactive Features</h2>
+            <p class="fade-in">Our fact-checking games and educational tools are provided for educational and entertainment purposes. While we strive for accuracy, these games are not intended as definitive fact-checking tools for current events. Always verify information through multiple credible sources.</p>
             
-            <h2>6. Disclaimer of Warranties</h2>
-            <p>Our services are provided "as is" and "as available" without warranties of any kind, either express or implied. We do not guarantee that:</p>
-            <ul>
+            <h2 class="fade-in">6. Disclaimer of Warranties</h2>
+            <p class="fade-in">Our services are provided "as is" and "as available" without warranties of any kind, either express or implied. We do not guarantee that:</p>
+            <ul class="fade-in">
                 <li>Our services will be uninterrupted or error-free</li>
                 <li>Our content is completely accurate or free from errors</li>
                 <li>Our website is free from viruses or other harmful components</li>
             </ul>
             
-            <h2>7. Limitation of Liability</h2>
-            <p>To the fullest extent permitted by law, Noteworthy News shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use our services, even if we have been advised of the possibility of such damages.</p>
+            <h2 class="fade-in">7. Limitation of Liability</h2>
+            <p class="fade-in">To the fullest extent permitted by law, Noteworthy News shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use our services, even if we have been advised of the possibility of such damages.</p>
             
-            <h2>8. External Links</h2>
-            <p>Our website may contain links to third-party websites. We are not responsible for the content, privacy practices, or terms of service of external websites. We provide these links for convenience only and do not endorse the linked sites.</p>
+            <h2 class="fade-in">8. External Links</h2>
+            <p class="fade-in">Our website may contain links to third-party websites. We are not responsible for the content, privacy practices, or terms of service of external websites. We provide these links for convenience only and do not endorse the linked sites.</p>
             
-            <h2>9. Modifications to Terms</h2>
-            <p>We reserve the right to modify these Terms of Service at any time. We will notify users of significant changes by updating the "Last Updated" date. Your continued use of our services after changes constitutes acceptance of the modified terms.</p>
+            <h2 class="fade-in">9. Modifications to Terms</h2>
+            <p class="fade-in">We reserve the right to modify these Terms of Service at any time. We will notify users of significant changes by updating the "Last Updated" date. Your continued use of our services after changes constitutes acceptance of the modified terms.</p>
             
-            <h2>10. Termination</h2>
-            <p>We reserve the right to terminate or suspend your access to our services at any time, without notice, for any reason, including violation of these Terms of Service.</p>
+            <h2 class="fade-in">10. Termination</h2>
+            <p class="fade-in">We reserve the right to terminate or suspend your access to our services at any time, without notice, for any reason, including violation of these Terms of Service.</p>
             
-            <h2>11. Governing Law</h2>
-            <p>These Terms of Service shall be governed by and construed in accordance with the laws of the jurisdiction in which Noteworthy News operates, without regard to its conflict of law provisions.</p>
+            <h2 class="fade-in">11. Governing Law</h2>
+            <p class="fade-in">These Terms of Service shall be governed by and construed in accordance with the laws of the jurisdiction in which Noteworthy News operates, without regard to its conflict of law provisions.</p>
             
-            <h2>12. Contact Information</h2>
-            <p>If you have any questions about these Terms of Service, please contact us through our website or social media channels.</p>
+            <h2 class="fade-in">12. Contact Information</h2>
+            <p class="fade-in">If you have any questions about these Terms of Service, please contact us through our website or social media channels.</p>
             
-            <div class="footer-link">
-                <a href="index.html">← Back to Home</a> | <a href="privacy.html">Privacy Policy</a> | <a href="editorial-policy.html">Editorial Policy</a>
+            <div class="footer-link fade-in">
+                <a href="index.html">← Back to Home</a>
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="editorial-policy.html">Editorial Policy</a>
             </div>
         </div>
     </div>
     
-    <!-- Background Music - Shared across all pages -->
-    <audio id="backgroundMusic" preload="metadata">
-        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+    <!-- Scroll to Top Button -->
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top" tabindex="0">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+        </svg>
+    </button>
+    
+    <script>
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 30;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        function initScrollAnimations() {
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, observerOptions);
+            
+            document.querySelectorAll('.fade-in').forEach(el => {
+                observer.observe(el);
+            });
+        }
+        
+        // Debounce function for performance
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // Optimized scroll handlers with debouncing
+        const debouncedScrollHandler = debounce(() => {
+            const scrollBtn = document.getElementById('scrollToTop');
+            const progressBar = document.getElementById('readingProgress');
+            
+            if (scrollBtn) {
+                if (window.pageYOffset > 300) {
+                    scrollBtn.classList.add('visible');
+                } else {
+                    scrollBtn.classList.remove('visible');
+                }
+            }
+            
+            if (progressBar) {
+                const windowHeight = window.innerHeight;
+                const documentHeight = document.documentElement.scrollHeight;
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollableHeight = documentHeight - windowHeight;
+                const progress = (scrollTop / scrollableHeight) * 100;
+                progressBar.style.transform = `scaleX(${progress / 100})`;
+            }
+        }, 10);
+        
+        // Scroll to top functionality
+        function initScrollToTop() {
+            const scrollBtn = document.getElementById('scrollToTop');
+            if (!scrollBtn) return;
+            
+            scrollBtn.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+            
+            scrollBtn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        }
+        
+        // Reading progress indicator (now handled by debounced scroll handler)
+        function initReadingProgress() {
+            // Progress bar updates are handled by debouncedScrollHandler
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+            initScrollAnimations();
+            initScrollToTop();
+            initReadingProgress();
+            
+            // Use debounced scroll handler
+            window.addEventListener('scroll', debouncedScrollHandler, { passive: true });
+        });
+    </script>
+    
+    <!-- Background Music - bruhbruhbruh1.wav -->
+    <audio id="backgroundMusic" preload="auto" loop>
+        <source src="bruhbruhbruh1.wav" type="audio/wav">
         Your browser does not support the audio element.
     </audio>
     
-    <!-- Second track (plays after first) -->
-    <audio id="backgroundMusicSecond" preload="metadata">
-        <source src="YEAHHHHHH.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
+    <!-- Placeholder tracks for music system compatibility -->
+    <audio id="backgroundMusicSecond" preload="metadata" style="display: none;">
+        <source src="bruhbruhbruh1.wav" type="audio/wav">
     </audio>
     
-    <!-- Third track (loops after second) -->
-    <audio id="backgroundMusicLoop" preload="metadata" loop>
-        <source src="Audiolandingpage.m4a" type="audio/mp4">
-        Your browser does not support the audio element.
+    <audio id="backgroundMusicLoop" preload="metadata" loop style="display: none;">
+        <source src="bruhbruhbruh1.wav" type="audio/wav">
     </audio>
     
-    <!-- Shared Music Manager Script -->
-    <script src="music-system.js"></script>
+    <!-- Direct Music Start Script - Ensures bruhbruhbruh1.wav plays (music-system.js removed to prevent conflicts) -->
+    <script>
+        (function() {
+            console.log('🎵 Direct music script loaded');
+            const audio = document.getElementById('backgroundMusic');
+            if (!audio) {
+                console.error('❌ Audio element not found!');
+                return;
+            }
+            
+            let hasStarted = false;
+            
+            // Function to start music directly
+            const startMusic = () => {
+                if (hasStarted || !audio.paused) return;
+                
+                hasStarted = true;
+                console.log('🎵 Starting music...');
+                
+                audio.currentTime = 0;
+                audio.volume = 0.5;
+                audio.loop = true;
+                
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log('✅ Music playing successfully!');
+                    }).catch(err => {
+                        console.error('❌ Failed to play:', err);
+                        hasStarted = false; // Allow retry
+                    });
+                }
+            };
+            
+            // Start on ANY user interaction
+            const events = ['click', 'touchstart', 'keydown', 'mousemove', 'scroll', 'wheel', 'pointerdown'];
+            const startOnce = () => {
+                startMusic();
+                events.forEach(e => {
+                    document.removeEventListener(e, startOnce, true);
+                    window.removeEventListener(e, startOnce, true);
+                });
+            };
+            
+            // Add listeners with capture phase to catch events early
+            events.forEach(e => {
+                document.addEventListener(e, startOnce, { once: true, passive: true, capture: true });
+                window.addEventListener(e, startOnce, { once: true, passive: true, capture: true });
+            });
+            
+            // Also try after page is fully loaded
+            if (document.readyState === 'complete') {
+                setTimeout(startMusic, 500);
+            } else {
+                window.addEventListener('load', () => {
+                    setTimeout(startMusic, 500);
+                }, { once: true });
+            }
+        })();
+    </script>
     
     <!-- Cookie Consent Banner -->
     <script src="src/components/cookie-banner.js"></script>
 </body>
 </html>
-

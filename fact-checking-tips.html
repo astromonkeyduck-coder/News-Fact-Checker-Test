@@ -3,8 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fact-Checking Tips - Noteworthy News</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <title>Fact-Checking Tips - Noteworthy News | Essential Verification Strategies</title>
+    
+    <!-- Enhanced SEO Meta Tags -->
+    <meta name="description" content="Essential fact-checking tips and strategies: learn how to verify information, identify misinformation, use fact-checking tools, and develop critical verification skills.">
+    <meta name="keywords" content="fact checking, fact-checking tips, verify information, misinformation detection, source verification, lateral reading, fact-checking tools, information verification, news verification">
+    <meta name="author" content="Noteworthy News">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <link rel="canonical" href="https://noteworthynews.co/fact-checking-tips.html">
+    
+    <!-- Enhanced Open Graph for Social Media -->
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://noteworthynews.co/fact-checking-tips.html">
+    <meta property="og:site_name" content="Noteworthy News">
+    <meta property="og:title" content="Fact-Checking Tips - Noteworthy News">
+    <meta property="og:description" content="Essential fact-checking tips and strategies: learn how to verify information, identify misinformation, and develop critical verification skills.">
+    <meta property="og:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg?v=2">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Enhanced Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://noteworthynews.co/fact-checking-tips.html">
+    <meta name="twitter:title" content="Fact-Checking Tips - Noteworthy News">
+    <meta name="twitter:description" content="Essential fact-checking tips and strategies: learn how to verify information, identify misinformation, and develop critical verification skills.">
+    <meta name="twitter:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg?v=2">
+    <meta name="twitter:site" content="@NoteworthyNews">
+    <meta name="twitter:creator" content="@NoteworthyNews">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": "Fact-Checking Tips",
+      "description": "Essential fact-checking tips and strategies: learn how to verify information, identify misinformation, and develop critical verification skills.",
+      "author": {
+        "@type": "Organization",
+        "name": "Noteworthy News"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Noteworthy News",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://noteworthynews.co/IMG_5794.PNG"
+        }
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://noteworthynews.co/fact-checking-tips.html"
+      }
+    }
+    </script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Favicon and Theme -->
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="192x192">
@@ -20,7 +76,9 @@
         }
         
         html {
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            scroll-behavior: smooth;
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
+            background-color: #07152a !important;
             min-height: 100vh;
             overflow-x: hidden;
             overscroll-behavior: none !important;
@@ -30,13 +88,15 @@
         }
         
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+            background-color: #07152a;
             color: white;
-            line-height: 1.6;
+            line-height: 1.7;
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
+            font-weight: 400;
         }
         
         body::before {
@@ -46,35 +106,97 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle at 20% 80%, rgba(74, 144, 226, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, rgba(46, 204, 113, 0.1) 0%, transparent 50%);
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(74, 158, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(46, 204, 113, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(91, 181, 255, 0.08) 0%, transparent 70%);
+            z-index: -2;
+            animation: backgroundPulse 20s ease-in-out infinite;
+        }
+        
+        @keyframes backgroundPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.9; transform: scale(1.05); }
+        }
+        
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
             z-index: -1;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(74, 158, 255, 0.6);
+            border-radius: 50%;
+            animation: floatParticle 15s infinite ease-in-out;
+        }
+        
+        @keyframes floatParticle {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+            25% { transform: translate(30px, -50px) scale(1.2); opacity: 0.8; }
+            50% { transform: translate(-20px, -100px) scale(0.8); opacity: 0.5; }
+            75% { transform: translate(40px, -70px) scale(1.1); opacity: 0.7; }
         }
         
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 60px 20px;
             position: relative;
             z-index: 1;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 50px;
-            padding: 40px 20px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            border: 1px solid rgba(74, 144, 226, 0.2);
+            margin-bottom: 60px;
+            padding: 60px 40px;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            border: 2px solid rgba(74, 158, 255, 0.3);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(74, 158, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease-out;
+        }
+        
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 30px;
             border-radius: 50%;
             overflow: hidden;
+            position: relative;
+            animation: logoFloat 6s ease-in-out infinite;
+            box-shadow: 0 10px 40px rgba(74, 158, 255, 0.4);
+            transition: transform 0.3s ease;
+        }
+        
+        .logo:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+        
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
         }
         
         .logo a {
@@ -88,204 +210,763 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            filter: brightness(1.1);
         }
         
         h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, #4A90E2, #2ECC71);
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #4A9EFF 0%, #2ECC71 50%, #5BB5FF 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
         }
         
         .last-updated {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.9rem;
-            margin-top: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.1rem;
+            margin-top: 15px;
+            font-weight: 400;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
         }
         
         .content {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            border: 1px solid rgba(74, 144, 226, 0.2);
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 50px;
+            border: 2px solid rgba(74, 158, 255, 0.3);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(74, 158, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            animation: fadeInUp 0.8s ease-out 0.6s both;
         }
         
         .content h2 {
-            font-size: 1.8rem;
-            margin-top: 40px;
-            margin-bottom: 20px;
-            color: #4A90E2;
-            border-bottom: 2px solid rgba(74, 144, 226, 0.3);
-            padding-bottom: 10px;
+            font-size: clamp(1.8rem, 4vw, 2.2rem);
+            margin-top: 50px;
+            margin-bottom: 25px;
+            color: #4A9EFF;
+            border-bottom: 3px solid rgba(74, 158, 255, 0.4);
+            padding-bottom: 15px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            position: relative;
+            scroll-margin-top: 100px;
         }
         
         .content h2:first-child {
             margin-top: 0;
         }
         
+        .content h2::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #4A9EFF, #2ECC71);
+            border-radius: 2px;
+        }
+        
         .content h3 {
-            font-size: 1.3rem;
-            margin-top: 25px;
-            margin-bottom: 15px;
+            font-size: clamp(1.3rem, 3vw, 1.6rem);
+            margin-top: 35px;
+            margin-bottom: 18px;
             color: #2ECC71;
+            font-weight: 600;
+            letter-spacing: -0.01em;
         }
         
         .content p {
-            margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.9);
-            line-height: 1.8;
+            margin-bottom: 22px;
+            color: rgba(255, 255, 255, 0.92);
+            line-height: 1.85;
+            font-size: 1.05rem;
         }
         
         .content ul {
-            margin-left: 30px;
-            margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.9);
+            margin-left: 25px;
+            margin-bottom: 25px;
+            color: rgba(255, 255, 255, 0.92);
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .content ul li {
+            margin-bottom: 12px;
+            line-height: 1.85;
+            padding-left: 30px;
+            position: relative;
+            font-size: 1.05rem;
+        }
+        
+        .content ul li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #2ECC71;
+            font-weight: 700;
         }
         
         .content ol {
-            margin-left: 30px;
-            margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.9);
+            margin-left: 25px;
+            margin-bottom: 25px;
+            color: rgba(255, 255, 255, 0.92);
+            padding-left: 0;
+            list-style: none; /* Hide default browser numbering */
+            counter-reset: list-counter; /* Reset counter for each ol */
         }
         
-        .content li {
-            margin-bottom: 10px;
-            line-height: 1.8;
+        .content ol li {
+            margin-bottom: 12px;
+            line-height: 1.85;
+            padding-left: 35px;
+            position: relative;
+            font-size: 1.05rem;
+            counter-increment: list-counter;
+        }
+        
+        .content ol li::before {
+            content: counter(list-counter) '.'; /* Add period after number */
+            position: absolute;
+            left: 0;
+            color: #4A9EFF;
+            font-weight: 700;
+            width: 25px;
+            text-align: center;
         }
         
         .content strong {
-            color: #4A90E2;
+            color: #4A9EFF;
+            font-weight: 600;
+        }
+        
+        .info-box {
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.15), rgba(74, 158, 255, 0.08));
+            border-left: 5px solid #4A9EFF;
+            padding: 30px;
+            margin: 35px 0;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 8px 25px rgba(74, 158, 255, 0.2);
+        }
+        
+        .info-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #4A9EFF, transparent);
+            animation: scanLine 3s infinite;
+        }
+        
+        @keyframes scanLine {
+            0%, 100% { transform: translateX(-100%); }
+            50% { transform: translateX(100%); }
+        }
+        
+        .info-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(74, 158, 255, 0.3);
+        }
+        
+        .info-box p {
+            margin-bottom: 12px;
+            font-size: 1.15rem;
+            line-height: 1.8;
         }
         
         .tip-box {
-            background: rgba(46, 204, 113, 0.1);
-            border-left: 4px solid #2ECC71;
-            padding: 20px;
-            margin: 25px 0;
-            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.15), rgba(46, 204, 113, 0.08));
+            border-left: 5px solid #2ECC71;
+            padding: 28px;
+            margin: 30px 0;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 8px 25px rgba(46, 204, 113, 0.2);
+        }
+        
+        .tip-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #2ECC71, transparent);
+            animation: scanLine 3s infinite;
+        }
+        
+        .tip-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(46, 204, 113, 0.3);
         }
         
         .tip-box h3 {
             margin-top: 0;
             color: #2ECC71;
+            font-size: 1.4rem;
+            margin-bottom: 15px;
         }
         
         .warning-box {
-            background: rgba(231, 76, 60, 0.1);
-            border-left: 4px solid #E74C3C;
-            padding: 20px;
-            margin: 25px 0;
-            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(91, 181, 255, 0.15), rgba(91, 181, 255, 0.08));
+            border-left: 5px solid #5BB5FF;
+            padding: 28px;
+            margin: 30px 0;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 8px 25px rgba(91, 181, 255, 0.2);
+        }
+        
+        .warning-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #5BB5FF, transparent);
+            animation: scanLine 3s infinite;
+        }
+        
+        .warning-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(91, 181, 255, 0.3);
         }
         
         .warning-box h3 {
             margin-top: 0;
-            color: #E74C3C;
-        }
-        
-        .info-box {
-            background: rgba(74, 144, 226, 0.1);
-            border-left: 4px solid #4A90E2;
-            padding: 25px;
-            margin: 30px 0;
-            border-radius: 10px;
-        }
-        
-        .info-box p {
-            margin-bottom: 10px;
-            font-size: 1.1rem;
+            color: #5BB5FF;
+            font-size: 1.4rem;
+            margin-bottom: 15px;
         }
         
         .checklist {
-            background: rgba(155, 89, 182, 0.1);
-            border-left: 4px solid #9B59B6;
-            padding: 25px;
-            margin: 30px 0;
-            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(91, 181, 255, 0.15), rgba(91, 181, 255, 0.08));
+            border-left: 5px solid #5BB5FF;
+            padding: 30px;
+            margin: 35px 0;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 8px 25px rgba(91, 181, 255, 0.2);
+        }
+        
+        .checklist::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #5BB5FF, transparent);
+            animation: scanLine 3s infinite;
+        }
+        
+        .checklist:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(91, 181, 255, 0.3);
         }
         
         .checklist h3 {
-            color: #9B59B6;
+            color: #5BB5FF;
             margin-top: 0;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
         }
         
         .step-by-step {
             counter-reset: step-counter;
-            margin: 30px 0;
+            margin: 40px 0;
         }
         
         .step {
             counter-increment: step-counter;
-            background: rgba(74, 144, 226, 0.1);
-            border-left: 4px solid #4A90E2;
-            padding: 20px;
-            margin: 15px 0;
-            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.12), rgba(74, 158, 255, 0.06));
+            border-left: 5px solid #4A9EFF;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 15px;
             position: relative;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 25px rgba(74, 158, 255, 0.15);
         }
         
         .step::before {
             content: counter(step-counter);
             position: absolute;
-            left: -15px;
-            top: 20px;
-            background: #4A90E2;
+            left: -20px;
+            top: 30px;
+            background: linear-gradient(135deg, #4A9EFF, #2ECC71);
             color: white;
-            width: 30px;
-            height: 30px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
+            font-weight: 800;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(74, 158, 255, 0.4);
+            border: 3px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .step:hover {
+            transform: translateX(10px) translateY(-3px);
+            box-shadow: 0 12px 35px rgba(74, 158, 255, 0.3);
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.18), rgba(74, 158, 255, 0.1));
         }
         
         .step h3 {
             margin-top: 0;
-            padding-left: 25px;
+            padding-left: 40px;
+            color: #4A9EFF;
         }
         
         .step p, .step ul {
-            padding-left: 25px;
+            padding-left: 40px;
+        }
+        
+        .content a {
+            color: #4A9EFF;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .content a:hover {
+            color: #2ECC71;
+            border-bottom-color: #2ECC71;
         }
         
         .footer-link {
             text-align: center;
-            margin-top: 50px;
-            padding: 30px;
+            margin-top: 60px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(74, 158, 255, 0.2);
         }
         
         .footer-link a {
-            color: #4A90E2;
+            color: #4A9EFF;
             text-decoration: none;
             font-weight: 600;
-            transition: all 0.3s;
+            padding: 12px 24px;
+            margin: 0 8px;
+            border-radius: 25px;
+            background: rgba(74, 158, 255, 0.1);
+            border: 2px solid rgba(74, 158, 255, 0.3);
+            display: inline-block;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
         }
         
         .footer-link a:hover {
             color: #2ECC71;
-            text-decoration: underline;
+            background: rgba(46, 204, 113, 0.15);
+            border-color: #2ECC71;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
         
         @media (max-width: 768px) {
+            .container {
+                padding: 40px 15px;
+            }
+            
+            .header {
+                padding: 40px 25px;
+                margin-bottom: 40px;
+            }
+            
             h1 {
                 font-size: 2rem;
             }
             
             .content {
-                padding: 25px;
+                padding: 30px 20px;
+                border-radius: 20px;
             }
             
             .content h2 {
+                font-size: 1.6rem;
+                margin-top: 35px;
+            }
+            
+            .content h3 {
+                font-size: 1.2rem;
+            }
+            
+            .step {
+                padding: 25px 20px;
+            }
+            
+            .step::before {
+                left: -15px;
+                width: 35px;
+                height: 35px;
+                font-size: 1rem;
+            }
+            
+            .step h3, .step p, .step ul {
+                padding-left: 30px;
+            }
+            
+            .footer-link a {
+                display: block;
+                margin: 8px 0;
+            }
+        }
+        
+        /* Scroll to Top Button */
+        .scroll-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #4A9EFF, #5BB5FF);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(74, 158, 255, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .scroll-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .scroll-to-top:hover {
+            transform: translateY(-5px) scale(1.1);
+            box-shadow: 0 8px 25px rgba(74, 158, 255, 0.6);
+        }
+        
+        .scroll-to-top svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+        
+        .scroll-to-top:focus {
+            outline: 2px solid rgba(255, 255, 255, 0.8);
+            outline-offset: 2px;
+        }
+        
+        .step {
+            outline: none;
+        }
+        
+        .step:focus {
+            outline: 2px solid #4A9EFF;
+            outline-offset: 2px;
+        }
+        
+        .section-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            margin-right: 12px;
+            vertical-align: text-top;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        .section-icon svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 8px rgba(74, 158, 255, 0.5));
+            display: block;
+        }
+        
+        /* Reading Progress Bar */
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #4A9EFF, #5BB5FF);
+            z-index: 1001;
+            transform-origin: left;
+            transition: transform 0.1s ease;
+            box-shadow: 0 2px 10px rgba(74, 158, 255, 0.5);
+        }
+        
+        /* Table of Contents - Modern Design */
+        .table-of-contents {
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.12), rgba(91, 181, 255, 0.08));
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 35px;
+            margin-bottom: 50px;
+            border: 2px solid rgba(74, 158, 255, 0.3);
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(74, 158, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .table-of-contents::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #4A9EFF, #5BB5FF, transparent);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
+        .table-of-contents h3 {
+            color: #4A9EFF;
+            margin-top: 0;
+            margin-bottom: 25px;
                 font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(74, 158, 255, 0.5);
+            letter-spacing: -0.02em;
+        }
+        
+        .table-of-contents ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+        }
+        
+        .table-of-contents li {
+            margin: 0;
+            padding: 0;
+        }
+        
+        .table-of-contents li::before {
+            content: none;
+        }
+        
+        .table-of-contents a {
+            color: rgba(255, 255, 255, 0.95);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.95rem;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(74, 158, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .table-of-contents a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(74, 158, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .table-of-contents a:hover::before {
+            left: 100%;
+        }
+        
+        .table-of-contents a:hover {
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.2), rgba(91, 181, 255, 0.15));
+            color: #4A9EFF;
+            transform: translateX(8px) translateY(-2px);
+            border-color: rgba(74, 158, 255, 0.5);
+            box-shadow: 0 6px 20px rgba(74, 158, 255, 0.3);
+        }
+        
+        .table-of-contents a::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #4A9EFF;
+            opacity: 0;
+            transition: all 0.3s ease;
+            margin-left: auto;
+            box-shadow: 0 0 10px rgba(74, 158, 255, 0.8);
+        }
+        
+        .table-of-contents a:hover::after {
+            opacity: 1;
+            transform: scale(1.5);
+        }
+        
+        /* Interactive Tooltips */
+        .tooltip-trigger {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            border-bottom: 2px dotted #4A9EFF;
+            color: #4A9EFF;
+            font-weight: 600;
+        }
+        
+        .tooltip {
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 30, 50, 0.98);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            width: 250px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            border: 1px solid rgba(74, 158, 255, 0.3);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+        
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: rgba(20, 30, 50, 0.98);
+        }
+        
+        .tooltip-trigger:hover .tooltip,
+        .tooltip-trigger:focus .tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* Expandable Sections */
+        .expandable-section {
+            margin: 25px 0;
+            border: 1px solid rgba(74, 158, 255, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        .expandable-header {
+            padding: 18px 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+            user-select: none;
+        }
+        
+        .expandable-header:hover {
+            background: rgba(74, 158, 255, 0.1);
+        }
+        
+        .expandable-header:focus {
+            outline: 2px solid #4A9EFF;
+            outline-offset: -2px;
+        }
+        
+        .expandable-title {
+            font-weight: 600;
+            color: #4A9EFF;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+        
+        .expandable-icon {
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+            color: #4A9EFF;
+        }
+        
+        .expandable-section.expanded .expandable-icon {
+            transform: rotate(180deg);
+        }
+        
+        .expandable-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.4s ease;
+            padding: 0 24px;
+        }
+        
+        .expandable-section.expanded .expandable-content {
+            max-height: 2000px;
+            padding: 20px 24px;
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
             }
         }
     </style>
 </head>
 <body>
+    <div class="particles" id="particles"></div>
+    <div class="reading-progress" id="readingProgress"></div>
+    
     <div class="container">
         <div class="header">
             <div class="logo">
@@ -298,14 +979,30 @@
         </div>
         
         <div class="content">
-            <div class="info-box">
+            <div class="table-of-contents fade-in">
+                <h3>Table of Contents</h3>
+                <ul>
+                    <li><a href="#fact-checking-process">The Fact-Checking Process</a></li>
+                    <li><a href="#red-flags">Red Flags: Warning Signs of Misinformation</a></li>
+                    <li><a href="#tools-techniques">Fact-Checking Tools and Techniques</a></li>
+                    <li><a href="#checklist">Quick Fact-Check Checklist</a></li>
+                    <li><a href="#advanced-techniques">Advanced Fact-Checking Techniques</a></li>
+                    <li><a href="#scenarios">Common Fact-Checking Scenarios</a></li>
+                    <li><a href="#building-skills">Building Your Fact-Checking Skills</a></li>
+                    <li><a href="#different-contexts">Fact-Checking in Different Contexts</a></li>
+                    <li><a href="#routine">Creating a Fact-Checking Routine</a></li>
+                    <li><a href="#impact">The Impact of Fact-Checking</a></li>
+                </ul>
+            </div>
+            
+            <div class="info-box fade-in">
                 <p><strong>Why Fact-Check?</strong> In an age of information overload, fact-checking helps you make informed decisions, avoid misinformation, and maintain trust in reliable sources. These tips will help you verify information quickly and effectively.</p>
             </div>
             
-            <h2>The Fact-Checking Process</h2>
+            <h2 id="fact-checking-process" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="searchGrad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><circle cx="11" cy="11" r="7" stroke="url(#searchGrad1)" stroke-width="2" fill="none"/><path d="m20 20-4-4" stroke="url(#searchGrad1)" stroke-width="2" stroke-linecap="round"/></svg></span>The Fact-Checking Process</h2>
             
             <div class="step-by-step">
-                <div class="step">
+                <div class="step fade-in">
                     <h3>Pause Before Sharing</h3>
                     <p>Before you share or act on information, take a moment to pause. Ask yourself:</p>
                     <ul>
@@ -315,7 +1012,7 @@
                     </ul>
                 </div>
                 
-                <div class="step">
+                <div class="step fade-in">
                     <h3>Check the Source</h3>
                     <p>Investigate who created and published the information:</p>
                     <ul>
@@ -326,7 +1023,7 @@
                     </ul>
                 </div>
                 
-                <div class="step">
+                <div class="step fade-in">
                     <h3>Read Beyond the Headline</h3>
                     <p>Headlines can be misleading or taken out of context:</p>
                     <ul>
@@ -336,7 +1033,7 @@
                     </ul>
                 </div>
                 
-                <div class="step">
+                <div class="step fade-in">
                     <h3>Verify with Multiple Sources</h3>
                     <p>Don't rely on a single source:</p>
                     <ul>
@@ -347,7 +1044,7 @@
                     </ul>
                 </div>
                 
-                <div class="step">
+                <div class="step fade-in">
                     <h3>Check the Date</h3>
                     <p>Information can become outdated or be shared out of context:</p>
                     <ul>
@@ -357,7 +1054,7 @@
                     </ul>
                 </div>
                 
-                <div class="step">
+                <div class="step fade-in">
                     <h3>Examine Evidence</h3>
                     <p>Look for supporting evidence:</p>
                     <ul>
@@ -369,9 +1066,9 @@
                 </div>
             </div>
             
-            <h2>Red Flags: Warning Signs of Misinformation</h2>
+            <h2 id="red-flags" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="warningGrad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#FF6B9D;stop-opacity:1" /><stop offset="100%" style="stop-color:#C44569;stop-opacity:1" /></linearGradient></defs><path d="M12 2L2 22h20L12 2z" fill="url(#warningGrad1)" stroke="url(#warningGrad1)" stroke-width="1.5" stroke-linejoin="round"/><line x1="12" y1="9" x2="12" y2="13" stroke="white" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="white"/></svg></span>Red Flags: Warning Signs of Misinformation</h2>
             
-            <div class="warning-box">
+            <div class="warning-box fade-in">
                 <h3>Watch Out For:</h3>
                 <ul>
                     <li><strong>Emotional Manipulation:</strong> Content designed to trigger strong emotional reactions</li>
@@ -385,61 +1082,61 @@
                 </ul>
             </div>
             
-            <h2>Fact-Checking Tools and Techniques</h2>
+            <h2 id="tools-techniques" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="toolsGrad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" stroke="url(#toolsGrad1)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Fact-Checking Tools and Techniques</h2>
             
-            <h3>For News Articles</h3>
-            <ul>
+            <h3 class="fade-in">For News Articles</h3>
+            <ul class="fade-in">
                 <li><strong>Fact-Checking Websites:</strong> Snopes, FactCheck.org, PolitiFact, AP News Fact Check</li>
                 <li><strong>Source Verification:</strong> Check if the publication is known and reputable</li>
                 <li><strong>Author Research:</strong> Look up the author's credentials and previous work</li>
                 <li><strong>Archive Search:</strong> Use Wayback Machine to see if content has been edited</li>
             </ul>
             
-            <h3>For Images and Videos</h3>
-            <ul>
+            <h3 class="fade-in">For Images and Videos</h3>
+            <ul class="fade-in">
                 <li><strong>Reverse Image Search:</strong> Use Google Images or TinEye to find original sources</li>
                 <li><strong>Video Verification:</strong> Check when and where the video was originally posted</li>
                 <li><strong>Metadata Analysis:</strong> Use tools to check image metadata (when possible)</li>
                 <li><strong>Context Check:</strong> Verify if images/videos are being used in original context</li>
             </ul>
             
-            <h3>For Social Media Claims</h3>
-            <ul>
+            <h3 class="fade-in">For Social Media Claims</h3>
+            <ul class="fade-in">
                 <li><strong>Profile Verification:</strong> Check if accounts are verified and legitimate</li>
                 <li><strong>Original Source:</strong> Trace claims back to original sources</li>
                 <li><strong>Cross-Platform Check:</strong> See if information appears on other platforms</li>
                 <li><strong>Expert Verification:</strong> Check if experts in the field confirm the claims</li>
             </ul>
             
-            <h2>Quick Fact-Check Checklist</h2>
+            <h2 id="checklist" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="checkGrad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#2ECC71;stop-opacity:1" /><stop offset="100%" style="stop-color:#27AE60;stop-opacity:1" /></linearGradient></defs><path d="M20 6L9 17l-5-5" stroke="url(#checkGrad1)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>Quick Fact-Check Checklist</h2>
             
-            <div class="checklist">
+            <div class="checklist fade-in">
                 <h3>Before Sharing Information:</h3>
                 <ol>
-                    <li>✓ Have I read the full article, not just the headline?</li>
-                    <li>✓ Do I know who created this information?</li>
-                    <li>✓ Is the source credible and reliable?</li>
-                    <li>✓ Have I checked this information with other sources?</li>
-                    <li>✓ Is this information current and up-to-date?</li>
-                    <li>✓ Is there evidence supporting these claims?</li>
-                    <li>✓ Does this make logical sense?</li>
-                    <li>✓ Am I being influenced by my emotions or biases?</li>
+                    <li>Have I read the full article, not just the headline?</li>
+                    <li>Do I know who created this information?</li>
+                    <li>Is the source credible and reliable?</li>
+                    <li>Have I checked this information with other sources?</li>
+                    <li>Is this information current and up-to-date?</li>
+                    <li>Is there evidence supporting these claims?</li>
+                    <li>Does this make logical sense?</li>
+                    <li>Am I being influenced by my emotions or biases?</li>
                 </ol>
             </div>
             
-            <h2>Advanced Fact-Checking Techniques</h2>
+            <h2 id="advanced-techniques" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="rocketGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" stroke="url(#rocketGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" stroke="url(#rocketGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" stroke="url(#rocketGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" stroke="url(#rocketGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Advanced Fact-Checking Techniques</h2>
             
-            <div class="tip-box">
+            <div class="tip-box fade-in">
                 <h3>Lateral Reading</h3>
                 <p>Instead of just reading the article in depth, open multiple tabs to investigate the source, check what others say about it, and verify claims across different sources. This "lateral" approach is more effective than "vertical" reading (just reading one source deeply).</p>
             </div>
             
-            <div class="tip-box">
+            <div class="tip-box fade-in">
                 <h3>Check Primary Sources</h3>
                 <p>When possible, go to the original source. If an article cites a study, try to find and read the study yourself. If it quotes someone, see if you can find the original statement in context.</p>
             </div>
             
-            <div class="tip-box">
+            <div class="tip-box fade-in">
                 <h3>Understand the Difference</h3>
                 <ul>
                     <li><strong>Misinformation:</strong> False information shared unintentionally</li>
@@ -448,37 +1145,37 @@
                 </ul>
             </div>
             
-            <h2>Common Fact-Checking Scenarios</h2>
+            <h2 id="scenarios" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="clipboardGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" stroke="url(#clipboardGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="9" y="3" width="6" height="4" rx="1" stroke="url(#clipboardGrad)" stroke-width="2" fill="none"/><path d="M9 12h6M9 16h6" stroke="url(#clipboardGrad)" stroke-width="2" stroke-linecap="round"/></svg></span>Common Fact-Checking Scenarios</h2>
             
-            <h3>Viral Social Media Posts</h3>
-            <ul>
+            <h3 class="fade-in">Viral Social Media Posts</h3>
+            <ul class="fade-in">
                 <li>Check if the account is verified and authentic</li>
                 <li>Look for the original post and context</li>
                 <li>Verify if images/videos are real and not manipulated</li>
                 <li>Check if experts or official sources confirm the claim</li>
             </ul>
             
-            <h3>Breaking News</h3>
-            <ul>
+            <h3 class="fade-in">Breaking News</h3>
+            <ul class="fade-in">
                 <li>Wait for verification from multiple credible sources</li>
                 <li>Be cautious of early reports, which may have inaccuracies</li>
                 <li>Look for official sources (police, government, verified accounts)</li>
                 <li>Avoid sharing unverified breaking news</li>
             </ul>
             
-            <h3>Health and Science Claims</h3>
-            <ul>
+            <h3 class="fade-in">Health and Science Claims</h3>
+            <ul class="fade-in">
                 <li>Check if research is peer-reviewed</li>
                 <li>Look for consensus in the scientific community</li>
                 <li>Verify if health claims are supported by medical authorities</li>
                 <li>Be skeptical of "miracle cures" or claims that sound too good to be true</li>
             </ul>
             
-            <h2>Building Your Fact-Checking Skills</h2>
+            <h2 id="building-skills" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="strengthGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M17 6c0-1.1-.9-2-2-2H9C7.9 4 7 4.9 7 6v5c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V6z" stroke="url(#strengthGrad)" stroke-width="2" fill="none" stroke-linejoin="round"/><path d="M13 6V4a1 1 0 0 0-2 0v2" stroke="url(#strengthGrad)" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M12 11v6M9 14h6" stroke="url(#strengthGrad)" stroke-width="2" stroke-linecap="round"/></svg></span>Building Your Fact-Checking Skills</h2>
             
-            <p>Fact-checking is a skill that improves with practice:</p>
+            <p class="fade-in">Fact-checking is a skill that improves with practice:</p>
             
-            <ul>
+            <ul class="fade-in">
                 <li><strong>Practice Regularly:</strong> Fact-check information you encounter daily</li>
                 <li><strong>Learn from Mistakes:</strong> When you share something false, understand why</li>
                 <li><strong>Use Tools:</strong> Familiarize yourself with fact-checking websites and tools</li>
@@ -486,11 +1183,11 @@
                 <li><strong>Be Humble:</strong> Recognize that verifying information takes time and effort</li>
             </ul>
             
-            <h2>Fact-Checking in Different Contexts</h2>
+            <h2 id="different-contexts" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="globeGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><circle cx="12" cy="12" r="10" stroke="url(#globeGrad)" stroke-width="2" fill="none"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="url(#globeGrad)" stroke-width="2" fill="none"/></svg></span>Fact-Checking in Different Contexts</h2>
             
-            <h3>Political Claims</h3>
-            <p>When fact-checking political claims, consider:</p>
-            <ul>
+            <h3 class="fade-in">Political Claims</h3>
+            <p class="fade-in">When fact-checking political claims, consider:</p>
+            <ul class="fade-in">
                 <li>Check official records, voting records, and public statements</li>
                 <li>Verify statistics with original sources (census data, government reports)</li>
                 <li>Look for fact-checks from nonpartisan organizations</li>
@@ -498,9 +1195,9 @@
                 <li>Check if claims have been made before and how they were fact-checked</li>
             </ul>
             
-            <h3>Health and Medical Claims</h3>
-            <p>Health information requires extra care:</p>
-            <ul>
+            <h3 class="fade-in">Health and Medical Claims</h3>
+            <p class="fade-in">Health information requires extra care:</p>
+            <ul class="fade-in">
                 <li>Verify with medical authorities (CDC, WHO, medical associations)</li>
                 <li>Check if research is peer-reviewed and published in reputable journals</li>
                 <li>Look for consensus in the medical community</li>
@@ -508,9 +1205,9 @@
                 <li>Check if health claims are supported by multiple independent studies</li>
             </ul>
             
-            <h3>Scientific Claims</h3>
-            <p>For scientific information:</p>
-            <ul>
+            <h3 class="fade-in">Scientific Claims</h3>
+            <p class="fade-in">For scientific information:</p>
+            <ul class="fade-in">
                 <li>Check if research is peer-reviewed</li>
                 <li>Look for replication of findings</li>
                 <li>Verify if claims represent scientific consensus or minority views</li>
@@ -518,11 +1215,11 @@
                 <li>Look for expert commentary from scientists in relevant fields</li>
             </ul>
             
-            <h2>Creating a Fact-Checking Routine</h2>
+            <h2 id="routine" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="calendarGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><rect x="3" y="4" width="18" height="18" rx="2" stroke="url(#calendarGrad)" stroke-width="2" fill="none" stroke-linejoin="round"/><path d="M16 2v4M8 2v4M3 10h18" stroke="url(#calendarGrad)" stroke-width="2" stroke-linecap="round"/><circle cx="8" cy="15" r="1" fill="url(#calendarGrad)"/><circle cx="12" cy="15" r="1" fill="url(#calendarGrad)"/><circle cx="16" cy="15" r="1" fill="url(#calendarGrad)"/></svg></span>Creating a Fact-Checking Routine</h2>
             
-            <p>Develop a personal fact-checking routine that works for you:</p>
+            <p class="fade-in">Develop a personal fact-checking routine that works for you:</p>
             
-            <div class="tip-box">
+            <div class="tip-box fade-in">
                 <h3>Daily Practice</h3>
                 <ul>
                     <li>Before sharing any information, take 30 seconds to verify it</li>
@@ -532,9 +1229,9 @@
                 </ul>
             </div>
             
-            <h3>Building Your Toolkit</h3>
-            <p>Create a personal toolkit of fact-checking resources:</p>
-            <ul>
+            <h3 class="fade-in">Building Your Toolkit</h3>
+            <p class="fade-in">Create a personal toolkit of fact-checking resources:</p>
+            <ul class="fade-in">
                 <li>Bookmark reliable fact-checking websites</li>
                 <li>Install browser extensions that help identify unreliable sources</li>
                 <li>Follow fact-checking organizations on social media</li>
@@ -542,62 +1239,279 @@
                 <li>Learn to use reverse image search and other verification tools</li>
             </ul>
             
-            <h2>The Impact of Fact-Checking</h2>
+            <h2 id="impact" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lightbulbGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M9 21h6M12 3a6 6 0 0 1 6 6c0 2.22-1.21 4.15-3 5.19V15a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-.81C7.21 13.15 6 11.22 6 9a6 6 0 0 1 6-6z" stroke="url(#lightbulbGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>The Impact of Fact-Checking</h2>
             
-            <p>Fact-checking has real-world impact:</p>
+            <p class="fade-in">Fact-checking has real-world impact:</p>
             
-            <h3>Individual Impact</h3>
-            <p>When you fact-check before sharing, you:</p>
-            <ul>
+            <h3 class="fade-in">Individual Impact</h3>
+            <p class="fade-in">When you fact-check before sharing, you:</p>
+            <ul class="fade-in">
                 <li>Protect yourself from being misled</li>
                 <li>Make better-informed decisions</li>
                 <li>Maintain credibility with others</li>
                 <li>Contribute to a healthier information ecosystem</li>
             </ul>
             
-            <h3>Social Impact</h3>
-            <p>When more people fact-check:</p>
-            <ul>
+            <h3 class="fade-in">Social Impact</h3>
+            <p class="fade-in">When more people fact-check:</p>
+            <ul class="fade-in">
                 <li>Misinformation spreads more slowly</li>
                 <li>Public discourse becomes more informed</li>
                 <li>Democracy functions better with an informed citizenry</li>
                 <li>Trust in reliable sources is strengthened</li>
             </ul>
             
-            <div class="info-box">
+            <div class="info-box fade-in">
                 <p><strong>Remember:</strong> It's better to verify before sharing than to spread misinformation. Taking a few minutes to fact-check can prevent the spread of false information and protect others from being misled. Fact-checking is not just a personal skill—it's a civic responsibility.</p>
             </div>
             
-            <p>For more comprehensive guides, visit our <a href="media-literacy-guide.html" style="color: #4A90E2;">Media Literacy Guide</a>, <a href="critical-reading-guide.html" style="color: #4A90E2;">Critical Reading Guide</a>, and <a href="how-we-verify.html" style="color: #4A90E2;">How We Verify</a> pages.</p>
+            <p class="fade-in">For more comprehensive guides, visit our <a href="media-literacy-guide.html">Media Literacy Guide</a>, <a href="critical-reading-guide.html">Critical Reading Guide</a>, and <a href="how-we-verify.html">How We Verify</a> pages.</p>
             
-            <div class="footer-link">
-                <a href="index.html">← Back to Home</a> | <a href="media-literacy-guide.html">Media Literacy Guide</a> | <a href="educational-resources.html">Educational Resources</a>
+            <div class="footer-link fade-in">
+                <a href="index.html">← Back to Home</a>
+                <a href="media-literacy-guide.html">Media Literacy Guide</a>
+                <a href="educational-resources.html">Educational Resources</a>
             </div>
         </div>
     </div>
     
-    <!-- Background Music - Shared across all pages -->
-    <audio id="backgroundMusic" preload="metadata">
-        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+    <!-- Scroll to Top Button -->
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top" tabindex="0">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+        </svg>
+    </button>
+    
+    <script>
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 30;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        function initScrollAnimations() {
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, observerOptions);
+            
+            document.querySelectorAll('.fade-in').forEach(el => {
+                observer.observe(el);
+            });
+        }
+        
+        // Debounce function for performance
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // Optimized scroll handlers with debouncing
+        const debouncedScrollHandler = debounce(() => {
+            const scrollBtn = document.getElementById('scrollToTop');
+            const progressBar = document.getElementById('readingProgress');
+            
+            if (scrollBtn) {
+                if (window.pageYOffset > 300) {
+                    scrollBtn.classList.add('visible');
+                } else {
+                    scrollBtn.classList.remove('visible');
+                }
+            }
+            
+            if (progressBar) {
+                const windowHeight = window.innerHeight;
+                const documentHeight = document.documentElement.scrollHeight;
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollableHeight = documentHeight - windowHeight;
+                const progress = (scrollTop / scrollableHeight) * 100;
+                progressBar.style.transform = `scaleX(${progress / 100})`;
+            }
+        }, 10);
+        
+        // Scroll to top functionality
+        function initScrollToTop() {
+            const scrollBtn = document.getElementById('scrollToTop');
+            if (!scrollBtn) return;
+            
+            scrollBtn.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+            
+            scrollBtn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        }
+        
+        // Reading progress indicator (now handled by debounced scroll handler)
+        function initReadingProgress() {
+            // Progress bar updates are handled by debouncedScrollHandler
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+            initScrollAnimations();
+            initScrollToTop();
+            initReadingProgress();
+            initTableOfContents();
+            initExpandableSections();
+            
+            // Use debounced scroll handler
+            window.addEventListener('scroll', debouncedScrollHandler, { passive: true });
+        });
+        
+        // Initialize expandable sections
+        function initExpandableSections() {
+            document.querySelectorAll('.expandable-header').forEach(header => {
+                header.addEventListener('click', toggleExpandable);
+                header.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleExpandable(e);
+                    }
+                });
+            });
+        }
+        
+        function toggleExpandable(e) {
+            const header = e.currentTarget;
+            const section = header.closest('.expandable-section');
+            const isExpanded = section.classList.contains('expanded');
+            
+            section.classList.toggle('expanded');
+            header.setAttribute('aria-expanded', !isExpanded);
+        }
+        
+        // Smooth scroll for table of contents links
+        function initTableOfContents() {
+            document.querySelectorAll('.table-of-contents a').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    const href = link.getAttribute('href');
+                    if (href.startsWith('#')) {
+                        e.preventDefault();
+                        const target = document.querySelector(href);
+                        if (target) {
+                            target.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                        }
+                    }
+                });
+            });
+        }
+    </script>
+    
+    <!-- Background Music - bruhbruhbruh1.wav -->
+    <audio id="backgroundMusic" preload="auto" loop>
+        <source src="bruhbruhbruh1.wav" type="audio/wav">
         Your browser does not support the audio element.
     </audio>
     
-    <!-- Second track (plays after first) -->
-    <audio id="backgroundMusicSecond" preload="metadata">
-        <source src="YEAHHHHHH.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
+    <!-- Placeholder tracks for music system compatibility -->
+    <audio id="backgroundMusicSecond" preload="metadata" style="display: none;">
+        <source src="bruhbruhbruh1.wav" type="audio/wav">
     </audio>
     
-    <!-- Third track (loops after second) -->
-    <audio id="backgroundMusicLoop" preload="metadata" loop>
-        <source src="Audiolandingpage.m4a" type="audio/mp4">
-        Your browser does not support the audio element.
+    <audio id="backgroundMusicLoop" preload="metadata" loop style="display: none;">
+        <source src="bruhbruhbruh1.wav" type="audio/wav">
     </audio>
     
-    <script src="music-system.js"></script>
+    <!-- Direct Music Start Script - Ensures bruhbruhbruh1.wav plays (music-system.js removed to prevent conflicts) -->
+    <script>
+        (function() {
+            console.log('🎵 Direct music script loaded');
+            const audio = document.getElementById('backgroundMusic');
+            if (!audio) {
+                console.error('❌ Audio element not found!');
+                return;
+            }
+            
+            let hasStarted = false;
+            
+            // Function to start music directly
+            const startMusic = () => {
+                if (hasStarted || !audio.paused) return;
+                
+                hasStarted = true;
+                console.log('🎵 Starting music...');
+                
+                audio.currentTime = 0;
+                audio.volume = 0.5;
+                audio.loop = true;
+                
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log('✅ Music playing successfully!');
+                    }).catch(err => {
+                        console.error('❌ Failed to play:', err);
+                        hasStarted = false; // Allow retry
+                    });
+                }
+            };
+            
+            // Start on ANY user interaction
+            const events = ['click', 'touchstart', 'keydown', 'mousemove', 'scroll', 'wheel', 'pointerdown'];
+            const startOnce = () => {
+                startMusic();
+                events.forEach(e => {
+                    document.removeEventListener(e, startOnce, true);
+                    window.removeEventListener(e, startOnce, true);
+                });
+            };
+            
+            // Add listeners with capture phase to catch events early
+            events.forEach(e => {
+                document.addEventListener(e, startOnce, { once: true, passive: true, capture: true });
+                window.addEventListener(e, startOnce, { once: true, passive: true, capture: true });
+            });
+            
+            // Also try after page is fully loaded
+            if (document.readyState === 'complete') {
+                setTimeout(startMusic, 500);
+            } else {
+                window.addEventListener('load', () => {
+                    setTimeout(startMusic, 500);
+                }, { once: true });
+            }
+        })();
+    </script>
     
     <!-- Cookie Consent Banner -->
     <script src="src/components/cookie-banner.js"></script>
 </body>
 </html>
-

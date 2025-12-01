@@ -293,8 +293,8 @@ exports.handler = async (event, context) => {
         }
       } else if (templateId) {
         // Get specific template
-        const template = await store.get(templateId);
-        if (!template) {
+        const templateData = await store.get(templateId);
+        if (!templateData) {
           return {
             statusCode: 404,
             headers,
@@ -302,10 +302,50 @@ exports.handler = async (event, context) => {
           };
         }
         
+        // Parse the template data
+        let template;
+        try {
+          template = typeof templateData === 'string' ? JSON.parse(templateData) : templateData;
+        } catch (e) {
+          console.error('Error parsing template data:', e.message);
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ error: 'Invalid template format' }),
+          };
+        }
+        
+        // Ensure template has all required fields
+        if (!template.html && template.previewHtml) {
+          template.html = template.previewHtml;
+        }
+        
+        // Ensure html and subject exist
+        if (!template.html) {
+          console.error('Template missing html field:', templateId);
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ error: 'Template missing HTML content' }),
+          };
+        }
+        
+        if (!template.subject) {
+          template.subject = template.name || 'Newsletter';
+        }
+        
+        console.log('Returning template:', {
+          id: template.id,
+          name: template.name,
+          hasSubject: !!template.subject,
+          hasHtml: !!template.html,
+          htmlLength: template.html?.length || 0
+        });
+        
         return {
           statusCode: 200,
           headers,
-          body: template,
+          body: JSON.stringify(template),
         };
       } else {
         // List all templates
@@ -328,14 +368,18 @@ exports.handler = async (event, context) => {
                   .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#')
                   .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#');
               }
+              // Ensure html exists - use previewHtml if html is missing
+              const html = parsed.html || parsed.previewHtml || '';
+              const finalPreviewHtml = previewHtml || html;
+              
               templates.push({
                 id: blob.key,
                 name: parsed.name || blob.key,
                 subject: parsed.subject || '',
                 createdAt: parsed.createdAt || blob.updatedAt,
                 updatedAt: parsed.updatedAt || blob.updatedAt,
-                previewHtml: previewHtml, // Include preview HTML with placeholders
-                html: parsed.html || '', // Include full HTML for sending
+                previewHtml: finalPreviewHtml, // Include preview HTML with placeholders
+                html: html, // Include full HTML for sending
                 text: parsed.text || '', // Include text version
               });
             } catch (e) {
@@ -492,16 +536,29 @@ exports.handler = async (event, context) => {
                     }
                     
                     // Generate HTML with sample data
-                    const html = templateFn(sampleData);
+                    let html;
+                    try {
+                      html = templateFn(sampleData);
+                      if (!html || typeof html !== 'string' || html.trim().length === 0) {
+                        console.error(`Template ${file} generated empty HTML`);
+                        continue;
+                      }
+                    } catch (e) {
+                      console.error(`Error generating HTML for template ${file}:`, e.message);
+                      continue;
+                    }
+                    
                     const text = html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
                     
-                    // Create preview HTML
+                    // Create preview HTML (replace placeholders with preview values)
                     let previewHtml = html
                       .replace(/\{\{FULL_NAME\}\}/g, 'Preview User')
                       .replace(/\{\{FIRST_NAME\}\}/g, 'Preview')
                       .replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview')
                       .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#')
                       .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#');
+                    
+                    console.log(`✅ Generated HTML for ${file}: ${html.length} chars, preview: ${previewHtml.length} chars`);
                     
                     const templateId = `template-${file.replace('.js', '').toLowerCase()}`;
                     const now = new Date().toISOString();

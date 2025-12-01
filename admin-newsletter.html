@@ -1526,19 +1526,59 @@
         async function loadTemplates() {
             try {
                 const token = getAdminToken();
+                console.log('Loading templates...');
                 const response = await fetch(`/.netlify/functions/newsletter-templates?token=${encodeURIComponent(token || '')}`);
                 
                 if (!response.ok) {
                     console.error('Failed to load templates:', response.status, response.statusText);
                     const errorText = await response.text();
                     console.error('Error response:', errorText);
-                    document.getElementById('templatesGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading templates: ' + response.status + '</p></div>';
+                    document.getElementById('templatesGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading templates: ' + response.status + '</p><p style="font-size:0.8rem;color:var(--terminal-amber);margin-top:0.5rem;">' + escapeHtml(errorText) + '</p></div>';
                     return;
                 }
                 
-                const data = await response.json();
+                const responseText = await response.text();
+                console.log('Raw templates response:', responseText.substring(0, 500));
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    console.error('Failed to parse templates response:', e.message);
+                    console.error('Response text:', responseText);
+                    document.getElementById('templatesGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error parsing templates response</p></div>';
+                    return;
+                }
+                
+                console.log('Templates response:', data);
                 console.log('Templates loaded:', data.templates?.length || 0, 'templates');
                 const grid = document.getElementById('templatesGrid');
+                
+                // Store templates in window for selection and sending
+                if (data.templates && data.templates.length > 0) {
+                    window.newsletterTemplates = window.newsletterTemplates || {};
+                    data.templates.forEach(template => {
+                        // Ensure template has all required fields
+                        if (!template.html && template.previewHtml) {
+                            template.html = template.previewHtml;
+                        }
+                        if (!template.subject) {
+                            template.subject = template.name || 'Newsletter';
+                        }
+                        window.newsletterTemplates[template.id] = {
+                            id: template.id,
+                            name: template.name || 'Unnamed Template',
+                            subject: template.subject || 'Newsletter',
+                            html: template.html || '',
+                            text: template.text || '',
+                            previewHtml: template.previewHtml || template.html || ''
+                        };
+                    });
+                    console.log('Stored templates in window.newsletterTemplates:', Object.keys(window.newsletterTemplates).length);
+                } else {
+                    console.warn('No templates found in response. Response structure:', Object.keys(data));
+                    grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No templates found</p><p style="font-size:0.8rem;color:var(--terminal-amber);margin-top:0.5rem;">Templates will be auto-loaded from the email templates directory on first use.</p></div>';
+                    return;
+                }
                 
                 if (data.templates && data.templates.length > 0) {
                         grid.innerHTML = data.templates.map((template, index) => {
@@ -1546,6 +1586,19 @@
                             // Check for previewHtml or html field
                             const previewHtml = template.previewHtml || template.html || '';
                             const hasPreview = previewHtml && previewHtml.trim().length > 0;
+                            
+                            // Log template structure for debugging
+                            if (!hasPreview) {
+                                console.warn('Template missing HTML:', {
+                                    id: template.id,
+                                    name: template.name,
+                                    hasPreviewHtml: !!template.previewHtml,
+                                    hasHtml: !!template.html,
+                                    previewHtmlLength: template.previewHtml?.length || 0,
+                                    htmlLength: template.html?.length || 0
+                                });
+                            }
+                            
                             return `
                             <div class="preview-card expanded" data-template-id="${template.id}" data-is-template="true">
                                 <div class="preview-title">${escapeHtml(template.name || 'Unnamed Template')}</div>
@@ -2105,16 +2158,44 @@
                 
                 // Check if it's a past newsletter template (stored in window.newsletterTemplates)
                 if (window.newsletterTemplates && window.newsletterTemplates[selectedTemplateId]) {
-                    template = window.newsletterTemplates[selectedTemplateId];
-                    console.log('Using past newsletter as template for test:', template.subject);
+                    template = { ...window.newsletterTemplates[selectedTemplateId] };
+                    console.log('Using stored template for test:', template.subject);
+                    
+                    // Ensure template has all required fields
+                    if (!template.html && template.previewHtml) {
+                        template.html = template.previewHtml;
+                    }
+                    if (!template.subject) {
+                        template.subject = template.name || 'Newsletter';
+                    }
+                    if (!template.text && template.html) {
+                        template.text = template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+                    }
                 } else {
                     // Try to load from blob store
                     const templateResponse = await fetch(`/.netlify/functions/newsletter-templates?id=${selectedTemplateId}&token=${encodeURIComponent(token || '')}`);
                     if (!templateResponse.ok) {
-                        throw new Error('Failed to load template');
+                        const errorText = await templateResponse.text();
+                        console.error('Failed to load template:', templateResponse.status, errorText);
+                        throw new Error(`Failed to load template: ${templateResponse.status}`);
                     }
-                    template = JSON.parse(await templateResponse.text());
+                    const responseText = await templateResponse.text();
+                    try {
+                        template = JSON.parse(responseText);
+                    } catch (e) {
+                        console.error('Failed to parse template response:', responseText);
+                        throw new Error('Invalid template data format');
+                    }
                 }
+                
+                console.log('Loaded template for test:', {
+                    id: template.id,
+                    name: template.name,
+                    subject: template.subject,
+                    hasHtml: !!template.html,
+                    hasText: !!template.text,
+                    htmlLength: template.html?.length || 0
+                });
                 
                 // For past newsletters, we might not have text, so generate it from html
                 if (!template.text && template.html) {
@@ -2123,11 +2204,17 @@
                 
                 // Validate template before using
                 if (!template || typeof template !== 'object') {
+                    console.error('Template validation failed - not an object:', template);
                     throw new Error('Invalid template data received');
                 }
                 
                 if (!template.subject || !template.html) {
-                    throw new Error('Template missing required fields (subject or html)');
+                    console.error('Template missing required fields:', {
+                        hasSubject: !!template.subject,
+                        hasHtml: !!template.html,
+                        template: template
+                    });
+                    throw new Error(`Template missing required fields. Subject: ${!!template.subject}, HTML: ${!!template.html}`);
                 }
                 
                 const response = await fetch('/.netlify/functions/send-newsletter', {

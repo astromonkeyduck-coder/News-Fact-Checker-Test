@@ -951,7 +951,7 @@ class NoteworthyChat extends HTMLElement {
         }
         
         .tutorial-header h2::before {
-          content: '✨';
+          content: '';
           font-size: 28px;
           -webkit-text-fill-color: initial;
           filter: drop-shadow(0 2px 4px rgba(74, 144, 226, 0.3));

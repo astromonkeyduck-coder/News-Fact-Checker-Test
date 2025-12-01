@@ -6802,17 +6802,26 @@
             letter-spacing: -0.5px;
         }
         
-        /* Fix mailbox emoji - don't apply gradient to emojis */
-        .mailbox-emoji {
-            display: inline-block;
-            -webkit-text-fill-color: initial;
-            background: none;
-            -webkit-background-clip: initial;
-            background-clip: initial;
-            color: initial;
-            font-style: normal;
-            font-weight: normal;
+        /* Mailbox SVG icon styling */
+        .mailbox-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            margin-right: 12px;
+            line-height: 1;
+        }
+        
+        .mailbox-icon svg {
+            width: 56px;
+            height: 56px;
             filter: none;
+            transition: transform 0.3s ease;
+        }
+        
+        .news-cta:hover .mailbox-icon svg {
+            filter: none;
+            transform: scale(1.1);
         }
         .news-cta p {
             color: rgba(255, 255, 255, 0.95);
@@ -8013,10 +8022,18 @@
         .hero-stat-icon {
             font-size: 3.5rem;
             margin-bottom: 15px;
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             animation: float 3s ease-in-out infinite;
             text-align: center;
             width: 100%;
+        }
+        
+        .hero-stat-icon svg {
+            width: 96px;
+            height: 72px;
+            filter: drop-shadow(0 0 10px rgba(155, 89, 182, 0.6));
         }
         .hero-stat-number {
             font-size: 3.5rem;
@@ -8175,6 +8192,11 @@
         
         /* Mobile responsive stats */
         @media (max-width: 768px) {
+            .hero-stat-icon svg {
+                width: 80px;
+                height: 60px;
+            }
+            
             .stats-surrounding {
                 grid-template-columns: repeat(3, 1fr);
                 gap: 20px;
@@ -8202,6 +8224,11 @@
         }
         
         @media (max-width: 480px) {
+            .hero-stat-icon svg {
+                width: 64px;
+                height: 48px;
+            }
+            
             .stats-surrounding {
                 grid-template-columns: repeat(3, 1fr);
                 gap: 15px;
@@ -10197,6 +10224,56 @@
             transition: transform 0.3s ease;
         }
         
+        /* SVG Glow Effects for Stat Cards */
+        .stat-card.surrounding .stat-icon svg {
+            filter: drop-shadow(0 0 8px rgba(74, 158, 255, 0.5));
+            transition: filter 0.3s ease;
+        }
+        
+        .stat-card.surrounding[data-metric="engagements"] .stat-icon svg {
+            filter: drop-shadow(0 0 8px rgba(79, 172, 254, 0.6));
+        }
+        
+        .stat-card.surrounding[data-metric="likes"] .stat-icon svg {
+            filter: drop-shadow(0 0 8px rgba(255, 107, 157, 0.6));
+        }
+        
+        .stat-card.surrounding[data-metric="shares"] .stat-icon svg {
+            filter: drop-shadow(0 0 8px rgba(79, 172, 254, 0.6));
+        }
+        
+        .stat-card.surrounding[data-metric="reposts"] .stat-icon svg {
+            filter: drop-shadow(0 0 8px rgba(0, 212, 170, 0.6));
+        }
+        
+        .stat-card.surrounding[data-metric="followers"] .stat-icon svg {
+            filter: drop-shadow(0 0 8px rgba(155, 89, 182, 0.6));
+        }
+        
+        .stat-card.surrounding:hover .stat-icon svg {
+            filter: drop-shadow(0 0 12px rgba(74, 158, 255, 0.8));
+        }
+        
+        .stat-card.surrounding[data-metric="engagements"]:hover .stat-icon svg {
+            filter: drop-shadow(0 0 12px rgba(79, 172, 254, 0.9));
+        }
+        
+        .stat-card.surrounding[data-metric="likes"]:hover .stat-icon svg {
+            filter: drop-shadow(0 0 12px rgba(255, 107, 157, 0.9));
+        }
+        
+        .stat-card.surrounding[data-metric="shares"]:hover .stat-icon svg {
+            filter: drop-shadow(0 0 12px rgba(79, 172, 254, 0.9));
+        }
+        
+        .stat-card.surrounding[data-metric="reposts"]:hover .stat-icon svg {
+            filter: drop-shadow(0 0 12px rgba(0, 212, 170, 0.9));
+        }
+        
+        .stat-card.surrounding[data-metric="followers"]:hover .stat-icon svg {
+            filter: drop-shadow(0 0 12px rgba(155, 89, 182, 0.9));
+        }
+        
         /* Hero stat hover effect */
         .hero-stat-main {
             cursor: pointer;
@@ -10209,8 +10286,12 @@
         }
         
         .hero-stat-main:hover .hero-stat-icon {
-            transform: scale(1.4);
+            transform: scale(1.15);
             transition: transform 0.3s ease;
+        }
+        
+        .hero-stat-main:hover .hero-stat-icon svg {
+            filter: drop-shadow(0 0 15px rgba(155, 89, 182, 0.9));
         }
         
         .hero-stat-main:hover .hero-stat-number {
@@ -12735,33 +12816,33 @@
         
         <!-- Hero Stats Section -->
         <div class="hero-stats-container">
-            <div class="hero-stat-card" data-number="857.4K+">
-                <div class="hero-stat-number-small">857.4K+</div>
+            <div class="hero-stat-card" data-number="863.2K+">
+                <div class="hero-stat-number-small">863.2K+</div>
                 <div class="hero-stat-label-small">Engagements</div>
             </div>
             
-            <div class="hero-stat-card" data-number="92.5K+">
-                <div class="hero-stat-number-small">92.5K+</div>
+            <div class="hero-stat-card" data-number="93.2K+">
+                <div class="hero-stat-number-small">93.2K+</div>
                 <div class="hero-stat-label-small">Likes</div>
             </div>
             
-            <div class="hero-stat-card" data-number="29.4M+">
-                <div class="hero-stat-number-small">29.4M+</div>
+            <div class="hero-stat-card" data-number="29.5M+">
+                <div class="hero-stat-number-small">29.5M+</div>
                 <div class="hero-stat-label-small">Total Impressions</div>
             </div>
             
-            <div class="hero-stat-card" data-number="33.7K+">
-                <div class="hero-stat-number-small">33.7K+</div>
+            <div class="hero-stat-card" data-number="33.9K+">
+                <div class="hero-stat-number-small">33.9K+</div>
                 <div class="hero-stat-label-small">Shares</div>
             </div>
             
-            <div class="hero-stat-card" data-number="22.1K+">
-                <div class="hero-stat-number-small">22.1K+</div>
+            <div class="hero-stat-card" data-number="22.4K+">
+                <div class="hero-stat-number-small">22.4K+</div>
                 <div class="hero-stat-label-small">Reposts</div>
             </div>
             
-            <div class="hero-stat-card" data-number="4.2K+">
-                <div class="hero-stat-number-small">4.2K+</div>
+            <div class="hero-stat-card" data-number="4.3K+">
+                <div class="hero-stat-number-small">4.3K+</div>
                 <div class="hero-stat-label-small">Followers</div>
             </div>
         </div>
@@ -12796,7 +12877,38 @@
         <div style="position: relative; z-index: 1;">
             <div class="newsletter-stars" id="newsletterStars"></div>
             <div class="news-cta">
-                <h3><span class="mailbox-emoji">📬</span> Stay Informed with Noteworthy News</h3>
+                <h3><span class="mailbox-icon">
+                    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="mailboxGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#4FACFE;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#9B59B6;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="birdGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Mailbox post -->
+                        <rect x="9" y="14" width="2" height="6" fill="url(#mailboxGrad)" rx="1"/>
+                        <!-- Mailbox body -->
+                        <rect x="5" y="8" width="10" height="8" fill="url(#mailboxGrad)" rx="1" stroke="url(#mailboxGrad)" stroke-width="1.5"/>
+                        <!-- Mailbox door/flap -->
+                        <path d="M5 8 L10 6 L15 8" stroke="url(#mailboxGrad)" stroke-width="1.5" fill="url(#mailboxGrad)" stroke-linejoin="round"/>
+                        <!-- Mail slot -->
+                        <rect x="8" y="10" width="4" height="1.5" fill="rgba(0,0,0,0.3)" rx="0.75"/>
+                        <!-- Bird body -->
+                        <ellipse cx="12" cy="4" rx="2.5" ry="2" fill="url(#birdGrad)" stroke="url(#birdGrad)" stroke-width="1.5"/>
+                        <!-- Bird head -->
+                        <circle cx="13.5" cy="3" r="1.2" fill="url(#birdGrad)"/>
+                        <!-- Bird beak -->
+                        <path d="M14.5 3 L16 2.5 L14.5 3.5 Z" fill="url(#birdGrad)"/>
+                        <!-- Bird wing -->
+                        <ellipse cx="11" cy="4.5" rx="1.2" ry="1.5" fill="url(#birdGrad)" opacity="0.8"/>
+                        <!-- Bird tail -->
+                        <path d="M9.5 4.5 L8 6 L9.5 5.5 Z" fill="url(#birdGrad)"/>
+                    </svg>
+                </span> Stay Informed with Noteworthy News</h3>
                 <p>Get the latest fact-checked stories and media literacy insights delivered directly to your inbox</p>
                 <div class="newsletter-signup">
                     <input type="email" placeholder="Enter your email address" class="newsletter-input">
@@ -12827,29 +12939,104 @@
             </div>
             
             <div class="news-carousel" role="region" aria-label="News articles carousel">
-            <!-- Global Coverage Search Bar -->
-            <div class="globe-search-container-posts" id="globeSearchContainerPosts" style="margin-bottom: 1.5rem; padding: 0.75rem 1rem; background: rgba(0, 0, 0, 0.25); border-radius: 999px; backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);">
-                <div style="flex: 1; min-width: 200px; position: relative; display: flex; align-items: center; gap: 0.5rem;">
+            <!-- Global Coverage Search Bar - Professional Design -->
+            <div class="globe-search-container-posts" id="globeSearchContainerPosts" style="margin-bottom: 2rem; padding: 1rem 1.25rem; background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%); border-radius: 16px; backdrop-filter: blur(20px) saturate(180%); border: 1px solid rgba(74, 144, 226, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 2px 8px rgba(74, 144, 226, 0.1); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+                <div style="flex: 1; min-width: 200px; position: relative; display: flex; align-items: center; gap: 0.75rem;">
+                    <!-- Search Icon -->
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; color: rgba(74, 144, 226, 0.6); transition: color 0.3s ease;">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                     <input 
                         type="text" 
                         class="globe-search-input-posts" 
                         id="globeSearchInputPosts"
                         placeholder="Search global coverage..." 
-                        style="flex: 1; min-width: 0; padding: 0.5rem 0.75rem; background: transparent; border: none; border-radius: 999px; color: #fff; font-size: 0.938rem; font-weight: 400; font-family: inherit; outline: none; transition: all 0.2s ease;"
+                        style="flex: 1; min-width: 0; padding: 0.625rem 0; background: transparent; border: none; border-radius: 0; color: #fff; font-size: 1rem; font-weight: 400; font-family: inherit; outline: none; transition: all 0.3s ease; letter-spacing: 0.01em;"
                     />
-                    <button class="globe-search-clear-posts" id="globeSearchClearPosts" title="Clear search" style="display: none; background: transparent; border: none; color: rgba(255, 255, 255, 0.6); font-size: 1.5rem; cursor: pointer; padding: 0 0.5rem; line-height: 1;">&times;</button>
+                    <button class="globe-search-clear-posts" id="globeSearchClearPosts" title="Clear search" style="display: none; background: rgba(255, 255, 255, 0.1); border: none; color: rgba(255, 255, 255, 0.7); font-size: 1.25rem; cursor: pointer; padding: 0.375rem 0.5rem; line-height: 1; border-radius: 8px; transition: all 0.2s ease; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">&times;</button>
                 </div>
-                <!-- Sort Controls -->
-                <div class="feed-sort-controls" id="feedSortControls">
-                    <button class="feed-sort-btn" data-sort="recent">Recent</button>
-                    <button class="feed-sort-btn" data-sort="views">Views</button>
-                    <button class="feed-sort-btn" data-sort="likes">Likes</button>
-                    <button class="feed-sort-btn" data-sort="nearMe">Near Me</button>
+                <!-- Sort Controls - Professional Segmented Buttons -->
+                <div class="feed-sort-controls" id="feedSortControls" style="display: flex; gap: 0.5rem; flex-shrink: 0; margin-left: 1rem; padding-left: 1rem; border-left: 1px solid rgba(255, 255, 255, 0.1);">
+                    <button class="feed-sort-btn" data-sort="recent" style="padding: 0.625rem 1.25rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap;">Recent</button>
+                    <button class="feed-sort-btn" data-sort="views" style="padding: 0.625rem 1.25rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap;">Views</button>
+                    <button class="feed-sort-btn" data-sort="likes" style="padding: 0.625rem 1.25rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap;">Likes</button>
+                    <button class="feed-sort-btn" data-sort="nearMe" style="padding: 0.625rem 1.25rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap;">Near Me</button>
                 </div>
             </div>
+            <style>
+                .globe-search-container-posts:hover {
+                    border-color: rgba(74, 144, 226, 0.3);
+                    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08) inset, 0 4px 12px rgba(74, 144, 226, 0.15);
+                }
+                .globe-search-input-posts::placeholder {
+                    color: rgba(255, 255, 255, 0.4);
+                    font-weight: 400;
+                }
+                .globe-search-input-posts:focus {
+                    color: #fff;
+                }
+                .globe-search-input-posts:focus + .globe-search-clear-posts,
+                .globe-search-container-posts:focus-within svg {
+                    color: rgba(74, 144, 226, 0.9);
+                }
+                .globe-search-clear-posts:hover {
+                    background: rgba(255, 255, 255, 0.15);
+                    color: #fff;
+                    transform: scale(1.1);
+                }
+                .feed-sort-btn:hover {
+                    background: rgba(255, 255, 255, 0.1);
+                    border-color: rgba(255, 255, 255, 0.2);
+                    transform: translateY(-1px);
+                }
+                .feed-sort-btn:active {
+                    transform: translateY(0);
+                }
+                @media (max-width: 768px) {
+                    .globe-search-container-posts {
+                        flex-direction: column;
+                        gap: 1rem;
+                    }
+                    .feed-sort-controls {
+                        margin-left: 0;
+                        padding-left: 0;
+                        border-left: none;
+                        border-top: 1px solid rgba(255, 255, 255, 0.1);
+                        padding-top: 1rem;
+                        width: 100%;
+                        flex-wrap: wrap;
+                    }
+                    .feed-sort-btn {
+                        flex: 1;
+                        min-width: calc(50% - 0.25rem);
+                    }
+                }
+            </style>
             
                 <div class="articles-track" id="articlesTrack" role="list" aria-live="polite">
-                    <!-- Skeleton loading animation will be shown here immediately, then replaced with actual posts -->
+                    <!-- Professional Loading Indicator -->
+                    <div id="postsLoadingIndicator" style="padding: 4rem 2rem; text-align: center; background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.6) 100%); border-radius: 20px; border: 1px solid rgba(74, 144, 226, 0.1); backdrop-filter: blur(10px); min-width: 100%;">
+                        <div style="position: relative; display: inline-block; margin-bottom: 2rem;">
+                            <!-- Outer rotating ring -->
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; border: 3px solid rgba(74, 144, 226, 0.2); border-top-color: #4A90E2; border-radius: 50%; animation: spinPosts 1.2s linear infinite;"></div>
+                            <!-- Inner pulsing circle -->
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; background: radial-gradient(circle, rgba(74, 144, 226, 0.3) 0%, transparent 70%); border-radius: 50%; animation: pulsePosts 2s ease-in-out infinite;"></div>
+                            <!-- Center dot -->
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 12px; height: 12px; background: #4A90E2; border-radius: 50%; box-shadow: 0 0 20px rgba(74, 144, 226, 0.8);"></div>
+                        </div>
+                        <h3 style="color: #fff; font-size: 1.75rem; font-weight: 700; margin: 0 0 0.75rem 0; letter-spacing: -0.02em; background: linear-gradient(135deg, #fff 0%, rgba(74, 144, 226, 0.9) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Loading Posts</h3>
+                        <p style="color: rgba(255, 255, 255, 0.85); font-size: 1.0625rem; margin: 0 0 0.5rem 0; font-weight: 500;">Fetching the latest news from around the world</p>
+                        <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9375rem; margin: 0; letter-spacing: 0.02em;">Please wait, content is loading...</p>
+                        <style>
+                            @keyframes spinPosts {
+                                to { transform: translate(-50%, -50%) rotate(360deg); }
+                            }
+                            @keyframes pulsePosts {
+                                0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+                                50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+                            }
+                        </style>
+                    </div>
             </div>
             
             <!-- In-Content Ad - After Articles -->
@@ -12868,7 +13055,43 @@
         <!-- Global Coverage Globe Section - Below News Stories -->
         <div class="globe-section" id="globe-section" style="padding: 3rem 1rem; background: rgba(7, 21, 42, 0.5); margin: 2rem 0;">
             <h2 class="news-title" style="text-align: center; margin-bottom: 1rem;">Global Coverage Map</h2>
-            <div id="cia-globe-container" style="width: 100%; height: 600px; max-width: 1200px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);"></div>
+            <div id="cia-globe-container" style="width: 100%; height: 600px; max-width: 1200px; margin: 0 auto; border-radius: 16px; overflow: hidden; background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%); position: relative; border: 1px solid rgba(74, 144, 226, 0.15); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;">
+                <!-- Professional Loading Indicator for Globe -->
+                <div id="globeLoadingIndicator" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(7, 21, 42, 0.98) 0%, rgba(13, 31, 58, 0.98) 100%); backdrop-filter: blur(10px); z-index: 10; border-radius: 16px;">
+                    <div style="position: relative; display: inline-block; margin-bottom: 2.5rem;">
+                        <!-- Globe icon with rotation -->
+                        <div style="position: relative; width: 100px; height: 100px;">
+                            <!-- Outer ring -->
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; border: 3px solid rgba(74, 144, 226, 0.2); border-top-color: #4A90E2; border-radius: 50%; animation: spinGlobe 1.5s linear infinite;"></div>
+                            <!-- Middle ring -->
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; border: 2px solid rgba(74, 144, 226, 0.15); border-right-color: rgba(74, 144, 226, 0.6); border-radius: 50%; animation: spinGlobe 1s linear infinite reverse;"></div>
+                            <!-- Globe SVG -->
+                            <svg style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; animation: floatGlobe 3s ease-in-out infinite;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="url(#globeGradient)" stroke-width="1.5" fill="none"/>
+                                <path d="M2 12h20M12 2a15.3 15.3 0 0 0 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 0 4-10z" stroke="url(#globeGradient)" stroke-width="1" opacity="0.6"/>
+                                <defs>
+                                    <linearGradient id="globeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                    </div>
+                    <h3 style="color: #fff; font-size: 1.75rem; font-weight: 700; margin: 0 0 0.75rem 0; letter-spacing: -0.02em; background: linear-gradient(135deg, #fff 0%, rgba(74, 144, 226, 0.9) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Loading Global Map</h3>
+                    <p style="color: rgba(255, 255, 255, 0.85); font-size: 1.0625rem; margin: 0 0 0.5rem 0; font-weight: 500;">Preparing interactive coverage visualization</p>
+                    <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9375rem; margin: 0; letter-spacing: 0.02em;">Please wait, map is loading...</p>
+                    <style>
+                        @keyframes spinGlobe {
+                            to { transform: translate(-50%, -50%) rotate(360deg); }
+                        }
+                        @keyframes floatGlobe {
+                            0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+                            50% { transform: translate(-50%, -50%) translateY(-8px); }
+                        }
+                    </style>
+                </div>
+            </div>
         </div>
         <style>
             .cta-badge {
@@ -13128,41 +13351,113 @@
             <p class="credibility-subtitle">Trusted by millions across the globe</p>
             
             <div class="stats-hero-container">
-                <div class="hero-stat-main" data-emoji="📊" data-number="29.4M+">
-                    <div class="hero-stat-icon">📊</div>
-                    <div class="hero-stat-number">29.4M+</div>
+                <div class="hero-stat-main" data-metric="impressions" data-number="29.5M+">
+                    <div class="hero-stat-icon">
+                        <svg width="96" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="impressionsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#9B59B6;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#8E44AD;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <!-- Base axis line -->
+                            <line x1="4" y1="20" x2="20" y2="20" stroke="url(#impressionsGrad)" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+                            <!-- Vertical bars increasing left to right -->
+                            <rect x="5" y="18" width="2.2" height="2" fill="url(#impressionsGrad)" rx="1.1"/>
+                            <rect x="8.5" y="15" width="2.2" height="5" fill="url(#impressionsGrad)" rx="1.1"/>
+                            <rect x="12" y="11" width="2.2" height="9" fill="url(#impressionsGrad)" rx="1.1"/>
+                            <rect x="15.5" y="8" width="2.2" height="12" fill="url(#impressionsGrad)" rx="1.1"/>
+                            <rect x="19" y="5" width="2.2" height="15" fill="url(#impressionsGrad)" rx="1.1"/>
+                        </svg>
+                    </div>
+                    <div class="hero-stat-number">29.5M+</div>
                     <div class="hero-stat-label">Total Impressions</div>
                     <div class="hero-stat-description">Reaching millions with fact-checked news every day</div>
                 </div>
                 
                 <div class="stats-surrounding">
-                    <div class="stat-card surrounding" data-emoji="💬" data-number="857.4K+">
-                        <div class="stat-icon">💬</div>
-                        <div class="stat-number">857.4K+</div>
+                    <div class="stat-card surrounding" data-metric="engagements" data-number="863.2K+">
+                        <div class="stat-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="engagementsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#4FACFE;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#9B59B6;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                                <!-- Rounded square chat bubble -->
+                                <rect x="3" y="5" width="18" height="14" rx="3" fill="url(#engagementsGrad)" stroke="url(#engagementsGrad)" stroke-width="1.5" stroke-linejoin="round"/>
+                                <!-- Three dots inside - more obvious -->
+                                <circle cx="8" cy="11" r="2" fill="url(#engagementsGrad)"/>
+                                <circle cx="12" cy="11" r="2" fill="url(#engagementsGrad)"/>
+                                <circle cx="16" cy="11" r="2" fill="url(#engagementsGrad)"/>
+                            </svg>
+                        </div>
+                        <div class="stat-number">863.2K+</div>
                         <div class="stat-label">Engagements</div>
                     </div>
                     
-                    <div class="stat-card surrounding" data-emoji="❤️" data-number="92.5K+">
-                        <div class="stat-icon">❤️</div>
-                        <div class="stat-number">92.5K+</div>
+                    <div class="stat-card surrounding" data-metric="likes" data-number="93.2K+">
+                        <div class="stat-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="url(#likesGrad)" stroke="url(#likesGrad)" stroke-width="1.5" stroke-linejoin="round"/>
+                                <defs>
+                                    <linearGradient id="likesGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#FF6B9D;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#C44569;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                        <div class="stat-number">93.2K+</div>
                         <div class="stat-label">Likes</div>
                     </div>
 
-                    <div class="stat-card surrounding" data-emoji="📤" data-number="33.7K+">
-                        <div class="stat-icon">📤</div>
-                        <div class="stat-number">33.7K+</div>
+                    <div class="stat-card surrounding" data-metric="shares" data-number="33.9K+">
+                        <div class="stat-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" fill="url(#sharesGrad)" stroke="url(#sharesGrad)" stroke-width="1.5" stroke-linejoin="round"/>
+                                <defs>
+                                    <linearGradient id="sharesGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#4FACFE;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                        <div class="stat-number">33.9K+</div>
                         <div class="stat-label">Shares</div>
                     </div>
                     
-                    <div class="stat-card surrounding" data-emoji="🔄" data-number="22.1K+">
-                        <div class="stat-icon">🔄</div>
-                        <div class="stat-number">22.1K+</div>
+                    <div class="stat-card surrounding" data-metric="reposts" data-number="22.4K+">
+                        <div class="stat-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" fill="url(#repostsGrad)" stroke="url(#repostsGrad)" stroke-width="1.5" stroke-linejoin="round"/>
+                                <defs>
+                                    <linearGradient id="repostsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#00D4AA;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#00B894;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                        <div class="stat-number">22.4K+</div>
                         <div class="stat-label">Reposts</div>
                     </div>
                     
-                    <div class="stat-card surrounding" data-emoji="👥" data-number="4.2K+">
-                        <div class="stat-icon">👥</div>
-                        <div class="stat-number">4.2K+</div>
+                    <div class="stat-card surrounding" data-metric="followers" data-number="4.3K+">
+                        <div class="stat-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="url(#followersGrad)" stroke="url(#followersGrad)" stroke-width="1.5" stroke-linejoin="round"/>
+                                <defs>
+                                    <linearGradient id="followersGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#9B59B6;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#8E44AD;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                        <div class="stat-number">4.3K+</div>
                         <div class="stat-label">Followers</div>
                     </div>
                 </div>
@@ -13248,6 +13543,16 @@
                     <p>Empowering critical thinking through trusted journalism.</p>
                     <p style="margin-top: 15px; color: rgba(255, 255, 255, 0.7); font-size: 0.85rem;">Website built and maintained by Richard, Co-Founder of Noteworthy News.</p>
                     <p style="margin-top: 8px; color: rgba(255, 255, 255, 0.6); font-size: 0.8rem;">Press inquiries, partnerships and verified tips: <a href="mailto:richard@noteworthynews.co" style="color: #4A9EFF; text-decoration: none; transition: color 0.3s ease;">richard@noteworthynews.co</a></p>
+                    <div class="founders-line" style="margin-top: 25px; padding-top: 25px; border-top: 1px solid rgba(255, 255, 255, 0.15);">
+                        <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.85rem; margin: 0; text-align: center; letter-spacing: 0.5px; font-weight: 400;">
+                            <span style="color: rgba(255, 255, 255, 0.6); font-weight: 500; margin-right: 10px;">Founders:</span>
+                            <span style="color: rgba(255, 255, 255, 0.9); font-weight: 500;">Richard</span>
+                            <span style="color: rgba(255, 255, 255, 0.3); margin: 0 12px; font-weight: 300;">•</span>
+                            <span style="color: rgba(255, 255, 255, 0.9); font-weight: 500;">Chase</span>
+                            <span style="color: rgba(255, 255, 255, 0.3); margin: 0 12px; font-weight: 300;">•</span>
+                            <span style="color: rgba(255, 255, 255, 0.9); font-weight: 500;">Jack</span>
+                        </p>
+                    </div>
             </div>
         </div>
     </footer>
@@ -14671,8 +14976,27 @@
             if (typeof CiaMissionGlobe !== 'undefined') {
                 const globe = new CiaMissionGlobe('cia-globe-container');
                 console.log('[Globe] Initialized global coverage map');
+                
+                // Hide loading indicator once globe is ready
+                setTimeout(function() {
+                    const loadingIndicator = document.getElementById('globeLoadingIndicator');
+                    if (loadingIndicator) {
+                        loadingIndicator.style.opacity = '0';
+                        loadingIndicator.style.transition = 'opacity 0.5s ease';
+                        setTimeout(function() {
+                            loadingIndicator.style.display = 'none';
+                        }, 500);
+                    }
+                }, 1000);
             } else {
                 console.warn('[Globe] CiaMissionGlobe not available');
+                // Still hide loading indicator after timeout
+                setTimeout(function() {
+                    const loadingIndicator = document.getElementById('globeLoadingIndicator');
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
+                }, 3000);
             }
         });
     </script>

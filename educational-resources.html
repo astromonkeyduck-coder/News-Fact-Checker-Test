@@ -3,8 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Educational Resources - Noteworthy News</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <title>Educational Resources - Noteworthy News | Media Literacy Tools & Courses</title>
+    
+    <!-- Enhanced SEO Meta Tags -->
+    <meta name="description" content="Comprehensive list of educational resources for media literacy: fact-checking websites, online courses, verification tools, books, podcasts, and interactive learning games.">
+    <meta name="keywords" content="media literacy resources, fact-checking tools, educational resources, media literacy courses, verification tools, news literacy, digital literacy education, fact-checking websites">
+    <meta name="author" content="Noteworthy News">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <link rel="canonical" href="https://noteworthynews.co/educational-resources.html">
+    
+    <!-- Enhanced Open Graph for Social Media -->
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://noteworthynews.co/educational-resources.html">
+    <meta property="og:site_name" content="Noteworthy News">
+    <meta property="og:title" content="Educational Resources - Noteworthy News">
+    <meta property="og:description" content="Comprehensive list of educational resources for media literacy: fact-checking websites, online courses, verification tools, and interactive learning games.">
+    <meta property="og:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg?v=2">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Enhanced Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://noteworthynews.co/educational-resources.html">
+    <meta name="twitter:title" content="Educational Resources - Noteworthy News">
+    <meta name="twitter:description" content="Comprehensive list of educational resources for media literacy: fact-checking websites, online courses, verification tools, and interactive learning games.">
+    <meta name="twitter:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg?v=2">
+    <meta name="twitter:site" content="@NoteworthyNews">
+    <meta name="twitter:creator" content="@NoteworthyNews">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": "Educational Resources",
+      "description": "Comprehensive list of educational resources for media literacy: fact-checking websites, online courses, verification tools, and interactive learning games.",
+      "author": {
+        "@type": "Organization",
+        "name": "Noteworthy News"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Noteworthy News",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://noteworthynews.co/IMG_5794.PNG"
+        }
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "https://noteworthynews.co/educational-resources.html"
+      }
+    }
+    </script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Favicon and Theme -->
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="192x192">
@@ -20,7 +76,9 @@
         }
         
         html {
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%) !important;
+            scroll-behavior: smooth;
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
+            background-color: #07152a !important;
             min-height: 100vh;
             overflow-x: hidden;
             overscroll-behavior: none !important;
@@ -30,13 +88,15 @@
         }
         
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3a 50%, #2d2d5a 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+            background-color: #07152a;
             color: white;
-            line-height: 1.6;
+            line-height: 1.7;
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
+            font-weight: 400;
         }
         
         body::before {
@@ -46,35 +106,97 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle at 20% 80%, rgba(74, 144, 226, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, rgba(46, 204, 113, 0.1) 0%, transparent 50%);
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(74, 158, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(46, 204, 113, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(91, 181, 255, 0.08) 0%, transparent 70%);
+            z-index: -2;
+            animation: backgroundPulse 20s ease-in-out infinite;
+        }
+        
+        @keyframes backgroundPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.9; transform: scale(1.05); }
+        }
+        
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
             z-index: -1;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(74, 158, 255, 0.6);
+            border-radius: 50%;
+            animation: floatParticle 15s infinite ease-in-out;
+        }
+        
+        @keyframes floatParticle {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+            25% { transform: translate(30px, -50px) scale(1.2); opacity: 0.8; }
+            50% { transform: translate(-20px, -100px) scale(0.8); opacity: 0.5; }
+            75% { transform: translate(40px, -70px) scale(1.1); opacity: 0.7; }
         }
         
         .container {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 60px 20px;
             position: relative;
             z-index: 1;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 50px;
-            padding: 40px 20px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            border: 1px solid rgba(74, 144, 226, 0.2);
+            margin-bottom: 60px;
+            padding: 60px 40px;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            border: 2px solid rgba(74, 158, 255, 0.3);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(74, 158, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.8s ease-out;
+        }
+        
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 30px;
             border-radius: 50%;
             overflow: hidden;
+            position: relative;
+            animation: logoFloat 6s ease-in-out infinite;
+            box-shadow: 0 10px 40px rgba(74, 158, 255, 0.4);
+            transition: transform 0.3s ease;
+        }
+        
+        .logo:hover {
+            transform: scale(1.1) rotate(5deg);
+        }
+        
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
         }
         
         .logo a {
@@ -88,173 +210,730 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            filter: brightness(1.1);
         }
         
         h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, #4A90E2, #2ECC71);
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #4A9EFF 0%, #2ECC71 50%, #5BB5FF 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
         }
         
         .last-updated {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.9rem;
-            margin-top: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.1rem;
+            margin-top: 15px;
+            font-weight: 400;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
         }
         
         .content {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            border: 1px solid rgba(74, 144, 226, 0.2);
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 50px;
+            border: 2px solid rgba(74, 158, 255, 0.3);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(74, 158, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            animation: fadeInUp 0.8s ease-out 0.6s both;
         }
         
         .content h2 {
-            font-size: 1.8rem;
-            margin-top: 40px;
-            margin-bottom: 20px;
-            color: #4A90E2;
-            border-bottom: 2px solid rgba(74, 144, 226, 0.3);
-            padding-bottom: 10px;
+            font-size: clamp(1.8rem, 4vw, 2.2rem);
+            margin-top: 50px;
+            margin-bottom: 25px;
+            color: #4A9EFF;
+            border-bottom: 3px solid rgba(74, 158, 255, 0.4);
+            padding-bottom: 15px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            position: relative;
+            scroll-margin-top: 100px;
         }
         
         .content h2:first-child {
             margin-top: 0;
         }
         
+        .content h2::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #4A9EFF, #2ECC71);
+            border-radius: 2px;
+        }
+        
         .content h3 {
-            font-size: 1.3rem;
-            margin-top: 25px;
-            margin-bottom: 15px;
+            font-size: clamp(1.3rem, 3vw, 1.6rem);
+            margin-top: 35px;
+            margin-bottom: 18px;
             color: #2ECC71;
+            font-weight: 600;
+            letter-spacing: -0.01em;
         }
         
         .content p {
-            margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.9);
-            line-height: 1.8;
+            margin-bottom: 22px;
+            color: rgba(255, 255, 255, 0.92);
+            line-height: 1.85;
+            font-size: 1.05rem;
         }
         
         .content ul {
-            margin-left: 30px;
-            margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.9);
+            margin-left: 25px;
+            margin-bottom: 25px;
+            color: rgba(255, 255, 255, 0.92);
+            list-style: none;
+            padding-left: 0;
         }
         
-        .content li {
-            margin-bottom: 10px;
-            line-height: 1.8;
+        .content ul li {
+            margin-bottom: 12px;
+            line-height: 1.85;
+            padding-left: 30px;
+            position: relative;
+            font-size: 1.05rem;
+        }
+        
+        .content ul li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: #4A9EFF;
+            font-weight: 600;
+        }
+        
+        .content ol {
+            margin-left: 25px;
+            margin-bottom: 25px;
+            color: rgba(255, 255, 255, 0.92);
+            padding-left: 0;
+            counter-reset: list-counter;
+            list-style: none;
+        }
+        
+        .content ol li {
+            margin-bottom: 12px;
+            line-height: 1.85;
+            padding-left: 35px;
+            position: relative;
+            font-size: 1.05rem;
+            counter-increment: list-counter;
+        }
+        
+        .content ol li::before {
+            content: counter(list-counter) '.';
+            position: absolute;
+            left: 0;
+            color: #4A9EFF;
+            font-weight: 700;
         }
         
         .content strong {
-            color: #4A90E2;
+            color: #4A9EFF;
+            font-weight: 600;
+        }
+        
+        .info-box {
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.15), rgba(74, 158, 255, 0.08));
+            border-left: 5px solid #4A9EFF;
+            padding: 30px;
+            margin: 35px 0;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 8px 25px rgba(74, 158, 255, 0.2);
+        }
+        
+        .info-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #4A9EFF, transparent);
+            animation: scanLine 3s infinite;
+        }
+        
+        @keyframes scanLine {
+            0%, 100% { transform: translateX(-100%); }
+            50% { transform: translateX(100%); }
+        }
+        
+        .info-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(74, 158, 255, 0.3);
+        }
+        
+        .info-box p {
+            margin-bottom: 12px;
+            font-size: 1.15rem;
+            line-height: 1.8;
+        }
+        
+        /* Enhanced Resource Cards */
+        .resource-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+            margin: 40px 0;
         }
         
         .resource-card {
-            background: rgba(74, 144, 226, 0.1);
-            border: 1px solid rgba(74, 144, 226, 0.3);
-            padding: 25px;
-            margin: 20px 0;
-            border-radius: 10px;
-            transition: transform 0.3s ease;
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.12), rgba(74, 158, 255, 0.06));
+            border: 2px solid rgba(74, 158, 255, 0.3);
+            padding: 30px;
+            border-radius: 20px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(74, 158, 255, 0.15);
+        }
+        
+        .resource-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .resource-card:hover::before {
+            left: 100%;
         }
         
         .resource-card:hover {
-            transform: translateY(-2px);
-            border-color: #4A90E2;
+            transform: translateY(-10px) scale(1.02);
+            border-color: #4A9EFF;
+            box-shadow: 0 20px 50px rgba(74, 158, 255, 0.4);
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.2), rgba(74, 158, 255, 0.12));
         }
         
         .resource-card h3 {
-            color: #4A90E2;
+            color: #4A9EFF;
             margin-top: 0;
             margin-bottom: 15px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+        
+        .resource-card p {
+            margin-bottom: 15px;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.7;
+            font-size: 1rem;
         }
         
         .resource-card a {
             color: #2ECC71;
             text-decoration: none;
             font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
         }
         
         .resource-card a:hover {
-            text-decoration: underline;
+            color: #4A9EFF;
+            border-bottom-color: #4A9EFF;
+            transform: translateX(5px);
+        }
+        
+        .resource-card a::after {
+            content: '→';
+            transition: transform 0.3s ease;
+        }
+        
+        .resource-card a:hover::after {
+            transform: translateX(5px);
         }
         
         .resource-category {
-            background: rgba(46, 204, 113, 0.1);
-            border-left: 4px solid #2ECC71;
-            padding: 25px;
-            margin: 30px 0;
-            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.15), rgba(46, 204, 113, 0.08));
+            border-left: 5px solid #2ECC71;
+            padding: 30px;
+            margin: 35px 0;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 8px 25px rgba(46, 204, 113, 0.2);
+        }
+        
+        .resource-category::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #2ECC71, transparent);
+            animation: scanLine 3s infinite;
+        }
+        
+        .resource-category:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(46, 204, 113, 0.3);
         }
         
         .resource-category h3 {
             color: #2ECC71;
             margin-top: 0;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
         }
         
-        .info-box {
-            background: rgba(74, 144, 226, 0.1);
-            border-left: 4px solid #4A90E2;
-            padding: 25px;
-            margin: 30px 0;
-            border-radius: 10px;
+        .resource-category p {
+            margin-bottom: 12px;
         }
         
-        .info-box p {
-            margin-bottom: 10px;
-            font-size: 1.1rem;
+        .resource-category a {
+            color: #2ECC71;
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
         }
         
-        .resource-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin: 30px 0;
+        .resource-category a:hover {
+            color: #4A9EFF;
+            border-bottom-color: #4A9EFF;
+        }
+        
+        .content a {
+            color: #4A9EFF;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .content a:hover {
+            color: #2ECC71;
+            border-bottom-color: #2ECC71;
         }
         
         .footer-link {
             text-align: center;
-            margin-top: 50px;
-            padding: 30px;
+            margin-top: 60px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(74, 158, 255, 0.2);
         }
         
         .footer-link a {
-            color: #4A90E2;
+            color: #4A9EFF;
             text-decoration: none;
             font-weight: 600;
-            transition: all 0.3s;
+            padding: 12px 24px;
+            margin: 0 8px;
+            border-radius: 25px;
+            background: rgba(74, 158, 255, 0.1);
+            border: 2px solid rgba(74, 158, 255, 0.3);
+            display: inline-block;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
         }
         
         .footer-link a:hover {
             color: #2ECC71;
-            text-decoration: underline;
+            background: rgba(46, 204, 113, 0.15);
+            border-color: #2ECC71;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
+        }
+        
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
         
         @media (max-width: 768px) {
+            .container {
+                padding: 40px 15px;
+            }
+            
+            .header {
+                padding: 40px 25px;
+                margin-bottom: 40px;
+            }
+            
             h1 {
                 font-size: 2rem;
             }
             
             .content {
-                padding: 25px;
+                padding: 30px 20px;
+                border-radius: 20px;
             }
             
             .content h2 {
-                font-size: 1.5rem;
+                font-size: 1.6rem;
+                margin-top: 35px;
+            }
+            
+            .content h3 {
+                font-size: 1.2rem;
             }
             
             .resource-grid {
                 grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .footer-link a {
+                display: block;
+                margin: 8px 0;
+            }
+        }
+        
+        /* Scroll to Top Button */
+        .scroll-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #4A9EFF, #5BB5FF);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(74, 158, 255, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .scroll-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .scroll-to-top:hover {
+            transform: translateY(-5px) scale(1.1);
+            box-shadow: 0 8px 25px rgba(74, 158, 255, 0.6);
+        }
+        
+        .scroll-to-top svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+        
+        .scroll-to-top:focus {
+            outline: 2px solid rgba(255, 255, 255, 0.8);
+            outline-offset: 2px;
+        }
+        
+        .resource-card {
+            outline: none;
+        }
+        
+        .resource-card:focus {
+            outline: 2px solid #4A9EFF;
+            outline-offset: 2px;
+        }
+        
+        .section-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            margin-right: 12px;
+            vertical-align: text-top;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        .section-icon svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 8px rgba(74, 158, 255, 0.5));
+            display: block;
+        }
+        
+        /* Reading Progress Bar */
+        .reading-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #4A9EFF, #5BB5FF);
+            z-index: 1001;
+            transform-origin: left;
+            transition: transform 0.1s ease;
+            box-shadow: 0 2px 10px rgba(74, 158, 255, 0.5);
+        }
+        
+        /* Table of Contents - Modern Design */
+        .table-of-contents {
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.12), rgba(91, 181, 255, 0.08));
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 35px;
+            margin-bottom: 50px;
+            border: 2px solid rgba(74, 158, 255, 0.3);
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(74, 158, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .table-of-contents::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #4A9EFF, #5BB5FF, transparent);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
+        .table-of-contents h3 {
+            color: #4A9EFF;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(74, 158, 255, 0.5);
+            letter-spacing: -0.02em;
+        }
+        
+        .table-of-contents ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+        }
+        
+        .table-of-contents li {
+            margin: 0;
+            padding: 0;
+        }
+        
+        .table-of-contents li::before {
+            content: none;
+        }
+        
+        .table-of-contents a {
+            color: rgba(255, 255, 255, 0.95);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.95rem;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(74, 158, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .table-of-contents a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(74, 158, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .table-of-contents a:hover::before {
+            left: 100%;
+        }
+        
+        .table-of-contents a:hover {
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.2), rgba(91, 181, 255, 0.15));
+            color: #4A9EFF;
+            transform: translateX(8px) translateY(-2px);
+            border-color: rgba(74, 158, 255, 0.5);
+            box-shadow: 0 6px 20px rgba(74, 158, 255, 0.3);
+        }
+        
+        .table-of-contents a::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #4A9EFF;
+            opacity: 0;
+            transition: all 0.3s ease;
+            margin-left: auto;
+            box-shadow: 0 0 10px rgba(74, 158, 255, 0.8);
+        }
+        
+        .table-of-contents a:hover::after {
+            opacity: 1;
+            transform: scale(1.5);
+        }
+        
+        /* Interactive Tooltips */
+        .tooltip-trigger {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            border-bottom: 2px dotted #4A9EFF;
+            color: #4A9EFF;
+            font-weight: 600;
+        }
+        
+        .tooltip {
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 30, 50, 0.98);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            width: 250px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            border: 1px solid rgba(74, 158, 255, 0.3);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+        
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: rgba(20, 30, 50, 0.98);
+        }
+        
+        .tooltip-trigger:hover .tooltip,
+        .tooltip-trigger:focus .tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* Expandable Sections */
+        .expandable-section {
+            margin: 25px 0;
+            border: 1px solid rgba(74, 158, 255, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        .expandable-header {
+            padding: 18px 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+            user-select: none;
+        }
+        
+        .expandable-header:hover {
+            background: rgba(74, 158, 255, 0.1);
+        }
+        
+        .expandable-header:focus {
+            outline: 2px solid #4A9EFF;
+            outline-offset: -2px;
+        }
+        
+        .expandable-title {
+            font-weight: 600;
+            color: #4A9EFF;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+        
+        .expandable-icon {
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+            color: #4A9EFF;
+        }
+        
+        .expandable-section.expanded .expandable-icon {
+            transform: rotate(180deg);
+        }
+        
+        .expandable-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.4s ease;
+            padding: 0 24px;
+        }
+        
+        .expandable-section.expanded .expandable-content {
+            max-height: 2000px;
+            padding: 20px 24px;
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
             }
         }
     </style>
 </head>
 <body>
+    <div class="particles" id="particles"></div>
+    <div class="reading-progress" id="readingProgress"></div>
+    
     <div class="container">
         <div class="header">
             <div class="logo">
@@ -267,212 +946,231 @@
         </div>
         
         <div class="content">
-            <div class="info-box">
-                <p><strong>Expand Your Knowledge:</strong> These resources will help you develop stronger media literacy skills, learn fact-checking techniques, and become a more informed consumer of information.</p>
+            <div class="table-of-contents fade-in">
+                <h3>Table of Contents</h3>
+                <ul>
+                    <li><a href="#fact-checking-websites">Fact-Checking Websites</a></li>
+                    <li><a href="#media-literacy-orgs">Media Literacy Organizations</a></li>
+                    <li><a href="#online-courses">Online Courses and Learning Platforms</a></li>
+                    <li><a href="#verification-tools">Tools for Verification</a></li>
+                    <li><a href="#books">Books and Publications</a></li>
+                    <li><a href="#podcasts">Podcasts and Videos</a></li>
+                    <li><a href="#interactive-tools">Interactive Learning Tools</a></li>
+                    <li><a href="#guides">Educational Guides and Worksheets</a></li>
+                    <li><a href="#educators">For Educators</a></li>
+                    <li><a href="#research">Research and Reports</a></li>
+                    <li><a href="#how-to-use">How to Use These Resources</a></li>
+                    <li><a href="#staying-current">Staying Current</a></li>
+                    <li><a href="#additional-resources">Additional Resources</a></li>
+                </ul>
             </div>
             
-            <h2>Fact-Checking Websites</h2>
+            <div class="info-box fade-in">
+                <p><strong>Expand Your Knowledge:</strong> These resources will help you develop stronger <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Learn about media literacy">media literacy<span class="tooltip">Media literacy is the ability to access, analyze, evaluate, create, and act using all forms of communication. It helps you navigate today's complex information landscape.</span></span> skills, learn fact-checking techniques, and become a more informed consumer of information.</p>
+            </div>
+            
+            <h2 id="fact-checking-websites" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="webGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><circle cx="12" cy="12" r="10" stroke="url(#webGrad)" stroke-width="2" fill="none"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="url(#webGrad)" stroke-width="2" fill="none"/></svg></span>Fact-Checking Websites</h2>
             
             <div class="resource-grid">
-                <div class="resource-card">
-                    <h3>Snopes</h3>
+                <div class="resource-card fade-in" tabindex="0" role="article" aria-label="Snopes fact-checking website">
+                    <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: text-top; margin-right: 6px; margin-top: 2px;"><defs><linearGradient id="snopesGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><circle cx="11" cy="11" r="7" stroke="url(#snopesGrad)" stroke-width="2" fill="none"/><path d="m20 20-4-4" stroke="url(#snopesGrad)" stroke-width="2" stroke-linecap="round"/></svg>Snopes</h3>
                     <p>One of the oldest and most respected fact-checking websites. Covers urban legends, rumors, and misinformation across various topics.</p>
-                    <p><a href="https://www.snopes.com" target="_blank" rel="noopener noreferrer">Visit Snopes →</a></p>
+                    <p><a href="https://www.snopes.com" target="_blank" rel="noopener noreferrer">Visit Snopes</a></p>
                 </div>
                 
-                <div class="resource-card">
-                    <h3>FactCheck.org</h3>
+                <div class="resource-card fade-in" tabindex="0" role="article" aria-label="FactCheck.org fact-checking website">
+                    <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: text-top; margin-right: 6px; margin-top: 2px;"><defs><linearGradient id="factcheckGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#2ECC71;stop-opacity:1" /><stop offset="100%" style="stop-color:#27AE60;stop-opacity:1" /></linearGradient></defs><path d="M20 6L9 17l-5-5" stroke="url(#factcheckGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>FactCheck.org</h3>
                     <p>A nonpartisan fact-checking website that monitors the factual accuracy of political claims and statements.</p>
-                    <p><a href="https://www.factcheck.org" target="_blank" rel="noopener noreferrer">Visit FactCheck.org →</a></p>
+                    <p><a href="https://www.factcheck.org" target="_blank" rel="noopener noreferrer">Visit FactCheck.org</a></p>
                 </div>
                 
-                <div class="resource-card">
-                    <h3>PolitiFact</h3>
+                <div class="resource-card fade-in" tabindex="0" role="article" aria-label="PolitiFact fact-checking website">
+                    <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: text-top; margin-right: 6px; margin-top: 2px;"><defs><linearGradient id="politifactGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M3 3v18h18" stroke="url(#politifactGrad)" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M7 16l4-4 4 4 6-6" stroke="url(#politifactGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>PolitiFact</h3>
                     <p>Rates the accuracy of claims by public officials and others on its Truth-O-Meter.</p>
-                    <p><a href="https://www.politifact.com" target="_blank" rel="noopener noreferrer">Visit PolitiFact →</a></p>
+                    <p><a href="https://www.politifact.com" target="_blank" rel="noopener noreferrer">Visit PolitiFact</a></p>
                 </div>
                 
-                <div class="resource-card">
-                    <h3>AP News Fact Check</h3>
+                <div class="resource-card fade-in" tabindex="0" role="article" aria-label="AP News Fact Check">
+                    <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: text-top; margin-right: 6px; margin-top: 2px;"><defs><linearGradient id="apnewsGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="url(#apnewsGrad)" stroke-width="2" fill="none" stroke-linejoin="round"/><path d="M22 6l-10 7L2 6" stroke="url(#apnewsGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>AP News Fact Check</h3>
                     <p>The Associated Press fact-checking unit verifies claims and viral content.</p>
-                    <p><a href="https://apnews.com/hub/ap-fact-check" target="_blank" rel="noopener noreferrer">Visit AP Fact Check →</a></p>
+                    <p><a href="https://apnews.com/hub/ap-fact-check" target="_blank" rel="noopener noreferrer">Visit AP Fact Check</a></p>
                 </div>
                 
-                <div class="resource-card">
-                    <h3>BBC Reality Check</h3>
+                <div class="resource-card fade-in" tabindex="0" role="article" aria-label="BBC Reality Check">
+                    <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: text-top; margin-right: 6px; margin-top: 2px;"><defs><linearGradient id="bbcGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><rect x="3" y="3" width="18" height="18" rx="2" stroke="url(#bbcGrad)" stroke-width="2" fill="none"/><path d="M3 9h18M9 3v18" stroke="url(#bbcGrad)" stroke-width="2" stroke-linecap="round"/></svg>BBC Reality Check</h3>
                     <p>BBC's fact-checking service verifying claims and stories in the news.</p>
-                    <p><a href="https://www.bbc.com/news/reality_check" target="_blank" rel="noopener noreferrer">Visit BBC Reality Check →</a></p>
+                    <p><a href="https://www.bbc.com/news/reality_check" target="_blank" rel="noopener noreferrer">Visit BBC Reality Check</a></p>
                 </div>
                 
-                <div class="resource-card">
-                    <h3>Reuters Fact Check</h3>
+                <div class="resource-card fade-in" tabindex="0" role="article" aria-label="Reuters Fact Check">
+                    <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: text-top; margin-right: 6px; margin-top: 2px;"><defs><linearGradient id="reutersGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><circle cx="12" cy="12" r="10" stroke="url(#reutersGrad)" stroke-width="2" fill="none"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="url(#reutersGrad)" stroke-width="2" fill="none"/></svg>Reuters Fact Check</h3>
                     <p>Reuters' dedicated fact-checking unit verifying viral claims and misinformation.</p>
-                    <p><a href="https://www.reuters.com/fact-check" target="_blank" rel="noopener noreferrer">Visit Reuters Fact Check →</a></p>
+                    <p><a href="https://www.reuters.com/fact-check" target="_blank" rel="noopener noreferrer">Visit Reuters Fact Check</a></p>
                 </div>
             </div>
             
-            <h2>Media Literacy Organizations</h2>
+            <h2 id="media-literacy-orgs" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="orgGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4" stroke="url(#orgGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 9v0M9 12v0M9 15v0M9 18v0" stroke="url(#orgGrad)" stroke-width="2" stroke-linecap="round"/></svg></span>Media Literacy Organizations</h2>
             
-            <div class="resource-category">
+            <div class="resource-category fade-in">
                 <h3>News Literacy Project</h3>
                 <p>Provides educational resources and programs to help students and the public become better informed and more engaged news consumers.</p>
                 <p><strong>Website:</strong> <a href="https://newslit.org" target="_blank" rel="noopener noreferrer">newslit.org</a></p>
             </div>
             
-            <div class="resource-category">
+            <div class="resource-category fade-in">
                 <h3>MediaWise</h3>
                 <p>A digital media literacy initiative teaching people how to spot misinformation online.</p>
                 <p><strong>Website:</strong> <a href="https://www.poynter.org/mediawise" target="_blank" rel="noopener noreferrer">poynter.org/mediawise</a></p>
             </div>
             
-            <div class="resource-category">
+            <div class="resource-category fade-in">
                 <h3>First Draft</h3>
                 <p>Global organization providing training and resources to help journalists and the public navigate information disorder.</p>
                 <p><strong>Website:</strong> <a href="https://firstdraftnews.org" target="_blank" rel="noopener noreferrer">firstdraftnews.org</a></p>
             </div>
             
-            <div class="resource-category">
+            <div class="resource-category fade-in">
                 <h3>Center for Media Literacy</h3>
                 <p>Educational organization providing resources and training for media literacy education.</p>
                 <p><strong>Website:</strong> <a href="https://www.medialit.org" target="_blank" rel="noopener noreferrer">medialit.org</a></p>
             </div>
             
-            <h2>Online Courses and Learning Platforms</h2>
+            <h2 id="online-courses" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="graduationGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="url(#graduationGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 12v5c3 3 9 3 12 0v-5" stroke="url(#graduationGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Online Courses and Learning Platforms</h2>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>Coursera - Media Literacy Courses</h3>
                 <p>Free and paid courses on media literacy, fact-checking, and information verification from universities and institutions worldwide.</p>
-                <p><a href="https://www.coursera.org" target="_blank" rel="noopener noreferrer">Explore Coursera →</a></p>
+                <p><a href="https://www.coursera.org" target="_blank" rel="noopener noreferrer">Explore Coursera</a></p>
             </div>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>edX - Journalism and Media Courses</h3>
                 <p>Online courses from top universities covering journalism ethics, media literacy, and digital information.</p>
-                <p><a href="https://www.edx.org" target="_blank" rel="noopener noreferrer">Explore edX →</a></p>
+                <p><a href="https://www.edx.org" target="_blank" rel="noopener noreferrer">Explore edX</a></p>
             </div>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>Khan Academy</h3>
                 <p>Free educational resources including lessons on evaluating sources and understanding media.</p>
-                <p><a href="https://www.khanacademy.org" target="_blank" rel="noopener noreferrer">Visit Khan Academy →</a></p>
+                <p><a href="https://www.khanacademy.org" target="_blank" rel="noopener noreferrer">Visit Khan Academy</a></p>
             </div>
             
-            <h2>Tools for Verification</h2>
+            <h2 id="verification-tools" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="toolsGrad2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" stroke="url(#toolsGrad2)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tools for Verification</h2>
             
             <div class="resource-grid">
-                <div class="resource-card">
+                <div class="resource-card fade-in">
                     <h3>Google Reverse Image Search</h3>
                     <p>Verify where images originally appeared and detect if they've been used out of context.</p>
                     <p><strong>How:</strong> Right-click image → "Search Google for image"</p>
                 </div>
                 
-                <div class="resource-card">
+                <div class="resource-card fade-in">
                     <h3>TinEye</h3>
                     <p>Reverse image search engine to find where images appear online.</p>
-                    <p><a href="https://tineye.com" target="_blank" rel="noopener noreferrer">Visit TinEye →</a></p>
+                    <p><a href="https://tineye.com" target="_blank" rel="noopener noreferrer">Visit TinEye</a></p>
                 </div>
                 
-                <div class="resource-card">
+                <div class="resource-card fade-in">
                     <h3>Wayback Machine</h3>
                     <p>Archive of web pages showing how content has changed over time.</p>
-                    <p><a href="https://web.archive.org" target="_blank" rel="noopener noreferrer">Visit Wayback Machine →</a></p>
+                    <p><a href="https://web.archive.org" target="_blank" rel="noopener noreferrer">Visit Wayback Machine</a></p>
                 </div>
                 
-                <div class="resource-card">
+                <div class="resource-card fade-in">
                     <h3>NewsGuard</h3>
                     <p>Browser extension that rates news websites for credibility and transparency.</p>
-                    <p><a href="https://www.newsguardtech.com" target="_blank" rel="noopener noreferrer">Visit NewsGuard →</a></p>
+                    <p><a href="https://www.newsguardtech.com" target="_blank" rel="noopener noreferrer">Visit NewsGuard</a></p>
                 </div>
                 
-                <div class="resource-card">
+                <div class="resource-card fade-in">
                     <h3>Media Bias/Fact Check</h3>
                     <p>Database of media sources with bias ratings and fact-checking assessments.</p>
-                    <p><a href="https://mediabiasfactcheck.com" target="_blank" rel="noopener noreferrer">Visit Media Bias/Fact Check →</a></p>
+                    <p><a href="https://mediabiasfactcheck.com" target="_blank" rel="noopener noreferrer">Visit Media Bias/Fact Check</a></p>
                 </div>
                 
-                <div class="resource-card">
+                <div class="resource-card fade-in">
                     <h3>InVID Verification Plugin</h3>
                     <p>Browser extension to verify videos and images shared on social media.</p>
-                    <p><a href="https://www.invid-project.eu" target="_blank" rel="noopener noreferrer">Visit InVID →</a></p>
+                    <p><a href="https://www.invid-project.eu" target="_blank" rel="noopener noreferrer">Visit InVID</a></p>
                 </div>
             </div>
             
-            <h2>Books and Publications</h2>
+            <h2 id="books" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="booksGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" fill="url(#booksGrad)" stroke="url(#booksGrad)" stroke-width="1.5" stroke-linejoin="round"/></svg></span>Books and Publications</h2>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>"Trust Me, I'm Lying" by Ryan Holiday</h3>
                 <p>Exposes how media manipulation works and how to recognize it.</p>
             </div>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>"The News: A User's Manual" by Alain de Botton</h3>
                 <p>Explores how to consume news more intelligently and thoughtfully.</p>
             </div>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>"Post-Truth" by Lee McIntyre</h3>
                 <p>Examines the rise of post-truth politics and how to combat misinformation.</p>
             </div>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>"The Misinformation Age" by Cailin O'Connor and James Owen Weatherall</h3>
                 <p>Explores how false beliefs spread and persist in society.</p>
             </div>
             
-            <h2>Podcasts and Videos</h2>
+            <h2 id="podcasts" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="podcastGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M12 1a9 9 0 0 0-9 9v7a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H6v-1a6 6 0 0 1 12 0v1h-3a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-7a9 9 0 0 0-9-9z" stroke="url(#podcastGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="19" r="2" fill="url(#podcastGrad)"/><path d="M12 19v3" stroke="url(#podcastGrad)" stroke-width="2" stroke-linecap="round"/></svg></span>Podcasts and Videos</h2>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>Breaking the News</h3>
                 <p>Podcast exploring how media shapes public perception and how to be a more critical consumer.</p>
             </div>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>Crash Course Media Literacy</h3>
                 <p>YouTube series covering media literacy basics and critical thinking about media. Comprehensive video course on understanding how media works and developing critical media consumption skills.</p>
-                <p><a href="https://www.youtube.com/watch?v=sPwJ0obJya0&list=PL8dPuuaLjXtM6jSpzb5gMNsx9kdmqBfmY&index=1" target="_blank" rel="noopener noreferrer">Watch on YouTube →</a></p>
+                <p><a href="https://www.youtube.com/watch?v=sPwJ0obJya0&list=PL8dPuuaLjXtM6jSpzb5gMNsx9kdmqBfmY&index=1" target="_blank" rel="noopener noreferrer">Watch on YouTube</a></p>
             </div>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>On the Media</h3>
                 <p>Podcast analyzing media coverage and exploring how information is presented.</p>
             </div>
             
-            <h2>Interactive Learning Tools</h2>
+            <h2 id="interactive-tools" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gameGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><rect x="2" y="6" width="20" height="12" rx="2" stroke="url(#gameGrad)" stroke-width="2" fill="none" stroke-linejoin="round"/><circle cx="8" cy="12" r="1.5" fill="url(#gameGrad)"/><circle cx="16" cy="12" r="1.5" fill="url(#gameGrad)"/><path d="M12 8v8" stroke="url(#gameGrad)" stroke-width="2" stroke-linecap="round"/></svg></span>Interactive Learning Tools</h2>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>Factitious Game</h3>
                 <p>Interactive game that helps you practice identifying real vs. fake news articles.</p>
-                <p><a href="https://factitious.augamestudio.com" target="_blank" rel="noopener noreferrer">Play Factitious →</a></p>
+                <p><a href="https://factitious.augamestudio.com" target="_blank" rel="noopener noreferrer">Play Factitious</a></p>
             </div>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>Bad News Game</h3>
                 <p>Educational game that teaches you about misinformation tactics by letting you become a misinformation creator.</p>
-                <p><a href="https://www.getbadnews.com" target="_blank" rel="noopener noreferrer">Play Bad News →</a></p>
+                <p><a href="https://www.getbadnews.com" target="_blank" rel="noopener noreferrer">Play Bad News</a></p>
             </div>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>Noteworthy News Game</h3>
                 <p>Our own interactive game to test your fact-checking skills and media literacy knowledge.</p>
-                <p><a href="game.html">Play Our Game →</a></p>
+                <p><a href="game.html">Play Our Game</a></p>
             </div>
             
-            <h2>Educational Guides and Worksheets</h2>
+            <h2 id="guides" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="worksheetGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="url(#worksheetGrad)" stroke-width="2" fill="none" stroke-linejoin="round"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="url(#worksheetGrad)" stroke-width="2" stroke-linecap="round"/></svg></span>Educational Guides and Worksheets</h2>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>CRAAP Test Worksheet</h3>
                 <p>Framework for evaluating sources: Currency, Relevance, Authority, Accuracy, and Purpose. Many educational institutions provide free worksheets.</p>
             </div>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>SIFT Method Resources</h3>
                 <p>Stop, Investigate, Find, Trace - a method for quick source evaluation. Developed by Mike Caulfield.</p>
                 <p><strong>Website:</strong> <a href="https://hapgood.us" target="_blank" rel="noopener noreferrer">hapgood.us</a></p>
             </div>
             
-            <h2>For Educators</h2>
+            <h2 id="educators" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="educatorGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="url(#educatorGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="7" r="4" stroke="url(#educatorGrad)" stroke-width="2" fill="none"/><path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="url(#educatorGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="url(#educatorGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>For Educators</h2>
             
-            <div class="info-box">
+            <div class="info-box fade-in">
                 <p><strong>Teaching Resources:</strong> If you're an educator looking to teach media literacy, consider these resources:</p>
                 <ul>
                     <li><strong>Common Sense Media:</strong> Lesson plans and resources for teaching digital citizenship and media literacy</li>
@@ -482,33 +1180,33 @@
                 </ul>
             </div>
             
-            <h2>Research and Reports</h2>
+            <h2 id="research" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="researchGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M3 3v18h18" stroke="url(#researchGrad)" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M7 16l4-4 4 4 6-6" stroke="url(#researchGrad)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Research and Reports</h2>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>Pew Research Center</h3>
                 <p>Nonpartisan research organization providing data and analysis on media consumption and news habits.</p>
-                <p><a href="https://www.pewresearch.org" target="_blank" rel="noopener noreferrer">Visit Pew Research →</a></p>
+                <p><a href="https://www.pewresearch.org" target="_blank" rel="noopener noreferrer">Visit Pew Research</a></p>
             </div>
             
-            <h2>How to Use These Resources</h2>
+            <h2 id="how-to-use" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lightbulbGrad2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M9 21h6M12 3a6 6 0 0 1 6 6c0 2.22-1.21 4.15-3 5.19V15a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-.81C7.21 13.15 6 11.22 6 9a6 6 0 0 1 6-6z" stroke="url(#lightbulbGrad2)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>How to Use These Resources</h2>
             
-            <div class="info-box">
+            <div class="info-box fade-in">
                 <p><strong>Building Your Media Literacy Toolkit:</strong> Start by familiarizing yourself with fact-checking websites and tools. Practice using reverse image search and verification tools regularly. As you become more comfortable, explore courses and deeper educational resources. The key is consistent practice and continuous learning.</p>
             </div>
             
-            <h3>Recommended Learning Path</h3>
-            <ol>
-                <li><strong>Start with Basics:</strong> Read our <a href="media-literacy-guide.html" style="color: #4A90E2;">Media Literacy Guide</a> and <a href="fact-checking-tips.html" style="color: #4A90E2;">Fact-Checking Tips</a> to understand fundamental concepts</li>
+            <h3 class="fade-in">Recommended Learning Path</h3>
+            <ol class="fade-in">
+                <li><strong>Start with Basics:</strong> Read our <a href="media-literacy-guide.html">Media Literacy Guide</a> and <a href="fact-checking-tips.html">Fact-Checking Tips</a> to understand fundamental concepts</li>
                 <li><strong>Practice Daily:</strong> Use fact-checking tools to verify at least one piece of information each day</li>
                 <li><strong>Take a Course:</strong> Enroll in an online media literacy course to deepen your understanding</li>
                 <li><strong>Join Communities:</strong> Engage with media literacy communities and discussions</li>
                 <li><strong>Teach Others:</strong> Share what you learn with friends, family, or students</li>
             </ol>
             
-            <h2>Staying Current</h2>
+            <h2 id="staying-current" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="refreshGrad2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M23 4v6h-6" stroke="url(#refreshGrad2)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 20v-6h6" stroke="url(#refreshGrad2)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="url(#refreshGrad2)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Staying Current</h2>
             
-            <p>The media landscape changes rapidly. To stay current with media literacy best practices:</p>
-            <ul>
+            <p class="fade-in">The media landscape changes rapidly. To stay current with media literacy best practices:</p>
+            <ul class="fade-in">
                 <li>Follow fact-checking organizations on social media</li>
                 <li>Subscribe to newsletters from media literacy organizations</li>
                 <li>Read research reports on misinformation and media literacy</li>
@@ -516,55 +1214,272 @@
                 <li>Practice your skills regularly with current news stories</li>
             </ul>
             
-            <h2>Additional Resources from Noteworthy News</h2>
+            <h2 id="additional-resources" class="fade-in"><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="starGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" /><stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" /></linearGradient></defs><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="url(#starGrad)" stroke="url(#starGrad)" stroke-width="1.5" stroke-linejoin="round"/></svg></span>Additional Resources from Noteworthy News</h2>
             
-            <p>Explore our comprehensive guides and resources:</p>
-            <ul>
-                <li><a href="how-we-verify.html" style="color: #4A90E2;">How We Verify Breaking Events</a> - Learn about our verification process</li>
-                <li><a href="critical-reading-guide.html" style="color: #4A90E2;">Critical Reading Guide</a> - Develop your critical reading skills</li>
-                <li><a href="geopolitics-guide.html" style="color: #4A90E2;">Geopolitics Guide</a> - Understand major international events</li>
-                <li><a href="news-types-guide.html" style="color: #4A90E2;">News Types Guide</a> - Learn to distinguish different types of news</li>
-                <li><a href="our-mission.html" style="color: #4A90E2;">Our Mission</a> - Understand our editorial standards and approach</li>
+            <p class="fade-in">Explore our comprehensive guides and resources:</p>
+            <ul class="fade-in">
+                <li><a href="how-we-verify.html">How We Verify Breaking Events</a> - Learn about our verification process</li>
+                <li><a href="critical-reading-guide.html">Critical Reading Guide</a> - Develop your critical reading skills</li>
+                <li><a href="geopolitics-guide.html">Geopolitics Guide</a> - Understand major international events</li>
+                <li><a href="news-types-guide.html">News Types Guide</a> - Learn to distinguish different types of news</li>
+                <li><a href="our-mission.html">Our Mission</a> - Understand our editorial standards and approach</li>
             </ul>
             
-            <div class="resource-card">
+            <div class="resource-card fade-in">
                 <h3>Knight Foundation</h3>
                 <p>Research on trust in media, news literacy, and the future of journalism.</p>
-                <p><a href="https://knightfoundation.org" target="_blank" rel="noopener noreferrer">Visit Knight Foundation →</a></p>
+                <p><a href="https://knightfoundation.org" target="_blank" rel="noopener noreferrer">Visit Knight Foundation</a></p>
             </div>
             
-            <div class="info-box">
+            <div class="info-box fade-in">
                 <p><strong>Keep Learning:</strong> Media literacy is an ongoing journey. Bookmark these resources, practice regularly, and stay curious about how information works in our digital age.</p>
             </div>
             
-            <div class="footer-link">
-                <a href="index.html">← Back to Home</a> | <a href="media-literacy-guide.html">Media Literacy Guide</a> | <a href="fact-checking-tips.html">Fact-Checking Tips</a>
+            <div class="footer-link fade-in">
+                <a href="index.html">← Back to Home</a>
+                <a href="media-literacy-guide.html">Media Literacy Guide</a>
+                <a href="fact-checking-tips.html">Fact-Checking Tips</a>
             </div>
         </div>
     </div>
     
-    <!-- Background Music - Shared across all pages -->
-    <audio id="backgroundMusic" preload="metadata">
-        <source src="TheMoneyMaker 🤑.mp3" type="audio/mpeg">
+    <!-- Scroll to Top Button -->
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top" tabindex="0">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+        </svg>
+    </button>
+    
+    <script>
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 30;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        function initScrollAnimations() {
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, observerOptions);
+            
+            document.querySelectorAll('.fade-in').forEach(el => {
+                observer.observe(el);
+            });
+        }
+        
+        // Debounce function for performance
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // Optimized scroll handlers with debouncing
+        const debouncedScrollHandler = debounce(() => {
+            const scrollBtn = document.getElementById('scrollToTop');
+            const progressBar = document.getElementById('readingProgress');
+            
+            if (scrollBtn) {
+                if (window.pageYOffset > 300) {
+                    scrollBtn.classList.add('visible');
+                } else {
+                    scrollBtn.classList.remove('visible');
+                }
+            }
+            
+            if (progressBar) {
+                const windowHeight = window.innerHeight;
+                const documentHeight = document.documentElement.scrollHeight;
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollableHeight = documentHeight - windowHeight;
+                const progress = (scrollTop / scrollableHeight) * 100;
+                progressBar.style.transform = `scaleX(${progress / 100})`;
+            }
+        }, 10);
+        
+        // Scroll to top functionality
+        function initScrollToTop() {
+            const scrollBtn = document.getElementById('scrollToTop');
+            if (!scrollBtn) return;
+            
+            scrollBtn.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+            
+            scrollBtn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        }
+        
+        // Reading progress indicator (now handled by debounced scroll handler)
+        function initReadingProgress() {
+            // Progress bar updates are handled by debouncedScrollHandler
+        }
+        
+        // Smooth scroll for table of contents links
+        function initTableOfContents() {
+            document.querySelectorAll('.table-of-contents a').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    const href = link.getAttribute('href');
+                    if (href.startsWith('#')) {
+                        e.preventDefault();
+                        const target = document.querySelector(href);
+                        if (target) {
+                            target.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                        }
+                    }
+                });
+            });
+        }
+        
+        // Initialize expandable sections
+        function initExpandableSections() {
+            document.querySelectorAll('.expandable-header').forEach(header => {
+                header.addEventListener('click', toggleExpandable);
+                header.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleExpandable(e);
+                    }
+                });
+            });
+        }
+        
+        function toggleExpandable(e) {
+            const header = e.currentTarget;
+            const section = header.closest('.expandable-section');
+            const isExpanded = section.classList.contains('expanded');
+            
+            section.classList.toggle('expanded');
+            header.setAttribute('aria-expanded', !isExpanded);
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+            initScrollAnimations();
+            initScrollToTop();
+            initReadingProgress();
+            initTableOfContents();
+            initExpandableSections();
+            
+            // Use debounced scroll handler
+            window.addEventListener('scroll', debouncedScrollHandler, { passive: true });
+        });
+    </script>
+    
+    <!-- Background Music - bruhbruhbruh1.wav -->
+    <audio id="backgroundMusic" preload="auto" loop>
+        <source src="bruhbruhbruh1.wav" type="audio/wav">
         Your browser does not support the audio element.
     </audio>
     
-    <!-- Second track (plays after first) -->
-    <audio id="backgroundMusicSecond" preload="metadata">
-        <source src="YEAHHHHHH.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
+    <!-- Placeholder tracks for music system compatibility -->
+    <audio id="backgroundMusicSecond" preload="metadata" style="display: none;">
+        <source src="bruhbruhbruh1.wav" type="audio/wav">
     </audio>
     
-    <!-- Third track (loops after second) -->
-    <audio id="backgroundMusicLoop" preload="metadata" loop>
-        <source src="Audiolandingpage.m4a" type="audio/mp4">
-        Your browser does not support the audio element.
+    <audio id="backgroundMusicLoop" preload="metadata" loop style="display: none;">
+        <source src="bruhbruhbruh1.wav" type="audio/wav">
     </audio>
     
-    <script src="music-system.js"></script>
+    <!-- Direct Music Start Script - Ensures bruhbruhbruh1.wav plays (music-system.js removed to prevent conflicts) -->
+    <script>
+        (function() {
+            console.log('🎵 Direct music script loaded');
+            const audio = document.getElementById('backgroundMusic');
+            if (!audio) {
+                console.error('❌ Audio element not found!');
+                return;
+            }
+            
+            let hasStarted = false;
+            
+            // Function to start music directly
+            const startMusic = () => {
+                if (hasStarted || !audio.paused) return;
+                
+                hasStarted = true;
+                console.log('🎵 Starting music...');
+                
+                audio.currentTime = 0;
+                audio.volume = 0.5;
+                audio.loop = true;
+                
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log('✅ Music playing successfully!');
+                    }).catch(err => {
+                        console.error('❌ Failed to play:', err);
+                        hasStarted = false; // Allow retry
+                    });
+                }
+            };
+            
+            // Start on ANY user interaction
+            const events = ['click', 'touchstart', 'keydown', 'mousemove', 'scroll', 'wheel', 'pointerdown'];
+            const startOnce = () => {
+                startMusic();
+                events.forEach(e => {
+                    document.removeEventListener(e, startOnce, true);
+                    window.removeEventListener(e, startOnce, true);
+                });
+            };
+            
+            // Add listeners with capture phase to catch events early
+            events.forEach(e => {
+                document.addEventListener(e, startOnce, { once: true, passive: true, capture: true });
+                window.addEventListener(e, startOnce, { once: true, passive: true, capture: true });
+            });
+            
+            // Also try after page is fully loaded
+            if (document.readyState === 'complete') {
+                setTimeout(startMusic, 500);
+            } else {
+                window.addEventListener('load', () => {
+                    setTimeout(startMusic, 500);
+                }, { once: true });
+            }
+        })();
+    </script>
     
     <!-- Cookie Consent Banner -->
     <script src="src/components/cookie-banner.js"></script>
 </body>
 </html>
-

@@ -1920,12 +1920,32 @@ async function renderFeed() {
   }
   
   if (currentPosts.length === 0) {
-    // If user is searching but no posts loaded yet, show appropriate message
-    if (currentSearch && currentSearch.trim()) {
-      container.innerHTML = '<div style="padding: 2rem; text-align: center; color: rgba(255,255,255,0.7);">Loading posts... Search will filter results once loaded.</div>';
-    } else {
-      container.innerHTML = '<div style="padding: 2rem; text-align: center; color: rgba(255,255,255,0.7);">Loading posts...</div>';
-    }
+    // Show professional loading indicator
+    const loadingHTML = `
+      <div style="padding: 4rem 2rem; text-align: center; background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.6) 100%); border-radius: 20px; border: 1px solid rgba(74, 144, 226, 0.1); backdrop-filter: blur(10px);">
+        <div style="position: relative; display: inline-block; margin-bottom: 2rem;">
+          <!-- Outer rotating ring -->
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; border: 3px solid rgba(74, 144, 226, 0.2); border-top-color: #4A90E2; border-radius: 50%; animation: spinPosts 1.2s linear infinite;"></div>
+          <!-- Inner pulsing circle -->
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; background: radial-gradient(circle, rgba(74, 144, 226, 0.3) 0%, transparent 70%); border-radius: 50%; animation: pulsePosts 2s ease-in-out infinite;"></div>
+          <!-- Center dot -->
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 12px; height: 12px; background: #4A90E2; border-radius: 50%; box-shadow: 0 0 20px rgba(74, 144, 226, 0.8);"></div>
+        </div>
+        <h3 style="color: #fff; font-size: 1.75rem; font-weight: 700; margin: 0 0 0.75rem 0; letter-spacing: -0.02em; background: linear-gradient(135deg, #fff 0%, rgba(74, 144, 226, 0.9) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">${currentSearch && currentSearch.trim() ? 'Searching Posts' : 'Loading Posts'}</h3>
+        <p style="color: rgba(255, 255, 255, 0.85); font-size: 1.0625rem; margin: 0 0 0.5rem 0; font-weight: 500;">${currentSearch && currentSearch.trim() ? 'Finding posts matching your search' : 'Fetching the latest news from around the world'}</p>
+        <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9375rem; margin: 0; letter-spacing: 0.02em;">Please wait, content is loading...</p>
+        <style>
+          @keyframes spinPosts {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+          }
+          @keyframes pulsePosts {
+            0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+          }
+        </style>
+      </div>
+    `;
+    container.innerHTML = loadingHTML;
     console.log('[Feed] No posts loaded yet, showing loading message');
     return;
   }
@@ -1976,17 +1996,26 @@ async function renderFeed() {
     // Use existing controls - just update button states and render posts
     const postsHtml = sorted.map(post => renderPostCard(post)).join('');
     
-    // Update sort button states
+    // Update sort button states - Professional styling
     existingSortButtons.forEach(btn => {
       const active = btn.dataset.sort === currentSort;
-      btn.style.background = active ? 'rgba(79, 172, 254, 0.2)' : 'transparent';
-      btn.style.borderColor = active ? 'rgba(79, 172, 254, 0.4)' : 'rgba(255, 255, 255, 0.1)';
-      btn.style.color = active ? '#4FACFE' : 'rgba(255, 255, 255, 0.8)';
-      btn.style.fontWeight = active ? '600' : '500';
+      if (active) {
+        btn.style.background = 'linear-gradient(135deg, rgba(74, 144, 226, 0.25) 0%, rgba(91, 181, 255, 0.2) 100%)';
+        btn.style.borderColor = 'rgba(74, 144, 226, 0.5)';
+        btn.style.color = '#4A90E2';
+        btn.style.fontWeight = '600';
+        btn.style.boxShadow = '0 2px 8px rgba(74, 144, 226, 0.2), 0 0 0 1px rgba(74, 144, 226, 0.1) inset';
+      } else {
+        btn.style.background = 'rgba(255, 255, 255, 0.05)';
+        btn.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        btn.style.color = 'rgba(255, 255, 255, 0.8)';
+        btn.style.fontWeight = '500';
+        btn.style.boxShadow = 'none';
+      }
     });
     
     // Update posts
-    container.innerHTML = postsHtml;
+  container.innerHTML = postsHtml;
   }
   
   // Track analytics
@@ -2555,17 +2584,19 @@ function initializeExistingControls() {
       const sortValue = newBtn.dataset.sort;
       const isActive = currentSort === sortValue;
       
-      // Update button styles
+      // Update button styles - Professional active state
       if (isActive) {
-        newBtn.style.background = 'rgba(79, 172, 254, 0.2)';
-        newBtn.style.borderColor = 'rgba(79, 172, 254, 0.4)';
-        newBtn.style.color = '#4FACFE';
+        newBtn.style.background = 'linear-gradient(135deg, rgba(74, 144, 226, 0.25) 0%, rgba(91, 181, 255, 0.2) 100%)';
+        newBtn.style.borderColor = 'rgba(74, 144, 226, 0.5)';
+        newBtn.style.color = '#4A90E2';
         newBtn.style.fontWeight = '600';
+        newBtn.style.boxShadow = '0 2px 8px rgba(74, 144, 226, 0.2), 0 0 0 1px rgba(74, 144, 226, 0.1) inset';
       } else {
-        newBtn.style.background = 'transparent';
+        newBtn.style.background = 'rgba(255, 255, 255, 0.05)';
         newBtn.style.borderColor = 'rgba(255, 255, 255, 0.1)';
         newBtn.style.color = 'rgba(255, 255, 255, 0.8)';
         newBtn.style.fontWeight = '500';
+        newBtn.style.boxShadow = 'none';
       }
       
       // Click handler
@@ -2608,14 +2639,23 @@ function initializeExistingControls() {
         currentSort = newSort;
         localStorage.setItem('feed-sort', currentSort);
         
-        // Update all button states
+        // Update all button states - Professional styling
         const allSortButtons = document.querySelectorAll('.feed-sort-btn');
         allSortButtons.forEach(b => {
           const active = b.dataset.sort === newSort;
-          b.style.background = active ? 'rgba(79, 172, 254, 0.2)' : 'transparent';
-          b.style.borderColor = active ? 'rgba(79, 172, 254, 0.4)' : 'rgba(255, 255, 255, 0.1)';
-          b.style.color = active ? '#4FACFE' : 'rgba(255, 255, 255, 0.8)';
-          b.style.fontWeight = active ? '600' : '500';
+          if (active) {
+            b.style.background = 'linear-gradient(135deg, rgba(74, 144, 226, 0.25) 0%, rgba(91, 181, 255, 0.2) 100%)';
+            b.style.borderColor = 'rgba(74, 144, 226, 0.5)';
+            b.style.color = '#4A90E2';
+            b.style.fontWeight = '600';
+            b.style.boxShadow = '0 2px 8px rgba(74, 144, 226, 0.2), 0 0 0 1px rgba(74, 144, 226, 0.1) inset';
+          } else {
+            b.style.background = 'rgba(255, 255, 255, 0.05)';
+            b.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            b.style.color = 'rgba(255, 255, 255, 0.8)';
+            b.style.fontWeight = '500';
+            b.style.boxShadow = 'none';
+          }
         });
         
         updateURLParams();
@@ -2637,27 +2677,29 @@ function initializeExistingControls() {
   console.log('[Feed] Control initialization complete');
 }
 
-// Initialize existing controls immediately when DOM is ready
+// Initialize existing controls immediately when DOM is ready (optimized)
 if (typeof document !== 'undefined') {
   function tryInitialize() {
     const searchInput = document.getElementById('globeSearchInputPosts');
     if (searchInput) {
-      console.log('[Feed] DOM ready, initializing controls...');
       initializeExistingControls();
-    } else {
-      // Retry after a short delay if controls aren't ready yet
-      console.log('[Feed] Controls not found yet, retrying...');
-      setTimeout(tryInitialize, 200);
+      return true;
     }
+    return false;
   }
   
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-      // Try immediately, then retry if needed
-      setTimeout(tryInitialize, 100);
-    });
+  // Try immediately if DOM is ready
+  if (document.readyState !== 'loading') {
+    if (!tryInitialize()) {
+      // If not found, try once more after a very short delay
+      setTimeout(tryInitialize, 50);
+    }
   } else {
-    // DOM already loaded
-    setTimeout(tryInitialize, 100);
+    // Wait for DOMContentLoaded, but try immediately when it fires
+    document.addEventListener('DOMContentLoaded', function() {
+      if (!tryInitialize()) {
+        setTimeout(tryInitialize, 50);
+      }
+    }, { once: true });
   }
 }

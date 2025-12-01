@@ -5,6 +5,12 @@
 (function() {
     'use strict';
     
+    // Check if music system is disabled for this page (e.g., using direct script)
+    if (window.musicSystemDisabled) {
+        console.log('🎵 Music system disabled for this page');
+        return;
+    }
+    
     // Prevent multiple initializations
     if (window.musicSystemInitialized) {
         return;
@@ -25,9 +31,26 @@
         const backgroundMusicLoop = document.getElementById('backgroundMusicLoop');
         
         if (!backgroundMusic) {
-            console.warn('Background music elements not found');
+            console.warn('❌ Background music elements not found');
             return;
         }
+        
+        console.log('🎵 Music system initialized');
+        console.log('🎵 Audio source:', backgroundMusic.querySelector('source')?.src || 'not found');
+        
+        // Add error listener to debug audio issues
+        backgroundMusic.addEventListener('error', (e) => {
+            console.error('❌ Audio error:', e);
+            console.error('❌ Audio error details:', backgroundMusic.error);
+        });
+        
+        backgroundMusic.addEventListener('loadeddata', () => {
+            console.log('🎵 Audio loaded successfully');
+        });
+        
+        backgroundMusic.addEventListener('play', () => {
+            console.log('🎵 Audio started playing!');
+        });
         
         // Fade in/out utility functions
         const FADE_DURATION = 1500; // milliseconds for fade transition - increased for smoother transitions
@@ -85,16 +108,33 @@
             // Set initial volume
             audio.volume = 0;
             
-            // Start playing if not already
-            const playPromise = audio.paused ? audio.play() : Promise.resolve();
+            // Start playing if not already - FORCE PLAY on these pages
+            const playPromise = audio.paused ? audio.play().catch(err => {
+                console.log('Play failed in fadeInAudio, will retry:', err);
+                // Retry play after a short delay - these pages MUST play bruhbruhbruh.wav
+                setTimeout(() => {
+                    audio.play().catch(() => {
+                        // If still fails, set volume anyway
+                        audio.volume = finalVolume;
+                    });
+                }, 100);
+                return Promise.resolve();
+            }) : Promise.resolve();
             
-            playPromise.catch(err => {
-                console.log('Could not play audio during fade in:', err);
-                // Fallback: try to set volume directly and complete
+            playPromise.then(() => {
+                // Play succeeded, continue with fade
+                console.log('🎵 fadeInAudio: Play succeeded, starting fade');
+            }).catch(err => {
+                console.log('⚠️ Could not play audio during fade in:', err);
+                // Still try to set volume in case it starts later
                 try {
                     audio.volume = finalVolume;
+                    // Try one more direct play
+                    audio.play().catch(() => {
+                        console.log('⚠️ Direct play in fadeInAudio also failed');
+                    });
                 } catch (e) {
-                    console.error('Error setting audio volume:', e);
+                    console.error('❌ Error setting audio volume:', e);
                 }
                 if (onComplete) onComplete();
                 return;
@@ -184,7 +224,13 @@
         
         // Check if music should be playing (from localStorage)
         const musicWasPlaying = localStorage.getItem('globalMusicPlaying') === 'true';
-        const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+        // Default to enabled if not explicitly disabled
+        let musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
+        // If musicEnabled is null (first visit), default to true and save it
+        if (localStorage.getItem('globalMusicEnabled') === null) {
+            localStorage.setItem('globalMusicEnabled', 'true');
+            musicEnabled = true;
+        }
         
         // Check for music=true URL parameter (from shared links)
         const urlParams = new URLSearchParams(window.location.search);
@@ -611,40 +657,86 @@
         
         // Start music if it was playing or if enabled
         const startMusic = () => {
-            // First try to restore previous state
-            if (musicWasPlaying && savedTrack !== 'none') {
-                restoreMusicState();
-            } else if (musicEnabled && localStorage.getItem('globalMusicPlaying') === null) {
-                // First time - start from beginning with fade in
-                if (backgroundMusic) {
-                    if (backgroundMusic.readyState < 2) {
-                        backgroundMusic.load();
-                        backgroundMusic.addEventListener('loadeddata', () => {
+            // Check if music is already playing
+            if (backgroundMusic && !backgroundMusic.paused) {
+                return; // Already playing
+            }
+            
+            // FORCE START MUSIC - these pages should always play bruhbruhbruh.wav
+            if (backgroundMusic) {
+                console.log('🎵 startMusic() called - attempting to play bruhbruhbruh.wav');
+                
+                // Ensure audio is loaded
+                if (backgroundMusic.readyState < 1) {
+                    console.log('🎵 Loading audio...');
+                    backgroundMusic.load();
+                }
+                
+                const tryPlay = async () => {
+                    try {
+                        console.log('🎵 Audio readyState:', backgroundMusic.readyState);
+                        
+                        if (backgroundMusic.readyState >= 1) {
                             backgroundMusic.currentTime = 0;
-                            const targetVolume = backgroundMusic.volume || 0.5;
-                            fadeInAudio(backgroundMusic, targetVolume, () => {
+                            backgroundMusic.volume = 0.5;
+                            
+                            // Try to play directly - this should work on user interaction
+                            try {
+                                console.log('🎵 Attempting to play audio...');
+                                await backgroundMusic.play();
+                                console.log('🎵 Audio playing successfully!');
+                                
+                                // If play succeeded, save state
                                 localStorage.setItem('globalMusicPlaying', 'true');
                                 localStorage.setItem('globalMusicEnabled', 'true');
-                            });
-                        }, { once: true });
-                    } else {
-                        backgroundMusic.currentTime = 0;
-                        const targetVolume = backgroundMusic.volume || 0.5;
-                        fadeInAudio(backgroundMusic, targetVolume, () => {
+                                
+                                // Start fade in for smooth volume transition
+                                fadeInAudio(backgroundMusic, 0.5, () => {
+                                    console.log('🎵 Fade in complete');
+                                });
+                            } catch (playError) {
+                                // Play failed - try fade in which will attempt play
+                                console.log('⚠️ Direct play failed, trying fade in:', playError);
+                                fadeInAudio(backgroundMusic, 0.5, () => {
+                                    localStorage.setItem('globalMusicPlaying', 'true');
+                                    localStorage.setItem('globalMusicEnabled', 'true');
+                                });
+                            }
+                        } else {
+                            // Wait for audio to load
+                            console.log('🎵 Waiting for audio to load...');
+                            backgroundMusic.addEventListener('loadeddata', tryPlay, { once: true });
+                            backgroundMusic.addEventListener('canplay', tryPlay, { once: true });
+                            backgroundMusic.load();
+                        }
+                    } catch (error) {
+                        console.error('❌ Error starting music:', error);
+                        // Still try fade in as last resort
+                        fadeInAudio(backgroundMusic, 0.5, () => {
                             localStorage.setItem('globalMusicPlaying', 'true');
                             localStorage.setItem('globalMusicEnabled', 'true');
                         });
                     }
-                }
+                };
+                
+                tryPlay();
+            } else {
+                console.error('❌ backgroundMusic element not found!');
             }
-            
-            document.removeEventListener('click', startMusic);
-            document.removeEventListener('touchstart', startMusic);
-            document.removeEventListener('keydown', startMusic);
         };
         
+        // FORCE ENABLE MUSIC ON THESE PAGES - bruhbruhbruh.wav should always play
+        localStorage.setItem('globalMusicEnabled', 'true');
+        musicEnabled = true;
+        
         // Try to start on page load (if audio is ready)
-        if (musicEnabled || isSharedLink) {
+        // Always try to start music - these pages should play bruhbruhbruh.wav
+        if (true) { // Always try to start
+            // If musicEnabled is null (first visit), default to true
+            if (localStorage.getItem('globalMusicEnabled') === null) {
+                localStorage.setItem('globalMusicEnabled', 'true');
+            }
+            
             // If this is a shared link with music=true, enable music if not already enabled
             if (isSharedLink && !musicEnabled) {
                 localStorage.setItem('globalMusicEnabled', 'true');
@@ -715,38 +807,70 @@
                 }
             });
             
-            if (loadedCount === audioElements.length) {
-                setTimeout(() => {
-                    // If this is a shared link, try to start music immediately
-                    if (isSharedLink) {
-                        // Try to start music directly (may be blocked by browser)
-                        const attemptAutoplay = async () => {
-                            try {
-                                if (backgroundMusic) {
-                                    await backgroundMusic.play();
-                                    localStorage.setItem('globalMusicPlaying', 'true');
-                                    localStorage.setItem('globalMusicEnabled', 'true');
-                                }
-                            } catch (error) {
-                                // Autoplay was blocked - show prompt
-                                console.log('Autoplay blocked, showing prompt');
-                                createMusicPrompt();
-                            }
-                        };
-                        attemptAutoplay();
-                    } else {
-                        startMusic();
-                    }
-                }, 200);
+            // Try to start music immediately when ready
+            const attemptStart = () => {
+                console.log('🎵 attemptStart() called');
+                if (backgroundMusic && backgroundMusic.readyState >= 1) {
+                    // Audio is ready, try to play
+                    console.log('🎵 Audio ready, attempting to play bruhbruhbruh.wav');
+                    backgroundMusic.currentTime = 0;
+                    backgroundMusic.volume = 0.5;
+                    backgroundMusic.play().then(() => {
+                        // Success! Music is playing
+                        console.log('🎵 Music started successfully!');
+                        localStorage.setItem('globalMusicPlaying', 'true');
+                        localStorage.setItem('globalMusicEnabled', 'true');
+                        fadeInAudio(backgroundMusic, 0.5, () => {});
+                    }).catch(err => {
+                        // Autoplay blocked - will start on first interaction
+                        console.log('⚠️ Autoplay blocked, will start on interaction:', err);
+                    });
+                } else if (backgroundMusic) {
+                    // Wait for audio to load
+                    console.log('🎵 Waiting for audio to load...');
+                    backgroundMusic.addEventListener('canplaythrough', attemptStart, { once: true });
+                    backgroundMusic.addEventListener('canplay', attemptStart, { once: true });
+                    backgroundMusic.load();
+                }
+            };
+            
+            // Always try to start, regardless of loaded count
+            if (backgroundMusic) {
+                if (backgroundMusic.readyState >= 1) {
+                    // Audio ready, try immediately
+                    console.log('🎵 Audio already ready, attempting start');
+                    setTimeout(attemptStart, 100);
+                } else {
+                    // Wait for audio to load
+                    console.log('🎵 Audio not ready, waiting...');
+                    backgroundMusic.addEventListener('canplaythrough', attemptStart, { once: true });
+                    backgroundMusic.addEventListener('canplay', attemptStart, { once: true });
+                    backgroundMusic.load();
+                }
             }
             
+            // ALSO try to start immediately on page load (may be blocked, but worth trying)
+            setTimeout(() => {
+                if (backgroundMusic && backgroundMusic.readyState >= 1 && backgroundMusic.paused) {
+                    console.log('🎵 Delayed start attempt');
+                    attemptStart();
+                }
+            }, 500);
+            
             // Also listen for user interaction (required by browsers) - but make it more accessible
-            const startOnInteraction = () => {
+            const startOnInteraction = (e) => {
+                console.log('🎵 User interaction detected:', e.type);
+                // Prevent default only for certain events
+                if (e && e.type === 'click' && e.target && e.target.tagName === 'A') {
+                    // Don't prevent navigation
+                }
                 startMusic();
+                // Clean up listeners
                 document.removeEventListener('click', startOnInteraction);
                 document.removeEventListener('touchstart', startOnInteraction);
                 document.removeEventListener('keydown', startOnInteraction);
                 document.removeEventListener('mousemove', startOnInteraction);
+                document.removeEventListener('pointermove', startOnInteraction);
             };
             
             // For shared links, be more aggressive about trying to start music
@@ -766,11 +890,69 @@
                 window.addEventListener('scroll', startOnScroll, { once: true, passive: true });
                 window.addEventListener('wheel', startOnScroll, { once: true, passive: true });
             } else {
-                document.addEventListener('click', startOnInteraction, { once: true });
-                document.addEventListener('touchstart', startOnInteraction, { once: true });
-                document.addEventListener('keydown', startOnInteraction, { once: true });
-                document.addEventListener('mousemove', startOnInteraction, { once: true });
+                // For all pages, be VERY aggressive about starting music on ANY interaction
+                // These pages MUST play bruhbruhbruh.wav
+                const startOnAnyInteraction = (e) => {
+                    console.log('🎵 User interaction detected:', e ? e.type : 'unknown');
+                    startMusic();
+                    // Remove all listeners
+                    document.removeEventListener('click', startOnAnyInteraction);
+                    document.removeEventListener('touchstart', startOnAnyInteraction);
+                    document.removeEventListener('keydown', startOnAnyInteraction);
+                    document.removeEventListener('mousemove', startOnAnyInteraction);
+                    document.removeEventListener('pointermove', startOnAnyInteraction);
+                    document.removeEventListener('pointerdown', startOnAnyInteraction);
+                    window.removeEventListener('scroll', startOnAnyInteraction);
+                    window.removeEventListener('wheel', startOnAnyInteraction);
+                };
+                
+                // Listen to EVERY possible interaction - music MUST start
+                document.addEventListener('click', startOnAnyInteraction, { once: true, passive: true });
+                document.addEventListener('touchstart', startOnAnyInteraction, { once: true, passive: true });
+                document.addEventListener('keydown', startOnAnyInteraction, { once: true, passive: true });
+                document.addEventListener('mousemove', startOnAnyInteraction, { once: true, passive: true });
+                document.addEventListener('pointermove', startOnAnyInteraction, { once: true, passive: true });
+                document.addEventListener('pointerdown', startOnAnyInteraction, { once: true, passive: true });
+                // Also try to start on scroll (very common first interaction)
+                window.addEventListener('scroll', startOnAnyInteraction, { once: true, passive: true });
+                window.addEventListener('wheel', startOnAnyInteraction, { once: true, passive: true });
+                // Also try on focus (when user switches to tab)
+                window.addEventListener('focus', () => {
+                    setTimeout(() => startMusic(), 100);
+                }, { once: true });
+                // Try on page visibility change
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden) {
+                        setTimeout(() => startMusic(), 100);
+                    }
+                }, { once: true });
             }
+            
+            // CRITICAL: Also set up a fallback to ensure music starts
+            // If no interaction happens within 2 seconds, try to start anyway
+            setTimeout(() => {
+                if (backgroundMusic && backgroundMusic.paused) {
+                    console.log('🎵 Fallback: Attempting to start music after 2 seconds');
+                    // Music still not playing, try one more time
+                    startMusic();
+                }
+            }, 2000);
+            
+            // Also try immediately when page becomes visible
+            if (document.visibilityState === 'visible') {
+                setTimeout(() => {
+                    console.log('🎵 Page visible, attempting to start music');
+                    startMusic();
+                }, 500);
+            }
+            
+            // Listen for when page becomes visible
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && backgroundMusic && backgroundMusic.paused) {
+                    console.log('🎵 Page became visible, attempting to start music');
+                    setTimeout(() => startMusic(), 100);
+                }
+            });
             
             // Also try to start on window focus if music was playing
             window.addEventListener('focus', () => {

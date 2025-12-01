@@ -7889,7 +7889,7 @@ function initNewsletterSubscription() {
         { name: 'Mexico', flag: '🇲🇽' },
         { name: 'South Korea', flag: '🇰🇷' },
         { name: 'China', flag: '🇨🇳' },
-        { name: 'Russia', flag: '🇷🇺' },
+        // { name: 'Russia', flag: '🇷🇺' }, // Temporarily removed
         { name: 'Turkey', flag: '🇹🇷' },
         { name: 'Argentina', flag: '🇦🇷' },
         { name: 'South Africa', flag: '🇿🇦' },
