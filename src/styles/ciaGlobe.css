@@ -81,14 +81,46 @@
 }
 
 .cia-globe-loading-spinner {
-  width: 80px;
-  height: 80px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
-  background:
-    radial-gradient(circle, rgba(74, 158, 255, 0.9) 0%, rgba(74, 158, 255, 0.1) 70%, transparent 100%),
-    radial-gradient(circle, rgba(24, 144, 255, 0.4) 0%, transparent 70%);
-  box-shadow: 0 0 40px rgba(74, 158, 255, 0.35), 0 0 80px rgba(74, 158, 255, 0.25);
-  animation: ciaGlobePulse 1.25s ease-in-out infinite;
+  position: relative;
+  margin: 0 auto;
+  background: radial-gradient(circle at 30% 30%, rgba(74, 158, 255, 0.3), rgba(7, 21, 42, 0.8));
+  background-image: 
+    radial-gradient(circle at 30% 30%, rgba(74, 158, 255, 0.3), rgba(7, 21, 42, 0.8)),
+    linear-gradient(0deg, transparent 48%, rgba(74, 158, 255, 0.2) 49%, rgba(74, 158, 255, 0.2) 51%, transparent 52%),
+    linear-gradient(90deg, transparent 48%, rgba(74, 158, 255, 0.2) 49%, rgba(74, 158, 255, 0.2) 51%, transparent 52%);
+  box-shadow: 
+    inset -20px -20px 40px rgba(0, 0, 0, 0.5),
+    inset 20px 20px 40px rgba(74, 158, 255, 0.2),
+    0 0 60px rgba(74, 158, 255, 0.3);
+  animation: ciaGlobeSpin 3s linear infinite;
+}
+
+/* Outer spinning ring */
+.cia-globe-loading-spinner::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 4px solid transparent;
+  border-top-color: rgba(74, 158, 255, 0.9);
+  border-right-color: rgba(74, 158, 255, 0.7);
+  animation: ciaGlobeSpin 1.5s linear infinite;
+  box-shadow: 0 0 20px rgba(74, 158, 255, 0.4);
+}
+
+/* Middle spinning ring */
+.cia-globe-loading-spinner::after {
+  content: '';
+  position: absolute;
+  inset: 15px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-bottom-color: rgba(91, 181, 255, 0.8);
+  border-left-color: rgba(91, 181, 255, 0.6);
+  animation: ciaGlobeSpin 1s linear infinite reverse;
 }
 
 .cia-globe-loading-message {
@@ -96,16 +128,15 @@
   font-size: 1.05rem;
   letter-spacing: 0.4px;
   font-weight: 500;
+  margin-top: 20px;
 }
 
-@keyframes ciaGlobePulse {
-  0%, 100% {
-    transform: scale(0.9);
-    opacity: 0.8;
+@keyframes ciaGlobeSpin {
+  0% {
+    transform: rotate(0deg);
   }
-  50% {
-    transform: scale(1.1);
-    opacity: 1;
+  100% {
+    transform: rotate(360deg);
   }
 }
 

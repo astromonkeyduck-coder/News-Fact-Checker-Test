@@ -1164,6 +1164,8 @@ header.main-header,
     max-height: 60px;
     display: flex;
     align-items: center;
+    overflow: visible !important;
+    box-sizing: border-box;
 }
 
 /* Add padding-top to body to account for fixed header */
@@ -1183,7 +1185,8 @@ body {
     min-height: 60px;
     max-height: 60px;
     position: relative;
-    overflow: visible;
+    overflow: visible !important;
+    box-sizing: border-box;
 }
 
 /* Left Group: Logo + Brand - Positioned at left edge */
@@ -1251,7 +1254,8 @@ body {
     margin: 0 auto;
     flex-shrink: 1;
     max-width: 100%;
-    overflow: hidden;
+    overflow: visible;
+    position: relative;
 }
 
 .main-nav ul {
@@ -1284,10 +1288,48 @@ body {
     align-items: center;
     gap: 0.5rem;
     flex: 0 0 auto;
-    flex-shrink: 0;
+    flex-shrink: 0 !important;
     min-width: fit-content;
     margin-left: auto;
-    overflow: visible;
+    overflow: visible !important;
+    position: relative;
+    z-index: 10;
+}
+
+/* Ensure all buttons in header-right are never cut off */
+.header-right > * {
+    flex-shrink: 0 !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+}
+
+/* Auth buttons container */
+.auth-buttons-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0 !important;
+    overflow: visible !important;
+}
+
+/* Individual auth buttons */
+.auth-btn,
+.signin-btn,
+.signup-btn,
+#signinBtn,
+#signupBtn {
+    flex-shrink: 0 !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+    min-width: fit-content !important;
+}
+
+/* Music control button */
+.music-control-btn {
+    flex-shrink: 0 !important;
+    overflow: visible !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
 }
 
 .last-update {
@@ -1303,6 +1345,41 @@ body {
 @media (min-width: 769px) and (max-width: 1366px) {
     .last-update {
         display: none !important;
+    }
+}
+
+/* Ensure header buttons never get cut off at any screen size */
+@media (max-width: 1400px) {
+    .header-container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    
+    .header-right {
+        flex-shrink: 0 !important;
+        overflow: visible !important;
+        min-width: fit-content !important;
+    }
+}
+
+@media (max-width: 900px) {
+    .main-nav {
+        gap: 1rem !important;
+    }
+    
+    .main-nav ul {
+        gap: 1rem !important;
+    }
+}
+
+@media (max-width: 700px) {
+    .header-right {
+        gap: 0.4rem !important;
+    }
+    
+    .auth-btn {
+        padding: 0.3rem 0.7rem !important;
+        font-size: 0.8rem !important;
     }
 }
 

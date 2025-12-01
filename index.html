@@ -2173,8 +2173,16 @@
             .header-right {
                 gap: 0.5rem;
                 flex: 0 0 auto;
+                flex-shrink: 0 !important;
                 order: 2;
                 margin-left: auto;
+                overflow: visible !important;
+                min-width: fit-content !important;
+            }
+            
+            .header-right > * {
+                flex-shrink: 0 !important;
+                overflow: visible !important;
             }
             
             .mobile-menu-toggle {
@@ -2395,15 +2403,54 @@
             -moz-osx-font-smoothing: grayscale !important;
         }
         
-        /* Ensure header elements don't overlap */
-        .header-container {
+        /* Ensure header elements don't overlap and buttons never get cut off */
+        .main-header {
             overflow: visible !important;
+            box-sizing: border-box !important;
         }
         
-        .header-left,
+        .header-container {
+            overflow: visible !important;
+            box-sizing: border-box !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        
+        .header-left {
+            overflow: visible !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+            min-width: 0 !important;
+        }
+        
         .header-right {
             overflow: visible !important;
             white-space: nowrap !important;
+            flex-shrink: 0 !important;
+            min-width: fit-content !important;
+            position: relative !important;
+            z-index: 10 !important;
+        }
+        
+        /* Ensure all buttons in header-right are never cut off */
+        .header-right > *,
+        .header-right .auth-buttons-container,
+        .header-right .auth-btn,
+        .header-right .signin-btn,
+        .header-right .signup-btn,
+        .header-right #signinBtn,
+        .header-right #signupBtn,
+        .header-right .music-control-btn {
+            flex-shrink: 0 !important;
+            overflow: visible !important;
+            white-space: nowrap !important;
+            min-width: fit-content !important;
+        }
+        
+        .main-nav {
+            overflow: visible !important;
+            flex-shrink: 1 !important;
+            min-width: 0 !important;
         }
         
         /* Mobile menu toggle for very small screens */
@@ -2444,6 +2491,18 @@
             .brand-info p {
                 max-width: 120px;
                 font-size: 0.6rem;
+            }
+            
+            /* Ensure header-right buttons are never cut off */
+            .header-right {
+                flex-shrink: 0 !important;
+                overflow: visible !important;
+                min-width: fit-content !important;
+            }
+            
+            .header-right > * {
+                flex-shrink: 0 !important;
+                overflow: visible !important;
             }
         }
         
@@ -13056,41 +13115,6 @@
         <div class="globe-section" id="globe-section" style="padding: 3rem 1rem; background: rgba(7, 21, 42, 0.5); margin: 2rem 0;">
             <h2 class="news-title" style="text-align: center; margin-bottom: 1rem;">Global Coverage Map</h2>
             <div id="cia-globe-container" style="width: 100%; height: 600px; max-width: 1200px; margin: 0 auto; border-radius: 16px; overflow: hidden; background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%); position: relative; border: 1px solid rgba(74, 144, 226, 0.15); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;">
-                <!-- Professional Loading Indicator for Globe -->
-                <div id="globeLoadingIndicator" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(7, 21, 42, 0.98) 0%, rgba(13, 31, 58, 0.98) 100%); backdrop-filter: blur(10px); z-index: 10; border-radius: 16px;">
-                    <div style="position: relative; display: inline-block; margin-bottom: 2.5rem;">
-                        <!-- Globe icon with rotation -->
-                        <div style="position: relative; width: 100px; height: 100px;">
-                            <!-- Outer ring -->
-                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; border: 3px solid rgba(74, 144, 226, 0.2); border-top-color: #4A90E2; border-radius: 50%; animation: spinGlobe 1.5s linear infinite;"></div>
-                            <!-- Middle ring -->
-                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; border: 2px solid rgba(74, 144, 226, 0.15); border-right-color: rgba(74, 144, 226, 0.6); border-radius: 50%; animation: spinGlobe 1s linear infinite reverse;"></div>
-                            <!-- Globe SVG -->
-                            <svg style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; animation: floatGlobe 3s ease-in-out infinite;" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="12" cy="12" r="10" stroke="url(#globeGradient)" stroke-width="1.5" fill="none"/>
-                                <path d="M2 12h20M12 2a15.3 15.3 0 0 0 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 0 4-10z" stroke="url(#globeGradient)" stroke-width="1" opacity="0.6"/>
-                                <defs>
-                                    <linearGradient id="globeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
-                                        <stop offset="100%" style="stop-color:#5BB5FF;stop-opacity:1" />
-                                    </linearGradient>
-                                </defs>
-                            </svg>
-                        </div>
-                    </div>
-                    <h3 style="color: #fff; font-size: 1.75rem; font-weight: 700; margin: 0 0 0.75rem 0; letter-spacing: -0.02em; background: linear-gradient(135deg, #fff 0%, rgba(74, 144, 226, 0.9) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Loading Global Map</h3>
-                    <p style="color: rgba(255, 255, 255, 0.85); font-size: 1.0625rem; margin: 0 0 0.5rem 0; font-weight: 500;">Preparing interactive coverage visualization</p>
-                    <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9375rem; margin: 0; letter-spacing: 0.02em;">Please wait, map is loading...</p>
-                    <style>
-                        @keyframes spinGlobe {
-                            to { transform: translate(-50%, -50%) rotate(360deg); }
-                        }
-                        @keyframes floatGlobe {
-                            0%, 100% { transform: translate(-50%, -50%) translateY(0); }
-                            50% { transform: translate(-50%, -50%) translateY(-8px); }
-                        }
-                    </style>
-                </div>
             </div>
         </div>
         <style>
@@ -14976,27 +15000,8 @@
             if (typeof CiaMissionGlobe !== 'undefined') {
                 const globe = new CiaMissionGlobe('cia-globe-container');
                 console.log('[Globe] Initialized global coverage map');
-                
-                // Hide loading indicator once globe is ready
-                setTimeout(function() {
-                    const loadingIndicator = document.getElementById('globeLoadingIndicator');
-                    if (loadingIndicator) {
-                        loadingIndicator.style.opacity = '0';
-                        loadingIndicator.style.transition = 'opacity 0.5s ease';
-                        setTimeout(function() {
-                            loadingIndicator.style.display = 'none';
-                        }, 500);
-                    }
-                }, 1000);
             } else {
                 console.warn('[Globe] CiaMissionGlobe not available');
-                // Still hide loading indicator after timeout
-                setTimeout(function() {
-                    const loadingIndicator = document.getElementById('globeLoadingIndicator');
-                    if (loadingIndicator) {
-                        loadingIndicator.style.display = 'none';
-                    }
-                }, 3000);
             }
         });
     </script>
