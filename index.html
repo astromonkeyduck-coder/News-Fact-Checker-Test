@@ -4258,18 +4258,19 @@
             box-sizing: border-box;
         }
         
-        /* Mobile: Allow horizontal scroll for posts if needed */
+        /* Mobile: Ensure proper layout */
         @media (max-width: 768px) {
             .container {
                 width: 100% !important;
                 max-width: 100% !important;
-                overflow-x: auto !important;
+                overflow-x: hidden !important;
             }
             
             /* Ensure posts grid wraps on mobile */
             .breaking-news-grid,
             .articles-track {
                 grid-template-columns: 1fr !important;
+                overflow-x: hidden;
             }
             
             * {
@@ -6789,8 +6790,8 @@
             gap: 1.5rem;
             padding: 0;
             width: 100%;
+            max-width: 100%;
             overflow: visible;
-            overflow-x: auto;
             box-sizing: border-box;
         }
         
@@ -6837,8 +6838,8 @@
             gap: 1.5rem;
             padding: 0;
             width: 100%;
+            max-width: 100%;
             overflow: visible;
-            overflow-x: auto;
             min-height: auto;
             height: auto;
             box-sizing: border-box;
@@ -6849,28 +6850,34 @@
             overflow: visible !important;
             height: auto !important;
             max-height: none !important;
-            overflow-x: auto !important;
             width: 100%;
+            box-sizing: border-box;
         }
         
-        /* Ensure body and html can scroll - allow horizontal scroll for posts */
+        /* Ensure body and html can scroll vertically, but prevent horizontal scroll on body */
         html, body {
-            overflow-x: auto !important;
+            overflow-x: hidden !important;
             overflow-y: auto !important;
             height: auto !important;
             max-height: none !important;
         }
         
-        /* Ensure the grid can extend horizontally if needed */
+        /* Allow horizontal scrolling ONLY on the feed grid container if content overflows */
         .breaking-news-grid,
         .articles-track {
-            min-width: max-content;
             width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            /* Only enable horizontal scroll if content actually overflows */
+            overflow-x: auto;
+            overflow-y: visible;
         }
         
-        /* Allow horizontal scrolling on the container if content overflows */
+        /* Container should not force horizontal scroll */
         .container {
-            overflow-x: auto !important;
+            overflow-x: hidden !important;
+            width: 100%;
+            max-width: 100%;
         }
         
         @media (min-width: 1400px) {
