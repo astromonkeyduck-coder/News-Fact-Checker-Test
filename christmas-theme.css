@@ -1,0 +1,247 @@
+/* ============================================
+   CHRISTMAS THEME - Easy to Toggle On/Off
+   ============================================ */
+
+/* Christmas Color Overrides */
+:root {
+    --christmas-red: #dc2626;
+    --christmas-green: #16a34a;
+    --christmas-gold: #fbbf24;
+    --christmas-snow: #f8fafc;
+}
+
+/* Snowflake Animation Background */
+.christmas-snowflakes {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: none !important;
+    z-index: 99999 !important;
+    overflow: hidden !important;
+}
+
+.snowflake {
+    position: absolute !important;
+    color: white !important;
+    font-size: 1.2em !important;
+    font-family: Arial, sans-serif !important;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 1) !important;
+    animation: snowfall linear infinite !important;
+    opacity: 0.9 !important;
+    display: block !important;
+    visibility: visible !important;
+}
+
+@keyframes snowfall {
+    0% {
+        transform: translateY(-100vh) rotate(0deg) !important;
+        opacity: 1 !important;
+    }
+    10% {
+        opacity: 1 !important;
+    }
+    90% {
+        opacity: 1 !important;
+    }
+    100% {
+        transform: translateY(100vh) rotate(360deg) !important;
+        opacity: 0.3 !important;
+    }
+}
+
+/* Subtle Christmas gradient overlay on background */
+html.christmas-theme,
+body.christmas-theme {
+    position: relative;
+}
+
+html.christmas-theme::before,
+body.christmas-theme::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 50%, rgba(220, 38, 38, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 50%, rgba(22, 163, 74, 0.08) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Christmas accents on header */
+.christmas-theme header.main-header,
+.christmas-theme .main-header,
+header.main-header.christmas-theme,
+.main-header.christmas-theme {
+    border-bottom: 2px solid rgba(220, 38, 38, 0.4) !important;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3), 0 0 20px rgba(22, 163, 74, 0.15) !important;
+}
+
+/* Christmas glow on logo/brand */
+.christmas-theme .header-logo img,
+.christmas-theme .brand-name,
+.header-logo.christmas-theme img,
+.brand-name.christmas-theme {
+    filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.5)) !important;
+    animation: christmas-glow 3s ease-in-out infinite;
+}
+
+@keyframes christmas-glow {
+    0%, 100% {
+        filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.4));
+    }
+    50% {
+        filter: drop-shadow(0 0 12px rgba(220, 38, 38, 0.5)) drop-shadow(0 0 8px rgba(22, 163, 74, 0.4));
+    }
+}
+
+/* Christmas accents on buttons */
+.christmas-theme button,
+.christmas-theme .btn,
+.christmas-theme a.button {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.christmas-theme button:hover,
+.christmas-theme .btn:hover,
+.christmas-theme a.button:hover {
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3), 0 0 20px rgba(22, 163, 74, 0.2);
+}
+
+/* Christmas decorations on cards/containers */
+.christmas-theme .post-card,
+.christmas-theme .card,
+.christmas-theme article {
+    border-left: 3px solid transparent;
+    transition: border-color 0.3s ease;
+}
+
+.christmas-theme .post-card:hover,
+.christmas-theme .card:hover,
+.christmas-theme article:hover {
+    border-left-color: var(--christmas-red);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+}
+
+/* Christmas sparkle effect on links */
+.christmas-theme a:not(.button):not(.btn) {
+    position: relative;
+}
+
+.christmas-theme a:not(.button):not(.btn):hover::after {
+    content: '✨';
+    position: absolute;
+    margin-left: 4px;
+    animation: sparkle 0.6s ease-in-out;
+}
+
+@keyframes sparkle {
+    0%, 100% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+}
+
+/* Subtle Christmas border on main content */
+.christmas-theme .container,
+.christmas-theme main {
+    position: relative;
+}
+
+.christmas-theme .container::before,
+.christmas-theme main::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        var(--christmas-red) 25%, 
+        var(--christmas-gold) 50%, 
+        var(--christmas-green) 75%, 
+        transparent 100%);
+    background-size: 200% 100%;
+    animation: border-slide 3s linear infinite;
+    opacity: 0.6;
+}
+
+@keyframes border-slide {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Christmas-themed scrollbar (webkit browsers) */
+.christmas-theme ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--christmas-red), var(--christmas-green));
+    border-radius: 10px;
+}
+
+.christmas-theme ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--christmas-green), var(--christmas-red));
+}
+
+/* Subtle Christmas text shadow on headings */
+.christmas-theme h1,
+.christmas-theme h2,
+.christmas-theme h3 {
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.2);
+}
+
+/* Christmas emoji decorations (optional, can be removed if too much) */
+.christmas-theme .hero-section::after {
+    content: '🎄';
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 2rem;
+    opacity: 0.3;
+    animation: float 3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+.christmas-theme .hero-section::before {
+    content: '❄️';
+    position: absolute;
+    top: 60px;
+    left: 20px;
+    font-size: 1.5rem;
+    opacity: 0.3;
+    animation: float 4s ease-in-out infinite reverse;
+    pointer-events: none;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .christmas-theme .hero-section::after,
+    .christmas-theme .hero-section::before {
+        display: none; /* Hide emoji on mobile for cleaner look */
+    }
+    
+    .snowflake {
+        font-size: 0.8em;
+    }
+}

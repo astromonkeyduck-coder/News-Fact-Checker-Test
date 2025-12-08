@@ -30,6 +30,16 @@
     
     <!-- Styles -->
     <link rel="stylesheet" href="mobile.css">
+    
+    <!-- Christmas Theme - Easy to toggle on/off -->
+    <script src="christmas-config.js"></script>
+    <script>
+        // Make config available globally
+        if (typeof CHRISTMAS_CONFIG !== 'undefined') {
+            window.CHRISTMAS_CONFIG = CHRISTMAS_CONFIG;
+        }
+    </script>
+    <script src="christmas-theme-loader.js"></script>
 </head>
 <body>
     <!-- Skip to content link for accessibility -->

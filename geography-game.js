@@ -157,7 +157,6 @@ class GeographyGame {
         this.flashRight = document.getElementById('viewportFlashRight');
         this.startBtn = document.getElementById('startBtn');
         this.resetBtn = document.getElementById('resetBtn');
-        this.skipCountryBtn = document.getElementById('skipCountryBtn');
         this.directionsCountEl = document.getElementById('directionsCount');
         this.timerEl = document.getElementById('geoTimer');
         this.speedEl = document.getElementById('geoSpeed');
@@ -679,25 +678,6 @@ class GeographyGame {
             this.hintBtn.addEventListener('click', () => this.showHint());
         }
         
-        if (this.skipCountryBtn) {
-            this.skipCountryBtn.addEventListener('click', () => {
-                try {
-                    if (this.gameActive && this.currentCountry) {
-                        // Mark current country as skipped (count as wrong)
-                        if (!this.wrongCountries.has(this.currentCountry.code)) {
-                            this.wrong++;
-                            this.wrongCountries.add(this.currentCountry.code);
-                        }
-                        this.answered.add(this.currentCountry.code);
-                        this.updateStats();
-                        this.getNextCountry();
-                    }
-                } catch (e) {
-                    console.error('Error skipping country:', e);
-                }
-            });
-        }
-        
         // Setup drag handlers - can be called multiple times
         this.setupDragHandlers();
     }
@@ -1191,26 +1171,33 @@ class GeographyGame {
                 }
                 
                 // Center the SVG initially if it hasn't been manually panned yet
-                const isInitialLoad = this.panX === 0 && this.panY === 0 && 
-                                     (this.zoomLevel === this.minZoomLevel || this.zoomLevel === 1);
+                // Check if this is the first time we're positioning the map
+                const hasBeenPanned = Math.abs(this.panX) > 1 || Math.abs(this.panY) > 1;
+                const isInitialLoad = !hasBeenPanned && (this.zoomLevel === this.minZoomLevel || this.zoomLevel === 1 || Math.abs(this.zoomLevel - 1) < 0.1);
                 
                 if (isInitialLoad) {
                     // Note: panY controls horizontal (X) movement, panX controls vertical (Y) movement (due to swap in transform)
-                    // Position map to fit perfectly in container - center it if it fits, or start at top-left if larger
+                    // With transformOrigin 'top left', we need to calculate the offset to center the map
                     
+                    // Center horizontally: 
+                    // If map is wider: move left (negative panY) by half the overflow
+                    // If map is smaller: move right (positive panY) by half the difference
                     if (scaledWidth > containerWidth) {
-                        // Map is wider than container - center it horizontally
+                        // Map is wider than container - center it horizontally by moving left
                         this.panY = -(scaledWidth - containerWidth) / 2;
                     } else {
-                        // Map fits or is smaller - center it horizontally
+                        // Map fits or is smaller - center it horizontally by moving right
                         this.panY = (containerWidth - scaledWidth) / 2;
                     }
                     
+                    // Center vertically:
+                    // If map is taller: move up (negative panX) by half the overflow
+                    // If map is smaller: move down (positive panX) by half the difference
                     if (scaledHeight > containerHeight) {
-                        // Map is taller than container - center it vertically
+                        // Map is taller than container - center it vertically by moving up
                         this.panX = -(scaledHeight - containerHeight) / 2;
                     } else {
-                        // Map fits or is smaller - center it vertically
+                        // Map fits or is smaller - center it vertically by moving down
                         this.panX = (containerHeight - scaledHeight) / 2;
                     }
                     
@@ -1221,6 +1208,7 @@ class GeographyGame {
                         scaledHeight,
                         containerWidth,
                         containerHeight,
+                        zoomLevel: this.zoomLevel,
                         isCentered: true
                     });
                 }
@@ -1363,10 +1351,6 @@ class GeographyGame {
         if (this.hintBtn) {
             this.hintBtn.disabled = false;
             this.hintBtn.style.display = 'inline-flex';
-        }
-        if (this.skipCountryBtn) {
-            this.skipCountryBtn.disabled = false;
-            this.skipCountryBtn.style.display = 'inline-flex';
         }
         this.feedbackEl.textContent = '';
         this.feedbackEl.className = 'feedback-message';
@@ -1578,10 +1562,6 @@ class GeographyGame {
         if (this.hintBtn) {
             this.hintBtn.disabled = true;
             this.hintBtn.style.display = 'none';
-        }
-        if (this.skipCountryBtn) {
-            this.skipCountryBtn.disabled = true;
-            this.skipCountryBtn.style.display = 'none';
         }
         
         // Update stats display
@@ -1823,10 +1803,6 @@ class GeographyGame {
         // Re-enable hint button for new country
         if (this.hintBtn) {
             this.hintBtn.disabled = false;
-        }
-        // Re-enable skip button for new country
-        if (this.skipCountryBtn) {
-            this.skipCountryBtn.disabled = false;
         }
         
         // Remove any previous markers
@@ -5632,11 +5608,20 @@ function loadSVGMap() {
                         window.geoGame.setupDragHandlers();
                     }
                     // Force update to recalculate constraints and center
+                    // Use multiple timeouts to ensure container dimensions are ready
                     setTimeout(() => {
                         if (window.geoGame && window.geoGame.updateTransform) {
-                        window.geoGame.updateTransform();
+                            window.geoGame.updateTransform();
                         }
                     }, 100);
+                    setTimeout(() => {
+                        if (window.geoGame && window.geoGame.updateTransform) {
+                            // Force recenter by resetting pan values
+                            window.geoGame.panX = 0;
+                            window.geoGame.panY = 0;
+                            window.geoGame.updateTransform();
+                        }
+                    }, 300);
                 }
                 
                 // IMPORTANT: Set up click handlers on the newly loaded SVG

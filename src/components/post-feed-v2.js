@@ -7,6 +7,38 @@
 // Note: In production, these would be compiled TS files
 // For now, we'll include the logic inline
 
+// Icon helper functions - Premium SVG icons replacing emojis
+function getIconHTML(iconName, className = 'w-5 h-5') {
+  const icons = {
+    reply: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="${className}" style="color: currentColor; width: 1em; height: 1em; vertical-align: middle;">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <path d="M8 10h8M8 14h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    </svg>`,
+    like: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="${className}" style="color: currentColor; width: 1em; height: 1em; vertical-align: middle;">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+    </svg>`,
+    view: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="${className}" style="color: currentColor; width: 1em; height: 1em; vertical-align: middle;">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity="0.2"/>
+    </svg>`,
+    search: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="${className}" style="color: currentColor; width: 1em; height: 1em; vertical-align: middle;">
+      <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.5" fill="none"/>
+      <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+    location: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="${className}" style="color: currentColor; width: 1em; height: 1em; vertical-align: middle;">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+      <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity="0.3"/>
+    </svg>`,
+    share: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="${className}" style="color: currentColor; width: 1em; height: 1em; vertical-align: middle;">
+      <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>`,
+    repost: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="${className}" style="color: currentColor; width: 1em; height: 1em; vertical-align: middle;">
+      <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>`,
+  };
+  return icons[iconName] || '';
+}
+
 const CACHE_KEY = 'noteworthy-posts-cache-v2';
 const CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
 
@@ -363,7 +395,8 @@ function showShareMenu(post, buttonElement) {
       }
     },
     {
-      icon: '💬',
+      icon: 'reply',
+      iconHTML: getIconHTML('reply', 'w-4 h-4'),
       label: 'Messages',
       action: () => {
         // Try SMS first, fallback to generic messaging
@@ -1275,7 +1308,8 @@ function renderEngagementBar(post) {
   
   const buttons = [
     {
-      icon: '💬',
+      icon: 'reply',
+      iconHTML: getIconHTML('reply', 'w-5 h-5'),
       count: stats.comments,
       label: 'Comments',
       color: 'rgb(113, 118, 123)',
@@ -1283,7 +1317,8 @@ function renderEngagementBar(post) {
       onClick: `window.feedOpenCommentDrawer('${post.id}')`,
     },
     {
-      icon: '🔄',
+      icon: 'repost',
+      iconHTML: getIconHTML('repost', 'w-5 h-5'),
       count: stats.reposts,
       label: 'Reposts',
       color: 'rgb(113, 118, 123)',
@@ -1291,7 +1326,8 @@ function renderEngagementBar(post) {
       href: post.url,
     },
     {
-      icon: '❤️',
+      icon: 'like',
+      iconHTML: getIconHTML('like', 'w-5 h-5'),
       count: stats.likes,
       label: 'Likes',
       color: 'rgb(113, 118, 123)',
@@ -1299,7 +1335,8 @@ function renderEngagementBar(post) {
       href: post.url,
     },
     {
-      icon: '📤',
+      icon: 'share',
+      iconHTML: getIconHTML('share', 'w-5 h-5'),
       count: null,
       label: 'Share',
       color: 'rgb(113, 118, 123)',
@@ -1308,7 +1345,8 @@ function renderEngagementBar(post) {
       showCount: false,
     },
     {
-      icon: '👁️',
+      icon: 'view',
+      iconHTML: getIconHTML('view', 'w-5 h-5'),
       count: stats.views,
       label: 'Views',
       color: 'rgb(113, 118, 123)',
@@ -1343,7 +1381,7 @@ function renderEngagementBar(post) {
           onmouseover="this.style.color='${btn.hoverColor}'; this.style.backgroundColor='rgba(29, 155, 240, 0.1)'"
           onmouseout="this.style.color='${btn.color}'; this.style.backgroundColor='transparent'"
         >
-          <span style="font-size: 1.25rem; line-height: 1;">${btn.icon}</span>
+          <span class="icon-inline" style="display: inline-flex; align-items: center; gap: 0.25rem;">${btn.iconHTML || getIconHTML(btn.icon, 'w-5 h-5')}</span>
           ${btn.showCount !== false && btn.count !== null && btn.count !== undefined ? `<span style="font-size: 0.813rem; line-height: 1; font-weight: 400;">${formatCount(btn.count)}</span>` : ''}
         </button>
       `;
@@ -1371,7 +1409,7 @@ function renderEngagementBar(post) {
           onmouseover="this.style.color='${btn.hoverColor}'; this.style.backgroundColor='rgba(29, 155, 240, 0.1)'"
           onmouseout="this.style.color='${btn.color}'; this.style.backgroundColor='transparent'"
         >
-          <span style="font-size: 1.25rem; line-height: 1;">${btn.icon}</span>
+          <span class="icon-inline" style="display: inline-flex; align-items: center; gap: 0.25rem;">${btn.iconHTML || getIconHTML(btn.icon, 'w-5 h-5')}</span>
           ${btn.showCount !== false && btn.count !== null && btn.count !== undefined ? `<span style="font-size: 0.813rem; line-height: 1; font-weight: 400;">${formatCount(btn.count)}</span>` : ''}
         </a>
       `;
@@ -1418,7 +1456,8 @@ function renderFeedControls(totalPosts) {
     pointer-events: none;
     z-index: 1;
   `;
-  searchIcon.textContent = '🔍';
+  searchIcon.innerHTML = getIconHTML('search', 'w-5 h-5');
+  searchIcon.style.cssText += 'display: flex; align-items: center; justify-content: center;';
   
   const searchInput = document.createElement('input');
   searchInput.id = searchId;
@@ -1490,7 +1529,7 @@ function renderFeedControls(totalPosts) {
   sortButtonText.className = 'feed-sort-button-text';
   const currentSortText = {
     'recent': 'Most Recent',
-    'nearby': '📍 Near Me',
+    'nearby': 'Near Me',
     'views': 'Most Views',
     'likes': 'Most Likes',
     'comments': 'Most Comments',
@@ -1534,12 +1573,12 @@ function renderFeedControls(totalPosts) {
   `;
   
   const options = [
-    { value: 'recent', text: 'Most Recent', icon: '🕐' },
-    { value: 'nearby', text: 'Near Me', icon: '📍' },
-    { value: 'views', text: 'Most Views', icon: '👁️' },
-    { value: 'likes', text: 'Most Likes', icon: '❤️' },
-    { value: 'comments', text: 'Most Comments', icon: '💬' },
-    { value: 'reposts', text: 'Most Reposts', icon: '🔄' }
+    { value: 'recent', text: 'Most Recent', icon: 'clock', iconHTML: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" style="color: currentColor; width: 1em; height: 1em;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>' },
+    { value: 'nearby', text: 'Near Me', icon: 'location', iconHTML: getIconHTML('location', 'w-4 h-4') },
+    { value: 'views', text: 'Most Views', icon: 'view', iconHTML: getIconHTML('view', 'w-4 h-4') },
+    { value: 'likes', text: 'Most Likes', icon: 'like', iconHTML: getIconHTML('like', 'w-4 h-4') },
+    { value: 'comments', text: 'Most Comments', icon: 'reply', iconHTML: getIconHTML('reply', 'w-4 h-4') },
+    { value: 'reposts', text: 'Most Reposts', icon: 'repost', iconHTML: getIconHTML('repost', 'w-4 h-4') }
   ];
   
   options.forEach(opt => {
@@ -1565,8 +1604,9 @@ function renderFeedControls(totalPosts) {
     `;
     
     const optionIcon = document.createElement('span');
-    optionIcon.textContent = opt.icon;
-    optionIcon.style.cssText = 'font-size: 1.125rem; flex-shrink: 0;';
+    optionIcon.className = 'icon-inline';
+    optionIcon.innerHTML = opt.iconHTML || getIconHTML(opt.icon, 'w-4 h-4');
+    optionIcon.style.cssText = 'display: inline-flex; align-items: center; flex-shrink: 0;';
     
     const optionText = document.createElement('span');
     optionText.textContent = opt.text;
@@ -1789,14 +1829,14 @@ function attachFeedControlListeners(controlsElement) {
     
     // Re-attach sort option click handlers
     const sortOptions = sortDropdown.querySelectorAll('.feed-sort-option');
-    const options = [
-      { value: 'recent', text: 'Most Recent', icon: '🕐' },
-      { value: 'nearby', text: 'Near Me', icon: '📍' },
-      { value: 'views', text: 'Most Views', icon: '👁️' },
-      { value: 'likes', text: 'Most Likes', icon: '❤️' },
-      { value: 'comments', text: 'Most Comments', icon: '💬' },
-      { value: 'reposts', text: 'Most Reposts', icon: '🔄' }
-    ];
+  const options = [
+    { value: 'recent', text: 'Most Recent', icon: 'clock', iconHTML: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" style="color: currentColor; width: 1em; height: 1em;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>' },
+    { value: 'nearby', text: 'Near Me', icon: 'location', iconHTML: getIconHTML('location', 'w-4 h-4') },
+    { value: 'views', text: 'Most Views', icon: 'view', iconHTML: getIconHTML('view', 'w-4 h-4') },
+    { value: 'likes', text: 'Most Likes', icon: 'like', iconHTML: getIconHTML('like', 'w-4 h-4') },
+    { value: 'comments', text: 'Most Comments', icon: 'reply', iconHTML: getIconHTML('reply', 'w-4 h-4') },
+    { value: 'reposts', text: 'Most Reposts', icon: 'repost', iconHTML: getIconHTML('repost', 'w-4 h-4') }
+  ];
     
     sortOptions.forEach((option, index) => {
       const opt = options[index];
@@ -1816,7 +1856,7 @@ function attachFeedControlListeners(controlsElement) {
         if (sortButtonText) {
           const currentSortText = {
             'recent': 'Most Recent',
-            'nearby': '📍 Near Me',
+            'nearby': 'Near Me',
             'views': 'Most Views',
             'likes': 'Most Likes',
             'comments': 'Most Comments',

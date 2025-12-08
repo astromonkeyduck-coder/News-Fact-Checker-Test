@@ -6,6 +6,16 @@
     <title>Noteworthy News - Breaking News Fact Checker</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Christmas Theme - Easy to toggle on/off -->
+    <script src="christmas-config.js"></script>
+    <script>
+        // Make config available globally
+        if (typeof CHRISTMAS_CONFIG !== 'undefined') {
+            window.CHRISTMAS_CONFIG = CHRISTMAS_CONFIG;
+        }
+    </script>
+    <script src="christmas-theme-loader.js"></script>
     <style>
         /* Base Styles - Dark Background */
         * {

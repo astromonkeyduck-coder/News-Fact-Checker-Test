@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="app-version" content="January 2025">
+    <meta name="app-version" content="October 10, 2025">
     
     <!-- Dynamic Meta Tags - Replace with actual article data -->
     <title id="article-title">Article Title - Noteworthy News</title>
@@ -50,6 +50,16 @@
     
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- Christmas Theme - Easy to toggle on/off -->
+    <script src="christmas-config.js"></script>
+    <script>
+        // Make config available globally
+        if (typeof CHRISTMAS_CONFIG !== 'undefined') {
+            window.CHRISTMAS_CONFIG = CHRISTMAS_CONFIG;
+        }
+    </script>
+    <script src="christmas-theme-loader.js"></script>
     
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5427142458403577"
@@ -462,7 +472,7 @@
                 <div class="article-meta">
                     <span>
                         <span class="meta-label">Published:</span>
-                        <span id="article-date">January 2025</span>
+                        <span id="article-date">October 10, 2025</span>
                     </span>
                     <span>
                         <span class="meta-label">By:</span>
@@ -584,19 +594,19 @@
                     <li>
                         <a href="#">
                             <strong>Related Article Title 1</strong>
-                            <div class="related-date">January 2025</div>
+                            <div class="related-date">October 10, 2025</div>
                         </a>
                     </li>
                     <li>
                         <a href="#">
                             <strong>Related Article Title 2</strong>
-                            <div class="related-date">January 2025</div>
+                            <div class="related-date">October 10, 2025</div>
                         </a>
                     </li>
                     <li>
                         <a href="#">
                             <strong>Related Article Title 3</strong>
-                            <div class="related-date">January 2025</div>
+                            <div class="related-date">October 10, 2025</div>
                         </a>
                     </li>
                 </ul>

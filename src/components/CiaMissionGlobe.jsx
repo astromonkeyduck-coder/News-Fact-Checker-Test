@@ -1,19 +1,113 @@
 import React, { useRef, useEffect, useState } from 'react';
 import coveragePoints from '../data/coveragePoints';
+import { getLocationCoordinates, getCityCoordinates } from '../utils/locationCoordinates';
 import '../styles/ciaGlobe.css';
 
 const CiaMissionGlobe = () => {
   const globeRef = useRef(null);
   const globeInstanceRef = useRef(null);
   const animationFrameRef = useRef(null);
-  const [activeOp, setActiveOp] = useState(coveragePoints[0] || null);
+  const [activeOp, setActiveOp] = useState(null);
   const [isClient, setIsClient] = useState(false);
+  const [coveragePointsData, setCoveragePointsData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load posts and extract coverage points
+  useEffect(() => {
+    const loadCoveragePoints = async () => {
+      try {
+        // Try to load from posts-with-locations.json
+        const response = await fetch('/posts-with-locations.json');
+        if (response.ok) {
+          const data = await response.json();
+          const posts = data.posts || [];
+          
+          const points = [];
+          const locationCounts = new Map();
+          
+          // Process each post
+          for (const post of posts) {
+            const locations = Array.isArray(post.locations) ? post.locations : [];
+            if (locations.length === 0) continue;
+            
+            const postText = post.postText || '';
+            const headline = postText.length > 60 ? postText.substring(0, 57) + '...' : postText;
+            
+            // Process each location in the post
+            for (const locationName of locations) {
+              if (!locationName || typeof locationName !== 'string') continue;
+              
+              const trimmedLocation = locationName.trim();
+              const coords = getLocationCoordinates(trimmedLocation);
+              if (!coords) continue;
+              
+              // Count posts per location for slight randomization
+              const count = (locationCounts.get(trimmedLocation) || 0) + 1;
+              locationCounts.set(trimmedLocation, count);
+              
+              // Add slight randomization to prevent exact overlap
+              const isCity = getCityCoordinates(trimmedLocation) !== null;
+              const spreadRadius = isCity ? 0.5 : 2;
+              const angle = (count * 137.5) % 360; // Golden angle for even distribution
+              const distance = isCity ? Math.min(count * 0.1, spreadRadius) : Math.min(count * 0.3, spreadRadius);
+              
+              const latOffset = (Math.cos(angle * Math.PI / 180) * distance);
+              const lngOffset = (Math.sin(angle * Math.PI / 180) * distance / Math.cos(coords.lat * Math.PI / 180));
+              
+              points.push({
+                id: `post-${post.postId || Date.now()}-${trimmedLocation}-${count}`,
+                lat: coords.lat + latOffset,
+                lng: coords.lng + lngOffset,
+                location: trimmedLocation,
+                headline: headline || `Coverage from ${locationName}`,
+                timestamp: post.date ? new Date(post.date).toISOString() : new Date().toISOString(),
+                postId: post.postId,
+                postLink: post.postLink || ''
+              });
+            }
+          }
+          
+          // Sort by timestamp (newest first) and limit to most recent
+          points.sort((a, b) => {
+            const aTime = new Date(a.timestamp).getTime();
+            const bTime = new Date(b.timestamp).getTime();
+            return bTime - aTime;
+          });
+          
+          // Limit to 200 most recent points for performance
+          const limitedPoints = points.slice(0, 200);
+          
+          setCoveragePointsData(limitedPoints);
+          if (limitedPoints.length > 0) {
+            setActiveOp(limitedPoints[0]);
+          }
+        } else {
+          // Fallback to static data
+          setCoveragePointsData(coveragePoints);
+          if (coveragePoints.length > 0) {
+            setActiveOp(coveragePoints[0]);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load coverage points:', error);
+        // Fallback to static data
+        setCoveragePointsData(coveragePoints);
+        if (coveragePoints.length > 0) {
+          setActiveOp(coveragePoints[0]);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadCoveragePoints();
+  }, []);
 
   useEffect(() => {
     // Ensure we're on the client side
     setIsClient(true);
     
-    if (!globeRef.current) return;
+    if (!globeRef.current || isLoading || coveragePointsData.length === 0) return;
 
     // Dynamically import Globe.gl only on client side
     import('globe.gl').then(({ default: Globe }) => {
@@ -30,7 +124,7 @@ const CiaMissionGlobe = () => {
 
       // Configure points
       globe
-        .pointsData(coveragePoints)
+        .pointsData(coveragePointsData)
         .pointLat(d => d.lat)
         .pointLng(d => d.lng)
         .pointLabel(d => `${d.location}\n${d.headline}`)
@@ -98,17 +192,17 @@ const CiaMissionGlobe = () => {
       // Cleanup
       return () => {
         window.removeEventListener('resize', handleResize);
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current);
-        }
-        if (globeInstanceRef.current) {
-          globeInstanceRef.current._destructor?.();
-        }
-      };
-    }).catch(err => {
-      console.error('Failed to load Globe.gl:', err);
-    });
-  }, []);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (globeInstanceRef.current) {
+        globeInstanceRef.current._destructor?.();
+      }
+    };
+  }).catch(err => {
+    console.error('Failed to load Globe.gl:', err);
+  });
+  }, [isLoading, coveragePointsData]);
 
   // Format timestamp for display
   const formatTimestamp = (timestamp) => {
@@ -127,7 +221,7 @@ const CiaMissionGlobe = () => {
     }
   };
 
-  if (!isClient) {
+  if (!isClient || isLoading) {
     return (
       <div className="cia-globe-root">
         <div className="cia-globe-canvas" ref={globeRef} />
@@ -159,7 +253,7 @@ const CiaMissionGlobe = () => {
             <span className="cia-live-dot"></span>
           </div>
           <div className="hud-status-line">
-            <strong>ACTIVE TARGETS:</strong> {coveragePoints.length}
+            <strong>ACTIVE TARGETS:</strong> {coveragePointsData.length}
           </div>
           <div className="hud-status-line">
             <strong>LATENCY:</strong> {Math.floor(Math.random() * 20 + 30)} ms
@@ -184,7 +278,7 @@ const CiaMissionGlobe = () => {
 
         {/* Bottom strip: Recent operations */}
         <div className="cia-hud-bottom-strip">
-          {coveragePoints.slice(0, 8).map((point) => (
+          {coveragePointsData.slice(0, 8).map((point) => (
             <div
               key={point.id}
               className={`cia-op-item ${activeOp?.id === point.id ? 'active' : ''}`}
@@ -204,6 +298,8 @@ const CiaMissionGlobe = () => {
 };
 
 export default CiaMissionGlobe;
+
+
 
 
 

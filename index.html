@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="app-version" content="November 30, 2025">
+    <meta name="app-version" content="December 7, 2025">
     <title>Noteworthy News - Fact-Checked Journalism & Media Literacy Games | Trusted News Source</title>
     
     <!-- Favicon and Theme -->
@@ -120,6 +120,16 @@
     }
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Christmas Theme - Easy to toggle on/off -->
+    <script src="christmas-config.js"></script>
+    <script>
+        // Make config available globally
+        if (typeof CHRISTMAS_CONFIG !== 'undefined') {
+            window.CHRISTMAS_CONFIG = CHRISTMAS_CONFIG;
+        }
+    </script>
+    <script src="christmas-theme-loader.js"></script>
     
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5427142458403577"
@@ -1133,11 +1143,11 @@
             if (musicBtn) {
                 if (isPlaying) {
                     musicBtn.classList.add('playing');
-                    musicBtn.innerHTML = '<span class="btn-icon">🔇</span>';
+                    musicBtn.innerHTML = '<span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M4 8v8h4l5 5V3L8 8H4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.08" opacity="0.6"/><path d="M15 10c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 6c3.3 0 6 2.7 6 6s-2.7 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 3c5 0 9 4 9 9s-4 9-9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.2"/><path d="M2 2l20 20" stroke="#ff4444" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="1"/><path d="M3 3l18 18" stroke="#ff6666" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/></svg></span>';
                     musicBtn.title = 'Pause Background Music';
                 } else {
                     musicBtn.classList.remove('playing');
-                    musicBtn.innerHTML = '<span class="btn-icon">🎵</span>';
+                    musicBtn.innerHTML = '<span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M9 18V5l9-2v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/><circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/></svg></span>';
                     musicBtn.title = 'Play Background Music';
                 }
             }
@@ -1945,68 +1955,98 @@
             height: 64px;
         }
         
-        /* Global Coverage Search Bar in Posts Area */
-        .globe-search-container-posts {
+        /* ============================================
+           Breaking News - Search and Filter Bar
+           ============================================
+           Compact, professional search bar with filter buttons.
+           Sits above the posts grid in normal document flow.
+        */
+        
+        .breaking-news-search-bar {
             display: flex;
             align-items: center;
-            position: relative;
-            max-width: 960px;
-            margin: 0 auto;
-            width: 100%;
+            justify-content: space-between;
             gap: 1rem;
-            flex-wrap: wrap;
-        }
-        
-        .globe-search-icon-posts {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 1rem;
-            pointer-events: none;
-            z-index: 1;
-        }
-        
-        .globe-search-input-posts {
+            margin-bottom: 2rem;
+            padding: 0.875rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
             width: 100%;
-            height: 48px;
-            padding: 0.75rem 3rem 0.75rem 3rem;
-            background: rgba(255, 255, 255, 0.08);
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            color: #fff;
-            font-size: 1rem;
-            font-weight: 400;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            outline: none;
             box-sizing: border-box;
         }
         
-        .globe-search-input-posts::placeholder {
-            color: rgba(255, 255, 255, 0.5);
+        .breaking-news-search-bar:hover {
+            border-color: rgba(74, 144, 226, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
         
-        .globe-search-input-posts:focus {
+        /* Search input wrapper */
+        .breaking-news-search-input-wrapper {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .breaking-news-search-icon {
+            flex-shrink: 0;
+            color: rgba(74, 144, 226, 0.6);
+            transition: color 0.3s ease;
+        }
+        
+        .breaking-news-search-bar:focus-within .breaking-news-search-icon {
+            color: rgba(74, 144, 226, 0.9);
+        }
+        
+        /* Compact search input */
+        .breaking-news-search-input {
+            flex: 1;
+            min-width: 0;
+            height: 36px;
+            padding: 0.5rem 0.75rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.9375rem;
+            font-weight: 400;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .breaking-news-search-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 400;
+        }
+        
+        .breaking-news-search-input:focus {
             background: rgba(255, 255, 255, 0.12);
-            border-color: #4A90E2;
-            box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3);
+            border-color: rgba(74, 144, 226, 0.5);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
         }
         
-        .globe-search-clear-posts {
+        /* Clear button */
+        .breaking-news-search-clear {
             position: absolute;
-            right: 0.75rem;
+            right: 0.5rem;
             top: 50%;
             transform: translateY(-50%);
-            background: transparent;
+            background: rgba(255, 255, 255, 0.1);
             border: none;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.25rem;
             line-height: 1;
             cursor: pointer;
             padding: 0.25rem;
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2014,14 +2054,14 @@
             transition: all 0.2s ease;
         }
         
-        .globe-search-clear-posts:hover {
-            background: rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
+        .breaking-news-search-clear:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
             transform: translateY(-50%) scale(1.1);
         }
         
-        /* Sort controls styling */
-        .feed-sort-controls {
+        /* Filter buttons */
+        .breaking-news-filters {
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -2030,9 +2070,9 @@
         
         .feed-sort-btn {
             padding: 0.5rem 1rem;
-            background: transparent;
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 999px;
+            border-radius: 6px;
             color: rgba(255, 255, 255, 0.8);
             font-size: 0.875rem;
             font-weight: 500;
@@ -2044,9 +2084,14 @@
         }
         
         .feed-sort-btn:hover {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.1);
             border-color: rgba(255, 255, 255, 0.2);
             color: #fff;
+            transform: translateY(-1px);
+        }
+        
+        .feed-sort-btn:active {
+            transform: translateY(0);
         }
         
         .feed-sort-btn[data-sort="recent"] {
@@ -2056,43 +2101,205 @@
             font-weight: 600;
         }
         
-        @media (max-width: 768px) {
+        /* Legacy support for old class names */
             .globe-search-container-posts {
-                margin-bottom: 1rem;
-                padding: 0.75rem;
-                flex-direction: column;
-                align-items: stretch;
-                border-radius: 16px;
-            }
-            
-            .globe-search-container-posts > div:first-child {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding: 0.875rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
                 width: 100%;
-                margin-bottom: 0.75rem;
+            box-sizing: border-box;
             }
             
             .globe-search-input-posts {
-                height: 44px;
+            flex: 1;
+            min-width: 0;
+            height: 36px;
+            padding: 0.5rem 0.75rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            color: #fff;
                 font-size: 0.9375rem;
+            font-weight: 400;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .globe-search-input-posts::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .globe-search-input-posts:focus {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(74, 144, 226, 0.5);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
+        }
+        
+        .globe-search-clear-posts {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.25rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0.25rem;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        
+        .globe-search-clear-posts:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            transform: translateY(-50%) scale(1.1);
             }
             
             .feed-sort-controls {
-                width: 100%;
-                overflow-x: auto;
-                overflow-y: hidden;
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: none;
-                padding-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+        
+        /* Responsive: Stack search and filters on mobile */
+        @media (max-width: 768px) {
+            .breaking-news-search-bar,
+            .globe-search-container-posts {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.75rem;
+                padding: 0.75rem;
             }
             
-            .feed-sort-controls::-webkit-scrollbar {
-                display: none;
+            .breaking-news-search-input-wrapper {
+                width: 100%;
+            }
+            
+            .breaking-news-filters,
+            .feed-sort-controls {
+                width: 100%;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+                gap: 0.5rem;
             }
             
             .feed-sort-btn {
-                flex-shrink: 0;
+                flex: 1;
+                min-width: calc(50% - 0.25rem);
                 font-size: 0.813rem;
                 padding: 0.5rem 0.875rem;
             }
+        }
+        
+        /* ============================================
+           Premium Icon Utilities
+           ============================================
+           Styling for SVG icon replacements of emojis
+        */
+        
+        /* Base inline icon container */
+        .icon-inline {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            vertical-align: middle;
+        }
+        
+        .icon-inline svg {
+            flex-shrink: 0;
+            width: 1em;
+            height: 1em;
+            color: currentColor;
+        }
+        
+        /* Icon in metric/engagement rows */
+        .icon-metric {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+        
+        .icon-metric svg {
+            width: 1em;
+            height: 1em;
+            transition: transform 0.15s ease, opacity 0.15s ease;
+        }
+        
+        .icon-metric:hover svg {
+            transform: scale(1.07);
+            opacity: 1;
+        }
+        
+        /* Icon in headings */
+        .icon-heading {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .icon-heading svg {
+            flex-shrink: 0;
+            width: 1.25em;
+            height: 1.25em;
+        }
+        
+        /* Icon sizes */
+        .icon-xs svg {
+            width: 0.75rem;
+            height: 0.75rem;
+        }
+        
+        .icon-sm svg {
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .icon-md svg {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+        
+        .icon-lg svg {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+        
+        .icon-xl svg {
+            width: 2rem;
+            height: 2rem;
+        }
+        
+        /* Ensure icons inherit text color */
+        .icon-inline,
+        .icon-metric,
+        .icon-heading {
+            color: inherit;
+        }
+        
+        .icon-inline svg,
+        .icon-metric svg,
+        .icon-heading svg {
+            color: currentColor;
         }
         
         @media (max-width: 480px) {
@@ -4220,7 +4427,7 @@
             margin-top: 0;
             padding-top: 100px;
             margin-bottom: 0;
-            animation: fadeInUp 1s ease-out 0.6s both;
+            animation: fadeInUp 1s ease-out 0.6s both, heroBackgroundFlash 12s ease-in-out infinite;
             /* CRITICAL: Prevent any overflow - hero section should not scroll */
             width: 100%;
             min-height: 100vh;
@@ -4248,6 +4455,239 @@
             height: 100%;
             z-index: 0;
             overflow: visible;
+        }
+        
+        /* CHRISTMAS TEMP: Ensure Santa body image stays behind logo */
+        .welcome-bg-img[src*="santabodynwbest"] {
+            z-index: 0;
+            /* Keep the original tilt animation AND add lightning flash */
+            animation: tiltBackAndForth 6s ease-in-out infinite, lightningFlash 12s ease-in-out infinite;
+            transform-origin: center center;
+            position: relative;
+        }
+        
+        /* CHRISTMAS TEMP: Add color overlay for red/green flash */
+        .welcome-bg-img[src*="santabodynwbest"]::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 1;
+            mix-blend-mode: overlay;
+            animation: colorFlashOverlay 12s ease-in-out infinite;
+        }
+        
+        @keyframes colorFlashOverlay {
+            0%, 100%, 35%, 49%, 71%, 85% {
+                background: transparent;
+                opacity: 0;
+            }
+            39% {
+                background: rgba(220, 20, 20, 0.15);
+                opacity: 0.3;
+            }
+            40% {
+                background: rgba(220, 20, 20, 0.25);
+                opacity: 0.5;
+            }
+            41% {
+                background: rgba(220, 20, 20, 0.3);
+                opacity: 0.7;
+            }
+            42% {
+                background: rgba(220, 20, 20, 0.3);
+                opacity: 0.7;
+            }
+            43% {
+                background: rgba(220, 20, 20, 0.3);
+                opacity: 0.7;
+            }
+            44% {
+                background: rgba(220, 20, 20, 0.25);
+                opacity: 0.5;
+            }
+            45% {
+                background: rgba(220, 20, 20, 0.15);
+                opacity: 0.3;
+            }
+            75% {
+                background: rgba(20, 180, 20, 0.15);
+                opacity: 0.3;
+            }
+            76% {
+                background: rgba(20, 180, 20, 0.25);
+                opacity: 0.5;
+            }
+            77% {
+                background: rgba(20, 180, 20, 0.3);
+                opacity: 0.7;
+            }
+            78% {
+                background: rgba(20, 180, 20, 0.3);
+                opacity: 0.7;
+            }
+            79% {
+                background: rgba(20, 180, 20, 0.3);
+                opacity: 0.7;
+            }
+            80% {
+                background: rgba(20, 180, 20, 0.25);
+                opacity: 0.5;
+            }
+            81% {
+                background: rgba(20, 180, 20, 0.15);
+                opacity: 0.3;
+            }
+        }
+        
+        /* CHRISTMAS TEMP: Christmas flash effect - brightness only, color comes from overlay */
+        /* Only animates filter, transform is handled by tiltBackAndForth */
+        @keyframes lightningFlash {
+            0%, 100% {
+                filter: brightness(0.8) contrast(1.05) blur(0.5px);
+            }
+            35% {
+                filter: brightness(0.8) contrast(1.05) blur(0.5px);
+            }
+            37% {
+                filter: brightness(0.85) contrast(1.06) blur(0.5px);
+            }
+            39% {
+                filter: brightness(0.9) contrast(1.07) blur(0.5px);
+            }
+            40% {
+                filter: brightness(1.0) contrast(1.1) blur(0.5px);
+            }
+            41% {
+                filter: brightness(1.05) contrast(1.12) blur(0.5px);
+            }
+            42% {
+                filter: brightness(1.05) contrast(1.12) blur(0.5px);
+            }
+            43% {
+                filter: brightness(1.05) contrast(1.12) blur(0.5px);
+            }
+            44% {
+                filter: brightness(1.0) contrast(1.1) blur(0.5px);
+            }
+            45% {
+                filter: brightness(0.9) contrast(1.07) blur(0.5px);
+            }
+            47% {
+                filter: brightness(0.85) contrast(1.06) blur(0.5px);
+            }
+            49% {
+                filter: brightness(0.8) contrast(1.05) blur(0.5px);
+            }
+            71% {
+                filter: brightness(0.8) contrast(1.05) blur(0.5px);
+            }
+            73% {
+                filter: brightness(0.85) contrast(1.06) blur(0.5px);
+            }
+            75% {
+                filter: brightness(0.9) contrast(1.07) blur(0.5px);
+            }
+            76% {
+                filter: brightness(1.0) contrast(1.1) blur(0.5px);
+            }
+            77% {
+                filter: brightness(1.05) contrast(1.12) blur(0.5px);
+            }
+            78% {
+                filter: brightness(1.05) contrast(1.12) blur(0.5px);
+            }
+            79% {
+                filter: brightness(1.05) contrast(1.12) blur(0.5px);
+            }
+            80% {
+                filter: brightness(1.0) contrast(1.1) blur(0.5px);
+            }
+            81% {
+                filter: brightness(0.9) contrast(1.07) blur(0.5px);
+            }
+            83% {
+                filter: brightness(0.85) contrast(1.06) blur(0.5px);
+            }
+            85% {
+                filter: brightness(0.8) contrast(1.05) blur(0.5px);
+            }
+        }
+        
+        /* CHRISTMAS TEMP: Hero section background flash - alternating true red and green */
+        @keyframes heroBackgroundFlash {
+            0%, 100% {
+                background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+            }
+            35% {
+                background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+            }
+            37% {
+                background: linear-gradient(180deg, #0a1528 0%, #0e1f38 100%);
+            }
+            39% {
+                background: linear-gradient(180deg, #2a0a0f 0%, #3a1a1f 100%);
+            }
+            40% {
+                background: linear-gradient(180deg, #3a0a0f 0%, #4a1a1f 100%);
+            }
+            41% {
+                background: linear-gradient(180deg, #4a0a0f 0%, #5a1a1f 100%);
+            }
+            42% {
+                background: linear-gradient(180deg, #4a0a0f 0%, #5a1a1f 100%);
+            }
+            43% {
+                background: linear-gradient(180deg, #4a0a0f 0%, #5a1a1f 100%);
+            }
+            44% {
+                background: linear-gradient(180deg, #3a0a0f 0%, #4a1a1f 100%);
+            }
+            45% {
+                background: linear-gradient(180deg, #2a0a0f 0%, #3a1a1f 100%);
+            }
+            47% {
+                background: linear-gradient(180deg, #1a0a0f 0%, #2a1a1f 100%);
+            }
+            49% {
+                background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+            }
+            71% {
+                background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+            }
+            73% {
+                background: linear-gradient(180deg, #0a1528 0%, #0e1f38 100%);
+            }
+            75% {
+                background: linear-gradient(180deg, #0a1a0a 0%, #1a2a0f 100%);
+            }
+            76% {
+                background: linear-gradient(180deg, #0a2a0a 0%, #1a3a0f 100%);
+            }
+            77% {
+                background: linear-gradient(180deg, #0a3a0a 0%, #1a4a0f 100%);
+            }
+            78% {
+                background: linear-gradient(180deg, #0a3a0a 0%, #1a4a0f 100%);
+            }
+            79% {
+                background: linear-gradient(180deg, #0a3a0a 0%, #1a4a0f 100%);
+            }
+            80% {
+                background: linear-gradient(180deg, #0a2a0a 0%, #1a3a0f 100%);
+            }
+            81% {
+                background: linear-gradient(180deg, #0a1a0a 0%, #1a2a0f 100%);
+            }
+            83% {
+                background: linear-gradient(180deg, #0a1512 0%, #1a1f1a 100%);
+            }
+            85% {
+                background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+            }
         }
         
         .welcome-bg-img {
@@ -4667,6 +5107,14 @@
             filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
             transform-origin: center center;
             pointer-events: none; /* Image itself not clickable */
+        }
+        
+        /* CHRISTMAS TEMP: Ensure Santa logo is always in front, move down 10px, and faster fade-in */
+        .hero-logo-image[src*="SantalogoEdited"] {
+            z-index: 101 !important;
+            position: relative;
+            margin-top: 10px;
+            animation: fadeInUp 0.3s ease-out 0s forwards, subtleWiggle 4s ease-in-out 0.5s infinite !important;
         }
         
         .hero-logo-clickable {
@@ -6302,133 +6750,128 @@
             margin-left: 40px;
             margin-right: auto;
         }
-        /* News carousel */
-        .news-carousel {
+        /* ============================================
+           Breaking News & Analysis Section
+           ============================================
+           This section displays X/Twitter posts in a clean,
+           professional news feed layout with vertical scrolling.
+           No horizontal scrolling - uses CSS grid for responsive layout.
+        */
+        
+        /* Main container for breaking news section */
+        .breaking-news-container {
             position: relative;
-            overflow-x: auto;
-            overflow-y: visible; /* Changed to visible to allow card expansion */
-            padding: 20px 20px 40px; /* Increased top padding for expanded cards */
             max-width: 100%;
-            margin: 0 auto 40px auto;
-            min-height: 400px;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(74, 158, 255, 0.6) rgba(74, 158, 255, 0.6);
-            /* CRITICAL: Fix bidirectional scrolling without jumping */
-            scroll-behavior: auto; /* Changed from smooth to prevent jumping */
-            /* Remove problematic snap settings */
-            /* scroll-snap-type: x mandatory; */
-            -webkit-overflow-scrolling: touch;
-            /* Ensure proper scroll momentum and bounds */
-            overscroll-behavior-x: none; /* Changed from contain to prevent bounce issues */
-            overscroll-behavior-y: auto; /* Changed to auto to allow vertical scrolling */
-            /* Fix scroll bounds */
-            scroll-padding: 0;
-            scroll-margin: 0;
-            z-index: 1;
+            margin: 0 auto;
+            padding: 0;
+            overflow: visible;
+            width: 100%;
+            box-sizing: border-box;
         }
-        /* Custom scrollbar for Webkit browsers (Chrome, Safari, Edge) */
-        .news-carousel::-webkit-scrollbar {
-            height: 16px; /* Horizontal scrollbar height */
-            width: 16px; /* Vertical scrollbar width */
+        
+        /* Ensure no horizontal overflow in news section */
+        .news-section {
+            overflow-x: hidden;
+            width: 100%;
+            box-sizing: border-box;
         }
-        .news-carousel::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            margin: 0 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        
+        /* Twitter posts grid - Responsive CSS Grid layout */
+        .breaking-news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            padding: 0;
+            width: 100%;
+            overflow: visible;
         }
-        .news-carousel::-webkit-scrollbar-thumb {
-            background: linear-gradient(90deg, rgba(74, 158, 255, 0.9), rgba(91, 181, 255, 0.9));
-            border-radius: 8px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        }
-        .news-carousel::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(90deg, rgba(74, 158, 255, 1), rgba(91, 181, 255, 1));
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
-        .news-carousel::-webkit-scrollbar-thumb:active {
-            background: linear-gradient(90deg, rgba(74, 158, 255, 1), rgba(91, 181, 255, 1));
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-        }
-        /* Firefox scrollbar */
-        .news-carousel {
-            scrollbar-width: auto;
-            scrollbar-color: rgba(74, 158, 255, 0.8) rgba(255, 255, 255, 0.1);
-        }
-        .articles-track {
-            display: flex;
-            flex-wrap: nowrap;
-            gap: 20px;
-            /* Remove min-width: max-content to fix scroll bounds */
-            width: fit-content;
-            padding: 20px 0 10px; /* Added top padding for expanded cards */
-            /* Ensure smooth scrolling behavior without jumping */
-            scroll-behavior: auto; /* Changed from smooth to prevent jumping */
-            /* Prevent any interference with scroll events */
-            pointer-events: auto;
-            /* Ensure proper touch scrolling - allow both horizontal and vertical */
-            touch-action: pan-x pan-y;
-        }
-        /* Responsive card sizing - show as many as possible */
-        .articles-track .article-card {
-            flex: 0 0 360px; /* Slightly smaller to prevent cutting */
-            min-width: 340px; /* Smaller minimum width */
-            max-width: 380px; /* Smaller maximum width */
-            /* Remove problematic scroll snapping that causes jumping */
-            /* scroll-snap-align: start; */
-            /* scroll-snap-stop: always; */
-        }
-        /* Large screens: show more cards */
+        
+        /* Large screens: 3-4 columns */
         @media (min-width: 1400px) {
-            .articles-track .article-card {
-                flex: 0 0 340px;
-            }
-        }
-        /* Medium screens: show fewer cards */
-        @media (max-width: 1200px) {
-            .articles-track .article-card {
-                flex: 0 0 320px;
-            }
-        }
-        /* Tablet: adjust card size */
-        @media (max-width: 992px) {
-            .articles-track .article-card {
-                flex: 0 0 300px;
-            }
-        }
-        /* Mobile: full width */
-        @media (max-width: 600px) {
-            .articles-track .article-card {
-                flex: 0 0 calc(100vw - 40px); /* Full width minus minimal padding */
-                min-width: 240px;
-                /* Remove problematic scroll snapping on mobile */
-                /* scroll-snap-align: start; */
-                /* scroll-snap-stop: always; */
-            }
-            
-            .news-carousel {
-                padding: 0 20px 10px; /* Minimal padding since no arrows */
+            .breaking-news-grid {
+                grid-template-columns: repeat(4, 1fr);
             }
         }
         
-        /* Enhanced mobile formatting */
-        @media (max-width: 768px) {
-            .news-carousel {
-                padding: 0 15px 15px;
-                margin: 0 auto 30px auto;
-                min-height: 350px;
+        /* Medium-large screens: 3 columns */
+        @media (min-width: 1200px) and (max-width: 1399px) {
+            .breaking-news-grid {
+                grid-template-columns: repeat(3, 1fr);
             }
-            
+        }
+        
+        /* Medium screens: 2 columns */
+        @media (min-width: 768px) and (max-width: 1199px) {
+            .breaking-news-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        /* Mobile: 1 column */
+        @media (max-width: 767px) {
+            .breaking-news-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+        
+        /* Card styling within grid */
+        .breaking-news-grid .article-card {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+        }
+        
+        /* Legacy support - keep articles-track for existing code */
+        .articles-track {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            padding: 0;
+            width: 100%;
+            overflow: visible;
+        }
+        
+        @media (min-width: 1400px) {
             .articles-track {
-                gap: 15px;
-                padding-bottom: 15px;
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        @media (min-width: 1200px) and (max-width: 1399px) {
+            .articles-track {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (min-width: 768px) and (max-width: 1199px) {
+            .articles-track {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 767px) {
+            .articles-track {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
             }
             
             .articles-track .article-card {
-                flex: 0 0 calc(100vw - 60px);
-                min-width: 260px;
-                max-width: none;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+        }
+        
+        /* Enhanced mobile formatting - now handled by grid */
+        @media (max-width: 768px) {
+            .breaking-news-container {
+                padding: 0;
+            }
+            
+            .breaking-news-grid,
+            .articles-track {
+                gap: 1rem;
             }
             
             /* Improve mobile card layout - more horizontal */
@@ -7451,23 +7894,86 @@
             margin-bottom: 20px;
         }
         
+        /* Mode Selector - Premium Trophy Icons */
         .homepage-leaderboard-title {
             font-size: 1.5rem;
             font-weight: 800;
             margin: 0;
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 10px;
+            gap: 0.5rem;
         }
         
         .homepage-leaderboard-title .trophy-emoji {
-            -webkit-text-fill-color: initial !important;
-            color: initial !important;
-            background: none !important;
-            -webkit-background-clip: initial !important;
-            background-clip: initial !important;
-            font-size: 1.3rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 22px;
+            height: 22px;
             line-height: 1;
+        }
+        
+        .homepage-leaderboard-title .trophy-emoji svg {
+            width: 22px !important;
+            height: 22px !important;
+            flex-shrink: 0;
+            display: block;
+            /* Prevent any stretching or distortion */
+            max-width: 22px !important;
+            max-height: 22px !important;
+            min-width: 22px !important;
+            min-height: 22px !important;
+            /* Prevent aspect ratio distortion */
+            aspect-ratio: 1 / 1;
+            /* Ensure crisp rendering */
+            shape-rendering: geometricPrecision;
+            text-rendering: geometricPrecision;
+            /* Remove any transforms that might cause stretching */
+            transform: none !important;
+            /* Prevent object-fit from affecting SVG */
+            object-fit: none !important;
+        }
+        
+        /* Classic Mode - white outline trophy */
+        #geographyLeaderboardClassicHome .trophy-emoji svg {
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        #geographyLeaderboardClassicHome .trophy-emoji svg path {
+            fill: none !important;
+        }
+        
+        /* Hard Mode and Typing Mode - golden filled trophy */
+        #geographyLeaderboardHardHome .trophy-emoji svg,
+        #geographyLeaderboardTypingHome .trophy-emoji svg {
+            color: #FFD700;
+        }
+        
+        #geographyLeaderboardHardHome .trophy-emoji svg path:first-child,
+        #geographyLeaderboardTypingHome .trophy-emoji svg path:first-child {
+            fill: #FFD700 !important;
+            fill-opacity: 0.5 !important;
+        }
+        
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .homepage-leaderboard-title .trophy-emoji {
+                width: 20px;
+                height: 20px;
+            }
+            
+            .homepage-leaderboard-title .trophy-emoji svg {
+                width: 20px !important;
+                height: 20px !important;
+                max-width: 20px !important;
+                max-height: 20px !important;
+                min-width: 20px !important;
+                min-height: 20px !important;
+                aspect-ratio: 1 / 1;
+                transform: none !important;
+                object-fit: none !important;
+            }
         }
         
         .homepage-leaderboard-title .title-text {
@@ -7475,6 +7981,9 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            display: inline-block;
+            line-height: 1.2;
+            vertical-align: baseline;
         }
         
         .trophy-icon {
@@ -12704,14 +13213,14 @@
             </nav>
             
             <div class="header-right">
-                <div class="last-update" title="Scheduled Maintenance: December 5, 2026">Scheduled Maintenance: December 5, 2026</div>
+                <div class="last-update" title="Scheduled Maintenance: December 12, 2025">Scheduled Maintenance: December 12, 2025</div>
                 <!-- Auth Buttons -->
                 <div class="auth-buttons-container" id="authButtonsContainer">
                     <button class="auth-btn signin-btn" id="signinBtn" aria-label="Sign In">Sign In</button>
                     <button class="auth-btn signup-btn" id="signupBtn" aria-label="Sign Up">Sign Up</button>
                 </div>
                 <button class="music-control-btn" id="musicControlBtn" title="Toggle Background Music">
-                    <span class="btn-icon">🎵</span>
+                    <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M9 18V5l9-2v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/><circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/></svg></span>
                 </button>
             </div>
             
@@ -12737,7 +13246,7 @@
     
     <!-- Fixed Floating Tip Submission Button (mirrors AI chat position) -->
     <button class="tip-submit-btn" id="tipSubmitBtn" title="Submit a Tip">
-        <span>💡</span>
+        <span class="icon-inline"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><path d="M9 21h6M10 18h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
         <span>Submit Tip</span>
     </button>
     
@@ -12745,7 +13254,7 @@
     <div class="tip-modal" id="tipModal">
         <div class="tip-modal-content">
             <div class="tip-modal-header">
-                <h2>💡 Submit a Tip</h2>
+                <h2 class="icon-heading"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1.25em; height: 1.25em; color: currentColor; vertical-align: middle; margin-right: 0.5rem;"><path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><path d="M9 21h6M10 18h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Submit a Tip</h2>
                 <button class="tip-modal-close" id="tipModalClose" aria-label="Close">&times;</button>
             </div>
             <div class="tip-modal-body">
@@ -12840,14 +13349,17 @@
         <div class="hero-section">
             <div class="flags-background" id="flagsBackground"></div>
             <div class="welcome-background-image">
-                <img src="e2e66fe2-12c0-428b-ba44-0ff07b895551.png" alt="Welcome Background" class="welcome-bg-img welcome-bg-desktop">
-                <img src="7680cb96-729f-4344-b08a-4f9a2aa314f8.png" alt="Welcome Background" class="welcome-bg-img welcome-bg-mobile">
+                <!-- CHRISTMAS TEMP: Replaced with Santa body - hidden until logo loads -->
+                <img src="santabodynwbest.png" alt="Welcome Background" class="welcome-bg-img welcome-bg-desktop" id="santa-body-image" style="opacity: 0; transition: opacity 0.5s ease-in;">
+                <!-- CHRISTMAS TEMP: Replaced with Santa logo -->
+                <img src="SantalogoEdited.png" alt="Welcome Background" class="welcome-bg-img welcome-bg-mobile">
             </div>
             <div class="rough-terrain-background">
                 <img src="Rough terrain.png" alt="Rough Terrain" class="rough-terrain-img">
             </div>
             <div class="hero-logo" aria-hidden="true">
-                <img src="7680cb96-729f-4344-b08a-4f9a2aa314f8.png" alt="Noteworthy News Logo" class="hero-logo-image">
+                <!-- CHRISTMAS TEMP: Replaced with Santa logo - preloaded to show first -->
+                <img src="SantalogoEdited.png" alt="Noteworthy News Logo" class="hero-logo-image" id="santa-logo-image">
             </div>
             
             <!-- Left Side Welcome Image -->
@@ -12976,7 +13488,7 @@
             </div>
         </div>
 
-        <!-- News Articles Section -->
+        <!-- Breaking News & Analysis Section -->
         <div class="news-section" id="news-section">
             <h2 class="news-title">Breaking News & Analysis</h2>
             <p class="news-subtitle">Stay informed with our latest fact-checked stories and in-depth analysis</p>
@@ -12997,84 +13509,33 @@
                 <a class="twitter-timeline" data-height="600" data-theme="dark" href="https://twitter.com/newsnoteworthy?ref_src=twsrc%5Etfw">Tweets by newsnoteworthy</a>
             </div>
             
-            <div class="news-carousel" role="region" aria-label="News articles carousel">
-            <!-- Global Coverage Search Bar - Professional Design -->
-            <div class="globe-search-container-posts" id="globeSearchContainerPosts" style="margin-bottom: 2rem; padding: 1rem 1.25rem; background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%); border-radius: 16px; backdrop-filter: blur(20px) saturate(180%); border: 1px solid rgba(74, 144, 226, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 2px 8px rgba(74, 144, 226, 0.1); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
-                <div style="flex: 1; min-width: 200px; position: relative; display: flex; align-items: center; gap: 0.75rem;">
-                    <!-- Search Icon -->
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; color: rgba(74, 144, 226, 0.6); transition: color 0.3s ease;">
+            <!-- Search and filter bar -->
+            <div class="breaking-news-search-bar" id="globeSearchContainerPosts">
+                <div class="breaking-news-search-input-wrapper">
+                    <svg class="breaking-news-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                     <input 
                         type="text" 
-                        class="globe-search-input-posts" 
+                        class="globe-search-input-posts breaking-news-search-input" 
                         id="globeSearchInputPosts"
-                        placeholder="Search global coverage..." 
-                        style="flex: 1; min-width: 0; padding: 0.625rem 0; background: transparent; border: none; border-radius: 0; color: #fff; font-size: 1rem; font-weight: 400; font-family: inherit; outline: none; transition: all 0.3s ease; letter-spacing: 0.01em;"
+                        placeholder="Search global coverage…" 
                     />
-                    <button class="globe-search-clear-posts" id="globeSearchClearPosts" title="Clear search" style="display: none; background: rgba(255, 255, 255, 0.1); border: none; color: rgba(255, 255, 255, 0.7); font-size: 1.25rem; cursor: pointer; padding: 0.375rem 0.5rem; line-height: 1; border-radius: 8px; transition: all 0.2s ease; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">&times;</button>
+                    <button class="globe-search-clear-posts breaking-news-search-clear" id="globeSearchClearPosts" title="Clear search" style="display: none;">&times;</button>
                 </div>
-                <!-- Sort Controls - Professional Segmented Buttons -->
-                <div class="feed-sort-controls" id="feedSortControls" style="display: flex; gap: 0.5rem; flex-shrink: 0; margin-left: 1rem; padding-left: 1rem; border-left: 1px solid rgba(255, 255, 255, 0.1);">
-                    <button class="feed-sort-btn" data-sort="recent" style="padding: 0.625rem 1.25rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap;">Recent</button>
-                    <button class="feed-sort-btn" data-sort="views" style="padding: 0.625rem 1.25rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap;">Views</button>
-                    <button class="feed-sort-btn" data-sort="likes" style="padding: 0.625rem 1.25rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap;">Likes</button>
-                    <button class="feed-sort-btn" data-sort="nearMe" style="padding: 0.625rem 1.25rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; color: rgba(255, 255, 255, 0.8); font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap;">Near Me</button>
+                <div class="feed-sort-controls breaking-news-filters" id="feedSortControls">
+                    <button class="feed-sort-btn" data-sort="recent">Recent</button>
+                    <button class="feed-sort-btn" data-sort="views">Views</button>
+                    <button class="feed-sort-btn" data-sort="likes">Likes</button>
+                    <button class="feed-sort-btn" data-sort="nearMe">Near Me</button>
                 </div>
             </div>
-            <style>
-                .globe-search-container-posts:hover {
-                    border-color: rgba(74, 144, 226, 0.3);
-                    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08) inset, 0 4px 12px rgba(74, 144, 226, 0.15);
-                }
-                .globe-search-input-posts::placeholder {
-                    color: rgba(255, 255, 255, 0.4);
-                    font-weight: 400;
-                }
-                .globe-search-input-posts:focus {
-                    color: #fff;
-                }
-                .globe-search-input-posts:focus + .globe-search-clear-posts,
-                .globe-search-container-posts:focus-within svg {
-                    color: rgba(74, 144, 226, 0.9);
-                }
-                .globe-search-clear-posts:hover {
-                    background: rgba(255, 255, 255, 0.15);
-                    color: #fff;
-                    transform: scale(1.1);
-                }
-                .feed-sort-btn:hover {
-                    background: rgba(255, 255, 255, 0.1);
-                    border-color: rgba(255, 255, 255, 0.2);
-                    transform: translateY(-1px);
-                }
-                .feed-sort-btn:active {
-                    transform: translateY(0);
-                }
-                @media (max-width: 768px) {
-                    .globe-search-container-posts {
-                        flex-direction: column;
-                        gap: 1rem;
-                    }
-                    .feed-sort-controls {
-                        margin-left: 0;
-                        padding-left: 0;
-                        border-left: none;
-                        border-top: 1px solid rgba(255, 255, 255, 0.1);
-                        padding-top: 1rem;
-                        width: 100%;
-                        flex-wrap: wrap;
-                    }
-                    .feed-sort-btn {
-                        flex: 1;
-                        min-width: calc(50% - 0.25rem);
-                    }
-                }
-            </style>
             
-                <div class="articles-track" id="articlesTrack" role="list" aria-live="polite">
+            <!-- Twitter posts grid -->
+            <div class="breaking-news-container" role="region" aria-label="Breaking news articles">
+                <div class="breaking-news-grid articles-track" id="articlesTrack" role="list" aria-live="polite">
                     <!-- Professional Loading Indicator -->
-                    <div id="postsLoadingIndicator" style="padding: 4rem 2rem; text-align: center; background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.6) 100%); border-radius: 20px; border: 1px solid rgba(74, 144, 226, 0.1); backdrop-filter: blur(10px); min-width: 100%;">
+                    <div id="postsLoadingIndicator" style="grid-column: 1 / -1; padding: 4rem 2rem; text-align: center; background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.6) 100%); border-radius: 20px; border: 1px solid rgba(74, 144, 226, 0.1); backdrop-filter: blur(10px);">
                         <div style="position: relative; display: inline-block; margin-bottom: 2rem;">
                             <!-- Outer rotating ring -->
                             <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; border: 3px solid rgba(74, 144, 226, 0.2); border-top-color: #4A90E2; border-radius: 50%; animation: spinPosts 1.2s linear infinite;"></div>
@@ -13096,6 +13557,7 @@
                             }
                         </style>
                     </div>
+                    </div>
             </div>
             
             <!-- In-Content Ad - After Articles -->
@@ -13108,7 +13570,6 @@
             <script>
                  (adsbygoogle = window.adsbygoogle || []).push({});
             </script>
-            </div>
         </div>
 
         <!-- Global Coverage Globe Section - Below News Stories -->
@@ -13175,14 +13636,14 @@
             <div class="fact-checker-content">
                 <div class="fact-checker-text">
                     <h2 class="fact-checker-title"><span class="emoji" role="img" aria-label="World">🌍</span> Geography Challenge</h2>
-                    <div class="badge-highlight popular-badge">⭐ Most Popular & Recommended Game on Noteworthy</div>
+                    <div class="badge-highlight popular-badge"><span class="icon-inline"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor; vertical-align: middle; margin-right: 0.25rem;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.2"/></svg></span> Most Popular & Recommended Game on Noteworthy</div>
                     <p class="fact-checker-description">
                         Test your knowledge of world geography! Find the 50 most populous countries on an interactive world map.
                         Click on countries as they're prompted - green means not answered, white is correct, and red is wrong.
                     </p>
             </div>
                 <div class="fact-checker-action">
-                    <div class="cta-badge">⭐ Most Popular & Recommended</div>
+                    <div class="cta-badge"><span class="icon-inline"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor; vertical-align: middle; margin-right: 0.25rem;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.2"/></svg></span> Most Popular & Recommended</div>
                     <a href="geography-game.html" class="play-button-large">Play Geography Game</a>
                     <p class="fact-checker-note">Free to play • Educational & Fun</p>
                 </div>
@@ -13190,19 +13651,19 @@
             <!-- Geography Game Leaderboards -->
             <div class="homepage-leaderboards-container">
                 <div class="homepage-leaderboard" id="geographyLeaderboardClassicHome">
-                    <h3 class="homepage-leaderboard-title"><span class="trophy-emoji">🏆</span><span class="title-text">Classic Mode</span></h3>
+                    <h3 class="homepage-leaderboard-title"><span class="trophy-emoji"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5h8v2a4 4 0 0 1-8 0V5Z"/><path d="M12 11v4"/><path d="M7 19h10M9 15h6"/><path d="M8 5H5a2 2 0 0 0 2 3h1"/><path d="M16 5h3a2 2 0 0 1-2 3h-1"/></svg></span><span class="title-text">Classic Mode</span></h3>
                     <div class="homepage-leaderboard-list" id="geographyLeaderboardListClassicHome">
                         <div class="homepage-leaderboard-loading">Loading...</div>
                     </div>
                 </div>
                 <div class="homepage-leaderboard" id="geographyLeaderboardHardHome">
-                    <h3 class="homepage-leaderboard-title"><span class="trophy-emoji">🏆</span><span class="title-text">Hard Mode</span></h3>
+                    <h3 class="homepage-leaderboard-title"><span class="trophy-emoji"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5h8v2a4 4 0 0 1-8 0V5Z" fill="currentColor" fill-opacity="0.5"/><path d="M12 11v4"/><path d="M7 19h10M9 15h6"/><path d="M8 5H5a2 2 0 0 0 2 3h1"/><path d="M16 5h3a2 2 0 0 1-2 3h-1"/></svg></span><span class="title-text">Hard Mode</span></h3>
                     <div class="homepage-leaderboard-list" id="geographyLeaderboardListHardHome">
                         <div class="homepage-leaderboard-loading">Loading...</div>
                     </div>
                 </div>
                 <div class="homepage-leaderboard" id="geographyLeaderboardTypingHome">
-                    <h3 class="homepage-leaderboard-title"><span class="trophy-emoji">🏆</span><span class="title-text">Typing Mode</span></h3>
+                    <h3 class="homepage-leaderboard-title"><span class="trophy-emoji"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5h8v2a4 4 0 0 1-8 0V5Z" fill="currentColor" fill-opacity="0.5"/><path d="M12 11v4"/><path d="M7 19h10M9 15h6"/><path d="M8 5H5a2 2 0 0 0 2 3h1"/><path d="M16 5h3a2 2 0 0 1-2 3h-1"/></svg></span><span class="title-text">Typing Mode</span></h3>
                     <div class="homepage-leaderboard-list" id="geographyLeaderboardListTypingHome">
                         <div class="homepage-leaderboard-loading">Loading...</div>
                     </div>
@@ -13284,7 +13745,7 @@
             <div class="spotlight-content">
                 <div class="spotlight-header">
                     <h2 class="spotlight-title">
-                        <span class="emoji" role="img" aria-label="Spotlight">✨</span> Country Spotlight
+                        <span class="emoji icon-inline" role="img" aria-label="Spotlight"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor; vertical-align: middle; margin-right: 0.25rem;"><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M6.34 6.34l2.83 2.83M14.83 14.83l2.83 2.83M17.66 6.34l-2.83 2.83M9.17 14.83l-2.83 2.83" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="2" fill="currentColor" fill-opacity="0.6"/></svg></span> Country Spotlight
                     </h2>
                     <p class="spotlight-subtitle">Discover culture, fun facts, and breaking news from around the world</p>
                     <div class="spotlight-remaining" id="spotlight-remaining">
@@ -13354,7 +13815,7 @@
                     </div>
                     
                     <div class="spotlight-error" id="spotlight-error" style="display: none;">
-                        <p>⚠️ Unable to load spotlight. Please try again later.</p>
+                        <p><span class="icon-inline"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor; vertical-align: middle; margin-right: 0.25rem;"><path d="M12 2L2 22h20L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span> Unable to load spotlight. Please try again later.</p>
                         <button class="retry-spotlight-btn" id="retry-spotlight-btn">Retry</button>
                     </div>
                 </div>
@@ -13488,7 +13949,7 @@
         </div>
 
             <div class="credibility-highlight">
-                <div class="highlight-icon">⭐</div>
+                <div class="highlight-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.2"/></svg></div>
                 <div class="highlight-content">
                     <h3>Established Authority</h3>
                     <p>Founded and actively posting since <strong>March 2025</strong>, we've built a reputation for accuracy, reliability, and timely fact-checking that millions trust daily.</p>
@@ -14189,8 +14650,42 @@
             });
         }
         
+        // CHRISTMAS TEMP: Preload Santa logo and show body image only after logo is loaded
+        function ensureSantaLogoLoadsFirst() {
+            const santaLogo = document.getElementById('santa-logo-image');
+            const santaBody = document.getElementById('santa-body-image');
+            
+            if (!santaLogo || !santaBody) return;
+            
+            // Check if logo is already loaded
+            if (santaLogo.complete && santaLogo.naturalHeight !== 0) {
+                // Logo already loaded, show body immediately
+                santaBody.style.opacity = '0.15';
+                console.log('[Christmas] Santa logo already loaded, showing body image');
+                return;
+            }
+            
+            // Wait for logo to load
+            santaLogo.addEventListener('load', function() {
+                // Logo is loaded, now show the body image
+                santaBody.style.opacity = '0.15'; // Match the original opacity
+                console.log('[Christmas] Santa logo loaded, showing body image');
+            }, { once: true });
+            
+            // Fallback: if logo fails to load or takes too long, show body after delay
+            setTimeout(function() {
+                if (santaBody.style.opacity === '0') {
+                    santaBody.style.opacity = '0.15';
+                    console.log('[Christmas] Showing body image after timeout');
+                }
+            }, 3000);
+        }
+        
         // Initialize functions when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
+            // CHRISTMAS TEMP: Ensure logo loads first
+            ensureSantaLogoLoadsFirst();
+            
             if (typeof initCredibilityStats === 'function') initCredibilityStats();
             if (typeof initMobileMenu === 'function') initMobileMenu();
             if (typeof initNavigation === 'function') initNavigation();
@@ -16501,7 +16996,7 @@
                                         const musicBtn = document.getElementById('musicControlBtn');
                                         if (musicBtn) {
                                             musicBtn.classList.add('playing');
-                                            musicBtn.innerHTML = '<span class="btn-icon">🔇</span>';
+                                            musicBtn.innerHTML = '<span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M4 8v8h4l5 5V3L8 8H4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.08" opacity="0.6"/><path d="M15 10c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 6c3.3 0 6 2.7 6 6s-2.7 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 3c5 0 9 4 9 9s-4 9-9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.2"/><path d="M2 2l20 20" stroke="#ff4444" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="1"/><path d="M3 3l18 18" stroke="#ff6666" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/></svg></span>';
                                             musicBtn.title = 'Pause Background Music';
                                         }
                                     }).catch(function(err) {
@@ -16928,7 +17423,7 @@
                                                 const musicBtn = document.getElementById('musicControlBtn');
                                                 if (musicBtn) {
                                                     musicBtn.classList.add('playing');
-                                                    musicBtn.innerHTML = '<span class="btn-icon">🔇</span>';
+                                                    musicBtn.innerHTML = '<span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M4 8v8h4l5 5V3L8 8H4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.08" opacity="0.6"/><path d="M15 10c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 6c3.3 0 6 2.7 6 6s-2.7 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 3c5 0 9 4 9 9s-4 9-9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.2"/><path d="M2 2l20 20" stroke="#ff4444" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="1"/><path d="M3 3l18 18" stroke="#ff6666" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/></svg></span>';
                                                     musicBtn.title = 'Pause Background Music';
                                                 }
                                             }).catch(function(err) {
@@ -17139,7 +17634,7 @@
                                                         const musicBtn = document.getElementById('musicControlBtn');
                                                         if (musicBtn) {
                                                             musicBtn.classList.add('playing');
-                                                            musicBtn.innerHTML = '<span class="btn-icon">🔇</span>';
+                                                            musicBtn.innerHTML = '<span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M4 8v8h4l5 5V3L8 8H4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.08" opacity="0.6"/><path d="M15 10c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 6c3.3 0 6 2.7 6 6s-2.7 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 3c5 0 9 4 9 9s-4 9-9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.2"/><path d="M2 2l20 20" stroke="#ff4444" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="1"/><path d="M3 3l18 18" stroke="#ff6666" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/></svg></span>';
                                                             musicBtn.title = 'Pause Background Music';
                                                         }
                                                     }).catch(function(err) {
@@ -17446,7 +17941,7 @@
                                                     const musicBtn = document.getElementById('musicControlBtn');
                                                     if (musicBtn) {
                                                         musicBtn.classList.add('playing');
-                                                        musicBtn.innerHTML = '<span class="btn-icon">🔇</span>';
+                                                        musicBtn.innerHTML = '<span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M4 8v8h4l5 5V3L8 8H4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.08" opacity="0.6"/><path d="M15 10c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 6c3.3 0 6 2.7 6 6s-2.7 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 3c5 0 9 4 9 9s-4 9-9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.2"/><path d="M2 2l20 20" stroke="#ff4444" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="1"/><path d="M3 3l18 18" stroke="#ff6666" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/></svg></span>';
                                                         musicBtn.title = 'Pause Background Music';
                                                     }
                                                 }).catch(function(err) {
@@ -17832,6 +18327,9 @@
             }
         })();
     </script>
+    
+</body>
+</html>
     
 </body>
 </html>

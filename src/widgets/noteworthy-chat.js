@@ -17,6 +17,10 @@ class NoteworthyChat extends HTMLElement {
   connectedCallback() {
     const endpoint = this.getAttribute('data-endpoint') || '/api/noteworthy';
     const openOnLoad = this.getAttribute('data-open') === 'true';
+    const initialAudioState = localStorage.getItem('noteworthy-ai-audio') === 'true';
+    const audioIconHTML = initialAudioState
+      ? '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M4 8v8h4l5 5V3L8 8H4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.12"/><path d="M15 10c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M17 6c3.3 0 6 2.7 6 6s-2.7 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M17 3c5 0 9 4 9 9s-4 9-9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.7"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: rgba(255,255,255,0.5);"><path d="M4 8v8h4l5 5V3L8 8H4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.08" opacity="0.6"/><path d="M15 10c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 6c3.3 0 6 2.7 6 6s-2.7 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 3c5 0 9 4 9 9s-4 9-9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.2"/><path d="M2 2l20 20" stroke="#ff4444" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="1"/><path d="M3 3l18 18" stroke="#ff6666" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/></svg>';
 
     this.root.innerHTML = `
       <style>
@@ -1458,14 +1462,14 @@ class NoteworthyChat extends HTMLElement {
             </div>
           </div>
           <div class="head-right">
-            <button class="audio-toggle" aria-label="Toggle audio" id="audioToggle" title="Audio On/Off">🔊</button>
-            <button class="voice-input-toggle" aria-label="Toggle voice input" id="voiceInputToggle" title="Voice Input">🎤</button>
+            <button class="audio-toggle ${initialAudioState ? 'active' : ''}" aria-label="Toggle audio" id="audioToggle" title="Audio On/Off">${audioIconHTML}</button>
+            <button class="voice-input-toggle" aria-label="Toggle voice input" id="voiceInputToggle" title="Voice Input"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></button>
             <button class="close" aria-label="Close chat">×</button>
           </div>
         </div>
         
         <div class="drag-drop-overlay">
-          <div class="drag-drop-overlay-icon">📎</div>
+          <div class="drag-drop-overlay-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 4em; height: 4em; color: currentColor;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
           <div class="drag-drop-overlay-text">Drag and Drop</div>
           <div class="drag-drop-overlay-subtext">Drop your files here to upload</div>
         </div>
@@ -1476,7 +1480,7 @@ class NoteworthyChat extends HTMLElement {
         
         <div class="input">
           <input type="file" id="fileInput" accept="image/*,application/pdf,.txt,.doc,.docx" multiple aria-label="Upload file" />
-          <button type="button" class="file-upload-btn" id="fileUploadBtn" aria-label="Upload file" title="Upload file">📎</button>
+          <button type="button" class="file-upload-btn" id="fileUploadBtn" aria-label="Upload file" title="Upload file"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></button>
           <input type="text" placeholder="Ask a question or describe an image to generate…" aria-label="Your question" id="chatInput" />
           <button type="button" id="sendButton">Send</button>
         </div>
@@ -1499,7 +1503,7 @@ class NoteworthyChat extends HTMLElement {
             <div class="tutorial-steps">
               <div class="tutorial-step">
                 <div class="tutorial-step-header">
-                  <div class="tutorial-icon">💬</div>
+                  <div class="tutorial-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M8 10h8M8 14h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div>
                   <h3>Ask Questions & Get Answers</h3>
                 </div>
                 <p>Ask about breaking news, headlines, or request fact-checks. The AI provides instant, accurate responses to help you stay informed.</p>
@@ -1513,7 +1517,7 @@ class NoteworthyChat extends HTMLElement {
               
               <div class="tutorial-step">
                 <div class="tutorial-step-header">
-                  <div class="tutorial-icon">🎨</div>
+                  <div class="tutorial-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="12" cy="7" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="17" r="1.5" fill="currentColor"/></svg></div>
                   <h3>Generate Images Instantly</h3>
                 </div>
                 <p>Simply describe what you want to see! The AI automatically detects image requests and generates visuals for you.</p>
@@ -1527,7 +1531,7 @@ class NoteworthyChat extends HTMLElement {
               
               <div class="tutorial-step">
                 <div class="tutorial-step-header">
-                  <div class="tutorial-icon">📎</div>
+                  <div class="tutorial-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
                   <h3>Upload & Analyze Files</h3>
                 </div>
                 <p>Upload images, PDFs, or documents for AI analysis. Click the paperclip button or drag and drop files directly into the chat. Perfect for verifying screenshots, analyzing documents, or understanding complex content.</p>
@@ -1540,23 +1544,23 @@ class NoteworthyChat extends HTMLElement {
               
               <div class="tutorial-step">
                 <div class="tutorial-step-header">
-                  <div class="tutorial-icon">🔊</div>
+                  <div class="tutorial-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M4 8v8h4l5 5V3L8 8H4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.12"/><path d="M15 10c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M17 6c3.3 0 6 2.7 6 6s-2.7 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M17 3c5 0 9 4 9 9s-4 9-9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.7"/></svg></div>
                   <h3>Audio Responses</h3>
                 </div>
-                <p>Toggle the audio button (🔊) in the header to hear AI responses read aloud. Perfect for multitasking or accessibility needs.</p>
+                <p>Toggle the audio button in the header to hear AI responses read aloud. Perfect for multitasking or accessibility needs.</p>
               </div>
               
               <div class="tutorial-step">
                 <div class="tutorial-step-header">
-                  <div class="tutorial-icon">🎤</div>
+                  <div class="tutorial-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
                   <h3>Voice Input</h3>
                 </div>
-                <p>Click the microphone button (🎤) to speak your questions instead of typing. Great for hands-free use and faster interactions!</p>
+                <p>Click the microphone button to speak your questions instead of typing. Great for hands-free use and faster interactions!</p>
               </div>
             </div>
             
             <div class="tutorial-tips">
-              <h4>💡 Pro Tips</h4>
+              <h4><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor; display: inline-block; vertical-align: middle; margin-right: 0.5rem;"><path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.87-3.13-7-7-7z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><path d="M9 21h6M10 18h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Pro Tips</h4>
               <ul>
                 <li><strong>Resize the window:</strong> Drag the bottom-right corner to adjust the chat size</li>
                 <li><strong>Drag to move:</strong> Click and drag the header to reposition the chat window</li>
@@ -1627,15 +1631,21 @@ class NoteworthyChat extends HTMLElement {
     let recognition = null;
     let currentSpeech = null;
     
-    // Initialize audio toggle state
+    // Initialize audio toggle state (already set in template, but ensure it's correct)
     if (audioToggle) {
-      audioToggle.textContent = audioEnabled ? '🔊' : '🔇';
-      if (audioEnabled) audioToggle.classList.add('active');
+      // The icon is already set in the template via audioIconHTML, but we ensure state is correct
+      if (audioEnabled) {
+        audioToggle.classList.add('active');
+      } else {
+        audioToggle.classList.remove('active');
+      }
       
       audioToggle.addEventListener('click', () => {
         audioEnabled = !audioEnabled;
         localStorage.setItem('noteworthy-ai-audio', audioEnabled.toString());
-        audioToggle.textContent = audioEnabled ? '🔊' : '🔇';
+        audioToggle.innerHTML = audioEnabled 
+        ? '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M4 8v8h4l5 5V3L8 8H4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.12"/><path d="M15 10c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M17 6c3.3 0 6 2.7 6 6s-2.7 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M17 3c5 0 9 4 9 9s-4 9-9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.7"/></svg>'
+        : '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: rgba(255,255,255,0.5);"><path d="M4 8v8h4l5 5V3L8 8H4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.08" opacity="0.6"/><path d="M15 10c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 6c3.3 0 6 2.7 6 6s-2.7 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 3c5 0 9 4 9 9s-4 9-9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.2"/><path d="M2 2l20 20" stroke="#ff4444" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="1"/><path d="M3 3l18 18" stroke="#ff6666" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/></svg>';
         audioToggle.classList.toggle('active');
         if (!audioEnabled && currentSpeech) {
           window.speechSynthesis.cancel();
@@ -2115,7 +2125,7 @@ class NoteworthyChat extends HTMLElement {
       errorGroup.className = 'message-group ai-msg-group';
       const err = document.createElement('div');
       err.className = 'error';
-      err.innerHTML = `<strong>⚠️ Error</strong><p>${message}</p>`;
+      err.innerHTML = `<strong><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor; display: inline-block; vertical-align: middle; margin-right: 0.25rem;"><path d="M12 2L2 22h20L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Error</strong><p>${message}</p>`;
       errorGroup.innerHTML = `
         <div class="message-avatar">
           <img src="/IMG_5794.PNG" alt="Noteworthy News" />
@@ -2556,7 +2566,7 @@ class NoteworthyChat extends HTMLElement {
           const message = e.message || 'Rate limit exceeded';
           const resetInfo = e.resetIn ? ` Try again in ${e.resetIn} minute(s).` : '';
           err.innerHTML = `
-            <strong>⚠️ Rate Limit Reached</strong>
+            <strong><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor; display: inline-block; vertical-align: middle; margin-right: 0.25rem;"><path d="M12 2L2 22h20L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Rate Limit Reached</strong>
             <p>${message}${resetInfo}</p>
             <p style="font-size: 12px; opacity: 0.8; margin-top: 8px;">
               Limit: 10 messages per 30 minutes

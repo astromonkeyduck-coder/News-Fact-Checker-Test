@@ -1,0 +1,80 @@
+/**
+ * High-Quality SVG Snowfall CSS
+ * Premium snowfall animation styles
+ */
+
+/* Snowfall Overlay Container */
+.snowfall-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    pointer-events: none !important;
+    z-index: 9999 !important;
+    overflow: hidden !important;
+}
+
+/* Individual Snowflake */
+.snowflake {
+    position: absolute !important;
+    width: 16px !important;
+    height: 16px !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    animation-name: snowfall-fall !important;
+    animation-timing-function: linear !important;
+    animation-iteration-count: infinite !important;
+    will-change: transform, opacity !important;
+}
+
+/* Snowflake SVG styling */
+.snowflake svg {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+}
+
+/* Main snowfall animation */
+@keyframes snowfall-fall {
+    0% {
+        transform: translate3d(var(--snow-x, 0), -10vh, 0) scale(var(--snow-scale, 1)) !important;
+        opacity: 0 !important;
+    }
+    10% {
+        opacity: var(--snow-opacity, 0.9) !important;
+    }
+    90% {
+        opacity: var(--snow-opacity, 0.9) !important;
+    }
+    100% {
+        transform: translate3d(var(--snow-x, 0), 110vh, 0) scale(var(--snow-scale, 1)) !important;
+        opacity: 0 !important;
+    }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .snowflake {
+        width: 12px !important;
+        height: 12px !important;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .snowflake {
+        animation: none !important;
+        opacity: 0 !important;
+    }
+    
+    .snowfall-overlay {
+        display: none !important;
+    }
+}
+
+/* Performance optimizations */
+.snowfall-overlay,
+.snowflake {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+

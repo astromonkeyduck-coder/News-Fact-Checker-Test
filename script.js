@@ -7731,7 +7731,10 @@ function initNewsletterSubscription() {
         const images = document.querySelectorAll('.welcome-bg-img, .hero-logo-image');
         return Array.from(images).filter(img => {
             const src = img.src || img.getAttribute('src') || '';
+            // CHRISTMAS TEMP: Added SantalogoEdited.png and santabodynwbest.png check
             return src.includes('7680cb96-729f-4344-b08a-4f9a2aa314f8') || 
+                   src.includes('SantalogoEdited') ||
+                   src.includes('santabodynwbest') ||
                    src.includes('e2e66fe2-12c0-428b-ba44-0ff07b895551');
         });
     }
