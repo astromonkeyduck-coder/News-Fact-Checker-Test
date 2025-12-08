@@ -4258,12 +4258,18 @@
             box-sizing: border-box;
         }
         
-        /* Mobile: Ensure no horizontal overflow */
+        /* Mobile: Allow horizontal scroll for posts if needed */
         @media (max-width: 768px) {
             .container {
                 width: 100% !important;
                 max-width: 100% !important;
-                overflow-x: hidden !important;
+                overflow-x: auto !important;
+            }
+            
+            /* Ensure posts grid wraps on mobile */
+            .breaking-news-grid,
+            .articles-track {
+                grid-template-columns: 1fr !important;
             }
             
             * {
@@ -6784,6 +6790,8 @@
             padding: 0;
             width: 100%;
             overflow: visible;
+            overflow-x: auto;
+            box-sizing: border-box;
         }
         
         /* Large screens: 3-4 columns */
@@ -6830,8 +6838,10 @@
             padding: 0;
             width: 100%;
             overflow: visible;
+            overflow-x: auto;
             min-height: auto;
             height: auto;
+            box-sizing: border-box;
         }
         
         /* Ensure parent containers allow scrolling */
@@ -6839,14 +6849,28 @@
             overflow: visible !important;
             height: auto !important;
             max-height: none !important;
+            overflow-x: auto !important;
+            width: 100%;
         }
         
-        /* Ensure body and html can scroll */
+        /* Ensure body and html can scroll - allow horizontal scroll for posts */
         html, body {
-            overflow-x: hidden;
+            overflow-x: auto !important;
             overflow-y: auto !important;
             height: auto !important;
             max-height: none !important;
+        }
+        
+        /* Ensure the grid can extend horizontally if needed */
+        .breaking-news-grid,
+        .articles-track {
+            min-width: max-content;
+            width: 100%;
+        }
+        
+        /* Allow horizontal scrolling on the container if content overflows */
+        .container {
+            overflow-x: auto !important;
         }
         
         @media (min-width: 1400px) {
