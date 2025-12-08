@@ -6830,6 +6830,23 @@
             padding: 0;
             width: 100%;
             overflow: visible;
+            min-height: auto;
+            height: auto;
+        }
+        
+        /* Ensure parent containers allow scrolling */
+        .breaking-news-container {
+            overflow: visible !important;
+            height: auto !important;
+            max-height: none !important;
+        }
+        
+        /* Ensure body and html can scroll */
+        html, body {
+            overflow-x: hidden;
+            overflow-y: auto !important;
+            height: auto !important;
+            max-height: none !important;
         }
         
         @media (min-width: 1400px) {

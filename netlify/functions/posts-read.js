@@ -86,8 +86,12 @@ exports.handler = async (event) => {
       };
     }
 
-    // Get IDs to fetch (first N)
-    const idsToFetch = indexData.ids.slice(0, maxLimit);
+    // Fetch MORE posts than requested (up to 1000) so we can sort by date and return the most recent
+    // This ensures we get the newest posts even if they're at the end of the index
+    const fetchLimit = Math.min(Math.max(maxLimit * 5, 500), 1000); // Fetch 5x the requested amount, but cap at 1000
+    const idsToFetch = indexData.ids.slice(0, fetchLimit);
+    
+    console.log(`[posts-read] Fetching ${idsToFetch.length} posts from index (requested ${maxLimit}, will sort and return top ${maxLimit})`);
 
     // Fetch all posts in parallel
     const postPromises = idsToFetch.map(async (id) => {
@@ -104,15 +108,33 @@ exports.handler = async (event) => {
 
     const posts = await Promise.all(postPromises);
     
-    // Filter out nulls and return
+    // Filter out nulls
     const validPosts = posts.filter(post => post !== null);
+    
+    // Sort by date (newest first) - this ensures recent posts appear first
+    validPosts.sort((a, b) => {
+      const dateA = new Date(a.datePosted || a.createdAt || a.created_at || a.Date || 0);
+      const dateB = new Date(b.datePosted || b.createdAt || b.created_at || b.Date || 0);
+      // Newest first (descending order)
+      return dateB.getTime() - dateA.getTime();
+    });
+    
+    // Return only the requested number of most recent posts
+    const topPosts = validPosts.slice(0, maxLimit);
 
-    console.log(`[posts-read] Returning ${validPosts.length} posts out of ${idsToFetch.length} requested`);
+    console.log(`[posts-read] Fetched ${validPosts.length} valid posts, returning top ${topPosts.length} (newest first)`);
+    
+    // Log date range for debugging
+    if (topPosts.length > 0) {
+      const newestDate = new Date(topPosts[0].datePosted || topPosts[0].createdAt || topPosts[0].created_at || topPosts[0].Date || 0);
+      const oldestDate = new Date(topPosts[topPosts.length - 1].datePosted || topPosts[topPosts.length - 1].createdAt || topPosts[topPosts.length - 1].created_at || topPosts[topPosts.length - 1].Date || 0);
+      console.log(`[posts-read] Date range: ${oldestDate.toISOString()} to ${newestDate.toISOString()}`);
+    }
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(validPosts),
+      body: JSON.stringify(topPosts),
     };
   } catch (error) {
     console.error('[posts-read] Error:', error);
