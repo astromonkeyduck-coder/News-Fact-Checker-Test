@@ -20,9 +20,18 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    // Log request details for debugging
+    console.log('Realtime voice request:', {
+      method: event.httpMethod,
+      path: event.path,
+      body: event.body,
+      queryString: event.queryStringParameters
+    });
+
     const apiKey = process.env.OPENAI_API_KEY;
     
     if (!apiKey) {
+      console.error('OPENAI_API_KEY not configured');
       return {
         statusCode: 500,
         headers,
@@ -98,32 +107,60 @@ Always inform the user when you're using these tools during the conversation.`,
 
       const sessionData = await response.json();
       
-      // Generate ephemeral token for client-side connection
-      const tokenResponse = await fetch(`https://api.openai.com/v1/realtime/sessions/${sessionData.id}/tokens`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          expires_in: 600, // 10 minutes
-        }),
-      });
+      // Check if session response includes client_secret (ephemeral token)
+      // New API format includes it directly in session response
+      let ephemeralToken;
+      let expiresAt;
+      
+      if (sessionData.client_secret && sessionData.client_secret.value) {
+        // New format: token is in client_secret.value
+        ephemeralToken = sessionData.client_secret.value;
+        expiresAt = sessionData.client_secret.expires_at || sessionData.expires_at;
+        console.log('Using ephemeral token from client_secret');
+      } else {
+        // Fallback: Try to generate token via separate endpoint (older API format)
+        console.log('No client_secret found, trying token endpoint...');
+        const tokenResponse = await fetch(`https://api.openai.com/v1/realtime/sessions/${sessionData.id}/tokens`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            expires_in: 600, // 10 minutes
+          }),
+        });
 
-      if (!tokenResponse.ok) {
-        const errorData = await tokenResponse.json().catch(() => ({}));
-        console.error('OpenAI token generation error:', errorData);
+        if (!tokenResponse.ok) {
+          const errorData = await tokenResponse.json().catch(() => ({}));
+          console.error('OpenAI token generation error:', errorData);
+          return {
+            statusCode: tokenResponse.status,
+            headers,
+            body: JSON.stringify({ 
+              error: errorData.error?.message || 'Failed to generate ephemeral token',
+              details: errorData,
+              note: 'Session created but token generation failed. Check if client_secret is in session response.'
+            }),
+          };
+        }
+
+        const tokenData = await tokenResponse.json();
+        ephemeralToken = tokenData.token || tokenData.value;
+        expiresAt = tokenData.expires_at || sessionData.expires_at;
+      }
+      
+      if (!ephemeralToken) {
+        console.error('No ephemeral token found in response:', sessionData);
         return {
-          statusCode: tokenResponse.status,
+          statusCode: 500,
           headers,
           body: JSON.stringify({ 
-            error: errorData.error?.message || 'Failed to generate ephemeral token',
-            details: errorData 
+            error: 'No ephemeral token found in session response',
+            sessionData: sessionData
           }),
         };
       }
-
-      const tokenData = await tokenResponse.json();
       
       // Return session details with ephemeral token
       return {
@@ -131,8 +168,8 @@ Always inform the user when you're using these tools during the conversation.`,
         headers,
         body: JSON.stringify({
           session_id: sessionData.id,
-          expires_at: sessionData.expires_at,
-          ephemeral_token: tokenData.token,
+          expires_at: expiresAt || sessionData.expires_at,
+          ephemeral_token: ephemeralToken,
           websocket_url: `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview&session_id=${sessionData.id}`,
         }),
       };
@@ -140,18 +177,41 @@ Always inform the user when you're using these tools during the conversation.`,
 
     // Handle POST request - create session with custom voice
     if (event.httpMethod === "POST") {
-      let body;
-      try {
-        body = typeof event.body === 'string' ? JSON.parse(event.body) : (event.body || {});
-      } catch (e) {
-        console.error('Error parsing request body:', e);
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: 'Invalid JSON in request body', details: e.message }),
-        };
+      let body = {};
+      
+      // Handle different body formats from Netlify Functions
+      if (event.body) {
+        try {
+          if (typeof event.body === 'string') {
+            // Empty string or whitespace only
+            if (event.body.trim() === '') {
+              body = {};
+            } else {
+              body = JSON.parse(event.body);
+            }
+          } else if (typeof event.body === 'object') {
+            // Already parsed (shouldn't happen in Netlify but handle it)
+            body = event.body;
+          }
+        } catch (e) {
+          console.error('Error parsing request body:', e);
+          console.error('Raw body type:', typeof event.body);
+          console.error('Raw body value:', event.body);
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ 
+              error: 'Invalid JSON in request body', 
+              details: e.message,
+              receivedBodyType: typeof event.body,
+              receivedBody: typeof event.body === 'string' ? event.body.substring(0, 200) : 'Not a string'
+            }),
+          };
+        }
       }
+      
       const voice = body.voice || 'cove';
+      console.log('Creating session with voice:', voice, 'from body:', body);
       
       const response = await fetch('https://api.openai.com/v1/realtime/sessions', {
         method: 'POST',
@@ -210,60 +270,96 @@ Always inform the user when you're using these tools during the conversation.`,
 
       const sessionData = await response.json();
       
-      // Generate ephemeral token for client-side connection
-      const tokenResponse = await fetch(`https://api.openai.com/v1/realtime/sessions/${sessionData.id}/tokens`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          expires_in: 600, // 10 minutes
-        }),
-      });
+      // Check if session response includes client_secret (ephemeral token)
+      // New API format includes it directly in session response
+      let ephemeralToken;
+      let expiresAt;
+      
+      if (sessionData.client_secret && sessionData.client_secret.value) {
+        // New format: token is in client_secret.value
+        ephemeralToken = sessionData.client_secret.value;
+        expiresAt = sessionData.client_secret.expires_at || sessionData.expires_at;
+        console.log('Using ephemeral token from client_secret');
+      } else {
+        // Fallback: Try to generate token via separate endpoint (older API format)
+        console.log('No client_secret found, trying token endpoint...');
+        const tokenResponse = await fetch(`https://api.openai.com/v1/realtime/sessions/${sessionData.id}/tokens`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            expires_in: 600, // 10 minutes
+          }),
+        });
 
-      if (!tokenResponse.ok) {
-        const errorData = await tokenResponse.json().catch(() => ({}));
-        console.error('OpenAI token generation error:', errorData);
+        if (!tokenResponse.ok) {
+          const errorData = await tokenResponse.json().catch(() => ({}));
+          console.error('OpenAI token generation error:', errorData);
+          return {
+            statusCode: tokenResponse.status,
+            headers,
+            body: JSON.stringify({ 
+              error: errorData.error?.message || 'Failed to generate ephemeral token',
+              details: errorData,
+              note: 'Session created but token generation failed. Check if client_secret is in session response.'
+            }),
+          };
+        }
+
+        const tokenData = await tokenResponse.json();
+        ephemeralToken = tokenData.token || tokenData.value;
+        expiresAt = tokenData.expires_at || sessionData.expires_at;
+      }
+      
+      if (!ephemeralToken) {
+        console.error('No ephemeral token found in response:', sessionData);
         return {
-          statusCode: tokenResponse.status,
+          statusCode: 500,
           headers,
           body: JSON.stringify({ 
-            error: errorData.error?.message || 'Failed to generate ephemeral token',
-            details: errorData 
+            error: 'No ephemeral token found in session response',
+            sessionData: sessionData
           }),
         };
       }
-
-      const tokenData = await tokenResponse.json();
       
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
           session_id: sessionData.id,
-          expires_at: sessionData.expires_at,
-          ephemeral_token: tokenData.token,
+          expires_at: expiresAt || sessionData.expires_at,
+          ephemeral_token: ephemeralToken,
           websocket_url: `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview&session_id=${sessionData.id}`,
           voice: voice,
         }),
       };
     }
 
+    // If we get here, the method is not GET or POST
+    console.error('Unsupported HTTP method:', event.httpMethod);
     return {
       statusCode: 405,
       headers,
-      body: JSON.stringify({ error: "Method not allowed" }),
+      body: JSON.stringify({ 
+        error: "Method not allowed",
+        receivedMethod: event.httpMethod,
+        allowedMethods: ["GET", "POST", "OPTIONS"]
+      }),
     };
 
   } catch (error) {
     console.error('Realtime voice function error:', error);
+    console.error('Error stack:', error.stack);
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({ 
         error: "Internal server error",
-        message: error.message 
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       }),
     };
   }

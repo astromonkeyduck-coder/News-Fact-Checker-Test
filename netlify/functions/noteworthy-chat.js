@@ -229,6 +229,191 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // Convert unsupported file formats to supported formats
+    // OpenAI GPT-4 Vision only supports: PNG, JPEG, WEBP, and non-animated GIF
+    const SUPPORTED_IMAGE_FORMATS = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
+    const SUPPORTED_EXTENSIONS = ['.png', '.jpeg', '.jpg', '.webp', '.gif'];
+    
+    /**
+     * Convert unsupported file formats to PNG/JPEG
+     */
+    async function convertFileToSupportedFormat(file) {
+      const fileType = (file.type || '').toLowerCase();
+      const fileName = file.name || 'file';
+      const fileExtension = fileName.split('.').pop()?.toLowerCase() || '';
+      const base64Data = file.data.replace(/^data:[^;]+;base64,/, '');
+      const fileBuffer = Buffer.from(base64Data, 'base64');
+      
+      // Check if already supported
+      const mimeTypeSupported = SUPPORTED_IMAGE_FORMATS.includes(fileType);
+      const extensionSupported = SUPPORTED_EXTENSIONS.includes('.' + fileExtension);
+      
+      if (mimeTypeSupported || extensionSupported) {
+        return file; // Already supported, return as-is
+      }
+      
+      console.log(`[File Conversion] Converting ${fileName} (${fileType}) to supported format...`);
+      
+      try {
+        // Handle PDF files
+        if (fileType === 'application/pdf' || fileExtension === 'pdf') {
+          const { pdfToPng } = require('pdf-to-png-converter');
+          const pngPages = await pdfToPng(fileBuffer, {
+            viewportScale: 2.0,
+            disableFontFace: false,
+            useSystemFonts: false,
+            enableXfa: false,
+          });
+          
+          if (pngPages && pngPages.length > 0) {
+            // pdfToPng returns array of objects with 'content' property containing the buffer
+            // For PDFs with multiple pages, we'll convert all pages
+            const convertedPages = pngPages.map((pageObj, index) => {
+              const pageBuffer = pageObj.content || pageObj; // Handle both formats
+              return {
+                name: fileName.replace(/\.pdf$/i, `-page${index + 1}.png`),
+                type: 'image/png',
+                data: pageBuffer.toString('base64'),
+                size: pageBuffer.length,
+                converted: true,
+                originalFormat: 'pdf',
+                pageNumber: index + 1,
+                totalPages: pngPages.length
+              };
+            });
+            
+            console.log(`[File Conversion] ✅ PDF converted to PNG (${pngPages.length} page(s))`);
+            
+            // Return first page as main file, but include all pages in a special property
+            return {
+              ...convertedPages[0],
+              _allPages: convertedPages, // Special property for multi-page handling
+              _isMultiPage: true
+            };
+          }
+        }
+        
+        // Handle HEIC/HEIF images
+        if (fileType.includes('heic') || fileType.includes('heif') || fileExtension === 'heic' || fileExtension === 'heif') {
+          const convert = require('heic-convert');
+          const outputBuffer = await convert({
+            buffer: fileBuffer,
+            format: 'JPEG',
+            quality: 0.92
+          });
+          
+          const convertedBase64 = outputBuffer.toString('base64');
+          console.log(`[File Conversion] ✅ HEIC converted to JPEG`);
+          
+          return {
+            name: fileName.replace(/\.(heic|heif)$/i, '.jpg'),
+            type: 'image/jpeg',
+            data: convertedBase64,
+            size: convertedBase64.length,
+            converted: true,
+            originalFormat: 'heic'
+          };
+        }
+        
+        // Handle other image formats (TIFF, BMP, SVG, ICO, etc.) using sharp
+        if (fileType.startsWith('image/')) {
+          const sharp = require('sharp');
+          
+          // Convert to PNG (most compatible)
+          const convertedBuffer = await sharp(fileBuffer)
+            .png({ quality: 90, compressionLevel: 6 })
+            .toBuffer();
+          
+          const convertedBase64 = convertedBuffer.toString('base64');
+          console.log(`[File Conversion] ✅ ${fileType} converted to PNG`);
+          
+          return {
+            name: fileName.replace(/\.[^.]+$/, '.png'),
+            type: 'image/png',
+            data: convertedBase64,
+            size: convertedBase64.length,
+            converted: true,
+            originalFormat: fileType
+          };
+        }
+        
+        // If we can't convert it, return original (will be rejected later)
+        console.warn(`[File Conversion] ⚠️ Cannot convert ${fileType} - format not recognized`);
+        return file;
+        
+      } catch (conversionError) {
+        console.error(`[File Conversion] ❌ Error converting ${fileName}:`, conversionError);
+        // Return original file - it will be rejected with a clear error message
+        return file;
+      }
+    }
+    
+    // Process and convert files if needed
+    if (files && files.length > 0) {
+      const convertedFiles = [];
+      const conversionErrors = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        try {
+          const convertedFile = await convertFileToSupportedFormat(file);
+          
+          // Check if conversion was successful (file is now supported)
+          const isSupported = SUPPORTED_IMAGE_FORMATS.includes(convertedFile.type?.toLowerCase()) ||
+                             (convertedFile.name && SUPPORTED_EXTENSIONS.includes('.' + convertedFile.name.split('.').pop()?.toLowerCase()));
+          
+          if (isSupported) {
+            // Handle multi-page PDFs - add all pages
+            if (convertedFile._isMultiPage && convertedFile._allPages) {
+              convertedFiles.push(...convertedFile._allPages);
+              console.log(`[File Conversion] ✅ Successfully converted PDF: ${file.name} → ${convertedFile._allPages.length} page(s)`);
+            } else {
+              convertedFiles.push(convertedFile);
+              if (convertedFile.converted) {
+                console.log(`[File Conversion] ✅ Successfully converted: ${file.name} → ${convertedFile.name}`);
+              }
+            }
+          } else {
+            // Still unsupported after conversion attempt
+            conversionErrors.push({
+              name: file.name || 'unnamed file',
+              type: file.type || 'unknown',
+              error: 'Format not supported and conversion failed'
+            });
+          }
+        } catch (error) {
+          console.error(`[File Conversion] Error processing file ${file.name}:`, error);
+          conversionErrors.push({
+            name: file.name || 'unnamed file',
+            type: file.type || 'unknown',
+            error: error.message || 'Conversion failed'
+          });
+        }
+      }
+      
+      // If we have conversion errors, return helpful error message
+      if (conversionErrors.length > 0 && convertedFiles.length === 0) {
+        const fileList = conversionErrors.map(f => `"${f.name}" (${f.type})`).join(', ');
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: `Unable to process the uploaded files. Files are automatically converted when possible. Please ensure your files are images (PNG, JPEG, WEBP, GIF, HEIC, TIFF, BMP, SVG) or PDFs.`,
+            details: `Files that couldn't be processed: ${fileList}. Note: PDFs and unsupported image formats are automatically converted to PNG/JPEG.`,
+            supportedFormats: ['png', 'jpeg', 'gif', 'webp', 'pdf', 'heic', 'tiff', 'bmp', 'svg'],
+            unsupportedFiles: conversionErrors
+          }),
+        };
+      }
+      
+      // Replace files array with converted files
+      if (convertedFiles.length > 0) {
+        files = convertedFiles;
+        console.log(`[File Conversion] Processed ${files.length} file(s), ${files.filter(f => f.converted).length} were converted`);
+      }
+    }
+
     // Get API key
     const apiKey = process.env.OPENAI_API_KEY;
     

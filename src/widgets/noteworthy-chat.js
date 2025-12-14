@@ -3983,6 +3983,8 @@ class NoteworthyChat extends HTMLElement {
             : '/.netlify/functions/realtime-voice';
         }
         
+        console.log('[Voice Mode] Requesting session from:', realtimeEndpoint, 'with voice:', currentVoice);
+        
         const sessionRes = await fetch(realtimeEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -3990,19 +3992,64 @@ class NoteworthyChat extends HTMLElement {
         });
         
         if (!sessionRes.ok) {
-          const errorData = await sessionRes.json().catch(() => ({ error: 'Unknown error' }));
-          console.error('Realtime voice session error:', errorData);
-          throw new Error(errorData.error || `Failed to create voice session: ${sessionRes.status} ${sessionRes.statusText}`);
+          let errorData;
+          try {
+            const text = await sessionRes.text();
+            errorData = text ? JSON.parse(text) : { error: 'Unknown error' };
+          } catch (e) {
+            errorData = { error: `HTTP ${sessionRes.status}: ${sessionRes.statusText}` };
+          }
+          console.error('[Voice Mode] Session creation failed:', {
+            status: sessionRes.status,
+            statusText: sessionRes.statusText,
+            error: errorData,
+            endpoint: realtimeEndpoint
+          });
+          
+          // Show user-friendly error message
+          if (voiceStatusTextIntegrated) {
+            voiceStatusTextIntegrated.textContent = `Error: ${errorData.error || errorData.message || 'Failed to connect'}`;
+          }
+          if (voiceStatusIntegrated) {
+            voiceStatusIntegrated.classList.add('error');
+            voiceStatusIntegrated.classList.remove('recording');
+          }
+          
+          throw new Error(errorData.error || errorData.message || `Failed to create voice session: ${sessionRes.status} ${sessionRes.statusText}`);
         }
         
-        const sessionData = await sessionRes.json();
+        let sessionData;
+        try {
+          const text = await sessionRes.text();
+          sessionData = text ? JSON.parse(text) : {};
+        } catch (e) {
+          console.error('[Voice Mode] Failed to parse session response:', e);
+          throw new Error('Invalid response from server');
+        }
         
         // Connect directly to OpenAI WebSocket using ephemeral token
-        const wsUrl = `${sessionData.websocket_url}&ephemeral_token=${sessionData.ephemeral_token}`;
+        // Note: Browser WebSocket API doesn't support custom headers
+        // OpenAI Realtime API accepts ephemeral token as query parameter for browser connections
+        if (!sessionData.ephemeral_token) {
+          throw new Error('No ephemeral token received from server');
+        }
         
-        websocket = new WebSocket(wsUrl);
+        const wsUrl = sessionData.websocket_url || 
+          `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview&session_id=${sessionData.session_id}`;
+        
+        // Append ephemeral token as query parameter (browser WebSocket doesn't support headers)
+        const separator = wsUrl.includes('?') ? '&' : '?';
+        const finalWsUrl = `${wsUrl}${separator}ephemeral_token=${encodeURIComponent(sessionData.ephemeral_token)}`;
+        
+        console.log('[Voice Mode] Connecting to WebSocket:', finalWsUrl.substring(0, 150) + '...');
+        console.log('[Voice Mode] Session ID:', sessionData.session_id);
+        console.log('[Voice Mode] Has ephemeral token:', !!sessionData.ephemeral_token);
+        
+        websocket = new WebSocket(finalWsUrl);
         
         websocket.onopen = () => {
+          console.log('[Voice Mode] WebSocket connected successfully');
+          // Session is already configured on the server, no need to send configuration
           if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connected - Speak now!';
           if (voiceStatusIntegrated) {
             voiceStatusIntegrated.classList.remove('error');
@@ -4108,6 +4155,8 @@ class NoteworthyChat extends HTMLElement {
       
       try {
         const source = audioContext.createMediaStreamSource(mediaStream);
+        // Use ScriptProcessorNode for audio processing (deprecated but widely supported)
+        // Buffer size: 4096 samples = ~170ms at 24kHz (good for real-time)
         const processor = audioContext.createScriptProcessor(4096, 1, 1);
         
         processor.onaudioprocess = (e) => {
@@ -4122,13 +4171,23 @@ class NoteworthyChat extends HTMLElement {
           }
           
           // Convert to base64 for OpenAI Realtime API
-          const base64Audio = btoa(String.fromCharCode(...new Uint8Array(pcm16.buffer)));
+          // Use more efficient conversion for large arrays
+          const uint8Array = new Uint8Array(pcm16.buffer);
+          let binaryString = '';
+          const chunkSize = 8192; // Process in chunks to avoid stack overflow
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            const chunk = uint8Array.subarray(i, i + chunkSize);
+            binaryString += String.fromCharCode.apply(null, chunk);
+          }
+          const base64Audio = btoa(binaryString);
           
           // Send audio to WebSocket in OpenAI's format
-          websocket.send(JSON.stringify({
-            type: 'input_audio_buffer.append',
-            audio: base64Audio,
-          }));
+          if (websocket && websocket.readyState === WebSocket.OPEN) {
+            websocket.send(JSON.stringify({
+              type: 'input_audio_buffer.append',
+              audio: base64Audio,
+            }));
+          }
         };
         
         source.connect(processor);

@@ -1106,7 +1106,7 @@ export class NoteworthyChat extends HTMLElement {
               <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
             </svg>
           </button>
-          <input type="file" id="fileInput" accept="image/*" multiple aria-label="Upload image" style="display: none;" />
+          <input type="file" id="fileInput" accept="image/*,application/pdf" multiple aria-label="Upload image or PDF" style="display: none;" />
           <button type="button" class="file-upload-btn" id="fileUploadBtn" aria-label="Upload file or image" title="Upload file or image for analysis">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;">
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
@@ -1325,14 +1325,87 @@ export class NoteworthyChat extends HTMLElement {
       });
     }
     
-    function handleFiles(files: File[]) {
-      files.forEach(file => {
-        if (file.type.startsWith('image/')) {
-          if (file.size > 20 * 1024 * 1024) {
-            alert(`File "${file.name}" is too large. Maximum size is 20MB.`);
-            return;
+    // Handle paste events for images - works on input and entire chat container
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      
+      const imageFiles: File[] = [];
+      
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        
+        // Check if the item is an image
+        if (item.type.indexOf('image') !== -1) {
+          const blob = item.getAsFile();
+          if (blob) {
+            // Convert blob to File object with a name
+            const fileName = `pasted-image-${Date.now()}.${blob.type.split('/')[1] || 'png'}`;
+            const file = new File([blob], fileName, { type: blob.type });
+            imageFiles.push(file);
           }
+        }
+      }
+      
+      if (imageFiles.length > 0) {
+        e.preventDefault(); // Prevent default paste behavior
+        
+        // Process the pasted images
+        handleFiles(imageFiles);
+        
+        // Show a brief visual feedback
+        if (input) {
+          const originalPlaceholder = input.placeholder;
+          input.placeholder = `✓ ${imageFiles.length} image${imageFiles.length > 1 ? 's' : ''} pasted!`;
+          setTimeout(() => {
+            input.placeholder = originalPlaceholder;
+          }, 2000);
+        }
+      }
+    };
+    
+    // Add paste listener to input field
+    if (input) {
+      input.addEventListener('paste', handlePaste);
+    }
+    
+    // Add paste listener to the entire chat container (so it works even when input isn't focused)
+    if (wrap) {
+      wrap.addEventListener('paste', handlePaste);
+      // Make the chat container focusable for paste events
+      if (!wrap.hasAttribute('tabindex')) {
+        wrap.setAttribute('tabindex', '-1');
+      }
+    }
+    
+    function handleFiles(files: File[]) {
+      // Files that will be automatically converted on the backend
+      // (PDFs, HEIC, TIFF, BMP, SVG, etc. will be converted automatically)
+      const CONVERTIBLE_FORMATS = ['application/pdf', 'image/heic', 'image/heif', 'image/tiff', 'image/tif', 'image/bmp', 'image/svg+xml', 'image/x-icon'];
+      
+      files.forEach(file => {
+        // Check file size (max 20MB)
+        if (file.size > 20 * 1024 * 1024) {
+          alert(`File "${file.name}" is too large. Maximum size is 20MB.`);
+          return;
+        }
+        
+        // Allow images and PDFs (will be converted if needed)
+        if (file.type.startsWith('image/') || file.type === 'application/pdf') {
           uploadedFiles.push(file);
+          
+          // Show info message for files that will be converted
+          if (CONVERTIBLE_FORMATS.includes(file.type.toLowerCase())) {
+            const formatName = file.type.split('/')[1] || 'unknown';
+            console.log(`[File Upload] File "${file.name}" (${formatName}) will be automatically converted to a supported format`);
+          }
+        } else {
+          // Not an image or PDF
+          alert(
+            `File "${file.name}" is not a supported file type.\n\n` +
+            `Supported: Images (PNG, JPEG, WEBP, GIF, HEIC, TIFF, BMP, SVG) and PDFs\n\n` +
+            `Note: Unsupported image formats and PDFs will be automatically converted.`
+          );
         }
       });
       updateFilePreview();
@@ -2056,7 +2129,21 @@ export class NoteworthyChat extends HTMLElement {
         aiGroup.className = 'message-group ai-msg-group';
         const err = document.createElement('div');
         err.className = 'error';
-        err.textContent = e?.message || 'Network error. Please try again.';
+        
+        // Check if this is a file processing error
+        const errorMessage = e?.message || 'Network error. Please try again.';
+        if (errorMessage.includes('unsupported') || errorMessage.includes('Unable to process')) {
+          err.innerHTML = `
+            <strong>File Processing Error</strong>
+            <p>${errorMessage}</p>
+            <p style="font-size: 12px; opacity: 0.8; margin-top: 8px;">
+              <strong>Supported formats:</strong> PNG, JPEG, WEBP, GIF, PDF, HEIC, TIFF, BMP, SVG<br>
+              <strong>Note:</strong> PDFs and unsupported image formats are automatically converted. If conversion fails, please try a different file.
+            </p>
+          `;
+        } else {
+          err.textContent = errorMessage;
+        }
         
         aiGroup.innerHTML = `
           <div class="message-avatar">NW</div>
@@ -2155,7 +2242,21 @@ export class NoteworthyChat extends HTMLElement {
         aiGroup.className = 'message-group ai-msg-group';
         const err = document.createElement('div');
         err.className = 'error';
-        err.textContent = e?.message || 'Network error. Please try again.';
+        
+        // Check if this is an unsupported image format error
+        const errorMessage = e?.message || 'Network error. Please try again.';
+        if (errorMessage.includes('unsupported image') || errorMessage.includes('unsupported') || errorMessage.includes('Unable to process')) {
+          err.innerHTML = `
+            <strong>File Processing Error</strong>
+            <p>${errorMessage}</p>
+            <p style="font-size: 12px; opacity: 0.8; margin-top: 8px;">
+              <strong>Supported formats:</strong> PNG, JPEG, WEBP, GIF, PDF, HEIC, TIFF, BMP, SVG<br>
+              <strong>Note:</strong> PDFs and unsupported image formats are automatically converted to PNG/JPEG. If conversion fails, please try a different file.
+            </p>
+          `;
+        } else {
+          err.textContent = errorMessage;
+        }
         
         aiGroup.innerHTML = `
           <div class="message-avatar">NW</div>
