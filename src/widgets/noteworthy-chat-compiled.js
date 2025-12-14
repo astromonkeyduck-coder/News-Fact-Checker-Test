@@ -1114,7 +1114,7 @@ class NoteworthyChat extends HTMLElement {
         <div class="voice-selector" id="voiceSelector">
           <label for="voiceSelect">Choose Voice:</label>
           <select id="voiceSelect">
-            <option value="cove">Cove - Composed and direct</option>
+            <option value="alloy">Alloy - Balanced and versatile</option>
             <option value="spruce">Spruce - Calm and affirming</option>
             <option value="ember">Ember - Confident and optimistic</option>
             <option value="arbor">Arbor - Easygoing and versatile</option>
@@ -1270,7 +1270,7 @@ class NoteworthyChat extends HTMLElement {
         let mediaStream = null;
         let audioWorkletNode = null;
         let isRecording = false;
-        let currentVoice = 'cove';
+        let currentVoice = 'alloy';
         let audioQueue = [];
         let isPlayingAudio = false;
         // Toggle between chat and image generation modes

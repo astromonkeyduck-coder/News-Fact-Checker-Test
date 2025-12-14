@@ -1119,15 +1119,14 @@ export class NoteworthyChat extends HTMLElement {
         <div class="voice-selector" id="voiceSelector">
           <label for="voiceSelect">Choose Voice:</label>
           <select id="voiceSelect">
-            <option value="cove">Cove - Composed and direct</option>
-            <option value="spruce">Spruce - Calm and affirming</option>
-            <option value="ember">Ember - Confident and optimistic</option>
-            <option value="arbor">Arbor - Easygoing and versatile</option>
-            <option value="breeze">Breeze - Animated and earnest</option>
-            <option value="juniper">Juniper - Open and upbeat</option>
-            <option value="maple">Maple - Cheerful and candid</option>
-            <option value="sol">Sol - Savvy and relaxed</option>
-            <option value="vale">Vale - Bright and inquisitive</option>
+            <option value="alloy">Alloy - Balanced and versatile</option>
+            <option value="ash">Ash - Calm and composed</option>
+            <option value="ballad">Ballad - Warm and expressive</option>
+            <option value="coral">Coral - Bright and energetic</option>
+            <option value="echo">Echo - Clear and direct</option>
+            <option value="sage">Sage - Wise and thoughtful</option>
+            <option value="shimmer">Shimmer - Smooth and polished</option>
+            <option value="verse">Verse - Poetic and melodic</option>
             <option value="marin">Marin - Natural and expressive</option>
             <option value="cedar">Cedar - Natural and clear</option>
           </select>
@@ -1278,7 +1277,7 @@ export class NoteworthyChat extends HTMLElement {
     let mediaStream: MediaStream | null = null;
     let audioWorkletNode: AudioWorkletNode | null = null;
     let isRecording = false;
-    let currentVoice = 'cove';
+    let currentVoice = 'alloy';
     let audioQueue: Float32Array[] = [];
     let isPlayingAudio = false;
     

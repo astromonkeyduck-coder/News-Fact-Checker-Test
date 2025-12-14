@@ -51,15 +51,7 @@ exports.handler = async (event, context) => {
           voice: voice,
           instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
 
-You have access to tools that allow you to:
-- Generate images when users ask for pictures or images
-- Search the web for breaking news and current information
-- Verify facts and claims using real-time information
-
-When a user asks you to generate an image, create a picture, or make an image, use the image_generation tool.
-When a user asks you to research breaking news, search for information, or verify something, use the web_search tool.
-
-Always inform the user when you're using these tools during the conversation.`,
+You help users understand news, fact-check claims, and stay informed with accurate information.`,
           temperature: 0.4,
           max_response_output_tokens: 4096,
           modalities: ['text', 'audio'],
@@ -71,14 +63,8 @@ Always inform the user when you're using these tools during the conversation.`,
             prefix_padding_ms: 300,
             silence_duration_ms: 500,
           },
-          tools: [
-            {
-              type: 'image_generation',
-            },
-            {
-              type: 'web_search',
-            },
-          ],
+          // Tools removed - Realtime API requires 'function' or 'mcp' type, not 'image_generation'/'web_search'
+          // Will add proper function definitions later if needed
         };
       
       console.log('Creating Realtime API session (GET) with body:', JSON.stringify(requestBody, null, 2));
@@ -236,15 +222,7 @@ Always inform the user when you're using these tools during the conversation.`,
           voice: voice,
           instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
 
-You have access to tools that allow you to:
-- Generate images when users ask for pictures or images
-- Search the web for breaking news and current information
-- Verify facts and claims using real-time information
-
-When a user asks you to generate an image, create a picture, or make an image, use the image_generation tool.
-When a user asks you to research breaking news, search for information, or verify something, use the web_search tool.
-
-Always inform the user when you're using these tools during the conversation.`,
+You help users understand news, fact-check claims, and stay informed with accurate information.`,
           temperature: 0.4,
           max_response_output_tokens: 4096,
           modalities: ['text', 'audio'],

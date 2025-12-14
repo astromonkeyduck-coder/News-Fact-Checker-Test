@@ -2174,9 +2174,9 @@ class NoteworthyChat extends HTMLElement {
                       <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                   </div>
-                  <div class="voice-option active" data-value="cove" data-selected="true">
-                    <span class="voice-name">Cove</span>
-                    <span class="voice-desc">Calm & Professional</span>
+                  <div class="voice-option active" data-value="alloy" data-selected="true">
+                    <span class="voice-name">Alloy</span>
+                    <span class="voice-desc">Balanced & Versatile</span>
                     <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -2278,17 +2278,16 @@ class NoteworthyChat extends HTMLElement {
             </label>
             <div class="voice-select-wrapper">
               <select id="voiceSelect" class="voice-select">
-                <option value="alloy">Alloy - Balanced & Clear</option>
-                <option value="echo">Echo - Warm & Friendly</option>
-                <option value="fable">Fable - Expressive & Dynamic</option>
-                <option value="onyx">Onyx - Deep & Authoritative</option>
-                <option value="nova">Nova - Bright & Energetic</option>
-                <option value="shimmer">Shimmer - Soft & Gentle</option>
-                <option value="cove" selected>Cove - Calm & Professional</option>
-                <option value="ash">Ash - Neutral & Versatile</option>
-                <option value="ballad">Ballad - Melodic & Smooth</option>
+                <option value="alloy" selected>Alloy - Balanced & Versatile</option>
+                <option value="ash">Ash - Calm & Composed</option>
+                <option value="ballad">Ballad - Warm & Expressive</option>
+                <option value="coral">Coral - Bright & Energetic</option>
+                <option value="echo">Echo - Clear & Direct</option>
                 <option value="sage">Sage - Wise & Thoughtful</option>
-                <option value="verse">Verse - Poetic & Refined</option>
+                <option value="shimmer">Shimmer - Smooth & Polished</option>
+                <option value="verse">Verse - Poetic & Melodic</option>
+                <option value="marin">Marin - Natural & Expressive</option>
+                <option value="cedar">Cedar - Natural & Clear</option>
               </select>
               <svg class="voice-select-arrow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -2556,7 +2555,7 @@ class NoteworthyChat extends HTMLElement {
       voiceActionsIntegrated.style.display = 'flex';
       voiceActionsIntegrated.style.visibility = 'visible';
       voiceActionsIntegrated.style.opacity = '1';
-      console.log('✅ Start Voice Call button shown on load (Cove is default)');
+      console.log('✅ Start Voice Call button shown on load (Alloy is default)');
     } else {
       console.error('❌ voiceActionsIntegrated element not found!');
     }
@@ -2776,7 +2775,7 @@ class NoteworthyChat extends HTMLElement {
     let mediaStream = null;
     let audioWorkletNode = null;
     let isRecording = false;
-    let currentVoice = 'cove';
+    let currentVoice = 'alloy';
     let audioQueue = [];
     let isPlayingAudio = false;
     
@@ -3958,7 +3957,7 @@ class NoteworthyChat extends HTMLElement {
           }
         }
         // Fallback to default
-        if (!currentVoice) currentVoice = 'cove';
+        if (!currentVoice) currentVoice = 'alloy';
         
         // Request microphone permission
         mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
