@@ -13498,18 +13498,20 @@
                 </div>
             </div>
             
-            <!-- Main Navigation -->
-            <nav class="main-nav" id="mainNav">
-                <ul>
-                    <li><a href="#news-section" class="nav-link">News</a></li>
-                    <li><a href="#geography-game-section" class="nav-link">Games</a></li>
-                    <li><a href="#credibility-section" class="nav-link">Credibility</a></li>
-                    <li><a href="#about-section" class="nav-link">About</a></li>
-                    <li><a href="#ai-assistant-section" class="nav-link">AI Chat</a></li>
-                    <li><a href="profile.html" class="nav-link" id="profileLink" style="display: none;">Profile</a></li>
-                    <li><a href="my-reading-list.html" class="nav-link" id="readingListLink" style="display: none;">Reading List</a></li>
-                </ul>
-            </nav>
+            <!-- Center Group: Main Navigation -->
+            <div class="header-center">
+                <nav class="main-nav" id="mainNav">
+                    <ul>
+                        <li><a href="#news-section" class="nav-link">News</a></li>
+                        <li><a href="#geography-game-section" class="nav-link">Games</a></li>
+                        <li><a href="#credibility-section" class="nav-link">Credibility</a></li>
+                        <li><a href="#about-section" class="nav-link">About</a></li>
+                        <li><a href="#ai-assistant-section" class="nav-link">AI Chat</a></li>
+                        <li><a href="profile.html" class="nav-link" id="profileLink" style="display: none;">Profile</a></li>
+                        <li><a href="my-reading-list.html" class="nav-link" id="readingListLink" style="display: none;">Reading List</a></li>
+                    </ul>
+                </nav>
+            </div>
             
             <div class="header-right">
                 <div class="last-update" title="Scheduled Maintenance: December 18, 2025">Scheduled Maintenance: December 18, 2025</div>
@@ -19153,6 +19155,104 @@
                         return false;
                     });
                 }
+            }
+        })();
+    </script>
+    
+    <!-- Header Overlap Guard - Prevents maintenance pill from overlapping nav/buttons -->
+    <script>
+        (function() {
+            'use strict';
+            
+            function checkHeaderOverlap() {
+                const header = document.querySelector('.main-header');
+                const headerContainer = document.querySelector('.header-container');
+                const maintenancePill = document.querySelector('.last-update');
+                const nav = document.querySelector('.main-nav');
+                const authButtons = document.querySelector('.auth-buttons-container');
+                
+                if (!header || !headerContainer || !maintenancePill) {
+                    return;
+                }
+                
+                // Remove existing tight classes
+                header.classList.remove('header--tight', 'header--ultratight');
+                
+                // Check if header container is overflowing
+                const containerOverflow = headerContainer.scrollWidth > headerContainer.clientWidth;
+                
+                if (containerOverflow) {
+                    // Check if maintenance pill intersects with nav or auth buttons
+                    const pillRect = maintenancePill.getBoundingClientRect();
+                    let hasIntersection = false;
+                    
+                    if (nav) {
+                        const navRect = nav.getBoundingClientRect();
+                        if (pillRect.right > navRect.left && pillRect.left < navRect.right) {
+                            hasIntersection = true;
+                        }
+                    }
+                    
+                    if (authButtons && !hasIntersection) {
+                        const authRect = authButtons.getBoundingClientRect();
+                        if (pillRect.right > authRect.left && pillRect.left < authRect.right) {
+                            hasIntersection = true;
+                        }
+                    }
+                    
+                    // Apply tight class first
+                    if (containerOverflow || hasIntersection) {
+                        header.classList.add('header--tight');
+                        
+                        // Re-check after applying tight class
+                        setTimeout(() => {
+                            const stillOverflow = headerContainer.scrollWidth > headerContainer.clientWidth;
+                            const pillStillVisible = maintenancePill.offsetParent !== null;
+                            
+                            if (stillOverflow && pillStillVisible) {
+                                // Check intersection again
+                                const newPillRect = maintenancePill.getBoundingClientRect();
+                                let stillIntersects = false;
+                                
+                                if (nav) {
+                                    const newNavRect = nav.getBoundingClientRect();
+                                    if (newPillRect.right > newNavRect.left && newPillRect.left < newNavRect.right) {
+                                        stillIntersects = true;
+                                    }
+                                }
+                                
+                                if (authButtons && !stillIntersects) {
+                                    const newAuthRect = authButtons.getBoundingClientRect();
+                                    if (newPillRect.right > newAuthRect.left && newPillRect.left < newAuthRect.right) {
+                                        stillIntersects = true;
+                                    }
+                                }
+                                
+                                if (stillOverflow || stillIntersects) {
+                                    header.classList.add('header--ultratight');
+                                }
+                            }
+                        }, 50);
+                    }
+                }
+            }
+            
+            // Run on load and resize
+            function initOverlapGuard() {
+                checkHeaderOverlap();
+                
+                let resizeTimeout;
+                window.addEventListener('resize', function() {
+                    clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(checkHeaderOverlap, 100);
+                });
+            }
+            
+            // Wait for DOM to be ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initOverlapGuard);
+            } else {
+                initOverlapGuard();
             }
         })();
     </script>

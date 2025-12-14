@@ -1188,7 +1188,7 @@ body {
     min-height: 60px;
     max-height: 60px;
     position: relative;
-    overflow: visible !important;
+    overflow: visible;
     box-sizing: border-box;
 }
 
@@ -1202,7 +1202,6 @@ body {
     min-width: 0 !important;
     margin-left: 0 !important;
     padding-left: 0 !important;
-    margin-right: auto !important;
 }
 
 .header-logo {
@@ -1248,14 +1247,22 @@ body {
 }
 
 /* Center Group: Navigation Links */
+.header-center {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: center;
+    overflow: visible;
+    position: relative;
+}
+
 .main-nav {
     display: flex;
     align-items: center;
     flex: 1 1 auto;
     justify-content: center;
     min-width: 0;
-    margin: 0 auto;
-    flex-shrink: 1;
     max-width: 100%;
     overflow: visible;
     position: relative;
@@ -1266,8 +1273,9 @@ body {
     list-style: none;
     margin: 0;
     padding: 0;
-    gap: 1.75rem;
+    gap: clamp(10px, 2vw, 28px);
     align-items: center;
+    flex-wrap: nowrap;
 }
 
 .main-nav .nav-link {
@@ -1290,20 +1298,11 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    flex: 0 0 auto;
-    flex-shrink: 0 !important;
-    min-width: fit-content;
-    margin-left: auto;
-    overflow: visible !important;
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: visible;
     position: relative;
     z-index: 10;
-}
-
-/* Ensure all buttons in header-right are never cut off */
-.header-right > * {
-    flex-shrink: 0 !important;
-    overflow: visible !important;
-    white-space: nowrap !important;
 }
 
 /* Auth buttons container */
@@ -1311,8 +1310,9 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    flex-shrink: 0 !important;
-    overflow: visible !important;
+    flex: 0 0 auto;
+    flex-shrink: 0;
+    overflow: visible;
 }
 
 /* Individual auth buttons */
@@ -1321,68 +1321,85 @@ body {
 .signup-btn,
 #signinBtn,
 #signupBtn {
-    flex-shrink: 0 !important;
-    overflow: visible !important;
-    white-space: nowrap !important;
-    min-width: fit-content !important;
+    flex: 0 0 auto;
+    flex-shrink: 0;
+    overflow: visible;
+    white-space: nowrap;
+    min-width: fit-content;
 }
 
 /* Music control button */
 .music-control-btn {
-    flex-shrink: 0 !important;
-    overflow: visible !important;
-    min-width: 32px !important;
-    min-height: 32px !important;
+    flex: 0 0 auto;
+    flex-shrink: 0;
+    overflow: visible;
+    min-width: 32px;
+    min-height: 32px;
 }
 
 .last-update {
-    font-size: 0.7rem !important;
-    color: rgba(255, 255, 255, 0.6) !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
+    font-size: clamp(11px, 1vw, 14px);
+    color: rgba(255, 255, 255, 0.6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: clamp(180px, 22vw, 420px);
+    padding: 0 0.5rem;
 }
 
-/* Hide last-update on medium screens to save space */
-@media (min-width: 769px) and (max-width: 1366px) {
-    .last-update {
-        display: none !important;
-    }
-}
-
-/* Ensure header buttons never get cut off at any screen size */
-@media (max-width: 1400px) {
+/* Breakpoints for responsive header - maintenance pill shrinks first */
+@media (max-width: 1100px) {
     .header-container {
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
     
-    .header-right {
-        flex-shrink: 0 !important;
-        overflow: visible !important;
-        min-width: fit-content !important;
-    }
-}
-
-@media (max-width: 900px) {
-    .main-nav {
-        gap: 1rem !important;
+    .last-update {
+        max-width: clamp(140px, 18vw, 300px);
+        font-size: clamp(10px, 0.9vw, 13px);
     }
     
     .main-nav ul {
-        gap: 1rem !important;
+        gap: clamp(8px, 1.5vw, 20px);
+    }
+}
+
+@media (max-width: 950px) {
+    .last-update {
+        display: none;
+    }
+    
+    .main-nav ul {
+        gap: clamp(6px, 1.2vw, 16px);
+    }
+}
+
+/* Tight space classes for JS overlap guard */
+.main-header.header--tight .last-update {
+    max-width: 160px;
+    font-size: 11px;
+}
+
+.main-header.header--ultratight .last-update {
+    display: none;
+}
+
+@media (max-width: 900px) {
+    .main-nav ul {
+        gap: 1rem;
     }
 }
 
 @media (max-width: 700px) {
     .header-right {
-        gap: 0.4rem !important;
+        gap: 0.4rem;
     }
     
     .auth-btn {
-        padding: 0.3rem 0.7rem !important;
-        font-size: 0.8rem !important;
+        padding: 0.3rem 0.7rem;
+        font-size: 0.8rem;
     }
 }
 

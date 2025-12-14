@@ -93,10 +93,10 @@ exports.handler = async (event) => {
                 text: `Analyze this screenshot of a social media post (likely from X/Twitter). Extract the following information and return it as JSON:
 
 1. **text**: The main post text/story content
-2. **views**: Number of views (if visible)
-3. **likes**: Number of likes (if visible)
-4. **reposts**: Number of reposts/retweets (if visible)
-5. **replies**: Number of replies (if visible)
+2. **views**: Number of views (if visible) - PRESERVE the original format (e.g., "12k", "1.4M", "500" - do NOT convert to raw numbers)
+3. **likes**: Number of likes (if visible) - PRESERVE the original format (e.g., "12k", "1.4M", "500")
+4. **reposts**: Number of reposts/retweets (if visible) - PRESERVE the original format
+5. **replies**: Number of replies (if visible) - PRESERVE the original format
 6. **datePosted**: The date/time the post was made (if visible, in ISO format)
 7. **link**: The post URL if visible in the screenshot
 8. **images**: Array of image URLs if any images are visible in the post
@@ -104,16 +104,18 @@ exports.handler = async (event) => {
 Return ONLY valid JSON in this format:
 {
   "text": "extracted post text",
-  "views": 1234,
-  "likes": 56,
-  "reposts": 12,
-  "replies": 8,
+  "views": "12k",
+  "likes": "1.4M",
+  "reposts": "500",
+  "replies": "8",
   "datePosted": "2025-12-14T12:00:00Z",
   "link": "https://x.com/username/status/123456",
   "images": []
 }
 
-If a value is not visible or cannot be determined, use null. Be precise with numbers - extract exact values when visible.`
+CRITICAL: For metrics (views, likes, reposts, replies), return them EXACTLY as they appear in the screenshot. If you see "12k", return "12k" (string), NOT 12000. If you see "1.4M", return "1.4M", NOT 1400000. Preserve the compact notation (k, M, B) exactly as displayed.
+
+If a value is not visible or cannot be determined, use null.`
               },
               {
                 type: "image_url",
@@ -175,13 +177,47 @@ If a value is not visible or cannot be determined, use null. Be precise with num
       };
     }
 
-    // Clean and validate extracted data
+    // Helper function to preserve number format (k, M, B notation)
+    const preserveNumberFormat = (value) => {
+      if (!value && value !== 0) return null;
+      // If it's already a string with k/M/B, return as-is
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed.match(/^[\d.]+[kKmMbB]$/)) {
+          return trimmed;
+        }
+        // If it's a plain number string, try to parse and check if it should be formatted
+        const num = parseFloat(trimmed);
+        if (!isNaN(num)) {
+          // Only format if it's a large number that would typically be shown as k/M
+          if (num >= 1000000) {
+            return (num / 1000000).toFixed(1) + 'M';
+          } else if (num >= 1000) {
+            return (num / 1000).toFixed(1) + 'k';
+          }
+          return trimmed;
+        }
+        return trimmed;
+      }
+      // If it's a number, preserve compact notation if it was likely displayed that way
+      if (typeof value === 'number') {
+        if (value >= 1000000) {
+          return (value / 1000000).toFixed(1) + 'M';
+        } else if (value >= 1000) {
+          return (value / 1000).toFixed(1) + 'k';
+        }
+        return value.toString();
+      }
+      return value;
+    };
+
+    // Clean and validate extracted data - PRESERVE compact number notation
     const result = {
       text: extractedData.text || null,
-      views: extractedData.views ? parseInt(extractedData.views) : null,
-      likes: extractedData.likes ? parseInt(extractedData.likes) : null,
-      reposts: extractedData.reposts ? parseInt(extractedData.reposts) : null,
-      replies: extractedData.replies ? parseInt(extractedData.replies) : null,
+      views: preserveNumberFormat(extractedData.views),
+      likes: preserveNumberFormat(extractedData.likes),
+      reposts: preserveNumberFormat(extractedData.reposts),
+      replies: preserveNumberFormat(extractedData.replies),
       datePosted: extractedData.datePosted || null,
       link: extractedData.link || null,
       images: Array.isArray(extractedData.images) ? extractedData.images : [],

@@ -16,6 +16,7 @@
 
 const ENHANCED_CACHE_KEY = 'noteworthy-posts-cache-enhanced';
 const ENHANCED_CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
+const ENHANCED_CACHE_VERSION = '2'; // Increment this to invalidate all caches
 
 let enhancedIsLoading = false;
 let enhancedCurrentSort = localStorage.getItem('feed-sort') || 'recent';
@@ -980,14 +981,21 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
     try {
       const cached = localStorage.getItem(ENHANCED_CACHE_KEY);
       if (cached) {
-        const { posts, timestamp } = JSON.parse(cached);
-        // Use cache if less than 5 minutes old
-        if (posts && posts.length > 0 && Date.now() - timestamp < 300000) {
+        const { posts, timestamp, version } = JSON.parse(cached);
+        // Check cache version and expiry
+        const isVersionValid = version === ENHANCED_CACHE_VERSION;
+        const isNotExpired = Date.now() - timestamp < 300000; // 5 minutes
+        // Use cache if version matches and less than 5 minutes old
+        if (posts && posts.length > 0 && isVersionValid && isNotExpired) {
           enhancedCurrentPosts = posts;
           // Render first 5 posts instantly from cache
           renderEnhancedFeed();
           setupInfiniteScroll();
           // Continue to fetch fresh data in background
+        } else if (!isVersionValid) {
+          // Cache version mismatch - clear it
+          console.log('[Enhanced Feed] Cache version mismatch, clearing cache');
+          localStorage.removeItem(ENHANCED_CACHE_KEY);
         }
       }
     } catch (e) {
@@ -1054,10 +1062,11 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
     
     console.log('[Enhanced Feed] Loaded', enhancedCurrentPosts.length, 'posts');
     
-    // Cache posts
+    // Cache posts with version
     localStorage.setItem(ENHANCED_CACHE_KEY, JSON.stringify({
       posts: enhancedCurrentPosts,
       timestamp: Date.now(),
+      version: ENHANCED_CACHE_VERSION,
     }));
     
     // Update current limit
@@ -1549,5 +1558,11 @@ if (typeof window !== 'undefined') {
   window.renderPostFeedEnhanced = initEnhancedFeed;
   // Also export skeleton function for immediate use
   window.renderPostFeedEnhanced.renderSkeletonCards = renderSkeletonCards;
+  // Export cache clearing function
+  window.clearEnhancedFeedCache = function() {
+    localStorage.removeItem(ENHANCED_CACHE_KEY);
+    console.log('[Enhanced Feed] Cache cleared. Refresh the page to see updated posts.');
+    return true;
+  };
 }
 
