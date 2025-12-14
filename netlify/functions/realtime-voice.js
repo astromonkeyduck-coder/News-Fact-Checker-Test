@@ -106,7 +106,11 @@ The following are REAL, VERIFIED news articles published on Noteworthy News. Use
 
 ${recentEvents.join('\n')}
 
-IMPORTANT: You can discuss these verified articles and their details. For any events NOT listed here, you should say you don't have information about them.`;
+CRITICAL INSTRUCTIONS:
+- You MUST use the information above when answering questions about current events
+- You CAN discuss these verified articles and provide details from them
+- If asked about events NOT listed above, you MUST say: "I don't have information about that specific event. For the latest verified news, please check Noteworthy News' articles or other trusted news sources."
+- NEVER make up or fabricate events that are not in the list above`;
   }
   
   console.log('[Realtime Voice] No recent events found (all posts are older than 7 days)');
@@ -188,9 +192,12 @@ You help users understand news, fact-check claims, and stay informed with accura
 CRITICAL: BREAKING NEWS AND CURRENT EVENTS
 ${currentEventsContext ? '- You have access to REAL, VERIFIED current events from Noteworthy News (see below)' : '- You do NOT have access to real-time breaking news'}
 - You can discuss verified articles listed below
-- NEVER make up breaking news events NOT in the verified articles
-- If asked about events NOT listed, say: "I don't have information about that. Check Noteworthy News' articles for verified news."
-- If you don't know something, say so clearly rather than speculate
+- You have access to a web search function (search_web) that can find REAL-TIME breaking news and current events
+- When asked about breaking news, recent events, or current developments NOT in the verified articles, USE the search_web function to find real-time information
+- After searching, provide accurate, factual information from the search results
+- NEVER make up breaking news events
+- If web search fails or returns no results, say: "I couldn't find current information about that. Check Noteworthy News' articles for verified news."
+- If you don't know something and search doesn't help, say so clearly rather than speculate
 ${currentEventsContext}
 
 IMAGE GENERATION:
@@ -229,6 +236,21 @@ When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy
                       }
                     },
                     required: ['prompt']
+                  }
+                },
+                {
+                  type: 'function',
+                  name: 'search_web',
+                  description: 'Search the web for real-time breaking news, current events, or any information that happened recently. Use this when the user asks about current events, breaking news, recent developments, or anything that requires up-to-date information beyond your training data.',
+                  parameters: {
+                    type: 'object',
+                    properties: {
+                      query: {
+                        type: 'string',
+                        description: 'The search query to find current information about (e.g., "breaking news today", "latest developments in [topic]", "what happened in [location] today")'
+                      }
+                    },
+                    required: ['query']
                   }
                 }
               ],
@@ -427,9 +449,12 @@ You help users understand news, fact-check claims, and stay informed with accura
 CRITICAL: BREAKING NEWS AND CURRENT EVENTS
 ${currentEventsContext ? '- You have access to REAL, VERIFIED current events from Noteworthy News (see below)' : '- You do NOT have access to real-time breaking news'}
 - You can discuss verified articles listed below
-- NEVER make up breaking news events NOT in the verified articles
-- If asked about events NOT listed, say: "I don't have information about that. Check Noteworthy News' articles for verified news."
-- If you don't know something, say so clearly rather than speculate
+- You have access to a web search function (search_web) that can find REAL-TIME breaking news and current events
+- When asked about breaking news, recent events, or current developments NOT in the verified articles, USE the search_web function to find real-time information
+- After searching, provide accurate, factual information from the search results
+- NEVER make up breaking news events
+- If web search fails or returns no results, say: "I couldn't find current information about that. Check Noteworthy News' articles for verified news."
+- If you don't know something and search doesn't help, say so clearly rather than speculate
 ${currentEventsContext}
 
 IMAGE GENERATION:
@@ -468,6 +493,21 @@ When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy
                       }
                     },
                     required: ['prompt']
+                  }
+                },
+                {
+                  type: 'function',
+                  name: 'search_web',
+                  description: 'Search the web for real-time breaking news, current events, or any information that happened recently. Use this when the user asks about current events, breaking news, recent developments, or anything that requires up-to-date information beyond your training data.',
+                  parameters: {
+                    type: 'object',
+                    properties: {
+                      query: {
+                        type: 'string',
+                        description: 'The search query to find current information about (e.g., "breaking news today", "latest developments in [topic]", "what happened in [location] today")'
+                      }
+                    },
+                    required: ['query']
                   }
                 }
               ],

@@ -10004,15 +10004,26 @@ function initNewsletterSubscription() {
                 if (aiResponse) {
                     aiResponse.innerHTML = '<p style="color: rgba(255, 255, 255, 0.7);">Loading country information...</p>';
                 }
-                const textPrompt = `Tell me about ${currentCountry.name}. Please include:
+                const textPrompt = `Tell me about ${currentCountry.name}. Please include THREE sections:
+
 1. **Culture** - Interesting cultural aspects, traditions, or customs
 2. **Fun Facts** - Surprising or fascinating facts about the country
-3. **Breaking News** - Recent important news or events from ${currentCountry.name} (if any significant developments)
+3. **Breaking News** - REAL, CURRENT breaking news and recent events from ${currentCountry.name} happening NOW, yesterday, or today
+
+CRITICAL REQUIREMENTS FOR BREAKING NEWS SECTION:
+- You MUST use web search to find REAL, CURRENT breaking news from ${currentCountry.name}
+- Search for: "breaking news ${currentCountry.name} today" or "latest news ${currentCountry.name} December 2024"
+- Include SPECIFIC, REAL events that happened recently (within the last few days)
+- Include specific dates, locations, and details
+- DO NOT use generic information or make up events
+- DO NOT use information from your training data cutoff - only use REAL-TIME search results
+- If no significant breaking news exists, say "No major breaking news at this time" rather than making up generic information
 
 IMPORTANT REQUIREMENTS:
 - You MUST include sources and links for all factual information you provide
 - Format sources as clickable links: [Source Name](URL)
 - Include at least 2-3 reliable sources (news sites, official government sites, reputable encyclopedias)
+- For breaking news, prioritize recent articles from reputable news sources
 - Use proper markdown formatting with ## for section headers
 - Keep it engaging and informative, around 300-400 words total
 - Do NOT use ## or ** in the middle of paragraphs - only for section headers`;

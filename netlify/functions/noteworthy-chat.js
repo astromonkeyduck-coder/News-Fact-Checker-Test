@@ -697,15 +697,18 @@ exports.handler = async (event, context) => {
     let currentEventsContext = '';
     if (recentPosts.length > 0) {
       const today = new Date();
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
+      const weekAgo = new Date(today);
+      weekAgo.setDate(weekAgo.getDate() - 7); // Include posts from last 7 days
       
       const recentEvents = recentPosts
         .filter(post => {
           const postDate = post.timestamp || post.createdAt || 0;
+          if (!postDate) return false;
           const postDateObj = new Date(postDate);
-          // Include posts from today or yesterday
-          return postDateObj >= yesterday;
+          // Include posts from the last 7 days (more inclusive for current events)
+          const weekAgo = new Date(today);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return postDateObj >= weekAgo;
         })
         .map(post => {
           const title = post.title || post.story || post.text || 'Untitled';
@@ -723,7 +726,15 @@ The following are REAL, VERIFIED news articles published on Noteworthy News. Use
 
 ${recentEvents.join('\n')}
 
-IMPORTANT: You can discuss these verified articles and their details. For any events NOT listed here, you should say you don't have information about them.`;
+CRITICAL INSTRUCTIONS:
+- You MUST use the information above when answering questions about current events
+- You CAN discuss these verified articles and provide details from them
+- If asked about events NOT listed above, you MUST say: "I don't have information about that specific event. For the latest verified news, please check Noteworthy News' articles or other trusted news sources."
+- NEVER make up or fabricate events that are not in the list above`;
+        console.log(`[Noteworthy Chat] ✅ Built current events context with ${recentEvents.length} events`);
+        console.log(`[Noteworthy Chat] 📰 Sample events:`, recentEvents.slice(0, 2));
+      } else {
+        console.log('[Noteworthy Chat] ⚠️ No recent events found (all posts are older than 7 days)');
       }
     }
     
@@ -761,10 +772,12 @@ YOUR ROLE:
 CRITICAL: BREAKING NEWS AND CURRENT EVENTS
 ${currentEventsContext ? '- You have access to REAL, VERIFIED current events from Noteworthy News articles (see below)' : '- You do NOT have access to real-time breaking news or current events'}
 - You can discuss and provide details about the verified articles listed below
-- NEVER make up, invent, or fabricate breaking news events that are NOT in the verified articles list
-- NEVER provide specific details about recent events at specific locations unless they are in the verified articles below
-- If asked about breaking news or recent events NOT in the verified articles, you MUST say: "I don't have information about that specific event. For the latest verified news, please check Noteworthy News' articles or other trusted news sources."
-- If you don't know something, say so clearly rather than speculate or make up information
+- You have access to a web search function (search_web) that can find REAL-TIME breaking news and current events
+- When asked about breaking news, recent events, or current developments NOT in the verified articles, USE the search_web function to find real-time information
+- After searching, provide accurate, factual information from the search results
+- NEVER make up, invent, or fabricate breaking news events
+- If web search fails or returns no results, say: "I couldn't find current information about that. For the latest verified news, please check Noteworthy News' articles or other trusted news sources."
+- If you don't know something and search doesn't help, say so clearly rather than speculate
 ${currentEventsContext}
 - When an image has been generated for the user, acknowledge it naturally in your response
 - When analyzing uploaded images or documents, provide detailed observations and insights
@@ -1006,6 +1019,26 @@ RESPONSE STYLE:
           temperature: 0.4,
           max_tokens: 450,
           messages: messages,
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "search_web",
+                description: "Search the web for real-time breaking news, current events, or any information that happened recently. Use this when the user asks about current events, breaking news, recent developments, or anything that requires up-to-date information.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    query: {
+                      type: "string",
+                      description: "The search query to find current information about"
+                    }
+                  },
+                  required: ["query"]
+                }
+              }
+            }
+          ],
+          tool_choice: "auto" // Let the model decide when to use web search
       }),
     });
     } catch (fetchError) {
@@ -1043,6 +1076,94 @@ RESPONSE STYLE:
     const data = await r.json();
     let reply = data?.choices?.[0]?.message?.content?.trim() || "No response generated.";
     const usage = data?.usage || null;
+    
+    // Handle function calls (e.g., web search)
+    const functionCall = data?.choices?.[0]?.message?.function_call;
+    if (functionCall && functionCall.name === 'search_web') {
+      console.log('[Noteworthy Chat] 🔍 Web search requested:', functionCall.arguments);
+      
+      try {
+        // Parse function arguments
+        const args = JSON.parse(functionCall.arguments || '{}');
+        const searchQuery = args.query || message;
+        
+        // Call web search function
+        const searchResponse = await fetch(`${event.headers['x-forwarded-proto'] || 'https'}://${event.headers.host}/.netlify/functions/search-web`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: searchQuery })
+        });
+        
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json();
+          console.log('[Noteworthy Chat] ✅ Web search results:', searchData.results?.length || 0, 'results');
+          
+          // Add search results to messages and call OpenAI again
+          messages.push({
+            role: "assistant",
+            content: null,
+            function_call: functionCall
+          });
+          
+          messages.push({
+            role: "function",
+            name: "search_web",
+            content: JSON.stringify({
+              results: searchData.results || [],
+              query: searchQuery
+            })
+          });
+          
+          // Call OpenAI again with search results
+          const secondResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "gpt-4o",
+              temperature: 0.4,
+              max_tokens: 600, // Increased for more detailed responses with search results
+              messages: messages,
+              tools: [
+                {
+                  type: "function",
+                  function: {
+                    name: "search_web",
+                    description: "Search the web for real-time breaking news, current events, or any information that happened recently. Use this when the user asks about current events, breaking news, recent developments, or anything that requires up-to-date information.",
+                    parameters: {
+                      type: "object",
+                      properties: {
+                        query: {
+                          type: "string",
+                          description: "The search query to find current information about"
+                        }
+                      },
+                      required: ["query"]
+                    }
+                  }
+                }
+              ],
+              tool_choice: "auto"
+            }),
+          });
+          
+          if (secondResponse.ok) {
+            const secondData = await secondResponse.json();
+            reply = secondData?.choices?.[0]?.message?.content?.trim() || reply;
+            console.log('[Noteworthy Chat] ✅ Response with web search results generated');
+          } else {
+            console.error('[Noteworthy Chat] ⚠️ Second API call failed, using original response');
+          }
+        } else {
+          console.error('[Noteworthy Chat] ⚠️ Web search failed, continuing without search results');
+        }
+      } catch (searchError) {
+        console.error('[Noteworthy Chat] ⚠️ Error executing web search:', searchError);
+        // Continue with original response
+      }
+    }
     
     // If an image was generated, include it in the response
     if (imageData && imageData.imageUrl) {

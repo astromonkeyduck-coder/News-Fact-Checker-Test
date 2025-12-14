@@ -148,6 +148,12 @@ exports.handler = async (event, context) => {
 
 ⚠️ WARNING: Any deviation from the style guide or use of generic/fictional content will result in rejection. This is production content for a real news organization.
 
+🌐 CURRENT EVENTS REQUIREMENT:
+You MUST use your knowledge of REAL, ACTUAL breaking news events that have occurred. Reference specific events, names, locations, dates, and sources from your training data. If the user prompt mentions current events or breaking news, you MUST write about those specific events with real details. Do NOT write generic scenarios. Do NOT make up events. Use your knowledge cutoff to reference actual events that have happened.
+
+📋 GOLD STANDARD REFERENCE:
+The "Weekly Newsletter - Noteworthy News" sent on November 26, 2025 is the ABSOLUTE GOLD STANDARD. Every newsletter you generate MUST match this style and quality level EXACTLY. Study the structure, tone, specificity, and formatting of that newsletter - it is your template for perfection.
+
 ═══════════════════════════════════════════════════════════════
 CRITICAL STYLE REQUIREMENTS (MUST FOLLOW EXACTLY):
 ═══════════════════════════════════════════════════════════════
@@ -284,15 +290,29 @@ Your response MUST start with these EXACT elements in this order:
    Thank you message and sign-off
 
 ═══════════════════════════════════════════════════════════════
-FINAL INSTRUCTIONS:
+FINAL INSTRUCTIONS (MANDATORY):
 ═══════════════════════════════════════════════════════════════
 - Return ONLY the HTML content that goes inside: <td style="padding:50px 40px;background-color:#141b2b!important">
 - Do NOT include the outer table structure
 - Do NOT include DOCTYPE, html, head, or body tags
 - Do NOT use markdown or code blocks
-- Write about REAL, ACTUAL breaking news events
-- Match the gold standard style EXACTLY
-- Quality is non-negotiable - this is production content`;
+- Write about REAL, ACTUAL breaking news events with SPECIFIC details
+- Match the gold standard style EXACTLY (November 26, 2025 newsletter)
+- Quality is non-negotiable - this is production content for real subscribers
+
+⚠️ QUALITY CHECKLIST (VERIFY BEFORE RETURNING):
+✅ Does every paragraph contain specific, real details (names, locations, dates)?
+✅ Are all claims properly attributed with sources?
+✅ Does the style match the gold standard EXACTLY (colors, sizes, spacing)?
+✅ Is the HTML structure correct (table-based, inline styles)?
+✅ Are section labels used appropriately?
+✅ Is there a "What we're watching next" section with specific items?
+✅ Is the date the CURRENT date (not a hardcoded date)?
+✅ Are images using [[Image: Title]] tokens (not placeholder URLs)?
+✅ Is there NO generic, hypothetical, or placeholder content?
+✅ Does it read like professional journalism, not a template?
+
+If ANY item above is ❌, FIX IT before returning. This is production content - perfection is required.`;
 
     const userPrompt = `⚠️ CRITICAL: Generate newsletter content based on this prompt. This is PRODUCTION CONTENT for REAL SUBSCRIBERS.
 
@@ -337,22 +357,55 @@ Reference the house style template structure and fill in the content section wit
     
     let openaiResponse;
     try {
-      openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openaiApiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o', // Use latest model for best HTML generation
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          temperature: 0.7,
-          max_tokens: 4000,
-        }),
-      });
+      // Use Responses API with web search for current breaking news
+      // This enables the AI to access real-time information from the web
+      // Note: Responses API is in preview - using Chat Completions for now with enhanced prompts
+      const useResponsesAPI = false; // Set to true when Responses API is stable and available
+      
+      if (useResponsesAPI) {
+        // Responses API format (for future use when API is stable)
+        // This enables web search for real-time breaking news
+        openaiResponse = await fetch('https://api.openai.com/v1/responses', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiApiKey}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o',
+            tools: [{ type: 'web_search_preview' }], // Enable web search for current events
+            input: [
+              { role: 'system', content: [{ type: 'text', text: systemPrompt }] },
+              { role: 'user', content: [{ type: 'text', text: userPrompt }] },
+            ],
+            temperature: 0.7,
+            max_output_tokens: 4000,
+          }),
+        });
+      } else {
+        // Chat Completions API (current implementation)
+        // Add explicit instruction to use knowledge of current events
+        const enhancedSystemPrompt = `${systemPrompt}
+
+⚠️ CRITICAL: You MUST use your knowledge of REAL, ACTUAL breaking news events that have occurred. If the user prompt references current events, you MUST write about those specific events with real details. Do NOT write generic content. Use your training data to reference actual events, names, locations, and sources.`;
+        
+        openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiApiKey}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o', // Use latest model for best HTML generation and most current knowledge
+            messages: [
+              { role: 'system', content: enhancedSystemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+            temperature: 0.7,
+            max_tokens: 4000,
+          }),
+        });
+      }
     } catch (fetchError) {
       console.error('[Generate Newsletter] Fetch error:', fetchError);
       throw new Error(`Network error calling OpenAI API: ${fetchError.message}`);
@@ -382,7 +435,20 @@ Reference the house style template structure and fill in the content section wit
       throw new Error(`Invalid response format from OpenAI API: ${jsonError.message}`);
     }
     
-    const generatedContent = completion?.choices?.[0]?.message?.content || '';
+    // Handle both Responses API and Chat Completions API response formats
+    let generatedContent = '';
+    if (useResponsesAPI) {
+      // Responses API format - extract text from output
+      if (completion?.output && Array.isArray(completion.output)) {
+        const textContent = completion.output.find(item => item.type === 'text');
+        generatedContent = textContent?.text || '';
+      } else if (completion?.output?.[0]?.content?.[0]?.text) {
+        generatedContent = completion.output[0].content[0].text;
+      }
+    } else {
+      // Chat Completions API format
+      generatedContent = completion?.choices?.[0]?.message?.content || '';
+    }
     console.log('[Generate Newsletter] Generated content length:', generatedContent.length);
     
     if (!generatedContent || generatedContent.trim() === '') {

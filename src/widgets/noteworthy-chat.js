@@ -29,6 +29,7 @@ class NoteworthyChat extends HTMLElement {
     let websocket = null;
     let audioContext = null;
     let mediaStream = null;
+    let voiceModeSpeechCheckInterval = null; // Interval to periodically cancel text-to-speech during voice mode
     let audioWorkletNode = null;
     let isRecording = false;
     let audioQueue = [];
@@ -3170,10 +3171,25 @@ class NoteworthyChat extends HTMLElement {
     function speakText(text) {
       // CRITICAL: Cancel text-to-speech if voice mode is active (we only want GPT's voice)
       if (voiceModeActive) {
+        console.log('[Voice Mode] 🔇 Blocking text-to-speech - voice mode is active');
         window.speechSynthesis.cancel();
         return;
       }
       if (!audioEnabled) return;
+      
+      // Double-check voice mode is still not active before speaking
+      if (voiceModeActive) {
+        console.log('[Voice Mode] 🔇 Blocking text-to-speech - voice mode is active (double-check)');
+        window.speechSynthesis.cancel();
+        return;
+      }
+      
+      // CRITICAL: Cancel any ongoing speech if voice mode becomes active
+      if (currentSpeech && voiceModeActive) {
+        window.speechSynthesis.cancel();
+        currentSpeech = null;
+        return;
+      }
       
       // Clean text (remove HTML tags, URLs, etc.)
       let cleanText = text.replace(/<[^>]+>/g, '').replace(/\n+/g, ' ').trim();
@@ -3189,7 +3205,22 @@ class NoteworthyChat extends HTMLElement {
         window.speechSynthesis.cancel();
       }
       
+      // FINAL CHECK: Make absolutely sure voice mode is not active
+      if (voiceModeActive) {
+        console.log('[Voice Mode] 🔇 Blocking text-to-speech - voice mode is active (final check)');
+        window.speechSynthesis.cancel();
+        return;
+      }
+      
+      // FINAL CHECK before creating utterance
+      if (voiceModeActive) {
+        console.log('[Voice Mode] 🔇 Blocking text-to-speech - voice mode is active (pre-utterance check)');
+        window.speechSynthesis.cancel();
+        return;
+      }
+      
       const utterance = new SpeechSynthesisUtterance(cleanText);
+      currentSpeech = utterance; // Store reference to cancel if needed
       
       // Enhanced AI voice settings
       utterance.rate = 1.05; // Slightly faster for more natural AI feel
@@ -3236,6 +3267,13 @@ class NoteworthyChat extends HTMLElement {
       }
       
       utterance.onstart = () => {
+        // CRITICAL: Cancel if voice mode becomes active
+        if (voiceModeActive) {
+          console.log('[Voice Mode] 🔇 Canceling text-to-speech mid-speech - voice mode activated');
+          window.speechSynthesis.cancel();
+          currentSpeech = null;
+          return;
+        }
         // Visual feedback that audio is playing
         if (audioToggle) {
           audioToggle.style.opacity = '0.7';
@@ -3453,10 +3491,10 @@ class NoteworthyChat extends HTMLElement {
     }, { passive: false });
 
     // Tutorial functionality
-    const tutorialOverlay = this.root.querySelector('#tutorialOverlay');
-    const tutorialClose = this.root.querySelector('.tutorial-close');
-    const tutorialGotIt = this.root.querySelector('#tutorialGotIt');
-    const dontShowAgain = this.root.querySelector('#dontShowAgain');
+    const tutorialOverlay = root.querySelector('#tutorialOverlay');
+    const tutorialClose = root.querySelector('.tutorial-close');
+    const tutorialGotIt = root.querySelector('#tutorialGotIt');
+    const dontShowAgain = root.querySelector('#dontShowAgain');
     const helpBtn = document.createElement('button');
     
     // Check if tutorial should be shown
@@ -4643,6 +4681,20 @@ class NoteworthyChat extends HTMLElement {
         voiceModeActive = true;
         // CRITICAL: Cancel any text-to-speech immediately when voice mode starts
         window.speechSynthesis.cancel();
+        if (currentSpeech) {
+          currentSpeech = null;
+        }
+        // Set up periodic check to ensure text-to-speech stays canceled
+        if (voiceModeSpeechCheckInterval) {
+          clearInterval(voiceModeSpeechCheckInterval);
+        }
+        voiceModeSpeechCheckInterval = setInterval(() => {
+          if (voiceModeActive && window.speechSynthesis.speaking) {
+            console.log('[Voice Mode] 🔇 Force-canceling text-to-speech (periodic check)');
+            window.speechSynthesis.cancel();
+            currentSpeech = null;
+          }
+        }, 100); // Check every 100ms
         if (voiceModeToggle) voiceModeToggle.classList.add('active');
         if (voiceStatusIntegrated) {
           voiceStatusIntegrated.style.display = 'block';
@@ -5218,6 +5270,12 @@ class NoteworthyChat extends HTMLElement {
       voiceModeActive = false;
       isRecording = false;
       
+      // Clear the periodic text-to-speech check
+      if (voiceModeSpeechCheckInterval) {
+        clearInterval(voiceModeSpeechCheckInterval);
+        voiceModeSpeechCheckInterval = null;
+      }
+      
       // Stop microphone IMMEDIATELY
       if (mediaStream) {
         console.log('[Voice Mode] 🎤 Stopping microphone tracks...');
@@ -5785,14 +5843,33 @@ class NoteworthyChat extends HTMLElement {
             
           case 'response.function_call_arguments.done':
             // Function is being called - we need to EXECUTE it and send back the result
-            console.log('[Voice Mode] 🔧 Function call received:', message.name, message.arguments);
+            console.log('[Voice Mode] 🔧 Function call received:', {
+              name: message.name,
+              call_id: message.call_id,
+              arguments: message.arguments,
+              fullMessage: message
+            });
+            console.log('[Voice Mode] 🔧 Function call type:', typeof message.arguments, 'isString:', typeof message.arguments === 'string');
+            
+            // Parse arguments (they come as a JSON string)
+            let functionArgs = {};
+            try {
+              if (typeof message.arguments === 'string') {
+                functionArgs = JSON.parse(message.arguments);
+              } else {
+                functionArgs = message.arguments || {};
+              }
+            } catch (e) {
+              console.error('[Voice Mode] Failed to parse function arguments:', e);
+              functionArgs = {};
+            }
             
             if (message.name === 'generate_image') {
               if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = '🎨 Generating image...';
-              console.log('[Voice Mode] 🎨 Image generation requested via function call');
+              console.log('[Voice Mode] 🎨 Image generation requested via function call, prompt:', functionArgs.prompt);
               
               // Execute the function
-              const prompt = message.arguments?.prompt || '';
+              const prompt = functionArgs.prompt || '';
               if (prompt) {
                 // Call the image generation API
                 fetch('/.netlify/functions/generate-image', {
@@ -5804,105 +5881,158 @@ class NoteworthyChat extends HTMLElement {
                 .then(data => {
                   if (data.imageUrl || data.image_url) {
                     const imageUrl = data.imageUrl || data.image_url;
-                    // Send function result back to AI
+                    const revisedPrompt = data.revisedPrompt || data.revised_prompt || prompt;
+                    
+                    console.log('[Voice Mode] ✅ Image generated:', imageUrl.substring(0, 50) + '...');
+                    
+                    // Send function result back using conversation.item.create
                     websocket.send(JSON.stringify({
-                      type: 'response.function_call_result',
-                      function_call_id: message.function_call_id,
-                      result: {
-                        image_url: imageUrl,
-                        revised_prompt: data.revisedPrompt || data.revised_prompt || prompt
+                      type: 'conversation.item.create',
+                      item: {
+                        type: 'function_call_output',
+                        call_id: message.call_id,
+                        output: JSON.stringify({
+                          image_url: imageUrl,
+                          revised_prompt: revisedPrompt
+                        })
                       }
                     }));
-                    console.log('[Voice Mode] ✅ Image generated and result sent to AI');
+                    
+                    // Then trigger response.create to continue the conversation
+                    websocket.send(JSON.stringify({
+                      type: 'response.create'
+                    }));
+                    
+                    console.log('[Voice Mode] ✅ Function result sent to AI, triggering response');
                   } else {
+                    console.error('[Voice Mode] ❌ Image generation returned no URL');
                     // Send error result
                     websocket.send(JSON.stringify({
-                      type: 'response.function_call_result',
-                      function_call_id: message.function_call_id,
-                      result: { error: 'Failed to generate image' }
+                      type: 'conversation.item.create',
+                      item: {
+                        type: 'function_call_output',
+                        call_id: message.call_id,
+                        output: JSON.stringify({ error: 'Failed to generate image' })
+                      }
                     }));
+                    websocket.send(JSON.stringify({ type: 'response.create' }));
                   }
                 })
                 .catch(error => {
                   console.error('[Voice Mode] ❌ Image generation error:', error);
                   websocket.send(JSON.stringify({
-                    type: 'response.function_call_result',
-                    function_call_id: message.function_call_id,
-                    result: { error: error.message || 'Failed to generate image' }
+                    type: 'conversation.item.create',
+                    item: {
+                      type: 'function_call_output',
+                      call_id: message.call_id,
+                      output: JSON.stringify({ error: error.message || 'Failed to generate image' })
+                    }
                   }));
+                  websocket.send(JSON.stringify({ type: 'response.create' }));
                 });
+              } else {
+                console.error('[Voice Mode] ❌ No prompt provided for image generation');
               }
             } else if (message.name === 'search_web') {
-              if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Searching the web...';
-              // Web search not implemented yet - send empty result
-              websocket.send(JSON.stringify({
-                type: 'response.function_call_result',
-                function_call_id: message.function_call_id,
-                result: { error: 'Web search not available' }
-              }));
+              if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = '🔍 Searching the web...';
+              console.log('[Voice Mode] 🔍 Web search requested via function call, query:', functionArgs.query);
+              
+              // Execute the web search
+              const searchQuery = functionArgs.query || '';
+              if (searchQuery) {
+                // Determine the base URL (for localhost vs production)
+                const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                const baseUrl = isLocalhost 
+                  ? 'http://localhost:8888' 
+                  : window.location.origin;
+                
+                fetch(`${baseUrl}/.netlify/functions/search-web`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ query: searchQuery })
+                })
+                .then(res => res.json())
+                .then(data => {
+                  if (data.results && data.results.length > 0) {
+                    console.log('[Voice Mode] ✅ Web search results:', data.results.length, 'results');
+                    
+                    // Format results for AI
+                    const searchResults = data.results.map(r => ({
+                      title: r.title,
+                      snippet: r.snippet,
+                      url: r.url
+                    }));
+                    
+                    // Send function result back
+                    websocket.send(JSON.stringify({
+                      type: 'conversation.item.create',
+                      item: {
+                        type: 'function_call_output',
+                        call_id: message.call_id,
+                        output: JSON.stringify({
+                          results: searchResults,
+                          query: searchQuery
+                        })
+                      }
+                    }));
+                    
+                    // Trigger response.create to continue conversation
+                    websocket.send(JSON.stringify({
+                      type: 'response.create'
+                    }));
+                    
+                    console.log('[Voice Mode] ✅ Web search results sent to AI');
+                  } else {
+                    console.warn('[Voice Mode] ⚠️ Web search returned no results');
+                    websocket.send(JSON.stringify({
+                      type: 'conversation.item.create',
+                      item: {
+                        type: 'function_call_output',
+                        call_id: message.call_id,
+                        output: JSON.stringify({ 
+                          results: [],
+                          query: searchQuery,
+                          note: 'No results found'
+                        })
+                      }
+                    }));
+                    websocket.send(JSON.stringify({ type: 'response.create' }));
+                  }
+                })
+                .catch(error => {
+                  console.error('[Voice Mode] ❌ Web search error:', error);
+                  websocket.send(JSON.stringify({
+                    type: 'conversation.item.create',
+                    item: {
+                      type: 'function_call_output',
+                      call_id: message.call_id,
+                      output: JSON.stringify({ 
+                        error: error.message || 'Web search failed',
+                        results: []
+                      })
+                    }
+                  }));
+                  websocket.send(JSON.stringify({ type: 'response.create' }));
+                });
+              } else {
+                console.error('[Voice Mode] ❌ No query provided for web search');
+                websocket.send(JSON.stringify({
+                  type: 'conversation.item.create',
+                  item: {
+                    type: 'function_call_output',
+                    call_id: message.call_id,
+                    output: JSON.stringify({ error: 'No search query provided' })
+                  }
+                }));
+                websocket.send(JSON.stringify({ type: 'response.create' }));
+              }
             }
             break;
             
           case 'response.function_call_result.done':
-            // Function result received
-            if (message.result) {
-              if (message.name === 'generate_image' && message.result.image_url) {
-                // Show generated image in sidebar during voice call, or in chat if not in voice mode
-                if (voiceModeActive) {
-                  showInVoiceSidebar('image', {
-                    image_url: message.result.image_url,
-                    prompt: message.result.revised_prompt || 'Generated image'
-                  });
-                } else {
-                  // Show in chat if not in voice mode
-                  const aiGroup = document.createElement('div');
-                  aiGroup.className = 'message-group ai-msg-group';
-                  const replyContent = document.createElement('div');
-                  replyContent.className = 'reply';
-                  
-                  const imageEl = document.createElement('img');
-                  imageEl.src = message.result.image_url;
-                  imageEl.alt = message.result.revised_prompt || 'Generated image';
-                  imageEl.style.maxWidth = '100%';
-                  imageEl.style.borderRadius = '12px';
-                  imageEl.style.marginTop = '8px';
-                  
-                  replyContent.innerHTML = '<p>🎨 Generated image:</p>';
-                  replyContent.appendChild(imageEl);
-                  
-                  aiGroup.innerHTML = `
-                    <div class="message-avatar">NW</div>
-                    <div class="message-content"></div>
-                  `;
-                  aiGroup.querySelector('.message-content').appendChild(replyContent);
-                  body.appendChild(aiGroup);
-                  body.scrollTop = body.scrollHeight;
-                }
-              } else if (message.name === 'search_web' && message.result.results) {
-                // Show search results in chat (or sidebar if in voice mode)
-                const aiGroup = document.createElement('div');
-                aiGroup.className = 'message-group ai-msg-group';
-                const replyContent = document.createElement('div');
-                replyContent.className = 'reply';
-                
-                let resultsHTML = '<p>🔍 Search results:</p><ul>';
-                message.result.results.slice(0, 5).forEach((result) => {
-                  resultsHTML += `<li><a href="${result.url}" target="_blank">${result.title}</a></li>`;
-                });
-                resultsHTML += '</ul>';
-                
-                replyContent.innerHTML = resultsHTML;
-                
-                aiGroup.innerHTML = `
-                  <div class="message-avatar">NW</div>
-                  <div class="message-content"></div>
-                `;
-                aiGroup.querySelector('.message-content').appendChild(replyContent);
-                body.appendChild(aiGroup);
-                body.scrollTop = body.scrollHeight;
-              }
-            }
-            if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Listening...';
+            // Function result received (this is when AI acknowledges the function output)
+            console.log('[Voice Mode] 🔧 Function call result done:', message.name);
+            // The actual image URL will be in the conversation.item.added event (handled above)
             break;
             
           case 'response.output_audio.delta':
@@ -6106,6 +6236,50 @@ class NoteworthyChat extends HTMLElement {
             break;
             
           case 'conversation.item.added':
+            // Check if this is a function call output with an image
+            if (message.item && message.item.type === 'function_call_output' && message.item.output) {
+              try {
+                const output = typeof message.item.output === 'string' 
+                  ? JSON.parse(message.item.output) 
+                  : message.item.output;
+                
+                if (output.image_url) {
+                  console.log('[Voice Mode] ✅ Image from function call:', output.image_url.substring(0, 50) + '...');
+                  // Show generated image in sidebar during voice call
+                  if (voiceModeActive) {
+                    showInVoiceSidebar('image', {
+                      image_url: output.image_url,
+                      prompt: output.revised_prompt || 'Generated image'
+                    });
+                    if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = '✅ Image generated!';
+                  } else {
+                    // Show in chat if not in voice mode
+                    const aiGroup = document.createElement('div');
+                    aiGroup.className = 'message-group ai-msg-group';
+                    const imageUrl = output.image_url;
+                    const prompt = (output.revised_prompt || 'Generated image').replace(/'/g, "\\'");
+                    aiGroup.innerHTML = `
+                      <div class="message-avatar">
+                        <img src="/IMG_5794.PNG" alt="Noteworthy News" />
+                      </div>
+                      <div class="message-content">
+                        <div class="reply">
+                          <p>🎨 Generated image:</p>
+                          <div style="margin: 12px 0;">
+                            <img src="${imageUrl}" alt="${prompt}" style="max-width: 100%; border-radius: 8px; cursor: pointer;" onclick="window.openImagePopup && window.openImagePopup('${imageUrl}', '${prompt}')" />
+                          </div>
+                        </div>
+                      </div>
+                    `;
+                    body.appendChild(aiGroup);
+                    body.scrollTop = body.scrollHeight;
+                  }
+                }
+              } catch (e) {
+                console.error('[Voice Mode] Error parsing function call output:', e);
+              }
+            }
+            
             // Check if this item contains a user transcript
             if (message.item && message.item.type === 'message' && message.item.role === 'user') {
               // Check for transcript in item content
