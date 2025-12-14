@@ -4099,29 +4099,23 @@ class NoteworthyChat extends HTMLElement {
           throw new Error('No ephemeral token received from server');
         }
         
-        // Connect to WebSocket with session_id
-        // The session is already authenticated when created, so we just connect
-        const wsUrl = sessionData.websocket_url || 
-          `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview&session_id=${sessionData.session_id}`;
+        // Connect to WebSocket with session_id and ephemeral token as query parameter
+        // Browsers can't set Authorization headers, so we use query parameter
+        if (!sessionData.ephemeral_token) {
+          throw new Error('No ephemeral token received from server');
+        }
         
-        console.log('[Voice Mode] Connecting to WebSocket:', wsUrl.substring(0, 100) + '...');
+        const baseUrl = `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview&session_id=${sessionData.session_id}`;
+        const wsUrl = `${baseUrl}&authorization=Bearer ${encodeURIComponent(sessionData.ephemeral_token)}`;
+        
+        console.log('[Voice Mode] Connecting to WebSocket with session_id and token');
         console.log('[Voice Mode] Session ID:', sessionData.session_id);
+        console.log('[Voice Mode] Token present:', !!sessionData.ephemeral_token);
         
         websocket = new WebSocket(wsUrl);
         
         websocket.onopen = () => {
           console.log('[Voice Mode] WebSocket opened successfully');
-          
-          // Session is already authenticated, we can start immediately
-          // Send session.update to confirm we're ready
-          const sessionUpdate = {
-            type: 'session.update',
-            session: {
-              modalities: ['text', 'audio'],
-              instructions: 'You are Noteworthy AI, the intelligent assistant for Noteworthy News.',
-            }
-          };
-          websocket.send(JSON.stringify(sessionUpdate));
           
           if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connected - Speak now!';
           if (voiceStatusIntegrated) {
@@ -4284,12 +4278,8 @@ class NoteworthyChat extends HTMLElement {
         
         switch (message.type) {
           case 'session.updated':
-            // Session update confirmed, we're ready
-            console.log('[Voice Mode] Session updated, ready to use');
-            if (!isRecording) {
-              isRecording = true;
-              startAudioCapture();
-            }
+            // Session update confirmed
+            console.log('[Voice Mode] Session updated:', message);
             break;
             
           case 'response.audio_transcript.done':
