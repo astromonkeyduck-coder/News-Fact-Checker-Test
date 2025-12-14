@@ -13,14 +13,60 @@ function initKeyboardShortcuts() {
   let helpModal = null;
   
   function handleKeyboardShortcut(e) {
+    // #region agent log
+    if (e.key === 'k' || e.key === 'K') {
+      fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'keyboard-shortcuts.js:15',message:'K key pressed in keyboard handler',data:{key:e.key,targetTagName:e.target.tagName,targetType:e.target.type,isContentEditable:e.target.isContentEditable,activeElementTag:document.activeElement?.tagName,activeElementType:document.activeElement?.type,isShadowRoot:!!e.target.getRootNode?.()?.host},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+    }
+    // #endregion
     // Don't trigger if typing in input, textarea, or contenteditable
     const target = e.target;
-    if (
+    const activeElement = document.activeElement;
+    
+    // Check if active element is an input (handles Shadow DOM inputs)
+    const isActiveInput = activeElement && (
+      activeElement.tagName === 'INPUT' ||
+      activeElement.tagName === 'TEXTAREA' ||
+      activeElement.isContentEditable
+    );
+    
+    // Check if target is an input (handles regular inputs)
+    const isTargetInput = (
       target.tagName === 'INPUT' ||
       target.tagName === 'TEXTAREA' ||
       target.isContentEditable ||
       target.closest('[contenteditable="true"]')
-    ) {
+    );
+    
+    // Check if target is inside Shadow DOM and the shadow root contains an input
+    let isShadowInput = false;
+    try {
+      const rootNode = target.getRootNode();
+      if (rootNode && rootNode !== document && rootNode.host) {
+        // This is a Shadow DOM, check if active element is inside it
+        const shadowRoot = rootNode;
+        if (shadowRoot.contains && activeElement) {
+          isShadowInput = shadowRoot.contains(activeElement) && (
+            activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA'
+          );
+        }
+      }
+    } catch (err) {
+      // Ignore errors accessing shadow root
+    }
+    
+    // #region agent log
+    if (e.key === 'k' || e.key === 'K') {
+      fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'keyboard-shortcuts.js:18',message:'Input check before return',data:{isTargetInput,isActiveInput,isShadowInput,willReturn:isTargetInput||isActiveInput||isShadowInput},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'C'})}).catch(()=>{});
+    }
+    // #endregion
+    
+    if (isTargetInput || isActiveInput || isShadowInput) {
+      // #region agent log
+      if (e.key === 'k' || e.key === 'K') {
+        fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'keyboard-shortcuts.js:24',message:'Early return - input detected',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'C'})}).catch(()=>{});
+      }
+      // #endregion
       return;
     }
 
@@ -51,6 +97,9 @@ function initKeyboardShortcuts() {
 
       case 'k':
       case 'ArrowUp':
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'keyboard-shortcuts.js:52',message:'K key intercepted - preventing default',data:{targetTagName:e.target.tagName,activeElementTag:document.activeElement?.tagName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         // Navigate to previous article/item
         e.preventDefault();
         navigatePrev();

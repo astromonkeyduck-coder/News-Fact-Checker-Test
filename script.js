@@ -6159,10 +6159,10 @@ function tryAlternativeLocationAPI(locationElement) {
 function displayLocation(locationElement, locationName) {
     if (locationElement && locationName) {
         locationElement.textContent = `Welcome from ${locationName}`;
-        // Fade in the location text
+        // Fade in the location text (200-300ms delay for subtle entrance)
         setTimeout(() => {
             locationElement.classList.add('visible');
-        }, 500);
+        }, 250);
     }
 }
 

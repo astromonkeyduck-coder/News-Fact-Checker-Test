@@ -2832,6 +2832,11 @@ class NoteworthyChat extends HTMLElement {
     
     if (input) {
       input.addEventListener('keydown', (e) => {
+        // #region agent log
+        if (e.key === 'k' || e.key === 'K') {
+          fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'noteworthy-chat.js:2834',message:'K key received in chat input',data:{key:e.key,defaultPrevented:e.defaultPrevented,isFocused:document.activeElement===input},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        }
+        // #endregion
         if (e.key === 'Enter' && !send.disabled) {
           console.log('Enter key pressed');
           e.preventDefault();
@@ -2840,6 +2845,13 @@ class NoteworthyChat extends HTMLElement {
           });
         }
       });
+      // #region agent log
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'k' || e.key === 'K') {
+          fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'noteworthy-chat.js:2842',message:'K keypress in chat input',data:{key:e.key,charCode:e.charCode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        }
+      });
+      // #endregion
     } else {
       console.error('Input field not found!');
     }

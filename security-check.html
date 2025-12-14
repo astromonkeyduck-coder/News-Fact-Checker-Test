@@ -63,8 +63,14 @@
         
         // Initialize component
         function initSecurityCheck() {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'security-check.html:65',message:'initSecurityCheck called',data:{reactAvailable:typeof React !== 'undefined',reactDOMAvailable:typeof ReactDOM !== 'undefined',securityCheckAvailable:typeof SecurityCheck !== 'undefined',returnPath},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
             const rootElement = document.getElementById('security-check-root');
             if (!rootElement) {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'security-check.html:67',message:'Root element not found',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                // #endregion
                 console.error('Security check root element not found');
                 return;
             }
@@ -73,16 +79,25 @@
             
             // Handle verification completion
             const handleVerified = () => {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'security-check.html:75',message:'handleVerified called',data:{returnPath},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                // #endregion
                 console.log('[Security Check] Verification complete, redirecting to:', returnPath);
                 
                 // Store verification token in sessionStorage (for route protection)
                 sessionStorage.setItem('security-check-verified', 'true');
                 sessionStorage.setItem('security-check-timestamp', Date.now().toString());
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'security-check.html:80',message:'SessionStorage set',data:{verified:sessionStorage.getItem('security-check-verified'),timestamp:sessionStorage.getItem('security-check-timestamp')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                // #endregion
                 
                 // Redirect to original path
                 window.location.href = returnPath;
             };
             
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'security-check.html:86',message:'Rendering SecurityCheck component',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
             root.render(
                 React.createElement(SecurityCheck, {
                     onVerified: handleVerified
@@ -90,13 +105,78 @@
             );
         }
         
-        // Wait for React and component to load
+        // Wait for React and component to load with error handling
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'security-check.html:94',message:'Script execution started',data:{readyState:document.readyState,reactAvailable:typeof React !== 'undefined',reactDOMAvailable:typeof ReactDOM !== 'undefined'},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        
+        function tryInitSecurityCheck() {
+            try {
+                // Check if React is loaded
+                if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'security-check.html:112',message:'React not loaded, retrying',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+                    // #endregion
+                    // Retry after a delay if React isn't loaded yet
+                    setTimeout(tryInitSecurityCheck, 200);
+                    return;
+                }
+                
+                // Check if SecurityCheck component is available (might be loaded via Babel)
+                if (typeof SecurityCheck === 'undefined') {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'security-check.html:119',message:'SecurityCheck component not loaded, retrying',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+                    // #endregion
+                    // Retry after a delay if component isn't loaded yet
+                    setTimeout(tryInitSecurityCheck, 200);
+                    return;
+                }
+                
+                initSecurityCheck();
+            } catch (error) {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'security-check.html:126',message:'Error in tryInitSecurityCheck',data:{error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+                // #endregion
+                console.error('Error initializing security check:', error);
+                // Fallback: show a simple message and auto-redirect after 3 seconds
+                const rootElement = document.getElementById('security-check-root');
+                if (rootElement) {
+                    rootElement.innerHTML = `
+                        <div style="text-align: center; color: white; padding: 2rem;">
+                            <h1>Checking your browser...</h1>
+                            <p>Please wait while we verify your request.</p>
+                            <div style="margin: 2rem 0;">
+                                <div style="width: 48px; height: 48px; border: 4px solid rgba(74, 144, 226, 0.2); border-top: 4px solid #4A90E2; border-radius: 50%; margin: 0 auto; animation: spin 1s linear infinite;"></div>
+                            </div>
+                        </div>
+                        <style>
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                        </style>
+                    `;
+                    // Auto-redirect after 3 seconds as fallback
+                    setTimeout(() => {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const returnPath = urlParams.get('return') || '/';
+                        sessionStorage.setItem('security-check-verified', 'true');
+                        sessionStorage.setItem('security-check-timestamp', Date.now().toString());
+                        window.location.href = returnPath;
+                    }, 3000);
+                }
+            }
+        }
+        
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
-                setTimeout(initSecurityCheck, 100);
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'security-check.html:150',message:'DOMContentLoaded fired',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
+                // #endregion
+                setTimeout(tryInitSecurityCheck, 100);
             });
         } else {
-            setTimeout(initSecurityCheck, 100);
+            setTimeout(tryInitSecurityCheck, 100);
         }
     </script>
 </body>

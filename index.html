@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="app-version" content="December 7, 2025">
+    <meta name="app-version" content="December 13, 2025">
     <title>Noteworthy News - Fact-Checked Journalism & Media Literacy Games | Trusted News Source</title>
     
     <!-- Favicon and Theme -->
@@ -5994,76 +5994,169 @@
             }
         }
         
-        .hero-subtitle-container {
+        /* HERO MODULE: Modern News Module */
+        .hero-module-container {
             position: relative;
-            display: inline-block;
-            padding: 12px 25px;
+            display: block;
+            padding: 0.75rem 1.25rem;
             margin: -50px auto;
             z-index: 100;
-            border-radius: 12px;
-            background: rgba(74, 158, 255, 0.08);
-            border: 2px solid rgba(74, 158, 255, 0.8);
-            box-shadow: 
-                0 3px 12px rgba(74, 158, 255, 0.15),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3),
-                inset 0 -1px 0 rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(8px);
             max-width: 700px;
+            width: 100%;
+            box-sizing: border-box;
+            background: rgba(10, 14, 28, 0.55);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            text-align: left;
+            cursor: pointer;
+            transition: background 0.2s ease;
         }
         
-
+        .hero-module-container:hover {
+            background: rgba(10, 14, 28, 0.65);
+        }
         
-        .hero-subtitle {
-            font-size: 1.1rem;
-            margin-bottom: 15px;
-            opacity: 0.98;
-            animation: fadeInUp 1s ease-out 0.9s both;
-            line-height: 1.4;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-            position: relative;
-            z-index: 1;
+        .hero-module-container:focus {
+            outline: 2px solid rgba(255, 255, 255, 0.3);
+            outline-offset: 2px;
+        }
+        
+        /* Status Row */
+        .hero-module-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.688rem;
+            line-height: 1.2;
+        }
+        
+        .hero-module-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.625rem;
             font-weight: 600;
-            font-family: 'Georgia', 'Times New Roman', serif;
-            color: rgba(255, 255, 255, 0.98);
-            text-shadow: 
-                0 2px 8px rgba(0, 0, 0, 0.6),
-                0 0 25px rgba(74, 158, 255, 0.4);
-            letter-spacing: 0.03em;
-            text-align: center;
-            padding: 10px;
-        }
-        
-        .hero-subtitle .subtitle-line-1 {
-            display: block;
-            font-size: 1.05em;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            color: rgba(255, 255, 255, 1);
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            margin-bottom: 4px;
         }
         
-        .hero-subtitle .subtitle-line-2 {
-            display: block;
-            font-size: 0.9em;
+        .hero-module-updated {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.563rem;
+        }
+        
+        .hero-module-time {
+            color: rgba(255, 255, 255, 0.9);
             font-weight: 500;
-            letter-spacing: 0.03em;
-            color: rgba(255, 255, 255, 0.95);
-            text-transform: none;
-            margin-bottom: 4px;
-            font-style: italic;
         }
         
-        .hero-subtitle .subtitle-line-3 {
-            display: block;
-            font-size: 0.85em;
+        /* Headline */
+        .hero-module-headline {
+            font-size: 1.125rem;
+            font-weight: 700;
+            line-height: 1.25;
+            color: #ffffff;
+            margin: 0 0 0.375rem 0;
+            padding: 0;
+            letter-spacing: -0.01em;
+        }
+        
+        /* Subhead */
+        .hero-module-subhead {
+            font-size: 0.813rem;
+            line-height: 1.4;
+            color: rgba(255, 255, 255, 0.85);
+            margin: 0 0 0.625rem 0;
+            padding: 0;
+            font-weight: 400;
+        }
+        
+        /* CTA Row */
+        .hero-module-cta {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.625rem;
+        }
+        
+        .hero-module-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.438rem 0.875rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
             font-weight: 600;
-            letter-spacing: 0.04em;
-            color: rgba(74, 158, 255, 0.95);
-            text-transform: uppercase;
-            margin-top: 2px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .hero-module-btn-primary {
+            background: #ffffff;
+            color: #0a0e1c;
+        }
+        
+        .hero-module-btn-primary:hover {
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-1px);
+        }
+        
+        .hero-module-btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .hero-module-btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Divider */
+        .hero-module-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 0 0 0.5rem 0;
+        }
+        
+        /* Quick Links */
+        .hero-module-links {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.688rem;
+        }
+        
+        .hero-module-link {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.2s ease;
+            font-weight: 500;
+        }
+        
+        .hero-module-link:hover {
+            color: rgba(255, 255, 255, 0.95);
+        }
+        
+        /* Responsive: Center on small screens */
+        @media (max-width: 768px) {
+            .hero-module-container {
+                text-align: center;
+            }
+            
+            .hero-module-cta {
+                flex-direction: column;
+            }
+            
+            .hero-module-btn {
+                width: 100%;
+            }
+            
+            .hero-module-links {
+                justify-content: center;
+            }
         }
         
         /* Hero Stats Container - Horizontal Layout */
@@ -13425,12 +13518,25 @@
                 </div>
                 <div class="welcome-location" id="welcomeLocation"></div>
             </h1>
-                        <div class="hero-subtitle-container">
-              <p class="hero-subtitle">
-                  <span class="subtitle-line-1">Breaking News & Noteworthy Events</span><br>
-                  <span class="subtitle-line-2">Coverage From Around The World</span><br>
-                  <span class="subtitle-line-3">Reliable, Neutral Coverage You Can Trust</span>
-              </p>
+                        <!-- HERO: Latest Breaking News -->
+        <div class="hero-module-container" id="heroModuleContainer" role="button" tabindex="0" aria-label="Latest breaking news">
+            <!-- Status Row -->
+            <div class="hero-module-status">
+                <span class="hero-module-label" id="heroModuleLabel">LATEST BREAKING NEWS</span>
+                <span class="hero-module-updated">Updated <span class="hero-module-time" id="heroModuleTime">--:-- --</span></span>
+            </div>
+            
+            <!-- Headline -->
+            <h2 class="hero-module-headline" id="heroModuleHeadline">Loading latest news...</h2>
+            
+            <!-- Subhead -->
+            <p class="hero-module-subhead" id="heroModuleSubhead"></p>
+            
+            <!-- CTA Row -->
+            <div class="hero-module-cta">
+                <a href="#" class="hero-module-btn hero-module-btn-primary" id="heroModuleReadBtn" onclick="event.stopPropagation();">Read Full Update</a>
+                <a href="#news-section" class="hero-module-btn hero-module-btn-secondary" id="heroModuleViewAllBtn" onclick="event.stopPropagation();">View All News</a>
+            </div>
         </div>
         
         <!-- Hero Stats Section -->
@@ -13445,8 +13551,8 @@
                 <div class="hero-stat-label-small">Likes</div>
             </div>
             
-            <div class="hero-stat-card" data-number="29.5M+">
-                <div class="hero-stat-number-small">29.5M+</div>
+            <div class="hero-stat-card" data-number="29.9M">
+                <div class="hero-stat-number-small">29.9M</div>
                 <div class="hero-stat-label-small">Total Impressions</div>
             </div>
             
@@ -13874,7 +13980,7 @@
         <div class="about-section" id="sudan-section" style="margin-top: 50px;">
             <h2 class="about-title">All Eyes on Sudan</h2>
             <p class="about-text">
-                The war in Sudan has entered a devastating new phase as the Rapid Support Forces (RSF) took control of El Fasher, the last army stronghold in North Darfur. Following the city's fall, reports detail mass killings, executions, and sexual violence against civilians, while communication blackouts conceal the full extent of the atrocities. The United Nations warns that Sudan now faces one of the worst humanitarian crises globally, with millions displaced, cities in ruins, and aid routes blocked by ongoing clashes between the RSF and the Sudanese Armed Forces (SAF). Despite international condemnation, including from Pope Leo and the UN Human Rights Office, the global response remains limited as the conflict spreads across regions. Sudan's collapse threatens to destabilize the entire Horn of Africa, leaving its people trapped between starvation, displacement, and war.
+                The war in Sudan has entered a devastating new phase as the Rapid Support Forces (RSF) took control of El Fasher, the last remaining army stronghold in North Darfur. With the city's fall, reports have emerged describing mass killings, executions, and widespread sexual violence against civilians. Ongoing communication blackouts have made it difficult to fully understand the scale of these atrocities, leaving much of what is happening unknown. The United Nations has warned that Sudan is now facing one of the most severe humanitarian crises in the world. Millions of people have been displaced, cities have been reduced to ruins, and humanitarian aid routes are repeatedly blocked by fighting between the RSF and the Sudanese Armed Forces. For many civilians, escape is no longer an option. Despite international condemnation, including statements from the United Nations Human Rights Office and Pope Leo, meaningful global action remains limited as the conflict spreads across multiple regions. Sudan's collapse threatens to destabilize the wider Horn of Africa.
             </p>
         </div>
         
@@ -13884,7 +13990,7 @@
             <p class="credibility-subtitle">Trusted by millions across the globe</p>
             
             <div class="stats-hero-container">
-                <div class="hero-stat-main" data-metric="impressions" data-number="29.5M+">
+                <div class="hero-stat-main" data-metric="impressions" data-number="29.9M">
                     <div class="hero-stat-icon">
                         <svg width="96" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <defs>
@@ -13903,7 +14009,7 @@
                             <rect x="19" y="5" width="2.2" height="15" fill="url(#impressionsGrad)" rx="1.1"/>
                         </svg>
                     </div>
-                    <div class="hero-stat-number">29.5M+</div>
+                    <div class="hero-stat-number">29.9M</div>
                     <div class="hero-stat-label">Total Impressions</div>
                     <div class="hero-stat-description">Reaching millions with fact-checked news every day</div>
                 </div>
@@ -14012,19 +14118,7 @@
         <div class="about-section" id="about-section">
             <h2 class="about-title">About Noteworthy News</h2>
             <p class="about-text">
-                <strong>Noteworthy News</strong> is committed to delivering accurate, fact-checked journalism in an era of information overload. 
-                When you search for "Noteworthy News," you'll find a trusted source dedicated to reliable reporting and media literacy education.
-            </p>
-            <p class="about-text">
-                <strong>Noteworthy News</strong> combines traditional journalistic standards with modern fact-checking tools to provide you with 
-                stories you can trust. We're dedicated to separating fact from fiction and helping you develop critical thinking skills through our interactive games and educational resources.
-            </p>
-            <p class="about-text">
-                From breaking news to in-depth analysis, <strong>Noteworthy News</strong> is here to keep you informed with the truth, not just the headlines. 
-                Our fact-checking games and media literacy guides make learning about news verification accessible and engaging.
-            </p>
-            <p class="about-text">
-                <strong>Noteworthy News</strong> serves millions of readers worldwide with breaking news, fact-checked stories, and educational content designed to help you navigate today's media landscape with confidence.
+                Three lifelong friends founded Noteworthy News to address the overwhelming pace of modern news. Breaking reports often flood social media, making it hard to distinguish what is confirmed, what is developing, and what is false. Our platform was created to slow that process just enough to make understanding possible. Political decisions, economic pressures, social behaviors, and global trends are interconnected, and reporting should reflect that! Using traditional journalistic standards, we clearly distinguish between verified information and ongoing developments. We also prioritize media literacy. Through interactive games and educational resources, we encourage readers to think critically about how news is produced, how narratives form, and how misinformation spreads. From breaking events to in-depth analysis, Noteworthy News aims to help readers stay grounded in what is happening while maintaining a broader perspective on why it matters. In a digital world where more people rely on social media for news, this platform takes its responsibility to share accurate, contextual, and meaningful information seriously.
             </p>
     </div>
     
@@ -14093,6 +14187,150 @@
     
     <script src="script.js"></script>
     <script>
+        // HERO: Latest Breaking News - Fetch and display latest breaking news post
+        async function loadLatestBreakingNews() {
+            const container = document.getElementById('heroModuleContainer');
+            const labelEl = document.getElementById('heroModuleLabel');
+            const headlineEl = document.getElementById('heroModuleHeadline');
+            const subheadEl = document.getElementById('heroModuleSubhead');
+            const timeEl = document.getElementById('heroModuleTime');
+            const readBtn = document.getElementById('heroModuleReadBtn');
+            
+            if (!container || !labelEl || !headlineEl || !subheadEl || !timeEl || !readBtn) {
+                return;
+            }
+            
+            try {
+                // Fetch posts from API
+                const response = await fetch('/.netlify/functions/posts-read?limit=100');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch posts');
+                }
+                
+                const posts = await response.json();
+                if (!Array.isArray(posts) || posts.length === 0) {
+                    // No posts available
+                    labelEl.textContent = 'LATEST NEWS';
+                    headlineEl.textContent = 'No news available at this time.';
+                    subheadEl.textContent = '';
+                    timeEl.textContent = '--:-- --';
+                    container.onclick = null;
+                    readBtn.href = '#news-section';
+                    return;
+                }
+                
+                // Find breaking news post (text contains "BREAKING" or has breaking flag)
+                let breakingPost = posts.find(post => {
+                    const text = (post.text || post.title || post.story || '').toUpperCase();
+                    return text.includes('BREAKING') || post.breaking === true || post.category === 'breaking';
+                });
+                
+                // If no breaking post, use most recent post
+                const latestPost = breakingPost || posts[0];
+                const isBreaking = breakingPost !== undefined;
+                
+                // Update label
+                labelEl.textContent = isBreaking ? 'LATEST BREAKING NEWS' : 'LATEST NEWS';
+                
+                // Extract headline
+                let headline = latestPost.title || '';
+                if (!headline) {
+                    // If no title, use text but limit length and remove BREAKING prefix
+                    const text = latestPost.text || latestPost.story || 'Untitled';
+                    headline = text.replace(/^BREAKING:\s*/i, '').trim();
+                    // Limit headline to ~80 characters
+                    if (headline.length > 80) {
+                        headline = headline.substring(0, 77) + '...';
+                    }
+                } else {
+                    // Remove BREAKING prefix from title if present
+                    headline = headline.replace(/^BREAKING:\s*/i, '').trim();
+                }
+                headlineEl.textContent = headline;
+                
+                // Extract subhead (first 1-2 sentences from story or text, excluding title)
+                let subhead = '';
+                const storyText = latestPost.story || (latestPost.title ? '' : latestPost.text) || '';
+                if (storyText) {
+                    // Get first 1-2 sentences (split by period, exclamation, or question mark)
+                    const sentences = storyText.match(/[^.!?]+[.!?]+/g) || [];
+                    if (sentences.length > 0) {
+                        subhead = sentences.slice(0, 2).join(' ').trim();
+                        // Limit length to ~150 characters
+                        if (subhead.length > 150) {
+                            subhead = subhead.substring(0, 147) + '...';
+                        }
+                    } else {
+                        // Fallback: use first 150 chars if no sentence breaks
+                        subhead = storyText.substring(0, 150).trim();
+                        if (storyText.length > 150) {
+                            subhead += '...';
+                        }
+                    }
+                }
+                subheadEl.textContent = subhead;
+                
+                // Update timestamp
+                const postDate = latestPost.datePosted || latestPost.createdAt || latestPost.created_at || latestPost.Date;
+                if (postDate) {
+                    const date = new Date(postDate);
+                    const timeString = date.toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                    timeEl.textContent = timeString;
+                } else {
+                    timeEl.textContent = '--:-- --';
+                }
+                
+                // Set up click behavior - navigate to post
+                // Prioritize article page over external links for consistency
+                const postId = latestPost.id;
+                const postUrl = postId ? `article.html?id=${encodeURIComponent(postId)}` : (latestPost.link || latestPost.url || '#news-section');
+                container.onclick = function(e) {
+                    // Don't navigate if clicking on buttons (they handle their own clicks)
+                    if (e.target.closest('.hero-module-btn')) {
+                        return;
+                    }
+                    window.location.href = postUrl;
+                };
+                
+                // Update button links
+                readBtn.href = postUrl;
+                
+                // Add keyboard support
+                container.onkeydown = function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        window.location.href = postUrl;
+                    }
+                };
+                
+            } catch (error) {
+                console.error('[Hero Module] Error loading breaking news:', error);
+                labelEl.textContent = 'LATEST NEWS';
+                headlineEl.textContent = 'Unable to load latest news.';
+                subheadEl.textContent = '';
+                timeEl.textContent = '--:-- --';
+            }
+        }
+        
+        // HERO MODULE: Update live time display (fallback if no post time available)
+        function updateHeroModuleTime() {
+            const timeElement = document.getElementById('heroModuleTime');
+            if (!timeElement || timeElement.textContent === '--:-- --') {
+                return; // Don't override post timestamp
+            }
+        }
+        
+        // Load breaking news on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLatestBreakingNews();
+            // Refresh every 5 minutes
+            setInterval(loadLatestBreakingNews, 300000);
+        });
+        
         // Initialize animated country flags
         function initCountryFlags() {
             const flagsContainer = document.getElementById('flagsBackground');
@@ -14757,7 +14995,7 @@
                         if (now - pageState.timestamp < 1800000 && pageState.scrollY > 0) {
                             // Will restore scroll position - cancel animations now
                             heroSection.style.animation = 'none';
-                            const heroChildren = heroSection.querySelectorAll('.hero-title, .hero-subtitle, .hero-logo, .hero-stats-container, .welcome-text, .welcome-text-container, .hero-subtitle-container');
+                            const heroChildren = heroSection.querySelectorAll('.hero-title, .hero-subtitle, .hero-logo, .hero-stats-container, .welcome-text, .welcome-text-container, .hero-module-container');
                             heroChildren.forEach(child => {
                                 child.style.animation = 'none';
                             });
@@ -14983,7 +15221,7 @@
                                     heroSection.style.opacity = '1';
                                     heroSection.style.transform = 'translateY(0)';
                                     
-                                    const heroChildren = heroSection.querySelectorAll('.hero-title, .hero-subtitle, .hero-logo, .hero-stats-container, .welcome-text, .welcome-text-container, .hero-subtitle-container');
+                                    const heroChildren = heroSection.querySelectorAll('.hero-title, .hero-subtitle, .hero-logo, .hero-stats-container, .welcome-text, .welcome-text-container, .hero-module-container');
                                     heroChildren.forEach(child => {
                                         child.style.animation = 'none';
                                         child.style.opacity = '1';

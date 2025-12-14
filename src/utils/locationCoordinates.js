@@ -323,3 +323,4 @@ export function getLocationCoordinates(locationName) {
   return null;
 }
 
+
