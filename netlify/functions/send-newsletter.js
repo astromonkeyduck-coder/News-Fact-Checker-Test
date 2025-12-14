@@ -823,12 +823,6 @@ exports.handler = async (event, context) => {
         .replace(/\{\{DATE_PLACEHOLDER\}\}/g, dateStr)
         .replace(/\{\{MONTH\}\}/g, monthStr)
         .replace(/\{\{YEAR\}\}/g, yearStr);
-        .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl)
-        .replace(/\{\{FIRST_NAME\}\}/g, firstName || emailUsername)
-        .replace(/\{\{LAST_NAME\}\}/g, lastName || '')
-        .replace(/\{\{FULL_NAME\}\}/g, fullName)
-        .replace(/\{\{EMAIL\}\}/g, email)
-        .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername);
       
       return {
         email,

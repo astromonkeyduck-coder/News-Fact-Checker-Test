@@ -294,33 +294,17 @@ Reference the house style template structure and fill in the content section wit
     });
 
     // Insert generated content into house template
-    // The AI should generate content that includes date and greeting
-    // If it doesn't, we'll add them
+    // The AI generates content that includes date and greeting - we trust it to do so correctly
+    let finalContent = htmlContent.trim();
+    
+    // Only replace date placeholder if it exists (don't add if missing - AI should generate it)
     const datePlaceholder = new Date().toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric' 
     });
-    
-    // Ensure the generated content includes date and greeting if missing
-    let finalContent = htmlContent.trim();
-    
-    // Check if date is already present (check for date placeholder or actual date text)
-    const dateCheck = datePlaceholder && datePlaceholder.length >= 10 
-                      ? datePlaceholder.toLowerCase().substring(0, 10) 
-                      : '';
-    const hasDate = finalContent.includes('{{DATE_PLACEHOLDER}}') || 
-                    (dateCheck && finalContent.toLowerCase().includes(dateCheck)) ||
-                    /(monday|tuesday|wednesday|thursday|friday|saturday|sunday).*\d{4}/i.test(finalContent);
-    
-    if (!hasDate) {
-      // Add date and greeting if missing
-      finalContent = `<p style="margin:0 0 30px 0;color:#9ca3af!important;font-size:14px">${datePlaceholder}</p>\n<p style="margin:0 0 30px 0;color:#f9fafb!important;font-size:16px;line-height:1.5">Hey {{FULL_NAME}},</p>\n${finalContent}`;
-    } else {
-      // Replace date placeholder if present
-      finalContent = finalContent.replace(/\{\{DATE_PLACEHOLDER\}\}/g, datePlaceholder);
-    }
+    finalContent = finalContent.replace(/\{\{DATE_PLACEHOLDER\}\}/g, datePlaceholder);
     
     // Verify template has placeholder before replacing
     if (!houseTemplate.includes('<!-- CONTENT_PLACEHOLDER -->')) {

@@ -5355,6 +5355,22 @@ class NoteworthyChat extends HTMLElement {
           }
         }
         
+        // Debug: Log message type before switch for transcript messages
+        if (message.type && (
+          message.type.includes('transcript') || 
+          message.type.includes('input_audio_transcription') ||
+          message.type === 'conversation.item.input_audio_transcription.completed'
+        )) {
+          console.log('[Voice Mode] 🔍 DEBUG TRANSCRIPT MESSAGE:', {
+            type: message.type,
+            typeLength: message.type?.length,
+            hasDelta: !!message.delta,
+            hasTranscript: !!message.transcript,
+            hasText: !!message.text,
+            fullMessage: message
+          });
+        }
+        
         // Debug: Log message type before switch
         if (message.type === 'response.output_audio.delta') {
           console.log('[Voice Mode] 🔍 DEBUG: About to switch on message.type:', message.type, 'typeof:', typeof message.type);
@@ -5469,6 +5485,12 @@ class NoteworthyChat extends HTMLElement {
           case 'response.audio_transcript.done':
           case 'response.output_audio_transcript.done':
             // Full transcript available (handle both old and new message types)
+            console.log('[Voice Mode] ✅ CASE MATCHED: response.output_audio_transcript.done');
+            console.log('[Voice Mode] 🔍 Transcript done data:', {
+              transcript: message.transcript,
+              text: message.text,
+              fullMessage: message
+            });
             const transcript = message.transcript || message.text || '';
             console.log('[Voice Mode] ✅ AI RESPONSE TRANSCRIPT:', transcript);
             if (transcript) {
@@ -5490,6 +5512,12 @@ class NoteworthyChat extends HTMLElement {
             
           case 'response.output_audio_transcript.delta':
             // Real-time transcript updates as AI speaks
+            console.log('[Voice Mode] ✅ CASE MATCHED: response.output_audio_transcript.delta');
+            console.log('[Voice Mode] 🔍 Transcript delta data:', {
+              delta: message.delta,
+              deltaLength: message.delta?.length,
+              hasDelta: !!message.delta
+            });
             if (message.delta) {
               // Find or create a transcript element for this response
               let transcriptElement = root.querySelector('#ai-transcript-live');
@@ -5684,6 +5712,11 @@ class NoteworthyChat extends HTMLElement {
             
           case 'conversation.item.input_audio_transcription.completed':
             // User's speech transcribed
+            console.log('[Voice Mode] ✅ CASE MATCHED: conversation.item.input_audio_transcription.completed');
+            console.log('[Voice Mode] 🔍 User transcript data:', {
+              transcript: message.transcript,
+              fullMessage: message
+            });
             console.log('[Voice Mode] ✅ AI HEARD YOU! Transcript received:', message.transcript);
             if (message.transcript) {
               const userGroup = document.createElement('div');
@@ -5783,10 +5816,157 @@ class NoteworthyChat extends HTMLElement {
             if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
             break;
             
+          case 'conversation.item.added':
+            // Check if this item contains a user transcript
+            if (message.item && message.item.type === 'message' && message.item.role === 'user') {
+              // Check for transcript in item content
+              if (message.item.content) {
+                const contentArray = Array.isArray(message.item.content) ? message.item.content : [message.item.content];
+                contentArray.forEach(content => {
+                  if (content.type === 'input_audio' && content.transcript) {
+                    console.log('[Voice Mode] ✅ Found user transcript in conversation.item.added:', content.transcript);
+                    const userGroup = document.createElement('div');
+                    userGroup.className = 'message-group user-msg-group';
+                    userGroup.innerHTML = `
+                      <div class="message-avatar">You</div>
+                      <div class="message-content">
+                        <div class="user-msg">🎤 ${content.transcript}</div>
+                      </div>
+                    `;
+                    body.appendChild(userGroup);
+                    body.scrollTop = body.scrollHeight;
+                    console.log('[Voice Mode] ✅ Your speech displayed in chat');
+                  }
+                });
+              }
+            }
+            // Also check for AI response transcript in item
+            if (message.item && message.item.type === 'message' && message.item.role === 'assistant') {
+              if (message.item.content) {
+                const contentArray = Array.isArray(message.item.content) ? message.item.content : [message.item.content];
+                contentArray.forEach(content => {
+                  if (content.type === 'output_audio' && content.transcript) {
+                    console.log('[Voice Mode] ✅ Found AI transcript in conversation.item.added:', content.transcript);
+                    const aiGroup = document.createElement('div');
+                    aiGroup.className = 'message-group ai-msg-group';
+                    aiGroup.innerHTML = `
+                      <div class="message-avatar">NW</div>
+                      <div class="message-content">
+                        <div class="reply">🎤 ${content.transcript}</div>
+                      </div>
+                    `;
+                    body.appendChild(aiGroup);
+                    body.scrollTop = body.scrollHeight;
+                    console.log('[Voice Mode] ✅ AI response displayed in chat');
+                  }
+                });
+              }
+            }
+            break;
+            
           default:
-            // Log any unhandled message types for debugging
+            // CRITICAL: Try to extract transcripts from unhandled messages as fallback
+            // This catches messages that should have matched but didn't (browser cache issues, etc.)
+            
+            // Check for ANY transcript-related message types - be very explicit
+            const messageType = message.type || '';
+            const isTranscriptMessage = messageType.includes('transcript') || 
+                                       messageType.includes('transcription') ||
+                                       messageType === 'response.output_audio_transcript.delta' ||
+                                       messageType === 'response.output_audio_transcript.done' ||
+                                       messageType === 'conversation.item.input_audio_transcription.completed';
+            
+            if (isTranscriptMessage) {
+              console.log('[Voice Mode] 🔍 TRANSCRIPT MESSAGE IN DEFAULT - extracting transcript:', messageType);
+              console.log('[Voice Mode] 🔍 Message keys:', Object.keys(message));
+              
+              // Try to extract transcript from various possible locations
+              // For delta messages, the text is in message.delta
+              // For done messages, the text is in message.transcript or message.text
+              let transcript = '';
+              
+              if (messageType.includes('delta')) {
+                // Delta messages contain incremental text in message.delta
+                transcript = message.delta || '';
+                console.log('[Voice Mode] 🔍 Extracted delta transcript (length:', transcript.length, '):', transcript.substring(0, 100));
+              } else {
+                // Done messages contain full transcript
+                transcript = message.transcript || message.text || '';
+                console.log('[Voice Mode] 🔍 Extracted done transcript (length:', transcript.length, '):', transcript.substring(0, 100));
+              }
+              
+              // Check nested structures as fallback
+              if (!transcript && message.item && message.item.content) {
+                const contentArray = Array.isArray(message.item.content) ? message.item.content : [message.item.content];
+                for (const content of contentArray) {
+                  if (content.transcript) transcript = content.transcript;
+                  if (content.text) transcript = content.text;
+                  if (content.delta) transcript = (transcript || '') + content.delta;
+                }
+                console.log('[Voice Mode] 🔍 Extracted from nested content (length:', transcript.length, '):', transcript.substring(0, 100));
+              }
+              
+              console.log('[Voice Mode] 🔍 Final extracted transcript length:', transcript.length, 'hasContent:', !!transcript);
+              
+              if (transcript && messageType.includes('input_audio')) {
+                // User transcript
+                console.log('[Voice Mode] ✅ EXTRACTED USER TRANSCRIPT from default case:', transcript);
+                const userGroup = document.createElement('div');
+                userGroup.className = 'message-group user-msg-group';
+                userGroup.innerHTML = `
+                  <div class="message-avatar">You</div>
+                  <div class="message-content">
+                    <div class="user-msg">🎤 ${transcript}</div>
+                  </div>
+                `;
+                body.appendChild(userGroup);
+                body.scrollTop = body.scrollHeight;
+              } else if (transcript && messageType.includes('output_audio')) {
+                // AI transcript
+                console.log('[Voice Mode] ✅ EXTRACTED AI TRANSCRIPT from default case:', transcript);
+                if (messageType.includes('delta')) {
+                  // Real-time update
+                  let transcriptElement = root.querySelector('#ai-transcript-live');
+                  if (!transcriptElement) {
+                    const aiGroup = document.createElement('div');
+                    aiGroup.className = 'message-group ai-msg-group';
+                    aiGroup.id = 'ai-msg-live';
+                    aiGroup.innerHTML = `
+                      <div class="message-avatar">NW</div>
+                      <div class="message-content">
+                        <div class="reply" id="ai-transcript-live">🎤 </div>
+                      </div>
+                    `;
+                    body.appendChild(aiGroup);
+                    body.scrollTop = body.scrollHeight;
+                    transcriptElement = root.querySelector('#ai-transcript-live');
+                  }
+                  if (transcriptElement) {
+                    transcriptElement.textContent += transcript;
+                    body.scrollTop = body.scrollHeight;
+                  }
+                } else {
+                  // Final transcript
+                  const liveMsgGroup = root.querySelector('#ai-msg-live');
+                  if (liveMsgGroup) liveMsgGroup.remove();
+                  
+                  const aiGroup = document.createElement('div');
+                  aiGroup.className = 'message-group ai-msg-group';
+                  aiGroup.innerHTML = `
+                    <div class="message-avatar">NW</div>
+                    <div class="message-content">
+                      <div class="reply">🎤 ${transcript}</div>
+                    </div>
+                  `;
+                  body.appendChild(aiGroup);
+                  body.scrollTop = body.scrollHeight;
+                }
+              }
+            }
+            
+            // Log any unhandled message types for debugging (but skip transcript messages we already handled above)
             // Note: Filter should match the actual message type format (response.output_audio.delta)
-            if (message.type && !message.type.startsWith('response.output_audio.delta')) {
+            if (message.type && !message.type.startsWith('response.output_audio.delta') && !isTranscriptMessage) {
               console.log('[Voice Mode] Unhandled message type:', message.type, message);
             } else if (message.type === 'response.output_audio.delta') {
               // This shouldn't happen - if we get here, the case didn't match
