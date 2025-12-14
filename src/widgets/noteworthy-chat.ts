@@ -1740,10 +1740,10 @@ export class NoteworthyChat extends HTMLElement {
             
             // If not already recording, start now
             if (!isRecording) {
-              voiceStatusText.textContent = 'Connected - Speak now!';
-              voiceStatus.classList.remove('recording');
-              isRecording = true;
-              startAudioCapture();
+            voiceStatusText.textContent = 'Connected - Speak now!';
+            voiceStatus.classList.remove('recording');
+            isRecording = true;
+            startAudioCapture();
             } else {
               console.log('[Voice Mode] Already recording - auth.success is confirmation only');
             }

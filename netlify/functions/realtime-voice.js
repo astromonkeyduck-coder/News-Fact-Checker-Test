@@ -72,33 +72,44 @@ async function fetchRecentPosts(event, limit = 5) {
  * Build current events context from recent posts
  */
 function buildCurrentEventsContext(posts) {
-  if (!posts || posts.length === 0) return '';
+  if (!posts || posts.length === 0) {
+    console.log('[Realtime Voice] No posts available for context');
+    return '';
+  }
   
+  // Include posts from the last 7 days (more inclusive)
   const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 7);
   
   const recentEvents = posts
     .filter(post => {
       const postDate = post.timestamp || post.createdAt || 0;
+      if (!postDate) return false;
       const postDateObj = new Date(postDate);
-      return postDateObj >= yesterday;
+      return postDateObj >= weekAgo;
     })
     .map(post => {
       const title = post.title || post.story || post.text || 'Untitled';
       const date = post.timestamp || post.createdAt;
       const dateStr = date ? new Date(date).toLocaleDateString() : 'Recent';
-      return `${dateStr}: ${title}`;
+      const summary = post.summary || post.text?.substring(0, 150) || '';
+      return `${dateStr}: ${title}${summary ? ` - ${summary}` : ''}`;
     })
-    .slice(0, 3); // Limit to 3 for voice (shorter context)
+    .slice(0, 5); // Limit to 5 for voice
+  
+  console.log(`[Realtime Voice] Built context with ${recentEvents.length} recent events`);
   
   if (recentEvents.length > 0) {
     return `\n\nCURRENT EVENTS (Verified Articles from Noteworthy News):
+The following are REAL, VERIFIED news articles published on Noteworthy News. Use this information when answering questions about current events:
+
 ${recentEvents.join('\n')}
 
-You can discuss these verified articles. For events NOT listed, say you don't have information.`;
+IMPORTANT: You can discuss these verified articles and their details. For any events NOT listed here, you should say you don't have information about them.`;
   }
   
+  console.log('[Realtime Voice] No recent events found (all posts are older than 7 days)');
   return '';
 }
 
@@ -182,6 +193,11 @@ ${currentEventsContext ? '- You have access to REAL, VERIFIED current events fro
 - If you don't know something, say so clearly rather than speculate
 ${currentEventsContext}
 
+IMAGE GENERATION:
+- You CAN generate images when users ask for them
+- Use the generate_image function when users request images, pictures, illustrations, or visuals
+- Acknowledge the request and say you're generating the image
+
 When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy AI" in a friendly, welcoming tone.`;
 
         const clientSecretResponse = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
@@ -199,6 +215,23 @@ When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy
               type: 'realtime',
               model: 'gpt-realtime', // GA API uses 'gpt-realtime', not 'gpt-4o-realtime-preview'
               instructions: instructions,
+              tools: [
+                {
+                  type: 'function',
+                  name: 'generate_image',
+                  description: 'Generate an image using DALL-E based on a text description. Use this when the user asks for an image, picture, illustration, or visual.',
+                  parameters: {
+                    type: 'object',
+                    properties: {
+                      prompt: {
+                        type: 'string',
+                        description: 'A detailed description of the image to generate'
+                      }
+                    },
+                    required: ['prompt']
+                  }
+                }
+              ],
               audio: {
                 input: {
                   format: {
@@ -399,6 +432,11 @@ ${currentEventsContext ? '- You have access to REAL, VERIFIED current events fro
 - If you don't know something, say so clearly rather than speculate
 ${currentEventsContext}
 
+IMAGE GENERATION:
+- You CAN generate images when users ask for them
+- Use the generate_image function when users request images, pictures, illustrations, or visuals
+- Acknowledge the request and say you're generating the image
+
 When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy AI" in a friendly, welcoming tone.`;
 
         const clientSecretResponse = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
@@ -416,6 +454,23 @@ When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy
               type: 'realtime',
               model: 'gpt-realtime', // GA API uses 'gpt-realtime', not 'gpt-4o-realtime-preview'
               instructions: instructions,
+              tools: [
+                {
+                  type: 'function',
+                  name: 'generate_image',
+                  description: 'Generate an image using DALL-E based on a text description. Use this when the user asks for an image, picture, illustration, or visual.',
+                  parameters: {
+                    type: 'object',
+                    properties: {
+                      prompt: {
+                        type: 'string',
+                        description: 'A detailed description of the image to generate'
+                      }
+                    },
+                    required: ['prompt']
+                  }
+                }
+              ],
               audio: {
                 input: {
                   format: {

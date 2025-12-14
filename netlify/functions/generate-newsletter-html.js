@@ -144,54 +144,183 @@ exports.handler = async (event, context) => {
     }));
 
     // Build the AI prompt
-    const systemPrompt = `You are generating an email newsletter HTML for Noteworthy News. Your task is to create professional, fact-checked journalism content in the exact house style.
+    const systemPrompt = `You are generating an email newsletter HTML for Noteworthy News. This is a CRITICAL PRODUCTION SYSTEM serving real subscribers. Style fidelity is NON-NEGOTIABLE. Content quality is NON-NEGOTIABLE. You MUST write about REAL, ACTUAL breaking news events - not generic scenarios, not hypotheticals, not examples.
 
-CRITICAL REQUIREMENTS:
-1. Preserve the exact HTML structure and styling from the house style template provided
-2. Use ONLY the colors, fonts, spacing, and layout patterns from the style guide
-3. Return ONLY valid HTML - no markdown, no explanations, no code blocks
-4. Use table-based layout with inline styles (email-client safe)
-5. Max width: 650px
-6. Images must be inserted where referenced by title tokens like [[Image: Title]]
-7. Use alt text = image title
-8. Do not invent subscriber-specific personalization beyond "Hey {{FULL_NAME}},"
-9. Maintain dark theme: background #0b1020, card #141b2b, header #050814
-10. Use section labels: 11px, uppercase, letter-spacing 0.14em, color #3b82f6
-11. Body text: 15px, line-height 1.6, color #f9fafb
-12. Bullet lists: use ★ star bullets with flex layout
-13. Images: width 100%, border-radius 8px, proper margins
+⚠️ WARNING: Any deviation from the style guide or use of generic/fictional content will result in rejection. This is production content for a real news organization.
 
-STYLE GUIDE:
-- Background colors: #0b1020 (outer), #141b2b (content card), #050814 (header/footer)
-- Text colors: #f9fafb (primary), #9ca3af (secondary), #3b82f6 (accent)
-- Font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif
-- Section spacing: 50px between major sections
-- Paragraph spacing: 20px
-- Image style: display:block;width:100%;max-width:100%;border-radius:8px;margin:10px 0
+═══════════════════════════════════════════════════════════════
+CRITICAL STYLE REQUIREMENTS (MUST FOLLOW EXACTLY):
+═══════════════════════════════════════════════════════════════
+1. PRESERVE EXACT HTML STRUCTURE - Use the house style template structure provided. DO NOT modify table structure, cell padding, or layout.
+2. USE ONLY THESE COLORS - No exceptions:
+   - Background: #0b1020 (outer), #141b2b (content card), #050814 (header/footer)
+   - Text: #f9fafb (primary), #9ca3af (secondary dates), #3b82f6 (accent/section labels)
+   - Links: #60a5fa
+3. TYPOGRAPHY - Exact sizes and styles:
+   - Section labels: 11px, uppercase, letter-spacing 0.14em, color #3b82f6, font-weight 600
+   - Body text: 15px, line-height 1.6, color #f9fafb
+   - Date: 14px, color #9ca3af, margin: 0 0 30px 0
+   - Greeting: 16px, line-height 1.5, color #f9fafb, margin: 0 0 30px 0
+4. SPACING - Exact measurements:
+   - 50px between major sections
+   - 20px between paragraphs
+   - 30px margin on date and greeting paragraphs
+   - 12px margin on section label paragraphs
+5. BULLET LISTS - Use this EXACT structure:
+   <ul style="list-style:none;margin:8px 0 40px 0;padding:0">
+     <li style="margin:6px 0;display:flex;align-items:flex-start">
+       <span style="color:#3b82f6!important;font-size:14px;line-height:1;margin-top:3px">★</span>
+       <span style="margin-left:8px;font-size:15px;color:#f9fafb!important;line-height:1.6">[text]</span>
+     </li>
+   </ul>
+6. IMAGES - Exact style:
+   style="display:block;width:100%;max-width:100%;border-radius:8px;margin:10px 0"
+7. RETURN ONLY VALID HTML - No markdown, no explanations, no code blocks, no backticks
+8. TABLE-BASED LAYOUT - All content must use table structure with inline styles (email-client safe)
 
-CONTENT REQUIREMENTS:
-- Write in a professional, journalistic tone
-- Use clear section labels (BREAKING, UPDATE, Snapshot, etc.)
-- Include proper context and attribution
-- Maintain factual accuracy
-- Use bullet points for lists (★ format)
-- Include "What we're watching next" or similar forward-looking sections when appropriate
+═══════════════════════════════════════════════════════════════
+CONTENT QUALITY REQUIREMENTS (CRITICAL - ZERO TOLERANCE):
+═══════════════════════════════════════════════════════════════
+1. REAL BREAKING NEWS ONLY - MANDATORY:
+   ✅ You MUST write about ACTUAL, SPECIFIC breaking news events that have occurred
+   ✅ Use your knowledge to reference REAL events with REAL details
+   ✅ Include REAL names, REAL locations, REAL dates, REAL sources
+   ❌ DO NOT write generic scenarios like "a shooting happened somewhere"
+   ❌ DO NOT write hypothetical content like "imagine if..."
+   ❌ DO NOT write example content or placeholder text
+   ❌ DO NOT make up events that didn't happen
+   
+   EXAMPLES OF WHAT TO WRITE:
+   ✅ "President Trump delivered a live statement blaming the Washington, D.C. shooting on the Biden administration's security failures..."
+   ✅ "Governor Morrisey announced earlier today that both Guardsmen have reportedly died..."
+   ✅ "Authorities have identified the suspect as Rahmanullah Lakanwal, a 29-year-old Afghan national..."
+   
+   EXAMPLES OF WHAT NOT TO WRITE:
+   ❌ "A shooting occurred in a major city..."
+   ❌ "Officials are investigating an incident..."
+   ❌ "Breaking news: Something important happened..."
+
+2. FACTUAL ACCURACY - MANDATORY:
+   - All information must be factually correct based on your training data
+   - Include proper attribution and sources (e.g., "@AP", "— WTAE4", "according to officials")
+   - If you're unsure about a detail, either omit it or clearly state uncertainty
+   - Never fabricate quotes, names, or details
+
+3. JOURNALISTIC TONE - MANDATORY:
+   - Professional, clear, objective
+   - Avoid sensationalism, speculation, or opinion
+   - Use active voice and specific verbs
+   - Write with authority but remain factual
+
+4. SECTION STRUCTURE - MANDATORY:
+   - BREAKING: For urgent, developing stories (use sparingly, only for truly breaking news)
+   - UPDATE: For follow-ups to breaking news
+   - Snapshot: For summary sections with bullet points (use exact format specified)
+   - [Topic]: For specific subject sections (e.g., "Governor's statement", "Scene documentation", "Suspect & emerging details")
+   - "What we're watching next": Forward-looking section with specific, actionable items
+
+5. CONTEXT & ATTRIBUTION - MANDATORY FOR EVERY CLAIM:
+   - Who: Specific names, titles, organizations
+   - What: Specific actions, statements, events
+   - When: Specific times, dates, or relative timeframes
+   - Where: Specific locations (cities, states, countries)
+   - Why: Context and background when relevant
+   - Source: Attribution for all claims (e.g., "@AP", "— WTAE4", "according to officials")
+
+6. FORWARD-LOOKING SECTIONS - MANDATORY:
+   - Include "What we're watching next" with SPECIFIC, ACTIONABLE items
+   - Each item should be concrete and verifiable
+   - Use format: <strong>Topic:</strong> Specific detail about what to watch
+   - NO generic items like "We'll continue to monitor the situation"
+
+7. NO FILLER CONTENT - ZERO TOLERANCE:
+   - Every paragraph must add value
+   - No fluff, no generic statements, no padding
+   - If you can't write about real events, don't write at all
+
+═══════════════════════════════════════════════════════════════
+STYLE VIOLATIONS (DO NOT DO):
+═══════════════════════════════════════════════════════════════
+❌ DO NOT use different colors than specified
+❌ DO NOT use different font sizes than specified
+❌ DO NOT use different spacing than specified
+❌ DO NOT use markdown formatting
+❌ DO NOT write generic or hypothetical content
+❌ DO NOT skip section labels when appropriate
+❌ DO NOT use incorrect HTML structure
+❌ DO NOT add extra styling beyond what's specified
+❌ DO NOT write about events that didn't happen
+❌ DO NOT use placeholder or vague content
 
 IMAGES:
 ${imageReferences.length > 0 ? imageReferences.map(img => `- [[Image: ${img.title}]] (${img.placementHint})`).join('\n') : 'No images provided.'}
 
 ${imageReferences.length > 0 ? `IMPORTANT: When you see [[Image: Title]] in the prompt, you MUST use the EXACT token format [[Image: Title]] in your HTML output. DO NOT replace it with a placeholder URL. The system will automatically replace [[Image: Title]] tokens with the actual uploaded image.` : ''}
 
-IMPORTANT: Your response must start with:
-1. A date paragraph: <p style="margin:0 0 30px 0;color:#9ca3af!important;font-size:14px">[Current Date]</p>
-2. A greeting: <p style="margin:0 0 30px 0;color:#f9fafb!important;font-size:16px;line-height:1.5">Hey {{FULL_NAME}},</p>
-3. Then the newsletter content
+═══════════════════════════════════════════════════════════════
+REQUIRED OUTPUT FORMAT:
+═══════════════════════════════════════════════════════════════
+Your response MUST start with these EXACT elements in this order:
 
-Return ONLY the HTML content that goes inside the <td style="padding:50px 40px;background-color:#141b2b!important"> tag. Do not include the outer structure.`;
+1. DATE (REQUIRED - Use current date, not a placeholder):
+   <p style="margin:0 0 30px 0;color:#9ca3af!important;font-size:14px">[Current Date - format: "Weekday, Month Day, Year"]</p>
 
-    const userPrompt = `Generate newsletter content based on this prompt:
+2. GREETING (REQUIRED):
+   <p style="margin:0 0 30px 0;color:#f9fafb!important;font-size:16px;line-height:1.5">Hey {{FULL_NAME}},</p>
 
+3. OPENING CONTEXT (Optional but recommended):
+   A brief 1-2 sentence introduction to the newsletter's main story
+
+4. CONTENT SECTIONS:
+   - Use appropriate section labels (BREAKING, UPDATE, Snapshot, etc.)
+   - Include real, specific breaking news events
+   - Add proper attribution and context
+   - Use bullet lists for summaries (exact format specified above)
+
+5. FORWARD-LOOKING SECTION (Recommended):
+   "What we're watching next" with specific, actionable items
+
+6. CLOSING (Recommended):
+   Thank you message and sign-off
+
+═══════════════════════════════════════════════════════════════
+FINAL INSTRUCTIONS:
+═══════════════════════════════════════════════════════════════
+- Return ONLY the HTML content that goes inside: <td style="padding:50px 40px;background-color:#141b2b!important">
+- Do NOT include the outer table structure
+- Do NOT include DOCTYPE, html, head, or body tags
+- Do NOT use markdown or code blocks
+- Write about REAL, ACTUAL breaking news events
+- Match the gold standard style EXACTLY
+- Quality is non-negotiable - this is production content`;
+
+    const userPrompt = `⚠️ CRITICAL: Generate newsletter content based on this prompt. This is PRODUCTION CONTENT for REAL SUBSCRIBERS.
+
+⚠️ MANDATORY REQUIREMENTS:
+1. You MUST write about REAL, ACTUAL breaking news events that have occurred
+2. You MUST use specific details: real names, real locations, real dates, real sources
+3. You MUST match the gold standard style EXACTLY (see style guide above)
+4. You MUST include proper attribution for all claims
+5. You MUST write with journalistic authority and factual accuracy
+
+❌ FORBIDDEN:
+- Generic scenarios ("a shooting happened somewhere")
+- Hypothetical content ("imagine if...")
+- Placeholder text ("officials said something")
+- Made-up events or details
+- Style deviations (wrong colors, sizes, spacing)
+- Missing attribution
+
+USER PROMPT:
 ${promptText}
+
+⚠️ FINAL REMINDER:
+- This is PRODUCTION CONTENT - quality is non-negotiable
+- Write about REAL events with REAL details
+- Match the style guide EXACTLY - zero tolerance for deviations
+- Every claim must have attribution
+- Every paragraph must add value
+- This newsletter will be sent to real subscribers - make it perfect
 
 Subject: ${subject || 'Weekly Newsletter'}
 ${preheader ? `Preheader: ${preheader}` : ''}
@@ -313,13 +442,38 @@ Reference the house style template structure and fill in the content section wit
     // Replace date placeholder if it exists
     finalContent = finalContent.replace(/\{\{DATE_PLACEHOLDER\}\}/g, currentDate);
     
-    // Also replace any hardcoded dates that might be in the AI-generated content
-    // Match patterns like "Wednesday, November 26, 2025" or "October 10, 2023"
-    const datePattern = /(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s*(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s*\d{4}/gi;
-    if (datePattern.test(finalContent)) {
-      finalContent = finalContent.replace(datePattern, currentDate);
-      console.log('[Generate Newsletter] Replaced hardcoded date with current date:', currentDate);
+    // Replace ANY date patterns in the AI-generated content with current date
+    // Match various formats:
+    // - "Wednesday, November 26, 2025" (with weekday)
+    // - "October 24, 2023" (without weekday)
+    // - "Nov 26, 2025" (abbreviated month)
+    // - "10/24/2023" (numeric)
+    // - Any year that's not the current year
+    const currentYear = new Date().getFullYear().toString();
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthAbbr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    
+    // Pattern 1: Full date with weekday "Wednesday, November 26, 2025"
+    const pattern1 = new RegExp(`(${weekdays.join('|')}),\\s*(${months.join('|')})\\s+\\d{1,2},\\s*\\d{4}`, 'gi');
+    finalContent = finalContent.replace(pattern1, currentDate);
+    
+    // Pattern 2: Full date without weekday "October 24, 2023"
+    const pattern2 = new RegExp(`(${months.join('|')})\\s+\\d{1,2},\\s*\\d{4}`, 'gi');
+    finalContent = finalContent.replace(pattern2, currentDate);
+    
+    // Pattern 3: Abbreviated month "Oct 24, 2023" or "Nov 26, 2025"
+    const pattern3 = new RegExp(`(${monthAbbr.join('|')})\\.?\\s+\\d{1,2},\\s*\\d{4}`, 'gi');
+    finalContent = finalContent.replace(pattern3, currentDate);
+    
+    // Pattern 4: Any date with wrong year (not current year) - more aggressive
+    const wrongYearPattern = new RegExp(`(${months.join('|')}|${monthAbbr.join('|')})\\.?\\s+\\d{1,2},\\s*(?!${currentYear})\\d{4}`, 'gi');
+    if (wrongYearPattern.test(finalContent)) {
+      finalContent = finalContent.replace(wrongYearPattern, currentDate);
+      console.log('[Generate Newsletter] Replaced date with wrong year with current date:', currentDate);
     }
+    
+    console.log('[Generate Newsletter] Final date replacement complete. Current date:', currentDate);
     
     // Verify template has placeholder before replacing
     if (!houseTemplate.includes('<!-- CONTENT_PLACEHOLDER -->')) {

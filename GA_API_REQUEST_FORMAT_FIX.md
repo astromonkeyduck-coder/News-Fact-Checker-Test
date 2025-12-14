@@ -169,3 +169,4 @@ Both GET and POST handlers now use the correct GA API request format.
 **Date**: December 14, 2025  
 **Files Modified**: `netlify/functions/realtime-voice.js`  
 **Issue**: Invalid request format for GA `/v1/realtime/client_secrets` endpoint
+

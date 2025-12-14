@@ -192,3 +192,4 @@ Both GET and POST handlers now use the GA endpoint `/v1/realtime/client_secrets`
 **Date**: December 14, 2025  
 **Files Modified**: `netlify/functions/realtime-voice.js`  
 **Issue**: API version mismatch between beta sessions and GA WebSocket
+

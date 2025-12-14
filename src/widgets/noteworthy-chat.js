@@ -3168,6 +3168,11 @@ class NoteworthyChat extends HTMLElement {
     
     // Text-to-speech function with enhanced AI voice
     function speakText(text) {
+      // CRITICAL: Cancel text-to-speech if voice mode is active (we only want GPT's voice)
+      if (voiceModeActive) {
+        window.speechSynthesis.cancel();
+        return;
+      }
       if (!audioEnabled) return;
       
       // Clean text (remove HTML tags, URLs, etc.)
@@ -3517,7 +3522,7 @@ class NoteworthyChat extends HTMLElement {
     };
     
     // Insert help button before close button
-    const headRight = this.root.querySelector('.head-right');
+    const headRight = root.querySelector('.head-right');
     if (headRight && closeBtn) {
       headRight.insertBefore(helpBtn, closeBtn);
     }
@@ -3583,7 +3588,44 @@ class NoteworthyChat extends HTMLElement {
     // The generateImage() function has been removed - all messages go through ask()
 
     /**
+     * Play sound effect for call start/end
+     */
+    function playCallSound(type) {
+      try {
+        // Create audio context for sound effects
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        if (type === 'start') {
+          // Start call: ascending tone (more positive/energetic)
+          oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.15);
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.15);
+        } else if (type === 'end') {
+          // End call: descending tone (more final/complete)
+          oscillator.frequency.setValueAtTime(500, audioContext.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.2);
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.2);
+        }
+      } catch (error) {
+        console.warn('[Voice Mode] Could not play sound effect:', error);
+        // Silently fail - sound effects are nice-to-have
+      }
+    }
+
+    /**
      * Open image in popup/lightbox
+     * Also expose globally for onclick handlers
      */
     function openImagePopup(imageUrl, altText = 'Generated image') {
       // Remove existing popup if any
@@ -3732,6 +3774,9 @@ class NoteworthyChat extends HTMLElement {
         document.head.appendChild(style);
       }
     }
+    
+    // Expose openImagePopup globally for onclick handlers
+    window.openImagePopup = openImagePopup;
 
     // Helper function to show error messages
     function showError(message) {
@@ -4202,8 +4247,8 @@ class NoteworthyChat extends HTMLElement {
           chatHistory = chatHistory.slice(-20);
         }
         
-        // Text-to-speech for AI response
-        if (audioEnabled) {
+        // Text-to-speech for AI response (ONLY if NOT in voice mode - voice mode uses GPT's voice)
+        if (audioEnabled && !voiceModeActive) {
           speakText(text);
         }
       } catch (e) {
@@ -4596,6 +4641,8 @@ class NoteworthyChat extends HTMLElement {
         await testConnectivity();
         
         voiceModeActive = true;
+        // CRITICAL: Cancel any text-to-speech immediately when voice mode starts
+        window.speechSynthesis.cancel();
         if (voiceModeToggle) voiceModeToggle.classList.add('active');
         if (voiceStatusIntegrated) {
           voiceStatusIntegrated.style.display = 'block';
@@ -4896,16 +4943,29 @@ class NoteworthyChat extends HTMLElement {
           isRecording = true;
           startAudioCapture();
           
-          // Hide voice selector options since call is active (voice already selected)
-          const voiceControlContent = this.root.querySelector('#voiceControlContent');
-          const voiceSelectorIntegrated = this.root.querySelector('.voice-selector-integrated');
+          // Hide ALL voice settings/controls since call is active
+          const voiceControlContent = root.querySelector('#voiceControlContent');
+          const voiceSelectorIntegrated = root.querySelector('.voice-selector-integrated');
+          const voiceControlIntegrated = root.querySelector('#voiceControlIntegrated');
+          const voiceControlHeader = root.querySelector('#voiceControlHeader');
+          
           if (voiceControlContent) {
             voiceControlContent.style.display = 'none';
-            console.log('[Voice Mode] 🔇 Hiding voice selector (call active)');
+            console.log('[Voice Mode] 🔇 Hiding voice control content (call active)');
           }
           if (voiceSelectorIntegrated) {
             voiceSelectorIntegrated.style.display = 'none';
           }
+          if (voiceControlIntegrated) {
+            voiceControlIntegrated.style.display = 'none';
+            console.log('[Voice Mode] 🔇 Hiding voice control integrated panel (call active)');
+          }
+          if (voiceControlHeader) {
+            voiceControlHeader.style.display = 'none';
+          }
+          
+          // Play start call sound effect
+          playCallSound('start');
           
           // Show sidebar for voice call results
           showVoiceSidebar();
@@ -5220,6 +5280,9 @@ class NoteworthyChat extends HTMLElement {
       // Show voice selector options again (call ended, can change voice for next call)
       const voiceControlContent = root.querySelector('#voiceControlContent');
       const voiceSelectorIntegrated = root.querySelector('.voice-selector-integrated');
+      const voiceControlIntegrated = root.querySelector('#voiceControlIntegrated');
+      const voiceControlHeader = root.querySelector('#voiceControlHeader');
+      
       if (voiceControlContent) {
         voiceControlContent.style.display = '';
         console.log('[Voice Mode] 🔊 Showing voice selector (call ended)');
@@ -5227,6 +5290,16 @@ class NoteworthyChat extends HTMLElement {
       if (voiceSelectorIntegrated) {
         voiceSelectorIntegrated.style.display = '';
       }
+      if (voiceControlIntegrated) {
+        voiceControlIntegrated.style.display = '';
+        console.log('[Voice Mode] 🔊 Showing voice control integrated panel (call ended)');
+      }
+      if (voiceControlHeader) {
+        voiceControlHeader.style.display = '';
+      }
+      
+      // Play end call sound effect
+      playCallSound('end');
       
       if (voiceStatusIntegrated) {
         voiceStatusIntegrated.style.display = 'none';
@@ -5711,11 +5784,62 @@ class NoteworthyChat extends HTMLElement {
             break;
             
           case 'response.function_call_arguments.done':
-            // Function is being called
+            // Function is being called - we need to EXECUTE it and send back the result
+            console.log('[Voice Mode] 🔧 Function call received:', message.name, message.arguments);
+            
             if (message.name === 'generate_image') {
-              if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Generating image...';
+              if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = '🎨 Generating image...';
+              console.log('[Voice Mode] 🎨 Image generation requested via function call');
+              
+              // Execute the function
+              const prompt = message.arguments?.prompt || '';
+              if (prompt) {
+                // Call the image generation API
+                fetch('/.netlify/functions/generate-image', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ prompt })
+                })
+                .then(res => res.json())
+                .then(data => {
+                  if (data.imageUrl || data.image_url) {
+                    const imageUrl = data.imageUrl || data.image_url;
+                    // Send function result back to AI
+                    websocket.send(JSON.stringify({
+                      type: 'response.function_call_result',
+                      function_call_id: message.function_call_id,
+                      result: {
+                        image_url: imageUrl,
+                        revised_prompt: data.revisedPrompt || data.revised_prompt || prompt
+                      }
+                    }));
+                    console.log('[Voice Mode] ✅ Image generated and result sent to AI');
+                  } else {
+                    // Send error result
+                    websocket.send(JSON.stringify({
+                      type: 'response.function_call_result',
+                      function_call_id: message.function_call_id,
+                      result: { error: 'Failed to generate image' }
+                    }));
+                  }
+                })
+                .catch(error => {
+                  console.error('[Voice Mode] ❌ Image generation error:', error);
+                  websocket.send(JSON.stringify({
+                    type: 'response.function_call_result',
+                    function_call_id: message.function_call_id,
+                    result: { error: error.message || 'Failed to generate image' }
+                  }));
+                });
+              }
             } else if (message.name === 'search_web') {
               if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Searching the web...';
+              // Web search not implemented yet - send empty result
+              websocket.send(JSON.stringify({
+                type: 'response.function_call_result',
+                function_call_id: message.function_call_id,
+                result: { error: 'Web search not available' }
+              }));
             }
             break;
             
