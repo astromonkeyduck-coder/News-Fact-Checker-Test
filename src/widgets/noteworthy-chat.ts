@@ -1550,7 +1550,8 @@ export class NoteworthyChat extends HTMLElement {
         console.log('[Voice Mode] ✅ Ephemeral token received (redacted):', tokenPreview);
         
         // Construct WebSocket URL - ONLY model parameter, NO token or session_id in URL
-        const model = (sessionData as any).model || 'gpt-4o-realtime-preview';
+        // CRITICAL: Use 'gpt-realtime' for GA API (backend returns this, but fallback must match)
+        const model = (sessionData as any).model || 'gpt-realtime';
         const wsUrl = `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`;
         
         // CRITICAL: Use WebSocket subprotocols for authentication

@@ -4324,7 +4324,8 @@ class NoteworthyChat extends HTMLElement {
         console.log('[Voice Mode] Token length:', ephemeralToken.length, 'characters');
         
         // Construct WebSocket URL - ONLY model parameter, NO token or session_id in URL
-        const model = sessionData.model || 'gpt-4o-realtime-preview';
+        // CRITICAL: Use 'gpt-realtime' for GA API (backend returns this, but fallback must match)
+        const model = sessionData.model || 'gpt-realtime';
         const wsUrl = `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`;
         
         // CRITICAL: Use WebSocket subprotocols for authentication
@@ -4393,13 +4394,13 @@ class NoteworthyChat extends HTMLElement {
             }
           }
           
-          // Token is in URL, so authentication happens automatically during WebSocket handshake
-          // OpenAI authenticates the connection using the ephemeral_token query parameter
-          // No auth message needed - connection is already authenticated
-          console.log('[Voice Mode] ✅ WebSocket connected and authenticated (token in URL)');
+          // Authentication happens via WebSocket subprotocols during handshake
+          // Token is in subprotocol: "openai-insecure-api-key.{ephemeralToken}"
+          // No auth message needed - connection is already authenticated when onopen fires
+          console.log('[Voice Mode] ✅ WebSocket connected and authenticated (subprotocol auth)');
           
-          // Set a flag to track if we've received auth confirmation
-          // Some implementations may send auth.success, but it's not required when token is in URL
+          // Set a flag to track authentication
+          // Some implementations may send auth.success, but it's not required with subprotocol auth
           websocket._authenticated = true;
           
           // Start audio capture immediately - authentication is complete

@@ -72,8 +72,7 @@ exports.handler = async (event, context) => {
             },
             session: {
               type: 'realtime',
-              model: 'gpt-4o-realtime-preview',
-              voice: voice,
+              model: 'gpt-realtime', // GA API uses 'gpt-realtime', not 'gpt-4o-realtime-preview'
               instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
 
 You help users understand news, fact-check claims, and stay informed with accurate information.`,
@@ -82,6 +81,9 @@ You help users understand news, fact-check claims, and stay informed with accura
                   format: {
                     type: 'audio/pcm',
                     rate: 24000
+                  },
+                  turn_detection: {
+                    type: 'server_vad'
                   }
                 },
                 output: {
@@ -89,17 +91,9 @@ You help users understand news, fact-check claims, and stay informed with accura
                     type: 'audio/pcm',
                     rate: 24000
                   },
-                  voice: voice,
+                  voice: voice, // Voice goes in audio.output.voice, NOT session.voice
                   speed: 1.0
                 }
-              },
-              temperature: 0.6,
-              max_response_output_tokens: 4096,
-              turn_detection: {
-                type: 'server_vad',
-                threshold: 0.5,
-                prefix_padding_ms: 300,
-                silence_duration_ms: 500,
               }
             }
           }),
@@ -183,7 +177,7 @@ You help users understand news, fact-check claims, and stay informed with accura
         headers,
         body: JSON.stringify({
           ephemeralToken: ephemeralToken, // GA-compatible token from client_secrets.value
-          model: 'gpt-4o-realtime-preview',
+          model: 'gpt-realtime', // GA API model name
           voice: voice,
           // Optional: include session_id for internal tracking/logging only
           session_id: sessionId, // From client_secrets response if available
@@ -273,8 +267,7 @@ You help users understand news, fact-check claims, and stay informed with accura
             },
             session: {
               type: 'realtime',
-              model: 'gpt-4o-realtime-preview',
-              voice: voice,
+              model: 'gpt-realtime', // GA API uses 'gpt-realtime', not 'gpt-4o-realtime-preview'
               instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
 
 You help users understand news, fact-check claims, and stay informed with accurate information.`,
@@ -283,6 +276,9 @@ You help users understand news, fact-check claims, and stay informed with accura
                   format: {
                     type: 'audio/pcm',
                     rate: 24000
+                  },
+                  turn_detection: {
+                    type: 'server_vad'
                   }
                 },
                 output: {
@@ -290,17 +286,9 @@ You help users understand news, fact-check claims, and stay informed with accura
                     type: 'audio/pcm',
                     rate: 24000
                   },
-                  voice: voice,
+                  voice: voice, // Voice goes in audio.output.voice, NOT session.voice
                   speed: 1.0
                 }
-              },
-              temperature: 0.6,
-              max_response_output_tokens: 4096,
-              turn_detection: {
-                type: 'server_vad',
-                threshold: 0.5,
-                prefix_padding_ms: 300,
-                silence_duration_ms: 500,
               }
             }
           }),
@@ -404,7 +392,7 @@ You help users understand news, fact-check claims, and stay informed with accura
         headers,
         body: JSON.stringify({
           ephemeralToken: ephemeralToken, // GA-compatible token from client_secrets.value
-          model: 'gpt-4o-realtime-preview',
+          model: 'gpt-realtime', // GA API model name
           voice: voice,
           // Optional: include session_id for internal tracking/logging only
           session_id: sessionId, // From client_secrets response if available
