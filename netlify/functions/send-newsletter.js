@@ -946,13 +946,18 @@ exports.handler = async (event, context) => {
           .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#')
           .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#');
         
+        // Generate text version if not provided
+        const finalTextContent = textContent || htmlContent.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+        
         const sendRecord = {
           timestamp: new Date().toISOString(),
           emailsSent: successCount,
           totalContacts: validContacts.length,
           subject: subject,
           errors: errorCount,
-          previewHtml: previewHtml, // Save preview HTML
+          html: htmlContent, // Save original HTML with variables (for resending)
+          previewHtml: previewHtml, // Save preview HTML (for preview display)
+          text: finalTextContent, // Save text version
         };
         
         await store.set("last-send-time", JSON.stringify(sendRecord));

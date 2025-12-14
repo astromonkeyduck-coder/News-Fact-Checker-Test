@@ -101,13 +101,13 @@ exports.handler = async (event, context) => {
                 // Fetch preview HTML for each newsletter in the list
                 for (const newsletter of parsed) {
                   try {
-                    // Try to get full entry with preview HTML
+                    // Try to get full entry with HTML
                     if (newsletter.id && newsletter.id.startsWith('newsletter-history-')) {
                       const fullEntry = await historyStore.get(newsletter.id, { type: "json" });
-                      if (fullEntry && fullEntry.previewHtml) {
-                        newsletter.previewHtml = fullEntry.previewHtml;
-                      } else if (fullEntry && fullEntry.html) {
-                        newsletter.previewHtml = fullEntry.html;
+                      if (fullEntry) {
+                        newsletter.html = fullEntry.html || newsletter.html || '';
+                        newsletter.previewHtml = fullEntry.previewHtml || fullEntry.html || newsletter.previewHtml || '';
+                        newsletter.text = fullEntry.text || newsletter.text || '';
                       }
                     }
                   } catch (e) {
@@ -130,11 +130,12 @@ exports.handler = async (event, context) => {
                 n.timestamp === lastSend.timestamp && n.subject === lastSend.subject
               );
               if (!exists) {
-                // Try to get preview HTML - check multiple possible fields
-                let previewHtml = lastSend.previewHtml || lastSend.html || '';
+                // Get HTML and preview HTML - check multiple possible fields
+                let html = lastSend.html || '';
+                let previewHtml = lastSend.previewHtml || '';
                 
                 // If still empty, try to find it in a history entry
-                if (!previewHtml || previewHtml.trim() === '') {
+                if ((!html || html.trim() === '') || (!previewHtml || previewHtml.trim() === '')) {
                   try {
                     // Look for a matching history entry
                     const { blobs } = await historyStore.list();
@@ -142,26 +143,27 @@ exports.handler = async (event, context) => {
                       if (blob.key.startsWith('newsletter-history-')) {
                         const entry = await historyStore.get(blob.key, { type: "json" });
                         if (entry && entry.subject === lastSend.subject && entry.timestamp === lastSend.timestamp) {
+                          html = entry.html || html;
                           previewHtml = entry.previewHtml || entry.html || previewHtml;
-                          console.log(`Found preview HTML in history entry: ${blob.key}`);
+                          console.log(`Found HTML in history entry: ${blob.key}`);
                           break;
                         }
                       }
                     }
                   } catch (e) {
-                    console.log('Error searching for preview HTML:', e.message);
+                    console.log('Error searching for HTML in history:', e.message);
                   }
                 }
                 
-                // If still no previewHtml, try to get html from lastSend and create preview
-                if ((!previewHtml || previewHtml.trim() === '') && lastSend.html) {
-                  previewHtml = lastSend.html
+                // If we have html but no previewHtml, generate preview from html
+                if (html && (!previewHtml || previewHtml.trim() === '')) {
+                  previewHtml = html
                     .replace(/\{\{FULL_NAME\}\}/g, 'Preview User')
                     .replace(/\{\{FIRST_NAME\}\}/g, 'Preview')
                     .replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview')
                     .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#')
                     .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#');
-                  console.log('Generated preview HTML from lastSend.html');
+                  console.log('Generated preview HTML from html');
                 }
                 
                 newsletters.push({
@@ -169,7 +171,9 @@ exports.handler = async (event, context) => {
                   subject: lastSend.subject,
                   timestamp: lastSend.timestamp,
                   emailsSent: lastSend.emailsSent || 0,
-                  previewHtml: previewHtml || '', // Include preview HTML (empty string if not available)
+                  html: lastSend.html || '', // Include original HTML (for resending)
+                  previewHtml: previewHtml || '', // Include preview HTML (for preview display)
+                  text: lastSend.text || '', // Include text version
                 });
               }
             }
@@ -196,7 +200,9 @@ exports.handler = async (event, context) => {
                         subject: entry.subject,
                         timestamp: entry.timestamp,
                         emailsSent: entry.emailsSent || 0,
-                        previewHtml: entry.previewHtml || entry.html || '', // Include preview HTML
+                        html: entry.html || '', // Include original HTML (for resending)
+                        previewHtml: entry.previewHtml || entry.html || '', // Include preview HTML (for preview)
+                        text: entry.text || '', // Include text version
                       });
                     }
                   }
@@ -263,7 +269,9 @@ exports.handler = async (event, context) => {
                   subject: dcTemplate.subject || dcShootingSubject,
                   timestamp: dcTimestamp,
                   emailsSent: 0, // Will show as "Sent to 0 subscribers" - can be updated later if we find the actual count
+                  html: dcTemplate.html || '', // Include original HTML
                   previewHtml: dcTemplate.html || '', // Include preview HTML
+                  text: dcTemplate.text || '', // Include text version
                 });
                 console.log('✅ Added newsletter to history from template');
               }
@@ -627,7 +635,7 @@ exports.handler = async (event, context) => {
     // PUT: Update an existing template
     if (event.httpMethod === 'POST' || event.httpMethod === 'PUT') {
       const body = JSON.parse(event.body || '{}');
-      const { id, name, subject, preheader, html, text } = body;
+      const { id, name, subject, preheader, html, text, promptText, attachments, generatedHtml, generatedAt } = body;
       
       if (!name || !subject) {
         return {
@@ -680,6 +688,11 @@ exports.handler = async (event, context) => {
         preheader: preheader || '',
         html: html || '',
         text: text || '',
+        // AI generation fields
+        promptText: promptText || '',
+        attachments: attachments || [],
+        generatedHtml: generatedHtml || html || '',
+        generatedAt: generatedAt || null,
         createdAt: existingTemplate?.createdAt || body.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

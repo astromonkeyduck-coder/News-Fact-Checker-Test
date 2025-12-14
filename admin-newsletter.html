@@ -422,6 +422,8 @@
             margin-bottom: 1.5rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid var(--terminal-border);
+            gap: 1rem;
+            flex-wrap: nowrap;
         }
         
         .panel-header h2 {
@@ -432,6 +434,50 @@
             text-transform: uppercase;
             letter-spacing: 0.1em;
             margin: 0;
+            flex: 0 0 auto;
+        }
+        
+        .new-template-btn {
+            flex: 0 0 auto;
+            white-space: nowrap;
+            min-width: fit-content;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.7rem;
+            line-height: 1.1;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-left: auto;
+            text-align: center;
+        }
+        
+        .new-template-btn span:first-child {
+            font-size: 0.9rem;
+        }
+        
+        .new-template-btn span:last-child {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.1;
+            font-size: 0.65rem;
+        }
+        
+        /* Ensure panel-left doesn't cut off content */
+        .panel-left {
+            overflow-x: visible;
+            min-width: 0;
+        }
+        
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 1200px) {
+            .new-template-btn {
+                font-size: 0.65rem;
+                padding: 0.4rem 0.6rem;
+            }
+            
+            .new-template-btn span:last-child {
+                font-size: 0.6rem;
+            }
         }
         
         .templates-list {
@@ -600,6 +646,159 @@
             margin-top: 2rem;
             padding-top: 1.5rem;
             border-top: 1px solid var(--terminal-border);
+        }
+        
+        /* Attachments Panel */
+        .attachments-panel {
+            margin-top: 0.5rem;
+        }
+        
+        .attachments-dropzone {
+            border: 2px dashed var(--terminal-border);
+            border-radius: 4px;
+            padding: 2rem;
+            text-align: center;
+            background: var(--terminal-bg);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .attachments-dropzone:hover,
+        .attachments-dropzone.dragover {
+            border-color: var(--terminal-green);
+            background: rgba(0, 255, 65, 0.05);
+            box-shadow: 0 0 10px var(--glow-green);
+        }
+        
+        .dropzone-content {
+            color: var(--terminal-text-dim);
+        }
+        
+        .dropzone-icon {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .dropzone-hint {
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+            opacity: 0.6;
+        }
+        
+        .link-button {
+            background: none;
+            border: none;
+            color: var(--terminal-green);
+            text-decoration: underline;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: inherit;
+        }
+        
+        .link-button:hover {
+            color: var(--terminal-amber);
+        }
+        
+        .attachments-list {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .attachment-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-border);
+            border-radius: 4px;
+            align-items: flex-start;
+        }
+        
+        .attachment-thumbnail {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid var(--terminal-border);
+        }
+        
+        .attachment-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .attachment-title-input {
+            width: 100%;
+            padding: 0.5rem;
+            background: var(--terminal-bg-dark);
+            border: 1px solid var(--terminal-border);
+            color: var(--terminal-text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            border-radius: 4px;
+        }
+        
+        .attachment-title-input:focus {
+            outline: none;
+            border-color: var(--terminal-green);
+            box-shadow: 0 0 5px var(--glow-green);
+        }
+        
+        .attachment-title-input:invalid {
+            border-color: var(--terminal-red);
+        }
+        
+        .attachment-meta {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--terminal-text-dim);
+        }
+        
+        .attachment-placement {
+            padding: 0.25rem 0.5rem;
+            background: var(--terminal-bg-dark);
+            border: 1px solid var(--terminal-border);
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+        }
+        
+        .attachment-remove {
+            background: var(--terminal-red);
+            color: var(--terminal-bg);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+        
+        .attachment-remove:hover {
+            background: #ff4444;
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+        }
+        
+        /* Generate Controls */
+        .generate-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .generate-controls .btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         
         .preview-container {
@@ -1250,9 +1449,9 @@
             <div class="panel-left">
                 <div class="panel-header">
                     <h2>Templates</h2>
-                    <button class="btn btn-primary" id="newTemplateBtn" onclick="createNewTemplate()">
+                    <button class="btn btn-primary new-template-btn" onclick="createNewTemplate()">
                         <span>➕</span>
-                        <span>New Template</span>
+                        <span>NEW<br>TEMPLATE</span>
                     </button>
                 </div>
                 
@@ -1305,10 +1504,61 @@
                                 <div class="help-text">This text appears after the subject line in most email clients</div>
                             </div>
                             
+                            <!-- AI Prompt Composer -->
                             <div class="form-group">
-                                <label for="templateHtml">HTML Content</label>
-                                <textarea id="templateHtml" rows="20" required placeholder="Enter HTML content for your newsletter..."></textarea>
-                                <div class="help-text">Use HTML to design your newsletter. Variables: {{FULL_NAME}}, {{FIRST_NAME}}, {{UNSUBSCRIBE_URL}}</div>
+                                <label for="promptText">Newsletter Content Prompt</label>
+                                <textarea 
+                                    id="promptText" 
+                                    rows="12" 
+                                    placeholder="Describe your newsletter content here. Include exact text, structure, and any ideas. Reference images using [[Image: Title]].&#10;&#10;Example:&#10;Today there was a breaking news story about... Include the image [[Image: Breaking News Photo]] at the top. Then add a section with key developments..."
+                                ></textarea>
+                                <div class="help-text">
+                                    <strong>Tip:</strong> Reference images by title using <code>[[Image: Title]]</code>. Press Enter to generate (Shift+Enter for newline).
+                                </div>
+                            </div>
+                            
+                            <!-- Image Attachments Panel -->
+                            <div class="form-group">
+                                <label>Images</label>
+                                <div id="attachmentsPanel" class="attachments-panel">
+                                    <div class="attachments-dropzone" id="attachmentsDropzone">
+                                        <div class="dropzone-content">
+                                            <span class="dropzone-icon">📎</span>
+                                            <p>Drag & drop images here, or <button type="button" class="link-button" onclick="document.getElementById('imageFileInput').click()">click to upload</button></p>
+                                            <p class="dropzone-hint">You can also paste images directly into the prompt area above</p>
+                                        </div>
+                                        <input type="file" id="imageFileInput" accept="image/*" multiple style="display: none;">
+                                    </div>
+                                    <div id="attachmentsList" class="attachments-list"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Generate Controls -->
+                            <div class="form-group">
+                                <div class="generate-controls">
+                                    <button type="button" class="btn btn-primary" id="generateBtn" onclick="generateNewsletter()">
+                                        <span>✨</span>
+                                        <span>Generate Newsletter</span>
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" id="regenerateBtn" onclick="regenerateNewsletter()" style="display: none;">
+                                        <span>🔄</span>
+                                        <span>Regenerate</span>
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" id="toggleAdvancedBtn" onclick="toggleAdvancedView()">
+                                        <span>⚙️</span>
+                                        <span>Advanced</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Advanced HTML View (collapsed by default) -->
+                            <div id="advancedHtmlView" class="form-group" style="display: none;">
+                                <label for="templateHtml">Generated HTML <span class="help-text">(read-only)</span></label>
+                                <textarea id="templateHtml" rows="20" readonly placeholder="HTML will appear here after generation..."></textarea>
+                                <div class="form-actions" style="margin-top: 1rem;">
+                                    <button type="button" class="btn btn-secondary" onclick="enableHtmlEditing()">Edit HTML Anyway</button>
+                                    <button type="button" class="btn btn-secondary" onclick="copyHtmlToClipboard()">Copy HTML</button>
+                                </div>
                             </div>
                             
                             <div class="form-actions">
@@ -1449,9 +1699,18 @@
         const newsletterState = {
             selectedType: null, // 'template' | 'history' | null
             selectedId: null,
-            currentTemplate: null, // { id, name, subject, preheader, html, ... }
+            currentTemplate: null, // { id, name, subject, preheader, html, promptText, attachments, generatedHtml, ... }
             templates: {}, // All templates indexed by id
-            history: [] // Past newsletters
+            history: [], // Past newsletters
+            promptText: '', // AI prompt for newsletter generation
+            attachments: [], // [{ id, title, file, mimeType, dataUrl, width, height, placementHint }]
+            generatedHtml: '', // AI-generated HTML
+            generatedAt: null, // Timestamp of last generation
+            isDirty: false, // True if prompt changed after generation
+            styleReference: {
+                name: 'Weekly Newsletter - Noteworthy News',
+                sentAt: '2025-11-26T23:13:00',
+            }
         };
         
         let adminToken = sessionStorage.getItem('adminNewsletterToken');
@@ -2078,6 +2337,11 @@
                         html: finalHtml,
                         text: template.text || '',
                         previewHtml: finalPreviewHtml,
+                        // AI generation fields
+                        promptText: template.promptText || '',
+                        attachments: template.attachments || [],
+                        generatedHtml: template.generatedHtml || finalHtml,
+                        generatedAt: template.generatedAt || null,
                         createdAt: template.createdAt,
                         updatedAt: template.updatedAt
                     };
@@ -2150,17 +2414,18 @@
                 if (data.newsletters && data.newsletters.length > 0) {
                     newsletterState.history = data.newsletters.map(newsletter => {
                         const templateId = newsletter.id || `newsletter-${Date.now()}`;
-                        const previewHtml = newsletter.previewHtml || newsletter.html || '';
-                        const fullHtml = newsletter.html || newsletter.previewHtml || '';
-                        const hasHtml = fullHtml && fullHtml.trim().length > 0;
+                        // Prioritize html (original) over previewHtml (preview version)
+                        const html = newsletter.html || '';
+                        const previewHtml = newsletter.previewHtml || (html ? html.replace(/\{\{FULL_NAME\}\}/g, 'Preview User').replace(/\{\{FIRST_NAME\}\}/g, 'Preview').replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview').replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#').replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#') : '');
+                        const hasHtml = html && html.trim().length > 0;
                         
                         return {
                             type: 'history',
                             id: templateId,
                             name: newsletter.subject || 'Past Newsletter',
                             subject: newsletter.subject || 'No subject',
-                            html: hasHtml ? fullHtml : '',
-                            previewHtml: previewHtml || '',
+                            html: html, // Original HTML with variables (for resending)
+                            previewHtml: previewHtml, // Preview version (for display)
                             text: newsletter.text || '',
                             timestamp: newsletter.timestamp,
                             emailsSent: newsletter.emailsSent || 0
@@ -2177,7 +2442,7 @@
                                 <div class="template-item-name">${escapeHtml(item.subject || 'Past Newsletter')}</div>
                                 <div class="template-item-subject">${formatDate(item.timestamp)}</div>
                                 <div class="template-item-date">Sent to ${item.emailsSent || 0} subscribers</div>
-                                ${!hasHtml ? '<div class="template-item-badge">⚠️ No HTML</div>' : ''}
+                                ${!hasHtml ? '<div class="template-item-badge">⚠️ No HTML</div>' : '<div class="template-item-badge" style="border-color:var(--terminal-green);color:var(--terminal-green);">✓ Can Resend</div>'}
                             </div>
                         `;
                     }).join('');
@@ -2225,12 +2490,51 @@
             updateTemplateListSelection();
             if (history.html && history.html.trim()) {
                 loadTemplateIntoEditor(history);
+                showStatus(`Past newsletter "${history.subject}" selected. You can edit and resend, or convert to template.`, 'success');
             } else {
-                showEmptyEditorState('This past newsletter has no HTML content available for editing.');
+                showEmptyEditorState('This past newsletter has no HTML content available. It cannot be edited or resent.');
             }
             updatePreview();
             updateSendButtonStates();
         }
+        
+        // Convert history to template
+        async function convertHistoryToTemplate() {
+            const history = newsletterState.currentTemplate;
+            if (!history || newsletterState.selectedType !== 'history') {
+                showStatus('Please select a past newsletter first', 'error');
+                return;
+            }
+            
+            if (!history.html || !history.html.trim()) {
+                showStatus('This newsletter has no HTML content to convert', 'error');
+                return;
+            }
+            
+            // Create a new template from the history
+            const newTemplate = {
+                type: 'template',
+                id: `new-${Date.now()}`,
+                name: `${history.subject} (from history)`,
+                subject: history.subject,
+                preheader: '',
+                html: history.html, // Use original HTML
+                text: history.text || history.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            newsletterState.selectedType = 'template';
+            newsletterState.selectedId = newTemplate.id;
+            newsletterState.currentTemplate = newTemplate;
+            
+            loadTemplateIntoEditor(newTemplate);
+            updateTemplateListSelection();
+            showStatus('Converted to template! Edit and save to create a new template.', 'success');
+        }
+        
+        // Make convertHistoryToTemplate globally accessible
+        window.convertHistoryToTemplate = convertHistoryToTemplate;
         
         // Update template list selection highlighting
         function updateTemplateListSelection() {
@@ -2247,24 +2551,78 @@
             }
         }
         
-        // Load template into editor
-        function loadTemplateIntoEditor(template) {
-            document.getElementById('emptyEditorState').style.display = 'none';
-            document.getElementById('editorPanel').style.display = 'flex';
-            
-            document.getElementById('templateName').value = template.name || '';
-            document.getElementById('templateSubject').value = template.subject || '';
-            document.getElementById('templatePreheader').value = template.preheader || '';
-            document.getElementById('templateHtml').value = template.html || '';
-            
-            // Show/hide duplicate/delete buttons
-            const isNew = !template.id || template.id.startsWith('new-');
-            document.getElementById('duplicateBtn').style.display = isNew ? 'none' : 'inline-block';
-            document.getElementById('deleteBtn').style.display = isNew ? 'none' : 'inline-block';
-            
-            // Switch to editor tab
-            switchEditorTab('editor');
-        }
+            // Load template into editor
+            function loadTemplateIntoEditor(template) {
+                document.getElementById('emptyEditorState').style.display = 'none';
+                document.getElementById('editorPanel').style.display = 'flex';
+                
+                document.getElementById('templateName').value = template.name || '';
+                document.getElementById('templateSubject').value = template.subject || '';
+                document.getElementById('templatePreheader').value = template.preheader || '';
+                
+                // Load prompt and attachments (if AI-generated template)
+                const promptText = template.promptText || '';
+                const attachments = template.attachments || [];
+                const generatedHtml = template.generatedHtml || template.html || '';
+                
+                document.getElementById('promptText').value = promptText;
+                newsletterState.promptText = promptText;
+                newsletterState.attachments = attachments.map(a => ({ ...a })); // Clone
+                newsletterState.generatedHtml = generatedHtml;
+                newsletterState.isDirty = false;
+                
+                // Render attachments
+                const attachmentsList = document.getElementById('attachmentsList');
+                attachmentsList.innerHTML = '';
+                newsletterState.attachments.forEach(att => {
+                    renderAttachment(att);
+                });
+                
+                // Set HTML (use generatedHtml if available, otherwise html)
+                document.getElementById('templateHtml').value = generatedHtml || template.html || '';
+                
+                // Show/hide regenerate button
+                if (generatedHtml) {
+                    document.getElementById('regenerateBtn').style.display = 'inline-flex';
+                } else {
+                    document.getElementById('regenerateBtn').style.display = 'none';
+                }
+                
+                // Show/hide buttons based on type
+                const isNew = !template.id || template.id.startsWith('new-');
+                const isHistory = newsletterState.selectedType === 'history';
+                
+                document.getElementById('duplicateBtn').style.display = (isNew || isHistory) ? 'none' : 'inline-block';
+                document.getElementById('deleteBtn').style.display = (isNew || isHistory) ? 'none' : 'inline-block';
+                
+                // For history items with HTML, show "Convert to Template" button
+                if (isHistory && template.html && template.html.trim()) {
+                    // Add convert button if it doesn't exist
+                    let convertBtn = document.getElementById('convertBtn');
+                    if (!convertBtn) {
+                        convertBtn = document.createElement('button');
+                        convertBtn.id = 'convertBtn';
+                        convertBtn.type = 'button';
+                        convertBtn.className = 'btn btn-secondary';
+                        convertBtn.textContent = 'Convert to Template';
+                        convertBtn.onclick = convertHistoryToTemplate;
+                        const formActions = document.querySelector('.form-actions');
+                        if (formActions) {
+                            formActions.insertBefore(convertBtn, formActions.firstChild);
+                        }
+                    }
+                    convertBtn.style.display = 'inline-block';
+                } else {
+                    const convertBtn = document.getElementById('convertBtn');
+                    if (convertBtn) convertBtn.style.display = 'none';
+                }
+                
+                // Update generate button state
+                updateGenerateButtonState();
+                
+                // Switch to editor tab
+                switchEditorTab('editor');
+            }
         
         // Show empty editor state
         function showEmptyEditorState(message) {
@@ -2309,13 +2667,17 @@
             if (!container) return;
             
             const template = newsletterState.currentTemplate;
-            if (!template || !template.html || !template.html.trim()) {
+            
+            // Use generatedHtml if available, otherwise html
+            const htmlToPreview = template?.generatedHtml || template?.html || newsletterState.generatedHtml || '';
+            
+            if (!template || !htmlToPreview || !htmlToPreview.trim()) {
                 container.innerHTML = `
                     <div class="preview-placeholder">
                         <div class="empty-state-icon">👁️</div>
-                        <p>No HTML available to preview.</p>
+                        <p>Generate your newsletter to see preview</p>
                         <p style="font-size:0.8rem;margin-top:0.5rem;color:var(--terminal-text-dim);">
-                            Add HTML content in the Editor tab to see a preview.
+                            Use the prompt composer to generate HTML content.
                         </p>
                     </div>
                 `;
@@ -2323,7 +2685,7 @@
             }
             
             // Create preview HTML with email-safe styling
-            const previewHtml = template.html
+            const previewHtml = htmlToPreview
                 .replace(/\{\{FULL_NAME\}\}/g, 'Preview User')
                 .replace(/\{\{FIRST_NAME\}\}/g, 'Preview')
                 .replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview')
@@ -2371,9 +2733,12 @@
             const testBtn = document.getElementById('testBtn');
             
             const template = newsletterState.currentTemplate;
-            const hasHtml = template && template.html && template.html.trim() !== '';
+            // Use generatedHtml if available, otherwise html
+            const htmlToCheck = template.generatedHtml || template.html || '';
+            const hasHtml = htmlToCheck && htmlToCheck.trim() !== '';
             const hasSubject = template && template.subject && template.subject.trim() !== '';
-            const canSend = hasHtml && hasSubject && newsletterState.selectedType === 'template';
+            // Can send if it's a template, or history with HTML
+            const canSend = hasHtml && hasSubject && (newsletterState.selectedType === 'template' || (newsletterState.selectedType === 'history' && hasHtml));
             
             if (sendBtn) {
                 sendBtn.disabled = !canSend;
@@ -2382,11 +2747,11 @@
                         sendBtn.title = 'Template is missing HTML content';
                     } else if (!hasSubject) {
                         sendBtn.title = 'Template is missing subject line';
-                    } else if (newsletterState.selectedType === 'history') {
-                        sendBtn.title = 'Past newsletters cannot be resent. Create a template instead.';
+                    } else if (newsletterState.selectedType === 'history' && !hasHtml) {
+                        sendBtn.title = 'This past newsletter has no HTML content and cannot be resent.';
                     }
                 } else {
-                    sendBtn.title = '';
+                    sendBtn.title = newsletterState.selectedType === 'history' ? 'Resend this past newsletter' : '';
                 }
             }
             
@@ -2405,14 +2770,24 @@
         
         // Create new template
         async function createNewTemplate() {
+            // Reset AI generation state
+            newsletterState.promptText = '';
+            newsletterState.attachments = [];
+            newsletterState.generatedHtml = '';
+            newsletterState.generatedAt = null;
+            newsletterState.isDirty = false;
+            
             const newTemplate = {
                 type: 'template',
                 id: `new-${Date.now()}`,
                 name: 'New Template',
                 subject: 'Weekly Newsletter - Noteworthy News',
                 preheader: '',
-                html: STARTER_TEMPLATE_HTML,
+                html: '',
                 text: '',
+                promptText: '',
+                attachments: [],
+                generatedHtml: '',
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
@@ -2423,7 +2798,7 @@
             
             loadTemplateIntoEditor(newTemplate);
             updateTemplateListSelection();
-            showStatus('New template created. Fill in the details and save.', 'success');
+            showStatus('New template created. Use the prompt composer to generate your newsletter.', 'success');
         }
         
         // Save template
@@ -2437,10 +2812,18 @@
             const name = document.getElementById('templateName').value.trim();
             const subject = document.getElementById('templateSubject').value.trim();
             const preheader = document.getElementById('templatePreheader').value.trim();
-            const html = document.getElementById('templateHtml').value.trim();
             
-            if (!name || !subject || !html) {
-                showStatus('Name, subject, and HTML are required', 'error');
+            // Use generatedHtml if available, otherwise use manually edited HTML
+            const html = newsletterState.generatedHtml || document.getElementById('templateHtml').value.trim();
+            
+            if (!name || !subject) {
+                showStatus('Name and subject are required', 'error');
+                return;
+            }
+            
+            // HTML is required unless we have generatedHtml queued
+            if (!html && !newsletterState.generatedHtml) {
+                showStatus('Please generate newsletter HTML or provide HTML content', 'error');
                 return;
             }
             
@@ -2453,8 +2836,21 @@
                 name,
                 subject,
                 preheader,
-                html,
-                text: html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
+                html: html || newsletterState.generatedHtml,
+                text: (html || newsletterState.generatedHtml || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(),
+                // Save AI generation data
+                promptText: newsletterState.promptText || '',
+                attachments: newsletterState.attachments.map(a => ({
+                    id: a.id,
+                    title: a.title,
+                    mimeType: a.mimeType,
+                    dataUrl: a.dataUrl, // Save full data URL for regeneration
+                    width: a.width,
+                    height: a.height,
+                    placementHint: a.placementHint
+                })),
+                generatedHtml: newsletterState.generatedHtml || html,
+                generatedAt: newsletterState.generatedAt || null
             };
             
             if (!isNew) {
@@ -2841,14 +3237,312 @@
             animate();
         }
 
+        // ============================================
+        // AI Newsletter Generation Functions
+        // ============================================
+        
+        // Handle image file upload
+        function handleImageFiles(files) {
+            Array.from(files).forEach(file => {
+                if (!file.type.startsWith('image/')) {
+                    showStatus('Only image files are supported', 'error');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const dataUrl = e.target.result;
+                    const img = new Image();
+                    img.onload = () => {
+                        const attachment = {
+                            id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                            title: '',
+                            file: file,
+                            mimeType: file.type,
+                            dataUrl: dataUrl,
+                            width: img.width,
+                            height: img.height,
+                            placementHint: 'inline'
+                        };
+                        
+                        newsletterState.attachments.push(attachment);
+                        renderAttachment(attachment);
+                        
+                        // Insert token in prompt at cursor
+                        insertImageToken(attachment.id);
+                    };
+                    img.src = dataUrl;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // Render attachment in UI
+        function renderAttachment(attachment) {
+            const list = document.getElementById('attachmentsList');
+            const item = document.createElement('div');
+            item.className = 'attachment-item';
+            item.dataset.attachmentId = attachment.id;
+            
+            item.innerHTML = `
+                <img src="${attachment.dataUrl}" alt="Preview" class="attachment-thumbnail">
+                <div class="attachment-details">
+                    <input 
+                        type="text" 
+                        class="attachment-title-input" 
+                        placeholder="Image title (required)" 
+                        required
+                        value="${escapeHtml(attachment.title)}"
+                        data-attachment-id="${attachment.id}"
+                    >
+                    <div class="attachment-meta">
+                        <select class="attachment-placement" data-attachment-id="${attachment.id}">
+                            <option value="hero" ${attachment.placementHint === 'hero' ? 'selected' : ''}>Hero</option>
+                            <option value="top-story" ${attachment.placementHint === 'top-story' ? 'selected' : ''}>Top Story</option>
+                            <option value="inline" ${attachment.placementHint === 'inline' ? 'selected' : ''}>Inline</option>
+                            <option value="footer" ${attachment.placementHint === 'footer' ? 'selected' : ''}>Footer</option>
+                        </select>
+                        <span>${Math.round(attachment.width)}×${Math.round(attachment.height)}</span>
+                        <span>${(attachment.file.size / 1024).toFixed(1)} KB</span>
+                    </div>
+                </div>
+                <button type="button" class="attachment-remove" onclick="removeAttachment('${attachment.id}')">Remove</button>
+            `;
+            
+            list.appendChild(item);
+            
+            // Focus title input
+            const titleInput = item.querySelector('.attachment-title-input');
+            titleInput.focus();
+            
+            // Update title on change
+            titleInput.addEventListener('input', (e) => {
+                attachment.title = e.target.value;
+                updateImageTokens();
+                updateGenerateButtonState();
+            });
+            
+            // Update placement hint
+            const placementSelect = item.querySelector('.attachment-placement');
+            placementSelect.addEventListener('change', (e) => {
+                attachment.placementHint = e.target.value;
+            });
+        }
+        
+        // Insert image token in prompt
+        function insertImageToken(attachmentId) {
+            const attachment = newsletterState.attachments.find(a => a.id === attachmentId);
+            if (!attachment) return;
+            
+            const promptTextarea = document.getElementById('promptText');
+            const cursorPos = promptTextarea.selectionStart;
+            const textBefore = promptTextarea.value.substring(0, cursorPos);
+            const textAfter = promptTextarea.value.substring(cursorPos);
+            
+            const defaultTitle = attachment.title || `Untitled Image ${newsletterState.attachments.length}`;
+            const token = `[[Image: ${defaultTitle}]]`;
+            
+            promptTextarea.value = textBefore + token + textAfter;
+            promptTextarea.selectionStart = promptTextarea.selectionEnd = cursorPos + token.length;
+            promptTextarea.focus();
+            
+            newsletterState.promptText = promptTextarea.value;
+            newsletterState.isDirty = true;
+        }
+        
+        // Update image tokens in prompt when titles change
+        function updateImageTokens() {
+            // This is a simplified version - in a full implementation, we'd track token positions
+            // For now, we'll just mark as dirty and let regeneration handle it
+            newsletterState.isDirty = true;
+        }
+        
+        // Remove attachment
+        function removeAttachment(attachmentId) {
+            newsletterState.attachments = newsletterState.attachments.filter(a => a.id !== attachmentId);
+            const item = document.querySelector(`[data-attachment-id="${attachmentId}"]`);
+            if (item) item.remove();
+            updateGenerateButtonState();
+        }
+        
+        // Generate newsletter HTML
+        async function generateNewsletter() {
+            const promptText = document.getElementById('promptText').value.trim();
+            const subject = document.getElementById('templateSubject').value.trim();
+            const preheader = document.getElementById('templatePreheader').value.trim();
+            
+            // Validate
+            if (promptText.length < 20) {
+                showStatus('Prompt must be at least 20 characters', 'error');
+                return;
+            }
+            
+            const untitledImages = newsletterState.attachments.filter(a => !a.title || a.title.trim() === '');
+            if (untitledImages.length > 0) {
+                showStatus('All images must have titles before generating', 'error');
+                untitledImages.forEach(img => {
+                    const input = document.querySelector(`[data-attachment-id="${img.id}"].attachment-title-input`);
+                    if (input) input.focus();
+                });
+                return;
+            }
+            
+            // Disable generate button
+            const generateBtn = document.getElementById('generateBtn');
+            const originalText = generateBtn.innerHTML;
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<span>⏳</span><span>Generating...</span>';
+            
+            try {
+                showStatus('Generating newsletter HTML...', 'info');
+                
+                const response = await fetch('/.netlify/functions/generate-newsletter-html', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        subject: subject || 'Weekly Newsletter',
+                        preheader: preheader || '',
+                        promptText: promptText,
+                        attachments: newsletterState.attachments.map(a => ({
+                            id: a.id,
+                            title: a.title,
+                            mimeType: a.mimeType,
+                            dataUrl: a.dataUrl,
+                            placementHint: a.placementHint
+                        })),
+                        styleReference: newsletterState.styleReference
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to generate newsletter');
+                }
+                
+                const data = await response.json();
+                
+                // Update state
+                newsletterState.generatedHtml = data.html;
+                newsletterState.generatedAt = data.generatedAt;
+                newsletterState.isDirty = false;
+                
+                // Update template HTML (for preview and send)
+                if (newsletterState.currentTemplate) {
+                    newsletterState.currentTemplate.html = data.html;
+                    newsletterState.currentTemplate.generatedHtml = data.html;
+                    newsletterState.currentTemplate.promptText = promptText;
+                    newsletterState.currentTemplate.attachments = newsletterState.attachments;
+                }
+                
+                // Update HTML textarea
+                document.getElementById('templateHtml').value = data.html;
+                
+                // Show regenerate button
+                document.getElementById('regenerateBtn').style.display = 'inline-flex';
+                
+                // Update preview
+                updatePreview();
+                updateSendButtonStates();
+                
+                // Show warnings if any
+                if (data.warnings && data.warnings.length > 0) {
+                    showStatus(`Generated with warnings: ${data.warnings.join(', ')}`, 'warning');
+                } else {
+                    showStatus('Newsletter generated successfully!', 'success');
+                }
+                
+            } catch (error) {
+                console.error('Generation error:', error);
+                showStatus(`Generation failed: ${error.message}`, 'error');
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = originalText;
+            }
+        }
+        
+        // Regenerate with same prompt
+        async function regenerateNewsletter() {
+            await generateNewsletter();
+        }
+        
+        // Toggle advanced HTML view
+        function toggleAdvancedView() {
+            const advancedView = document.getElementById('advancedHtmlView');
+            const isVisible = advancedView.style.display !== 'none';
+            advancedView.style.display = isVisible ? 'none' : 'block';
+            
+            const btn = document.getElementById('toggleAdvancedBtn');
+            btn.innerHTML = isVisible 
+                ? '<span>⚙️</span><span>Advanced</span>'
+                : '<span>⬆️</span><span>Hide Advanced</span>';
+        }
+        
+        // Enable HTML editing
+        function enableHtmlEditing() {
+            const textarea = document.getElementById('templateHtml');
+            textarea.readOnly = false;
+            textarea.style.borderColor = 'var(--terminal-amber)';
+            showStatus('HTML editing enabled. Changes will override generated content.', 'warning');
+        }
+        
+        // Copy HTML to clipboard
+        async function copyHtmlToClipboard() {
+            const html = document.getElementById('templateHtml').value;
+            if (!html) {
+                showStatus('No HTML to copy', 'error');
+                return;
+            }
+            
+            try {
+                await navigator.clipboard.writeText(html);
+                showStatus('HTML copied to clipboard', 'success');
+            } catch (error) {
+                showStatus('Failed to copy HTML', 'error');
+            }
+        }
+        
+        // Update generate button state
+        function updateGenerateButtonState() {
+            const generateBtn = document.getElementById('generateBtn');
+            const promptText = document.getElementById('promptText').value.trim();
+            const hasValidPrompt = promptText.length >= 20;
+            const allImagesTitled = newsletterState.attachments.length === 0 || 
+                newsletterState.attachments.every(a => a.title && a.title.trim() !== '');
+            
+            generateBtn.disabled = !hasValidPrompt || !allImagesTitled;
+            
+            if (!hasValidPrompt) {
+                generateBtn.title = 'Prompt must be at least 20 characters';
+            } else if (!allImagesTitled) {
+                generateBtn.title = 'All images must have titles';
+            } else {
+                generateBtn.title = '';
+            }
+        }
+        
+        // ============================================
+        // End AI Newsletter Generation Functions
+        // ============================================
+        
         // Template Editor Form Handler
         document.getElementById('templateEditorForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             await saveTemplate();
         });
         
-        // Live preview update on HTML change
-        document.getElementById('templateHtml').addEventListener('input', () => {
+        // Live preview update on prompt change
+        document.getElementById('promptText').addEventListener('input', () => {
+            newsletterState.promptText = document.getElementById('promptText').value;
+            newsletterState.isDirty = true;
+            updateGenerateButtonState();
+        });
+        
+        // Live preview update on HTML change (if editing manually)
+        const templateHtmlEl = document.getElementById('templateHtml');
+        if (templateHtmlEl) {
+            templateHtmlEl.addEventListener('input', () => {
             // Update current template in state
             if (newsletterState.currentTemplate) {
                 newsletterState.currentTemplate.html = document.getElementById('templateHtml').value;
@@ -2864,6 +3558,53 @@
             }
             updateSendButtonStates();
         });
+        
+        // Image upload handlers
+        const imageFileInput = document.getElementById('imageFileInput');
+        const attachmentsDropzone = document.getElementById('attachmentsDropzone');
+        const promptTextarea = document.getElementById('promptText');
+        
+        if (imageFileInput) {
+            imageFileInput.addEventListener('change', (e) => {
+                handleImageFiles(e.target.files);
+                e.target.value = ''; // Reset input
+            });
+        }
+        
+        if (attachmentsDropzone) {
+            attachmentsDropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                attachmentsDropzone.classList.add('dragover');
+            });
+            
+            attachmentsDropzone.addEventListener('dragleave', () => {
+                attachmentsDropzone.classList.remove('dragover');
+            });
+            
+            attachmentsDropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                attachmentsDropzone.classList.remove('dragover');
+                handleImageFiles(e.dataTransfer.files);
+            });
+        }
+        
+        // Clipboard paste handler for images
+        if (promptTextarea) {
+            promptTextarea.addEventListener('paste', async (e) => {
+                const items = e.clipboardData.items;
+                const imageItems = Array.from(items).filter(item => item.type.startsWith('image/'));
+                
+                if (imageItems.length > 0) {
+                    e.preventDefault();
+                    imageItems.forEach(item => {
+                        const file = item.getAsFile();
+                        if (file) {
+                            handleImageFiles([file]);
+                        }
+                    });
+                }
+            });
+        }
         
         // Update send button states on input changes
         document.getElementById('templateSubject').addEventListener('input', updateSendButtonStates);
@@ -3098,18 +3839,27 @@
                 return;
             }
             
-            // Only allow sending templates, not history
-            if (newsletterState.selectedType !== 'template') {
-                showStatus('Only templates can be sent. Past newsletters cannot be resent.', 'error');
+            // Allow sending templates or history with HTML
+            if (newsletterState.selectedType === 'history') {
+                if (!template.html || !template.html.trim()) {
+                    showStatus('This past newsletter has no HTML content and cannot be resent.', 'error');
+                    return;
+                }
+                // History with HTML can be resent
+            } else if (newsletterState.selectedType !== 'template') {
+                showStatus('Please select a template or past newsletter with HTML content.', 'error');
                 return;
             }
+            
+            // Use generatedHtml if available, otherwise html
+            const htmlToSend = template.generatedHtml || template.html || '';
             
             pendingTemplate = {
                 id: template.id,
                 name: template.name,
                 subject: template.subject,
-                html: template.html,
-                text: template.text || template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
+                html: htmlToSend,
+                text: template.text || htmlToSend.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
             };
             pendingSend = true;
             

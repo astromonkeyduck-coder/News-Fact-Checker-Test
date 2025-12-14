@@ -13494,14 +13494,14 @@
                 </div>
                 <div class="brand-info">
                     <h1><span class="brand-name">Noteworthy News</span></h1>
-                    <p>Trusted Independent News & Media Literacy Company</p>
+                    <p>Trusted Independent News & Media Literacy</p>
                 </div>
             </div>
             
             <!-- Center Group: Main Navigation -->
             <div class="header-center">
                 <nav class="main-nav" id="mainNav">
-                    <ul class="nav-links">
+                    <ul>
                         <li><a href="#news-section" class="nav-link">News</a></li>
                         <li><a href="#geography-game-section" class="nav-link">Games</a></li>
                         <li><a href="#credibility-section" class="nav-link">Credibility</a></li>
@@ -13510,33 +13510,19 @@
                         <li><a href="profile.html" class="nav-link" id="profileLink" style="display: none;">Profile</a></li>
                         <li><a href="my-reading-list.html" class="nav-link" id="readingListLink" style="display: none;">Reading List</a></li>
                     </ul>
-                    <button class="nav-menu-button" id="navMenuButton" aria-label="Navigation menu" style="display: none;">
-                        <span>☰</span>
-                    </button>
-                    <div class="nav-dropdown" id="navDropdown" style="display: none;">
-                        <a href="#news-section" class="nav-link">News</a>
-                        <a href="#geography-game-section" class="nav-link">Games</a>
-                        <a href="#credibility-section" class="nav-link">Credibility</a>
-                        <a href="#about-section" class="nav-link">About</a>
-                        <a href="#ai-assistant-section" class="nav-link">AI Chat</a>
-                        <a href="profile.html" class="nav-link" id="dropdownProfileLink" style="display: none;">Profile</a>
-                        <a href="my-reading-list.html" class="nav-link" id="dropdownReadingListLink" style="display: none;">Reading List</a>
-                    </div>
                 </nav>
             </div>
             
             <div class="header-right">
-                <div class="last-update maintenance-pill" title="Scheduled Maintenance: December 18, 2025">Scheduled Maintenance: December 18, 2025</div>
-                <!-- Header Actions: Auth Buttons + Mute (never shrink) -->
-                <div class="header-actions">
-                    <div class="auth-buttons-container" id="authButtonsContainer">
-                        <button class="auth-btn signin-btn" id="signinBtn" aria-label="Sign In">Sign In</button>
-                        <button class="auth-btn signup-btn" id="signupBtn" aria-label="Sign Up">Sign Up</button>
-                    </div>
-                    <button class="music-control-btn" id="musicControlBtn" title="Toggle Background Music">
-                        <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M9 18V5l9-2v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/><circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/></svg></span>
-                    </button>
+                <div class="last-update" title="Scheduled Maintenance: December 18, 2025">Scheduled Maintenance: December 18, 2025</div>
+                <!-- Auth Buttons -->
+                <div class="auth-buttons-container" id="authButtonsContainer">
+                    <button class="auth-btn signin-btn" id="signinBtn" aria-label="Sign In">Sign In</button>
+                    <button class="auth-btn signup-btn" id="signupBtn" aria-label="Sign Up">Sign Up</button>
                 </div>
+                <button class="music-control-btn" id="musicControlBtn" title="Toggle Background Music">
+                    <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M9 18V5l9-2v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/><circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/></svg></span>
+                </button>
             </div>
             
             <!-- Mobile Menu Toggle -->
@@ -19174,116 +19160,56 @@
         })();
     </script>
     
-    <!-- Header No-Wrap Guard - Ensures header never wraps and right controls stay visible -->
+    <!-- Header No-Cutoff Guard - Ensures Sign In, Sign Up, and mute are never cut off -->
     <script>
         (function() {
             'use strict';
             
-            // Nav menu toggle functionality
-            function initNavMenu() {
-                const navMenuButton = document.getElementById('navMenuButton');
-                const navDropdown = document.getElementById('navDropdown');
+            function ensureHeaderNoCutoff() {
+                const header = document.querySelector('.main-header');
+                const headerActions = document.querySelector('.header-right');
+                const maintenancePill = document.querySelector('.last-update');
                 
-                if (!navMenuButton || !navDropdown) return;
-                
-                // Toggle dropdown on button click
-                navMenuButton.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const isOpen = navDropdown.style.display !== 'none';
-                    navDropdown.style.display = isOpen ? 'none' : 'flex';
-                });
-                
-                // Close dropdown when clicking outside
-                document.addEventListener('click', function(e) {
-                    if (!navMenuButton.contains(e.target) && !navDropdown.contains(e.target)) {
-                        navDropdown.style.display = 'none';
-                    }
-                });
-                
-                // Sync profile/reading list links visibility
-                const profileLink = document.getElementById('profileLink');
-                const readingListLink = document.getElementById('readingListLink');
-                const dropdownProfileLink = document.getElementById('dropdownProfileLink');
-                const dropdownReadingListLink = document.getElementById('dropdownReadingListLink');
-                
-                function syncLinkVisibility() {
-                    if (profileLink && dropdownProfileLink) {
-                        dropdownProfileLink.style.display = profileLink.style.display;
-                    }
-                    if (readingListLink && dropdownReadingListLink) {
-                        dropdownReadingListLink.style.display = readingListLink.style.display;
-                    }
+                if (!header || !headerActions) {
+                    return;
                 }
                 
-                // Watch for visibility changes
-                if (profileLink || readingListLink) {
-                    const observer = new MutationObserver(syncLinkVisibility);
-                    [profileLink, readingListLink].forEach(link => {
-                        if (link) {
-                            observer.observe(link, { attributes: true, attributeFilter: ['style'] });
-                        }
-                    });
-                    syncLinkVisibility();
-                }
-            }
-            
-            // Runtime guard to prevent wrapping
-            function enforceHeaderSingleRow() {
-                const header = document.querySelector('.header-container');
-                const headerInner = document.querySelector('.header-container');
-                const actions = document.querySelector('.header-actions');
-                const pill = document.querySelector('.maintenance-pill, .last-update');
-                const navLinks = document.querySelector('.nav-links');
-                const navBtn = document.getElementById('navMenuButton');
-                const mainHeader = document.querySelector('.main-header');
+                // Remove existing tight classes
+                header.classList.remove('header--tight', 'header--ultratight');
                 
-                if (!headerInner || !actions || !mainHeader) return;
-                
-                const headerH = headerInner.getBoundingClientRect().height;
-                const actionsH = actions.getBoundingClientRect().height;
-                
-                // If actions are taller than one line or header is too tall, something wrapped
-                const wrapped = actionsH > 48 || headerH > 90;
-                
-                if (wrapped) {
-                    mainHeader.classList.add('header--compact');
-                    if (pill) pill.style.display = 'none';
-                    if (navLinks && navBtn) {
-                        navLinks.style.display = 'none';
-                        navBtn.style.display = 'inline-flex';
-                    }
-                } else {
-                    mainHeader.classList.remove('header--compact');
-                }
-                
-                // Also check for cutoff
-                const actionsRect = actions.getBoundingClientRect();
+                // Check if header-actions is cut off (right edge exceeds window width)
+                const actionsRect = headerActions.getBoundingClientRect();
                 const cutoff = actionsRect.right > window.innerWidth - 4;
                 
-                mainHeader.classList.toggle('header--tight', cutoff);
-                
-                if (pill && cutoff) {
-                    pill.style.display = 'none';
+                // Apply tight class to hide maintenance pill if cutoff detected
+                if (cutoff) {
+                    header.classList.add('header--ultratight');
+                } else {
+                    // Check if we're in a tight space
+                    const containerRect = document.querySelector('.header-container').getBoundingClientRect();
+                    const tight = containerRect.width < 1200;
+                    if (tight) {
+                        header.classList.add('header--tight');
+                    }
                 }
             }
             
-            // Initialize everything
-            function initHeaderGuards() {
-                initNavMenu();
-                enforceHeaderSingleRow();
+            // Run on load and resize
+            function initNoCutoffGuard() {
+                ensureHeaderNoCutoff();
                 
                 let resizeTimeout;
                 window.addEventListener('resize', function() {
                     clearTimeout(resizeTimeout);
-                    resizeTimeout = setTimeout(enforceHeaderSingleRow, 100);
+                    resizeTimeout = setTimeout(ensureHeaderNoCutoff, 100);
                 });
             }
             
             // Wait for DOM to be ready
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initHeaderGuards);
+                document.addEventListener('DOMContentLoaded', initNoCutoffGuard);
             } else {
-                initHeaderGuards();
+                initNoCutoffGuard();
             }
         })();
     </script>

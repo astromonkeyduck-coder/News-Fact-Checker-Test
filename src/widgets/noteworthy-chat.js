@@ -4244,6 +4244,14 @@ class NoteworthyChat extends HTMLElement {
         try {
           const text = await sessionRes.text();
           sessionData = text ? JSON.parse(text) : {};
+          console.log('[Voice Mode] Session response received:', {
+            hasSessionId: !!sessionData.session_id,
+            hasEphemeralToken: !!sessionData.ephemeral_token,
+            hasWebsocketUrl: !!sessionData.websocket_url,
+            allKeys: Object.keys(sessionData),
+            tokenLength: sessionData.ephemeral_token ? sessionData.ephemeral_token.length : 0,
+            tokenPreview: sessionData.ephemeral_token ? sessionData.ephemeral_token.substring(0, 30) + '...' : 'none'
+          });
         } catch (e) {
           console.error('[Voice Mode] Failed to parse session response:', e);
           throw new Error('Invalid response from server');
@@ -4273,16 +4281,40 @@ class NoteworthyChat extends HTMLElement {
         if (sessionData.ephemeral_token) {
           // Check if URL already has query parameters
           const separator = wsUrl.includes('?') ? '&' : '?';
-          // URL-encode the token to handle special characters safely
-          const encodedToken = encodeURIComponent(sessionData.ephemeral_token);
-          wsUrl = `${wsUrl}${separator}ephemeral_token=${encodedToken}`;
+          
+          // Try the compiled version approach first (no encoding, direct concatenation)
+          // This matches the working compiled version exactly
+          const token = sessionData.ephemeral_token;
+          wsUrl = `${wsUrl}${separator}ephemeral_token=${token}`;
+          
           console.log('[Voice Mode] ✅ Added ephemeral token to WebSocket URL (browser authentication method)');
-          console.log('[Voice Mode] Token length:', sessionData.ephemeral_token.length, 'characters');
+          console.log('[Voice Mode] Token length:', token.length, 'characters');
+          console.log('[Voice Mode] Token starts with:', token.substring(0, 3));
           console.log('[Voice Mode] Full WebSocket URL (redacted):', wsUrl.replace(/ephemeral_token=[^&]+/, 'ephemeral_token=***'));
+          console.log('[Voice Mode] URL contains ephemeral_token param:', wsUrl.includes('ephemeral_token='));
+          console.log('[Voice Mode] URL contains session_id param:', wsUrl.includes('session_id='));
+          console.log('[Voice Mode] URL contains model param:', wsUrl.includes('model='));
+          
           // Verify token is actually in URL
           if (!wsUrl.includes('ephemeral_token=')) {
             console.error('[Voice Mode] ❌ CRITICAL: Token was not added to URL!');
             throw new Error('Failed to add ephemeral token to WebSocket URL');
+          }
+          
+          // Log the actual URL structure for debugging (redact token)
+          try {
+            const urlObj = new URL(wsUrl);
+            console.log('[Voice Mode] URL structure:', {
+              protocol: urlObj.protocol,
+              host: urlObj.host,
+              pathname: urlObj.pathname,
+              hasModel: urlObj.searchParams.has('model'),
+              hasSessionId: urlObj.searchParams.has('session_id'),
+              hasEphemeralToken: urlObj.searchParams.has('ephemeral_token'),
+              allParams: Array.from(urlObj.searchParams.keys())
+            });
+          } catch (urlError) {
+            console.warn('[Voice Mode] Could not parse URL for debugging:', urlError);
           }
         } else {
           console.error('[Voice Mode] ❌ CRITICAL: No ephemeral token received from server!');
@@ -4319,6 +4351,12 @@ class NoteworthyChat extends HTMLElement {
         const messageQueue = [];
         let connectionStartTime = Date.now();
         
+        // Create WebSocket connection with token in URL
+        // Note: Browser WebSocket API does NOT support custom headers
+        // Token MUST be in URL as query parameter
+        console.log('[Voice Mode] 🔌 Creating WebSocket connection...');
+        console.log('[Voice Mode] Final URL (redacted):', wsUrl.replace(/ephemeral_token=[^&]+/, 'ephemeral_token=***'));
+        
         websocket = new WebSocket(wsUrl);
         
         websocket.onopen = (event) => {
@@ -4328,6 +4366,7 @@ class NoteworthyChat extends HTMLElement {
           console.log('[Voice Mode] ReadyState:', websocket.readyState, '(OPEN = 1)');
           console.log('[Voice Mode] Protocol:', websocket.protocol || 'none');
           console.log('[Voice Mode] Extensions:', websocket.extensions || 'none');
+          console.log('[Voice Mode] URL used:', websocket.url ? websocket.url.replace(/ephemeral_token=[^&]+/, 'ephemeral_token=***') : 'not available');
           
           // Send queued messages
           while (messageQueue.length > 0) {
@@ -4790,12 +4829,12 @@ class NoteworthyChat extends HTMLElement {
             // If not already recording, start now (shouldn't happen with URL auth, but handle it)
             if (!isRecording) {
               console.log('[Voice Mode] 🎤 Starting audio capture after auth.success (delayed start)');
-              if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connected - Speak now!';
-              if (voiceStatusIntegrated) {
-                voiceStatusIntegrated.classList.remove('error');
-                voiceStatusIntegrated.classList.add('recording');
-              }
-              if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
+            if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connected - Speak now!';
+            if (voiceStatusIntegrated) {
+              voiceStatusIntegrated.classList.remove('error');
+              voiceStatusIntegrated.classList.add('recording');
+            }
+            if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
               isRecording = true;
               startAudioCapture();
             } else {
@@ -4851,11 +4890,11 @@ class NoteworthyChat extends HTMLElement {
               if (voiceStatusTextIntegrated) {
                 voiceStatusTextIntegrated.textContent = `Auth failed: ${authErrorMsg} (retrying...)`;
               }
-              if (voiceStatusIntegrated) {
-                voiceStatusIntegrated.classList.remove('recording');
-                voiceStatusIntegrated.classList.add('error');
-              }
-              if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
+            if (voiceStatusIntegrated) {
+              voiceStatusIntegrated.classList.remove('recording');
+              voiceStatusIntegrated.classList.add('error');
+            }
+            if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
               
               // Mark as not authenticated
               if (websocket) {
@@ -4863,7 +4902,7 @@ class NoteworthyChat extends HTMLElement {
               }
               
               // Stop current connection and get a fresh token
-              stopVoiceMode();
+            stopVoiceMode();
               setTimeout(() => {
                 if (voiceModeActive) {
                   console.log('[Voice Mode] 🔄 Restarting voice mode with fresh session and new token...');

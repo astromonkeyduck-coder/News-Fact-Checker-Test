@@ -273,14 +273,23 @@ You help users understand news, fact-check claims, and stay informed with accura
       let ephemeralToken;
       let expiresAt;
       
+      console.log('📋 [POST] Session response keys:', Object.keys(sessionData));
+      console.log('📋 [POST] Has client_secret:', !!sessionData.client_secret);
+      if (sessionData.client_secret) {
+        console.log('📋 [POST] client_secret keys:', Object.keys(sessionData.client_secret));
+        console.log('📋 [POST] client_secret.value exists:', !!sessionData.client_secret.value);
+      }
+      
       if (sessionData.client_secret && sessionData.client_secret.value) {
         // New format: token is in client_secret.value
         ephemeralToken = sessionData.client_secret.value;
         expiresAt = sessionData.client_secret.expires_at || sessionData.expires_at;
-        console.log('Using ephemeral token from client_secret');
+        console.log('✅ [POST] Using ephemeral token from client_secret');
+        console.log('📋 [POST] Token length:', ephemeralToken.length);
+        console.log('📋 [POST] Token preview (first 30 chars):', ephemeralToken.substring(0, 30) + '...');
       } else {
         // Fallback: Try to generate token via separate endpoint (older API format)
-        console.log('No client_secret found, trying token endpoint...');
+        console.log('⚠️ [POST] No client_secret found, trying token endpoint...');
         const tokenResponse = await fetch(`https://api.openai.com/v1/realtime/sessions/${sessionData.id}/tokens`, {
           method: 'POST',
           headers: {
@@ -294,7 +303,7 @@ You help users understand news, fact-check claims, and stay informed with accura
 
         if (!tokenResponse.ok) {
           const errorData = await tokenResponse.json().catch(() => ({}));
-          console.error('OpenAI token generation error:', errorData);
+          console.error('❌ [POST] OpenAI token generation error:', errorData);
           return {
             statusCode: tokenResponse.status,
             headers,
@@ -307,12 +316,21 @@ You help users understand news, fact-check claims, and stay informed with accura
         }
 
         const tokenData = await tokenResponse.json();
-        ephemeralToken = tokenData.token || tokenData.value;
+        console.log('📋 [POST] Token endpoint response keys:', Object.keys(tokenData));
+        ephemeralToken = tokenData.token || tokenData.value || tokenData.client_secret?.value;
         expiresAt = tokenData.expires_at || sessionData.expires_at;
+        
+        if (ephemeralToken) {
+          console.log('✅ [POST] Using ephemeral token from token endpoint');
+          console.log('📋 [POST] Token length:', ephemeralToken.length);
+          console.log('📋 [POST] Token preview (first 30 chars):', ephemeralToken.substring(0, 30) + '...');
+        } else {
+          console.error('❌ [POST] No token found in token endpoint response');
+        }
       }
       
       if (!ephemeralToken) {
-        console.error('No ephemeral token found in response:', sessionData);
+        console.error('❌ [POST] No ephemeral token found in response:', sessionData);
         return {
           statusCode: 500,
           headers,
@@ -321,6 +339,15 @@ You help users understand news, fact-check claims, and stay informed with accura
             sessionData: sessionData
           }),
         };
+      }
+      
+      console.log('✅ [POST] Returning session with token to client');
+      console.log('📋 [POST] Token being sent (first 30 chars):', ephemeralToken.substring(0, 30) + '...');
+      console.log('📋 [POST] Token length:', ephemeralToken.length);
+      
+      // Verify token format - should start with 'ek_' for ephemeral tokens
+      if (!ephemeralToken.startsWith('ek_')) {
+        console.warn('⚠️ [POST] Token does not start with "ek_" - might be wrong format');
       }
       
       return {
