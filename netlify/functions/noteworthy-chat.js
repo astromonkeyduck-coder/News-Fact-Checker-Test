@@ -256,48 +256,12 @@ exports.handler = async (event, context) => {
       
       try {
         // Handle PDF files
+        // Note: PDF conversion temporarily disabled due to serverless compatibility issues
+        // Users can convert PDFs to images manually or we'll add a better solution later
         if (fileType === 'application/pdf' || fileExtension === 'pdf') {
-          const { pdf } = require('pdf-to-img');
-          
-          // pdf-to-img expects a file path or buffer, and returns an async iterator
-          const document = await pdf(fileBuffer, { scale: 2.0 });
-          
-          const convertedPages = [];
-          let pageNumber = 1;
-          
-          // Iterate through all pages
-          for await (const image of document) {
-            // image is a Buffer containing PNG data
-            const pageBuffer = image;
-            convertedPages.push({
-              name: fileName.replace(/\.pdf$/i, `-page${pageNumber}.png`),
-              type: 'image/png',
-              data: pageBuffer.toString('base64'),
-              size: pageBuffer.length,
-              converted: true,
-              originalFormat: 'pdf',
-              pageNumber: pageNumber,
-              totalPages: null // Will be set after we know total count
-            });
-            pageNumber++;
-          }
-          
-          // Update totalPages for all pages
-          const totalPages = convertedPages.length;
-          convertedPages.forEach(page => {
-            page.totalPages = totalPages;
-          });
-          
-          if (convertedPages.length > 0) {
-            console.log(`[File Conversion] ✅ PDF converted to PNG (${totalPages} page(s))`);
-            
-            // Return first page as main file, but include all pages in a special property
-            return {
-              ...convertedPages[0],
-              _allPages: convertedPages, // Special property for multi-page handling
-              _isMultiPage: true
-            };
-          }
+          console.log(`[File Conversion] ⚠️ PDF conversion not yet available in serverless environment`);
+          // Return the file as-is - it will be rejected with a helpful error message
+          return file;
         }
         
         // Handle HEIC/HEIF images
@@ -406,9 +370,9 @@ exports.handler = async (event, context) => {
           statusCode: 400,
           headers,
           body: JSON.stringify({ 
-            error: `Unable to process the uploaded files. Files are automatically converted when possible. Please ensure your files are images (PNG, JPEG, WEBP, GIF, HEIC, TIFF, BMP, SVG) or PDFs.`,
-            details: `Files that couldn't be processed: ${fileList}. Note: PDFs and unsupported image formats are automatically converted to PNG/JPEG.`,
-            supportedFormats: ['png', 'jpeg', 'gif', 'webp', 'pdf', 'heic', 'tiff', 'bmp', 'svg'],
+            error: `Unable to process the uploaded files. Files are automatically converted when possible. Please ensure your files are images (PNG, JPEG, WEBP, GIF, HEIC, TIFF, BMP, SVG).`,
+            details: `Files that couldn't be processed: ${fileList}. Note: Unsupported image formats (HEIC, TIFF, BMP, SVG) are automatically converted to PNG/JPEG. PDF conversion is not yet available - please convert PDFs to images first.`,
+            supportedFormats: ['png', 'jpeg', 'gif', 'webp', 'heic', 'tiff', 'bmp', 'svg'],
             unsupportedFiles: conversionErrors
           }),
         };

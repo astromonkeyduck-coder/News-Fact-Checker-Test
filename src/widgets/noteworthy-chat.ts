@@ -1106,7 +1106,7 @@ export class NoteworthyChat extends HTMLElement {
               <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
             </svg>
           </button>
-          <input type="file" id="fileInput" accept="image/*,application/pdf" multiple aria-label="Upload image or PDF" style="display: none;" />
+          <input type="file" id="fileInput" accept="image/*" multiple aria-label="Upload image" style="display: none;" />
           <button type="button" class="file-upload-btn" id="fileUploadBtn" aria-label="Upload file or image" title="Upload file or image for analysis">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;">
               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
@@ -1390,8 +1390,8 @@ export class NoteworthyChat extends HTMLElement {
           return;
         }
         
-        // Allow images and PDFs (will be converted if needed)
-        if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+        // Allow images (will be converted if needed)
+        if (file.type.startsWith('image/')) {
           uploadedFiles.push(file);
           
           // Show info message for files that will be converted
@@ -1400,11 +1400,12 @@ export class NoteworthyChat extends HTMLElement {
             console.log(`[File Upload] File "${file.name}" (${formatName}) will be automatically converted to a supported format`);
           }
         } else {
-          // Not an image or PDF
+          // Not an image
           alert(
             `File "${file.name}" is not a supported file type.\n\n` +
-            `Supported: Images (PNG, JPEG, WEBP, GIF, HEIC, TIFF, BMP, SVG) and PDFs\n\n` +
-            `Note: Unsupported image formats and PDFs will be automatically converted.`
+            `Supported: Images (PNG, JPEG, WEBP, GIF, HEIC, TIFF, BMP, SVG)\n\n` +
+            `Note: Unsupported image formats (HEIC, TIFF, BMP, SVG) will be automatically converted.\n` +
+            `PDF conversion is not yet available - please convert PDFs to images first.`
           );
         }
       });
@@ -2137,8 +2138,8 @@ export class NoteworthyChat extends HTMLElement {
             <strong>File Processing Error</strong>
             <p>${errorMessage}</p>
             <p style="font-size: 12px; opacity: 0.8; margin-top: 8px;">
-              <strong>Supported formats:</strong> PNG, JPEG, WEBP, GIF, PDF, HEIC, TIFF, BMP, SVG<br>
-              <strong>Note:</strong> PDFs and unsupported image formats are automatically converted. If conversion fails, please try a different file.
+              <strong>Supported formats:</strong> PNG, JPEG, WEBP, GIF, HEIC, TIFF, BMP, SVG<br>
+              <strong>Note:</strong> Unsupported image formats (HEIC, TIFF, BMP, SVG) are automatically converted. PDF conversion is not yet available - please convert PDFs to images first.
             </p>
           `;
         } else {
