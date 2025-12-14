@@ -86,9 +86,19 @@ exports.handler = async (event) => {
       };
     }
 
-    // Fetch MORE posts than requested (up to 1000) so we can sort by date and return the most recent
-    // This ensures we get the newest posts even if they're at the end of the index
-    const fetchLimit = Math.min(Math.max(maxLimit * 5, 500), 1000); // Fetch 5x the requested amount, but cap at 1000
+    // For small requests (<=10), only fetch what's needed. For larger requests, fetch a bit more for sorting.
+    // This prevents fetching 1000 posts when only 5 are needed!
+    let fetchLimit;
+    if (maxLimit <= 10) {
+      // For small requests, fetch 2x to ensure we have enough for sorting, but cap at 50
+      fetchLimit = Math.min(maxLimit * 2, 50);
+    } else if (maxLimit <= 50) {
+      // For medium requests, fetch 1.5x, cap at 100
+      fetchLimit = Math.min(Math.ceil(maxLimit * 1.5), 100);
+    } else {
+      // For large requests, fetch 1.2x, cap at 200
+      fetchLimit = Math.min(Math.ceil(maxLimit * 1.2), 200);
+    }
     const idsToFetch = indexData.ids.slice(0, fetchLimit);
     
     console.log(`[posts-read] Fetching ${idsToFetch.length} posts from index (requested ${maxLimit}, will sort and return top ${maxLimit})`);

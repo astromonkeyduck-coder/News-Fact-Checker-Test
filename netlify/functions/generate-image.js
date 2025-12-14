@@ -62,32 +62,100 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
       };
     }
 
-    const { prompt, size = "1024x1024", quality = "standard", style = "vivid" } = requestBody;
+    const { prompt, image, imageType, size = "1024x1024", quality = "standard", style = "vivid" } = requestBody;
 
-    // Input validation
-    if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
+    // Input validation - either prompt or image must be provided
+    if (!prompt && !image) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: "Missing or invalid prompt" }),
+        body: JSON.stringify({ error: "Missing prompt or image. Please provide either a text prompt or an image to generate from." }),
+      };
+    }
+    
+    // If image is provided, analyze it first using GPT-4 Vision
+    let finalPrompt = prompt ? prompt.trim() : '';
+    
+    if (image && typeof image === 'string') {
+      try {
+        console.log("[Generate Image] Analyzing uploaded image with GPT-4 Vision...");
+        
+        // Use GPT-4 Vision to analyze the image and create a generation prompt
+        const visionResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o', // Use GPT-4o for vision capabilities
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an expert at analyzing images and creating detailed prompts for image generation. When given an image, analyze its content, style, composition, colors, mood, and key elements. Then create a comprehensive, detailed prompt that could be used to generate a similar or inspired image using DALL-E. The prompt should be descriptive, include style information, and be suitable for image generation. If the user provides additional text instructions, incorporate those into the prompt.'
+              },
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: prompt ? `Analyze this image and create a detailed prompt for generating a new image based on it. ${prompt} Make the prompt comprehensive and suitable for DALL-E image generation.` : 'Analyze this image and create a detailed, comprehensive prompt for generating a new image based on it. Include style, composition, colors, mood, and all key elements. Make it suitable for DALL-E image generation.'
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: `data:${imageType || 'image/png'};base64,${image}`
+                    }
+                  }
+                ]
+              }
+            ],
+            max_tokens: 500,
+          }),
+        });
+
+        if (!visionResponse.ok) {
+          const errorData = await visionResponse.json().catch(() => ({}));
+          console.error("[Generate Image] GPT-4 Vision error:", errorData);
+          throw new Error(errorData.error?.message || 'Failed to analyze image');
+        }
+
+        const visionData = await visionResponse.json();
+        const analyzedPrompt = visionData.choices[0]?.message?.content || '';
+        
+        if (analyzedPrompt) {
+          finalPrompt = analyzedPrompt.trim();
+          console.log("[Generate Image] ✅ Image analyzed. Generated prompt:", finalPrompt.substring(0, 100) + "...");
+        } else {
+          throw new Error('No prompt generated from image analysis');
+        }
+      } catch (visionError) {
+        console.error("[Generate Image] Error analyzing image:", visionError);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ 
+            error: "Failed to analyze uploaded image",
+            details: visionError.message 
+          }),
+        };
+      }
+    }
+    
+    // Validate final prompt
+    if (!finalPrompt || finalPrompt.length < 3) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: "Generated prompt is too short or invalid" }),
       };
     }
 
     // Validate prompt length and content
-    const trimmedPrompt = prompt.trim();
-    if (trimmedPrompt.length < 3) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: "Prompt must be at least 3 characters" }),
-      };
-    }
-    if (trimmedPrompt.length > 500) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: "Prompt must be no more than 500 characters" }),
-      };
+    if (finalPrompt.length > 1000) {
+      // Truncate if too long (DALL-E has limits)
+      finalPrompt = finalPrompt.substring(0, 1000);
+      console.log("[Generate Image] Prompt truncated to 1000 characters");
     }
 
     // Check for potentially harmful content
@@ -97,7 +165,7 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
       /on\w+\s*=/i,
     ];
     for (const pattern of blockedPatterns) {
-      if (pattern.test(trimmedPrompt)) {
+      if (pattern.test(finalPrompt)) {
         return {
           statusCode: 400,
           headers,
@@ -130,7 +198,7 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
       };
     }
     
-    console.log("Generating image with prompt:", prompt.substring(0, 100) + "...");
+    console.log("Generating image with prompt:", finalPrompt.substring(0, 100) + "...");
     
     // Check timeout before OpenAI call
     checkTimeout("OpenAI API call");
@@ -149,7 +217,7 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
         },
         body: JSON.stringify({
           model: "dall-e-3",
-          prompt: prompt.trim(),
+          prompt: finalPrompt,
           size: size,
           quality: quality,
           style: style,
@@ -266,7 +334,7 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
 
         // Generate unique key for the image (using timestamp + hash of prompt)
         const timestamp = Date.now();
-        const promptHash = Buffer.from(prompt.trim()).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+        const promptHash = Buffer.from(finalPrompt).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
         const imageKey = `image-${timestamp}-${promptHash}.png`;
         
         console.log("[Generate Image] Downloading image from DALL-E URL...");
@@ -315,7 +383,9 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
         const metadataKey = `metadata-${imageKey}.json`;
         await store.set(metadataKey, JSON.stringify({
           originalUrl: imageUrl,
-          prompt: prompt.trim(),
+          prompt: finalPrompt,
+          originalPrompt: prompt || null,
+          hadInputImage: !!image,
           revisedPrompt: revisedPrompt,
           size: size,
           quality: quality,
@@ -353,7 +423,9 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
       body: JSON.stringify({ 
         imageUrl,
         revisedPrompt,
-        prompt: prompt.trim(),
+        prompt: finalPrompt,
+        originalPrompt: prompt || null,
+        hadInputImage: !!image,
         storedImageKey: storedImageKey,
         storedImageUrl: storedImageUrl,
         stored: !!storedImageKey
@@ -368,7 +440,9 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
           const { logData } = require("./log-data");
           await Promise.race([
             logData("image-generation", {
-              userPrompt: prompt.trim(),
+              userPrompt: finalPrompt,
+              originalPrompt: prompt || null,
+              hadInputImage: !!image,
               revisedPrompt: revisedPrompt,
               imageUrl: imageUrl,
               storedImageKey: storedImageKey,
@@ -423,7 +497,7 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
       
       const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
       
-      const safePrompt = String(prompt.trim())
+      const safePrompt = String(finalPrompt)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -482,7 +556,8 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
                 </div>
                 `}
                 <p style="color: #333333; font-size: 16px; margin: 10px 0; line-height: 1.6;"><strong style="color: #ffc107;">💬 Prompt:</strong><br><span style="color: #666666; font-size: 15px;">${safePrompt}</span></p>
-                ${revisedPrompt && revisedPrompt !== prompt.trim() ? `<p style="color: #333333; font-size: 16px; margin: 10px 0; line-height: 1.6;"><strong style="color: #ffc107;">✨ Revised Prompt:</strong><br><span style="color: #666666; font-size: 15px;">${String(revisedPrompt).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 500)}</span></p>` : ''}
+                ${image ? `<p style="color: #333333; font-size: 16px; margin: 10px 0; line-height: 1.6;"><strong style="color: #4A90E2;">🖼️ Generated from uploaded image</strong></p>` : ''}
+                ${revisedPrompt && revisedPrompt !== finalPrompt ? `<p style="color: #333333; font-size: 16px; margin: 10px 0; line-height: 1.6;"><strong style="color: #ffc107;">✨ Revised Prompt:</strong><br><span style="color: #666666; font-size: 15px;">${String(revisedPrompt).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').substring(0, 500)}</span></p>` : ''}
               </div>
               <div style="padding: 15px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border: 2px solid #4A90E2; border-radius: 8px;">
                 <p style="color: #333333; font-size: 14px; margin: 5px 0;"><strong style="color: #4A90E2;">📐 Size:</strong> <span style="color: #666666;">${size}</span></p>
@@ -505,8 +580,8 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
 </html>`,
         text: `New AI Image Generated
 
-Prompt: ${prompt.trim()}
-${revisedPrompt && revisedPrompt !== prompt.trim() ? `Revised Prompt: ${revisedPrompt}\n` : ''}
+${image ? 'Generated from uploaded image\n' : ''}Prompt: ${finalPrompt}
+${revisedPrompt && revisedPrompt !== finalPrompt ? `Revised Prompt: ${revisedPrompt}\n` : ''}
 Size: ${size}
 Quality: ${quality}
 Style: ${style}

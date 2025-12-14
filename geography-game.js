@@ -16,7 +16,7 @@ const POPULOUS_COUNTRIES = [
     { name: 'Vietnam', code: 'VN', alt: ['vietnam'], lat: 14.0583, lng: 108.2772 },
     { name: 'Democratic Republic of the Congo', code: 'CD', alt: ['democratic republic of congo', 'drc', 'congo', 'dr congo'], lat: -4.0383, lng: 21.7587 },
     { name: 'Iran', code: 'IR', alt: ['iran'], lat: 32.4279, lng: 53.6880 },
-    { name: 'Türkiye', code: 'TR', alt: ['turkey', 'türkiye'], lat: 38.9637, lng: 35.2433 },
+    { name: 'Türkiye', code: 'TR', alt: ['turkey', 'Turkey', 'türkiye'], lat: 38.9637, lng: 35.2433 },
     { name: 'Germany', code: 'DE', alt: ['germany'], lat: 51.1657, lng: 10.4515 },
     { name: 'Thailand', code: 'TH', alt: ['thailand'], lat: 15.8700, lng: 100.9925 },
     { name: 'United Kingdom', code: 'GB', alt: ['uk', 'united kingdom', 'britain', 'great britain'], lat: 55.3781, lng: -3.4360 },

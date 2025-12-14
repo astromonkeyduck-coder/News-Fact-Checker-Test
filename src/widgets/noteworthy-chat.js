@@ -6,7 +6,7 @@ class NoteworthyChat extends HTMLElement {
     super();
     this.root = this.attachShadow({ mode: 'open' });
     this.pos = { x: 24, y: 24 };
-    this.size = { w: 420, h: 520 };
+    this.size = { w: 420, h: 680 };
     this.dragging = false;
     this.resizing = false;
     this.start = null;
@@ -15,7 +15,7 @@ class NoteworthyChat extends HTMLElement {
   }
 
   connectedCallback() {
-    const endpoint = this.getAttribute('data-endpoint') || '/api/noteworthy';
+    const endpoint = this.getAttribute('data-endpoint') || '/.netlify/functions/noteworthy-chat';
     const openOnLoad = this.getAttribute('data-open') === 'true';
     const initialAudioState = localStorage.getItem('noteworthy-ai-audio') === 'true';
     const audioIconHTML = initialAudioState
@@ -33,8 +33,9 @@ class NoteworthyChat extends HTMLElement {
           top: 24px; 
           width: 420px; 
           min-width: 360px;
-          height: 520px; 
-          min-height: 450px;
+          height: 680px; 
+          min-height: 600px;
+          max-height: 90vh;
           max-width: 95vw; 
           max-height: 90vh;
           border-radius: 16px; 
@@ -444,18 +445,20 @@ class NoteworthyChat extends HTMLElement {
         }
         
         .input input[type="file"] {
-          display: none;
+          display: none !important;
         }
         
         .file-upload-btn {
-          background: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          color: rgba(255, 255, 255, 0.9);
-          width: 40px;
-          height: 40px;
+          background: rgba(255, 255, 255, 0.15) !important;
+          border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+          color: rgba(255, 255, 255, 1) !important;
+          width: 40px !important;
+          height: 40px !important;
           border-radius: 12px;
           cursor: pointer;
-          display: flex;
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
           align-items: center;
           justify-content: center;
           font-size: 18px;
@@ -463,6 +466,8 @@ class NoteworthyChat extends HTMLElement {
           padding: 0;
           line-height: 1;
           flex-shrink: 0;
+          position: relative;
+          z-index: 10;
         }
         
         .file-upload-btn:hover {
@@ -473,6 +478,634 @@ class NoteworthyChat extends HTMLElement {
         
         .file-upload-btn:active {
           transform: scale(0.95);
+        }
+        
+        .file-upload-btn svg {
+          width: 20px !important;
+          height: 20px !important;
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          pointer-events: none;
+          flex-shrink: 0;
+        }
+        
+        .file-upload-btn svg path {
+          stroke: #FFFFFF !important;
+          stroke-width: 2 !important;
+          fill: none !important;
+        }
+        
+        .voice-mode-toggle {
+          background: linear-gradient(135deg, rgba(74, 144, 226, 0.25) 0%, rgba(74, 144, 226, 0.15) 100%) !important;
+          border: 1.5px solid rgba(74, 144, 226, 0.6) !important;
+          color: #4A90E2 !important;
+          width: 40px !important;
+          height: 40px !important;
+          border-radius: 12px;
+          cursor: pointer;
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+          transition: all 0.2s;
+          padding: 0;
+          line-height: 1;
+          flex-shrink: 0;
+          position: relative;
+          z-index: 10;
+        }
+        
+        .voice-mode-toggle:hover {
+          background: linear-gradient(135deg, rgba(74, 144, 226, 0.25) 0%, rgba(74, 144, 226, 0.15) 100%);
+          transform: scale(1.1);
+          border-color: #4A90E2;
+          box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+        }
+        
+        .voice-mode-toggle.active {
+          background: linear-gradient(135deg, rgba(74, 144, 226, 0.4) 0%, rgba(74, 144, 226, 0.3) 100%);
+          border-color: #4A90E2;
+          color: #4A90E2;
+          animation: pulse 2s infinite;
+          box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.3);
+        }
+        
+        .voice-mode-toggle svg {
+          width: 20px !important;
+          height: 20px !important;
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          pointer-events: none;
+          flex-shrink: 0;
+        }
+        
+        .voice-mode-toggle svg path {
+          stroke: #4A90E2 !important;
+          stroke-width: 2 !important;
+        }
+        
+        .voice-mode-toggle svg path[fill] {
+          fill: #4A90E2 !important;
+          fill-opacity: 0.2 !important;
+        }
+        
+        /* Expanded chat for voice mode */
+        .wrap.voice-mode-active {
+          min-height: 600px !important;
+          height: auto !important;
+        }
+        
+        .wrap.voice-mode-active .input {
+          flex-wrap: wrap;
+          gap: 8px;
+          padding: 16px 20px;
+        }
+        
+        
+        .wrap.voice-mode-active #chatInput {
+          flex: 1 1 200px;
+          min-width: 200px;
+        }
+        
+        .wrap.voice-mode-active #sendButton {
+          flex: 0 0 auto;
+        }
+        
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+        
+        /* Integrated Voice Control - Scrollable & Seamless */
+        .voice-control-integrated {
+          border-top: 1px solid rgba(74, 144, 226, 0.15);
+          background: linear-gradient(180deg, 
+            rgba(15, 23, 42, 0.6) 0%,
+            rgba(12, 19, 35, 0.8) 100%);
+          backdrop-filter: blur(10px);
+          overflow: hidden;
+          transition: all 0.3s ease;
+          max-height: 0;
+          opacity: 0;
+        }
+        
+        .voice-control-integrated.expanded {
+          max-height: 450px;
+          opacity: 1;
+        }
+        
+        .voice-control-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px 20px;
+          cursor: pointer;
+          user-select: none;
+          transition: background 0.2s;
+        }
+        
+        .voice-control-header:hover {
+          background: rgba(74, 144, 226, 0.08);
+        }
+        
+        .voice-control-title {
+          display: flex;
+          align-items: center;
+          font-size: 13px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.9);
+          letter-spacing: -0.01em;
+        }
+        
+        .voice-control-toggle {
+          width: 24px;
+          height: 24px;
+          border: none;
+          background: transparent;
+          color: rgba(255, 255, 255, 0.6);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.3s, color 0.2s;
+          border-radius: 6px;
+        }
+        
+        .voice-control-toggle:hover {
+          color: rgba(255, 255, 255, 0.9);
+          background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .voice-control-integrated.expanded .voice-control-toggle {
+          transform: rotate(180deg);
+        }
+        
+        .voice-control-content {
+          max-height: 0;
+          overflow: hidden;
+          transition: max-height 0.3s ease;
+        }
+        
+        .voice-control-integrated.expanded .voice-control-content {
+          max-height: 400px;
+        }
+        
+        .voice-list-container {
+          max-height: 220px;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding: 8px 0;
+        }
+        
+        .voice-list-container::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        .voice-list-container::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 3px;
+        }
+        
+        .voice-list-container::-webkit-scrollbar-thumb {
+          background: rgba(74, 144, 226, 0.4);
+          border-radius: 3px;
+        }
+        
+        .voice-list-container::-webkit-scrollbar-thumb:hover {
+          background: rgba(74, 144, 226, 0.6);
+        }
+        
+        .voice-list {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          padding: 0 20px;
+        }
+        
+        .voice-option {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 12px;
+          border-radius: 10px;
+          cursor: pointer;
+          transition: all 0.2s;
+          background: transparent;
+          border: 1px solid transparent;
+          position: relative;
+        }
+        
+        .voice-option:hover {
+          background: rgba(74, 144, 226, 0.1);
+          border-color: rgba(74, 144, 226, 0.2);
+          transform: translateX(4px);
+        }
+        
+        .voice-option.active {
+          background: rgba(74, 144, 226, 0.15);
+          border-color: rgba(74, 144, 226, 0.4);
+        }
+        
+        .voice-option.active .voice-check {
+          opacity: 1;
+          color: #4A90E2;
+        }
+        
+        .voice-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.95);
+          flex: 1;
+        }
+        
+        .voice-desc {
+          font-size: 12px;
+          color: rgba(255, 255, 255, 0.6);
+          margin-left: 12px;
+          flex: 1;
+        }
+        
+        .voice-check {
+          width: 18px;
+          height: 18px;
+          opacity: 0;
+          transition: opacity 0.2s;
+          color: #4A90E2;
+          flex-shrink: 0;
+        }
+        
+        .voice-label-integrated {
+          display: block;
+          font-size: 11px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.7);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          padding: 0 20px 8px 20px;
+          margin-top: 8px;
+        }
+        
+        .voice-status-integrated {
+          padding: 12px 20px;
+          border-top: 1px solid rgba(74, 144, 226, 0.15);
+          border-bottom: 1px solid rgba(74, 144, 226, 0.15);
+          margin: 8px 0;
+        }
+        
+        .voice-status-indicator-integrated {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 13px;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .status-dot-integrated {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.5);
+          animation: blink 1.5s infinite;
+        }
+        
+        .voice-status-integrated.recording .status-dot-integrated {
+          background: #4A90E2;
+          box-shadow: 0 0 8px rgba(74, 144, 226, 0.6);
+        }
+        
+        .voice-status-integrated.error .status-dot-integrated {
+          background: #b00020;
+          box-shadow: 0 0 8px rgba(176, 0, 32, 0.6);
+        }
+        
+        .voice-actions-integrated {
+          display: flex !important;
+          flex-direction: column;
+          gap: 8px;
+          padding: 12px 20px;
+          visibility: visible !important;
+          opacity: 1 !important;
+          min-height: 60px;
+        }
+        
+        /* Ensure button is always visible when panel is expanded */
+        .voice-control-integrated.expanded .voice-actions-integrated {
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+        }
+        
+        .voice-action-hint {
+          font-size: 11px;
+          color: rgba(255, 255, 255, 0.6);
+          text-align: center;
+          font-weight: 500;
+          margin-bottom: 4px;
+        }
+        
+        .voice-action-integrated {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 10px 16px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 600;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s;
+          outline: none;
+        }
+        
+        .voice-action-integrated svg {
+          width: 16px;
+          height: 16px;
+        }
+        
+        .voice-action-start {
+          background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+          color: white;
+          box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+          font-weight: 700;
+          font-size: 14px;
+          padding: 12px 20px;
+        }
+        
+        .voice-action-start:hover {
+          background: linear-gradient(135deg, #5BA0F2 0%, #4A90E2 100%);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(74, 144, 226, 0.5);
+        }
+        
+        .voice-action-start:active {
+          transform: translateY(0);
+        }
+        
+        .voice-action-stop {
+          background: rgba(255, 255, 255, 0.1);
+          color: rgba(255, 255, 255, 0.9);
+          border: 1.5px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .voice-action-stop:hover {
+          background: rgba(255, 255, 255, 0.15);
+          border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .voice-panel-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 18px 20px;
+          background: linear-gradient(135deg, rgba(74, 144, 226, 0.15) 0%, rgba(74, 144, 226, 0.05) 100%);
+          border-bottom: 1px solid rgba(74, 144, 226, 0.2);
+        }
+        
+        .voice-panel-title {
+          display: flex;
+          align-items: center;
+          font-size: 16px;
+          font-weight: 700;
+          color: rgba(255, 255, 255, 0.95);
+          letter-spacing: -0.02em;
+        }
+        
+        .voice-panel-close {
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          border: none;
+          background: rgba(255, 255, 255, 0.1);
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 20px;
+          line-height: 1;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+        
+        .voice-panel-close:hover {
+          background: rgba(255, 255, 255, 0.15);
+          color: rgba(255, 255, 255, 1);
+          transform: scale(1.1);
+        }
+        
+        .voice-panel-content {
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+        
+        .voice-selector-group {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        
+        .voice-selector-label {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        
+        .voice-selector-label > span:first-child {
+          font-size: 14px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.95);
+          letter-spacing: -0.01em;
+        }
+        
+        .voice-selector-subtitle {
+          font-size: 12px;
+          color: rgba(255, 255, 255, 0.6);
+          font-weight: 400;
+        }
+        
+        .voice-select-wrapper {
+          position: relative;
+        }
+        
+        .voice-select {
+          width: 100%;
+          padding: 12px 40px 12px 16px;
+          border: 1.5px solid rgba(255, 255, 255, 0.15);
+          border-radius: 12px;
+          font-size: 14px;
+          background: rgba(255, 255, 255, 0.05);
+          color: rgba(255, 255, 255, 0.95);
+          cursor: pointer;
+          outline: none;
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+        
+        .voice-select:hover {
+          border-color: rgba(74, 144, 226, 0.4);
+          background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .voice-select:focus {
+          border-color: #4A90E2;
+          background: rgba(255, 255, 255, 0.1);
+          box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.15);
+        }
+        
+        .voice-select-arrow {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 18px;
+          height: 18px;
+          color: rgba(255, 255, 255, 0.6);
+          pointer-events: none;
+          transition: transform 0.2s;
+        }
+        
+        .voice-select-wrapper:hover .voice-select-arrow {
+          color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .voice-status-group {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          padding: 16px;
+          background: rgba(74, 144, 226, 0.08);
+          border: 1px solid rgba(74, 144, 226, 0.2);
+          border-radius: 12px;
+        }
+        
+        .voice-status-header {
+          display: flex;
+          align-items: center;
+          margin-bottom: 4px;
+        }
+        
+        .voice-status-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.7);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        
+        .voice-status {
+          display: flex;
+          align-items: center;
+        }
+        
+        .voice-status-indicator {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 14px;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .voice-status.recording .voice-status-indicator {
+          color: #4A90E2;
+        }
+        
+        .voice-status.error .voice-status-indicator {
+          color: #b00020;
+        }
+        
+        .status-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: currentColor;
+          animation: blink 1.5s infinite;
+          box-shadow: 0 0 8px currentColor;
+        }
+        
+        .voice-status.recording .status-dot {
+          background: #4A90E2;
+          box-shadow: 0 0 12px rgba(74, 144, 226, 0.6);
+        }
+        
+        .voice-status.error .status-dot {
+          background: #b00020;
+          box-shadow: 0 0 12px rgba(176, 0, 32, 0.6);
+        }
+        
+        .voice-panel-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-top: 4px;
+        }
+        
+        .voice-action-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          padding: 14px 20px;
+          border-radius: 12px;
+          font-size: 14px;
+          font-weight: 600;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s;
+          outline: none;
+        }
+        
+        .voice-action-btn svg {
+          width: 18px;
+          height: 18px;
+        }
+        
+        .voice-action-primary {
+          background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+          color: white;
+          box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+        }
+        
+        .voice-action-primary:hover {
+          background: linear-gradient(135deg, #5BA0F2 0%, #4A90E2 100%);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(74, 144, 226, 0.4);
+        }
+        
+        .voice-action-primary:active {
+          transform: translateY(0);
+        }
+        
+        .voice-action-secondary {
+          background: rgba(255, 255, 255, 0.1);
+          color: rgba(255, 255, 255, 0.9);
+          border: 1.5px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .voice-action-secondary:hover {
+          background: rgba(255, 255, 255, 0.15);
+          border-color: rgba(255, 255, 255, 0.3);
+          transform: translateY(-2px);
+        }
+        
+        .voice-action-secondary:active {
+          transform: translateY(0);
+        }
+        
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
         }
         
         .input button { 
@@ -770,7 +1403,7 @@ class NoteworthyChat extends HTMLElement {
             max-width: calc(100vw - 32px) !important;
             height: 70vh !important;
             max-height: 70vh !important;
-            min-height: 400px !important;
+            min-height: 600px !important;
             left: 16px !important;
             top: 50% !important;
             transform: translateY(-50%) !important;
@@ -991,7 +1624,7 @@ class NoteworthyChat extends HTMLElement {
         
         .tutorial-content {
           padding: 32px;
-          padding-bottom: 140px; /* Extra space to prevent footer overlap */
+          padding-bottom: 32px; /* Reduced padding to eliminate dead space */
           overflow-y: auto;
           flex: 1 1 auto;
           min-height: 0;
@@ -1330,7 +1963,7 @@ class NoteworthyChat extends HTMLElement {
           
           .tutorial-content {
             padding: 24px;
-            padding-bottom: 140px; /* Extra space to prevent footer overlap */
+            padding-bottom: 24px; /* Reduced padding to eliminate dead space */
             overflow-y: auto;
             flex: 1;
             min-height: 0;
@@ -1400,7 +2033,7 @@ class NoteworthyChat extends HTMLElement {
           
           .tutorial-content {
             padding: 20px;
-            padding-bottom: 140px; /* Extra space to prevent footer overlap */
+            padding-bottom: 20px; /* Reduced padding to eliminate dead space */
             overflow-y: auto;
             flex: 1;
             min-height: 0;
@@ -1478,14 +2111,219 @@ class NoteworthyChat extends HTMLElement {
           <p class="tip">Ask about headlines, context, or fact-checks. Upload images or documents for analysis. I'm here to help you stay informed!</p>
         </div>
         
+        <!-- Integrated Voice Control Panel - Scrollable & Seamless -->
+        <div class="voice-control-integrated" id="voiceControlIntegrated">
+          <div class="voice-control-header" id="voiceControlHeader">
+            <div class="voice-control-title">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; margin-right: 8px;">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              </svg>
+              <span>Voice Settings</span>
+            </div>
+            <button class="voice-control-toggle" id="voiceControlToggle" aria-label="Toggle voice settings">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px;">
+                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="voice-control-content" id="voiceControlContent">
+            <div class="voice-selector-integrated">
+              <label for="voiceSelect" class="voice-label-integrated">Choose Voice</label>
+              <div class="voice-list-container">
+                <div class="voice-list" id="voiceList">
+                  <div class="voice-option" data-value="alloy">
+                    <span class="voice-name">Alloy</span>
+                    <span class="voice-desc">Balanced & Clear</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option" data-value="echo">
+                    <span class="voice-name">Echo</span>
+                    <span class="voice-desc">Warm & Friendly</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option" data-value="fable">
+                    <span class="voice-name">Fable</span>
+                    <span class="voice-desc">Expressive & Dynamic</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option" data-value="onyx">
+                    <span class="voice-name">Onyx</span>
+                    <span class="voice-desc">Deep & Authoritative</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option" data-value="nova">
+                    <span class="voice-name">Nova</span>
+                    <span class="voice-desc">Bright & Energetic</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option" data-value="shimmer">
+                    <span class="voice-name">Shimmer</span>
+                    <span class="voice-desc">Soft & Gentle</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option active" data-value="cove" data-selected="true">
+                    <span class="voice-name">Cove</span>
+                    <span class="voice-desc">Calm & Professional</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option" data-value="ash">
+                    <span class="voice-name">Ash</span>
+                    <span class="voice-desc">Neutral & Versatile</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option" data-value="ballad">
+                    <span class="voice-name">Ballad</span>
+                    <span class="voice-desc">Melodic & Smooth</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option" data-value="sage">
+                    <span class="voice-name">Sage</span>
+                    <span class="voice-desc">Wise & Thoughtful</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option" data-value="verse">
+                    <span class="voice-name">Verse</span>
+                    <span class="voice-desc">Poetic & Refined</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="voice-status-integrated" id="voiceStatusIntegrated" style="display: none;">
+              <div class="voice-status-indicator-integrated">
+                <span class="status-dot-integrated" id="statusDotIntegrated"></span>
+                <span id="voiceStatusTextIntegrated">Ready</span>
+              </div>
+            </div>
+            <div class="voice-actions-integrated" id="voiceActionsIntegrated">
+              <div class="voice-action-hint">Ready to start voice call</div>
+              <button class="voice-action-integrated voice-action-start" id="voiceStartBtnIntegrated" title="Click to start a voice conversation with AI">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.2"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                </svg>
+                <span>Start Voice Call</span>
+              </button>
+              <button class="voice-action-integrated voice-action-stop" id="voiceStopBtnIntegrated" style="display: none;" title="Click to end the voice call">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
+                  <rect x="6" y="6" width="12" height="12" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.2"/>
+                </svg>
+                <span>End Call</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        
         <div class="input">
-          <input type="file" id="fileInput" accept="image/*,application/pdf,.txt,.doc,.docx" multiple aria-label="Upload file" />
-          <button type="button" class="file-upload-btn" id="fileUploadBtn" aria-label="Upload file" title="Upload file"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></button>
+          <input type="file" id="fileInput" accept="image/*,application/pdf,.txt,.doc,.docx" multiple aria-label="Upload file" style="display: none;" />
+          <button type="button" class="file-upload-btn" id="fileUploadBtn" aria-label="Upload file" title="Upload file or image for analysis">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </button>
+          <button type="button" class="voice-mode-toggle" id="voiceModeToggle" aria-label="Start voice conversation" title="Click to start voice conversation with AI">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="#4A90E2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="#4A90E2" fill-opacity="0.2"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="#4A90E2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </button>
           <input type="text" placeholder="Ask a question or describe an image to generate…" aria-label="Your question" id="chatInput" />
           <button type="button" id="sendButton">Send</button>
         </div>
         
         <div class="resize-handle" aria-label="Resize chat" title="Drag to resize"></div>
+      </div>
+      
+      <!-- Voice Control Panel - REMOVED (now integrated) -->
+      <div class="voice-control-panel" id="voiceControlPanel" style="display: none !important;">
+        <div class="voice-panel-header">
+          <div class="voice-panel-title">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px; color: currentColor; margin-right: 8px;">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+            <span>Voice Settings</span>
+          </div>
+          <button class="voice-panel-close" id="voicePanelClose" aria-label="Close voice panel">×</button>
+        </div>
+        
+        <div class="voice-panel-content">
+          <div class="voice-selector-group">
+            <label for="voiceSelect" class="voice-selector-label">
+              <span>Choose Voice</span>
+              <span class="voice-selector-subtitle">Select your preferred AI voice</span>
+            </label>
+            <div class="voice-select-wrapper">
+              <select id="voiceSelect" class="voice-select">
+                <option value="alloy">Alloy - Balanced & Clear</option>
+                <option value="echo">Echo - Warm & Friendly</option>
+                <option value="fable">Fable - Expressive & Dynamic</option>
+                <option value="onyx">Onyx - Deep & Authoritative</option>
+                <option value="nova">Nova - Bright & Energetic</option>
+                <option value="shimmer">Shimmer - Soft & Gentle</option>
+                <option value="cove" selected>Cove - Calm & Professional</option>
+                <option value="ash">Ash - Neutral & Versatile</option>
+                <option value="ballad">Ballad - Melodic & Smooth</option>
+                <option value="sage">Sage - Wise & Thoughtful</option>
+                <option value="verse">Verse - Poetic & Refined</option>
+              </select>
+              <svg class="voice-select-arrow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+          
+          <div class="voice-status-group" id="voiceStatusGroup" style="display: none;">
+            <div class="voice-status-header">
+              <span class="voice-status-label">Connection Status</span>
+            </div>
+            <div class="voice-status" id="voiceStatus">
+              <div class="voice-status-indicator">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="voiceStatusText">Ready</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="voice-panel-actions">
+            <button class="voice-action-btn voice-action-primary" id="voiceStartBtn">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              </svg>
+              <span>Start Voice Call</span>
+            </button>
+            <button class="voice-action-btn voice-action-secondary" id="voiceStopBtn" style="display: none;">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="6" y="6" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+              </svg>
+              <span>End Call</span>
+            </button>
+          </div>
+        </div>
       </div>
       
       <!-- Tutorial Modal -->
@@ -1587,10 +2425,185 @@ class NoteworthyChat extends HTMLElement {
     const input = this.root.querySelector('#chatInput');
     const fileInput = this.root.querySelector('#fileInput');
     const fileUploadBtn = this.root.querySelector('#fileUploadBtn');
+    const voiceModeToggle = this.root.querySelector('#voiceModeToggle');
+    const voiceControlIntegrated = this.root.querySelector('#voiceControlIntegrated');
+    const voiceControlToggle = this.root.querySelector('#voiceControlToggle');
+    const voiceControlHeader = this.root.querySelector('#voiceControlHeader');
+    const voiceList = this.root.querySelector('#voiceList');
+    const voiceStatusIntegrated = this.root.querySelector('#voiceStatusIntegrated');
+    const voiceStatusTextIntegrated = this.root.querySelector('#voiceStatusTextIntegrated');
+    const statusDotIntegrated = this.root.querySelector('#statusDotIntegrated');
+    const voiceStartBtnIntegrated = this.root.querySelector('#voiceStartBtnIntegrated');
+    const voiceStopBtnIntegrated = this.root.querySelector('#voiceStopBtnIntegrated');
+    
+    // Legacy popup elements (hidden)
+    const voiceControlPanel = this.root.querySelector('#voiceControlPanel');
+    const voicePanelClose = this.root.querySelector('#voicePanelClose');
+    const voiceSelect = this.root.querySelector('#voiceSelect');
+    const voiceStatusGroup = this.root.querySelector('#voiceStatusGroup');
+    const voiceStatus = this.root.querySelector('#voiceStatus');
+    const voiceStatusText = this.root.querySelector('#voiceStatusText');
+    const statusDot = this.root.querySelector('#statusDot');
+    const voiceStartBtn = this.root.querySelector('#voiceStartBtn');
+    const voiceStopBtn = this.root.querySelector('#voiceStopBtn');
     const send = this.root.querySelector('#sendButton');
     const body = this.root.querySelector('.body');
     const head = this.root.querySelector('.head');
     const resizeHandle = this.root.querySelector('.resize-handle');
+    
+    // Capture endpoint for use in voice mode (this.getAttribute won't work in nested functions)
+    // Note: endpoint is already declared at the top of connectedCallback, so we reference it
+    
+    // Function to position voice panel next to chatbox
+    const positionVoicePanel = () => {
+      if (!voiceControlPanel || !wrap) return;
+      
+      const wrapRect = wrap.getBoundingClientRect();
+      const panelWidth = 320;
+      const gap = 16;
+      
+      // Position to the right of chatbox, or left if not enough space
+      const spaceOnRight = window.innerWidth - wrapRect.right;
+      const spaceOnLeft = wrapRect.left;
+      
+      if (spaceOnRight >= panelWidth + gap) {
+        // Position to the right
+        voiceControlPanel.style.left = (wrapRect.right + gap) + 'px';
+        voiceControlPanel.style.top = wrapRect.top + 'px';
+        voiceControlPanel.style.transform = 'translateX(0) scale(1)';
+      } else if (spaceOnLeft >= panelWidth + gap) {
+        // Position to the left
+        voiceControlPanel.style.left = (wrapRect.left - panelWidth - gap) + 'px';
+        voiceControlPanel.style.top = wrapRect.top + 'px';
+        voiceControlPanel.style.transform = 'translateX(0) scale(1)';
+      } else {
+        // Center it below or above
+        voiceControlPanel.style.left = wrapRect.left + 'px';
+        if (spaceOnRight < spaceOnLeft) {
+          voiceControlPanel.style.top = (wrapRect.bottom + gap) + 'px';
+        } else {
+          voiceControlPanel.style.top = (wrapRect.top - 280 - gap) + 'px';
+        }
+      }
+    };
+    
+    // Show voice panel
+    const showVoicePanel = () => {
+      if (!voiceControlPanel) {
+        console.error('Voice control panel not found!');
+        return;
+      }
+      console.log('Showing voice panel...');
+      positionVoicePanel();
+      voiceControlPanel.classList.add('show');
+      voiceControlPanel.style.display = 'block';
+      voiceControlPanel.style.visibility = 'visible';
+      voiceControlPanel.style.opacity = '1';
+      
+      // Update position on window resize
+      const updatePosition = () => {
+        if (voiceControlPanel.classList.contains('show')) {
+          positionVoicePanel();
+        }
+      };
+      window.addEventListener('resize', updatePosition);
+      voiceControlPanel._resizeHandler = updatePosition;
+    };
+    
+    // Hide voice panel
+    const hideVoicePanel = () => {
+      if (!voiceControlPanel) return;
+      console.log('Hiding voice panel...');
+      voiceControlPanel.classList.remove('show');
+      voiceControlPanel.style.opacity = '0';
+      if (voiceControlPanel._resizeHandler) {
+        window.removeEventListener('resize', voiceControlPanel._resizeHandler);
+      }
+    };
+    
+    // Voice mode toggle - toggle integrated panel or start call
+    if (voiceModeToggle) {
+      voiceModeToggle.addEventListener('click', () => {
+        if (voiceModeActive) {
+          // If already in voice mode, stop it
+          stopVoiceMode();
+        } else if (voiceControlIntegrated && voiceControlIntegrated.classList.contains('expanded')) {
+          // If panel is already expanded, start the call
+          startVoiceMode();
+        } else {
+          // Otherwise, expand the panel
+          if (voiceControlIntegrated) {
+            voiceControlIntegrated.classList.add('expanded');
+          }
+        }
+      });
+    }
+    
+    // Voice control header toggle
+    if (voiceControlHeader) {
+      voiceControlHeader.addEventListener('click', () => {
+        if (voiceControlIntegrated) {
+          voiceControlIntegrated.classList.toggle('expanded');
+        }
+      });
+    }
+    
+    // Voice option selection
+    const voiceActionsIntegrated = this.root.querySelector('#voiceActionsIntegrated');
+    
+    // Show button on initial load since Cove is default active
+    if (voiceActionsIntegrated) {
+      voiceActionsIntegrated.style.display = 'flex';
+      voiceActionsIntegrated.style.visibility = 'visible';
+      voiceActionsIntegrated.style.opacity = '1';
+      console.log('✅ Start Voice Call button shown on load (Cove is default)');
+    } else {
+      console.error('❌ voiceActionsIntegrated element not found!');
+    }
+    
+    if (voiceList) {
+      const voiceOptions = voiceList.querySelectorAll('.voice-option');
+      voiceOptions.forEach(option => {
+        option.addEventListener('click', () => {
+          // Remove active from all
+          voiceOptions.forEach(opt => opt.classList.remove('active'));
+          // Add active to clicked
+          option.classList.add('active');
+          // Update current voice
+          currentVoice = option.dataset.value;
+          
+          // Show the "Start Voice Call" button when a voice is selected
+          if (voiceActionsIntegrated) {
+            voiceActionsIntegrated.style.display = 'flex';
+            voiceActionsIntegrated.style.visibility = 'visible';
+            voiceActionsIntegrated.style.opacity = '1';
+            console.log('✅ Showing Start Voice Call button after voice selection');
+          } else {
+            console.error('❌ voiceActionsIntegrated element not found!');
+          }
+          
+          // If voice mode is active, restart with new voice
+          if (voiceModeActive) {
+            stopVoiceMode();
+            setTimeout(() => startVoiceMode(), 500);
+          }
+        });
+      });
+    }
+    
+    // Voice start/stop buttons (integrated)
+    if (voiceStartBtnIntegrated) {
+      voiceStartBtnIntegrated.addEventListener('click', () => {
+        startVoiceMode();
+      });
+    }
+    
+    if (voiceStopBtnIntegrated) {
+      voiceStopBtnIntegrated.addEventListener('click', () => {
+        stopVoiceMode();
+      });
+    }
+    
     const tip = this.root.querySelector('.tip');
     
     // Track uploaded files
@@ -1606,17 +2619,142 @@ class NoteworthyChat extends HTMLElement {
       input: !!input,
       send: !!send,
       body: !!body,
+      fileUploadBtn: !!fileUploadBtn,
+      voiceModeToggle: !!voiceModeToggle,
+      voiceControlPanel: !!voiceControlPanel,
+      voiceStartBtn: !!voiceStartBtn,
+      voiceStopBtn: !!voiceStopBtn,
       endpoint: endpoint
     });
+    
+    // Verify integrated voice control exists
+    if (!voiceControlIntegrated) {
+      console.error('❌ Integrated voice control NOT FOUND!');
+    } else {
+      console.log('✅ Integrated voice control found');
+    }
+    
+    // Ensure buttons are visible - force them to show
+    if (fileUploadBtn) {
+      fileUploadBtn.style.display = 'flex';
+      fileUploadBtn.style.visibility = 'visible';
+      fileUploadBtn.style.opacity = '1';
+      fileUploadBtn.style.alignItems = 'center';
+      fileUploadBtn.style.justifyContent = 'center';
+      fileUploadBtn.removeAttribute('hidden');
+      
+      // Force SVG to be visible with explicit styles
+      const fileSvg = fileUploadBtn.querySelector('svg');
+      if (fileSvg) {
+        fileSvg.setAttribute('width', '20');
+        fileSvg.setAttribute('height', '20');
+        fileSvg.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: 20px !important; height: 20px !important;';
+        const path = fileSvg.querySelector('path');
+        if (path) {
+          path.setAttribute('stroke', '#FFFFFF');
+          path.setAttribute('stroke-width', '2');
+          path.style.cssText = 'stroke: #FFFFFF !important; stroke-width: 2 !important;';
+        }
+      }
+      
+      console.log('✅ File upload button found', {
+        button: !!fileUploadBtn,
+        svg: !!fileSvg,
+        path: fileSvg ? !!fileSvg.querySelector('path') : false
+      });
+    } else {
+      console.error('❌ File upload button NOT FOUND in DOM!');
+    }
+    
+    if (voiceModeToggle) {
+      voiceModeToggle.style.display = 'flex';
+      voiceModeToggle.style.visibility = 'visible';
+      voiceModeToggle.style.opacity = '1';
+      voiceModeToggle.style.alignItems = 'center';
+      voiceModeToggle.style.justifyContent = 'center';
+      voiceModeToggle.removeAttribute('hidden');
+      
+      // Force SVG to be visible with explicit styles
+      const voiceSvg = voiceModeToggle.querySelector('svg');
+      if (voiceSvg) {
+        voiceSvg.setAttribute('width', '20');
+        voiceSvg.setAttribute('height', '20');
+        voiceSvg.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: 20px !important; height: 20px !important;';
+        const paths = voiceSvg.querySelectorAll('path');
+        paths.forEach(path => {
+          path.setAttribute('stroke', '#4A90E2');
+          path.setAttribute('stroke-width', '2');
+          path.style.cssText = 'stroke: #4A90E2 !important; stroke-width: 2 !important;';
+          if (path.hasAttribute('fill')) {
+            path.setAttribute('fill', '#4A90E2');
+            path.setAttribute('fill-opacity', '0.2');
+          }
+        });
+      }
+      
+      console.log('✅ Voice mode toggle found', {
+        button: !!voiceModeToggle,
+        svg: !!voiceSvg,
+        paths: voiceSvg ? voiceSvg.querySelectorAll('path').length : 0
+      });
+    } else {
+      console.error('❌ Voice mode toggle NOT FOUND in DOM!');
+    }
+    
+    // Double-check after a short delay and force SVG visibility
+    setTimeout(() => {
+      if (fileUploadBtn) {
+        const fileSvg = fileUploadBtn.querySelector('svg');
+        if (fileSvg) {
+          fileSvg.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: 20px !important; height: 20px !important;';
+          const path = fileSvg.querySelector('path');
+          if (path) {
+            path.setAttribute('stroke', '#FFFFFF');
+            path.setAttribute('stroke-width', '2');
+            path.style.cssText = 'stroke: #FFFFFF !important; stroke-width: 2 !important; fill: none !important;';
+          }
+        }
+      }
+      if (voiceModeToggle) {
+        const voiceSvg = voiceModeToggle.querySelector('svg');
+        if (voiceSvg) {
+          voiceSvg.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: 20px !important; height: 20px !important;';
+          const paths = voiceSvg.querySelectorAll('path');
+          paths.forEach(path => {
+            path.setAttribute('stroke', '#4A90E2');
+            path.setAttribute('stroke-width', '2');
+            path.style.cssText = 'stroke: #4A90E2 !important; stroke-width: 2 !important;';
+            if (path.hasAttribute('fill')) {
+              path.setAttribute('fill', '#4A90E2');
+              path.setAttribute('fill-opacity', '0.2');
+            }
+          });
+        }
+      }
+      console.log('✅ SVG visibility forced:', {
+        fileUpload: fileUploadBtn ? {
+          svgExists: !!fileUploadBtn.querySelector('svg'),
+          pathExists: !!fileUploadBtn.querySelector('svg path'),
+          svgDisplay: fileUploadBtn.querySelector('svg') ? getComputedStyle(fileUploadBtn.querySelector('svg')).display : 'none'
+        } : 'null',
+        voiceToggle: voiceModeToggle ? {
+          svgExists: !!voiceModeToggle.querySelector('svg'),
+          pathsCount: voiceModeToggle.querySelector('svg') ? voiceModeToggle.querySelectorAll('svg path').length : 0,
+          svgDisplay: voiceModeToggle.querySelector('svg') ? getComputedStyle(voiceModeToggle.querySelector('svg')).display : 'none'
+        } : 'null'
+      });
+    }, 100);
     
     // Ensure all critical elements exist
     if (!input || !send || !body) {
       console.error('Noteworthy Chat: Missing critical elements!', {
         input: !!input,
         send: !!send,
-        body: !!body
+        body: !!body,
+        wrap: !!wrap
       });
-      return;
+      // Don't return - try to continue anyway
+      console.warn('Continuing despite missing elements...');
     }
     
     // Store reference to root for use in nested functions
@@ -1630,6 +2768,17 @@ class NoteworthyChat extends HTMLElement {
     let voiceInputEnabled = false;
     let recognition = null;
     let currentSpeech = null;
+    
+    // Voice conversation state (Realtime API)
+    let voiceModeActive = false;
+    let websocket = null;
+    let audioContext = null;
+    let mediaStream = null;
+    let audioWorkletNode = null;
+    let isRecording = false;
+    let currentVoice = 'cove';
+    let audioQueue = [];
+    let isPlayingAudio = false;
     
     // Initialize audio toggle state (already set in template, but ensure it's correct)
     if (audioToggle) {
@@ -1836,7 +2985,7 @@ class NoteworthyChat extends HTMLElement {
     const setSize = (w, h) => {
       // Minimum sizes to ensure all buttons and UI elements remain visible
       const MIN_WIDTH = 360;  // Enough for mode toggle + input + send button + padding
-      const MIN_HEIGHT = 450; // Enough for header + body + input area + padding
+      const MIN_HEIGHT = 600; // Enough for header + body + voice panel + input area + padding
       
       this.size = { 
         w: Math.max(MIN_WIDTH, Math.min(w, window.innerWidth - 48)), 
@@ -2714,6 +3863,377 @@ class NoteworthyChat extends HTMLElement {
       });
     }
     
+    // Voice mode functionality - Full Realtime API implementation
+    async function startVoiceMode() {
+      if (voiceModeActive) {
+        stopVoiceMode();
+        return;
+      }
+      
+      try {
+        voiceModeActive = true;
+        if (voiceModeToggle) voiceModeToggle.classList.add('active');
+        if (voiceStatusIntegrated) {
+          voiceStatusIntegrated.style.display = 'block';
+          voiceStatusIntegrated.classList.remove('error');
+          voiceStatusIntegrated.classList.add('recording');
+        }
+        if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connecting...';
+        if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
+        if (voiceStartBtnIntegrated) voiceStartBtnIntegrated.style.display = 'none';
+        if (voiceStopBtnIntegrated) voiceStopBtnIntegrated.style.display = 'flex';
+        
+        // Show actions panel when starting call
+        if (voiceActionsIntegrated) {
+          voiceActionsIntegrated.style.display = 'flex';
+        }
+        
+        // Ensure integrated panel is expanded
+        if (voiceControlIntegrated && !voiceControlIntegrated.classList.contains('expanded')) {
+          voiceControlIntegrated.classList.add('expanded');
+        }
+        
+        // Get selected voice from integrated panel
+        if (voiceList) {
+          const activeOption = voiceList.querySelector('.voice-option.active');
+          if (activeOption) {
+            currentVoice = activeOption.dataset.value;
+          }
+        }
+        // Fallback to default
+        if (!currentVoice) currentVoice = 'cove';
+        
+        // Request microphone permission
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Create audio context
+        audioContext = new (window.AudioContext || window.webkitAudioContext)({
+          sampleRate: 24000, // OpenAI Realtime API uses 24kHz
+        });
+        
+        // Create session with backend (use captured endpoint from outer scope)
+        const realtimeEndpoint = endpoint.replace('/noteworthy-chat', '/realtime-voice');
+        
+        const sessionRes = await fetch(realtimeEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ voice: currentVoice }),
+        });
+        
+        if (!sessionRes.ok) {
+          throw new Error('Failed to create voice session');
+        }
+        
+        const sessionData = await sessionRes.json();
+        
+        // Connect directly to OpenAI WebSocket using ephemeral token
+        const wsUrl = `${sessionData.websocket_url}&ephemeral_token=${sessionData.ephemeral_token}`;
+        
+        websocket = new WebSocket(wsUrl);
+        
+        websocket.onopen = () => {
+          if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connected - Speak now!';
+          if (voiceStatusIntegrated) {
+            voiceStatusIntegrated.classList.remove('error');
+            voiceStatusIntegrated.classList.add('recording');
+          }
+          if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
+          isRecording = true;
+          startAudioCapture();
+        };
+        
+        websocket.onmessage = (event) => {
+          handleWebSocketMessage(event);
+        };
+        
+        websocket.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connection error';
+          if (voiceStatusIntegrated) {
+            voiceStatusIntegrated.classList.remove('recording');
+            voiceStatusIntegrated.classList.add('error');
+          }
+          if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
+        };
+        
+        websocket.onclose = () => {
+          if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Disconnected';
+          if (voiceStatusIntegrated) {
+            voiceStatusIntegrated.classList.remove('recording');
+            voiceStatusIntegrated.classList.remove('error');
+          }
+          if (statusDotIntegrated) statusDotIntegrated.style.background = 'rgba(255, 255, 255, 0.5)';
+          if (voiceModeActive) {
+            // Try to reconnect
+            setTimeout(() => {
+              if (voiceModeActive) {
+                startVoiceMode();
+              }
+            }, 2000);
+          }
+        };
+        
+      } catch (error) {
+        console.error('Error starting voice mode:', error);
+        if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = `Error: ${error.message}`;
+        if (voiceStatusIntegrated) {
+          voiceStatusIntegrated.classList.remove('recording');
+          voiceStatusIntegrated.classList.add('error');
+        }
+        if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
+        voiceModeActive = false;
+        if (voiceModeToggle) voiceModeToggle.classList.remove('active');
+        if (voiceStartBtnIntegrated) voiceStartBtnIntegrated.style.display = 'flex';
+        if (voiceStopBtnIntegrated) voiceStopBtnIntegrated.style.display = 'none';
+        // Keep actions visible on error so user can try again
+        if (voiceActionsIntegrated) {
+          voiceActionsIntegrated.style.display = 'flex';
+        }
+        alert(`Failed to start voice mode: ${error.message}`);
+      }
+    }
+    
+    function stopVoiceMode() {
+      voiceModeActive = false;
+      if (voiceModeToggle) voiceModeToggle.classList.remove('active');
+      if (voiceStatusIntegrated) {
+        voiceStatusIntegrated.style.display = 'none';
+        voiceStatusIntegrated.classList.remove('recording');
+        voiceStatusIntegrated.classList.remove('error');
+      }
+      if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Ready';
+      if (statusDotIntegrated) statusDotIntegrated.style.background = 'rgba(255, 255, 255, 0.5)';
+      if (voiceStartBtnIntegrated) voiceStartBtnIntegrated.style.display = 'flex';
+      if (voiceStopBtnIntegrated) voiceStopBtnIntegrated.style.display = 'none';
+      // Keep actions visible after call ends (user can start again)
+      if (voiceActionsIntegrated) {
+        voiceActionsIntegrated.style.display = 'flex';
+      }
+      isRecording = false;
+      
+      if (websocket) {
+        websocket.close();
+        websocket = null;
+      }
+      
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
+      }
+      
+      if (audioWorkletNode) {
+        audioWorkletNode.disconnect();
+        audioWorkletNode = null;
+      }
+      
+      if (audioContext && audioContext.state !== 'closed') {
+        audioContext.close();
+        audioContext = null;
+      }
+    }
+    
+    async function startAudioCapture() {
+      if (!audioContext || !mediaStream) return;
+      
+      try {
+        const source = audioContext.createMediaStreamSource(mediaStream);
+        const processor = audioContext.createScriptProcessor(4096, 1, 1);
+        
+        processor.onaudioprocess = (e) => {
+          if (!isRecording || !websocket || websocket.readyState !== WebSocket.OPEN) return;
+          
+          const inputData = e.inputBuffer.getChannelData(0);
+          // Convert Float32Array to Int16Array (PCM16)
+          const pcm16 = new Int16Array(inputData.length);
+          for (let i = 0; i < inputData.length; i++) {
+            const s = Math.max(-1, Math.min(1, inputData[i]));
+            pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+          }
+          
+          // Convert to base64 for OpenAI Realtime API
+          const base64Audio = btoa(String.fromCharCode(...new Uint8Array(pcm16.buffer)));
+          
+          // Send audio to WebSocket in OpenAI's format
+          websocket.send(JSON.stringify({
+            type: 'input_audio_buffer.append',
+            audio: base64Audio,
+          }));
+        };
+        
+        source.connect(processor);
+        processor.connect(audioContext.destination);
+        
+      } catch (error) {
+        console.error('Error starting audio capture:', error);
+      }
+    }
+    
+    function handleWebSocketMessage(event) {
+      try {
+        const message = JSON.parse(event.data);
+        
+        switch (message.type) {
+          case 'response.audio_transcript.done':
+            // Full transcript available
+            if (message.transcript) {
+              const aiGroup = document.createElement('div');
+              aiGroup.className = 'message-group ai-msg-group';
+              aiGroup.innerHTML = `
+                <div class="message-avatar">NW</div>
+                <div class="message-content">
+                  <div class="reply">🎤 ${message.transcript}</div>
+                </div>
+              `;
+              body.appendChild(aiGroup);
+              body.scrollTop = body.scrollHeight;
+            }
+            break;
+            
+          case 'response.function_call_arguments.done':
+            // Function is being called
+            if (message.name === 'generate_image') {
+              if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Generating image...';
+            } else if (message.name === 'search_web') {
+              if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Searching the web...';
+            }
+            break;
+            
+          case 'response.function_call_result.done':
+            // Function result received
+            if (message.result) {
+              if (message.name === 'generate_image' && message.result.image_url) {
+                // Show generated image in chat
+                const aiGroup = document.createElement('div');
+                aiGroup.className = 'message-group ai-msg-group';
+                const replyContent = document.createElement('div');
+                replyContent.className = 'reply';
+                
+                const imageEl = document.createElement('img');
+                imageEl.src = message.result.image_url;
+                imageEl.alt = message.result.revised_prompt || 'Generated image';
+                imageEl.style.maxWidth = '100%';
+                imageEl.style.borderRadius = '12px';
+                imageEl.style.marginTop = '8px';
+                
+                replyContent.innerHTML = '<p>🎨 Generated image:</p>';
+                replyContent.appendChild(imageEl);
+                
+                aiGroup.innerHTML = `
+                  <div class="message-avatar">NW</div>
+                  <div class="message-content"></div>
+                `;
+                aiGroup.querySelector('.message-content').appendChild(replyContent);
+                body.appendChild(aiGroup);
+                body.scrollTop = body.scrollHeight;
+              } else if (message.name === 'search_web' && message.result.results) {
+                // Show search results
+                const aiGroup = document.createElement('div');
+                aiGroup.className = 'message-group ai-msg-group';
+                const replyContent = document.createElement('div');
+                replyContent.className = 'reply';
+                
+                let resultsHTML = '<p>🔍 Search results:</p><ul>';
+                message.result.results.slice(0, 5).forEach((result) => {
+                  resultsHTML += `<li><a href="${result.url}" target="_blank">${result.title}</a></li>`;
+                });
+                resultsHTML += '</ul>';
+                
+                replyContent.innerHTML = resultsHTML;
+                
+                aiGroup.innerHTML = `
+                  <div class="message-avatar">NW</div>
+                  <div class="message-content"></div>
+                `;
+                aiGroup.querySelector('.message-content').appendChild(replyContent);
+                body.appendChild(aiGroup);
+                body.scrollTop = body.scrollHeight;
+              }
+            }
+            if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Listening...';
+            break;
+            
+          case 'response.audio.delta':
+            // Play audio chunks
+            if (message.delta) {
+              playAudioChunk(message.delta);
+            }
+            break;
+            
+          case 'response.done':
+            // Response complete
+            if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Listening...';
+            if (voiceStatusIntegrated) {
+              voiceStatusIntegrated.classList.remove('error');
+              voiceStatusIntegrated.classList.add('recording');
+            }
+            if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
+            break;
+            
+          case 'conversation.item.input_audio_transcription.completed':
+            // User's speech transcribed
+            if (message.transcript) {
+              const userGroup = document.createElement('div');
+              userGroup.className = 'message-group user-msg-group';
+              userGroup.innerHTML = `
+                <div class="message-avatar">You</div>
+                <div class="message-content">
+                  <div class="user-msg">🎤 ${message.transcript}</div>
+                </div>
+              `;
+              body.appendChild(userGroup);
+              body.scrollTop = body.scrollHeight;
+            }
+            break;
+            
+          case 'error':
+            console.error('WebSocket error:', message);
+            if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = `Error: ${message.message || 'Unknown error'}`;
+            if (voiceStatusIntegrated) {
+              voiceStatusIntegrated.classList.remove('recording');
+              voiceStatusIntegrated.classList.add('error');
+            }
+            if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
+            break;
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
+    }
+    
+    async function playAudioChunk(audioBase64) {
+      if (!audioContext) return;
+      
+      try {
+        // Decode base64 to binary
+        const binaryString = atob(audioBase64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        // Convert PCM16 bytes to Float32Array
+        const pcm16 = new Int16Array(bytes.buffer);
+        const float32 = new Float32Array(pcm16.length);
+        for (let i = 0; i < pcm16.length; i++) {
+          float32[i] = pcm16[i] / 32768.0;
+        }
+        
+        // Create audio buffer and play
+        const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
+        audioBuffer.copyToChannel(float32, 0);
+        
+        const source = audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioContext.destination);
+        source.start();
+        
+      } catch (error) {
+        console.error('Error playing audio chunk:', error);
+      }
+    }
+    
+    // Legacy handlers (kept for compatibility but not used)
+    
     // Drag and drop handling on the main chat body and wrap
     if (body && wrap) {
       // Prevent default drag behaviors
@@ -2832,6 +4352,10 @@ class NoteworthyChat extends HTMLElement {
     
     if (input) {
       input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
         // #region agent log
         if (e.key === 'k' || e.key === 'K') {
           fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'noteworthy-chat.js:2834',message:'K key received in chat input',data:{key:e.key,defaultPrevented:e.defaultPrevented,isFocused:document.activeElement===input},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});

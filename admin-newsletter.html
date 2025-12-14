@@ -1610,11 +1610,17 @@
                     window.newsletterTemplates = window.newsletterTemplates || {};
                     templates.forEach(template => {
                         // Ensure template has all required fields
-                        if (!template.html && template.previewHtml) {
-                            template.html = template.previewHtml;
+                        // First, ensure html exists - prefer html, fallback to previewHtml
+                        if (!template.html || template.html.trim() === '') {
+                            if (template.previewHtml && template.previewHtml.trim() !== '') {
+                                template.html = template.previewHtml;
+                            }
                         }
-                        if (!template.previewHtml && template.html) {
-                            template.previewHtml = template.html;
+                        // Ensure previewHtml exists - prefer previewHtml, fallback to html
+                        if (!template.previewHtml || template.previewHtml.trim() === '') {
+                            if (template.html && template.html.trim() !== '') {
+                                template.previewHtml = template.html;
+                            }
                         }
                         if (!template.subject) {
                             template.subject = template.name || 'Newsletter';
@@ -1627,13 +1633,17 @@
                         if (!template.text && template.html) {
                             template.text = template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
                         }
+                        // Final check: ensure we have at least html or previewHtml
+                        const finalHtml = (template.html && template.html.trim() !== '') ? template.html : (template.previewHtml && template.previewHtml.trim() !== '') ? template.previewHtml : '';
+                        const finalPreviewHtml = (template.previewHtml && template.previewHtml.trim() !== '') ? template.previewHtml : finalHtml;
+                        
                         window.newsletterTemplates[template.id] = {
                             id: template.id,
                             name: template.name || 'Unnamed Template',
                             subject: template.subject || 'Newsletter',
-                            html: template.html || '',
+                            html: finalHtml, // Ensure html is set (use previewHtml if html is missing)
                             text: template.text || '',
-                            previewHtml: template.previewHtml || template.html || '',
+                            previewHtml: finalPreviewHtml, // Ensure previewHtml is set (use html if previewHtml is missing)
                             createdAt: template.createdAt,
                             updatedAt: template.updatedAt
                         };
@@ -1798,12 +1808,16 @@
                             
                             // Store newsletter data for later use when sending
                             // Use fullHtml (prefer html over previewHtml) for sending
+                            // Ensure html is not empty - if it is, use previewHtml
+                            const finalHtml = (fullHtml && fullHtml.trim() !== '') ? fullHtml : (previewHtml && previewHtml.trim() !== '') ? previewHtml : '';
+                            const finalPreviewHtml = (previewHtml && previewHtml.trim() !== '') ? previewHtml : finalHtml;
+                            
                             window.newsletterTemplates[templateId] = {
                                 id: templateId,
                                 name: newsletter.subject || 'Past Newsletter',
                                 subject: newsletter.subject || 'No subject',
-                                html: fullHtml, // Use full HTML for sending (html preferred, fallback to previewHtml)
-                                previewHtml: previewHtml, // Keep previewHtml separate for preview display
+                                html: finalHtml, // Use full HTML for sending (html preferred, fallback to previewHtml)
+                                previewHtml: finalPreviewHtml, // Keep previewHtml separate for preview display
                                 text: newsletter.text || '',
                                 timestamp: newsletter.timestamp,
                                 emailsSent: newsletter.emailsSent || 0
@@ -2327,6 +2341,18 @@
                         console.error('Failed to parse template response:', responseText);
                         throw new Error('Invalid template data format');
                     }
+                    
+                    // Ensure template has all required fields after loading from API
+                    if (!template.html && template.previewHtml) {
+                        template.html = template.previewHtml;
+                        console.log('Using previewHtml as html for template loaded from API');
+                    }
+                    if (!template.subject) {
+                        template.subject = template.name || 'Newsletter';
+                    }
+                    if (!template.text && template.html) {
+                        template.text = template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+                    }
                 }
                 
                 console.log('Loaded template for test:', {
@@ -2334,9 +2360,29 @@
                     name: template.name,
                     subject: template.subject,
                     hasHtml: !!template.html,
+                    hasPreviewHtml: !!template.previewHtml,
                     hasText: !!template.text,
-                    htmlLength: template.html?.length || 0
+                    htmlLength: template.html?.length || 0,
+                    previewHtmlLength: template.previewHtml?.length || 0
                 });
+                
+                // Final check: if html is still missing, try to use previewHtml
+                if (!template.html || template.html.trim() === '') {
+                    if (template.previewHtml && template.previewHtml.trim() !== '') {
+                        template.html = template.previewHtml;
+                        console.log('Using previewHtml as html (final fallback)');
+                    } else {
+                        console.error('Template missing HTML content:', {
+                            id: template.id,
+                            name: template.name,
+                            hasHtml: !!template.html,
+                            hasPreviewHtml: !!template.previewHtml,
+                            htmlLength: template.html?.length || 0,
+                            previewHtmlLength: template.previewHtml?.length || 0
+                        });
+                        throw new Error('Template is missing HTML content. Please select a different template or contact support.');
+                    }
+                }
                 
                 // For past newsletters, we might not have text, so generate it from html
                 if (!template.text && template.html) {
@@ -2349,13 +2395,14 @@
                     throw new Error('Invalid template data received');
                 }
                 
-                if (!template.subject || !template.html) {
+                if (!template.subject || !template.html || template.html.trim() === '') {
                     console.error('Template missing required fields:', {
                         hasSubject: !!template.subject,
                         hasHtml: !!template.html,
+                        htmlIsEmpty: !template.html || template.html.trim() === '',
                         template: template
                     });
-                    throw new Error(`Template missing required fields. Subject: ${!!template.subject}, HTML: ${!!template.html}`);
+                    throw new Error(`Template missing required fields. Subject: ${!!template.subject}, HTML: ${!!template.html && template.html.trim() !== ''}`);
                 }
                 
                 const response = await fetch('/.netlify/functions/send-newsletter', {
@@ -2586,6 +2633,34 @@
                         throw new Error('Failed to load template');
                     }
                     template = JSON.parse(await templateResponse.text());
+                    
+                    // Ensure template has all required fields after loading from API
+                    if (!template.html && template.previewHtml) {
+                        template.html = template.previewHtml;
+                        console.log('Using previewHtml as html for template loaded from API');
+                    }
+                    if (!template.subject) {
+                        template.subject = template.name || 'Newsletter';
+                    }
+                    if (!template.text && template.html) {
+                        template.text = template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+                    }
+                }
+                
+                // Final check: if html is still missing, try to use previewHtml
+                if (!template.html || template.html.trim() === '') {
+                    if (template.previewHtml && template.previewHtml.trim() !== '') {
+                        template.html = template.previewHtml;
+                        console.log('Using previewHtml as html (final fallback)');
+                    } else {
+                        console.error('Template missing HTML content:', {
+                            id: template.id,
+                            name: template.name,
+                            hasHtml: !!template.html,
+                            hasPreviewHtml: !!template.previewHtml
+                        });
+                        throw new Error('Invalid template: missing HTML content. This newsletter may not have HTML content available.');
+                    }
                 }
                 
                 // For past newsletters, we might not have text, so generate it from html

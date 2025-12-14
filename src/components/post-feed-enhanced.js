@@ -22,10 +22,12 @@ let enhancedCurrentSort = localStorage.getItem('feed-sort') || 'recent';
 let enhancedCurrentSearch = localStorage.getItem('feed-search') || '';
 let enhancedCurrentPosts = [];
 let enhancedDisplayedCount = 5; // Number of posts currently displayed
-let enhancedPostsPerChunk = 10; // Number of posts to load per scroll
+let enhancedPostsPerChunk = 15; // Number of posts to load per scroll
 let enhancedScrollObserver = null; // Intersection Observer for infinite scroll
 let expandedPosts = new Set(); // Track which posts are expanded
 let sharedPosts = new Set(); // Track recently shared posts
+let enhancedEndpoint = '/.netlify/functions/posts-read'; // Current API endpoint
+let enhancedCurrentLimit = 5; // Current number of posts fetched from API
 
 /**
  * Calculate reading time in minutes
@@ -430,6 +432,27 @@ function renderEnhancedPostCard(post) {
     return mediaHtml;
   };
   
+  // Helper function to get SVG icon HTML
+  const getIconHTML = (iconName) => {
+    const icons = {
+      reply: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: currentColor; width: 1.25rem; height: 1.25rem; vertical-align: middle; display: inline-block;">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <path d="M8 10h8M8 14h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      </svg>`,
+      repost: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: currentColor; width: 1.25rem; height: 1.25rem; vertical-align: middle; display: inline-block;">
+        <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>`,
+      like: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: currentColor; width: 1.25rem; height: 1.25rem; vertical-align: middle; display: inline-block;">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+      </svg>`,
+      view: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: currentColor; width: 1.25rem; height: 1.25rem; vertical-align: middle; display: inline-block;">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity="0.2"/>
+      </svg>`,
+    };
+    return icons[iconName] || '';
+  };
+
   // Render engagement bar (same as old feed)
   const renderEngagementBar = (post, link) => {
     const replies = post.replies !== undefined && post.replies !== null ? post.replies : null;
@@ -448,7 +471,7 @@ function renderEnhancedPostCard(post) {
     
     // Reply button
     buttons.push({
-      icon: '💬',
+      icon: getIconHTML('reply'),
       count: replies,
       label: 'Reply',
       color: 'rgb(113, 118, 123)',
@@ -458,7 +481,7 @@ function renderEnhancedPostCard(post) {
     
     // Repost button
     buttons.push({
-      icon: '🔄',
+      icon: getIconHTML('repost'),
       count: reposts,
       label: 'Repost',
       color: 'rgb(113, 118, 123)',
@@ -468,7 +491,7 @@ function renderEnhancedPostCard(post) {
     
     // Like button
     buttons.push({
-      icon: '❤️',
+      icon: getIconHTML('like'),
       count: likes,
       label: 'Like',
       color: 'rgb(113, 118, 123)',
@@ -478,7 +501,7 @@ function renderEnhancedPostCard(post) {
     
     // Views button
     buttons.push({
-      icon: '👁️',
+      icon: getIconHTML('view'),
       count: views,
       label: 'Views',
       color: 'rgb(113, 118, 123)',
@@ -493,7 +516,7 @@ function renderEnhancedPostCard(post) {
          onmouseover="this.style.color='${btn.hoverColor}'; this.style.backgroundColor='rgba(29, 155, 240, 0.1)'" 
          onmouseout="this.style.color='${btn.color}'; this.style.backgroundColor='transparent'"
          title="${btn.label}">
-        <span style="font-size: 1.25rem; line-height: 1;">${btn.icon}</span>
+        <span style="display: inline-flex; align-items: center; line-height: 1;">${btn.icon}</span>
         ${btn.count !== null && btn.count !== undefined ? `<span style="font-size: 0.813rem; line-height: 1; font-weight: 400;">${formatNumber(btn.count)}</span>` : ''}
       </a>
     `).join('');
@@ -676,6 +699,29 @@ function renderEnhancedMedia(media) {
 }
 
 /**
+ * Helper function to get SVG icon HTML (for enhanced engagement bar)
+ */
+function getEngagementIconHTML(iconName) {
+  const icons = {
+    reply: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: currentColor; width: 1.25rem; height: 1.25rem; vertical-align: middle; display: inline-block;">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <path d="M8 10h8M8 14h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    </svg>`,
+    repost: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: currentColor; width: 1.25rem; height: 1.25rem; vertical-align: middle; display: inline-block;">
+      <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>`,
+    like: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: currentColor; width: 1.25rem; height: 1.25rem; vertical-align: middle; display: inline-block;">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+    </svg>`,
+    view: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: currentColor; width: 1.25rem; height: 1.25rem; vertical-align: middle; display: inline-block;">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity="0.2"/>
+    </svg>`,
+  };
+  return icons[iconName] || '';
+}
+
+/**
  * Render enhanced engagement bar
  */
 function renderEnhancedEngagementBar(post) {
@@ -683,7 +729,7 @@ function renderEnhancedEngagementBar(post) {
   
   const buttons = [
     {
-      icon: '💬',
+      icon: getEngagementIconHTML('reply'),
       count: stats.comments || stats.replies || 0,
       label: 'Comments',
       color: 'rgb(113, 118, 123)',
@@ -691,7 +737,7 @@ function renderEnhancedEngagementBar(post) {
       href: post.url || post.link || `https://x.com/newsnoteworthy/status/${post.id}`,
     },
     {
-      icon: '🔄',
+      icon: getEngagementIconHTML('repost'),
       count: stats.reposts || 0,
       label: 'Reposts',
       color: 'rgb(113, 118, 123)',
@@ -699,7 +745,7 @@ function renderEnhancedEngagementBar(post) {
       href: post.url || post.link || `https://x.com/newsnoteworthy/status/${post.id}`,
     },
     {
-      icon: '❤️',
+      icon: getEngagementIconHTML('like'),
       count: stats.likes || 0,
       label: 'Likes',
       color: 'rgb(113, 118, 123)',
@@ -707,7 +753,7 @@ function renderEnhancedEngagementBar(post) {
       href: post.url || post.link || `https://x.com/newsnoteworthy/status/${post.id}`,
     },
     {
-      icon: '👁️',
+      icon: getEngagementIconHTML('view'),
       count: stats.views || stats.impressions || 0,
       label: 'Views',
       color: 'rgb(113, 118, 123)',
@@ -740,7 +786,7 @@ function renderEnhancedEngagementBar(post) {
       onmouseover="this.style.color='${btn.hoverColor}'; this.style.backgroundColor='rgba(29, 155, 240, 0.1)'"
       onmouseout="this.style.color='${btn.color}'; this.style.backgroundColor='transparent'"
     >
-      <span style="font-size: 1.125rem; line-height: 1;">${btn.icon}</span>
+      <span style="display: inline-flex; align-items: center; line-height: 1;">${btn.icon}</span>
       <span style="font-size: 0.875rem; line-height: 1; font-weight: 500;">${formatCount(btn.count)}</span>
     </a>
   `).join('');
@@ -889,7 +935,7 @@ function renderSkeletonCards(count = 5) {
 /**
  * Load posts from API with chunked loading
  */
-async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', limit = 200, resetDisplayCount = true) {
+async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', limit = 5, resetDisplayCount = true) {
   // Prevent concurrent loads and infinite recursion
   if (enhancedIsLoading) {
     console.warn('[Enhanced Feed] Already loading, skipping duplicate call');
@@ -906,7 +952,7 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
   
   // Reset display count if this is a fresh load
   if (resetDisplayCount) {
-    enhancedDisplayedCount = 5;
+    enhancedDisplayedCount = 5; // Always start with 5 posts
     
     // Try to load from cache first for instant display
     try {
@@ -947,10 +993,39 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
   }
   
   try {
-    const response = await fetch(`${endpoint}?limit=${limit}`);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    let data = null;
     
-    const data = await response.json();
+    // PRIORITY 1: Check if prefetched data is available (for instant loading)
+    if (window.__BREAKING_NEWS_DATA_RESOLVED__) {
+      data = window.__BREAKING_NEWS_DATA_RESOLVED__;
+      console.log('[Enhanced Feed] Using prefetched data for instant load');
+    }
+    // PRIORITY 2: Try to await the prefetched promise if it exists
+    else if (window.__BREAKING_NEWS_DATA__) {
+      try {
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), 1000)
+        );
+        data = await Promise.race([window.__BREAKING_NEWS_DATA__, timeoutPromise]);
+        if (data && Array.isArray(data) && data.length > 0) {
+          window.__BREAKING_NEWS_DATA_RESOLVED__ = data;
+          console.log('[Enhanced Feed] Used prefetched promise for instant load');
+        } else {
+          data = null;
+        }
+      } catch (e) {
+        // Timeout or error - fall through to direct fetch
+        data = null;
+      }
+    }
+    
+    // PRIORITY 3: Fetch directly if no prefetched data
+    if (!data) {
+      const response = await fetch(`${endpoint}?limit=${limit}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      data = await response.json();
+    }
+    
     // Handle both array response and object with posts property
     const posts = Array.isArray(data) ? data : (data.posts || data.data || []);
     enhancedCurrentPosts = posts || [];
@@ -962,6 +1037,9 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
       posts: enhancedCurrentPosts,
       timestamp: Date.now(),
     }));
+    
+    // Update current limit
+    enhancedCurrentLimit = limit;
     
     // Render with chunked display (will update if cache was used)
     renderEnhancedFeed();
@@ -1134,14 +1212,49 @@ function renderEnhancedFeed() {
 /**
  * Load more posts when user scrolls near bottom
  */
-function loadMorePosts() {
+async function loadMorePosts() {
   // Filter and sort to get total available posts
   let filtered = searchEnhancedPosts(enhancedCurrentPosts, enhancedCurrentSearch);
   const pinned = filtered.filter(p => p.isPinned);
   const unpinned = filtered.filter(p => !p.isPinned);
   const sorted = [...pinned, ...sortEnhancedPosts(unpinned, enhancedCurrentSort)];
   
-  // Check if there are more posts to load
+  // Check if we need to fetch more posts from API
+  // If we're within 3 posts of the end, fetch more
+  const remainingPosts = sorted.length - enhancedDisplayedCount;
+  if (remainingPosts <= 3 && !enhancedIsLoading) {
+    // Fetch more posts from API
+    const newLimit = enhancedCurrentLimit + 15; // Fetch 15 more posts
+    console.log(`[Enhanced Feed] Fetching more posts: ${newLimit} total`);
+    await loadEnhancedPosts(enhancedEndpoint, newLimit, false); // false = don't reset display count
+    // After fetching, re-filter and sort
+    filtered = searchEnhancedPosts(enhancedCurrentPosts, enhancedCurrentSearch);
+    const newPinned = filtered.filter(p => p.isPinned);
+    const newUnpinned = filtered.filter(p => !p.isPinned);
+    const newSorted = [...newPinned, ...sortEnhancedPosts(newUnpinned, enhancedCurrentSort)];
+    
+    // Check if there are more posts to load
+    if (enhancedDisplayedCount >= newSorted.length) {
+      // No more posts to load, remove observer
+      if (enhancedScrollObserver) {
+        enhancedScrollObserver.disconnect();
+        enhancedScrollObserver = null;
+      }
+      return;
+    }
+    
+    // Increase displayed count
+    enhancedDisplayedCount = Math.min(enhancedDisplayedCount + enhancedPostsPerChunk, newSorted.length);
+    
+    // Re-render with more posts
+    renderEnhancedFeed();
+    
+    // Re-setup observer for next batch
+    setupInfiniteScroll();
+    return;
+  }
+  
+  // Check if there are more posts to load from current cache
   if (enhancedDisplayedCount >= sorted.length) {
     // No more posts to load, remove observer
     if (enhancedScrollObserver) {
@@ -1229,7 +1342,7 @@ function setupInfiniteScroll() {
 let enhancedFeedInitialized = false;
 let lastContainerId = null;
 
-function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/functions/posts-read', limit = 200) {
+function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/functions/posts-read', limit = 5) {
   const container = document.getElementById(containerId);
   if (!container) {
     console.error('[Enhanced Feed] Container not found:', containerId);
@@ -1270,6 +1383,8 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
   }
   // Always update loadEnhancedPosts to use current endpoint/limit
   // Store endpoint and limit in closure to prevent recursion
+  enhancedEndpoint = endpoint;
+  enhancedCurrentLimit = limit;
   const savedEndpoint = endpoint;
   const savedLimit = limit;
   

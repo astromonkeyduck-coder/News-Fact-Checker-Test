@@ -1,26 +1,21 @@
 // Shadow DOM web component for Noteworthy Chat widget (TypeScript version)
 // Enhanced with glassy effects, resize capability, AI logo, and mobile-friendly design
-
-export class NoteworthyChat extends HTMLElement {
-  private root: ShadowRoot;
-  private pos = { x: 24, y: 24 };
-  private size = { w: 420, h: 520 };
-  private dragging = false;
-  private resizing = false;
-  private start: { x: number; y: number } | null = null;
-  private startPos: { x: number; y: number } | null = null;
-  private startSize: { w: number; h: number } | null = null;
-
-  constructor() {
-    super();
-    this.root = this.attachShadow({ mode: 'open' });
-  }
-
-  connectedCallback() {
-    const endpoint = this.getAttribute('data-endpoint') || '/.netlify/functions/noteworthy-chat';
-    const openOnLoad = this.getAttribute('data-open') === 'true';
-
-    this.root.innerHTML = `
+class NoteworthyChat extends HTMLElement {
+    constructor() {
+        super();
+        this.pos = { x: 24, y: 24 };
+        this.size = { w: 420, h: 520 };
+        this.dragging = false;
+        this.resizing = false;
+        this.start = null;
+        this.startPos = null;
+        this.startSize = null;
+        this.root = this.attachShadow({ mode: 'open' });
+    }
+    connectedCallback() {
+        const endpoint = this.getAttribute('data-endpoint') || '/.netlify/functions/noteworthy-chat';
+        const openOnLoad = this.getAttribute('data-open') === 'true';
+        this.root.innerHTML = `
       <style>
         :host { all: initial; display: block; }
         *, *::before, *::after { box-sizing: border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
@@ -1246,721 +1241,634 @@ export class NoteworthyChat extends HTMLElement {
         </div>
       </div>
     `;
-
-    const root = this.root;
-    const wrap = root.querySelector('.wrap') as HTMLElement;
-    const launcher = root.querySelector('.launcher') as HTMLButtonElement;
-    const closeBtn = root.querySelector('.close') as HTMLButtonElement;
-    const input = root.querySelector('#chatInput') as HTMLInputElement;
-    const send = root.querySelector('#sendButton') as HTMLButtonElement;
-    const body = root.querySelector('.body') as HTMLElement;
-    const head = root.querySelector('.head') as HTMLElement;
-    const resizeHandle = root.querySelector('.resize-handle') as HTMLElement;
-    const tip = root.querySelector('.tip') as HTMLElement;
-    const modeToggle = root.querySelector('#modeToggle') as HTMLButtonElement;
-    const modeIcon = root.querySelector('#modeIcon') as HTMLElement;
-    const fileInput = root.querySelector('#fileInput') as HTMLInputElement;
-    const fileUploadBtn = root.querySelector('#fileUploadBtn') as HTMLButtonElement;
-    const voiceModeToggle = root.querySelector('#voiceModeToggle') as HTMLButtonElement;
-    const voiceSelector = root.querySelector('#voiceSelector') as HTMLElement;
-    const voiceSelect = root.querySelector('#voiceSelect') as HTMLSelectElement;
-    const voiceStatus = root.querySelector('#voiceStatus') as HTMLElement;
-    const voiceStatusText = root.querySelector('#voiceStatusText') as HTMLElement;
-    
-    // Track current mode: 'chat' or 'image'
-    let currentMode: 'chat' | 'image' = 'chat';
-    let uploadedFiles: File[] = [];
-    
-    // Voice conversation state
-    let voiceModeActive = false;
-    let websocket: WebSocket | null = null;
-    let audioContext: AudioContext | null = null;
-    let mediaStream: MediaStream | null = null;
-    let audioWorkletNode: AudioWorkletNode | null = null;
-    let isRecording = false;
-    let currentVoice = 'cove';
-    let audioQueue: Float32Array[] = [];
-    let isPlayingAudio = false;
-    
-    // Toggle between chat and image generation modes
-    if (modeToggle && modeIcon) {
-      modeToggle.addEventListener('click', () => {
-        currentMode = currentMode === 'chat' ? 'image' : 'chat';
-        
-        if (currentMode === 'image') {
-          modeIcon.textContent = '🎨';
-          modeToggle.classList.add('active');
-          input.placeholder = 'Describe the image you want to generate (or upload an image to generate based on it)…';
-          modeToggle.setAttribute('title', 'Click to switch to chat mode');
-        } else {
-          modeIcon.textContent = '💬';
-          modeToggle.classList.remove('active');
-          input.placeholder = 'Ask about a story or topic…';
-          modeToggle.setAttribute('title', 'Click to switch to image generation mode');
-          // Clear uploaded files when switching to chat mode
-          uploadedFiles = [];
-          updateFilePreview();
-          // Stop voice mode when switching modes
-          if (voiceModeActive) {
-            stopVoiceMode();
-          }
+        const root = this.root;
+        const wrap = root.querySelector('.wrap');
+        const launcher = root.querySelector('.launcher');
+        const closeBtn = root.querySelector('.close');
+        const input = root.querySelector('#chatInput');
+        const send = root.querySelector('#sendButton');
+        const body = root.querySelector('.body');
+        const head = root.querySelector('.head');
+        const resizeHandle = root.querySelector('.resize-handle');
+        const tip = root.querySelector('.tip');
+        const modeToggle = root.querySelector('#modeToggle');
+        const modeIcon = root.querySelector('#modeIcon');
+        const fileInput = root.querySelector('#fileInput');
+        const fileUploadBtn = root.querySelector('#fileUploadBtn');
+        const voiceModeToggle = root.querySelector('#voiceModeToggle');
+        const voiceSelector = root.querySelector('#voiceSelector');
+        const voiceSelect = root.querySelector('#voiceSelect');
+        const voiceStatus = root.querySelector('#voiceStatus');
+        const voiceStatusText = root.querySelector('#voiceStatusText');
+        // Track current mode: 'chat' or 'image'
+        let currentMode = 'chat';
+        let uploadedFiles = [];
+        // Voice conversation state
+        let voiceModeActive = false;
+        let websocket = null;
+        let audioContext = null;
+        let mediaStream = null;
+        let audioWorkletNode = null;
+        let isRecording = false;
+        let currentVoice = 'cove';
+        let audioQueue = [];
+        let isPlayingAudio = false;
+        // Toggle between chat and image generation modes
+        if (modeToggle && modeIcon) {
+            modeToggle.addEventListener('click', () => {
+                currentMode = currentMode === 'chat' ? 'image' : 'chat';
+                if (currentMode === 'image') {
+                    modeIcon.textContent = '🎨';
+                    modeToggle.classList.add('active');
+                    input.placeholder = 'Describe the image you want to generate (or upload an image to generate based on it)…';
+                    modeToggle.setAttribute('title', 'Click to switch to chat mode');
+                }
+                else {
+                    modeIcon.textContent = '💬';
+                    modeToggle.classList.remove('active');
+                    input.placeholder = 'Ask about a story or topic…';
+                    modeToggle.setAttribute('title', 'Click to switch to image generation mode');
+                    // Clear uploaded files when switching to chat mode
+                    uploadedFiles = [];
+                    updateFilePreview();
+                    // Stop voice mode when switching modes
+                    if (voiceModeActive) {
+                        stopVoiceMode();
+                    }
+                }
+                input.focus();
+            });
         }
-        
-        input.focus();
-      });
-    }
-    
-    // File upload handling
-    if (fileUploadBtn && fileInput) {
-      fileUploadBtn.addEventListener('click', () => {
-        fileInput.click();
-      });
-      
-      fileInput.addEventListener('change', (e) => {
-        const target = e.target as HTMLInputElement;
-        if (target.files && target.files.length > 0) {
-          handleFiles(Array.from(target.files));
-          target.value = '';
+        // File upload handling
+        if (fileUploadBtn && fileInput) {
+            fileUploadBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+            fileInput.addEventListener('change', (e) => {
+                const target = e.target;
+                if (target.files && target.files.length > 0) {
+                    handleFiles(Array.from(target.files));
+                    target.value = '';
+                }
+            });
         }
-      });
-    }
-    
-    function handleFiles(files: File[]) {
-      files.forEach(file => {
-        if (file.type.startsWith('image/')) {
-          if (file.size > 20 * 1024 * 1024) {
-            alert(`File "${file.name}" is too large. Maximum size is 20MB.`);
-            return;
-          }
-          uploadedFiles.push(file);
+        function handleFiles(files) {
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    if (file.size > 20 * 1024 * 1024) {
+                        alert(`File "${file.name}" is too large. Maximum size is 20MB.`);
+                        return;
+                    }
+                    uploadedFiles.push(file);
+                }
+            });
+            updateFilePreview();
         }
-      });
-      updateFilePreview();
-    }
-    
-    const updateFilePreview = () => {
-      let previewContainer = root.querySelector('.file-preview-container') as HTMLElement;
-      
-      if (uploadedFiles.length === 0) {
-        if (previewContainer) previewContainer.remove();
-        return;
-      }
-      
-      if (!previewContainer) {
-        previewContainer = document.createElement('div');
-        previewContainer.className = 'file-preview-container';
-        const inputContainer = root.querySelector('.input');
-        if (inputContainer && inputContainer.parentNode) {
-          inputContainer.parentNode.insertBefore(previewContainer, inputContainer);
-        }
-      }
-      
-      previewContainer.innerHTML = '';
-      
-      uploadedFiles.forEach((file, index) => {
-        const preview = document.createElement('div');
-        preview.className = 'file-preview';
-        
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = document.createElement('img');
-          img.src = e.target?.result as string;
-          preview.appendChild(img);
-        };
-        reader.readAsDataURL(file);
-        
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'remove-file';
-        removeBtn.textContent = '×';
-        removeBtn.setAttribute('aria-label', 'Remove file');
-        removeBtn.onclick = () => {
-          uploadedFiles = uploadedFiles.filter((_, i) => i !== index);
-          updateFilePreview();
-        };
-        preview.appendChild(removeBtn);
-        
-        previewContainer.appendChild(preview);
-      });
-    };
-    
-    // Voice mode functionality
-    async function startVoiceMode() {
-      if (voiceModeActive) {
-        // Stop voice mode
-        stopVoiceMode();
-        return;
-      }
-      
-      try {
-        voiceModeActive = true;
-        voiceModeToggle.classList.add('active');
-        voiceSelector.classList.add('show');
-        voiceStatus.style.display = 'flex';
-        voiceStatusText.textContent = 'Connecting...';
-        
-        // Get selected voice
-        currentVoice = voiceSelect.value;
-        
-        // Request microphone permission
-        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        
-        // Create audio context
-        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-          sampleRate: 24000, // OpenAI Realtime API uses 24kHz
-        });
-        
-        // Create session with backend
-        const endpoint = this.getAttribute('data-endpoint') || '/.netlify/functions/noteworthy-chat';
-        const realtimeEndpoint = endpoint.replace('/noteworthy-chat', '/realtime-voice');
-        
-        const sessionRes = await fetch(realtimeEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ voice: currentVoice }),
-        });
-        
-        if (!sessionRes.ok) {
-          throw new Error('Failed to create voice session');
-        }
-        
-        const sessionData = await sessionRes.json();
-        
-        // Connect directly to OpenAI WebSocket using ephemeral token
-        const wsUrl = `${sessionData.websocket_url}&ephemeral_token=${sessionData.ephemeral_token}`;
-        
-        websocket = new WebSocket(wsUrl);
-        
-        websocket.onopen = () => {
-          voiceStatusText.textContent = 'Connected - Speak now!';
-          voiceStatus.classList.remove('recording');
-          isRecording = true;
-          startAudioCapture();
-        };
-        
-        websocket.onmessage = (event) => {
-          handleWebSocketMessage(event);
-        };
-        
-        websocket.onerror = (error) => {
-          console.error('WebSocket error:', error);
-          voiceStatusText.textContent = 'Connection error';
-          voiceStatus.classList.add('recording');
-        };
-        
-        websocket.onclose = () => {
-          voiceStatusText.textContent = 'Disconnected';
-          voiceStatus.classList.add('recording');
-          if (voiceModeActive) {
-            // Try to reconnect
-            setTimeout(() => {
-              if (voiceModeActive) {
-                startVoiceMode();
-              }
-            }, 2000);
-          }
-        };
-        
-      } catch (error: any) {
-        console.error('Error starting voice mode:', error);
-        voiceStatusText.textContent = `Error: ${error.message}`;
-        voiceStatus.classList.add('recording');
-        voiceModeActive = false;
-        voiceModeToggle.classList.remove('active');
-        alert(`Failed to start voice mode: ${error.message}`);
-      }
-    }
-    
-    function stopVoiceMode() {
-      voiceModeActive = false;
-      voiceModeToggle.classList.remove('active');
-      voiceSelector.classList.remove('show');
-      voiceStatus.style.display = 'none';
-      isRecording = false;
-      
-      if (websocket) {
-        websocket.close();
-        websocket = null;
-      }
-      
-      if (mediaStream) {
-        mediaStream.getTracks().forEach(track => track.stop());
-        mediaStream = null;
-      }
-      
-      if (audioWorkletNode) {
-        audioWorkletNode.disconnect();
-        audioWorkletNode = null;
-      }
-      
-      if (audioContext && audioContext.state !== 'closed') {
-        audioContext.close();
-        audioContext = null;
-      }
-    }
-    
-    async function startAudioCapture() {
-      if (!audioContext || !mediaStream) return;
-      
-      try {
-        const source = audioContext.createMediaStreamSource(mediaStream);
-        const processor = audioContext.createScriptProcessor(4096, 1, 1);
-        
-        processor.onaudioprocess = (e) => {
-          if (!isRecording || !websocket || websocket.readyState !== WebSocket.OPEN) return;
-          
-          const inputData = e.inputBuffer.getChannelData(0);
-          // Convert Float32Array to Int16Array (PCM16)
-          const pcm16 = new Int16Array(inputData.length);
-          for (let i = 0; i < inputData.length; i++) {
-            const s = Math.max(-1, Math.min(1, inputData[i]));
-            pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-          }
-          
-          // Convert to base64 for OpenAI Realtime API
-          const base64Audio = btoa(String.fromCharCode(...new Uint8Array(pcm16.buffer)));
-          
-          // Send audio to WebSocket in OpenAI's format
-          websocket.send(JSON.stringify({
-            type: 'input_audio_buffer.append',
-            audio: base64Audio,
-          }));
-        };
-        
-        source.connect(processor);
-        processor.connect(audioContext.destination);
-        
-      } catch (error) {
-        console.error('Error starting audio capture:', error);
-      }
-    }
-    
-    function handleWebSocketMessage(event: MessageEvent) {
-      try {
-        const message = JSON.parse(event.data);
-        
-        switch (message.type) {
-          case 'response.audio_transcript.delta':
-            // Show transcript in real-time
-            if (message.delta) {
-              // Update status or show in chat
+        const updateFilePreview = () => {
+            let previewContainer = root.querySelector('.file-preview-container');
+            if (uploadedFiles.length === 0) {
+                if (previewContainer)
+                    previewContainer.remove();
+                return;
             }
-            break;
-            
-          case 'response.audio_transcript.done':
-            // Full transcript available
-            if (message.transcript) {
-              const aiGroup = document.createElement('div');
-              aiGroup.className = 'message-group ai-msg-group';
-              aiGroup.innerHTML = `
+            if (!previewContainer) {
+                previewContainer = document.createElement('div');
+                previewContainer.className = 'file-preview-container';
+                const inputContainer = root.querySelector('.input');
+                if (inputContainer && inputContainer.parentNode) {
+                    inputContainer.parentNode.insertBefore(previewContainer, inputContainer);
+                }
+            }
+            previewContainer.innerHTML = '';
+            uploadedFiles.forEach((file, index) => {
+                const preview = document.createElement('div');
+                preview.className = 'file-preview';
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.createElement('img');
+                    img.src = e.target?.result;
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-file';
+                removeBtn.textContent = '×';
+                removeBtn.setAttribute('aria-label', 'Remove file');
+                removeBtn.onclick = () => {
+                    uploadedFiles = uploadedFiles.filter((_, i) => i !== index);
+                    updateFilePreview();
+                };
+                preview.appendChild(removeBtn);
+                previewContainer.appendChild(preview);
+            });
+        };
+        // Voice mode functionality
+        async function startVoiceMode() {
+            if (voiceModeActive) {
+                // Stop voice mode
+                stopVoiceMode();
+                return;
+            }
+            try {
+                voiceModeActive = true;
+                voiceModeToggle.classList.add('active');
+                voiceSelector.classList.add('show');
+                voiceStatus.style.display = 'flex';
+                voiceStatusText.textContent = 'Connecting...';
+                // Get selected voice
+                currentVoice = voiceSelect.value;
+                // Request microphone permission
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                // Create audio context
+                audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                    sampleRate: 24000, // OpenAI Realtime API uses 24kHz
+                });
+                // Create session with backend
+                const endpoint = this.getAttribute('data-endpoint') || '/.netlify/functions/noteworthy-chat';
+                const realtimeEndpoint = endpoint.replace('/noteworthy-chat', '/realtime-voice');
+                const sessionRes = await fetch(realtimeEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ voice: currentVoice }),
+                });
+                if (!sessionRes.ok) {
+                    throw new Error('Failed to create voice session');
+                }
+                const sessionData = await sessionRes.json();
+                // Connect directly to OpenAI WebSocket using ephemeral token
+                const wsUrl = `${sessionData.websocket_url}&ephemeral_token=${sessionData.ephemeral_token}`;
+                websocket = new WebSocket(wsUrl);
+                websocket.onopen = () => {
+                    voiceStatusText.textContent = 'Connected - Speak now!';
+                    voiceStatus.classList.remove('recording');
+                    isRecording = true;
+                    startAudioCapture();
+                };
+                websocket.onmessage = (event) => {
+                    handleWebSocketMessage(event);
+                };
+                websocket.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    voiceStatusText.textContent = 'Connection error';
+                    voiceStatus.classList.add('recording');
+                };
+                websocket.onclose = () => {
+                    voiceStatusText.textContent = 'Disconnected';
+                    voiceStatus.classList.add('recording');
+                    if (voiceModeActive) {
+                        // Try to reconnect
+                        setTimeout(() => {
+                            if (voiceModeActive) {
+                                startVoiceMode();
+                            }
+                        }, 2000);
+                    }
+                };
+            }
+            catch (error) {
+                console.error('Error starting voice mode:', error);
+                voiceStatusText.textContent = `Error: ${error.message}`;
+                voiceStatus.classList.add('recording');
+                voiceModeActive = false;
+                voiceModeToggle.classList.remove('active');
+                alert(`Failed to start voice mode: ${error.message}`);
+            }
+        }
+        function stopVoiceMode() {
+            voiceModeActive = false;
+            voiceModeToggle.classList.remove('active');
+            voiceSelector.classList.remove('show');
+            voiceStatus.style.display = 'none';
+            isRecording = false;
+            if (websocket) {
+                websocket.close();
+                websocket = null;
+            }
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            if (audioWorkletNode) {
+                audioWorkletNode.disconnect();
+                audioWorkletNode = null;
+            }
+            if (audioContext && audioContext.state !== 'closed') {
+                audioContext.close();
+                audioContext = null;
+            }
+        }
+        async function startAudioCapture() {
+            if (!audioContext || !mediaStream)
+                return;
+            try {
+                const source = audioContext.createMediaStreamSource(mediaStream);
+                const processor = audioContext.createScriptProcessor(4096, 1, 1);
+                processor.onaudioprocess = (e) => {
+                    if (!isRecording || !websocket || websocket.readyState !== WebSocket.OPEN)
+                        return;
+                    const inputData = e.inputBuffer.getChannelData(0);
+                    // Convert Float32Array to Int16Array (PCM16)
+                    const pcm16 = new Int16Array(inputData.length);
+                    for (let i = 0; i < inputData.length; i++) {
+                        const s = Math.max(-1, Math.min(1, inputData[i]));
+                        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    }
+                    // Convert to base64 for OpenAI Realtime API
+                    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(pcm16.buffer)));
+                    // Send audio to WebSocket in OpenAI's format
+                    websocket.send(JSON.stringify({
+                        type: 'input_audio_buffer.append',
+                        audio: base64Audio,
+                    }));
+                };
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+            }
+            catch (error) {
+                console.error('Error starting audio capture:', error);
+            }
+        }
+        function handleWebSocketMessage(event) {
+            try {
+                const message = JSON.parse(event.data);
+                switch (message.type) {
+                    case 'response.audio_transcript.delta':
+                        // Show transcript in real-time
+                        if (message.delta) {
+                            // Update status or show in chat
+                        }
+                        break;
+                    case 'response.audio_transcript.done':
+                        // Full transcript available
+                        if (message.transcript) {
+                            const aiGroup = document.createElement('div');
+                            aiGroup.className = 'message-group ai-msg-group';
+                            aiGroup.innerHTML = `
                 <div class="message-avatar">NW</div>
                 <div class="message-content">
                   <div class="reply">🎤 ${message.transcript}</div>
                 </div>
               `;
-              body.appendChild(aiGroup);
-              body.scrollTop = body.scrollHeight;
-            }
-            break;
-            
-          case 'response.audio_transcript.delta':
-            // Partial transcript (could show in real-time if desired)
-            break;
-            
-          case 'response.function_call_arguments.done':
-            // Function is being called
-            if (message.name === 'generate_image') {
-              voiceStatusText.textContent = 'Generating image...';
-            } else if (message.name === 'search_web') {
-              voiceStatusText.textContent = 'Searching the web...';
-            }
-            break;
-            
-          case 'response.function_call_result.done':
-            // Function result received
-            if (message.result) {
-              if (message.name === 'generate_image' && message.result.image_url) {
-                // Show generated image in chat
-                const aiGroup = document.createElement('div');
-                aiGroup.className = 'message-group ai-msg-group';
-                const replyContent = document.createElement('div');
-                replyContent.className = 'reply';
-                
-                const imageEl = document.createElement('img');
-                imageEl.src = message.result.image_url;
-                imageEl.alt = message.result.revised_prompt || 'Generated image';
-                imageEl.style.maxWidth = '100%';
-                imageEl.style.borderRadius = '12px';
-                imageEl.style.marginTop = '8px';
-                
-                replyContent.innerHTML = '<p>🎨 Generated image:</p>';
-                replyContent.appendChild(imageEl);
-                
-                aiGroup.innerHTML = `
+                            body.appendChild(aiGroup);
+                            body.scrollTop = body.scrollHeight;
+                        }
+                        break;
+                    case 'response.audio_transcript.delta':
+                        // Partial transcript (could show in real-time if desired)
+                        break;
+                    case 'response.function_call_arguments.done':
+                        // Function is being called
+                        if (message.name === 'generate_image') {
+                            voiceStatusText.textContent = 'Generating image...';
+                        }
+                        else if (message.name === 'search_web') {
+                            voiceStatusText.textContent = 'Searching the web...';
+                        }
+                        break;
+                    case 'response.function_call_result.done':
+                        // Function result received
+                        if (message.result) {
+                            if (message.name === 'generate_image' && message.result.image_url) {
+                                // Show generated image in chat
+                                const aiGroup = document.createElement('div');
+                                aiGroup.className = 'message-group ai-msg-group';
+                                const replyContent = document.createElement('div');
+                                replyContent.className = 'reply';
+                                const imageEl = document.createElement('img');
+                                imageEl.src = message.result.image_url;
+                                imageEl.alt = message.result.revised_prompt || 'Generated image';
+                                imageEl.style.maxWidth = '100%';
+                                imageEl.style.borderRadius = '12px';
+                                imageEl.style.marginTop = '8px';
+                                replyContent.innerHTML = '<p>🎨 Generated image:</p>';
+                                replyContent.appendChild(imageEl);
+                                aiGroup.innerHTML = `
                   <div class="message-avatar">NW</div>
                   <div class="message-content"></div>
                 `;
-                (aiGroup.querySelector('.message-content') as HTMLElement).appendChild(replyContent);
-                body.appendChild(aiGroup);
-                body.scrollTop = body.scrollHeight;
-              } else if (message.name === 'search_web' && message.result.results) {
-                // Show search results
-                const aiGroup = document.createElement('div');
-                aiGroup.className = 'message-group ai-msg-group';
-                const replyContent = document.createElement('div');
-                replyContent.className = 'reply';
-                
-                let resultsHTML = '<p>🔍 Search results:</p><ul>';
-                message.result.results.slice(0, 5).forEach((result: any) => {
-                  resultsHTML += `<li><a href="${result.url}" target="_blank">${result.title}</a></li>`;
-                });
-                resultsHTML += '</ul>';
-                
-                replyContent.innerHTML = resultsHTML;
-                
-                aiGroup.innerHTML = `
+                                aiGroup.querySelector('.message-content').appendChild(replyContent);
+                                body.appendChild(aiGroup);
+                                body.scrollTop = body.scrollHeight;
+                            }
+                            else if (message.name === 'search_web' && message.result.results) {
+                                // Show search results
+                                const aiGroup = document.createElement('div');
+                                aiGroup.className = 'message-group ai-msg-group';
+                                const replyContent = document.createElement('div');
+                                replyContent.className = 'reply';
+                                let resultsHTML = '<p>🔍 Search results:</p><ul>';
+                                message.result.results.slice(0, 5).forEach((result) => {
+                                    resultsHTML += `<li><a href="${result.url}" target="_blank">${result.title}</a></li>`;
+                                });
+                                resultsHTML += '</ul>';
+                                replyContent.innerHTML = resultsHTML;
+                                aiGroup.innerHTML = `
                   <div class="message-avatar">NW</div>
                   <div class="message-content"></div>
                 `;
-                (aiGroup.querySelector('.message-content') as HTMLElement).appendChild(replyContent);
-                body.appendChild(aiGroup);
-                body.scrollTop = body.scrollHeight;
-              }
-            }
-            voiceStatusText.textContent = 'Listening...';
-            break;
-            
-          case 'response.audio.delta':
-            // Play audio chunks
-            if (message.delta) {
-              playAudioChunk(message.delta);
-            }
-            break;
-            
-          case 'response.done':
-            // Response complete
-            voiceStatusText.textContent = 'Listening...';
-            voiceStatus.classList.remove('recording');
-            break;
-            
-          case 'conversation.item.input_audio_transcription.completed':
-            // User's speech transcribed
-            if (message.transcript) {
-              const userGroup = document.createElement('div');
-              userGroup.className = 'message-group user-msg-group';
-              userGroup.innerHTML = `
+                                aiGroup.querySelector('.message-content').appendChild(replyContent);
+                                body.appendChild(aiGroup);
+                                body.scrollTop = body.scrollHeight;
+                            }
+                        }
+                        voiceStatusText.textContent = 'Listening...';
+                        break;
+                    case 'response.audio.delta':
+                        // Play audio chunks
+                        if (message.delta) {
+                            playAudioChunk(message.delta);
+                        }
+                        break;
+                    case 'response.done':
+                        // Response complete
+                        voiceStatusText.textContent = 'Listening...';
+                        voiceStatus.classList.remove('recording');
+                        break;
+                    case 'conversation.item.input_audio_transcription.completed':
+                        // User's speech transcribed
+                        if (message.transcript) {
+                            const userGroup = document.createElement('div');
+                            userGroup.className = 'message-group user-msg-group';
+                            userGroup.innerHTML = `
                 <div class="message-avatar">You</div>
                 <div class="message-content">
                   <div class="user-msg">🎤 ${message.transcript}</div>
                 </div>
               `;
-              body.appendChild(userGroup);
-              body.scrollTop = body.scrollHeight;
+                            body.appendChild(userGroup);
+                            body.scrollTop = body.scrollHeight;
+                        }
+                        break;
+                    case 'error':
+                        console.error('WebSocket error:', message);
+                        voiceStatusText.textContent = `Error: ${message.message || 'Unknown error'}`;
+                        voiceStatus.classList.add('recording');
+                        break;
+                    case 'session.updated':
+                        // Session updated
+                        break;
+                }
             }
-            break;
-            
-          case 'error':
-            console.error('WebSocket error:', message);
-            voiceStatusText.textContent = `Error: ${message.message || 'Unknown error'}`;
-            voiceStatus.classList.add('recording');
-            break;
-            
-          case 'session.updated':
-            // Session updated
-            break;
+            catch (error) {
+                console.error('Error parsing WebSocket message:', error);
+            }
         }
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-      }
-    }
-    
-    async function playAudioChunk(audioBase64: string) {
-      if (!audioContext) return;
-      
-      try {
-        // Decode base64 to binary
-        const binaryString = atob(audioBase64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
+        async function playAudioChunk(audioBase64) {
+            if (!audioContext)
+                return;
+            try {
+                // Decode base64 to binary
+                const binaryString = atob(audioBase64);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                // Convert PCM16 bytes to Float32Array
+                const pcm16 = new Int16Array(bytes.buffer);
+                const float32 = new Float32Array(pcm16.length);
+                for (let i = 0; i < pcm16.length; i++) {
+                    float32[i] = pcm16[i] / 32768.0;
+                }
+                // Create audio buffer and play
+                const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
+                audioBuffer.copyToChannel(float32, 0);
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(audioContext.destination);
+                source.start();
+            }
+            catch (error) {
+                console.error('Error playing audio chunk:', error);
+            }
         }
-        
-        // Convert PCM16 bytes to Float32Array
-        const pcm16 = new Int16Array(bytes.buffer);
-        const float32 = new Float32Array(pcm16.length);
-        for (let i = 0; i < pcm16.length; i++) {
-          float32[i] = pcm16[i] / 32768.0;
+        // Voice mode toggle
+        if (voiceModeToggle) {
+            voiceModeToggle.addEventListener('click', () => {
+                startVoiceMode();
+            });
         }
-        
-        // Create audio buffer and play
-        const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
-        audioBuffer.copyToChannel(float32, 0);
-        
-        const source = audioContext.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioContext.destination);
-        source.start();
-        
-      } catch (error) {
-        console.error('Error playing audio chunk:', error);
-      }
-    }
-    
-    // Voice mode toggle
-    if (voiceModeToggle) {
-      voiceModeToggle.addEventListener('click', () => {
-        startVoiceMode();
-      });
-    }
-    
-    // Voice selection change
-    if (voiceSelect) {
-      voiceSelect.addEventListener('change', () => {
-        currentVoice = voiceSelect.value;
-        if (voiceModeActive) {
-          // Restart with new voice
-          stopVoiceMode();
-          setTimeout(() => startVoiceMode(), 500);
+        // Voice selection change
+        if (voiceSelect) {
+            voiceSelect.addEventListener('change', () => {
+                currentVoice = voiceSelect.value;
+                if (voiceModeActive) {
+                    // Restart with new voice
+                    stopVoiceMode();
+                    setTimeout(() => startVoiceMode(), 500);
+                }
+            });
         }
-      });
-    }
-
-    const setPos = (x: number, y: number) => {
-      this.pos = { x, y };
-      wrap.style.left = x + 'px';
-      wrap.style.top = y + 'px';
-    };
-
-    const setSize = (w: number, h: number) => {
-      this.size = { 
-        w: Math.max(320, Math.min(w, window.innerWidth - 48)), 
-        h: Math.max(400, Math.min(h, window.innerHeight - 48)) 
-      };
-      wrap.style.width = this.size.w + 'px';
-      wrap.style.height = this.size.h + 'px';
-    };
-
-    const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
-
-    // Position dragging
-    const startDrag = (clientX: number, clientY: number) => {
-      this.dragging = true;
-      this.start = { x: clientX, y: clientY };
-      this.startPos = { ...this.pos };
-      head.style.cursor = 'grabbing';
-    };
-
-    const onMove = (clientX: number, clientY: number) => {
-      if (!this.dragging || !this.start || !this.startPos) return;
-      const nx = this.startPos.x + (clientX - this.start.x);
-      const ny = this.startPos.y + (clientY - this.start.y);
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      const wrapWidth = wrap.offsetWidth;
-      const wrapHeight = wrap.offsetHeight;
-      setPos(
-        clamp(nx, 12, w - 12 - wrapWidth),
-        clamp(ny, 12, h - 12 - wrapHeight)
-      );
-    };
-
-    const stopDrag = () => {
-      this.dragging = false;
-      head.style.cursor = 'grab';
-    };
-
-    // Resize functionality
-    const startResize = (clientX: number, clientY: number) => {
-      this.resizing = true;
-      this.start = { x: clientX, y: clientY };
-      this.startSize = { ...this.size };
-      this.startPos = { ...this.pos };
-      document.body.style.cursor = 'nwse-resize';
-      document.body.style.userSelect = 'none';
-    };
-
-    const onResize = (clientX: number, clientY: number) => {
-      if (!this.resizing || !this.start || !this.startSize || !this.startPos) return;
-      const deltaX = clientX - this.start.x;
-      const deltaY = clientY - this.start.y;
-      const newW = this.startSize.w + deltaX;
-      const newH = this.startSize.h + deltaY;
-      
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      
-      const maxW = w - this.pos.x - 12;
-      const maxH = h - this.pos.y - 12;
-      
-      setSize(
-        Math.min(newW, maxW),
-        Math.min(newH, maxH)
-      );
-      
-      if (this.pos.x + this.size.w > w - 12) {
-        setPos(w - 12 - this.size.w, this.pos.y);
-      }
-      if (this.pos.y + this.size.h > h - 12) {
-        setPos(this.pos.x, h - 12 - this.size.h);
-      }
-    };
-
-    const stopResize = () => {
-      this.resizing = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-
-    // Drag handlers
-    head.addEventListener('mousedown', (e) => {
-      if ((e.target as HTMLElement).tagName === 'BUTTON' || this.resizing) return;
-      e.preventDefault();
-      startDrag(e.clientX, e.clientY);
-    });
-    
-    window.addEventListener('mousemove', (e) => {
-      if (this.resizing) {
-        onResize(e.clientX, e.clientY);
-      } else {
-        onMove(e.clientX, e.clientY);
-      }
-    });
-    window.addEventListener('mouseup', () => {
-      stopDrag();
-      stopResize();
-    });
-
-    head.addEventListener('touchstart', (e) => {
-      if ((e.target as HTMLElement).tagName === 'BUTTON' || this.resizing) return;
-      const t = e.touches[0];
-      if (t) {
-        e.preventDefault();
-        startDrag(t.clientX, t.clientY);
-      }
-    }, { passive: false });
-    
-    window.addEventListener('touchmove', (e) => {
-      if (this.dragging) {
-        e.preventDefault();
-      }
-      const t = e.touches[0];
-      if (t) {
-        if (this.resizing) {
-          onResize(t.clientX, t.clientY);
-        } else {
-          onMove(t.clientX, t.clientY);
-        }
-      }
-    }, { passive: false });
-    
-    window.addEventListener('touchend', () => {
-      stopDrag();
-      stopResize();
-    });
-
-    // Resize handlers
-    resizeHandle.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      startResize(e.clientX, e.clientY);
-    });
-
-    resizeHandle.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const t = e.touches[0];
-      if (t) startResize(t.clientX, t.clientY);
-    }, { passive: false });
-
-    // Toggle open/close
-    launcher.onclick = () => {
-      wrap.classList.toggle('open');
-      if (wrap.classList.contains('open')) {
-        launcher.setAttribute('aria-expanded', 'true');
-        input.focus();
-      } else {
-        launcher.setAttribute('aria-expanded', 'false');
-      }
-    };
-
-    closeBtn.onclick = () => {
-      wrap.classList.remove('open');
-      launcher.setAttribute('aria-expanded', 'false');
-      // Stop voice mode when closing
-      if (voiceModeActive) {
-        stopVoiceMode();
-      }
-    };
-
-    // Escape key to close
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && wrap.classList.contains('open')) {
-        wrap.classList.remove('open');
-        launcher.setAttribute('aria-expanded', 'false');
-        // Stop voice mode when closing
-        if (voiceModeActive) {
-          stopVoiceMode();
-        }
-      }
-    });
-
-    // Generate image function
-    async function generateImage(prompt: string, imageFiles?: File[]) {
-      if (!prompt || !prompt.trim()) {
-        if (!imageFiles || imageFiles.length === 0) {
-          send.disabled = false;
-          return;
-        }
-      }
-
-      // Remove tip
-      if (tip && tip.parentNode) {
-        tip.style.display = 'none';
-      }
-
-      // Show user message with avatar
-      const userGroup = document.createElement('div');
-      userGroup.className = 'message-group user-msg-group';
-      
-      const userMsgContent = document.createElement('div');
-      userMsgContent.className = 'user-msg';
-      
-      if (imageFiles && imageFiles.length > 0) {
-        userMsgContent.innerHTML = '🎨 Generate image based on uploaded image';
-        imageFiles.forEach(file => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const img = document.createElement('img');
-            img.src = e.target?.result as string;
-            img.style.maxWidth = '200px';
-            img.style.maxHeight = '200px';
-            img.style.marginTop = '8px';
-            img.style.borderRadius = '8px';
-            userMsgContent.appendChild(img);
-          };
-          reader.readAsDataURL(file);
+        const setPos = (x, y) => {
+            this.pos = { x, y };
+            wrap.style.left = x + 'px';
+            wrap.style.top = y + 'px';
+        };
+        const setSize = (w, h) => {
+            this.size = {
+                w: Math.max(320, Math.min(w, window.innerWidth - 48)),
+                h: Math.max(400, Math.min(h, window.innerHeight - 48))
+            };
+            wrap.style.width = this.size.w + 'px';
+            wrap.style.height = this.size.h + 'px';
+        };
+        const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+        // Position dragging
+        const startDrag = (clientX, clientY) => {
+            this.dragging = true;
+            this.start = { x: clientX, y: clientY };
+            this.startPos = { ...this.pos };
+            head.style.cursor = 'grabbing';
+        };
+        const onMove = (clientX, clientY) => {
+            if (!this.dragging || !this.start || !this.startPos)
+                return;
+            const nx = this.startPos.x + (clientX - this.start.x);
+            const ny = this.startPos.y + (clientY - this.start.y);
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const wrapWidth = wrap.offsetWidth;
+            const wrapHeight = wrap.offsetHeight;
+            setPos(clamp(nx, 12, w - 12 - wrapWidth), clamp(ny, 12, h - 12 - wrapHeight));
+        };
+        const stopDrag = () => {
+            this.dragging = false;
+            head.style.cursor = 'grab';
+        };
+        // Resize functionality
+        const startResize = (clientX, clientY) => {
+            this.resizing = true;
+            this.start = { x: clientX, y: clientY };
+            this.startSize = { ...this.size };
+            this.startPos = { ...this.pos };
+            document.body.style.cursor = 'nwse-resize';
+            document.body.style.userSelect = 'none';
+        };
+        const onResize = (clientX, clientY) => {
+            if (!this.resizing || !this.start || !this.startSize || !this.startPos)
+                return;
+            const deltaX = clientX - this.start.x;
+            const deltaY = clientY - this.start.y;
+            const newW = this.startSize.w + deltaX;
+            const newH = this.startSize.h + deltaY;
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const maxW = w - this.pos.x - 12;
+            const maxH = h - this.pos.y - 12;
+            setSize(Math.min(newW, maxW), Math.min(newH, maxH));
+            if (this.pos.x + this.size.w > w - 12) {
+                setPos(w - 12 - this.size.w, this.pos.y);
+            }
+            if (this.pos.y + this.size.h > h - 12) {
+                setPos(this.pos.x, h - 12 - this.size.h);
+            }
+        };
+        const stopResize = () => {
+            this.resizing = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+        // Drag handlers
+        head.addEventListener('mousedown', (e) => {
+            if (e.target.tagName === 'BUTTON' || this.resizing)
+                return;
+            e.preventDefault();
+            startDrag(e.clientX, e.clientY);
         });
-        if (prompt && prompt.trim()) {
-          const textNode = document.createElement('div');
-          textNode.textContent = `Prompt: ${prompt}`;
-          textNode.style.marginTop = '8px';
-          userMsgContent.appendChild(textNode);
-        }
-      } else {
-        userMsgContent.textContent = `🎨 Generate image: ${prompt}`;
-      }
-      
-      userGroup.innerHTML = `
+        window.addEventListener('mousemove', (e) => {
+            if (this.resizing) {
+                onResize(e.clientX, e.clientY);
+            }
+            else {
+                onMove(e.clientX, e.clientY);
+            }
+        });
+        window.addEventListener('mouseup', () => {
+            stopDrag();
+            stopResize();
+        });
+        head.addEventListener('touchstart', (e) => {
+            if (e.target.tagName === 'BUTTON' || this.resizing)
+                return;
+            const t = e.touches[0];
+            if (t) {
+                e.preventDefault();
+                startDrag(t.clientX, t.clientY);
+            }
+        }, { passive: false });
+        window.addEventListener('touchmove', (e) => {
+            if (this.dragging) {
+                e.preventDefault();
+            }
+            const t = e.touches[0];
+            if (t) {
+                if (this.resizing) {
+                    onResize(t.clientX, t.clientY);
+                }
+                else {
+                    onMove(t.clientX, t.clientY);
+                }
+            }
+        }, { passive: false });
+        window.addEventListener('touchend', () => {
+            stopDrag();
+            stopResize();
+        });
+        // Resize handlers
+        resizeHandle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            startResize(e.clientX, e.clientY);
+        });
+        resizeHandle.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const t = e.touches[0];
+            if (t)
+                startResize(t.clientX, t.clientY);
+        }, { passive: false });
+        // Toggle open/close
+        launcher.onclick = () => {
+            wrap.classList.toggle('open');
+            if (wrap.classList.contains('open')) {
+                launcher.setAttribute('aria-expanded', 'true');
+                input.focus();
+            }
+            else {
+                launcher.setAttribute('aria-expanded', 'false');
+            }
+        };
+        closeBtn.onclick = () => {
+            wrap.classList.remove('open');
+            launcher.setAttribute('aria-expanded', 'false');
+            // Stop voice mode when closing
+            if (voiceModeActive) {
+                stopVoiceMode();
+            }
+        };
+        // Escape key to close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && wrap.classList.contains('open')) {
+                wrap.classList.remove('open');
+                launcher.setAttribute('aria-expanded', 'false');
+                // Stop voice mode when closing
+                if (voiceModeActive) {
+                    stopVoiceMode();
+                }
+            }
+        });
+        // Generate image function
+        async function generateImage(prompt, imageFiles) {
+            if (!prompt || !prompt.trim()) {
+                if (!imageFiles || imageFiles.length === 0) {
+                    send.disabled = false;
+                    return;
+                }
+            }
+            // Remove tip
+            if (tip && tip.parentNode) {
+                tip.style.display = 'none';
+            }
+            // Show user message with avatar
+            const userGroup = document.createElement('div');
+            userGroup.className = 'message-group user-msg-group';
+            const userMsgContent = document.createElement('div');
+            userMsgContent.className = 'user-msg';
+            if (imageFiles && imageFiles.length > 0) {
+                userMsgContent.innerHTML = '🎨 Generate image based on uploaded image';
+                imageFiles.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = document.createElement('img');
+                        img.src = e.target?.result;
+                        img.style.maxWidth = '200px';
+                        img.style.maxHeight = '200px';
+                        img.style.marginTop = '8px';
+                        img.style.borderRadius = '8px';
+                        userMsgContent.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                });
+                if (prompt && prompt.trim()) {
+                    const textNode = document.createElement('div');
+                    textNode.textContent = `Prompt: ${prompt}`;
+                    textNode.style.marginTop = '8px';
+                    userMsgContent.appendChild(textNode);
+                }
+            }
+            else {
+                userMsgContent.textContent = `🎨 Generate image: ${prompt}`;
+            }
+            userGroup.innerHTML = `
         <div class="message-avatar">You</div>
         <div class="message-content"></div>
       `;
-      (userGroup.querySelector('.message-content') as HTMLElement).appendChild(userMsgContent);
-      body.appendChild(userGroup);
-      body.scrollTop = body.scrollHeight;
-
-      // Show thinking indicator
-      const thinking = document.createElement('div');
-      thinking.className = 'message-group ai-msg-group';
-      thinking.innerHTML = `
+            userGroup.querySelector('.message-content').appendChild(userMsgContent);
+            body.appendChild(userGroup);
+            body.scrollTop = body.scrollHeight;
+            // Show thinking indicator
+            const thinking = document.createElement('div');
+            thinking.className = 'message-group ai-msg-group';
+            thinking.innerHTML = `
         <div class="message-avatar">NW</div>
         <div class="message-content">
           <div class="thinking">
@@ -1968,144 +1876,131 @@ export class NoteworthyChat extends HTMLElement {
           </div>
         </div>
       `;
-      body.appendChild(thinking);
-      body.scrollTop = body.scrollHeight;
-
-      try {
-        // Convert image files to base64
-        const imageData: string[] = [];
-        if (imageFiles && imageFiles.length > 0) {
-          for (const file of imageFiles) {
-            const base64 = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => {
-                const result = reader.result as string;
-                // Remove data:image/...;base64, prefix
-                const base64Data = result.split(',')[1];
-                resolve(base64Data);
-              };
-              reader.onerror = reject;
-              reader.readAsDataURL(file);
-            });
-            imageData.push(base64);
-          }
-        }
-        
-        // Generate image using DALL-E
-        let imageEndpoint = '/.netlify/functions/generate-image';
-        // Handle local development
-        if (endpoint.includes('localhost') || endpoint.includes('127.0.0.1')) {
-          imageEndpoint = endpoint.replace('/.netlify/functions/noteworthy-chat', '/.netlify/functions/generate-image')
-            .replace('/api/noteworthy', '/.netlify/functions/generate-image');
-        }
-        const imageRes = await fetch(imageEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            prompt: prompt || undefined,
-            image: imageData.length > 0 ? imageData[0] : undefined,
-            imageType: imageFiles && imageFiles.length > 0 ? imageFiles[0].type : undefined,
-            size: "1024x1024",
-            quality: "standard",
-            style: "vivid"
-          }),
-        });
-
-        if (!imageRes.ok) {
-          const errorData = await imageRes.json().catch(() => ({}));
-          throw new Error(errorData.error || errorData.message || `Server error (${imageRes.status})`);
-        }
-
-        const data = await imageRes.json();
-        thinking.remove();
-
-        // Show image with NW logo
-        const aiGroup = document.createElement('div');
-        aiGroup.className = 'message-group ai-msg-group';
-        const replyContent = document.createElement('div');
-        replyContent.className = 'reply';
-        
-        const imageEl = document.createElement('img');
-        imageEl.src = data.imageUrl;
-        imageEl.alt = data.revisedPrompt || prompt;
-        imageEl.loading = 'lazy';
-        imageEl.onerror = function() {
-          this.style.display = 'none';
-          const errorMsg = document.createElement('p');
-          errorMsg.textContent = 'Failed to load image. Please try again.';
-          replyContent.appendChild(errorMsg);
-        };
-        
-        const promptText = document.createElement('p');
-        promptText.innerHTML = `<strong>Prompt:</strong> ${(data.revisedPrompt || data.prompt || prompt).replace(/</g, '&lt;').replace(/>/g, '&gt;')}`;
-        
-        replyContent.appendChild(imageEl);
-        replyContent.appendChild(promptText);
-
-        aiGroup.innerHTML = `
+            body.appendChild(thinking);
+            body.scrollTop = body.scrollHeight;
+            try {
+                // Convert image files to base64
+                const imageData = [];
+                if (imageFiles && imageFiles.length > 0) {
+                    for (const file of imageFiles) {
+                        const base64 = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                                const result = reader.result;
+                                // Remove data:image/...;base64, prefix
+                                const base64Data = result.split(',')[1];
+                                resolve(base64Data);
+                            };
+                            reader.onerror = reject;
+                            reader.readAsDataURL(file);
+                        });
+                        imageData.push(base64);
+                    }
+                }
+                // Generate image using DALL-E
+                let imageEndpoint = '/.netlify/functions/generate-image';
+                // Handle local development
+                if (endpoint.includes('localhost') || endpoint.includes('127.0.0.1')) {
+                    imageEndpoint = endpoint.replace('/.netlify/functions/noteworthy-chat', '/.netlify/functions/generate-image')
+                        .replace('/api/noteworthy', '/.netlify/functions/generate-image');
+                }
+                const imageRes = await fetch(imageEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: prompt || undefined,
+                        image: imageData.length > 0 ? imageData[0] : undefined,
+                        imageType: imageFiles && imageFiles.length > 0 ? imageFiles[0].type : undefined,
+                        size: "1024x1024",
+                        quality: "standard",
+                        style: "vivid"
+                    }),
+                });
+                if (!imageRes.ok) {
+                    const errorData = await imageRes.json().catch(() => ({}));
+                    throw new Error(errorData.error || errorData.message || `Server error (${imageRes.status})`);
+                }
+                const data = await imageRes.json();
+                thinking.remove();
+                // Show image with NW logo
+                const aiGroup = document.createElement('div');
+                aiGroup.className = 'message-group ai-msg-group';
+                const replyContent = document.createElement('div');
+                replyContent.className = 'reply';
+                const imageEl = document.createElement('img');
+                imageEl.src = data.imageUrl;
+                imageEl.alt = data.revisedPrompt || prompt;
+                imageEl.loading = 'lazy';
+                imageEl.onerror = function () {
+                    this.style.display = 'none';
+                    const errorMsg = document.createElement('p');
+                    errorMsg.textContent = 'Failed to load image. Please try again.';
+                    replyContent.appendChild(errorMsg);
+                };
+                const promptText = document.createElement('p');
+                promptText.innerHTML = `<strong>Prompt:</strong> ${(data.revisedPrompt || data.prompt || prompt).replace(/</g, '&lt;').replace(/>/g, '&gt;')}`;
+                replyContent.appendChild(imageEl);
+                replyContent.appendChild(promptText);
+                aiGroup.innerHTML = `
           <div class="message-avatar">NW</div>
           <div class="message-content"></div>
         `;
-        (aiGroup.querySelector('.message-content') as HTMLElement).appendChild(replyContent);
-        body.appendChild(aiGroup);
-
-        body.scrollTop = body.scrollHeight;
-      } catch (e: any) {
-        thinking.remove();
-        const aiGroup = document.createElement('div');
-        aiGroup.className = 'message-group ai-msg-group';
-        const err = document.createElement('div');
-        err.className = 'error';
-        err.textContent = e?.message || 'Network error. Please try again.';
-        
-        aiGroup.innerHTML = `
+                aiGroup.querySelector('.message-content').appendChild(replyContent);
+                body.appendChild(aiGroup);
+                body.scrollTop = body.scrollHeight;
+            }
+            catch (e) {
+                thinking.remove();
+                const aiGroup = document.createElement('div');
+                aiGroup.className = 'message-group ai-msg-group';
+                const err = document.createElement('div');
+                err.className = 'error';
+                err.textContent = e?.message || 'Network error. Please try again.';
+                aiGroup.innerHTML = `
           <div class="message-avatar">NW</div>
           <div class="message-content"></div>
         `;
-        (aiGroup.querySelector('.message-content') as HTMLElement).appendChild(err);
-        body.appendChild(aiGroup);
-        body.scrollTop = body.scrollHeight;
-      } finally {
-        send.disabled = false;
-      }
-    }
-
-    async function ask() {
-      const message = input.value.trim();
-      if (!message) return;
-      input.value = '';
-      send.disabled = true;
-
-      // Remove tip
-      if (tip && tip.parentNode) {
-        tip.style.display = 'none';
-      }
-
-      // Check if we're in image generation mode
-      if (currentMode === 'image') {
-        const filesToSend = [...uploadedFiles];
-        uploadedFiles = [];
-        updateFilePreview();
-        await generateImage(message, filesToSend.length > 0 ? filesToSend : undefined);
-        return;
-      }
-
-      // Show user message with avatar
-      const userGroup = document.createElement('div');
-      userGroup.className = 'message-group user-msg-group';
-      userGroup.innerHTML = `
+                aiGroup.querySelector('.message-content').appendChild(err);
+                body.appendChild(aiGroup);
+                body.scrollTop = body.scrollHeight;
+            }
+            finally {
+                send.disabled = false;
+            }
+        }
+        async function ask() {
+            const message = input.value.trim();
+            if (!message)
+                return;
+            input.value = '';
+            send.disabled = true;
+            // Remove tip
+            if (tip && tip.parentNode) {
+                tip.style.display = 'none';
+            }
+            // Check if we're in image generation mode
+            if (currentMode === 'image') {
+                const filesToSend = [...uploadedFiles];
+                uploadedFiles = [];
+                updateFilePreview();
+                await generateImage(message, filesToSend.length > 0 ? filesToSend : undefined);
+                return;
+            }
+            // Show user message with avatar
+            const userGroup = document.createElement('div');
+            userGroup.className = 'message-group user-msg-group';
+            userGroup.innerHTML = `
         <div class="message-avatar">You</div>
         <div class="message-content">
           <div class="user-msg">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
         </div>
       `;
-      body.appendChild(userGroup);
-      body.scrollTop = body.scrollHeight;
-
-      // Show thinking indicator with NW logo
-      const thinking = document.createElement('div');
-      thinking.className = 'message-group ai-msg-group';
-      thinking.innerHTML = `
+            body.appendChild(userGroup);
+            body.scrollTop = body.scrollHeight;
+            // Show thinking indicator with NW logo
+            const thinking = document.createElement('div');
+            thinking.className = 'message-group ai-msg-group';
+            thinking.innerHTML = `
         <div class="message-avatar">NW</div>
         <div class="message-content">
           <div class="thinking">
@@ -2113,158 +2008,137 @@ export class NoteworthyChat extends HTMLElement {
           </div>
         </div>
       `;
-      body.appendChild(thinking);
-      body.scrollTop = body.scrollHeight;
-
-      try {
-        // Regular chat response
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message }),
+            body.appendChild(thinking);
+            body.scrollTop = body.scrollHeight;
+            try {
+                // Regular chat response
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message }),
+                });
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    throw new Error(errorData.error || errorData.message || `Server error (${res.status})`);
+                }
+                const data = await res.json();
+                thinking.remove();
+                // Show reply with NW logo
+                const aiGroup = document.createElement('div');
+                aiGroup.className = 'message-group ai-msg-group';
+                const text = data.reply || 'No response.';
+                const replyContent = document.createElement('div');
+                replyContent.className = 'reply';
+                replyContent.innerHTML = text.split('\n').filter((l) => l.trim()).map((l) => `<p>${l}</p>`).join('');
+                aiGroup.innerHTML = `
+          <div class="message-avatar">NW</div>
+          <div class="message-content"></div>
+        `;
+                aiGroup.querySelector('.message-content').appendChild(replyContent);
+                body.appendChild(aiGroup);
+                body.scrollTop = body.scrollHeight;
+            }
+            catch (e) {
+                thinking.remove();
+                const aiGroup = document.createElement('div');
+                aiGroup.className = 'message-group ai-msg-group';
+                const err = document.createElement('div');
+                err.className = 'error';
+                err.textContent = e?.message || 'Network error. Please try again.';
+                aiGroup.innerHTML = `
+          <div class="message-avatar">NW</div>
+          <div class="message-content"></div>
+        `;
+                aiGroup.querySelector('.message-content').appendChild(err);
+                body.appendChild(aiGroup);
+                body.scrollTop = body.scrollHeight;
+            }
+            finally {
+                send.disabled = false;
+            }
+        }
+        send.onclick = ask;
+        input.addEventListener('keydown', (e) => {
+            // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+            if (e.key === 'k' || e.key === 'K') {
+                e.stopPropagation();
+            }
+            if (e.key === 'Enter' && !send.disabled) {
+                ask();
+            }
         });
-
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || errorData.message || `Server error (${res.status})`);
+        // Initial position and size
+        setPos(this.pos.x, this.pos.y);
+        setSize(this.size.w, this.size.h);
+        // Tutorial functionality
+        const helpBtn = root.querySelector('#helpBtn');
+        const tutorialOverlay = root.querySelector('#tutorialOverlay');
+        const tutorialClose = root.querySelector('.tutorial-close');
+        const tutorialGotIt = root.querySelector('#tutorialGotIt');
+        const dontShowAgain = root.querySelector('#dontShowAgain');
+        // Check if tutorial should be shown
+        const shouldShowTutorial = () => {
+            const dontShow = localStorage.getItem('noteworthy-ai-tutorial-dismissed') === 'true';
+            return !dontShow;
+        };
+        // Show tutorial
+        const showTutorial = () => {
+            if (tutorialOverlay) {
+                tutorialOverlay.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+        };
+        // Hide tutorial
+        const hideTutorial = (savePreference = false) => {
+            if (tutorialOverlay) {
+                tutorialOverlay.classList.remove('show');
+                document.body.style.overflow = '';
+                if (savePreference && dontShowAgain && dontShowAgain.checked) {
+                    localStorage.setItem('noteworthy-ai-tutorial-dismissed', 'true');
+                }
+            }
+        };
+        // Help button click
+        if (helpBtn) {
+            helpBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showTutorial();
+            });
         }
-
-        const data = await res.json();
-        thinking.remove();
-
-        // Show reply with NW logo
-        const aiGroup = document.createElement('div');
-        aiGroup.className = 'message-group ai-msg-group';
-        const text = data.reply || 'No response.';
-        const replyContent = document.createElement('div');
-        replyContent.className = 'reply';
-        replyContent.innerHTML = text.split('\n').filter((l: string) => l.trim()).map((l: string) => `<p>${l}</p>`).join('');
-        
-
-        aiGroup.innerHTML = `
-          <div class="message-avatar">NW</div>
-          <div class="message-content"></div>
-        `;
-        (aiGroup.querySelector('.message-content') as HTMLElement).appendChild(replyContent);
-        body.appendChild(aiGroup);
-
-        body.scrollTop = body.scrollHeight;
-      } catch (e: any) {
-        thinking.remove();
-        const aiGroup = document.createElement('div');
-        aiGroup.className = 'message-group ai-msg-group';
-        const err = document.createElement('div');
-        err.className = 'error';
-        err.textContent = e?.message || 'Network error. Please try again.';
-        
-        aiGroup.innerHTML = `
-          <div class="message-avatar">NW</div>
-          <div class="message-content"></div>
-        `;
-        (aiGroup.querySelector('.message-content') as HTMLElement).appendChild(err);
-        body.appendChild(aiGroup);
-        body.scrollTop = body.scrollHeight;
-      } finally {
-        send.disabled = false;
-      }
-    }
-
-    send.onclick = ask;
-    input.addEventListener('keydown', (e) => {
-      // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
-      if (e.key === 'k' || e.key === 'K') {
-        e.stopPropagation();
-      }
-      if (e.key === 'Enter' && !send.disabled) {
-        ask();
-      }
-    });
-
-    // Initial position and size
-    setPos(this.pos.x, this.pos.y);
-    setSize(this.size.w, this.size.h);
-    
-    // Tutorial functionality
-    const helpBtn = root.querySelector('#helpBtn') as HTMLButtonElement;
-    const tutorialOverlay = root.querySelector('#tutorialOverlay') as HTMLElement;
-    const tutorialClose = root.querySelector('.tutorial-close') as HTMLButtonElement;
-    const tutorialGotIt = root.querySelector('#tutorialGotIt') as HTMLButtonElement;
-    const dontShowAgain = root.querySelector('#dontShowAgain') as HTMLInputElement;
-    
-    // Check if tutorial should be shown
-    const shouldShowTutorial = () => {
-      const dontShow = localStorage.getItem('noteworthy-ai-tutorial-dismissed') === 'true';
-      return !dontShow;
-    };
-    
-    // Show tutorial
-    const showTutorial = () => {
-      if (tutorialOverlay) {
-        tutorialOverlay.classList.add('show');
-        document.body.style.overflow = 'hidden';
-      }
-    };
-    
-    // Hide tutorial
-    const hideTutorial = (savePreference = false) => {
-      if (tutorialOverlay) {
-        tutorialOverlay.classList.remove('show');
-        document.body.style.overflow = '';
-        
-        if (savePreference && dontShowAgain && dontShowAgain.checked) {
-          localStorage.setItem('noteworthy-ai-tutorial-dismissed', 'true');
+        // Tutorial close handlers
+        if (tutorialClose) {
+            tutorialClose.addEventListener('click', () => hideTutorial(false));
         }
-      }
-    };
-    
-    // Help button click
-    if (helpBtn) {
-      helpBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        showTutorial();
-      });
-    }
-    
-    // Tutorial close handlers
-    if (tutorialClose) {
-      tutorialClose.addEventListener('click', () => hideTutorial(false));
-    }
-    
-    if (tutorialGotIt) {
-      tutorialGotIt.addEventListener('click', () => hideTutorial(true));
-    }
-    
-    // Close tutorial on overlay click
-    if (tutorialOverlay) {
-      tutorialOverlay.addEventListener('click', (e) => {
-        if (e.target === tutorialOverlay) {
-          hideTutorial(false);
+        if (tutorialGotIt) {
+            tutorialGotIt.addEventListener('click', () => hideTutorial(true));
         }
-      });
+        // Close tutorial on overlay click
+        if (tutorialOverlay) {
+            tutorialOverlay.addEventListener('click', (e) => {
+                if (e.target === tutorialOverlay) {
+                    hideTutorial(false);
+                }
+            });
+        }
+        // Close tutorial on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && tutorialOverlay && tutorialOverlay.classList.contains('show')) {
+                hideTutorial(false);
+            }
+        });
+        // Show tutorial on first open if not dismissed
+        launcher.addEventListener('click', () => {
+            if (wrap.classList.contains('open') && shouldShowTutorial()) {
+                setTimeout(() => {
+                    if (shouldShowTutorial()) {
+                        showTutorial();
+                    }
+                }, 300);
+            }
+        });
     }
-    
-    // Close tutorial on Escape key
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && tutorialOverlay && tutorialOverlay.classList.contains('show')) {
-        hideTutorial(false);
-      }
-    });
-    
-    // Show tutorial on first open if not dismissed
-    launcher.addEventListener('click', () => {
-      if (wrap.classList.contains('open') && shouldShowTutorial()) {
-        setTimeout(() => {
-          if (shouldShowTutorial()) {
-            showTutorial();
-          }
-        }, 300);
-      }
-    });
-  }
-
-  disconnectedCallback() {
-    // Cleanup if needed
-  }
+    disconnectedCallback() {
+        // Cleanup if needed
+    }
 }
-
 customElements.define('noteworthy-chat-widget', NoteworthyChat);

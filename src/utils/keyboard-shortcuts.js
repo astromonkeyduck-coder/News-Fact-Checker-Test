@@ -37,36 +37,40 @@ function initKeyboardShortcuts() {
       target.closest('[contenteditable="true"]')
     );
     
-    // Check if target is inside Shadow DOM and the shadow root contains an input
+    // Check if active element is inside a Shadow DOM and is an input
     let isShadowInput = false;
     try {
-      const rootNode = target.getRootNode();
-      if (rootNode && rootNode !== document && rootNode.host) {
-        // This is a Shadow DOM, check if active element is inside it
-        const shadowRoot = rootNode;
-        if (shadowRoot.contains && activeElement) {
-          isShadowInput = shadowRoot.contains(activeElement) && (
+      if (activeElement) {
+        const activeRoot = activeElement.getRootNode();
+        // If active element is inside a Shadow DOM, check if it's an input
+        if (activeRoot && activeRoot !== document && activeRoot.host) {
+          isShadowInput = (
             activeElement.tagName === 'INPUT' ||
-            activeElement.tagName === 'TEXTAREA'
+            activeElement.tagName === 'TEXTAREA' ||
+            activeElement.isContentEditable
           );
+        }
+        // Also check the event's composed path for Shadow DOM inputs
+        if (e.composedPath && !isShadowInput) {
+          const path = e.composedPath();
+          for (const node of path) {
+            // Check if any node in the path is an input/textarea
+            if (node && (
+              node.tagName === 'INPUT' ||
+              node.tagName === 'TEXTAREA' ||
+              (node.isContentEditable && node.contentEditable !== 'false')
+            )) {
+              isShadowInput = true;
+              break;
+            }
+          }
         }
       }
     } catch (err) {
       // Ignore errors accessing shadow root
     }
     
-    // #region agent log
-    if (e.key === 'k' || e.key === 'K') {
-      fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'keyboard-shortcuts.js:18',message:'Input check before return',data:{isTargetInput,isActiveInput,isShadowInput,willReturn:isTargetInput||isActiveInput||isShadowInput},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'C'})}).catch(()=>{});
-    }
-    // #endregion
-    
     if (isTargetInput || isActiveInput || isShadowInput) {
-      // #region agent log
-      if (e.key === 'k' || e.key === 'K') {
-        fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'keyboard-shortcuts.js:24',message:'Early return - input detected',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'C'})}).catch(()=>{});
-      }
-      // #endregion
       return;
     }
 
