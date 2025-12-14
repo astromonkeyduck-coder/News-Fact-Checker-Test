@@ -3957,14 +3957,32 @@ class NoteworthyChat extends HTMLElement {
         }
         
         // Get selected voice from integrated panel
+        // Supported voices for OpenAI Realtime API
+        const SUPPORTED_VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse', 'marin', 'cedar'];
+        
         if (voiceList) {
           const activeOption = voiceList.querySelector('.voice-option.active');
           if (activeOption) {
-            currentVoice = activeOption.dataset.value;
+            const selectedVoice = activeOption.dataset.value;
+            // Validate voice is supported
+            if (SUPPORTED_VOICES.includes(selectedVoice)) {
+              currentVoice = selectedVoice;
+            } else {
+              console.warn(`[Voice Mode] Unsupported voice "${selectedVoice}" selected, using default "alloy"`);
+              currentVoice = 'alloy';
+              // Update the active option to alloy
+              activeOption.classList.remove('active');
+              const alloyOption = voiceList.querySelector('.voice-option[data-value="alloy"]');
+              if (alloyOption) {
+                alloyOption.classList.add('active');
+              }
+            }
           }
         }
         // Fallback to default
-        if (!currentVoice) currentVoice = 'alloy';
+        if (!currentVoice || !SUPPORTED_VOICES.includes(currentVoice)) {
+          currentVoice = 'alloy';
+        }
         
         // Request microphone permission
         mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
