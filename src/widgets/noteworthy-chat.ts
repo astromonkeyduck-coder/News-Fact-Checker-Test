@@ -1510,16 +1510,24 @@ export class NoteworthyChat extends HTMLElement {
         
         const sessionData = await sessionRes.json();
         
-        // Connect directly to OpenAI WebSocket using ephemeral token
-        const wsUrl = `${sessionData.websocket_url}&ephemeral_token=${sessionData.ephemeral_token}`;
+        // Connect to OpenAI WebSocket (without token in URL)
+        // The token will be sent as an auth message after connection
+        const wsUrl = sessionData.websocket_url || `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview&session_id=${sessionData.session_id}`;
         
+        console.log('[Voice Mode] Connecting to WebSocket:', wsUrl.substring(0, 100) + '...');
         websocket = new WebSocket(wsUrl);
         
         websocket.onopen = () => {
-          voiceStatusText.textContent = 'Connected - Speak now!';
-          voiceStatus.classList.remove('recording');
-          isRecording = true;
-          startAudioCapture();
+          console.log('[Voice Mode] WebSocket opened, sending auth message...');
+          
+          // Send authentication message with ephemeral token
+          const authMessage = {
+            type: 'auth',
+            token: sessionData.ephemeral_token,
+          };
+          websocket.send(JSON.stringify(authMessage));
+          
+          voiceStatusText.textContent = 'Authenticating...';
         };
         
         websocket.onmessage = (event) => {
@@ -1528,7 +1536,14 @@ export class NoteworthyChat extends HTMLElement {
         
         websocket.onerror = (error) => {
           console.error('WebSocket error:', error);
-          voiceStatusText.textContent = 'Connection error';
+          console.error('WebSocket URL:', wsUrl.substring(0, 100) + '...');
+          console.error('WebSocket readyState:', websocket?.readyState);
+          console.error('Error event details:', {
+            type: error.type,
+            target: error.target,
+            timeStamp: error.timeStamp
+          });
+          voiceStatusText.textContent = 'Connection error - Check console for details';
           voiceStatus.classList.add('recording');
         };
         
@@ -1624,6 +1639,23 @@ export class NoteworthyChat extends HTMLElement {
         const message = JSON.parse(event.data);
         
         switch (message.type) {
+          case 'auth.success':
+            // Authentication successful, start audio capture
+            console.log('[Voice Mode] Authentication successful');
+            voiceStatusText.textContent = 'Connected - Speak now!';
+            voiceStatus.classList.remove('recording');
+            isRecording = true;
+            startAudioCapture();
+            break;
+            
+          case 'auth.error':
+            // Authentication failed
+            console.error('[Voice Mode] Authentication failed:', message);
+            voiceStatusText.textContent = 'Authentication failed';
+            voiceStatus.classList.add('recording');
+            stopVoiceMode();
+            break;
+            
           case 'response.audio_transcript.delta':
             // Show transcript in real-time
             if (message.delta) {
