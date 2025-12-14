@@ -92,14 +92,25 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
             messages: [
               {
                 role: 'system',
-                content: 'You are an expert at analyzing images and creating detailed prompts for image generation. When given an image, analyze its content, style, composition, colors, mood, and key elements. Then create a comprehensive, detailed prompt that could be used to generate a similar or inspired image using DALL-E. The prompt should be descriptive, include style information, and be suitable for image generation. If the user provides additional text instructions, incorporate those into the prompt.'
+                content: 'You are an expert at analyzing images and creating detailed prompts for image editing. When given an image and editing instructions, analyze the image\'s exact content, structure, composition, perspective, lighting, style, colors, mood, and all key elements. Then create a comprehensive prompt that will generate an EDITED version of this exact image - preserving the original structure, composition, perspective, lighting, and all details, but applying ONLY the requested changes. The edited image should be nearly identical to the original, with only the specific requested modifications. Be extremely precise about preserving every detail that should remain unchanged.'
               },
               {
                 role: 'user',
                 content: [
                   {
                     type: 'text',
-                    text: prompt ? `Analyze this image and create a detailed prompt for generating a new image based on it. ${prompt} Make the prompt comprehensive and suitable for DALL-E image generation.` : 'Analyze this image and create a detailed, comprehensive prompt for generating a new image based on it. Include style, composition, colors, mood, and all key elements. Make it suitable for DALL-E image generation.'
+                    text: prompt ? `Analyze this image carefully. This is an image editing request - you need to create a prompt that will generate an EDITED version of this EXACT image. The edited image must be nearly identical to the original, preserving:
+- The exact same composition and framing
+- The same perspective and camera angle
+- The same lighting and shadows
+- The same style and artistic approach
+- All objects, people, and elements in their exact positions
+- All details and textures
+- The same background and environment
+
+ONLY apply the specific change requested: "${prompt}"
+
+Create a detailed prompt that describes the original image exactly as it is, then specifies ONLY the requested modification. The result should look like the original image was edited in place, not recreated.` : 'Analyze this image carefully. Create a detailed prompt that describes this exact image with all its details, composition, style, colors, lighting, and elements. The prompt should be comprehensive enough to recreate this image exactly as it appears.'
                   },
                   {
                     type: 'image_url',
@@ -110,7 +121,7 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
                 ]
               }
             ],
-            max_tokens: 500,
+            max_tokens: 1000, // Increased for more detailed image analysis when editing
           }),
         });
 
@@ -124,8 +135,16 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
         const analyzedPrompt = visionData.choices[0]?.message?.content || '';
         
         if (analyzedPrompt) {
-          finalPrompt = analyzedPrompt.trim();
-          console.log("[Generate Image] ✅ Image analyzed. Generated prompt:", finalPrompt.substring(0, 100) + "...");
+          // For image editing, enhance the prompt to emphasize preservation
+          if (prompt) {
+            // This is an edit request - make the prompt emphasize it's an edit of the existing image
+            // The analyzed prompt should already describe the original image in detail
+            // Now we add the edit instruction while emphasizing preservation
+            finalPrompt = `${analyzedPrompt.trim()}\n\nEDIT INSTRUCTION: Apply ONLY this specific change: "${prompt}". The edited image must be nearly identical to the original in every way except for this one modification. Preserve: exact composition, same perspective, same lighting, same style, same background, same objects in same positions, same textures and details. Only change what was specifically requested.`;
+          } else {
+            finalPrompt = analyzedPrompt.trim();
+          }
+          console.log("[Generate Image] ✅ Image analyzed. Generated prompt:", finalPrompt.substring(0, 200) + "...");
         } else {
           throw new Error('No prompt generated from image analysis');
         }
@@ -220,7 +239,7 @@ exports.handler = rateLimiters.imageGeneration(async (event, context) => {
           prompt: finalPrompt,
           size: size,
           quality: quality,
-          style: style,
+          style: style, // Use 'vivid' for more faithful color reproduction when editing
           n: 1,
         }),
         signal: openaiController.signal,

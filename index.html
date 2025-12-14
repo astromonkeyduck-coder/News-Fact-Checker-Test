@@ -140,7 +140,7 @@
     (function() {
         // Start fetch IMMEDIATELY with highest priority - don't wait for DOM
         if (!window.__BREAKING_NEWS_DATA__) {
-            window.__BREAKING_NEWS_DATA__ = fetch('/.netlify/functions/posts-read?limit=5', {
+            window.__BREAKING_NEWS_DATA__ = fetch('/.netlify/functions/posts-read?limit=20', {
                 priority: 'high',
                 cache: 'no-cache',
                 credentials: 'same-origin'
@@ -16130,14 +16130,16 @@
     </script>
     
     <!-- Noteworthy Chat Widget - Shadow DOM Web Component -->
-    <script src="src/widgets/noteworthy-chat.js" onerror="console.error('Failed to load noteworthy-chat.js')"></script>
+    <script src="src/widgets/noteworthy-chat.js" defer onerror="console.error('Failed to load noteworthy-chat.js')"></script>
     <script>
-        // Initialize the Shadow DOM chat widget - ENSURE IT ALWAYS LOADS
+        // Initialize the Shadow DOM chat widget - Lazy load after page is interactive
         (function() {
             let initAttempts = 0;
             const maxAttempts = 10;
+            let initialized = false;
             
             function initChat() {
+                if (initialized) return;
                 initAttempts++;
                 console.log(`[Chat Init] Attempt ${initAttempts}: Initializing Noteworthy Chat widget...`);
                 
@@ -16151,6 +16153,7 @@
                         // Try to force load the script again
                         const script = document.createElement('script');
                         script.src = 'src/widgets/noteworthy-chat.js';
+                        script.defer = true;
                         script.onload = () => {
                             console.log('[Chat Init] Script reloaded, retrying...');
                             setTimeout(initChat, 100);
@@ -16168,6 +16171,7 @@
                     let existingWidget = document.querySelector('noteworthy-chat-widget');
                     if (existingWidget) {
                         console.log('[Chat Init] ✅ Chat widget already exists');
+                        initialized = true;
                         return;
                     }
                     
@@ -16177,20 +16181,38 @@
                     el.setAttribute('data-open', 'false');
                     document.body.appendChild(el);
                     console.log('[Chat Init] ✅ Noteworthy Chat widget successfully added to DOM');
+                    initialized = true;
                 } catch (error) {
                     console.error('[Chat Init] ❌ Error initializing Noteworthy Chat widget:', error);
                     console.error('[Chat Init] Error details:', error.stack);
                 }
             }
             
-            // Wait for DOM to be ready
+            // Lazy load: Wait for page to be interactive, then delay initialization
+            // This allows critical content to load first
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', () => {
-                    setTimeout(initChat, 100);
+                    // Delay chat widget initialization to prioritize page content
+                    setTimeout(initChat, 1000);
                 });
-            } else {
-                setTimeout(initChat, 100);
+            } else if (document.readyState === 'interactive' || document.readyState === 'complete') {
+                // Page already loaded, delay initialization
+                setTimeout(initChat, 1000);
             }
+            
+            // Also initialize on first user interaction (scroll, click, etc.) for faster perceived load
+            let interactionHandler = () => {
+                if (!initialized) {
+                    initChat();
+                }
+                // Remove listeners after first interaction
+                window.removeEventListener('scroll', interactionHandler, { passive: true });
+                window.removeEventListener('click', interactionHandler);
+                window.removeEventListener('touchstart', interactionHandler, { passive: true });
+            };
+            window.addEventListener('scroll', interactionHandler, { passive: true });
+            window.addEventListener('click', interactionHandler);
+            window.addEventListener('touchstart', interactionHandler, { passive: true });
         })();
     </script>
     
@@ -16226,7 +16248,7 @@
             }
         })();
     </script>
-    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.4/auth0-spa-js.production.js"></script>
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.4/auth0-spa-js.production.js" async></script>
     <script>
         // Suppress Auth0 favicon 404 errors
         (function() {
@@ -16284,22 +16306,22 @@
     </script>
     
     <!-- Auth0 Integration -->
-    <script src="/src/auth/auth0.js"></script>
+    <script src="/src/auth/auth0.js" defer></script>
     
     <!-- Comment Section Component -->
-    <script src="/src/components/comment-section.js"></script>
+    <script src="/src/components/comment-section.js" defer></script>
     
     <!-- Premium Features (Ad-free, Early Access, Exclusive Content) -->
-    <script src="/src/components/premium-features.js"></script>
+    <script src="/src/components/premium-features.js" defer></script>
     
     <!-- X Posts Feed v2 - Refactored X-style feed -->
-    <script src="/src/components/post-feed-v2.js?v=1.0"></script>
+    <script src="/src/components/post-feed-v2.js?v=1.0" defer></script>
     
     <!-- Enhanced Posts Feed - Premium features -->
-    <script src="/src/components/post-feed-enhanced.js?v=1.0"></script>
+    <script src="/src/components/post-feed-enhanced.js?v=1.0" defer></script>
     
     <!-- Global Coverage Globe -->
-    <script src="/src/components/CiaMissionGlobe-cdn.js"></script>
+    <script src="/src/components/CiaMissionGlobe-cdn.js" defer></script>
     <script>
         // Initialize globe after page loads (uses cached location data for instant display)
         document.addEventListener('DOMContentLoaded', function() {
@@ -16409,7 +16431,7 @@
                             // Try enhanced feed first, then fallback to v2
                             if (window.renderPostFeedEnhanced) {
                                 console.log('[X Posts] Using enhanced feed');
-                                window.renderPostFeedEnhanced('articlesTrack', '/.netlify/functions/posts-read', 5);
+                                window.renderPostFeedEnhanced('articlesTrack', '/.netlify/functions/posts-read', 20);
                             } else if (window.renderPostFeedV2) {
                                 console.log('[X Posts] Using v2 feed');
                                 window.renderPostFeedV2('articlesTrack', '/.netlify/functions/posts-read', 5);
@@ -16608,7 +16630,7 @@
     </script>
     
     <!-- Keyboard Shortcuts -->
-    <script src="/src/utils/keyboard-shortcuts.js"></script>
+    <script src="/src/utils/keyboard-shortcuts.js" defer></script>
     <script>
         // Initialize keyboard shortcuts
         if (typeof initKeyboardShortcuts === 'function') {
@@ -16621,7 +16643,7 @@
     </script>
     
     <!-- Leaderboard Component -->
-    <script src="/src/components/leaderboard.js"></script>
+    <script src="/src/components/leaderboard.js" defer></script>
     
     <!-- Homepage Leaderboards -->
     <script>

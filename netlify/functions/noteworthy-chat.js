@@ -314,12 +314,100 @@ exports.handler = async (event, context) => {
       return prompt || msg;
     }
 
+    // Check if this is an image editing request (user uploaded image + edit instruction)
+    function isImageEditRequest(msg, uploadedFiles) {
+      if (!uploadedFiles || uploadedFiles.length === 0) return false;
+      
+      // Check if any uploaded file is an image
+      const hasImage = uploadedFiles.some(file => file.type && file.type.startsWith('image/'));
+      if (!hasImage) return false;
+      
+      const lowerMsg = (msg || '').toLowerCase().trim();
+      const editPatterns = [
+        /^(make|change|edit|modify|transform|convert|turn|paint|color|recolor)\s+(this|it|the\s+image|the\s+picture|the\s+photo)/i,
+        /^(make|change|edit|modify|transform|convert|turn|paint|color|recolor)\s+.*\s+(this|it|the\s+image|the\s+picture|the\s+photo)/i,
+        /(make|change|edit|modify|transform|convert|turn|paint|color|recolor)\s+(this|it|the\s+image|the\s+picture|the\s+photo)\s+/i,
+        /^(add|remove|replace|swap|switch)\s+.*\s+(to|in|on|from)\s+(this|it|the\s+image|the\s+picture|the\s+photo)/i,
+        /(blue|red|green|yellow|black|white|color|colors?|hue|shade|tone)\s+(this|it|the\s+image|the\s+picture|the\s+photo)/i,
+        /^(this|it|the\s+image|the\s+picture|the\s+photo)\s+(but|with|in|as|to)\s+/i,
+      ];
+      
+      for (const pattern of editPatterns) {
+        if (pattern.test(lowerMsg)) {
+          console.log(`[Image Edit Detection] Matched pattern for: "${msg}"`);
+          return true;
+        }
+      }
+      
+      return false;
+    }
+    
     // Check if this is an image request
     const needsImage = isImageRequest(message);
+    const needsImageEdit = isImageEditRequest(message, files);
     let imageData = null;
     
-    // Generate image if needed (before GPT call so GPT can reference it)
-    if (needsImage) {
+    // Handle image editing (user uploaded image + wants to edit it)
+    if (needsImageEdit && files && files.length > 0) {
+      try {
+        // Find the first image file
+        const imageFile = files.find(file => file.type && file.type.startsWith('image/'));
+        if (imageFile && imageFile.data) {
+          console.log("[Image Edit] Detected image edit request, calling generate-image function...");
+          
+          // Extract base64 data (remove data URL prefix if present)
+          let imageBase64 = imageFile.data;
+          if (imageBase64.includes(',')) {
+            imageBase64 = imageBase64.split(',')[1];
+          }
+          
+          // Call generate-image function for image-to-image editing
+          // Construct absolute URL for fetch call
+          const protocol = event.headers['x-forwarded-proto'] || 'https';
+          const host = event.headers.host || event.headers['x-forwarded-host'] || 'noteworthynews.co';
+          const baseUrl = `${protocol}://${host}`;
+          const generateImageEndpoint = `${baseUrl}/.netlify/functions/generate-image`;
+          const imageEditResponse = await fetch(generateImageEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              prompt: message, // User's edit instruction (e.g., "make this blue")
+              image: imageBase64,
+              imageType: imageFile.type || 'image/png',
+              size: '1024x1024',
+              quality: 'hd', // Use HD quality for better fidelity when editing
+              style: 'vivid', // Vivid style preserves colors better
+            }),
+          });
+          
+          if (imageEditResponse.ok) {
+            const imageEditData = await imageEditResponse.json();
+            imageData = {
+              imageUrl: imageEditData.imageUrl,
+              revisedPrompt: imageEditData.revisedPrompt || message,
+              prompt: imageEditData.prompt || message,
+              isEdit: true,
+            };
+            console.log("[Image Edit] ✅ Image edited successfully:", {
+              hasUrl: !!imageData.imageUrl,
+              urlPreview: imageData.imageUrl ? imageData.imageUrl.substring(0, 50) + '...' : 'none',
+            });
+          } else {
+            const errorData = await imageEditResponse.json().catch(() => ({}));
+            console.error("[Image Edit] Image editing failed:", imageEditResponse.status, errorData);
+            // Continue with regular chat response even if image editing fails
+          }
+        }
+      } catch (imageEditError) {
+        console.error("[Image Edit] Error editing image:", imageEditError);
+        // Continue with regular chat response even if image editing fails
+      }
+    }
+    
+    // Generate new image if needed (before GPT call so GPT can reference it)
+    if (needsImage && !needsImageEdit) {
       try {
         const imagePrompt = extractImagePrompt(message);
         console.log("Generating image with prompt:", imagePrompt.substring(0, 100) + "...");
@@ -401,6 +489,7 @@ YOUR ROLE:
 - Explain Noteworthy News' mission and services
 - Generate images when users request them (you have access to DALL-E image generation)
 - Analyze images and documents when users upload them
+- Edit images when users upload an image and request modifications (e.g., "make this blue", "change the color", "edit this")
        - Be concise, neutral, and always Truth-Seeking
 - When discussing news, emphasize the importance of multiple sources and verification
 - If you don't know something, say so rather than speculate

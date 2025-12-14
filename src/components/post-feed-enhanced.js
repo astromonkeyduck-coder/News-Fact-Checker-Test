@@ -935,7 +935,7 @@ function renderSkeletonCards(count = 5) {
 /**
  * Load posts from API with chunked loading
  */
-async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', limit = 5, resetDisplayCount = true) {
+async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', limit = 20, resetDisplayCount = true) {
   // Prevent concurrent loads and infinite recursion
   if (enhancedIsLoading) {
     console.warn('[Enhanced Feed] Already loading, skipping duplicate call');
@@ -1166,7 +1166,7 @@ function renderEnhancedFeed() {
     if (!sentinel) {
       sentinel = document.createElement('div');
       sentinel.id = 'enhanced-feed-sentinel';
-      sentinel.style.cssText = 'height: 1px; width: 100%;';
+      sentinel.style.cssText = 'height: 100px; width: 100%; margin-top: 20px;';
       container.appendChild(sentinel);
     }
   } else {
@@ -1220,12 +1220,12 @@ async function loadMorePosts() {
   const sorted = [...pinned, ...sortEnhancedPosts(unpinned, enhancedCurrentSort)];
   
   // Check if we need to fetch more posts from API
-  // If we're within 3 posts of the end, fetch more
+  // If we're within 5 posts of the end (more aggressive), fetch more
   const remainingPosts = sorted.length - enhancedDisplayedCount;
-  if (remainingPosts <= 3 && !enhancedIsLoading) {
+  if (remainingPosts <= 5 && !enhancedIsLoading) {
     // Fetch more posts from API
-    const newLimit = enhancedCurrentLimit + 15; // Fetch 15 more posts
-    console.log(`[Enhanced Feed] Fetching more posts: ${newLimit} total`);
+    const newLimit = enhancedCurrentLimit + 20; // Fetch 20 more posts
+    console.log(`[Enhanced Feed] Fetching more posts: ${newLimit} total (currently showing ${enhancedDisplayedCount} of ${sorted.length})`);
     await loadEnhancedPosts(enhancedEndpoint, newLimit, false); // false = don't reset display count
     // After fetching, re-filter and sort
     filtered = searchEnhancedPosts(enhancedCurrentPosts, enhancedCurrentSearch);
@@ -1243,7 +1243,7 @@ async function loadMorePosts() {
       return;
     }
     
-    // Increase displayed count
+    // Increase displayed count by chunk size
     enhancedDisplayedCount = Math.min(enhancedDisplayedCount + enhancedPostsPerChunk, newSorted.length);
     
     // Re-render with more posts
@@ -1302,10 +1302,10 @@ function setupInfiniteScroll() {
   if (!sentinel) {
     // If sentinel doesn't exist, renderEnhancedFeed should have created it
     // But just in case, create it here
-    const newSentinel = document.createElement('div');
-    newSentinel.id = 'enhanced-feed-sentinel';
-    newSentinel.style.cssText = 'height: 1px; width: 100%;';
-    container.appendChild(newSentinel);
+      const newSentinel = document.createElement('div');
+      newSentinel.id = 'enhanced-feed-sentinel';
+      newSentinel.style.cssText = 'height: 100px; width: 100%; margin-top: 20px;';
+      container.appendChild(newSentinel);
     // Use the newly created sentinel
     enhancedScrollObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -1314,8 +1314,8 @@ function setupInfiniteScroll() {
         }
       });
     }, {
-      rootMargin: '200px', // Start loading when 200px away from bottom
-      threshold: 0.1
+      rootMargin: '300px', // Start loading when 300px away from bottom (more aggressive)
+      threshold: 0.01 // Lower threshold for earlier triggering
     });
     enhancedScrollObserver.observe(newSentinel);
     return;
@@ -1342,7 +1342,7 @@ function setupInfiniteScroll() {
 let enhancedFeedInitialized = false;
 let lastContainerId = null;
 
-function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/functions/posts-read', limit = 5) {
+function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/functions/posts-read', limit = 20) {
   const container = document.getElementById(containerId);
   if (!container) {
     console.error('[Enhanced Feed] Container not found:', containerId);

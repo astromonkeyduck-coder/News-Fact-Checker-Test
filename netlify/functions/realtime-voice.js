@@ -37,14 +37,8 @@ exports.handler = async (event, context) => {
       const voice = event.queryStringParameters?.voice || 'cove';
       
       // Create a session with OpenAI Realtime API
-      const response = await fetch('https://api.openai.com/v1/realtime/sessions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-realtime-preview-2024-12-17',
+      const requestBody = {
+          model: 'gpt-4o-realtime-preview',
           voice: voice,
           instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
 
@@ -71,16 +65,22 @@ Always inform the user when you're using these tools during the conversation.`,
           tools: [
             {
               type: 'image_generation',
-              name: 'generate_image',
-              description: 'Generate or edit images based on text prompts. Use this when users ask to create, generate, make, or draw an image or picture.',
             },
             {
               type: 'web_search',
-              name: 'search_web',
-              description: 'Search the web for real-time information, breaking news, current events, and to verify facts. Use this when users ask to research, search, find information, or verify something.',
             },
           ],
-        }),
+        };
+      
+      console.log('Creating Realtime API session (GET) with body:', JSON.stringify(requestBody, null, 2));
+      
+      const response = await fetch('https://api.openai.com/v1/realtime/sessions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -133,14 +133,24 @@ Always inform the user when you're using these tools during the conversation.`,
           session_id: sessionData.id,
           expires_at: sessionData.expires_at,
           ephemeral_token: tokenData.token,
-          websocket_url: `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17&session_id=${sessionData.id}`,
+          websocket_url: `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview&session_id=${sessionData.id}`,
         }),
       };
     }
 
     // Handle POST request - create session with custom voice
     if (event.httpMethod === "POST") {
-      const body = JSON.parse(event.body || '{}');
+      let body;
+      try {
+        body = typeof event.body === 'string' ? JSON.parse(event.body) : (event.body || {});
+      } catch (e) {
+        console.error('Error parsing request body:', e);
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Invalid JSON in request body', details: e.message }),
+        };
+      }
       const voice = body.voice || 'cove';
       
       const response = await fetch('https://api.openai.com/v1/realtime/sessions', {
@@ -150,7 +160,7 @@ Always inform the user when you're using these tools during the conversation.`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-realtime-preview-2024-12-17',
+          model: 'gpt-4o-realtime-preview',
           voice: voice,
           instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
 
@@ -177,13 +187,9 @@ Always inform the user when you're using these tools during the conversation.`,
           tools: [
             {
               type: 'image_generation',
-              name: 'generate_image',
-              description: 'Generate or edit images based on text prompts. Use this when users ask to create, generate, make, or draw an image or picture.',
             },
             {
               type: 'web_search',
-              name: 'search_web',
-              description: 'Search the web for real-time information, breaking news, current events, and to verify facts. Use this when users ask to research, search, find information, or verify something.',
             },
           ],
         }),
@@ -238,7 +244,7 @@ Always inform the user when you're using these tools during the conversation.`,
           session_id: sessionData.id,
           expires_at: sessionData.expires_at,
           ephemeral_token: tokenData.token,
-          websocket_url: `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17&session_id=${sessionData.id}`,
+          websocket_url: `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview&session_id=${sessionData.id}`,
           voice: voice,
         }),
       };

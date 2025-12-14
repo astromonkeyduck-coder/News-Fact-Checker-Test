@@ -3863,6 +3863,63 @@ class NoteworthyChat extends HTMLElement {
       });
     }
     
+    // Handle paste events for images - works on input and entire chat container
+    const handlePaste = async (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      
+      const imageFiles = [];
+      
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        
+        // Check if the item is an image
+        if (item.type.indexOf('image') !== -1) {
+          const blob = item.getAsFile();
+          if (blob) {
+            // Convert blob to File object with a name
+            const fileName = `pasted-image-${Date.now()}.${blob.type.split('/')[1] || 'png'}`;
+            const file = new File([blob], fileName, { type: blob.type });
+            imageFiles.push(file);
+          }
+        }
+      }
+      
+      if (imageFiles.length > 0) {
+        e.preventDefault(); // Prevent default paste behavior
+        
+        // Create a FileList-like object
+        const dataTransfer = new DataTransfer();
+        imageFiles.forEach(file => dataTransfer.items.add(file));
+        
+        // Process the pasted images
+        handleFiles(dataTransfer.files);
+        
+        // Show a brief visual feedback
+        if (input) {
+          const originalPlaceholder = input.placeholder;
+          input.placeholder = `✓ ${imageFiles.length} image${imageFiles.length > 1 ? 's' : ''} pasted!`;
+          setTimeout(() => {
+            input.placeholder = originalPlaceholder;
+          }, 2000);
+        }
+      }
+    };
+    
+    // Add paste listener to input field
+    if (input) {
+      input.addEventListener('paste', handlePaste);
+    }
+    
+    // Add paste listener to the entire chat container (so it works even when input isn't focused)
+    if (wrap) {
+      wrap.addEventListener('paste', handlePaste);
+      // Make the chat container focusable for paste events
+      if (!wrap.hasAttribute('tabindex')) {
+        wrap.setAttribute('tabindex', '-1');
+      }
+    }
+    
     // Voice mode functionality - Full Realtime API implementation
     async function startVoiceMode() {
       if (voiceModeActive) {
@@ -3912,7 +3969,19 @@ class NoteworthyChat extends HTMLElement {
         });
         
         // Create session with backend (use captured endpoint from outer scope)
-        const realtimeEndpoint = endpoint.replace('/noteworthy-chat', '/realtime-voice');
+        // Handle both '/.netlify/functions/noteworthy-chat' and '/api/noteworthy' endpoints
+        let realtimeEndpoint;
+        if (endpoint.includes('/noteworthy-chat')) {
+          realtimeEndpoint = endpoint.replace('/noteworthy-chat', '/realtime-voice');
+        } else if (endpoint.includes('/noteworthy')) {
+          realtimeEndpoint = endpoint.replace('/noteworthy', '/realtime-voice');
+        } else {
+          // Fallback to direct path
+          const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+          realtimeEndpoint = isLocalhost 
+            ? 'http://localhost:8888/.netlify/functions/realtime-voice'
+            : '/.netlify/functions/realtime-voice';
+        }
         
         const sessionRes = await fetch(realtimeEndpoint, {
           method: 'POST',
@@ -3921,7 +3990,9 @@ class NoteworthyChat extends HTMLElement {
         });
         
         if (!sessionRes.ok) {
-          throw new Error('Failed to create voice session');
+          const errorData = await sessionRes.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('Realtime voice session error:', errorData);
+          throw new Error(errorData.error || `Failed to create voice session: ${sessionRes.status} ${sessionRes.statusText}`);
         }
         
         const sessionData = await sessionRes.json();
@@ -4356,11 +4427,6 @@ class NoteworthyChat extends HTMLElement {
         if (e.key === 'k' || e.key === 'K') {
           e.stopPropagation();
         }
-        // #region agent log
-        if (e.key === 'k' || e.key === 'K') {
-          fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'noteworthy-chat.js:2834',message:'K key received in chat input',data:{key:e.key,defaultPrevented:e.defaultPrevented,isFocused:document.activeElement===input},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-        }
-        // #endregion
         if (e.key === 'Enter' && !send.disabled) {
           console.log('Enter key pressed');
           e.preventDefault();
@@ -4369,13 +4435,6 @@ class NoteworthyChat extends HTMLElement {
           });
         }
       });
-      // #region agent log
-      input.addEventListener('keypress', (e) => {
-        if (e.key === 'k' || e.key === 'K') {
-          fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'noteworthy-chat.js:2842',message:'K keypress in chat input',data:{key:e.key,charCode:e.charCode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-        }
-      });
-      // #endregion
     } else {
       console.error('Input field not found!');
     }
