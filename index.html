@@ -13514,15 +13514,16 @@
             </div>
             
             <div class="header-right">
-                <div class="last-update" title="Scheduled Maintenance: December 18, 2025">Scheduled Maintenance: December 18, 2025</div>
-                <!-- Auth Buttons -->
-                <div class="auth-buttons-container" id="authButtonsContainer">
-                    <button class="auth-btn signin-btn" id="signinBtn" aria-label="Sign In">Sign In</button>
-                    <button class="auth-btn signup-btn" id="signupBtn" aria-label="Sign Up">Sign Up</button>
+                <!-- Header Actions: Auth Buttons + Mute (never shrink) -->
+                <div class="header-actions">
+                    <div class="auth-buttons-container" id="authButtonsContainer">
+                        <button class="auth-btn signin-btn" id="signinBtn" aria-label="Sign In">Sign In</button>
+                        <button class="auth-btn signup-btn" id="signupBtn" aria-label="Sign Up">Sign Up</button>
+                    </div>
+                    <button class="music-control-btn" id="musicControlBtn" title="Toggle Background Music">
+                        <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M9 18V5l9-2v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/><circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/></svg></span>
+                    </button>
                 </div>
-                <button class="music-control-btn" id="musicControlBtn" title="Toggle Background Music">
-                    <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M9 18V5l9-2v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/><circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/></svg></span>
-                </button>
             </div>
             
             <!-- Mobile Menu Toggle -->
@@ -19159,100 +19160,56 @@
         })();
     </script>
     
-    <!-- Header Overlap Guard - Prevents maintenance pill from overlapping nav/buttons -->
+    <!-- Header No-Cutoff Guard - Ensures Sign In, Sign Up, and mute are never cut off -->
     <script>
         (function() {
             'use strict';
             
-            function checkHeaderOverlap() {
+            function ensureHeaderNoCutoff() {
                 const header = document.querySelector('.main-header');
-                const headerContainer = document.querySelector('.header-container');
-                const maintenancePill = document.querySelector('.last-update');
-                const nav = document.querySelector('.main-nav');
-                const authButtons = document.querySelector('.auth-buttons-container');
+                const headerActions = document.querySelector('.header-actions');
+                const maintenancePill = document.querySelector('.maintenance-pill, .last-update');
                 
-                if (!header || !headerContainer || !maintenancePill) {
+                if (!header || !headerActions) {
                     return;
                 }
                 
-                // Remove existing tight classes
-                header.classList.remove('header--tight', 'header--ultratight');
+                // Remove existing tight class
+                header.classList.remove('header--tight');
                 
-                // Check if header container is overflowing
-                const containerOverflow = headerContainer.scrollWidth > headerContainer.clientWidth;
+                // Check if header-actions is cut off (right edge exceeds window width)
+                const actionsRect = headerActions.getBoundingClientRect();
+                const cutoff = actionsRect.right > window.innerWidth - 4;
                 
-                if (containerOverflow) {
-                    // Check if maintenance pill intersects with nav or auth buttons
-                    const pillRect = maintenancePill.getBoundingClientRect();
-                    let hasIntersection = false;
-                    
-                    if (nav) {
-                        const navRect = nav.getBoundingClientRect();
-                        if (pillRect.right > navRect.left && pillRect.left < navRect.right) {
-                            hasIntersection = true;
-                        }
-                    }
-                    
-                    if (authButtons && !hasIntersection) {
-                        const authRect = authButtons.getBoundingClientRect();
-                        if (pillRect.right > authRect.left && pillRect.left < authRect.right) {
-                            hasIntersection = true;
-                        }
-                    }
-                    
-                    // Apply tight class first
-                    if (containerOverflow || hasIntersection) {
-                        header.classList.add('header--tight');
-                        
-                        // Re-check after applying tight class
-                        setTimeout(() => {
-                            const stillOverflow = headerContainer.scrollWidth > headerContainer.clientWidth;
-                            const pillStillVisible = maintenancePill.offsetParent !== null;
-                            
-                            if (stillOverflow && pillStillVisible) {
-                                // Check intersection again
-                                const newPillRect = maintenancePill.getBoundingClientRect();
-                                let stillIntersects = false;
-                                
-                                if (nav) {
-                                    const newNavRect = nav.getBoundingClientRect();
-                                    if (newPillRect.right > newNavRect.left && newPillRect.left < newNavRect.right) {
-                                        stillIntersects = true;
-                                    }
-                                }
-                                
-                                if (authButtons && !stillIntersects) {
-                                    const newAuthRect = authButtons.getBoundingClientRect();
-                                    if (newPillRect.right > newAuthRect.left && newPillRect.left < newAuthRect.right) {
-                                        stillIntersects = true;
-                                    }
-                                }
-                                
-                                if (stillOverflow || stillIntersects) {
-                                    header.classList.add('header--ultratight');
-                                }
-                            }
-                        }, 50);
+                // Apply tight class to hide maintenance pill if cutoff detected
+                header.classList.toggle('header--tight', cutoff);
+                
+                // Also hide pill directly via style if needed (extra safety)
+                if (maintenancePill) {
+                    if (cutoff) {
+                        maintenancePill.style.display = 'none';
+                    } else {
+                        maintenancePill.style.display = '';
                     }
                 }
             }
             
             // Run on load and resize
-            function initOverlapGuard() {
-                checkHeaderOverlap();
+            function initNoCutoffGuard() {
+                ensureHeaderNoCutoff();
                 
                 let resizeTimeout;
                 window.addEventListener('resize', function() {
                     clearTimeout(resizeTimeout);
-                    resizeTimeout = setTimeout(checkHeaderOverlap, 100);
+                    resizeTimeout = setTimeout(ensureHeaderNoCutoff, 100);
                 });
             }
             
             // Wait for DOM to be ready
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initOverlapGuard);
+                document.addEventListener('DOMContentLoaded', initNoCutoffGuard);
             } else {
-                initOverlapGuard();
+                initNoCutoffGuard();
             }
         })();
     </script>

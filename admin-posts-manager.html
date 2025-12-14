@@ -500,7 +500,7 @@
                                         id="sourceUrl" 
                                         placeholder="https://x.com/newsnoteworthy/status/..."
                                     >
-                                    <button class="btn btn-secondary" onclick="fetchFromUrl()">Fetch</button>
+                                    <button class="btn btn-secondary" onclick="fetchFromUrl(event)">Fetch</button>
                                 </div>
                             </div>
                             
@@ -746,83 +746,179 @@
         });
         
         // Fetch from URL
-        async function fetchFromUrl() {
+        async function fetchFromUrl(clickEvent) {
             const url = document.getElementById('sourceUrl').value.trim();
             if (!url) {
                 showResult('Please enter a URL', 'error');
                 return;
             }
             
-            const btn = event.target;
-            btn.disabled = true;
-            btn.textContent = 'Fetching...';
+            const btn = clickEvent?.target || document.querySelector('button[onclick*="fetchFromUrl"]');
+            const originalText = btn?.textContent || 'Fetch';
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Fetching...';
+            }
             
             try {
-                const response = await fetch(`${API_BASE}/.netlify/functions/fetch-tweets-simple`, {
+                // Step 1: Create/fetch the post
+                const createResponse = await fetch(`${API_BASE}/.netlify/functions/fetch-tweets-simple`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ tweetUrl: url })
                 });
                 
-                const data = await response.json();
+                const createData = await createResponse.json();
                 
-                if (!response.ok) {
-                    throw new Error(data.error || `HTTP ${response.status}`);
-                }
-                
-                // Populate form with fetched data
-                if (data.postId) {
-                    document.getElementById('postId').value = data.postId;
-                    postState.postId = data.postId;
-                }
-                if (data.story || data.text) {
-                    const text = data.story || data.text;
-                    document.getElementById('headline').value = text;
-                    postState.headline = text;
-                }
-                if (data.link) {
-                    document.getElementById('postLink').value = data.link;
-                    postState.postLink = data.link;
-                }
-                if (data.datePosted) {
-                    const date = new Date(data.datePosted);
-                    const dateStr = date.toISOString().slice(0, 16);
-                    document.getElementById('postDate').value = dateStr;
-                    postState.postDate = dateStr;
-                }
-                if (data.views) {
-                    const viewsStr = formatMetric(data.views);
-                    document.getElementById('views').value = viewsStr;
-                    postState.views = viewsStr;
-                }
-                if (data.likes) {
-                    const likesStr = formatMetric(data.likes);
-                    document.getElementById('likes').value = likesStr;
-                    postState.likes = likesStr;
-                }
-                if (data.reposts) {
-                    const repostsStr = formatMetric(data.reposts);
-                    document.getElementById('reposts').value = repostsStr;
-                    postState.reposts = repostsStr;
-                }
-                if (data.replies) {
-                    const repliesStr = formatMetric(data.replies);
-                    document.getElementById('replies').value = repliesStr;
-                    postState.replies = repliesStr;
-                }
-                if (data.images && data.images.length > 0) {
-                    postState.mediaUrls = [...data.images];
-                    updateMediaPreview();
+                if (!createResponse.ok) {
+                    throw new Error(createData.error || `HTTP ${createResponse.status}`);
                 }
                 
-                updatePreview();
+                // Step 2: Fetch the actual post data that was just created
+                const postId = createData.id;
+                if (!postId) {
+                    throw new Error('Post ID not returned from fetch');
+                }
+                
+                // Wait a moment for the post to be fully stored, then fetch it
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Try to fetch the post from storage - try multiple endpoints
+                let post = null;
+                
+                // Method 1: Try posts-read
+                try {
+                    const postsResponse = await fetch(`${API_BASE}/.netlify/functions/posts-read?limit=200`);
+                    if (postsResponse.ok) {
+                        const posts = await postsResponse.json();
+                        post = Array.isArray(posts) ? posts.find(p => p.id === postId) : null;
+                    }
+                } catch (err) {
+                    console.log('posts-read failed, trying alternative method');
+                }
+                
+                // Method 2: Try fetch-tweets-simple GET
+                if (!post) {
+                    try {
+                        const getResponse = await fetch(`${API_BASE}/.netlify/functions/fetch-tweets-simple?limit=200`);
+                        if (getResponse.ok) {
+                            const allPosts = await getResponse.json();
+                            post = Array.isArray(allPosts) ? allPosts.find(p => p.id === postId) : null;
+                        }
+                    } catch (err) {
+                        console.log('fetch-tweets-simple GET failed');
+                    }
+                }
+                
+                // If still not found, try one more time after a longer wait
+                if (!post) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    try {
+                        const retryResponse = await fetch(`${API_BASE}/.netlify/functions/posts-read?limit=200`);
+                        if (retryResponse.ok) {
+                            const posts = await retryResponse.json();
+                            post = Array.isArray(posts) ? posts.find(p => p.id === postId) : null;
+                        }
+                    } catch (err) {
+                        // Ignore
+                    }
+                }
+                
+                if (!post) {
+                    // Post was created but we can't fetch it yet - populate with basic info from URL
+                    const extractedPostId = url.match(/status\/(\d+)/)?.[1];
+                    if (extractedPostId) {
+                        populateFormFromPost({
+                            id: extractedPostId,
+                            link: url,
+                            url: url,
+                            story: 'Post created - please fill in details',
+                            text: 'Post created - please fill in details',
+                            datePosted: new Date().toISOString()
+                        });
+                        showResult('Post created successfully. Please fill in the details below.', 'info');
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.textContent = originalText;
+                        }
+                        return;
+                    }
+                    throw new Error('Post created but data not immediately available. Post ID: ' + postId + '. Please refresh and try again, or fill in details manually.');
+                }
+                
+                populateFormFromPost(post);
                 showResult('Post data fetched successfully', 'success');
             } catch (error) {
                 showResult(`Error: ${error.message}`, 'error');
             }
             
-            btn.disabled = false;
-            btn.textContent = 'Fetch';
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+        
+        // Helper to populate form from post data
+        function populateFormFromPost(post) {
+            if (post.id) {
+                document.getElementById('postId').value = post.id;
+                postState.postId = post.id;
+            }
+            if (post.story || post.text) {
+                const text = post.story || post.text;
+                document.getElementById('headline').value = text;
+                postState.headline = text;
+            }
+            if (post.link || post.url) {
+                const link = post.link || post.url;
+                document.getElementById('postLink').value = link;
+                postState.postLink = link;
+            }
+            if (post.datePosted) {
+                const date = new Date(post.datePosted);
+                const dateStr = date.toISOString().slice(0, 16);
+                document.getElementById('postDate').value = dateStr;
+                postState.postDate = dateStr;
+            }
+            if (post.views !== undefined && post.views !== null) {
+                const viewsStr = formatMetric(post.views);
+                document.getElementById('views').value = viewsStr;
+                postState.views = viewsStr;
+            }
+            if (post.likes !== undefined && post.likes !== null) {
+                const likesStr = formatMetric(post.likes);
+                document.getElementById('likes').value = likesStr;
+                postState.likes = likesStr;
+            }
+            if (post.reposts !== undefined && post.reposts !== null) {
+                const repostsStr = formatMetric(post.reposts);
+                document.getElementById('reposts').value = repostsStr;
+                postState.reposts = repostsStr;
+            }
+            if (post.replies !== undefined && post.replies !== null) {
+                const repliesStr = formatMetric(post.replies);
+                document.getElementById('replies').value = repliesStr;
+                postState.replies = repliesStr;
+            }
+            if (post.engagements !== undefined && post.engagements !== null) {
+                const engagementsStr = formatMetric(post.engagements);
+                document.getElementById('engagements').value = engagementsStr;
+                postState.engagements = engagementsStr;
+            }
+            if (post.bookmarks !== undefined && post.bookmarks !== null) {
+                const bookmarksStr = formatMetric(post.bookmarks);
+                document.getElementById('bookmarks').value = bookmarksStr;
+                postState.bookmarks = bookmarksStr;
+            }
+            if (post.images && post.images.length > 0) {
+                postState.mediaUrls = [...post.images];
+                updateMediaPreview();
+            } else if (post.image) {
+                postState.mediaUrls = [post.image];
+                updateMediaPreview();
+            }
+            
+            updatePreview();
         }
         
         // Format metric preserving k/M notation
@@ -1169,12 +1265,50 @@
                 allMediaUrls.push(manualMediaUrl);
             }
             
+            // Validate required fields
+            const postId = document.getElementById('postId').value.trim();
+            const headline = document.getElementById('headline').value.trim();
+            const postLink = document.getElementById('postLink').value.trim();
+            const postDate = document.getElementById('postDate').value;
+            
+            if (!postId) {
+                showResult('Post ID is required', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Publish Post';
+                document.getElementById('postForm').classList.remove('loading');
+                return;
+            }
+            
+            if (!headline) {
+                showResult('Headline/Story is required', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Publish Post';
+                document.getElementById('postForm').classList.remove('loading');
+                return;
+            }
+            
+            if (!postLink) {
+                showResult('Post Link is required', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Publish Post';
+                document.getElementById('postForm').classList.remove('loading');
+                return;
+            }
+            
+            if (!postDate) {
+                showResult('Date Posted is required', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Publish Post';
+                document.getElementById('postForm').classList.remove('loading');
+                return;
+            }
+            
             const postData = {
-                postId: document.getElementById('postId').value.trim(),
-                datePosted: new Date(document.getElementById('postDate').value).toISOString(),
-                story: document.getElementById('headline').value.trim(),
-                text: document.getElementById('headline').value.trim(),
-                link: document.getElementById('postLink').value.trim(),
+                postId: postId,
+                datePosted: new Date(postDate).toISOString(),
+                story: headline,
+                text: headline,
+                link: postLink,
                 views: parseMetric(document.getElementById('views').value),
                 likes: parseMetric(document.getElementById('likes').value),
                 reposts: parseMetric(document.getElementById('reposts').value),
@@ -1188,9 +1322,11 @@
                 postData.images = allMediaUrls;
             }
             
-            // Remove undefined/null values
+            // Remove undefined/null values (but keep 0 values for metrics)
             Object.keys(postData).forEach(key => {
-                if (postData[key] === undefined || postData[key] === null || postData[key] === '') {
+                if (postData[key] === undefined || postData[key] === null) {
+                    delete postData[key];
+                } else if (key !== 'postId' && key !== 'datePosted' && key !== 'story' && key !== 'text' && key !== 'link' && key !== 'image' && key !== 'images' && postData[key] === '') {
                     delete postData[key];
                 }
             });
@@ -1200,18 +1336,29 @@
             document.getElementById('postForm').classList.add('loading');
             
             try {
-                // Try to add via fetch-tweets-simple first (if it's a valid URL)
-                try {
-                    await fetch(`${API_BASE}/.netlify/functions/fetch-tweets-simple`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tweetUrl: postData.link })
-                    });
-                } catch (err) {
-                    console.log('Could not auto-fetch, will create manually');
+                // Step 1: Try to create post via fetch-tweets-simple if it's a valid X/Twitter URL
+                let postCreated = false;
+                const isTwitterUrl = postData.link && postData.link.match(/https?:\/\/(x\.com|twitter\.com)\//);
+                
+                if (isTwitterUrl) {
+                    try {
+                        const createResponse = await fetch(`${API_BASE}/.netlify/functions/fetch-tweets-simple`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ tweetUrl: postData.link })
+                        });
+                        
+                        if (createResponse.ok) {
+                            postCreated = true;
+                            console.log('Post created via fetch-tweets-simple');
+                        }
+                    } catch (err) {
+                        console.log('Could not auto-fetch, will create/update manually');
+                    }
                 }
                 
-                // Then update with manual data
+                // Step 2: Update or create post with manual data
+                // update-post-data now handles both creating and updating
                 const updateResponse = await fetch(`${API_BASE}/.netlify/functions/update-post-data`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1224,18 +1371,40 @@
                     throw new Error(updateData.error || `HTTP ${updateResponse.status}`);
                 }
                 
-                showResult(`Post published successfully${allMediaUrls.length > 0 ? ` (${allMediaUrls.length} media file(s))` : ''}`, 'success');
+                showResult(`Post ${postCreated ? 'created and ' : ''}updated successfully${allMediaUrls.length > 0 ? ` (${allMediaUrls.length} media file(s))` : ''}`, 'success');
                 
                 // Reset form
                 e.target.reset();
                 postState.mediaUrls = [];
                 updateMediaPreview();
+                
+                // Reset all form fields
+                document.getElementById('postId').value = '';
+                document.getElementById('headline').value = '';
+                document.getElementById('postLink').value = '';
                 document.getElementById('postDate').value = new Date().toISOString().slice(0, 16);
-                Object.keys(postState).forEach(key => {
-                    if (key !== 'mediaUrls') {
-                        postState[key] = '';
-                    }
-                });
+                document.getElementById('views').value = '';
+                document.getElementById('likes').value = '';
+                document.getElementById('reposts').value = '';
+                document.getElementById('replies').value = '';
+                document.getElementById('engagements').value = '';
+                document.getElementById('bookmarks').value = '';
+                document.getElementById('mediaUrl').value = '';
+                document.getElementById('sourceUrl').value = '';
+                
+                // Reset state
+                postState.postId = '';
+                postState.headline = '';
+                postState.postLink = '';
+                postState.postDate = new Date().toISOString().slice(0, 16);
+                postState.views = '';
+                postState.likes = '';
+                postState.reposts = '';
+                postState.replies = '';
+                postState.engagements = '';
+                postState.bookmarks = '';
+                postState.mediaUrls = [];
+                
                 updatePreview();
             } catch (error) {
                 showResult(`Error: ${error.message}`, 'error');

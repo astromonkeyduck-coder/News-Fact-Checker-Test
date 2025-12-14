@@ -15,7 +15,7 @@ exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Content-Type': 'application/json',
   };
 
@@ -376,6 +376,7 @@ exports.handler = async (event, context) => {
                 id: blob.key,
                 name: parsed.name || blob.key,
                 subject: parsed.subject || '',
+                preheader: parsed.preheader || '',
                 createdAt: parsed.createdAt || blob.updatedAt,
                 updatedAt: parsed.updatedAt || blob.updatedAt,
                 previewHtml: finalPreviewHtml, // Include preview HTML with placeholders
@@ -622,10 +623,11 @@ exports.handler = async (event, context) => {
       }
     }
 
-    // POST: Save or update a template
-    if (event.httpMethod === 'POST') {
+    // POST: Create a new template
+    // PUT: Update an existing template
+    if (event.httpMethod === 'POST' || event.httpMethod === 'PUT') {
       const body = JSON.parse(event.body || '{}');
-      const { id, name, subject, html, text } = body;
+      const { id, name, subject, preheader, html, text } = body;
       
       if (!name || !subject) {
         return {
@@ -635,14 +637,50 @@ exports.handler = async (event, context) => {
         };
       }
       
-      const templateId = id || `template-${Date.now()}`;
+      // For PUT, get ID from query string or body
+      let templateId;
+      if (event.httpMethod === 'PUT') {
+        templateId = event.queryStringParameters?.id || id;
+        if (!templateId) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ error: 'Template ID is required for update' }),
+          };
+        }
+      } else {
+        templateId = id || `template-${Date.now()}`;
+      }
+      
+      // For PUT, check if template exists
+      let existingTemplate = null;
+      if (event.httpMethod === 'PUT') {
+        try {
+          existingTemplate = await store.get(templateId, { type: 'json' });
+          if (!existingTemplate) {
+            return {
+              statusCode: 404,
+              headers,
+              body: JSON.stringify({ error: 'Template not found' }),
+            };
+          }
+        } catch (e) {
+          return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({ error: 'Template not found' }),
+          };
+        }
+      }
+      
       const templateData = {
         id: templateId,
         name,
         subject,
+        preheader: preheader || '',
         html: html || '',
         text: text || '',
-        createdAt: body.createdAt || new Date().toISOString(),
+        createdAt: existingTemplate?.createdAt || body.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       
@@ -653,13 +691,7 @@ exports.handler = async (event, context) => {
         headers,
         body: JSON.stringify({ 
           success: true, 
-          template: {
-            id: templateId,
-            name,
-            subject,
-            createdAt: templateData.createdAt,
-            updatedAt: templateData.updatedAt,
-          }
+          template: templateData
         }),
       };
     }

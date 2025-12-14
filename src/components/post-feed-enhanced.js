@@ -1319,6 +1319,85 @@ async function loadMorePosts() {
 }
 
 /**
+ * Generate a "tk tk" scroll sound effect using Web Audio API
+ */
+let scrollSoundAudioContext = null;
+let lastScrollSoundTime = 0;
+const SCROLL_SOUND_THROTTLE = 150; // Minimum milliseconds between sounds
+
+function playScrollSound() {
+  // Throttle to prevent too many sounds
+  const now = Date.now();
+  if (now - lastScrollSoundTime < SCROLL_SOUND_THROTTLE) {
+    return;
+  }
+  lastScrollSoundTime = now;
+
+  try {
+    // Initialize audio context if needed
+    if (!scrollSoundAudioContext) {
+      scrollSoundAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    // Resume audio context if suspended (browser autoplay policy)
+    if (scrollSoundAudioContext.state === 'suspended') {
+      scrollSoundAudioContext.resume().catch(() => {
+        // Silently fail if resume is not allowed
+        return;
+      });
+    }
+
+    // Create a short "tk tk" click sound
+    const oscillator = scrollSoundAudioContext.createOscillator();
+    const gainNode = scrollSoundAudioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(scrollSoundAudioContext.destination);
+
+    // Configure the sound: short, high-pitched click
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(800, scrollSoundAudioContext.currentTime); // Higher pitch for "tk"
+    oscillator.frequency.exponentialRampToValueAtTime(400, scrollSoundAudioContext.currentTime + 0.01);
+
+    // Quick fade in/out for clean click sound
+    gainNode.gain.setValueAtTime(0, scrollSoundAudioContext.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.15, scrollSoundAudioContext.currentTime + 0.001); // Low volume
+    gainNode.gain.exponentialRampToValueAtTime(0.01, scrollSoundAudioContext.currentTime + 0.02);
+    gainNode.gain.linearRampToValueAtTime(0, scrollSoundAudioContext.currentTime + 0.03);
+
+    oscillator.start(scrollSoundAudioContext.currentTime);
+    oscillator.stop(scrollSoundAudioContext.currentTime + 0.03); // Very short duration
+  } catch (e) {
+    // Silently fail if audio context can't be created (e.g., user hasn't interacted)
+    console.debug('[Scroll Sound] Could not play sound:', e.message);
+  }
+}
+
+/**
+ * Set up scroll sound effect listener
+ */
+function setupScrollSound(container) {
+  if (!container) return;
+
+  // Remove existing scroll sound listener if any
+  if (container._scrollSoundHandler) {
+    container.removeEventListener('scroll', container._scrollSoundHandler, { passive: true });
+    container._scrollSoundHandler = null;
+  }
+
+  // Add scroll sound effect
+  let scrollSoundThrottle;
+  container._scrollSoundHandler = () => {
+    clearTimeout(scrollSoundThrottle);
+    scrollSoundThrottle = setTimeout(() => {
+      playScrollSound();
+    }, 50); // Small delay to batch rapid scroll events
+  };
+
+  container.addEventListener('scroll', container._scrollSoundHandler, { passive: true });
+}
+
+/**
  * Set up infinite scroll using Intersection Observer and scroll event listener
  * Supports both vertical and horizontal scrolling
  */
@@ -1422,6 +1501,9 @@ function setupInfiniteScroll() {
     
     enhancedScrollObserver.observe(sentinel);
   }
+
+  // Set up scroll sound effect
+  setupScrollSound(container);
 }
 
 /**

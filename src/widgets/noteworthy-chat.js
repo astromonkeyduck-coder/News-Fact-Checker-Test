@@ -22,6 +22,18 @@ class NoteworthyChat extends HTMLElement {
       ? '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M4 8v8h4l5 5V3L8 8H4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.12"/><path d="M15 10c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M17 6c3.3 0 6 2.7 6 6s-2.7 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M17 3c5 0 9 4 9 9s-4 9-9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.7"/></svg>'
       : '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: rgba(255,255,255,0.5);"><path d="M4 8v8h4l5 5V3L8 8H4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.08" opacity="0.6"/><path d="M15 10c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 6c3.3 0 6 2.7 6 6s-2.7 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 3c5 0 9 4 9 9s-4 9-9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.2"/><path d="M2 2l20 20" stroke="#ff4444" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="1"/><path d="M3 3l18 18" stroke="#ff6666" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/></svg>';
 
+    // Declare voice-related variables early to avoid temporal dead zone errors
+    // These are used in event handlers that are set up before the variables were previously declared
+    let voiceModeActive = false;
+    let currentVoice = 'alloy';
+    let websocket = null;
+    let audioContext = null;
+    let mediaStream = null;
+    let audioWorkletNode = null;
+    let isRecording = false;
+    let audioQueue = [];
+    let isPlayingAudio = false;
+
     this.root.innerHTML = `
       <style>
         :host { all: initial; display: block; }
@@ -2816,16 +2828,8 @@ class NoteworthyChat extends HTMLElement {
     let recognition = null;
     let currentSpeech = null;
     
-    // Voice conversation state (Realtime API)
-    let voiceModeActive = false;
-    let websocket = null;
-    let audioContext = null;
-    let mediaStream = null;
-    let audioWorkletNode = null;
-    let isRecording = false;
-    let currentVoice = 'alloy';
-    let audioQueue = [];
-    let isPlayingAudio = false;
+    // Voice conversation state variables are declared at the top of connectedCallback
+    // to avoid temporal dead zone errors when used in event handlers
     
     // Initialize audio toggle state (already set in template, but ensure it's correct)
     if (audioToggle) {

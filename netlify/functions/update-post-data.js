@@ -57,18 +57,21 @@ exports.handler = async (event) => {
       }
 
       try {
-        // Get existing post
+        // Get existing post or create new one
         const postKey = `post-${postId}.json`;
         let post = null;
+        let isNewPost = false;
         
         try {
           const existing = await store.get(postKey, { type: "json" });
           post = existing;
         } catch (err) {
-          return {
-            statusCode: 404,
-            headers,
-            body: JSON.stringify({ error: `Post ${postId} not found` }),
+          // Post doesn't exist - create new one
+          isNewPost = true;
+          post = {
+            id: postId,
+            link: link || url || `https://x.com/newsnoteworthy/status/${postId}`,
+            url: url || link || `https://x.com/newsnoteworthy/status/${postId}`,
           };
         }
 
@@ -112,8 +115,46 @@ exports.handler = async (event) => {
           updatedPost.images = images;
         }
 
-        // Save updated post
+        // Save updated/created post
         await store.setJSON(postKey, updatedPost);
+        
+        // If this is a new post, add it to the index so it appears on the site
+        if (isNewPost) {
+          try {
+            let indexData = { ids: [], urls: [] };
+            try {
+              const indexBlob = await store.get("index.json", { type: "json" });
+              if (indexBlob) {
+                indexData = indexBlob;
+              }
+            } catch (err) {
+              // Index doesn't exist yet, will create it
+            }
+            
+            // Add post to index if not already there
+            const existingIds = indexData.ids || [];
+            const existingUrls = indexData.urls || [];
+            
+            if (!existingIds.includes(postId)) {
+              // Prepend new post to index
+              const newIds = [postId, ...existingIds];
+              const newUrls = [updatedPost.link || updatedPost.url, ...existingUrls];
+              
+              // Cap at 200 posts
+              const updatedIds = newIds.slice(0, 200);
+              const updatedUrls = newUrls.slice(0, 200);
+              
+              await store.set("index.json", JSON.stringify({ ids: updatedIds, urls: updatedUrls }), {
+                contentType: "application/json",
+              });
+              
+              console.log(`[update-post-data] Added new post ${postId} to index`);
+            }
+          } catch (indexErr) {
+            console.error('[update-post-data] Failed to update index:', indexErr);
+            // Don't fail the whole request if index update fails
+          }
+        }
 
         return {
           statusCode: 200,

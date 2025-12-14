@@ -398,6 +398,277 @@
             margin-top: 1.5rem;
         }
         
+        /* Two-Panel Newsletter Layout */
+        .newsletter-layout {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .panel-left {
+            background: var(--terminal-bg-dark);
+            border: 1px solid var(--terminal-border);
+            padding: 1.5rem;
+            height: fit-content;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--terminal-border);
+        }
+        
+        .panel-header h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--terminal-green);
+            font-family: 'Orbitron', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin: 0;
+        }
+        
+        .templates-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .template-item {
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-border);
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 4px;
+        }
+        
+        .template-item:hover {
+            border-color: var(--terminal-green);
+            box-shadow: 0 0 10px var(--glow-green);
+        }
+        
+        .template-item.selected {
+            border-color: var(--terminal-green);
+            background: rgba(0, 255, 65, 0.1);
+            box-shadow: 0 0 15px var(--glow-green);
+        }
+        
+        .template-item-name {
+            font-weight: 600;
+            color: var(--terminal-green);
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+        
+        .template-item-subject {
+            color: var(--terminal-text-dim);
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .template-item-date {
+            color: var(--terminal-text-dim);
+            font-size: 0.7rem;
+            opacity: 0.7;
+        }
+        
+        .template-item-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            background: var(--terminal-bg-dark);
+            border: 1px solid var(--terminal-amber);
+            color: var(--terminal-amber);
+            font-size: 0.65rem;
+            margin-top: 0.5rem;
+            border-radius: 3px;
+        }
+        
+        .panel-right {
+            background: var(--terminal-bg-dark);
+            border: 1px solid var(--terminal-border);
+            padding: 0;
+            min-height: 600px;
+        }
+        
+        .editor-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .editor-tabs {
+            display: flex;
+            border-bottom: 2px solid var(--terminal-border);
+            background: var(--terminal-bg);
+        }
+        
+        .editor-tab {
+            flex: 1;
+            padding: 1rem;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--terminal-text-dim);
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
+        }
+        
+        .editor-tab:hover {
+            color: var(--terminal-green);
+            background: rgba(0, 255, 65, 0.05);
+        }
+        
+        .editor-tab.active {
+            color: var(--terminal-green);
+            border-bottom-color: var(--terminal-green);
+            background: var(--terminal-bg-dark);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 2rem;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--terminal-green);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-border);
+            color: var(--terminal-text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            border-radius: 4px;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--terminal-green);
+            box-shadow: 0 0 10px var(--glow-green);
+        }
+        
+        .form-group textarea {
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+        }
+        
+        .help-text {
+            font-size: 0.75rem;
+            color: var(--terminal-text-dim);
+            margin-top: 0.5rem;
+            opacity: 0.7;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--terminal-border);
+        }
+        
+        .preview-container {
+            min-height: 500px;
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .preview-container iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+            background: white;
+        }
+        
+        .preview-placeholder {
+            padding: 4rem 2rem;
+            text-align: center;
+            color: var(--terminal-text-dim);
+        }
+        
+        .empty-editor-state {
+            padding: 4rem 2rem;
+            text-align: center;
+            color: var(--terminal-text-dim);
+        }
+        
+        .empty-editor-state h3 {
+            color: var(--terminal-green);
+            margin: 1rem 0;
+            font-family: 'Orbitron', monospace;
+        }
+        
+        .error-banner {
+            background: rgba(255, 68, 68, 0.1);
+            border: 2px solid var(--terminal-red);
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 4px;
+        }
+        
+        .error-banner-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .error-icon {
+            font-size: 1.5rem;
+        }
+        
+        .error-text {
+            flex: 1;
+            color: var(--terminal-red);
+        }
+        
+        .error-text strong {
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+        
+        .past-newsletters-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--terminal-border);
+        }
+        
         .preview-card {
             background: var(--terminal-bg-dark);
             border: 1px solid var(--terminal-border);
@@ -956,65 +1227,151 @@
         </div>
         
     <div class="container">
-            <h1 class="page-title">Newsletter Control Center</h1>
-            <p class="page-subtitle">Select a template and send to your audience</p>
+        <h1 class="page-title">Newsletter Control Center</h1>
+        <p class="page-subtitle">Create, edit, and send newsletters</p>
         
         <div id="statusMessage" class="status-message"></div>
         
-            <!-- Template Selection Card -->
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-icon">📋</span>
-                    <h3 class="card-title">Select Newsletter Template</h3>
+        <!-- Error Banner (shown if templates fail to load) -->
+        <div id="errorBanner" class="error-banner" style="display: none;">
+            <div class="error-banner-content">
+                <span class="error-icon">⚠️</span>
+                <div class="error-text">
+                    <strong>Templates could not be loaded</strong>
+                    <span id="errorMessage"></span>
                 </div>
-                <div id="templatesGrid" class="grid">
+                <button class="btn btn-secondary" onclick="loadTemplates()">Retry</button>
+            </div>
+        </div>
+        
+        <!-- Two-Panel Layout -->
+        <div class="newsletter-layout">
+            <!-- Left Panel: Template List -->
+            <div class="panel-left">
+                <div class="panel-header">
+                    <h2>Templates</h2>
+                    <button class="btn btn-primary" id="newTemplateBtn" onclick="createNewTemplate()">
+                        <span>➕</span>
+                        <span>New Template</span>
+                    </button>
+                </div>
+                
+                <!-- Templates List -->
+                <div id="templatesList" class="templates-list">
                     <div class="empty-state">
                         <div class="empty-state-icon">⏳</div>
                         <p>Loading templates...</p>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Past Newsletters Card -->
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-icon">📧</span>
-                    <h3 class="card-title">Past Newsletters Sent</h3>
-                </div>
-                <div id="newslettersGrid" class="grid">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">⏳</div>
-                        <p>Loading newsletter history...</p>
+                
+                <!-- Past Newsletters Section -->
+                <div class="past-newsletters-section">
+                    <h3 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--terminal-text-dim); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">Past Newsletters</h3>
+                    <div id="newslettersList" class="templates-list">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">⏳</div>
+                            <p>Loading history...</p>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Send Newsletter Card -->
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-icon">✉️</span>
-                    <h3 class="card-title">Send Newsletter</h3>
+            <!-- Right Panel: Editor + Preview + Send -->
+            <div class="panel-right">
+                <div id="editorPanel" class="editor-panel" style="display: none;">
+                    <!-- Editor Tabs -->
+                    <div class="editor-tabs">
+                        <button class="editor-tab active" data-tab="editor" onclick="switchEditorTab('editor')">Editor</button>
+                        <button class="editor-tab" data-tab="preview" onclick="switchEditorTab('preview')">Preview</button>
+                        <button class="editor-tab" data-tab="send" onclick="switchEditorTab('send')">Send</button>
+                    </div>
+                    
+                    <!-- Editor Tab Content -->
+                    <div id="tab-editor" class="tab-content active">
+                        <form id="templateEditorForm">
+                            <div class="form-group">
+                                <label for="templateName">Template Name</label>
+                                <input type="text" id="templateName" required placeholder="e.g., Weekly Newsletter Template">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="templateSubject">Subject Line</label>
+                                <input type="text" id="templateSubject" required placeholder="e.g., Weekly Newsletter - Noteworthy News">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="templatePreheader">Preheader (optional)</label>
+                                <input type="text" id="templatePreheader" placeholder="Preview text shown in email clients">
+                                <div class="help-text">This text appears after the subject line in most email clients</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="templateHtml">HTML Content</label>
+                                <textarea id="templateHtml" rows="20" required placeholder="Enter HTML content for your newsletter..."></textarea>
+                                <div class="help-text">Use HTML to design your newsletter. Variables: {{FULL_NAME}}, {{FIRST_NAME}}, {{UNSUBSCRIBE_URL}}</div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" onclick="duplicateTemplate()" id="duplicateBtn" style="display: none;">Duplicate</button>
+                                <button type="button" class="btn btn-secondary" onclick="deleteTemplate()" id="deleteBtn" style="display: none;">Delete</button>
+                                <button type="submit" class="btn btn-primary">Save Template</button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Preview Tab Content -->
+                    <div id="tab-preview" class="tab-content">
+                        <div id="previewContainer" class="preview-container">
+                            <div class="preview-placeholder">
+                                <div class="empty-state-icon">👁️</div>
+                                <p>Select a template or add HTML content to see preview</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Send Tab Content -->
+                    <div id="tab-send" class="tab-content">
+                        <form id="sendForm">
+                            <div class="form-group">
+                                <label for="testEmail">Test Email Address</label>
+                                <input type="email" id="testEmail" placeholder="your-email@example.com" required>
+                                <div class="help-text">Send a test email to preview before sending to your full audience</div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" id="testBtn">
+                                    <span>✉️</span>
+                                    <span>Send Test Email</span>
+                                </button>
+                            </div>
+                            
+                            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid var(--terminal-border);">
+                                <h3 style="margin-bottom: 1rem; color: var(--terminal-red);">⚠️ Send to Full Audience</h3>
+                                <p style="color: var(--terminal-text-dim); margin-bottom: 1rem; font-size: 0.9rem;">
+                                    This will send the newsletter to all subscribers in your Resend audience.
+                                </p>
+                                <button type="button" class="btn btn-primary" id="sendBtn">
+                                    <span>📧</span>
+                                    <span>Send to Full Audience</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                <form id="newsletterForm">
-            <div class="form-group">
-                        <label for="testEmail">Test Email Address (Optional)</label>
-                        <input type="email" id="testEmail" name="testEmail" placeholder="Enter test email address to preview before sending">
-                        <p class="help-text">Send a test email to preview before sending to your full audience</p>
-            </div>
-            
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-secondary" id="testBtn">
-                            <span>✉️</span>
-                            <span>Send Test Email</span>
-                        </button>
-                        <button type="submit" class="btn btn-primary" id="sendBtn">
-                            <span>📧</span>
-                            <span>Send to Full Audience</span>
-                        </button>
-            </div>
-        </form>
+                
+                <!-- Empty State (when no template selected) -->
+                <div id="emptyEditorState" class="empty-editor-state">
+                    <div class="empty-state-icon">📝</div>
+                    <h3>No Template Selected</h3>
+                    <p>Select a template from the list or create a new one to get started.</p>
+                    <button class="btn btn-primary" onclick="createNewTemplate()">
+                        <span>➕</span>
+                        <span>Create New Template</span>
+                    </button>
+                </div>
             </div>
         </div>
+    </div>
         
         <!-- Post Manager Section -->
         <div style="margin-top: 3rem; padding-top: 3rem; border-top: 2px solid var(--terminal-border);">
@@ -1089,8 +1446,14 @@
     
     <script>
         // Global state
-        let selectedTemplateId = null;
-        let selectedItem = null; // { type: 'template'|'history', id, name, html, subject, ... }
+        const newsletterState = {
+            selectedType: null, // 'template' | 'history' | null
+            selectedId: null,
+            currentTemplate: null, // { id, name, subject, preheader, html, ... }
+            templates: {}, // All templates indexed by id
+            history: [] // Past newsletters
+        };
+        
         let adminToken = sessionStorage.getItem('adminNewsletterToken');
         let backgroundMusic = null;
         let warningMusic = null;
@@ -1101,6 +1464,78 @@
         
         // Debug mode
         const DEBUG = location.hostname.includes("localhost") || location.search.includes("debug=1");
+        
+        // Starter HTML template
+        const STARTER_TEMPLATE_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newsletter</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f4f4;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f4f4f4;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">Noteworthy News</h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <h2 style="margin: 0 0 20px 0; color: #333333; font-size: 24px; font-weight: 600;">Your Newsletter Title</h2>
+                            
+                            <p style="margin: 0 0 20px 0; color: #666666; font-size: 16px; line-height: 1.6;">
+                                Hello {{FULL_NAME}},
+                            </p>
+                            
+                            <p style="margin: 0 0 20px 0; color: #666666; font-size: 16px; line-height: 1.6;">
+                                Welcome to your newsletter! This is a starter template. Edit the HTML to customize your content.
+                            </p>
+                            
+                            <!-- Story Section -->
+                            <div style="margin: 30px 0; padding: 20px; background-color: #f9f9f9; border-left: 4px solid #667eea; border-radius: 4px;">
+                                <h3 style="margin: 0 0 10px 0; color: #333333; font-size: 20px; font-weight: 600;">Top Story</h3>
+                                <p style="margin: 0 0 15px 0; color: #666666; font-size: 16px; line-height: 1.6;">
+                                    Add your top story content here.
+                                </p>
+                                <a href="#" style="display: inline-block; padding: 12px 24px; background-color: #667eea; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600;">Read More</a>
+                            </div>
+                            
+                            <!-- Additional Stories -->
+                            <div style="margin: 30px 0;">
+                                <h3 style="margin: 0 0 15px 0; color: #333333; font-size: 18px; font-weight: 600;">More Stories</h3>
+                                <ul style="margin: 0; padding-left: 20px; color: #666666; font-size: 16px; line-height: 1.8;">
+                                    <li>Story 1 - Add your content</li>
+                                    <li>Story 2 - Add your content</li>
+                                    <li>Story 3 - Add your content</li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 30px; background-color: #f9f9f9; text-align: center; border-top: 1px solid #e0e0e0;">
+                            <p style="margin: 0 0 10px 0; color: #999999; font-size: 14px;">
+                                You're receiving this because you subscribed to Noteworthy News.
+                            </p>
+                            <p style="margin: 0;">
+                                <a href="{{UNSUBSCRIBE_URL}}" style="color: #667eea; text-decoration: none; font-size: 14px;">Unsubscribe</a>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`;
         
         // Security: Rate limiting for login attempts
         const MAX_LOGIN_ATTEMPTS = 5;
@@ -1211,7 +1646,8 @@
             }
             window.__adminNewsletterInitDone = true;
             
-            // Initialize button states
+            // Initialize UI state
+            showEmptyEditorState();
             updateSendButtonStates();
             
             const storedToken = getAdminToken();
@@ -1222,6 +1658,7 @@
                             showMainContent();
                             loadTemplates();
                             loadNewsletterHistory();
+                            updateSendButtonStates();
                         } else {
                             sessionStorage.removeItem('adminNewsletterToken');
                         }
@@ -1385,177 +1822,18 @@
             }
         }
         
-        // Selection functions - defined early so they're available
+        // Legacy function stubs (for backward compatibility)
         function selectTemplate(templateId, element) {
-            if (DEBUG) console.log('selectTemplate called with:', templateId, element);
-            if (!templateId) {
-                console.error('No templateId provided to selectTemplate');
-                showStatus('Error: No template ID provided', 'error');
-                return;
-            }
-            
-            // Verify template exists
-            if (!window.newsletterTemplates || !window.newsletterTemplates[templateId]) {
-                console.error('Template not found in window.newsletterTemplates:', templateId);
-                if (DEBUG) console.log('Available templates:', Object.keys(window.newsletterTemplates || {}));
-                showStatus('Error: Template not found. Please refresh the page.', 'error');
-                return;
-            }
-            
-            const item = window.newsletterTemplates[templateId];
-            if (item.type !== 'template') {
-                console.error('Item is not a template:', item.type);
-                showStatus('Error: Selected item is not a template', 'error');
-                return;
-            }
-            
-            if (DEBUG) {
-                console.log('Selected template:', {
-                    id: item.id,
-                    name: item.name,
-                    subject: item.subject,
-                    hasHtml: !!item.html,
-                    htmlLength: item.html?.length || 0
-                });
-            }
-            
-            selectedTemplateId = templateId;
-            selectedItem = item;
-            
-            // Update UI
-            document.querySelectorAll('.preview-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-            if (element) {
-                element.classList.add('selected');
-                if (DEBUG) console.log('Template card selected:', templateId);
-                
-                // Cool effects when selecting!
-                if (typeof playSelectionSound === 'function') {
-                    playSelectionSound();
-                }
-                if (typeof triggerSelectionConfetti === 'function') {
-                    triggerSelectionConfetti(element);
-                }
-            } else {
-                console.warn('No element provided to selectTemplate');
-            }
-            
-            // Update send button states
-            updateSendButtonStates();
-            
-            // Open editor if available
-            if (typeof openEditor === 'function') {
-                openEditor(item);
-            }
-            
-            showStatus(`Template "${item.name || item.subject}" selected. Ready to send.`, 'success');
+            selectTemplateById(templateId);
         }
         
-        // Function to select a past newsletter as a template
         function selectNewsletterTemplate(templateId, element) {
-            if (DEBUG) console.log('selectNewsletterTemplate called with:', templateId, element);
-            if (!templateId) {
-                console.error('No templateId provided to selectNewsletterTemplate');
-                showStatus('Error: No template ID provided', 'error');
-                return;
-            }
-            
-            // Verify template exists
-            if (!window.newsletterTemplates || !window.newsletterTemplates[templateId]) {
-                console.error('Newsletter not found in window.newsletterTemplates:', templateId);
-                if (DEBUG) console.log('Available items:', Object.keys(window.newsletterTemplates || {}));
-                showStatus('Error: Newsletter not found. Please refresh the page.', 'error');
-                return;
-            }
-            
-            const item = window.newsletterTemplates[templateId];
-            if (item.type !== 'history') {
-                console.error('Item is not a history entry:', item.type);
-                showStatus('Error: Selected item is not a newsletter history entry', 'error');
-                return;
-            }
-            
-            if (DEBUG) {
-                console.log('Selected newsletter:', {
-                    id: item.id,
-                    name: item.name,
-                    subject: item.subject,
-                    hasHtml: !!item.html,
-                    htmlLength: item.html?.length || 0
-                });
-            }
-            
-            selectedTemplateId = templateId;
-            selectedItem = item;
-            
-            // Update UI
-            document.querySelectorAll('.preview-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-            if (element) {
-                element.classList.add('selected');
-                if (DEBUG) console.log('Newsletter card selected:', templateId);
-                
-                // Cool effects when selecting!
-                if (typeof playSelectionSound === 'function') {
-                    playSelectionSound();
-                }
-                if (typeof triggerSelectionConfetti === 'function') {
-                    triggerSelectionConfetti(element);
-                }
-            } else {
-                console.warn('No element provided to selectNewsletterTemplate');
-            }
-            
-            // Update send button states
-            updateSendButtonStates();
-            
-            // Open editor if HTML is available
-            if (item.html && typeof openEditor === 'function') {
-                openEditor(item);
-            }
-            
-            const newsletterName = item.subject || item.name || 'Past Newsletter';
-            if (item.html && item.html.trim() !== '') {
-                showStatus(`Past newsletter "${newsletterName}" selected. Ready to send.`, 'success');
-            } else {
-                showStatus(`Past newsletter "${newsletterName}" selected (view only - HTML not available for resend).`, 'info');
-            }
+            selectHistoryById(templateId);
         }
         
-        // Update send button states based on selection
-        function updateSendButtonStates() {
-            const sendBtn = document.getElementById('sendBtn');
-            const testBtn = document.getElementById('testBtn');
-            
-            if (!selectedItem) {
-                if (sendBtn) sendBtn.disabled = true;
-                if (testBtn) testBtn.disabled = true;
-                return;
-            }
-            
-            const hasHtml = selectedItem.html && selectedItem.html.trim() !== '';
-            const canSend = hasHtml;
-            
-            if (sendBtn) {
-                sendBtn.disabled = !canSend;
-                if (!canSend && selectedItem.type === 'history') {
-                    sendBtn.title = 'This past newsletter has no stored HTML, so it cannot be resent. Convert it into a template or regenerate HTML.';
-                } else {
-                    sendBtn.title = '';
-                }
-            }
-            
-            if (testBtn) {
-                testBtn.disabled = !canSend;
-                if (!canSend && selectedItem.type === 'history') {
-                    testBtn.title = 'This past newsletter has no stored HTML, so it cannot be sent. Convert it into a template or regenerate HTML.';
-                } else {
-                    testBtn.title = '';
-                }
-            }
-        }
+        // Make legacy functions globally accessible
+        window.selectTemplate = selectTemplate;
+        window.selectNewsletterTemplate = selectNewsletterTemplate;
         
         // Play a selection sound effect
         function playSelectionSound() {
@@ -1654,10 +1932,6 @@
             }
         }
         
-        // Make selection functions globally accessible
-        window.selectTemplate = selectTemplate;
-        window.selectNewsletterTemplate = selectNewsletterTemplate;
-        console.log('Selection functions defined and made globally accessible');
         
         // Missing function stubs - add implementations
         function filterTemplates() {
@@ -1693,6 +1967,10 @@
             // This is a placeholder - implement based on actual stats structure
         }
         
+        // ============================================
+        // NEWSLETTER TEMPLATE MANAGEMENT SYSTEM
+        // ============================================
+        
         // Load templates with diagnostics
         async function loadTemplates() {
             try {
@@ -1718,7 +1996,14 @@
                         console.error('Failed to load templates:', response.status, response.statusText);
                         console.error('Error response:', errorText);
                     }
-                    document.getElementById('templatesGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading templates: ' + response.status + '</p><p style="font-size:0.8rem;color:var(--terminal-amber);margin-top:0.5rem;">' + escapeHtml(errorText.substring(0, 200)) + '</p></div>';
+                    // Show error banner
+                    const errorBanner = document.getElementById('errorBanner');
+                    const errorMessage = document.getElementById('errorMessage');
+                    if (errorBanner && errorMessage) {
+                        errorBanner.style.display = 'block';
+                        errorMessage.textContent = ` (${response.status}: ${errorText.substring(0, 100)})`;
+                    }
+                    document.getElementById('templatesList').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading templates: ' + response.status + '</p></div>';
                     return;
                 }
                 
@@ -1735,7 +2020,13 @@
                         console.error('Failed to parse templates response:', e.message);
                         console.error('Response text:', responseText);
                     }
-                    document.getElementById('templatesGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error parsing templates response</p></div>';
+                    const errorBanner = document.getElementById('errorBanner');
+                    const errorMessage = document.getElementById('errorMessage');
+                    if (errorBanner && errorMessage) {
+                        errorBanner.style.display = 'block';
+                        errorMessage.textContent = ' (Failed to parse response)';
+                    }
+                    document.getElementById('templatesList').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error parsing templates response</p></div>';
                     return;
                 }
                 
@@ -1743,7 +2034,13 @@
                     console.log('Templates response:', data);
                 }
                 
-                const grid = document.getElementById('templatesGrid');
+                const list = document.getElementById('templatesList');
+                
+                // Hide error banner on success
+                const errorBanner = document.getElementById('errorBanner');
+                if (errorBanner) {
+                    errorBanner.style.display = 'none';
+                }
                 
                 // Handle case where response might be an array directly or have different structure
                 let templates = data.templates || data || [];
@@ -1756,46 +2053,52 @@
                     console.log('Templates loaded:', templates.length, 'templates');
                 }
                 
-                // Store templates in window for selection and sending
-                if (templates && templates.length > 0) {
-                    window.newsletterTemplates = window.newsletterTemplates || {};
-                    templates.forEach(template => {
-                        // Normalize template data with explicit type
-                        const finalHtml = template.html || template.previewHtml || '';
-                        const finalPreviewHtml = template.previewHtml || template.html || '';
-                        
-                        if (!template.id) {
-                            template.id = `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                        }
-                        if (!template.subject) {
-                            template.subject = template.name || 'Newsletter';
-                        }
-                        if (!template.text && finalHtml) {
-                            template.text = finalHtml.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-                        }
-                        
-                        // Store with explicit type flag
-                        window.newsletterTemplates[template.id] = {
-                            type: 'template',
-                            id: template.id,
-                            name: template.name || 'Unnamed Template',
-                            subject: template.subject || 'Newsletter',
-                            html: finalHtml,
-                            text: template.text || '',
-                            previewHtml: finalPreviewHtml,
-                            createdAt: template.createdAt,
-                            updatedAt: template.updatedAt
-                        };
-                    });
-                    if (DEBUG) {
-                        console.log('Stored templates in window.newsletterTemplates:', Object.keys(window.newsletterTemplates).length);
+                // Store templates in state
+                newsletterState.templates = {};
+                templates.forEach(template => {
+                    const finalHtml = template.html || template.previewHtml || '';
+                    const finalPreviewHtml = template.previewHtml || template.html || '';
+                    
+                    if (!template.id) {
+                        template.id = `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                     }
+                    if (!template.subject) {
+                        template.subject = template.name || 'Newsletter';
+                    }
+                    if (!template.text && finalHtml) {
+                        template.text = finalHtml.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+                    }
+                    
+                    newsletterState.templates[template.id] = {
+                        type: 'template',
+                        id: template.id,
+                        name: template.name || 'Unnamed Template',
+                        subject: template.subject || 'Newsletter',
+                        preheader: template.preheader || '',
+                        html: finalHtml,
+                        text: template.text || '',
+                        previewHtml: finalPreviewHtml,
+                        createdAt: template.createdAt,
+                        updatedAt: template.updatedAt
+                    };
+                });
+                
+                // Render template list
+                if (templates.length > 0) {
+                    list.innerHTML = templates.map(template => {
+                        const isSelected = newsletterState.selectedId === template.id && newsletterState.selectedType === 'template';
+                        return `
+                            <div class="template-item ${isSelected ? 'selected' : ''}" 
+                                 data-template-id="${template.id}" 
+                                 onclick="selectTemplateById('${template.id}')">
+                                <div class="template-item-name">${escapeHtml(template.name || 'Unnamed Template')}</div>
+                                <div class="template-item-subject">${escapeHtml(template.subject || 'No subject')}</div>
+                                <div class="template-item-date">${formatDate(template.updatedAt)}</div>
+                            </div>
+                        `;
+                    }).join('');
                 } else {
-                    if (DEBUG) {
-                        console.warn('No templates found in response. Response structure:', Object.keys(data || {}));
-                    }
-                    // Show actionable empty state with Create Template button
-                    grid.innerHTML = `
+                    list.innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state-icon">📭</div>
                             <p>No templates found</p>
@@ -1808,123 +2111,16 @@
                             </button>
                         </div>
                     `;
-                    return;
                 }
-                
-                if (templates && templates.length > 0) {
-                        grid.innerHTML = templates.map((template, index) => {
-                            const previewId = `template-preview-${index}`;
-                            // Check for previewHtml or html field
-                            const previewHtml = template.previewHtml || template.html || '';
-                            const hasPreview = previewHtml && previewHtml.trim().length > 0;
-                            
-                            // Log template structure for debugging
-                            if (!hasPreview) {
-                                console.warn('Template missing HTML:', {
-                                    id: template.id,
-                                    name: template.name,
-                                    hasPreviewHtml: !!template.previewHtml,
-                                    hasHtml: !!template.html,
-                                    previewHtmlLength: template.previewHtml?.length || 0,
-                                    htmlLength: template.html?.length || 0
-                                });
-                            }
-                            
-                            // Store preview HTML in a way that can be retrieved later
-                            // Use base64 encoding to avoid HTML entity issues
-                            // Use try-catch to handle any encoding errors gracefully
-                            let previewHtmlBase64 = '';
-                            if (hasPreview) {
-                                try {
-                                    // Encode to base64 safely
-                                    previewHtmlBase64 = btoa(unescape(encodeURIComponent(previewHtml)));
-                                } catch (e) {
-                                    console.warn('Failed to encode preview HTML to base64:', e);
-                                    // Fallback: use empty string, will rely on direct HTML parameter
-                                }
-                            }
-                            
-                            return `
-                            <div class="preview-card expanded" data-template-id="${template.id}" data-item-type="template" data-is-template="true">
-                                <div class="preview-title">${escapeHtml(template.name || 'Unnamed Template')}</div>
-                                <div class="preview-subject">${escapeHtml(template.subject || 'No subject')}</div>
-                                <div class="preview-date">${formatDate(template.updatedAt)}</div>
-                                ${hasPreview ? `
-                                <button class="preview-toggle" data-preview-id="${previewId}">Hide Preview</button>
-                                <div id="${previewId}" class="email-preview" data-html-base64="${previewHtmlBase64}"></div>
-                                ` : '<div style="margin-top:1rem;color:var(--terminal-amber);font-size:0.8rem;">No preview available</div>'}
-                            </div>
-                        `;
-                        }).join('');
-                        
-                        // Setup preview iframes after DOM is updated
-                        templates.forEach((template, index) => {
-                            const previewId = `template-preview-${index}`;
-                            const previewHtml = template.previewHtml || template.html || '';
-                            if (previewHtml && previewHtml.trim().length > 0) {
-                                // Use requestAnimationFrame for better timing
-                                requestAnimationFrame(() => {
-                                    setTimeout(() => {
-                                        const previewDiv = document.getElementById(previewId);
-                                        if (previewDiv) {
-                                            console.log('Setting up preview for template:', template.name, previewId);
-                                            // Pass the HTML directly - setupPreviewIframe will also check data-html-base64 as fallback
-                                            setupPreviewIframe(previewId, previewHtml);
-                                        } else {
-                                            console.error('Preview div not found:', previewId);
-                                            // Retry once more after a longer delay
-                                            setTimeout(() => {
-                                                const retryDiv = document.getElementById(previewId);
-                                                if (retryDiv) {
-                                                    setupPreviewIframe(previewId, previewHtml);
-                                                }
-                                            }, 1000);
-                                        }
-                                    }, 100);
-                                });
-                            } else {
-                                console.warn('Template missing previewHtml/html:', template.name, template.id);
-                            }
-                        });
-                        
-                        // Setup click handlers for template cards using event delegation on the grid
-                        setTimeout(() => {
-                            const templatesGrid = document.getElementById('templatesGrid');
-                            if (templatesGrid) {
-                                // Use event delegation - attach to grid, works for all cards
-                                templatesGrid.addEventListener('click', function(e) {
-                                    const card = e.target.closest('[data-item-type="template"]');
-                                    if (!card) return;
-                                    
-                                    // Don't trigger if clicking on preview toggle, preview, or iframe
-                                    if (e.target.closest('.preview-toggle') || 
-                                        e.target.closest('.email-preview') || 
-                                        e.target.closest('iframe') ||
-                                        e.target.tagName === 'BUTTON') {
-                                        return;
-                                    }
-                                    
-                                    const templateId = card.getAttribute('data-template-id');
-                                    if (templateId) {
-                                        if (DEBUG) console.log('Selecting template:', templateId);
-                                        if (typeof selectTemplate === 'function') {
-                                            selectTemplate(templateId, card);
-                                        } else {
-                                            console.error('selectTemplate function not available');
-                                        }
-                                    }
-                                });
-                                if (DEBUG) console.log('Template selection handlers attached to grid');
-                            } else {
-                                console.error('templatesGrid element not found');
-                            }
-                        }, 200);
-                    } else {
-                        grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No templates available</p></div>';
-                    }
             } catch (error) {
                 console.error('Error loading templates:', error);
-                document.getElementById('templatesGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading templates</p></div>';
+                const errorBanner = document.getElementById('errorBanner');
+                const errorMessage = document.getElementById('errorMessage');
+                if (errorBanner && errorMessage) {
+                    errorBanner.style.display = 'block';
+                    errorMessage.textContent = ` (${error.message})`;
+                }
+                document.getElementById('templatesList').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading templates</p></div>';
             }
         }
         
@@ -1948,139 +2144,431 @@
                 if (DEBUG) {
                     console.log('Newsletter history loaded:', data.newsletters?.length || 0, 'newsletters');
                 }
-                const grid = document.getElementById('newslettersGrid');
+                const list = document.getElementById('newslettersList');
+                newsletterState.history = [];
                 
                 if (data.newsletters && data.newsletters.length > 0) {
-                        // Store newsletter data for selection
-                        if (!window.newsletterTemplates) {
-                            window.newsletterTemplates = {};
-                        }
+                    newsletterState.history = data.newsletters.map(newsletter => {
+                        const templateId = newsletter.id || `newsletter-${Date.now()}`;
+                        const previewHtml = newsletter.previewHtml || newsletter.html || '';
+                        const fullHtml = newsletter.html || newsletter.previewHtml || '';
+                        const hasHtml = fullHtml && fullHtml.trim().length > 0;
                         
-                        grid.innerHTML = data.newsletters.map((newsletter, index) => {
-                            const previewId = `newsletter-preview-${index}`;
-                            // Check for previewHtml or html field
-                            const previewHtml = newsletter.previewHtml || newsletter.html || '';
-                            const fullHtml = newsletter.html || newsletter.previewHtml || '';
-                            const hasPreview = previewHtml && previewHtml.trim().length > 0;
-                            const hasHtml = fullHtml && fullHtml.trim().length > 0;
-                            // Create a template ID from the newsletter ID or generate one
-                            const templateId = newsletter.id || `newsletter-${index}-${Date.now()}`;
-                            
-                            // Store newsletter data with explicit type flag
-                            const finalHtml = hasHtml ? fullHtml : '';
-                            const finalPreviewHtml = hasPreview ? previewHtml : '';
-                            
-                            window.newsletterTemplates[templateId] = {
-                                type: 'history',
-                                id: templateId,
-                                name: newsletter.subject || 'Past Newsletter',
-                                subject: newsletter.subject || 'No subject',
-                                html: finalHtml, // May be empty for old newsletters
-                                previewHtml: finalPreviewHtml,
-                                text: newsletter.text || '',
-                                timestamp: newsletter.timestamp,
-                                emailsSent: newsletter.emailsSent || 0
-                            };
-                            
-                            // Store preview HTML in a way that can be retrieved later
-                            // Use base64 encoding to avoid HTML entity issues
-                            // Use try-catch to handle any encoding errors gracefully
-                            let previewHtmlBase64 = '';
-                            if (hasPreview) {
-                                try {
-                                    // Encode to base64 safely
-                                    previewHtmlBase64 = btoa(unescape(encodeURIComponent(previewHtml)));
-                                } catch (e) {
-                                    console.warn('Failed to encode preview HTML to base64:', e);
-                                    // Fallback: use empty string, will rely on direct HTML parameter
-                                }
-                            }
-                            
-                            return `
-                            <div class="preview-card expanded" data-template-id="${templateId}" data-item-type="history" data-newsletter-id="${templateId}" data-is-newsletter="true" data-has-html="${hasHtml}">
-                                <div class="preview-title">${escapeHtml(newsletter.subject || 'No subject')}</div>
-                                <div class="preview-date">${formatDate(newsletter.timestamp)}</div>
-                                <div class="preview-badge">Sent to ${newsletter.emailsSent || 0} subscribers</div>
-                                ${hasPreview ? `
-                                <button class="preview-toggle" data-preview-id="${previewId}">Hide Preview</button>
-                                <div id="${previewId}" class="email-preview" data-html-base64="${previewHtmlBase64}"></div>
-                                ` : '<div style="margin-top:1rem;color:var(--terminal-amber);font-size:0.8rem;">Preview unavailable (legacy send)</div>'}
-                                ${!hasHtml ? '<div style="margin-top:0.5rem;color:var(--terminal-red);font-size:0.75rem;font-weight:600;">⚠️ Cannot resend: HTML not available</div>' : ''}
+                        return {
+                            type: 'history',
+                            id: templateId,
+                            name: newsletter.subject || 'Past Newsletter',
+                            subject: newsletter.subject || 'No subject',
+                            html: hasHtml ? fullHtml : '',
+                            previewHtml: previewHtml || '',
+                            text: newsletter.text || '',
+                            timestamp: newsletter.timestamp,
+                            emailsSent: newsletter.emailsSent || 0
+                        };
+                    });
+                    
+                    list.innerHTML = newsletterState.history.map(item => {
+                        const isSelected = newsletterState.selectedId === item.id && newsletterState.selectedType === 'history';
+                        const hasHtml = item.html && item.html.trim().length > 0;
+                        return `
+                            <div class="template-item ${isSelected ? 'selected' : ''}" 
+                                 data-history-id="${item.id}" 
+                                 onclick="selectHistoryById('${item.id}')">
+                                <div class="template-item-name">${escapeHtml(item.subject || 'Past Newsletter')}</div>
+                                <div class="template-item-subject">${formatDate(item.timestamp)}</div>
+                                <div class="template-item-date">Sent to ${item.emailsSent || 0} subscribers</div>
+                                ${!hasHtml ? '<div class="template-item-badge">⚠️ No HTML</div>' : ''}
                             </div>
                         `;
-                        }).join('');
-                        
-                        // Setup preview iframes after DOM is updated
-                        data.newsletters.forEach((newsletter, index) => {
-                            const previewId = `newsletter-preview-${index}`;
-                            const previewHtml = newsletter.previewHtml || newsletter.html || '';
-                            if (previewHtml && previewHtml.trim().length > 0) {
-                                // Use requestAnimationFrame for better timing
-                                requestAnimationFrame(() => {
-                                    setTimeout(() => {
-                                        const previewDiv = document.getElementById(previewId);
-                                        if (previewDiv) {
-                                            console.log('Setting up preview for newsletter:', newsletter.subject, previewId);
-                                            // Pass the HTML directly - setupPreviewIframe will also check data-html-base64 as fallback
-                                            setupPreviewIframe(previewId, previewHtml);
-                                        } else {
-                                            console.error('Preview div not found:', previewId);
-                                            // Retry once more after a longer delay
-                                            setTimeout(() => {
-                                                const retryDiv = document.getElementById(previewId);
-                                                if (retryDiv) {
-                                                    setupPreviewIframe(previewId, previewHtml);
-                                                }
-                                            }, 1000);
-                                        }
-                                    }, 100);
-                                });
-                            } else {
-                                // Don't show warning for newsletters without preview - just skip rendering
-                                console.log('Newsletter without preview HTML (this is okay for old newsletters):', newsletter.subject);
-                            }
-                        });
-                        
-                        // Setup click handlers for newsletter cards using event delegation on the grid
-                        setTimeout(() => {
-                            const newslettersGrid = document.getElementById('newslettersGrid');
-                            if (newslettersGrid) {
-                                // Use event delegation - attach to grid, works for all cards
-                                newslettersGrid.addEventListener('click', function(e) {
-                                    const card = e.target.closest('[data-item-type="history"]');
-                                    if (!card) return;
-                                    
-                                    // Don't trigger if clicking on preview toggle, preview, or iframe
-                                    if (e.target.closest('.preview-toggle') || 
-                                        e.target.closest('.email-preview') || 
-                                        e.target.closest('iframe') ||
-                                        e.target.tagName === 'BUTTON') {
-                                        return;
-                                    }
-                                    
-                                    const templateId = card.getAttribute('data-template-id');
-                                    if (templateId) {
-                                        if (DEBUG) console.log('Selecting newsletter:', templateId);
-                                        if (typeof selectNewsletterTemplate === 'function') {
-                                            selectNewsletterTemplate(templateId, card);
-                                        } else {
-                                            console.error('selectNewsletterTemplate function not available');
-                                        }
-                                    }
-                                });
-                                if (DEBUG) console.log('Newsletter selection handlers attached to grid');
-                            } else {
-                                console.error('newslettersGrid element not found');
-                            }
-                        }, 200);
-                    } else {
-                        grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No newsletters sent yet</p></div>';
-                    }
+                    }).join('');
+                } else {
+                    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No newsletters sent yet</p></div>';
+                }
             } catch (error) {
                 console.error('Error loading newsletter history:', error);
-                document.getElementById('newslettersGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading history</p></div>';
+                document.getElementById('newslettersList').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading history</p></div>';
             }
         }
+        
+        // Select template by ID
+        function selectTemplateById(templateId) {
+            const template = newsletterState.templates[templateId];
+            if (!template) {
+                showStatus('Template not found', 'error');
+                return;
+            }
+            
+            newsletterState.selectedType = 'template';
+            newsletterState.selectedId = templateId;
+            newsletterState.currentTemplate = { ...template };
+            
+            // Update UI
+            updateTemplateListSelection();
+            loadTemplateIntoEditor(template);
+            updatePreview();
+            updateSendButtonStates();
+        }
+        
+        // Select history by ID
+        function selectHistoryById(historyId) {
+            const history = newsletterState.history.find(h => h.id === historyId);
+            if (!history) {
+                showStatus('Newsletter not found', 'error');
+                return;
+            }
+            
+            newsletterState.selectedType = 'history';
+            newsletterState.selectedId = historyId;
+            newsletterState.currentTemplate = { ...history };
+            
+            // Update UI
+            updateTemplateListSelection();
+            if (history.html && history.html.trim()) {
+                loadTemplateIntoEditor(history);
+            } else {
+                showEmptyEditorState('This past newsletter has no HTML content available for editing.');
+            }
+            updatePreview();
+            updateSendButtonStates();
+        }
+        
+        // Update template list selection highlighting
+        function updateTemplateListSelection() {
+            document.querySelectorAll('.template-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            if (newsletterState.selectedId) {
+                const selector = newsletterState.selectedType === 'template' 
+                    ? `[data-template-id="${newsletterState.selectedId}"]`
+                    : `[data-history-id="${newsletterState.selectedId}"]`;
+                const selected = document.querySelector(selector);
+                if (selected) selected.classList.add('selected');
+            }
+        }
+        
+        // Load template into editor
+        function loadTemplateIntoEditor(template) {
+            document.getElementById('emptyEditorState').style.display = 'none';
+            document.getElementById('editorPanel').style.display = 'flex';
+            
+            document.getElementById('templateName').value = template.name || '';
+            document.getElementById('templateSubject').value = template.subject || '';
+            document.getElementById('templatePreheader').value = template.preheader || '';
+            document.getElementById('templateHtml').value = template.html || '';
+            
+            // Show/hide duplicate/delete buttons
+            const isNew = !template.id || template.id.startsWith('new-');
+            document.getElementById('duplicateBtn').style.display = isNew ? 'none' : 'inline-block';
+            document.getElementById('deleteBtn').style.display = isNew ? 'none' : 'inline-block';
+            
+            // Switch to editor tab
+            switchEditorTab('editor');
+        }
+        
+        // Show empty editor state
+        function showEmptyEditorState(message) {
+            const emptyState = document.getElementById('emptyEditorState');
+            const editorPanel = document.getElementById('editorPanel');
+            if (emptyState) emptyState.style.display = 'block';
+            if (editorPanel) editorPanel.style.display = 'none';
+            if (message && emptyState) {
+                const p = emptyState.querySelector('p');
+                if (p) p.textContent = message;
+            }
+        }
+        
+        // Switch editor tab
+        function switchEditorTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.editor-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.dataset.tab === tabName) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            const activeTab = document.getElementById(`tab-${tabName}`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+            }
+            
+            // Update preview when switching to preview tab
+            if (tabName === 'preview') {
+                updatePreview();
+            }
+        }
+        
+        // Update preview
+        function updatePreview() {
+            const container = document.getElementById('previewContainer');
+            if (!container) return;
+            
+            const template = newsletterState.currentTemplate;
+            if (!template || !template.html || !template.html.trim()) {
+                container.innerHTML = `
+                    <div class="preview-placeholder">
+                        <div class="empty-state-icon">👁️</div>
+                        <p>No HTML available to preview.</p>
+                        <p style="font-size:0.8rem;margin-top:0.5rem;color:var(--terminal-text-dim);">
+                            Add HTML content in the Editor tab to see a preview.
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Create preview HTML with email-safe styling
+            const previewHtml = template.html
+                .replace(/\{\{FULL_NAME\}\}/g, 'Preview User')
+                .replace(/\{\{FIRST_NAME\}\}/g, 'Preview')
+                .replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview')
+                .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#')
+                .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#');
+            
+            const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Preview</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f4f4f4;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    ${previewHtml}
+</body>
+</html>`;
+            
+            // Use srcdoc with proper escaping
+            const iframe = document.createElement('iframe');
+            iframe.sandbox = 'allow-same-origin';
+            iframe.srcdoc = fullHtml;
+            iframe.style.width = '100%';
+            iframe.style.height = '600px';
+            iframe.style.border = 'none';
+            iframe.style.background = 'white';
+            container.innerHTML = '';
+            container.appendChild(iframe);
+        }
+        
+        // Update send button states
+        function updateSendButtonStates() {
+            const sendBtn = document.getElementById('sendBtn');
+            const testBtn = document.getElementById('testBtn');
+            
+            const template = newsletterState.currentTemplate;
+            const hasHtml = template && template.html && template.html.trim() !== '';
+            const hasSubject = template && template.subject && template.subject.trim() !== '';
+            const canSend = hasHtml && hasSubject && newsletterState.selectedType === 'template';
+            
+            if (sendBtn) {
+                sendBtn.disabled = !canSend;
+                if (!canSend) {
+                    if (!hasHtml) {
+                        sendBtn.title = 'Template is missing HTML content';
+                    } else if (!hasSubject) {
+                        sendBtn.title = 'Template is missing subject line';
+                    } else if (newsletterState.selectedType === 'history') {
+                        sendBtn.title = 'Past newsletters cannot be resent. Create a template instead.';
+                    }
+                } else {
+                    sendBtn.title = '';
+                }
+            }
+            
+            if (testBtn) {
+                const testEmail = document.getElementById('testEmail')?.value?.trim();
+                testBtn.disabled = !canSend || !testEmail;
+                if (!canSend) {
+                    testBtn.title = sendBtn?.title || 'Cannot send test email';
+                } else if (!testEmail) {
+                    testBtn.title = 'Please enter a test email address';
+                } else {
+                    testBtn.title = '';
+                }
+            }
+        }
+        
+        // Create new template
+        async function createNewTemplate() {
+            const newTemplate = {
+                type: 'template',
+                id: `new-${Date.now()}`,
+                name: 'New Template',
+                subject: 'Weekly Newsletter - Noteworthy News',
+                preheader: '',
+                html: STARTER_TEMPLATE_HTML,
+                text: '',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            newsletterState.selectedType = 'template';
+            newsletterState.selectedId = newTemplate.id;
+            newsletterState.currentTemplate = newTemplate;
+            
+            loadTemplateIntoEditor(newTemplate);
+            updateTemplateListSelection();
+            showStatus('New template created. Fill in the details and save.', 'success');
+        }
+        
+        // Save template
+        async function saveTemplate() {
+            const template = newsletterState.currentTemplate;
+            if (!template) {
+                showStatus('No template selected', 'error');
+                return;
+            }
+            
+            const name = document.getElementById('templateName').value.trim();
+            const subject = document.getElementById('templateSubject').value.trim();
+            const preheader = document.getElementById('templatePreheader').value.trim();
+            const html = document.getElementById('templateHtml').value.trim();
+            
+            if (!name || !subject || !html) {
+                showStatus('Name, subject, and HTML are required', 'error');
+                return;
+            }
+            
+            const token = getAdminToken();
+            const isNew = template.id.startsWith('new-');
+            const templateId = isNew ? `template-${Date.now()}` : template.id;
+            
+            const templateData = {
+                id: templateId,
+                name,
+                subject,
+                preheader,
+                html,
+                text: html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
+            };
+            
+            if (!isNew) {
+                templateData.createdAt = template.createdAt;
+            }
+            
+            try {
+                const token = getAdminToken();
+                const url = isNew 
+                    ? `/.netlify/functions/newsletter-templates?token=${encodeURIComponent(token || '')}`
+                    : `/.netlify/functions/newsletter-templates?id=${templateId}&token=${encodeURIComponent(token || '')}`;
+                
+                const response = await fetch(url, {
+                    method: isNew ? 'POST' : 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(templateData)
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to save template');
+                }
+                
+                // Update state
+                newsletterState.templates[templateId] = {
+                    ...templateData,
+                    type: 'template',
+                    updatedAt: new Date().toISOString()
+                };
+                newsletterState.selectedId = templateId;
+                newsletterState.currentTemplate = newsletterState.templates[templateId];
+                
+                // Reload templates list
+                await loadTemplates();
+                updateTemplateListSelection();
+                updatePreview();
+                
+                showStatus(`Template "${name}" saved successfully!`, 'success');
+            } catch (error) {
+                console.error('Error saving template:', error);
+                showStatus(`Error saving template: ${error.message}`, 'error');
+            }
+        }
+        
+        // Duplicate template
+        async function duplicateTemplate() {
+            const template = newsletterState.currentTemplate;
+            if (!template) return;
+            
+            const newTemplate = {
+                ...template,
+                id: `new-${Date.now()}`,
+                name: `${template.name} (Copy)`,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            newsletterState.selectedType = 'template';
+            newsletterState.selectedId = newTemplate.id;
+            newsletterState.currentTemplate = newTemplate;
+            
+            loadTemplateIntoEditor(newTemplate);
+            updateTemplateListSelection();
+            showStatus('Template duplicated. Edit and save to create a new template.', 'success');
+        }
+        
+        // Delete template
+        async function deleteTemplate() {
+            const template = newsletterState.currentTemplate;
+            if (!template || template.id.startsWith('new-')) return;
+            
+            if (!confirm(`Are you sure you want to delete "${template.name}"? This cannot be undone.`)) {
+                return;
+            }
+            
+            const token = getAdminToken();
+            try {
+                const response = await fetch(`/.netlify/functions/newsletter-templates?id=${template.id}&token=${encodeURIComponent(token || '')}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to delete template');
+                }
+                
+                // Clear selection
+                newsletterState.selectedType = null;
+                newsletterState.selectedId = null;
+                newsletterState.currentTemplate = null;
+                
+                // Reload templates
+                await loadTemplates();
+                showEmptyEditorState();
+                updateSendButtonStates();
+                
+                showStatus(`Template "${template.name}" deleted successfully`, 'success');
+            } catch (error) {
+                console.error('Error deleting template:', error);
+                showStatus(`Error deleting template: ${error.message}`, 'error');
+            }
+        }
+        
+        // Make functions globally accessible
+        window.createNewTemplate = createNewTemplate;
+        window.selectTemplateById = selectTemplateById;
+        window.selectHistoryById = selectHistoryById;
+        window.switchEditorTab = switchEditorTab;
+        window.duplicateTemplate = duplicateTemplate;
+        window.deleteTemplate = deleteTemplate;
         
         // Setup event delegation for preview toggle buttons
         document.addEventListener('click', function(e) {
@@ -2152,13 +2640,6 @@
             }
         }
         
-        
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
         
         function setupPreviewIframe(previewId, html) {
             // Try to find the preview div, with retry logic
@@ -2360,62 +2841,66 @@
             animate();
         }
 
-        // Form handling
-        const form = document.getElementById('newsletterForm');
-        const sendBtn = document.getElementById('sendBtn');
-        const testBtn = document.getElementById('testBtn');
+        // Template Editor Form Handler
+        document.getElementById('templateEditorForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await saveTemplate();
+        });
         
-        testBtn.addEventListener('click', async () => {
-            if (!selectedItem) {
-                showStatus('Please select a template or newsletter first', 'error');
+        // Live preview update on HTML change
+        document.getElementById('templateHtml').addEventListener('input', () => {
+            // Update current template in state
+            if (newsletterState.currentTemplate) {
+                newsletterState.currentTemplate.html = document.getElementById('templateHtml').value;
+                newsletterState.currentTemplate.subject = document.getElementById('templateSubject').value;
+                newsletterState.currentTemplate.name = document.getElementById('templateName').value;
+                newsletterState.currentTemplate.preheader = document.getElementById('templatePreheader').value;
+                
+                // Update preview if on preview tab
+                const previewTab = document.querySelector('.editor-tab[data-tab="preview"]');
+                if (previewTab && previewTab.classList.contains('active')) {
+                    updatePreview();
+                }
+            }
+            updateSendButtonStates();
+        });
+        
+        // Update send button states on input changes
+        document.getElementById('templateSubject').addEventListener('input', updateSendButtonStates);
+        document.getElementById('testEmail').addEventListener('input', updateSendButtonStates);
+        
+        // Send Test Email Handler
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            const template = newsletterState.currentTemplate;
+            if (!template) {
+                showStatus('Please select a template first', 'error');
                 return;
             }
             
-            const testEmail = document.getElementById('testEmail').value;
+            const testEmail = document.getElementById('testEmail').value.trim();
             if (!testEmail) {
                 showStatus('Please enter a test email address', 'error');
                 return;
             }
             
             // Check if HTML is available
-            if (!selectedItem.html || selectedItem.html.trim() === '') {
-                if (selectedItem.type === 'history') {
-                    showStatus('This past newsletter has no stored HTML, so it cannot be sent. Convert it into a template or regenerate HTML.', 'error');
-                } else {
-                    showStatus('Template is missing HTML content. Please select a different template or contact support.', 'error');
-                }
+            if (!template.html || !template.html.trim()) {
+                showStatus('Template is missing HTML content. Please add HTML in the Editor tab.', 'error');
                 return;
             }
             
+            if (!template.subject || !template.subject.trim()) {
+                showStatus('Template is missing subject line. Please add a subject in the Editor tab.', 'error');
+                return;
+            }
+            
+            const testBtn = document.getElementById('testBtn');
             testBtn.disabled = true;
+            const originalText = testBtn.innerHTML;
             testBtn.innerHTML = '<span class="spinner"></span> <span>Sending...</span>';
             showStatus(`Sending test email to ${testEmail}...`, 'info');
             
             try {
-                // Use selectedItem directly
-                const template = {
-                    id: selectedItem.id,
-                    name: selectedItem.name,
-                    subject: selectedItem.subject || selectedItem.name || 'Newsletter',
-                    html: selectedItem.html,
-                    text: selectedItem.text || selectedItem.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
-                };
-                
-                if (DEBUG) {
-                    console.log('Sending test email with template:', {
-                        id: template.id,
-                        name: template.name,
-                        subject: template.subject,
-                        hasHtml: !!template.html,
-                        htmlLength: template.html?.length || 0
-                    });
-                }
-                
-                // Validate template before using
-                if (!template.subject || !template.html || template.html.trim() === '') {
-                    throw new Error('Template missing required fields');
-                }
-                
                 const response = await fetch('/.netlify/functions/send-newsletter', {
                     method: 'POST',
                     headers: {
@@ -2425,7 +2910,7 @@
                     body: JSON.stringify({
                         subject: template.subject,
                         html: template.html,
-                        text: template.text,
+                        text: template.text || template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(),
                         testEmail: testEmail,
                         token: getAdminToken() || '',
                     }),
@@ -2434,19 +2919,17 @@
                 const data = await response.json();
                 
                 if (response.ok && data.success) {
-                    // Trigger confetti for test email too!
                     triggerConfetti();
-                    
                     showStatus(`✓ Test email sent successfully to ${testEmail}! Check your inbox.`, 'success');
                 } else {
                     showStatus(data.error || data.message || 'Failed to send test email', 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showStatus('An error occurred while sending the test email. Please try again.', 'error');
+                showStatus(`An error occurred while sending the test email: ${error.message}`, 'error');
             } finally {
                 testBtn.disabled = false;
-                testBtn.innerHTML = '<span>✉️</span> <span>Send Test Email</span>';
+                testBtn.innerHTML = originalText;
             }
         });
         
@@ -2596,198 +3079,68 @@
             }
         }
         
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            if (!selectedItem) {
-                showStatus('Please select a template or newsletter first', 'error');
+        // Send to Full Audience Handler
+        document.getElementById('sendBtn').addEventListener('click', async () => {
+            const template = newsletterState.currentTemplate;
+            if (!template) {
+                showStatus('Please select a template first', 'error');
                 return;
             }
             
             // Check if HTML is available
-            if (!selectedItem.html || selectedItem.html.trim() === '') {
-                if (selectedItem.type === 'history') {
-                    showStatus('This past newsletter has no stored HTML, so it cannot be resent. Convert it into a template or regenerate HTML.', 'error');
-                } else {
-                    showStatus('Template is missing HTML content. Please select a different template or contact support.', 'error');
-                }
+            if (!template.html || !template.html.trim()) {
+                showStatus('Template is missing HTML content. Please add HTML in the Editor tab.', 'error');
                 return;
             }
             
-            // Prepare template for sending
-            const template = {
-                id: selectedItem.id,
-                name: selectedItem.name,
-                subject: selectedItem.subject || selectedItem.name || 'Newsletter',
-                html: selectedItem.html,
-                text: selectedItem.text || selectedItem.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
+            if (!template.subject || !template.subject.trim()) {
+                showStatus('Template is missing subject line. Please add a subject in the Editor tab.', 'error');
+                return;
+            }
+            
+            // Only allow sending templates, not history
+            if (newsletterState.selectedType !== 'template') {
+                showStatus('Only templates can be sent. Past newsletters cannot be resent.', 'error');
+                return;
+            }
+            
+            pendingTemplate = {
+                id: template.id,
+                name: template.name,
+                subject: template.subject,
+                html: template.html,
+                text: template.text || template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
             };
-            
-            // Validate template
-            if (!template.subject || !template.html || template.html.trim() === '') {
-                showStatus('Template missing required fields', 'error');
-                return;
-            }
-            
-            pendingTemplate = template;
             pendingSend = true;
             
             // Show nuclear warning
             showNuclearWarning(template.name || template.subject);
         });
         
-        // Create new template function
-        async function createNewTemplate() {
-            const starterHtml = `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Newsletter Template</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-    <table role="presentation" style="width: 100%; border-collapse: collapse;">
-        <tr>
-            <td align="center" style="padding: 20px 0;">
-                <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff;">
-                    <tr>
-                        <td style="padding: 20px;">
-                            <h1 style="color: #333333; margin: 0 0 20px 0;">Your Newsletter Title</h1>
-                            <p style="color: #666666; line-height: 1.6; margin: 0 0 15px 0;">
-                                Welcome to your newsletter! Edit this template to customize your content.
-                            </p>
-                            <p style="color: #666666; line-height: 1.6; margin: 0;">
-                                Add your content here.
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>`;
-            
-            const newTemplate = {
-                type: 'template',
-                id: `template-${Date.now()}`,
-                name: 'New Template',
-                subject: 'New Newsletter',
-                html: starterHtml,
-                text: 'Your Newsletter Title\n\nWelcome to your newsletter! Edit this template to customize your content.',
-                previewHtml: starterHtml,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-            
-            // Store locally first
-            if (!window.newsletterTemplates) {
-                window.newsletterTemplates = {};
-            }
-            window.newsletterTemplates[newTemplate.id] = newTemplate;
-            
-            // Select it
-            selectedTemplateId = newTemplate.id;
-            selectedItem = newTemplate;
-            
-            // Open editor
-            if (typeof openEditor === 'function') {
-                openEditor(newTemplate);
-            } else {
-                // If editor not available, just select it
-                showStatus('New template created. Please save it to persist.', 'success');
-                loadTemplates(); // Reload to show it
-            }
+        // Helper: Escape HTML for display (not for srcdoc)
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
         
-        // Make createNewTemplate globally accessible
-        window.createNewTemplate = createNewTemplate;
-        
-        // Basic editor function (can be enhanced later)
-        function openEditor(item) {
-            // For now, just log - can be enhanced with a modal editor
-            if (DEBUG) {
-                console.log('Opening editor for:', item.name);
-            }
-            // TODO: Implement full editor UI with Monaco or textarea
-            // For now, selection is enough - user can edit via API
-        }
-        
-        // Update preview to use iframe srcdoc (more reliable)
-        function renderPreview(previewDiv, previewId, html) {
+        // Format date for display
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown date';
             try {
-                // Clear any existing content
-                previewDiv.innerHTML = '';
-                
-                // Ensure HTML is a string and not empty
-                if (!html || typeof html !== 'string' || !html.trim()) {
-                    console.error('Invalid HTML for preview:', previewId);
-                    previewDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--terminal-amber);">Preview not available</div>';
-                    return;
-                }
-                
-                // Create a complete HTML document with proper structure
-                const fullHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Preview</title>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-        body {
-            margin: 0;
-            padding: 20px;
-            background: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-        }
-    </style>
-</head>
-<body>
-    ${html}
-</body>
-</html>`;
-                
-                // Create iframe with srcdoc (more reliable than blob URL)
-                const iframe = document.createElement('iframe');
-                iframe.srcdoc = fullHtml;
-                iframe.style.width = '100%';
-                iframe.style.height = '600px';
-                iframe.style.border = 'none';
-                iframe.style.display = 'block';
-                iframe.style.marginTop = '12px';
-                iframe.style.borderRadius = '8px';
-                iframe.style.backgroundColor = '#ffffff';
-                iframe.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
-                
-                // Handle iframe load errors
-                iframe.onerror = function() {
-                    console.error('Error loading preview iframe:', previewId);
-                    previewDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--terminal-red);">Error loading preview</div>';
-                };
-                
-                // Show loading state
-                previewDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--terminal-text-dim);">Loading preview...</div>';
-                
-                iframe.onload = function() {
-                    if (DEBUG) console.log('Preview loaded successfully:', previewId);
-                };
-                
-                // Small delay to show loading state, then add iframe
-                setTimeout(() => {
-                    previewDiv.innerHTML = '';
-                    previewDiv.appendChild(iframe);
-                }, 100);
-            } catch (error) {
-                console.error('Error rendering preview:', error, previewId);
-                previewDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--terminal-red);">Error rendering preview</div>';
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return 'Invalid date';
             }
         }
-        
-        // Make renderPreview globally accessible (override the old one)
-        window.renderPreview = renderPreview;
     </script>
     
     <!-- Cookie Consent Banner -->
