@@ -4099,30 +4099,38 @@ class NoteworthyChat extends HTMLElement {
           throw new Error('No ephemeral token received from server');
         }
         
-        // Connect to WebSocket without token in URL
-        // The token will be sent as an auth message after connection
+        // Connect to WebSocket with session_id
+        // The session is already authenticated when created, so we just connect
         const wsUrl = sessionData.websocket_url || 
           `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview&session_id=${sessionData.session_id}`;
         
         console.log('[Voice Mode] Connecting to WebSocket:', wsUrl.substring(0, 100) + '...');
         console.log('[Voice Mode] Session ID:', sessionData.session_id);
-        console.log('[Voice Mode] Has ephemeral token:', !!sessionData.ephemeral_token);
         
         websocket = new WebSocket(wsUrl);
         
         websocket.onopen = () => {
-          console.log('[Voice Mode] WebSocket opened, sending auth message...');
-          console.log('[Voice Mode] Ephemeral token (first 20 chars):', sessionData.ephemeral_token?.substring(0, 20));
+          console.log('[Voice Mode] WebSocket opened successfully');
           
-          // Send authentication message with ephemeral token
-          const authMessage = {
-            type: 'auth',
-            token: sessionData.ephemeral_token,
+          // Session is already authenticated, we can start immediately
+          // Send session.update to confirm we're ready
+          const sessionUpdate = {
+            type: 'session.update',
+            session: {
+              modalities: ['text', 'audio'],
+              instructions: 'You are Noteworthy AI, the intelligent assistant for Noteworthy News.',
+            }
           };
-          console.log('[Voice Mode] Sending auth message:', { type: authMessage.type, tokenLength: authMessage.token?.length });
-          websocket.send(JSON.stringify(authMessage));
+          websocket.send(JSON.stringify(sessionUpdate));
           
-          if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Authenticating...';
+          if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connected - Speak now!';
+          if (voiceStatusIntegrated) {
+            voiceStatusIntegrated.classList.remove('error');
+            voiceStatusIntegrated.classList.add('recording');
+          }
+          if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
+          isRecording = true;
+          startAudioCapture();
         };
         
         websocket.onmessage = (event) => {
@@ -4275,29 +4283,13 @@ class NoteworthyChat extends HTMLElement {
         console.log('[Voice Mode] Received WebSocket message:', message.type, message);
         
         switch (message.type) {
-          case 'auth.success':
-            // Authentication successful, start audio capture
-            console.log('[Voice Mode] Authentication successful');
-            if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connected - Speak now!';
-            if (voiceStatusIntegrated) {
-              voiceStatusIntegrated.classList.remove('error');
-              voiceStatusIntegrated.classList.add('recording');
+          case 'session.updated':
+            // Session update confirmed, we're ready
+            console.log('[Voice Mode] Session updated, ready to use');
+            if (!isRecording) {
+              isRecording = true;
+              startAudioCapture();
             }
-            if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
-            isRecording = true;
-            startAudioCapture();
-            break;
-            
-          case 'auth.error':
-            // Authentication failed
-            console.error('[Voice Mode] Authentication failed:', message);
-            if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Authentication failed';
-            if (voiceStatusIntegrated) {
-              voiceStatusIntegrated.classList.remove('recording');
-              voiceStatusIntegrated.classList.add('error');
-            }
-            if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
-            stopVoiceMode();
             break;
             
           case 'response.audio_transcript.done':
