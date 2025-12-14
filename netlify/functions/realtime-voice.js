@@ -41,7 +41,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Handle GET request - create a new session with ephemeral token
+    // Handle GET request - create a new session with ephemeral token (GA API)
     if (event.httpMethod === "GET") {
       let voice = event.queryStringParameters?.voice || 'alloy';
       
@@ -52,105 +52,120 @@ exports.handler = async (event, context) => {
         voice = 'alloy';
       }
       
-      // Create a session with OpenAI Realtime API
-      const requestBody = {
-          model: 'gpt-4o-realtime-preview',
-          voice: voice,
-          instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
-
-You help users understand news, fact-check claims, and stay informed with accurate information.`,
-          temperature: 0.6,
-          max_response_output_tokens: 4096,
-          modalities: ['text', 'audio'],
-          input_audio_format: 'pcm16',
-          output_audio_format: 'pcm16',
-          turn_detection: {
-            type: 'server_vad',
-            threshold: 0.5,
-            prefix_padding_ms: 300,
-            silence_duration_ms: 500,
-          },
-          // Tools removed - Realtime API requires 'function' or 'mcp' type, not 'image_generation'/'web_search'
-          // Will add proper function definitions later if needed
-        };
+      console.log('🔄 [GET] Using GA endpoint: /v1/realtime/client_secrets');
       
-      console.log('Creating Realtime API session (GET) with body:', JSON.stringify(requestBody, null, 2));
-      
-      const response = await fetch('https://api.openai.com/v1/realtime/sessions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('OpenAI Realtime API error:', errorData);
-        return {
-          statusCode: response.status,
-          headers,
-          body: JSON.stringify({ 
-            error: errorData.error?.message || 'Failed to create Realtime API session',
-            details: errorData 
-          }),
-        };
-      }
-
-      const sessionData = await response.json();
-      
-      // Check if session response includes client_secret (ephemeral token)
-      // New API format includes it directly in session response
       let ephemeralToken;
       let expiresAt;
+      let sessionId;
       
-      if (sessionData.client_secret && sessionData.client_secret.value) {
-        // New format: token is in client_secret.value
-        ephemeralToken = sessionData.client_secret.value;
-        expiresAt = sessionData.client_secret.expires_at || sessionData.expires_at;
-        console.log('Using ephemeral token from client_secret');
-      } else {
-        // Fallback: Try to generate token via separate endpoint (older API format)
-        console.log('No client_secret found, trying token endpoint...');
-        const tokenResponse = await fetch(`https://api.openai.com/v1/realtime/sessions/${sessionData.id}/tokens`, {
+      try {
+        const clientSecretResponse = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            expires_in: 600, // 10 minutes
+            expires_after: {
+              anchor: 'created_at',
+              seconds: 600 // 10 minutes
+            },
+            session: {
+              type: 'realtime',
+              model: 'gpt-4o-realtime-preview',
+              voice: voice,
+              instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
+
+You help users understand news, fact-check claims, and stay informed with accurate information.`,
+              audio: {
+                input: {
+                  format: {
+                    type: 'audio/pcm',
+                    rate: 24000
+                  }
+                },
+                output: {
+                  format: {
+                    type: 'audio/pcm',
+                    rate: 24000
+                  },
+                  voice: voice,
+                  speed: 1.0
+                }
+              },
+              temperature: 0.6,
+              max_response_output_tokens: 4096,
+              turn_detection: {
+                type: 'server_vad',
+                threshold: 0.5,
+                prefix_padding_ms: 300,
+                silence_duration_ms: 500,
+              }
+            }
           }),
         });
 
-        if (!tokenResponse.ok) {
-          const errorData = await tokenResponse.json().catch(() => ({}));
-          console.error('OpenAI token generation error:', errorData);
+        if (!clientSecretResponse.ok) {
+          const errorData = await clientSecretResponse.json().catch(() => ({}));
+          console.error('❌ [GET] client_secrets endpoint failed:', clientSecretResponse.status, errorData);
           return {
-            statusCode: tokenResponse.status,
+            statusCode: clientSecretResponse.status,
             headers,
             body: JSON.stringify({ 
-              error: errorData.error?.message || 'Failed to generate ephemeral token',
+              error: errorData.error?.message || 'Failed to create GA client secret',
               details: errorData,
-              note: 'Session created but token generation failed. Check if client_secret is in session response.'
+              note: 'Using /v1/realtime/client_secrets endpoint for GA API compatibility'
             }),
           };
         }
 
-        const tokenData = await tokenResponse.json();
-        ephemeralToken = tokenData.token || tokenData.value;
-        expiresAt = tokenData.expires_at || sessionData.expires_at;
-      }
-      
-      if (!ephemeralToken) {
-        console.error('No ephemeral token found in response:', sessionData);
+        const clientSecretData = await clientSecretResponse.json();
+        console.log('✅ [GET] GA client_secrets endpoint response received');
+        
+        // Extract token from client_secrets response
+        if (clientSecretData.value) {
+          ephemeralToken = clientSecretData.value;
+          expiresAt = clientSecretData.expires_at;
+          console.log('✅ [GET] Using ephemeral token from GA client_secrets endpoint');
+          
+          // Validate format
+          if (!ephemeralToken.startsWith('ek_')) {
+            console.error('❌ [GET] CRITICAL: Token from client_secrets does not start with "ek_"!');
+            throw new Error('Invalid token format from GA client_secrets endpoint');
+          } else {
+            console.log('✅ [GET] Token format validated: starts with "ek_" (GA token)');
+          }
+          
+          // Extract session ID from client_secrets response if available
+          if (clientSecretData.session && clientSecretData.session.id) {
+            sessionId = clientSecretData.session.id;
+            console.log('📋 [GET] Session ID from client_secrets response:', sessionId);
+          }
+        } else {
+          console.error('❌ [GET] client_secrets endpoint did not return token in "value" field');
+          throw new Error('No token value in GA client_secrets response');
+        }
+      } catch (clientSecretError) {
+        console.error('❌ [GET] Error calling GA client_secrets endpoint:', clientSecretError);
         return {
           statusCode: 500,
           headers,
           body: JSON.stringify({ 
-            error: 'No ephemeral token found in session response',
-            sessionData: sessionData
+            error: 'Failed to create GA client secret',
+            message: clientSecretError.message,
+            details: 'Using /v1/realtime/client_secrets for GA API compatibility'
+          }),
+        };
+      }
+      
+      if (!ephemeralToken) {
+        console.error('❌ [GET] No ephemeral token found after GA client_secrets call');
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ 
+            error: 'No ephemeral token found from GA client_secrets endpoint',
+            details: 'This should not happen - token extraction failed'
           }),
         };
       }
@@ -159,19 +174,20 @@ You help users understand news, fact-check claims, and stay informed with accura
       // CRITICAL: Return format must be: { "ephemeralToken": "ek_...", "model": "...", "voice": "..." }
       // Return the string token value, not the whole object
       // Never return the real API key
+      // This is a GA-compatible token that works with GA WebSocket endpoint
       const tokenPreview = ephemeralToken.substring(0, 8) + '...';
-      console.log('✅ [GET] Returning session with token (redacted):', tokenPreview);
+      console.log('✅ [GET] Returning GA session with token (redacted):', tokenPreview);
       
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          ephemeralToken: ephemeralToken, // String token value from client_secret.value
+          ephemeralToken: ephemeralToken, // GA-compatible token from client_secrets.value
           model: 'gpt-4o-realtime-preview',
           voice: voice,
           // Optional: include session_id for internal tracking/logging only
-          session_id: sessionData.id,
-          expires_at: expiresAt || sessionData.expires_at
+          session_id: sessionId, // From client_secrets response if available
+          expires_at: expiresAt
         }),
       };
     }
@@ -233,236 +249,137 @@ You help users understand news, fact-check claims, and stay informed with accura
       }
       console.log('Creating session with voice:', voice, 'from body:', body);
       
-      // EXPERT FIX: Use /v1/realtime/sessions endpoint which returns client_secret
-      // This is the correct endpoint for WebSocket connections
-      // The client_secret.value is the ephemeral token needed for browser authentication
-      const response = await fetch('https://api.openai.com/v1/realtime/sessions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-realtime-preview',
-          voice: voice,
-          instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
-
-You help users understand news, fact-check claims, and stay informed with accurate information.`,
-          temperature: 0.6,
-          max_response_output_tokens: 4096,
-          modalities: ['text', 'audio'],
-          input_audio_format: 'pcm16',
-          output_audio_format: 'pcm16',
-          turn_detection: {
-            type: 'server_vad',
-            threshold: 0.5,
-            prefix_padding_ms: 300,
-            silence_duration_ms: 500,
-          },
-          // Tools removed - Realtime API requires 'function' or 'mcp' type, not 'image_generation'/'web_search'
-          // Will add proper function definitions later if needed
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('❌ [POST] OpenAI Realtime API error:', errorData);
-        console.error('❌ [POST] Response status:', response.status, response.statusText);
-        return {
-          statusCode: response.status,
-          headers,
-          body: JSON.stringify({ 
-            error: errorData.error?.message || 'Failed to create Realtime API session',
-            details: errorData 
-          }),
-        };
-      }
-
-      const sessionData = await response.json();
-      console.log('✅ [POST] Session created successfully');
-      console.log('📋 [POST] Session ID:', sessionData.id);
+      // CRITICAL FIX: Use /v1/realtime/client_secrets endpoint (GA API)
+      // The /v1/realtime/sessions endpoint creates BETA sessions which are incompatible with GA WebSocket
+      // Error: "API version mismatch. You cannot start a Realtime GA session with a beta client secret."
+      // Solution: Use /v1/realtime/client_secrets to create GA-compatible client secrets
+      console.log('🔄 [POST] Using GA endpoint: /v1/realtime/client_secrets');
       
-      // Check if session response includes client_secret (ephemeral token)
-      // New API format includes it directly in session response
       let ephemeralToken;
       let expiresAt;
+      let sessionId;
       
-      console.log('📋 [POST] Session response keys:', Object.keys(sessionData));
-      console.log('📋 [POST] Has client_secret:', !!sessionData.client_secret);
-      if (sessionData.client_secret) {
-        console.log('📋 [POST] client_secret keys:', Object.keys(sessionData.client_secret));
-        console.log('📋 [POST] client_secret.value exists:', !!sessionData.client_secret.value);
-      }
-      
-      if (sessionData.client_secret && sessionData.client_secret.value) {
-        // New format: token is in client_secret.value
-        ephemeralToken = sessionData.client_secret.value;
-        expiresAt = sessionData.client_secret.expires_at || sessionData.expires_at;
-        console.log('✅ [POST] Using ephemeral token from client_secret');
-        console.log('📋 [POST] Token length:', ephemeralToken.length);
-        console.log('📋 [POST] Token preview (first 30 chars):', ephemeralToken.substring(0, 30) + '...');
-        
-        // CRITICAL: Validate token format immediately
-        if (!ephemeralToken.startsWith('ek_')) {
-          console.error('❌ [POST] CRITICAL: Token from client_secret.value does not start with "ek_"!');
-          console.error('❌ [POST] This indicates a problem with the API response format');
-          console.error('❌ [POST] Full client_secret object:', JSON.stringify(sessionData.client_secret, null, 2));
-          // Continue anyway - might be a false alarm, but log it
-        } else {
-          console.log('✅ [POST] Token format validated: starts with "ek_"');
-        }
-      } else {
-        // Fallback: Try to generate token via separate endpoint (older API format)
-        console.log('⚠️ [POST] No client_secret found, trying token endpoint...');
-        const tokenResponse = await fetch(`https://api.openai.com/v1/realtime/sessions/${sessionData.id}/tokens`, {
+      try {
+        const clientSecretResponse = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            expires_in: 600, // 10 minutes
+            expires_after: {
+              anchor: 'created_at',
+              seconds: 600 // 10 minutes
+            },
+            session: {
+              type: 'realtime',
+              model: 'gpt-4o-realtime-preview',
+              voice: voice,
+              instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
+
+You help users understand news, fact-check claims, and stay informed with accurate information.`,
+              audio: {
+                input: {
+                  format: {
+                    type: 'audio/pcm',
+                    rate: 24000
+                  }
+                },
+                output: {
+                  format: {
+                    type: 'audio/pcm',
+                    rate: 24000
+                  },
+                  voice: voice,
+                  speed: 1.0
+                }
+              },
+              temperature: 0.6,
+              max_response_output_tokens: 4096,
+              turn_detection: {
+                type: 'server_vad',
+                threshold: 0.5,
+                prefix_padding_ms: 300,
+                silence_duration_ms: 500,
+              }
+            }
           }),
         });
 
-        if (!tokenResponse.ok) {
-          const errorData = await tokenResponse.json().catch(() => ({}));
-          console.error('❌ [POST] OpenAI token generation error:', errorData);
+        if (!clientSecretResponse.ok) {
+          const errorData = await clientSecretResponse.json().catch(() => ({}));
+          console.error('❌ [POST] client_secrets endpoint failed:', clientSecretResponse.status, errorData);
           return {
-            statusCode: tokenResponse.status,
+            statusCode: clientSecretResponse.status,
             headers,
             body: JSON.stringify({ 
-              error: errorData.error?.message || 'Failed to generate ephemeral token',
+              error: errorData.error?.message || 'Failed to create GA client secret',
               details: errorData,
-              note: 'Session created but token generation failed. Check if client_secret is in session response.'
+              note: 'Using /v1/realtime/client_secrets endpoint for GA API compatibility'
             }),
           };
         }
 
-        const tokenData = await tokenResponse.json();
-        console.log('📋 [POST] Token endpoint response keys:', Object.keys(tokenData));
-        ephemeralToken = tokenData.token || tokenData.value || tokenData.client_secret?.value;
-        expiresAt = tokenData.expires_at || sessionData.expires_at;
+        const clientSecretData = await clientSecretResponse.json();
+        console.log('✅ [POST] GA client_secrets endpoint response received');
+        console.log('📋 [POST] Response keys:', Object.keys(clientSecretData));
         
-        if (ephemeralToken) {
-          console.log('✅ [POST] Using ephemeral token from token endpoint');
+        // Extract token from client_secrets response
+        if (clientSecretData.value) {
+          ephemeralToken = clientSecretData.value;
+          expiresAt = clientSecretData.expires_at;
+          console.log('✅ [POST] Using ephemeral token from GA client_secrets endpoint');
           console.log('📋 [POST] Token length:', ephemeralToken.length);
           console.log('📋 [POST] Token preview (first 30 chars):', ephemeralToken.substring(0, 30) + '...');
           
           // Validate format
           if (!ephemeralToken.startsWith('ek_')) {
-            console.error('❌ [POST] CRITICAL: Token from token endpoint does not start with "ek_"!');
-            console.error('❌ [POST] Full token endpoint response:', JSON.stringify(tokenData, null, 2));
+            console.error('❌ [POST] CRITICAL: Token from client_secrets does not start with "ek_"!');
+            console.error('❌ [POST] Full response:', JSON.stringify(clientSecretData, null, 2));
+            throw new Error('Invalid token format from GA client_secrets endpoint');
           } else {
-            console.log('✅ [POST] Token format validated: starts with "ek_"');
+            console.log('✅ [POST] Token format validated: starts with "ek_" (GA token)');
+          }
+          
+          // Extract session ID from client_secrets response if available
+          if (clientSecretData.session && clientSecretData.session.id) {
+            sessionId = clientSecretData.session.id;
+            console.log('📋 [POST] Session ID from client_secrets response:', sessionId);
+          } else {
+            console.log('⚠️ [POST] No session ID in client_secrets response (optional)');
           }
         } else {
-          console.error('❌ [POST] No token found in token endpoint response');
-          console.error('❌ [POST] Token endpoint response keys:', Object.keys(tokenData));
-          console.error('❌ [POST] Full response:', JSON.stringify(tokenData, null, 2));
+          console.error('❌ [POST] client_secrets endpoint did not return token in "value" field');
+          console.error('❌ [POST] Response:', JSON.stringify(clientSecretData, null, 2));
+          throw new Error('No token value in GA client_secrets response');
         }
-      }
-      
-      // ENHANCED FALLBACK: If no token found, try /v1/realtime/client_secrets endpoint
-      // This is an alternative method that generates tokens separately
-      if (!ephemeralToken) {
-        console.error('❌ [POST] No ephemeral token found in session response');
-        console.log('🔄 [POST] Attempting fallback: /v1/realtime/client_secrets endpoint...');
-        
-        try {
-          const clientSecretResponse = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              expires_after: {
-                anchor: 'created_at',
-                seconds: 600 // 10 minutes
-              },
-              session: {
-                type: 'realtime',
-                model: 'gpt-4o-realtime-preview',
-                voice: voice,
-                instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.`,
-                audio: {
-                  input: {
-                    format: {
-                      type: 'audio/pcm',
-                      rate: 24000
-                    }
-                  },
-                  output: {
-                    format: {
-                      type: 'audio/pcm',
-                      rate: 24000
-                    },
-                    voice: voice,
-                    speed: 1.0
-                  }
-                }
-              }
-            }),
-          });
-
-          if (clientSecretResponse.ok) {
-            const clientSecretData = await clientSecretResponse.json();
-            console.log('✅ [POST] client_secrets endpoint response keys:', Object.keys(clientSecretData));
-            
-            // Extract token from client_secrets response
-            if (clientSecretData.value) {
-              ephemeralToken = clientSecretData.value;
-              expiresAt = clientSecretData.expires_at;
-              console.log('✅ [POST] Using ephemeral token from client_secrets endpoint (fallback)');
-              console.log('📋 [POST] Token length:', ephemeralToken.length);
-              console.log('📋 [POST] Token preview (first 30 chars):', ephemeralToken.substring(0, 30) + '...');
-              
-              // Validate format
-              if (!ephemeralToken.startsWith('ek_')) {
-                console.error('❌ [POST] CRITICAL: Token from client_secrets does not start with "ek_"!');
-              } else {
-                console.log('✅ [POST] Token format validated: starts with "ek_"');
-              }
-              
-              // Use the session from client_secrets response if available
-              if (clientSecretData.session && clientSecretData.session.id) {
-                sessionData.id = clientSecretData.session.id;
-                console.log('📋 [POST] Using session ID from client_secrets response:', sessionData.id);
-              }
-            } else {
-              console.error('❌ [POST] client_secrets endpoint did not return token in "value" field');
-              console.error('❌ [POST] Response:', JSON.stringify(clientSecretData, null, 2));
-            }
-          } else {
-            const errorData = await clientSecretResponse.json().catch(() => ({}));
-            console.error('❌ [POST] client_secrets endpoint failed:', clientSecretResponse.status, errorData);
-          }
-        } catch (clientSecretError) {
-          console.error('❌ [POST] Error calling client_secrets endpoint:', clientSecretError);
-        }
-      }
-      
-      // Final check - if still no token, return error
-      if (!ephemeralToken) {
-        console.error('❌ [POST] No ephemeral token found after all attempts:', {
-          triedSessions: true,
-          triedTokensEndpoint: true,
-          triedClientSecrets: true,
-          sessionResponse: sessionData
-        });
+      } catch (clientSecretError) {
+        console.error('❌ [POST] Error calling GA client_secrets endpoint:', clientSecretError);
         return {
           statusCode: 500,
           headers,
           body: JSON.stringify({ 
-            error: 'No ephemeral token found after all fallback attempts',
-            details: 'Tried: /sessions, /sessions/{id}/tokens, and /client_secrets endpoints',
-            sessionData: sessionData
+            error: 'Failed to create GA client secret',
+            message: clientSecretError.message,
+            details: 'Using /v1/realtime/client_secrets for GA API compatibility'
           }),
         };
       }
       
-      console.log('✅ [POST] Returning session with token to client');
+      // Final validation - token should already be set from client_secrets endpoint
+      if (!ephemeralToken) {
+        console.error('❌ [POST] CRITICAL: No ephemeral token after GA client_secrets call');
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ 
+            error: 'No ephemeral token found from GA client_secrets endpoint',
+            details: 'This should not happen - token extraction failed'
+          }),
+        };
+      }
+      
+      console.log('✅ [POST] Returning GA session with token to client');
       
       // Redact token in logs (show only first 8 chars)
       const tokenPreview = ephemeralToken.substring(0, 8) + '...';
@@ -476,21 +393,22 @@ You help users understand news, fact-check claims, and stay informed with accura
         throw new Error('Invalid token format - token must start with "ek_"');
       }
       
-      console.log('✅ [POST] Token format validated: starts with "ek_" (correct format)');
+      console.log('✅ [POST] Token format validated: starts with "ek_" (GA token format)');
       
       // Return response in required format: { "ephemeralToken": "ek_...", "model": "...", "voice": "..." }
       // Note: Return the string token value, not the whole object
       // Never return the real API key
+      // This is a GA-compatible token that works with GA WebSocket endpoint
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          ephemeralToken: ephemeralToken, // String token value from client_secret.value
+          ephemeralToken: ephemeralToken, // GA-compatible token from client_secrets.value
           model: 'gpt-4o-realtime-preview',
           voice: voice,
           // Optional: include session_id for internal tracking/logging only
-          session_id: sessionData.id,
-          expires_at: expiresAt || sessionData.expires_at
+          session_id: sessionId, // From client_secrets response if available
+          expires_at: expiresAt
         }),
       };
     }

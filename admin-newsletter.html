@@ -1953,55 +1953,54 @@
                 authBtn.textContent = 'Authenticating...';
             }
             
+            // Check for lockout
+            const lockoutMinutes = isLockedOut();
+            if (lockoutMinutes) {
+                errorEl.textContent = `Too many failed attempts. Please try again in ${lockoutMinutes} minute${lockoutMinutes > 1 ? 's' : ''}.`;
+                errorEl.style.display = 'block';
+                passwordInput.disabled = true;
+                
+                // Calculate actual milliseconds remaining (not rounded minutes)
+                const data = getLoginAttempts();
+                const actualMsRemaining = data.lockoutUntil ? Math.max(0, data.lockoutUntil - Date.now()) : 0;
+                
+                setTimeout(() => {
+                    passwordInput.disabled = false;
+                    const checkData = getLoginAttempts();
+                    if (Date.now() >= (checkData.lockoutUntil || 0)) {
+                        saveLoginAttempt(false); // Reset on unlock
+                    }
+                }, actualMsRemaining);
+                if (authBtn) {
+                    authBtn.disabled = false;
+                    authBtn.textContent = 'Authenticate';
+                }
+                return;
+            }
+            
+            if (!password) {
+                errorEl.textContent = 'Please enter a password';
+                errorEl.style.display = 'block';
+                if (authBtn) {
+                    authBtn.disabled = false;
+                    authBtn.textContent = 'Authenticate';
+                }
+                return;
+            }
+            
+            // Check attempt count
+            const attempts = getLoginAttempts();
+            if (attempts.count >= MAX_LOGIN_ATTEMPTS) {
+                errorEl.textContent = 'Too many failed attempts. Please wait before trying again.';
+                errorEl.style.display = 'block';
+                if (authBtn) {
+                    authBtn.disabled = false;
+                    authBtn.textContent = 'Authenticate';
+                }
+                return;
+            }
+            
             try {
-                // Check for lockout
-                const lockoutMinutes = isLockedOut();
-                if (lockoutMinutes) {
-                    errorEl.textContent = `Too many failed attempts. Please try again in ${lockoutMinutes} minute${lockoutMinutes > 1 ? 's' : ''}.`;
-                    errorEl.style.display = 'block';
-                    passwordInput.disabled = true;
-                    
-                    // Calculate actual milliseconds remaining (not rounded minutes)
-                    const data = getLoginAttempts();
-                    const actualMsRemaining = data.lockoutUntil ? Math.max(0, data.lockoutUntil - Date.now()) : 0;
-                    
-                    setTimeout(() => {
-                        passwordInput.disabled = false;
-                        const checkData = getLoginAttempts();
-                        if (Date.now() >= (checkData.lockoutUntil || 0)) {
-                            saveLoginAttempt(false); // Reset on unlock
-                        }
-                    }, actualMsRemaining);
-                    if (authBtn) {
-                        authBtn.disabled = false;
-                        authBtn.textContent = 'Authenticate';
-                    }
-                    return;
-                }
-                
-                if (!password) {
-                    errorEl.textContent = 'Please enter a password';
-                    errorEl.style.display = 'block';
-                    if (authBtn) {
-                        authBtn.disabled = false;
-                        authBtn.textContent = 'Authenticate';
-                    }
-                    return;
-                }
-                
-                // Check attempt count
-                const attempts = getLoginAttempts();
-                if (attempts.count >= MAX_LOGIN_ATTEMPTS) {
-                    errorEl.textContent = 'Too many failed attempts. Please wait before trying again.';
-                    errorEl.style.display = 'block';
-                    if (authBtn) {
-                        authBtn.disabled = false;
-                        authBtn.textContent = 'Authenticate';
-                    }
-                    return;
-                }
-                
-                try {
                 // Use timing-safe comparison by always making the API call
                 // The server will handle the actual comparison securely
                 const testUrl = `/.netlify/functions/newsletter-templates?token=${encodeURIComponent(password)}`;
@@ -2078,21 +2077,14 @@
                         passwordInput.value = '';
                     }
                 }
-                } catch (error) {
-                    console.error('Auth error:', error);
-                    if (errorEl) {
-                        errorEl.textContent = 'Connection error. Please try again.';
-                        errorEl.style.display = 'block';
-                    }
-                    if (passwordInput) {
-                        passwordInput.value = '';
-                    }
-                }
-            } catch (outerError) {
-                console.error('Outer auth error:', outerError);
+            } catch (error) {
+                console.error('Auth error:', error);
                 if (errorEl) {
-                    errorEl.textContent = 'An unexpected error occurred. Please try again.';
+                    errorEl.textContent = 'Connection error. Please try again.';
                     errorEl.style.display = 'block';
+                }
+                if (passwordInput) {
+                    passwordInput.value = '';
                 }
             } finally {
                 // Re-enable button
