@@ -257,32 +257,39 @@ exports.handler = async (event, context) => {
       try {
         // Handle PDF files
         if (fileType === 'application/pdf' || fileExtension === 'pdf') {
-          const { pdfToPng } = require('pdf-to-png-converter');
-          const pngPages = await pdfToPng(fileBuffer, {
-            viewportScale: 2.0,
-            disableFontFace: false,
-            useSystemFonts: false,
-            enableXfa: false,
+          const { pdf } = require('pdf-to-img');
+          
+          // pdf-to-img expects a file path or buffer, and returns an async iterator
+          const document = await pdf(fileBuffer, { scale: 2.0 });
+          
+          const convertedPages = [];
+          let pageNumber = 1;
+          
+          // Iterate through all pages
+          for await (const image of document) {
+            // image is a Buffer containing PNG data
+            const pageBuffer = image;
+            convertedPages.push({
+              name: fileName.replace(/\.pdf$/i, `-page${pageNumber}.png`),
+              type: 'image/png',
+              data: pageBuffer.toString('base64'),
+              size: pageBuffer.length,
+              converted: true,
+              originalFormat: 'pdf',
+              pageNumber: pageNumber,
+              totalPages: null // Will be set after we know total count
+            });
+            pageNumber++;
+          }
+          
+          // Update totalPages for all pages
+          const totalPages = convertedPages.length;
+          convertedPages.forEach(page => {
+            page.totalPages = totalPages;
           });
           
-          if (pngPages && pngPages.length > 0) {
-            // pdfToPng returns array of objects with 'content' property containing the buffer
-            // For PDFs with multiple pages, we'll convert all pages
-            const convertedPages = pngPages.map((pageObj, index) => {
-              const pageBuffer = pageObj.content || pageObj; // Handle both formats
-              return {
-                name: fileName.replace(/\.pdf$/i, `-page${index + 1}.png`),
-                type: 'image/png',
-                data: pageBuffer.toString('base64'),
-                size: pageBuffer.length,
-                converted: true,
-                originalFormat: 'pdf',
-                pageNumber: index + 1,
-                totalPages: pngPages.length
-              };
-            });
-            
-            console.log(`[File Conversion] ✅ PDF converted to PNG (${pngPages.length} page(s))`);
+          if (convertedPages.length > 0) {
+            console.log(`[File Conversion] ✅ PDF converted to PNG (${totalPages} page(s))`);
             
             // Return first page as main file, but include all pages in a special property
             return {
