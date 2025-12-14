@@ -772,12 +772,15 @@ YOUR ROLE:
 CRITICAL: BREAKING NEWS AND CURRENT EVENTS
 ${currentEventsContext ? '- You have access to REAL, VERIFIED current events from Noteworthy News articles (see below)' : '- You do NOT have access to real-time breaking news or current events'}
 - You can discuss and provide details about the verified articles listed below
-- You have access to a web search function (search_web) that can find REAL-TIME breaking news and current events
-- When asked about breaking news, recent events, or current developments NOT in the verified articles, USE the search_web function to find real-time information
-- After searching, provide accurate, factual information from the search results
+- You have access to OpenAI's native web_search tool that provides REAL-TIME, DEEP web research for breaking news and current events
+- This is OpenAI's built-in, top-tier web search - it automatically searches the web when you need current information
+- When asked about breaking news, recent events, or current developments NOT in the verified articles, the web_search tool will AUTOMATICALLY be used
+- The web_search tool performs deep research across multiple sources and provides comprehensive, up-to-date information
+- After web search completes, provide accurate, detailed, factual information from the search results
+- Include specific details: dates, locations, names, sources, and context
 - NEVER make up, invent, or fabricate breaking news events
-- If web search fails or returns no results, say: "I couldn't find current information about that. For the latest verified news, please check Noteworthy News' articles or other trusted news sources."
-- If you don't know something and search doesn't help, say so clearly rather than speculate
+- If web search doesn't find information, say: "I searched for current information but couldn't find verified details about that specific event. For the latest breaking news, please check direct news sources."
+- Always prioritize accuracy and cite information when possible
 ${currentEventsContext}
 - When an image has been generated for the user, acknowledge it naturally in your response
 - When analyzing uploaded images or documents, provide detailed observations and insights
@@ -1008,7 +1011,9 @@ RESPONSE STYLE:
 
     let r;
     try {
-      r = await fetch("https://api.openai.com/v1/chat/completions", {
+      // Use OpenAI Responses API with native web_search tool for real-time breaking news
+      // This provides OpenAI's built-in, reliable web search - no scraping needed!
+      r = await fetch("https://api.openai.com/v1/responses", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -1017,30 +1022,14 @@ RESPONSE STYLE:
         body: JSON.stringify({
           model: "gpt-4o",
           temperature: 0.4,
-          max_tokens: 1200, // Increased for country spotlight (needs 300-400 words)
-          messages: messages,
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "search_web",
-                description: "Search the web for real-time breaking news, current events, or any information that happened recently. Use this when the user asks about current events, breaking news, recent developments, or anything that requires up-to-date information.",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    query: {
-                      type: "string",
-                      description: "The search query to find current information about"
-                    }
-                  },
-                  required: ["query"]
-                }
-              }
-            }
-          ],
-          tool_choice: "auto" // Let the model decide when to use web search
-      }),
-    });
+          max_output_tokens: 2000, // Increased for country spotlight and detailed responses
+          tools: [{ type: "web_search" }], // OpenAI's native web search - top of the line!
+          input: messages.map(msg => ({
+            role: msg.role,
+            content: [{ type: "text", text: msg.content }]
+          })),
+        }),
+      });
     } catch (fetchError) {
       console.error("[Noteworthy Chat] Error calling OpenAI API:", fetchError);
       console.error("[Noteworthy Chat] Error stack:", fetchError.stack);
@@ -1074,94 +1063,44 @@ RESPONSE STYLE:
     }
 
     const data = await r.json();
-    let reply = data?.choices?.[0]?.message?.content?.trim() || "No response generated.";
+    
+    // Handle Responses API format (with native web_search)
+    let reply = "No response generated.";
     const usage = data?.usage || null;
     
-    // Handle function calls (e.g., web search)
-    const functionCall = data?.choices?.[0]?.message?.function_call;
-    if (functionCall && functionCall.name === 'search_web') {
-      console.log('[Noteworthy Chat] 🔍 Web search requested:', functionCall.arguments);
-      
-      try {
-        // Parse function arguments
-        const args = JSON.parse(functionCall.arguments || '{}');
-        const searchQuery = args.query || message;
-        
-        // Call web search function
-        const searchResponse = await fetch(`${event.headers['x-forwarded-proto'] || 'https'}://${event.headers.host}/.netlify/functions/search-web`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: searchQuery })
-        });
-        
-        if (searchResponse.ok) {
-          const searchData = await searchResponse.json();
-          console.log('[Noteworthy Chat] ✅ Web search results:', searchData.results?.length || 0, 'results');
-          
-          // Add search results to messages and call OpenAI again
-          messages.push({
-            role: "assistant",
-            content: null,
-            function_call: functionCall
-          });
-          
-          messages.push({
-            role: "function",
-            name: "search_web",
-            content: JSON.stringify({
-              results: searchData.results || [],
-              query: searchQuery
-            })
-          });
-          
-          // Call OpenAI again with search results
-          const secondResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "gpt-4o",
-              temperature: 0.4,
-              max_tokens: 1200, // Increased for country spotlight and detailed responses with search results
-              messages: messages,
-              tools: [
-                {
-                  type: "function",
-                  function: {
-                    name: "search_web",
-                    description: "Search the web for real-time breaking news, current events, or any information that happened recently. Use this when the user asks about current events, breaking news, recent developments, or anything that requires up-to-date information.",
-                    parameters: {
-                      type: "object",
-                      properties: {
-                        query: {
-                          type: "string",
-                          description: "The search query to find current information about"
-                        }
-                      },
-                      required: ["query"]
-                    }
-                  }
-                }
-              ],
-              tool_choice: "auto"
-            }),
-          });
-          
-          if (secondResponse.ok) {
-            const secondData = await secondResponse.json();
-            reply = secondData?.choices?.[0]?.message?.content?.trim() || reply;
-            console.log('[Noteworthy Chat] ✅ Response with web search results generated');
-          } else {
-            console.error('[Noteworthy Chat] ⚠️ Second API call failed, using original response');
-          }
-        } else {
-          console.error('[Noteworthy Chat] ⚠️ Web search failed, continuing without search results');
+    // Responses API returns output as an array of content items
+    if (data.output && Array.isArray(data.output)) {
+      // Find text content in the output
+      const textContent = data.output.find(item => item.type === 'text');
+      if (textContent && textContent.text) {
+        reply = textContent.text.trim();
+        console.log('[Noteworthy Chat] ✅ Response from Responses API with web search:', reply.substring(0, 100) + '...');
+      } else {
+        // Fallback: try to extract any text from output
+        const allText = data.output
+          .filter(item => item.text || item.content)
+          .map(item => item.text || item.content)
+          .join(' ')
+          .trim();
+        if (allText) {
+          reply = allText;
         }
-      } catch (searchError) {
-        console.error('[Noteworthy Chat] ⚠️ Error executing web search:', searchError);
-        // Continue with original response
+      }
+    } else if (data.choices && data.choices[0]?.message?.content) {
+      // Fallback to Chat Completions format (shouldn't happen with Responses API)
+      reply = data.choices[0].message.content.trim();
+      console.log('[Noteworthy Chat] ⚠️ Unexpected Chat Completions format, using fallback');
+    }
+    
+    // Log if web search was used (Responses API handles this automatically)
+    if (data.output) {
+      const hasWebSearch = data.output.some(item => 
+        item.type === 'web_search' || 
+        item.type === 'tool_use' ||
+        item.citations
+      );
+      if (hasWebSearch) {
+        console.log('[Noteworthy Chat] ✅ Web search was used by Responses API');
       }
     }
     
