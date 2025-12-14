@@ -10,6 +10,7 @@
 # Auth0 Client ID and Domain are meant to be public in SPA applications
 [build.environment]
   SECRETS_SCAN_OMIT_KEYS = "AUTH0_DOMAIN,AUTH0_CLIENT_ID"
+  NODE_VERSION = "20"
 
 # Netlify automatically serves 404.html for 404 errors
 # Make sure 404.html is in the root directory (publish directory)
