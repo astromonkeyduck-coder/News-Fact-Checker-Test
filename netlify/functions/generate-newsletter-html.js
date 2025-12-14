@@ -180,10 +180,7 @@ CONTENT REQUIREMENTS:
 IMAGES:
 ${imageReferences.length > 0 ? imageReferences.map(img => `- [[Image: ${img.title}]] (${img.placementHint})`).join('\n') : 'No images provided.'}
 
-${imageReferences.length > 0 ? `When you see [[Image: Title]], insert an <img> tag with:` : ''}
-- src: Use a placeholder URL like "https://noteworthynews.co/placeholder-[title].jpg" (replace [title] with the image title in lowercase, replacing spaces with hyphens)
-- alt: The image title
-- style: "${STYLE_GUIDE.imageStyle};margin:${STYLE_GUIDE.imageMargin}"
+${imageReferences.length > 0 ? `IMPORTANT: When you see [[Image: Title]] in the prompt, you MUST use the EXACT token format [[Image: Title]] in your HTML output. DO NOT replace it with a placeholder URL. The system will automatically replace [[Image: Title]] tokens with the actual uploaded image.` : ''}
 
 IMPORTANT: Your response must start with:
 1. A date paragraph: <p style="margin:0 0 30px 0;color:#9ca3af!important;font-size:14px">[Current Date]</p>
@@ -280,8 +277,6 @@ Reference the house style template structure and fill in the content section wit
     }
 
     // Replace image placeholders with actual image data URLs
-    // For now, we'll keep placeholders and let the frontend handle image uploads
-    // But we can replace [[Image: Title]] with proper img tags
     attachments.forEach(att => {
       if (!att.title || !att.dataUrl) {
         console.warn('[Generate Newsletter] Skipping attachment with missing title or dataUrl:', att);
@@ -290,21 +285,41 @@ Reference the house style template structure and fill in the content section wit
       const imageToken = `[[Image: ${att.title}]]`;
       const safeTitle = (att.title || '').replace(/"/g, '&quot;');
       const imageTag = `<img src="${att.dataUrl}" alt="${safeTitle}" style="${STYLE_GUIDE.imageStyle};margin:${STYLE_GUIDE.imageMargin}" />`;
+      
+      // Replace token format [[Image: Title]]
       htmlContent = htmlContent.replace(new RegExp(imageToken.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), imageTag);
+      
+      // Also replace any placeholder URLs the AI might have generated (fallback)
+      const titleSlug = att.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const placeholderPattern = new RegExp(`https://noteworthynews\\.co/placeholder-${titleSlug}\\.jpg`, 'gi');
+      if (placeholderPattern.test(htmlContent)) {
+        htmlContent = htmlContent.replace(placeholderPattern, att.dataUrl);
+        console.log('[Generate Newsletter] Replaced placeholder URL with data URL for:', att.title);
+      }
     });
 
     // Insert generated content into house template
     // The AI generates content that includes date and greeting - we trust it to do so correctly
     let finalContent = htmlContent.trim();
     
-    // Only replace date placeholder if it exists (don't add if missing - AI should generate it)
-    const datePlaceholder = new Date().toLocaleDateString('en-US', { 
+    // Always use current date - replace any date patterns or placeholders
+    const currentDate = new Date().toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric' 
     });
-    finalContent = finalContent.replace(/\{\{DATE_PLACEHOLDER\}\}/g, datePlaceholder);
+    
+    // Replace date placeholder if it exists
+    finalContent = finalContent.replace(/\{\{DATE_PLACEHOLDER\}\}/g, currentDate);
+    
+    // Also replace any hardcoded dates that might be in the AI-generated content
+    // Match patterns like "Wednesday, November 26, 2025" or "October 10, 2023"
+    const datePattern = /(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s*(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s*\d{4}/gi;
+    if (datePattern.test(finalContent)) {
+      finalContent = finalContent.replace(datePattern, currentDate);
+      console.log('[Generate Newsletter] Replaced hardcoded date with current date:', currentDate);
+    }
     
     // Verify template has placeholder before replacing
     if (!houseTemplate.includes('<!-- CONTENT_PLACEHOLDER -->')) {

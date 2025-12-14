@@ -3582,6 +3582,157 @@ class NoteworthyChat extends HTMLElement {
     // Image generation is now fully handled by the backend
     // The generateImage() function has been removed - all messages go through ask()
 
+    /**
+     * Open image in popup/lightbox
+     */
+    function openImagePopup(imageUrl, altText = 'Generated image') {
+      // Remove existing popup if any
+      const existingPopup = document.querySelector('#image-popup-overlay');
+      if (existingPopup) {
+        existingPopup.remove();
+      }
+      
+      // Create overlay
+      const overlay = document.createElement('div');
+      overlay.id = 'image-popup-overlay';
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.95);
+        z-index: 100000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        animation: fadeIn 0.2s ease;
+      `;
+      
+      // Create popup container
+      const popup = document.createElement('div');
+      popup.style.cssText = `
+        position: relative;
+        max-width: 90vw;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+      `;
+      
+      // Create image
+      const img = document.createElement('img');
+      img.src = imageUrl;
+      img.alt = altText;
+      img.style.cssText = `
+        max-width: 100%;
+        max-height: 80vh;
+        object-fit: contain;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        cursor: default;
+      `;
+      
+      // Create close button
+      const closeBtn = document.createElement('button');
+      closeBtn.innerHTML = '✕';
+      closeBtn.style.cssText = `
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        z-index: 100001;
+      `;
+      closeBtn.onmouseenter = function() {
+        this.style.background = 'rgba(255, 255, 255, 0.3)';
+        this.style.transform = 'scale(1.1)';
+      };
+      closeBtn.onmouseleave = function() {
+        this.style.background = 'rgba(255, 255, 255, 0.2)';
+        this.style.transform = 'scale(1)';
+      };
+      
+      // Create prompt text if available
+      if (altText && altText !== 'Generated image') {
+        const promptText = document.createElement('div');
+        promptText.textContent = altText;
+        promptText.style.cssText = `
+          color: rgba(255, 255, 255, 0.9);
+          font-size: 14px;
+          text-align: center;
+          max-width: 80%;
+          padding: 12px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 8px;
+        `;
+        popup.appendChild(promptText);
+      }
+      
+      // Close handlers
+      const closePopup = () => {
+        overlay.style.animation = 'fadeOut 0.2s ease';
+        setTimeout(() => overlay.remove(), 200);
+      };
+      
+      closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        closePopup();
+      };
+      
+      overlay.onclick = (e) => {
+        if (e.target === overlay) {
+          closePopup();
+        }
+      };
+      
+      // Close on Escape key
+      const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+          closePopup();
+          document.removeEventListener('keydown', handleEscape);
+        }
+      };
+      document.addEventListener('keydown', handleEscape);
+      
+      // Assemble popup
+      popup.appendChild(img);
+      overlay.appendChild(closeBtn);
+      overlay.appendChild(popup);
+      
+      // Append to document body (outside shadow DOM)
+      document.body.appendChild(overlay);
+      
+      // Add fade-in animation styles if not already present
+      if (!document.head.querySelector('#image-popup-styles')) {
+        const style = document.createElement('style');
+        style.id = 'image-popup-styles';
+        style.textContent = `
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+
     // Helper function to show error messages
     function showError(message) {
       const errorGroup = document.createElement('div');
@@ -3938,11 +4089,25 @@ class NoteworthyChat extends HTMLElement {
           imageEl.src = data.image.imageUrl;
           imageEl.alt = data.image.revisedPrompt || data.image.prompt || 'Generated image';
           imageEl.loading = 'lazy';
-          imageEl.style.cssText = 'max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.3); display: block; background: rgba(0,0,0,0.2);';
+          imageEl.style.cssText = 'max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.3); display: block; background: rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.2s ease;';
+          
+          // Add hover effect
+          imageEl.onmouseenter = function() {
+            this.style.transform = 'scale(1.02)';
+          };
+          imageEl.onmouseleave = function() {
+            this.style.transform = 'scale(1)';
+          };
+          
+          // Add click handler to open image in popup
+          imageEl.onclick = function(e) {
+            e.stopPropagation();
+            openImagePopup(this.src, data.image.revisedPrompt || data.image.prompt || 'Generated image');
+          };
           
           // Add loading state
           imageEl.style.opacity = '0.7';
-          imageEl.style.transition = 'opacity 0.3s ease';
+          imageEl.style.transition = 'opacity 0.3s ease, transform 0.2s ease';
           
           imageEl.onload = function() {
             console.log('Image loaded successfully');
@@ -5998,14 +6163,8 @@ class NoteworthyChat extends HTMLElement {
           console.log('[Voice Mode] ✅ AudioContext resumed, state:', audioContext.state);
         }
         
-        // Check if audio is enabled (check audio toggle state)
-        // The audio toggle uses 'active' class when enabled, and localStorage 'noteworthy-ai-audio'
-        const audioToggle = root.querySelector('#audioToggle');
-        const audioEnabled = localStorage.getItem('noteworthy-ai-audio') === 'true';
-        if (audioToggle && !audioEnabled) {
-          console.log('[Voice Mode] 🔇 Audio is disabled (toggle is off), skipping playback');
-          return;
-        }
+        // Voice call audio should ALWAYS play - audio toggle only controls text-to-speech
+        // No need to check audioEnabled here - voice calls work independently
         
         // Decode base64 to binary
         const binaryString = atob(audioBase64);

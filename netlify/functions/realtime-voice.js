@@ -1,6 +1,107 @@
 // OpenAI Realtime API integration for voice conversations
 // Creates a session token for the client to connect directly to OpenAI's WebSocket
 
+const { getStore } = require("@netlify/blobs");
+
+/**
+ * Fetch recent posts from blob storage for AI context
+ */
+async function fetchRecentPosts(event, limit = 5) {
+  try {
+    const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
+    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
+    
+    let store;
+    if (siteID && token) {
+      store = getStore({
+        name: "x-posts",
+        siteID: siteID,
+        token: token,
+      });
+    } else {
+      store = getStore({ name: "x-posts" });
+    }
+
+    // Read index
+    let indexData = { ids: [] };
+    try {
+      const indexBlob = await store.get("index.json", { type: "json" });
+      if (indexBlob && Array.isArray(indexBlob.ids)) {
+        indexData = indexBlob;
+      }
+    } catch (err) {
+      return [];
+    }
+
+    if (!indexData.ids || indexData.ids.length === 0) {
+      return [];
+    }
+
+    // Get most recent posts
+    const postIds = indexData.ids.slice(0, Math.min(limit, indexData.ids.length));
+    
+    // Fetch posts in parallel
+    const postPromises = postIds.map(async (id) => {
+      try {
+        const post = await store.get(id, { type: "json" });
+        return post;
+      } catch (err) {
+        return null;
+      }
+    });
+
+    const posts = await Promise.all(postPromises);
+    // Filter out nulls and sort by timestamp (newest first)
+    const validPosts = posts
+      .filter(p => p !== null)
+      .sort((a, b) => {
+        const timeA = a.timestamp || a.createdAt || 0;
+        const timeB = b.timestamp || b.createdAt || 0;
+        return timeB - timeA;
+      })
+      .slice(0, limit);
+
+    return validPosts;
+  } catch (error) {
+    console.error('[Realtime Voice] Error fetching recent posts:', error);
+    return [];
+  }
+}
+
+/**
+ * Build current events context from recent posts
+ */
+function buildCurrentEventsContext(posts) {
+  if (!posts || posts.length === 0) return '';
+  
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const recentEvents = posts
+    .filter(post => {
+      const postDate = post.timestamp || post.createdAt || 0;
+      const postDateObj = new Date(postDate);
+      return postDateObj >= yesterday;
+    })
+    .map(post => {
+      const title = post.title || post.story || post.text || 'Untitled';
+      const date = post.timestamp || post.createdAt;
+      const dateStr = date ? new Date(date).toLocaleDateString() : 'Recent';
+      return `${dateStr}: ${title}`;
+    })
+    .slice(0, 3); // Limit to 3 for voice (shorter context)
+  
+  if (recentEvents.length > 0) {
+    return `\n\nCURRENT EVENTS (Verified Articles from Noteworthy News):
+${recentEvents.join('\n')}
+
+You can discuss these verified articles. For events NOT listed, say you don't have information.`;
+  }
+  
+  return '';
+}
+
 exports.handler = async (event, context) => {
   // CORS headers
   const headers = {
@@ -52,6 +153,16 @@ exports.handler = async (event, context) => {
         voice = 'alloy';
       }
       
+      // Fetch recent posts for current events context
+      let currentEventsContext = '';
+      try {
+        const recentPosts = await fetchRecentPosts(event, 5);
+        currentEventsContext = buildCurrentEventsContext(recentPosts);
+        console.log(`[Realtime Voice] Fetched ${recentPosts.length} posts for context`);
+      } catch (error) {
+        console.error('[Realtime Voice] Error fetching posts:', error);
+      }
+      
       console.log('🔄 [GET] Using GA endpoint: /v1/realtime/client_secrets');
       
       let ephemeralToken;
@@ -59,6 +170,20 @@ exports.handler = async (event, context) => {
       let sessionId;
       
       try {
+        const instructions = `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
+
+You help users understand news, fact-check claims, and stay informed with accurate information.
+
+CRITICAL: BREAKING NEWS AND CURRENT EVENTS
+${currentEventsContext ? '- You have access to REAL, VERIFIED current events from Noteworthy News (see below)' : '- You do NOT have access to real-time breaking news'}
+- You can discuss verified articles listed below
+- NEVER make up breaking news events NOT in the verified articles
+- If asked about events NOT listed, say: "I don't have information about that. Check Noteworthy News' articles for verified news."
+- If you don't know something, say so clearly rather than speculate
+${currentEventsContext}
+
+When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy AI" in a friendly, welcoming tone.`;
+
         const clientSecretResponse = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
           method: 'POST',
           headers: {
@@ -73,11 +198,7 @@ exports.handler = async (event, context) => {
             session: {
               type: 'realtime',
               model: 'gpt-realtime', // GA API uses 'gpt-realtime', not 'gpt-4o-realtime-preview'
-              instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
-
-You help users understand news, fact-check claims, and stay informed with accurate information.
-
-When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy AI" in a friendly, welcoming tone.`,
+              instructions: instructions,
               audio: {
                 input: {
                   format: {
@@ -245,6 +366,16 @@ When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy
       }
       console.log('Creating session with voice:', voice, 'from body:', body);
       
+      // Fetch recent posts for current events context
+      let currentEventsContext = '';
+      try {
+        const recentPosts = await fetchRecentPosts(event, 5);
+        currentEventsContext = buildCurrentEventsContext(recentPosts);
+        console.log(`[Realtime Voice] Fetched ${recentPosts.length} posts for context`);
+      } catch (error) {
+        console.error('[Realtime Voice] Error fetching posts:', error);
+      }
+      
       // CRITICAL FIX: Use /v1/realtime/client_secrets endpoint (GA API)
       // The /v1/realtime/sessions endpoint creates BETA sessions which are incompatible with GA WebSocket
       // Error: "API version mismatch. You cannot start a Realtime GA session with a beta client secret."
@@ -256,6 +387,20 @@ When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy
       let sessionId;
       
       try {
+        const instructions = `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
+
+You help users understand news, fact-check claims, and stay informed with accurate information.
+
+CRITICAL: BREAKING NEWS AND CURRENT EVENTS
+${currentEventsContext ? '- You have access to REAL, VERIFIED current events from Noteworthy News (see below)' : '- You do NOT have access to real-time breaking news'}
+- You can discuss verified articles listed below
+- NEVER make up breaking news events NOT in the verified articles
+- If asked about events NOT listed, say: "I don't have information about that. Check Noteworthy News' articles for verified news."
+- If you don't know something, say so clearly rather than speculate
+${currentEventsContext}
+
+When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy AI" in a friendly, welcoming tone.`;
+
         const clientSecretResponse = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
           method: 'POST',
           headers: {
@@ -270,11 +415,7 @@ When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy
             session: {
               type: 'realtime',
               model: 'gpt-realtime', // GA API uses 'gpt-realtime', not 'gpt-4o-realtime-preview'
-              instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
-
-You help users understand news, fact-check claims, and stay informed with accurate information.
-
-When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy AI" in a friendly, welcoming tone.`,
+              instructions: instructions,
               audio: {
                 input: {
                   format: {

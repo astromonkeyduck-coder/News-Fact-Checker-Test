@@ -11,6 +11,73 @@ try {
 }
 
 /**
+ * Fetch recent posts from blob storage for AI context
+ */
+async function fetchRecentPosts(event, limit = 10) {
+  try {
+    const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
+    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
+    
+    let store;
+    if (siteID && token) {
+      store = getStore({
+        name: "x-posts",
+        siteID: siteID,
+        token: token,
+      });
+    } else {
+      store = getStore({ name: "x-posts" });
+    }
+
+    // Read index
+    let indexData = { ids: [] };
+    try {
+      const indexBlob = await store.get("index.json", { type: "json" });
+      if (indexBlob && Array.isArray(indexBlob.ids)) {
+        indexData = indexBlob;
+      }
+    } catch (err) {
+      console.log('[Noteworthy Chat] No posts index found');
+      return [];
+    }
+
+    if (!indexData.ids || indexData.ids.length === 0) {
+      return [];
+    }
+
+    // Get most recent posts (first N from index, which should be sorted by date)
+    const postIds = indexData.ids.slice(0, Math.min(limit, indexData.ids.length));
+    
+    // Fetch posts in parallel
+    const postPromises = postIds.map(async (id) => {
+      try {
+        const post = await store.get(id, { type: "json" });
+        return post;
+      } catch (err) {
+        console.error(`[Noteworthy Chat] Error fetching post ${id}:`, err);
+        return null;
+      }
+    });
+
+    const posts = await Promise.all(postPromises);
+    // Filter out nulls and sort by timestamp (newest first)
+    const validPosts = posts
+      .filter(p => p !== null)
+      .sort((a, b) => {
+        const timeA = a.timestamp || a.createdAt || 0;
+        const timeB = b.timestamp || b.createdAt || 0;
+        return timeB - timeA;
+      })
+      .slice(0, limit);
+
+    return validPosts;
+  } catch (error) {
+    console.error('[Noteworthy Chat] Error fetching recent posts:', error);
+    return [];
+  }
+}
+
+/**
  * Get user identifier (IP address)
  */
 function getUserIdentifier(event) {
@@ -612,15 +679,57 @@ exports.handler = async (event, context) => {
       }
     }
 
+    // Fetch recent posts for AI context (current events)
+    let recentPosts = [];
+    try {
+      recentPosts = await fetchRecentPosts(event, 10); // Get 10 most recent posts
+      console.log(`[Noteworthy Chat] Fetched ${recentPosts.length} recent posts for context`);
+    } catch (error) {
+      console.error('[Noteworthy Chat] Error fetching recent posts:', error);
+      // Continue without posts - AI will still work
+    }
+
     // Build messages array with chat history and current message
     let messages;
     let storedUploadedImages = [];
     
+    // Build current events context from recent posts
+    let currentEventsContext = '';
+    if (recentPosts.length > 0) {
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const recentEvents = recentPosts
+        .filter(post => {
+          const postDate = post.timestamp || post.createdAt || 0;
+          const postDateObj = new Date(postDate);
+          // Include posts from today or yesterday
+          return postDateObj >= yesterday;
+        })
+        .map(post => {
+          const title = post.title || post.story || post.text || 'Untitled';
+          const date = post.timestamp || post.createdAt;
+          const dateStr = date ? new Date(date).toLocaleDateString() : 'Recent';
+          const category = post.category || 'News';
+          const summary = post.summary || post.text?.substring(0, 200) || '';
+          return `- ${dateStr}: ${title} (${category})${summary ? ` - ${summary}` : ''}`;
+        })
+        .slice(0, 5); // Limit to 5 most recent
+      
+      if (recentEvents.length > 0) {
+        currentEventsContext = `\n\nCURRENT EVENTS FROM NOTEWORTHY NEWS (Verified Articles):
+The following are REAL, VERIFIED news articles published on Noteworthy News. Use this information when answering questions about current events:
+
+${recentEvents.join('\n')}
+
+IMPORTANT: You can discuss these verified articles and their details. For any events NOT listed here, you should say you don't have information about them.`;
+      }
+    }
+    
     try {
-      messages = [
-          {
-            role: "system",
-            content: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You are designed to help users with fact-checking, media literacy, and staying informed with verified news.
+      // Build system prompt with current events context
+      const systemPrompt = `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You are designed to help users with fact-checking, media literacy, and staying informed with verified news.
 
 ABOUT NOTEWORTHY NEWS:
 - Noteworthy News is committed to delivering accurate, fact-checked journalism in an era of information overload
@@ -648,7 +757,15 @@ YOUR ROLE:
 - Edit images when users upload an image and request modifications (e.g., "make this blue", "change the color", "edit this")
        - Be concise, neutral, and always Truth-Seeking
 - When discussing news, emphasize the importance of multiple sources and verification
-- If you don't know something, say so rather than speculate
+
+CRITICAL: BREAKING NEWS AND CURRENT EVENTS
+${currentEventsContext ? '- You have access to REAL, VERIFIED current events from Noteworthy News articles (see below)' : '- You do NOT have access to real-time breaking news or current events'}
+- You can discuss and provide details about the verified articles listed below
+- NEVER make up, invent, or fabricate breaking news events that are NOT in the verified articles list
+- NEVER provide specific details about recent events at specific locations unless they are in the verified articles below
+- If asked about breaking news or recent events NOT in the verified articles, you MUST say: "I don't have information about that specific event. For the latest verified news, please check Noteworthy News' articles or other trusted news sources."
+- If you don't know something, say so clearly rather than speculate or make up information
+${currentEventsContext}
 - When an image has been generated for the user, acknowledge it naturally in your response
 - When analyzing uploaded images or documents, provide detailed observations and insights
 
@@ -658,7 +775,12 @@ RESPONSE STYLE:
 - Cite principles of fact-checking when relevant
 - Maintain a professional but approachable tone
 - Do NOT include any attribution text like "generated by Noteworthy AI" or similar disclaimers in your responses
-- Do NOT add footers, signatures, or attribution statements to your answers`,
+- Do NOT add footers, signatures, or attribution statements to your answers${currentEventsContext}`;
+
+      messages = [
+          {
+            role: "system",
+            content: systemPrompt,
           },
       ];
       

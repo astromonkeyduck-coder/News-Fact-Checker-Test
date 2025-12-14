@@ -377,7 +377,11 @@ exports.handler = async (event, context) => {
     let htmlContent = newsletterData.html;
     let textContent = newsletterData.text;
     // testEmail already declared above
-    const includeRecentPosts = newsletterData.includeRecentPosts !== false; // Default to true
+    // For AI-generated newsletters, default to false (don't append posts unless explicitly requested)
+    // Only default to true if no HTML is provided (use template with posts)
+    const includeRecentPosts = newsletterData.includeRecentPosts !== undefined 
+      ? newsletterData.includeRecentPosts 
+      : (!htmlContent || htmlContent.trim() === ''); // Only true if no custom HTML
     
     // Always fetch posts if includeRecentPosts is true (even if custom HTML provided)
     let recentPosts = [];
