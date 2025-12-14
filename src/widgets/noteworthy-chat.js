@@ -2146,23 +2146,30 @@ class NoteworthyChat extends HTMLElement {
                       <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                   </div>
-                  <div class="voice-option" data-value="fable">
-                    <span class="voice-name">Fable</span>
-                    <span class="voice-desc">Expressive & Dynamic</span>
-                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </div>
-                  <div class="voice-option" data-value="onyx">
-                    <span class="voice-name">Onyx</span>
-                    <span class="voice-desc">Deep & Authoritative</span>
-                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </div>
-                  <div class="voice-option" data-value="nova">
-                    <span class="voice-name">Nova</span>
+                  <div class="voice-option" data-value="coral">
+                    <span class="voice-name">Coral</span>
                     <span class="voice-desc">Bright & Energetic</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option" data-value="echo">
+                    <span class="voice-name">Echo</span>
+                    <span class="voice-desc">Clear & Direct</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option" data-value="marin">
+                    <span class="voice-name">Marin</span>
+                    <span class="voice-desc">Natural & Expressive</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option" data-value="cedar">
+                    <span class="voice-name">Cedar</span>
+                    <span class="voice-desc">Natural & Clear</span>
                     <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>

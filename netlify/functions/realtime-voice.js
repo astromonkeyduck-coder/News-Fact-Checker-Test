@@ -234,14 +234,8 @@ You help users understand news, fact-check claims, and stay informed with accura
             prefix_padding_ms: 300,
             silence_duration_ms: 500,
           },
-          tools: [
-            {
-              type: 'image_generation',
-            },
-            {
-              type: 'web_search',
-            },
-          ],
+          // Tools removed - Realtime API requires 'function' or 'mcp' type, not 'image_generation'/'web_search'
+          // Will add proper function definitions later if needed
         }),
       });
 
