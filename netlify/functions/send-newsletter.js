@@ -478,20 +478,36 @@ exports.handler = async (event, context) => {
           const fullName = customData.fullName || firstName;
           const emailUsername = email.split('@')[0];
           
+          // Replace date placeholder and other template variables
+          const dateStr = new Date().toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          });
+          const monthStr = new Date().toLocaleDateString('en-US', { month: 'long' });
+          const yearStr = new Date().getFullYear().toString();
+          
           // For sendToEmails, use full name in greeting
           personalizedHtml = personalizedHtml
             .replace(/\{\{FIRST_NAME\}\}/g, firstName)
             .replace(/\{\{LAST_NAME\}\}/g, '')
             .replace(/\{\{FULL_NAME\}\}/g, fullName)
             .replace(/\{\{EMAIL\}\}/g, email)
-            .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername);
+            .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername)
+            .replace(/\{\{DATE_PLACEHOLDER\}\}/g, dateStr)
+            .replace(/\{\{MONTH\}\}/g, monthStr)
+            .replace(/\{\{YEAR\}\}/g, yearStr);
           
           personalizedText = personalizedText
             .replace(/\{\{FIRST_NAME\}\}/g, firstName)
             .replace(/\{\{LAST_NAME\}\}/g, '')
             .replace(/\{\{FULL_NAME\}\}/g, fullName)
             .replace(/\{\{EMAIL\}\}/g, email)
-            .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername);
+            .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername)
+            .replace(/\{\{DATE_PLACEHOLDER\}\}/g, dateStr)
+            .replace(/\{\{MONTH\}\}/g, monthStr)
+            .replace(/\{\{YEAR\}\}/g, yearStr);
           
         const result = await resend.emails.send({
           from: fromEmail,
@@ -775,6 +791,15 @@ exports.handler = async (event, context) => {
       
       // Replace personalization placeholders
       // Use fullName in greeting (template uses {{FULL_NAME}})
+      const dateStr = new Date().toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      const monthStr = new Date().toLocaleDateString('en-US', { month: 'long' });
+      const yearStr = new Date().getFullYear().toString();
+      
       let personalizedHtml = htmlContent
         .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl)
         .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl)
@@ -782,10 +807,22 @@ exports.handler = async (event, context) => {
         .replace(/\{\{LAST_NAME\}\}/g, lastName || '')
         .replace(/\{\{FULL_NAME\}\}/g, fullName)
         .replace(/\{\{EMAIL\}\}/g, email)
-        .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername);
+        .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername)
+        .replace(/\{\{DATE_PLACEHOLDER\}\}/g, dateStr)
+        .replace(/\{\{MONTH\}\}/g, monthStr)
+        .replace(/\{\{YEAR\}\}/g, yearStr);
       
       let personalizedText = textContent
         .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, unsubscribeUrl)
+        .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl)
+        .replace(/\{\{FIRST_NAME\}\}/g, firstName || emailUsername)
+        .replace(/\{\{LAST_NAME\}\}/g, lastName || '')
+        .replace(/\{\{FULL_NAME\}\}/g, fullName)
+        .replace(/\{\{EMAIL\}\}/g, email)
+        .replace(/\{\{EMAIL_USERNAME\}\}/g, emailUsername)
+        .replace(/\{\{DATE_PLACEHOLDER\}\}/g, dateStr)
+        .replace(/\{\{MONTH\}\}/g, monthStr)
+        .replace(/\{\{YEAR\}\}/g, yearStr);
         .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, unsubscribeUrl)
         .replace(/\{\{FIRST_NAME\}\}/g, firstName || emailUsername)
         .replace(/\{\{LAST_NAME\}\}/g, lastName || '')

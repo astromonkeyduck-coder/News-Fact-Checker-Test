@@ -2685,12 +2685,25 @@
             }
             
             // Create preview HTML with email-safe styling
+            const datePlaceholder = new Date().toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
             const previewHtml = htmlToPreview
                 .replace(/\{\{FULL_NAME\}\}/g, 'Preview User')
                 .replace(/\{\{FIRST_NAME\}\}/g, 'Preview')
                 .replace(/\{\{EMAIL_USERNAME\}\}/g, 'preview')
                 .replace(/\{\{\{UNSUBSCRIBE_URL\}\}\}/g, '#')
-                .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#');
+                .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, '#')
+                .replace(/\{\{DATE_PLACEHOLDER\}\}/g, datePlaceholder)
+                .replace(/\{\{HEADLINE\}\}/g, 'Major News Story')
+                .replace(/\{\{BREAKING_NEWS_CONTENT\}\}/g, 'This is a breaking news story that requires immediate attention.')
+                .replace(/\{\{TOPIC\}\}/g, 'Important Topic')
+                .replace(/\{\{MONTH\}\}/g, new Date().toLocaleDateString('en-US', { month: 'long' }))
+                .replace(/\{\{YEAR\}\}/g, new Date().getFullYear().toString());
             
             const fullHtml = `<!DOCTYPE html>
 <html lang="en">

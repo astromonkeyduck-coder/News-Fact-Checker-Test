@@ -225,6 +225,9 @@ You help users understand news, fact-check claims, and stay informed with accura
       }
       console.log('Creating session with voice:', voice, 'from body:', body);
       
+      // EXPERT FIX: Use /v1/realtime/sessions endpoint which returns client_secret
+      // This is the correct endpoint for WebSocket connections
+      // The client_secret.value is the ephemeral token needed for browser authentication
       const response = await fetch('https://api.openai.com/v1/realtime/sessions', {
         method: 'POST',
         headers: {
@@ -255,7 +258,8 @@ You help users understand news, fact-check claims, and stay informed with accura
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('OpenAI Realtime API error:', errorData);
+        console.error('❌ [POST] OpenAI Realtime API error:', errorData);
+        console.error('❌ [POST] Response status:', response.status, response.statusText);
         return {
           statusCode: response.status,
           headers,
@@ -267,6 +271,8 @@ You help users understand news, fact-check claims, and stay informed with accura
       }
 
       const sessionData = await response.json();
+      console.log('✅ [POST] Session created successfully');
+      console.log('📋 [POST] Session ID:', sessionData.id);
       
       // Check if session response includes client_secret (ephemeral token)
       // New API format includes it directly in session response
@@ -287,6 +293,16 @@ You help users understand news, fact-check claims, and stay informed with accura
         console.log('✅ [POST] Using ephemeral token from client_secret');
         console.log('📋 [POST] Token length:', ephemeralToken.length);
         console.log('📋 [POST] Token preview (first 30 chars):', ephemeralToken.substring(0, 30) + '...');
+        
+        // CRITICAL: Validate token format immediately
+        if (!ephemeralToken.startsWith('ek_')) {
+          console.error('❌ [POST] CRITICAL: Token from client_secret.value does not start with "ek_"!');
+          console.error('❌ [POST] This indicates a problem with the API response format');
+          console.error('❌ [POST] Full client_secret object:', JSON.stringify(sessionData.client_secret, null, 2));
+          // Continue anyway - might be a false alarm, but log it
+        } else {
+          console.log('✅ [POST] Token format validated: starts with "ek_"');
+        }
       } else {
         // Fallback: Try to generate token via separate endpoint (older API format)
         console.log('⚠️ [POST] No client_secret found, trying token endpoint...');
@@ -324,18 +340,115 @@ You help users understand news, fact-check claims, and stay informed with accura
           console.log('✅ [POST] Using ephemeral token from token endpoint');
           console.log('📋 [POST] Token length:', ephemeralToken.length);
           console.log('📋 [POST] Token preview (first 30 chars):', ephemeralToken.substring(0, 30) + '...');
+          
+          // Validate format
+          if (!ephemeralToken.startsWith('ek_')) {
+            console.error('❌ [POST] CRITICAL: Token from token endpoint does not start with "ek_"!');
+            console.error('❌ [POST] Full token endpoint response:', JSON.stringify(tokenData, null, 2));
+          } else {
+            console.log('✅ [POST] Token format validated: starts with "ek_"');
+          }
         } else {
           console.error('❌ [POST] No token found in token endpoint response');
+          console.error('❌ [POST] Token endpoint response keys:', Object.keys(tokenData));
+          console.error('❌ [POST] Full response:', JSON.stringify(tokenData, null, 2));
         }
       }
       
+      // ENHANCED FALLBACK: If no token found, try /v1/realtime/client_secrets endpoint
+      // This is an alternative method that generates tokens separately
       if (!ephemeralToken) {
-        console.error('❌ [POST] No ephemeral token found in response:', sessionData);
+        console.error('❌ [POST] No ephemeral token found in session response');
+        console.log('🔄 [POST] Attempting fallback: /v1/realtime/client_secrets endpoint...');
+        
+        try {
+          const clientSecretResponse = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              expires_after: {
+                anchor: 'created_at',
+                seconds: 600 // 10 minutes
+              },
+              session: {
+                type: 'realtime',
+                model: 'gpt-4o-realtime-preview',
+                voice: voice,
+                instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.`,
+                audio: {
+                  input: {
+                    format: {
+                      type: 'audio/pcm',
+                      rate: 24000
+                    }
+                  },
+                  output: {
+                    format: {
+                      type: 'audio/pcm',
+                      rate: 24000
+                    },
+                    voice: voice,
+                    speed: 1.0
+                  }
+                }
+              }
+            }),
+          });
+
+          if (clientSecretResponse.ok) {
+            const clientSecretData = await clientSecretResponse.json();
+            console.log('✅ [POST] client_secrets endpoint response keys:', Object.keys(clientSecretData));
+            
+            // Extract token from client_secrets response
+            if (clientSecretData.value) {
+              ephemeralToken = clientSecretData.value;
+              expiresAt = clientSecretData.expires_at;
+              console.log('✅ [POST] Using ephemeral token from client_secrets endpoint (fallback)');
+              console.log('📋 [POST] Token length:', ephemeralToken.length);
+              console.log('📋 [POST] Token preview (first 30 chars):', ephemeralToken.substring(0, 30) + '...');
+              
+              // Validate format
+              if (!ephemeralToken.startsWith('ek_')) {
+                console.error('❌ [POST] CRITICAL: Token from client_secrets does not start with "ek_"!');
+              } else {
+                console.log('✅ [POST] Token format validated: starts with "ek_"');
+              }
+              
+              // Use the session from client_secrets response if available
+              if (clientSecretData.session && clientSecretData.session.id) {
+                sessionData.id = clientSecretData.session.id;
+                console.log('📋 [POST] Using session ID from client_secrets response:', sessionData.id);
+              }
+            } else {
+              console.error('❌ [POST] client_secrets endpoint did not return token in "value" field');
+              console.error('❌ [POST] Response:', JSON.stringify(clientSecretData, null, 2));
+            }
+          } else {
+            const errorData = await clientSecretResponse.json().catch(() => ({}));
+            console.error('❌ [POST] client_secrets endpoint failed:', clientSecretResponse.status, errorData);
+          }
+        } catch (clientSecretError) {
+          console.error('❌ [POST] Error calling client_secrets endpoint:', clientSecretError);
+        }
+      }
+      
+      // Final check - if still no token, return error
+      if (!ephemeralToken) {
+        console.error('❌ [POST] No ephemeral token found after all attempts:', {
+          triedSessions: true,
+          triedTokensEndpoint: true,
+          triedClientSecrets: true,
+          sessionResponse: sessionData
+        });
         return {
           statusCode: 500,
           headers,
           body: JSON.stringify({ 
-            error: 'No ephemeral token found in session response',
+            error: 'No ephemeral token found after all fallback attempts',
+            details: 'Tried: /sessions, /sessions/{id}/tokens, and /client_secrets endpoints',
             sessionData: sessionData
           }),
         };
@@ -345,9 +458,27 @@ You help users understand news, fact-check claims, and stay informed with accura
       console.log('📋 [POST] Token being sent (first 30 chars):', ephemeralToken.substring(0, 30) + '...');
       console.log('📋 [POST] Token length:', ephemeralToken.length);
       
-      // Verify token format - should start with 'ek_' for ephemeral tokens
+      // CRITICAL VALIDATION: Verify token format - MUST start with 'ek_' for ephemeral tokens
+      // OpenAI ephemeral tokens from client_secret always start with 'ek_'
+      // If it doesn't, the token is invalid and will cause authentication failures
       if (!ephemeralToken.startsWith('ek_')) {
-        console.warn('⚠️ [POST] Token does not start with "ek_" - might be wrong format');
+        console.error('❌ [POST] CRITICAL: Token does not start with "ek_" - INVALID FORMAT!');
+        console.error('❌ [POST] Token preview:', ephemeralToken.substring(0, 50));
+        console.error('❌ [POST] This token will NOT work for authentication!');
+        console.error('❌ [POST] Possible causes:');
+        console.error('   1. API returned wrong token format');
+        console.error('   2. Token extraction from wrong field');
+        console.error('   3. API version mismatch');
+        
+        // Still return it, but log the error - let frontend handle it
+        // Frontend will detect auth failure and retry
+      } else {
+        console.log('✅ [POST] Token format validated: starts with "ek_" (correct format)');
+      }
+      
+      // Additional validation: token should be reasonable length
+      if (ephemeralToken.length < 20 || ephemeralToken.length > 200) {
+        console.warn('⚠️ [POST] Token length unusual:', ephemeralToken.length, '(expected 30-50 chars)');
       }
       
       return {

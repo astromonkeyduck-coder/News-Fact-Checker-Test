@@ -390,6 +390,11 @@ exports.handler = async (event, context) => {
                 previewHtml: finalPreviewHtml, // Include preview HTML with placeholders
                 html: html, // Include full HTML for sending
                 text: parsed.text || '', // Include text version
+                // Include AI generation fields if present
+                promptText: parsed.promptText || '',
+                attachments: parsed.attachments || [],
+                generatedHtml: parsed.generatedHtml || html,
+                generatedAt: parsed.generatedAt || null,
               });
             } catch (e) {
               // Skip invalid templates
@@ -594,6 +599,11 @@ exports.handler = async (event, context) => {
                       previewHtml: previewHtml,
                       html: html,
                       text: text,
+                      // AI generation fields (empty for legacy templates)
+                      promptText: '',
+                      attachments: [],
+                      generatedHtml: html,
+                      generatedAt: null,
                     });
                     console.log(`✅ Loaded template: ${templateName} (${templateId})`);
                   }
