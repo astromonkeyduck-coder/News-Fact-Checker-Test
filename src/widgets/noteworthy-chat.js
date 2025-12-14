@@ -2568,15 +2568,56 @@ class NoteworthyChat extends HTMLElement {
     }
     
     if (voiceList) {
+      // Supported voices for OpenAI Realtime API
+      const SUPPORTED_VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse', 'marin', 'cedar'];
+      
+      // Initialize: Remove any unsupported voices and ensure a valid voice is active
       const voiceOptions = voiceList.querySelectorAll('.voice-option');
+      let hasValidActive = false;
+      
       voiceOptions.forEach(option => {
+        const voiceValue = option.dataset.value;
+        // Remove unsupported voices from DOM
+        if (!SUPPORTED_VOICES.includes(voiceValue)) {
+          console.warn(`[Voice Mode] Removing unsupported voice option: ${voiceValue}`);
+          option.remove();
+          return;
+        }
+        
+        // Check if this is a valid active voice
+        if (option.classList.contains('active') && SUPPORTED_VOICES.includes(voiceValue)) {
+          hasValidActive = true;
+          currentVoice = voiceValue;
+        }
+      });
+      
+      // If no valid active voice, set alloy as default
+      if (!hasValidActive) {
+        const alloyOption = voiceList.querySelector('.voice-option[data-value="alloy"]');
+        if (alloyOption) {
+          alloyOption.classList.add('active');
+          currentVoice = 'alloy';
+        }
+      }
+      
+      // Add click handlers to remaining valid voice options
+      const validVoiceOptions = voiceList.querySelectorAll('.voice-option');
+      validVoiceOptions.forEach(option => {
         option.addEventListener('click', () => {
+          const selectedVoice = option.dataset.value;
+          
+          // Validate voice is supported before using
+          if (!SUPPORTED_VOICES.includes(selectedVoice)) {
+            console.warn(`[Voice Mode] Attempted to select unsupported voice: ${selectedVoice}`);
+            return;
+          }
+          
           // Remove active from all
-          voiceOptions.forEach(opt => opt.classList.remove('active'));
+          validVoiceOptions.forEach(opt => opt.classList.remove('active'));
           // Add active to clicked
           option.classList.add('active');
           // Update current voice
-          currentVoice = option.dataset.value;
+          currentVoice = selectedVoice;
           
           // Show the "Start Voice Call" button when a voice is selected
           if (voiceActionsIntegrated) {
