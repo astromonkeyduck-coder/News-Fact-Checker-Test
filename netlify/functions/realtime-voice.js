@@ -52,7 +52,7 @@ exports.handler = async (event, context) => {
           instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
 
 You help users understand news, fact-check claims, and stay informed with accurate information.`,
-          temperature: 0.4,
+          temperature: 0.6,
           max_response_output_tokens: 4096,
           modalities: ['text', 'audio'],
           input_audio_format: 'pcm16',
@@ -223,7 +223,7 @@ You help users understand news, fact-check claims, and stay informed with accura
           instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
 
 You help users understand news, fact-check claims, and stay informed with accurate information.`,
-          temperature: 0.4,
+          temperature: 0.6,
           max_response_output_tokens: 4096,
           modalities: ['text', 'audio'],
           input_audio_format: 'pcm16',
