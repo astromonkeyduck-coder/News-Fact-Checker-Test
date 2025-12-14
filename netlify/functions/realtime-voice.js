@@ -182,21 +182,32 @@ Always inform the user when you're using these tools during the conversation.`,
       // Handle different body formats from Netlify Functions
       if (event.body) {
         try {
-          if (typeof event.body === 'string') {
+          let bodyStr = event.body;
+          
+          // Handle base64 encoded body (Netlify Functions can send this)
+          if (event.isBase64Encoded && typeof bodyStr === 'string') {
+            bodyStr = Buffer.from(bodyStr, 'base64').toString('utf-8');
+            console.log('Decoded base64 body:', bodyStr.substring(0, 100));
+          }
+          
+          if (typeof bodyStr === 'string') {
             // Empty string or whitespace only
-            if (event.body.trim() === '') {
+            if (bodyStr.trim() === '') {
               body = {};
             } else {
-              body = JSON.parse(event.body);
+              body = JSON.parse(bodyStr);
             }
-          } else if (typeof event.body === 'object') {
+          } else if (typeof bodyStr === 'object') {
             // Already parsed (shouldn't happen in Netlify but handle it)
-            body = event.body;
+            body = bodyStr;
           }
+          
+          console.log('Parsed body:', body);
         } catch (e) {
           console.error('Error parsing request body:', e);
           console.error('Raw body type:', typeof event.body);
-          console.error('Raw body value:', event.body);
+          console.error('Raw body value:', typeof event.body === 'string' ? event.body.substring(0, 200) : event.body);
+          console.error('isBase64Encoded:', event.isBase64Encoded);
           return {
             statusCode: 400,
             headers,
@@ -204,6 +215,7 @@ Always inform the user when you're using these tools during the conversation.`,
               error: 'Invalid JSON in request body', 
               details: e.message,
               receivedBodyType: typeof event.body,
+              isBase64Encoded: event.isBase64Encoded,
               receivedBody: typeof event.body === 'string' ? event.body.substring(0, 200) : 'Not a string'
             }),
           };

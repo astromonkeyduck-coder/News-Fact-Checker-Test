@@ -1494,7 +1494,19 @@ export class NoteworthyChat extends HTMLElement {
         });
         
         if (!sessionRes.ok) {
-          throw new Error('Failed to create voice session');
+          // Try to get error details from response
+          let errorMessage = 'Failed to create voice session';
+          try {
+            const errorData = await sessionRes.json();
+            errorMessage = errorData.error || errorData.message || errorMessage;
+            if (errorData.details) {
+              console.error('[Voice Mode] Error details:', errorData.details);
+            }
+          } catch (e) {
+            // If response isn't JSON, use status text
+            errorMessage = `${errorMessage}: ${sessionRes.status} ${sessionRes.statusText}`;
+          }
+          throw new Error(errorMessage);
         }
         
         const sessionData = await sessionRes.json();
