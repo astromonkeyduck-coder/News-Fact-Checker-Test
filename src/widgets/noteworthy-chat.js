@@ -2092,6 +2092,181 @@ class NoteworthyChat extends HTMLElement {
             padding: 16px 20px;
           }
         }
+        
+        /* Voice Call Sidebar - Shows images and essays during calls */
+        .voice-call-sidebar {
+          position: fixed;
+          right: 24px;
+          top: 24px;
+          width: 400px;
+          max-width: calc(100vw - 48px);
+          max-height: calc(100vh - 48px);
+          background: linear-gradient(135deg, 
+            rgba(18, 24, 38, 0.98) 0%, 
+            rgba(15, 23, 42, 0.96) 50%,
+            rgba(12, 19, 35, 0.98) 100%);
+          border: 1.5px solid rgba(74, 144, 226, 0.3);
+          border-radius: 16px;
+          box-shadow: 
+            0 24px 64px rgba(0, 0, 0, 0.5),
+            0 8px 24px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+          z-index: 2147482999;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes slideInRight {
+          from {
+            opacity: 0;
+            transform: translateX(100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        .voice-sidebar-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 20px;
+          border-bottom: 1px solid rgba(74, 144, 226, 0.15);
+          background: linear-gradient(135deg, 
+            rgba(30, 41, 59, 0.95) 0%, 
+            rgba(15, 23, 42, 0.98) 50%,
+            rgba(30, 41, 59, 0.95) 100%);
+        }
+        
+        .voice-sidebar-title {
+          display: flex;
+          align-items: center;
+          color: #fff;
+          font-weight: 600;
+          font-size: 16px;
+        }
+        
+        .voice-sidebar-close {
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: #fff;
+          width: 28px;
+          height: 28px;
+          border-radius: 6px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+          line-height: 1;
+          transition: all 0.2s;
+        }
+        
+        .voice-sidebar-close:hover {
+          background: rgba(255, 255, 255, 0.2);
+          transform: scale(1.1);
+        }
+        
+        .voice-sidebar-content {
+          flex: 1;
+          overflow-y: auto;
+          padding: 20px;
+          min-height: 200px;
+        }
+        
+        .voice-sidebar-content::-webkit-scrollbar {
+          width: 8px;
+        }
+        
+        .voice-sidebar-content::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        .voice-sidebar-content::-webkit-scrollbar-thumb {
+          background: rgba(74, 144, 226, 0.3);
+          border-radius: 4px;
+        }
+        
+        .voice-sidebar-content::-webkit-scrollbar-thumb:hover {
+          background: rgba(74, 144, 226, 0.5);
+        }
+        
+        .voice-sidebar-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          color: rgba(255, 255, 255, 0.5);
+          text-align: center;
+          padding: 40px 20px;
+          min-height: 200px;
+        }
+        
+        .voice-sidebar-empty p {
+          margin: 0;
+          font-size: 14px;
+        }
+        
+        .voice-sidebar-item {
+          margin-bottom: 20px;
+          padding: 16px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(74, 144, 226, 0.2);
+          border-radius: 12px;
+          animation: fadeIn 0.3s ease;
+        }
+        
+        .voice-sidebar-item-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 12px;
+          color: #fff;
+          font-weight: 600;
+          font-size: 14px;
+        }
+        
+        .voice-sidebar-item img {
+          width: 100%;
+          border-radius: 8px;
+          margin-top: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .voice-sidebar-item-text {
+          color: rgba(255, 255, 255, 0.9);
+          line-height: 1.6;
+          white-space: pre-wrap;
+          word-wrap: break-word;
+          max-height: 400px;
+          overflow-y: auto;
+          padding: 12px;
+          background: rgba(0, 0, 0, 0.2);
+          border-radius: 8px;
+          font-size: 14px;
+        }
+        
+        .voice-sidebar-item-text::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        .voice-sidebar-item-text::-webkit-scrollbar-thumb {
+          background: rgba(74, 144, 226, 0.3);
+          border-radius: 3px;
+        }
+        
+        @media (max-width: 768px) {
+          .voice-call-sidebar {
+            right: 12px;
+            top: 12px;
+            width: calc(100vw - 24px);
+            max-width: calc(100vw - 24px);
+            max-height: calc(100vh - 24px);
+          }
+        }
       </style>
       
       <button class="launcher" aria-label="Open Noteworthy AI">
@@ -2278,6 +2453,27 @@ class NoteworthyChat extends HTMLElement {
         </div>
         
         <div class="resize-handle" aria-label="Resize chat" title="Drag to resize"></div>
+      </div>
+      
+      <!-- Voice Call Sidebar - Shows images and essays during voice calls -->
+      <div class="voice-call-sidebar" id="voiceCallSidebar" style="display: none;">
+        <div class="voice-sidebar-header">
+          <div class="voice-sidebar-title">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px; margin-right: 8px;">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+            <span>Call Results</span>
+          </div>
+          <button class="voice-sidebar-close" id="voiceSidebarClose" aria-label="Close sidebar">×</button>
+        </div>
+        <div class="voice-sidebar-content" id="voiceSidebarContent">
+          <div class="voice-sidebar-empty">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 48px; height: 48px; opacity: 0.3; margin-bottom: 12px;">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+            <p>Generated content will appear here during your call</p>
+          </div>
+        </div>
       </div>
       
       <!-- Voice Control Panel - REMOVED (now integrated) -->
@@ -4211,6 +4407,17 @@ class NoteworthyChat extends HTMLElement {
           sampleRate: 24000, // OpenAI Realtime API uses 24kHz
         });
         
+        // CRITICAL: Resume AudioContext if suspended (browsers suspend until user interaction)
+        // This ensures audio can play when we receive audio chunks
+        if (audioContext.state === 'suspended') {
+          console.log('[Voice Mode] 🔊 AudioContext is suspended, attempting to resume...');
+          audioContext.resume().then(() => {
+            console.log('[Voice Mode] ✅ AudioContext resumed successfully, state:', audioContext.state);
+          }).catch(err => {
+            console.error('[Voice Mode] ❌ Failed to resume AudioContext:', err);
+          });
+        }
+        
         // Create session with backend (use captured endpoint from outer scope)
         // Handle both '/.netlify/functions/noteworthy-chat' and '/api/noteworthy' endpoints
         let realtimeEndpoint;
@@ -4414,6 +4621,40 @@ class NoteworthyChat extends HTMLElement {
           if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
           isRecording = true;
           startAudioCapture();
+          
+          // Hide voice selector options since call is active (voice already selected)
+          const voiceControlContent = root.querySelector('#voiceControlContent');
+          const voiceSelectorIntegrated = root.querySelector('.voice-selector-integrated');
+          if (voiceControlContent) {
+            voiceControlContent.style.display = 'none';
+            console.log('[Voice Mode] 🔇 Hiding voice selector (call active)');
+          }
+          if (voiceSelectorIntegrated) {
+            voiceSelectorIntegrated.style.display = 'none';
+          }
+          
+          // Show sidebar for voice call results
+          showVoiceSidebar();
+          
+          // Trigger AI to speak first with greeting
+          // Wait a brief moment for connection to be fully ready, then trigger response
+          setTimeout(() => {
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+              console.log('[Voice Mode] 👋 Triggering AI to speak first...');
+              try {
+                // Send response.create to trigger AI to generate and speak the greeting
+                // The instructions in the session already tell it to greet with "Hey, It's Noteworthy AI"
+                websocket.send(JSON.stringify({
+                  type: 'response.create'
+                }));
+                console.log('[Voice Mode] ✅ Sent response.create to trigger initial greeting');
+              } catch (error) {
+                console.error('[Voice Mode] ❌ Error sending initial greeting:', error);
+              }
+            } else {
+              console.warn('[Voice Mode] ⚠️ WebSocket not ready for initial greeting, state:', websocket?.readyState);
+            }
+          }, 500); // Small delay to ensure connection is fully ready
         };
         
         websocket.onmessage = (event) => {
@@ -4574,11 +4815,90 @@ class NoteworthyChat extends HTMLElement {
       }
     }
     
+    // Voice sidebar functions
+    const voiceCallSidebar = root.querySelector('#voiceCallSidebar');
+    const voiceSidebarContent = root.querySelector('#voiceSidebarContent');
+    const voiceSidebarClose = root.querySelector('#voiceSidebarClose');
+    
+    function showVoiceSidebar() {
+      if (voiceCallSidebar) {
+        voiceCallSidebar.style.display = 'flex';
+        console.log('[Voice Mode] 📋 Showing voice call sidebar');
+      }
+    }
+    
+    function hideVoiceSidebar() {
+      if (voiceCallSidebar) {
+        voiceCallSidebar.style.display = 'none';
+        console.log('[Voice Mode] 📋 Hiding voice call sidebar');
+      }
+    }
+    
+    function showInVoiceSidebar(type, data) {
+      if (!voiceModeActive || !voiceSidebarContent) return;
+      
+      showVoiceSidebar();
+      
+      // Remove empty state
+      const emptyState = voiceSidebarContent.querySelector('.voice-sidebar-empty');
+      if (emptyState) emptyState.remove();
+      
+      const item = document.createElement('div');
+      item.className = 'voice-sidebar-item';
+      
+      if (type === 'image') {
+        item.innerHTML = `
+          <div class="voice-sidebar-item-header">
+            <span>🎨</span>
+            <span>Generated Image</span>
+          </div>
+          <img src="${data.image_url}" alt="${data.prompt || 'Generated image'}" />
+          ${data.prompt ? `<p style="margin-top: 12px; color: rgba(255,255,255,0.7); font-size: 12px;">${data.prompt}</p>` : ''}
+        `;
+      } else if (type === 'text' || type === 'essay') {
+        item.innerHTML = `
+          <div class="voice-sidebar-item-header">
+            <span>📝</span>
+            <span>${type === 'essay' ? 'Essay' : 'Text Response'}</span>
+          </div>
+          <div class="voice-sidebar-item-text">${data.text || data.content || ''}</div>
+        `;
+      }
+      
+      voiceSidebarContent.appendChild(item);
+      // Scroll to bottom
+      voiceSidebarContent.scrollTop = voiceSidebarContent.scrollHeight;
+      
+      console.log('[Voice Mode] 📋 Added', type, 'to sidebar');
+    }
+    
+    // Close sidebar button
+    if (voiceSidebarClose) {
+      voiceSidebarClose.addEventListener('click', () => {
+        hideVoiceSidebar();
+      });
+    }
+    
     function stopVoiceMode() {
       voiceModeActive = false;
       // Reset retry counter when stopping
       authRetryCount = 0;
       if (voiceModeToggle) voiceModeToggle.classList.remove('active');
+      
+      // Hide sidebar when stopping voice mode
+      hideVoiceSidebar();
+      
+      // Show voice selector options again (call ended, can change voice for next call)
+      const voiceControlContent = root.querySelector('#voiceControlContent');
+      const voiceSelectorIntegrated = root.querySelector('.voice-selector-integrated');
+      if (voiceControlContent) {
+        voiceControlContent.style.display = '';
+        console.log('[Voice Mode] 🔊 Showing voice selector (call ended)');
+      }
+      if (voiceSelectorIntegrated) {
+        voiceSelectorIntegrated.style.display = '';
+      }
+      
       if (voiceStatusIntegrated) {
         voiceStatusIntegrated.style.display = 'none';
         voiceStatusIntegrated.classList.remove('recording');
@@ -4593,6 +4913,9 @@ class NoteworthyChat extends HTMLElement {
         voiceActionsIntegrated.style.display = 'flex';
       }
       isRecording = false;
+      
+      // Hide sidebar when stopping voice mode
+      hideVoiceSidebar();
       
       // Restore background music if it was playing before the call
       if (musicStateBeforeCall && musicStateBeforeCall.wasPlaying) {
@@ -4951,31 +5274,39 @@ class NoteworthyChat extends HTMLElement {
             // Function result received
             if (message.result) {
               if (message.name === 'generate_image' && message.result.image_url) {
-                // Show generated image in chat
-                const aiGroup = document.createElement('div');
-                aiGroup.className = 'message-group ai-msg-group';
-                const replyContent = document.createElement('div');
-                replyContent.className = 'reply';
-                
-                const imageEl = document.createElement('img');
-                imageEl.src = message.result.image_url;
-                imageEl.alt = message.result.revised_prompt || 'Generated image';
-                imageEl.style.maxWidth = '100%';
-                imageEl.style.borderRadius = '12px';
-                imageEl.style.marginTop = '8px';
-                
-                replyContent.innerHTML = '<p>🎨 Generated image:</p>';
-                replyContent.appendChild(imageEl);
-                
-                aiGroup.innerHTML = `
-                  <div class="message-avatar">NW</div>
-                  <div class="message-content"></div>
-                `;
-                aiGroup.querySelector('.message-content').appendChild(replyContent);
-                body.appendChild(aiGroup);
-                body.scrollTop = body.scrollHeight;
+                // Show generated image in sidebar during voice call, or in chat if not in voice mode
+                if (voiceModeActive) {
+                  showInVoiceSidebar('image', {
+                    image_url: message.result.image_url,
+                    prompt: message.result.revised_prompt || 'Generated image'
+                  });
+                } else {
+                  // Show in chat if not in voice mode
+                  const aiGroup = document.createElement('div');
+                  aiGroup.className = 'message-group ai-msg-group';
+                  const replyContent = document.createElement('div');
+                  replyContent.className = 'reply';
+                  
+                  const imageEl = document.createElement('img');
+                  imageEl.src = message.result.image_url;
+                  imageEl.alt = message.result.revised_prompt || 'Generated image';
+                  imageEl.style.maxWidth = '100%';
+                  imageEl.style.borderRadius = '12px';
+                  imageEl.style.marginTop = '8px';
+                  
+                  replyContent.innerHTML = '<p>🎨 Generated image:</p>';
+                  replyContent.appendChild(imageEl);
+                  
+                  aiGroup.innerHTML = `
+                    <div class="message-avatar">NW</div>
+                    <div class="message-content"></div>
+                  `;
+                  aiGroup.querySelector('.message-content').appendChild(replyContent);
+                  body.appendChild(aiGroup);
+                  body.scrollTop = body.scrollHeight;
+                }
               } else if (message.name === 'search_web' && message.result.results) {
-                // Show search results
+                // Show search results in chat (or sidebar if in voice mode)
                 const aiGroup = document.createElement('div');
                 aiGroup.className = 'message-group ai-msg-group';
                 const replyContent = document.createElement('div');
@@ -5009,13 +5340,63 @@ class NoteworthyChat extends HTMLElement {
             break;
             
           case 'response.done':
-            // Response complete
+            // Response complete - check if there's text content (essay) to show in sidebar
+            if (voiceModeActive && message.response && message.response.output) {
+              // Check for text content in the response
+              let textContent = '';
+              
+              // Handle different response formats
+              if (message.response.output) {
+                // Check if output is an array of items
+                if (Array.isArray(message.response.output)) {
+                  message.response.output.forEach(item => {
+                    if (item.type === 'text' && item.text) {
+                      textContent += item.text;
+                    } else if (item.type === 'content' && item.content) {
+                      textContent += item.content;
+                    }
+                  });
+                } else if (typeof message.response.output === 'string') {
+                  textContent = message.response.output;
+                }
+              }
+              
+              // If we have text content and it's substantial (likely an essay), show in sidebar
+              if (textContent && textContent.length > 100) {
+                console.log('[Voice Mode] 📝 Detected text response (essay), showing in sidebar');
+                showInVoiceSidebar('essay', { text: textContent });
+              }
+            }
+            
             if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Listening...';
             if (voiceStatusIntegrated) {
               voiceStatusIntegrated.classList.remove('error');
               voiceStatusIntegrated.classList.add('recording');
             }
             if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
+            break;
+            
+          case 'response.text.delta':
+          case 'response.content.delta':
+            // Text content is being streamed - we'll collect it and show when done
+            // Store in a temporary variable for now
+            if (!websocket._textBuffer) websocket._textBuffer = '';
+            const deltaText = message.delta || message.text || message.content || '';
+            if (deltaText) {
+              websocket._textBuffer += deltaText;
+            }
+            break;
+            
+          case 'response.text.done':
+          case 'response.content.done':
+            // Text response complete - show in sidebar if it's substantial
+            const fullText = message.text || message.content || websocket._textBuffer || '';
+            if (voiceModeActive && fullText && fullText.length > 100) {
+              console.log('[Voice Mode] 📝 Text response complete, showing in sidebar');
+              showInVoiceSidebar('essay', { text: fullText });
+            }
+            // Clear buffer
+            if (websocket._textBuffer) websocket._textBuffer = '';
             break;
             
           case 'conversation.item.input_audio_transcription.completed':
@@ -5129,9 +5510,28 @@ class NoteworthyChat extends HTMLElement {
     }
     
     async function playAudioChunk(audioBase64) {
-      if (!audioContext) return;
+      if (!audioContext) {
+        console.warn('[Voice Mode] ⚠️ Cannot play audio: AudioContext not initialized');
+        return;
+      }
       
       try {
+        // CRITICAL: Resume AudioContext if suspended (browsers suspend until user interaction)
+        if (audioContext.state === 'suspended') {
+          console.log('[Voice Mode] 🔊 Resuming suspended AudioContext...');
+          await audioContext.resume();
+          console.log('[Voice Mode] ✅ AudioContext resumed, state:', audioContext.state);
+        }
+        
+        // Check if audio is enabled (check audio toggle state)
+        // The audio toggle uses 'active' class when enabled, and localStorage 'noteworthy-ai-audio'
+        const audioToggle = root.querySelector('#audioToggle');
+        const audioEnabled = localStorage.getItem('noteworthy-ai-audio') === 'true';
+        if (audioToggle && !audioEnabled) {
+          console.log('[Voice Mode] 🔇 Audio is disabled (toggle is off), skipping playback');
+          return;
+        }
+        
         // Decode base64 to binary
         const binaryString = atob(audioBase64);
         const bytes = new Uint8Array(binaryString.length);
@@ -5155,8 +5555,17 @@ class NoteworthyChat extends HTMLElement {
         source.connect(audioContext.destination);
         source.start();
         
+        console.log('[Voice Mode] 🔊 Playing audio chunk, length:', float32.length, 'samples');
+        
       } catch (error) {
-        console.error('Error playing audio chunk:', error);
+        console.error('[Voice Mode] ❌ Error playing audio chunk:', error);
+        console.error('[Voice Mode] AudioContext state:', audioContext?.state);
+        console.error('[Voice Mode] Error details:', {
+          message: error.message,
+          stack: error.stack,
+          audioContextExists: !!audioContext,
+          audioContextState: audioContext?.state
+        });
       }
     }
     

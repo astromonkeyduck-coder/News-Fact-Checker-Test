@@ -1579,6 +1579,23 @@ export class NoteworthyChat extends HTMLElement {
           voiceStatus.classList.remove('recording');
           isRecording = true;
           startAudioCapture();
+          
+          // Trigger AI to speak first with greeting
+          setTimeout(() => {
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+              console.log('[Voice Mode] 👋 Triggering AI to speak first...');
+              try {
+                // Send response.create to trigger AI to generate and speak the greeting
+                // The instructions in the session already tell it to greet with "Hey, It's Noteworthy AI"
+                websocket.send(JSON.stringify({
+                  type: 'response.create'
+                }));
+                console.log('[Voice Mode] ✅ Sent response.create to trigger initial greeting');
+              } catch (error) {
+                console.error('[Voice Mode] ❌ Error sending initial greeting:', error);
+              }
+            }
+          }, 500);
         };
         
         websocket.onmessage = (event) => {

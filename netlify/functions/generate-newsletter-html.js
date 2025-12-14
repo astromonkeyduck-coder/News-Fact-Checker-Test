@@ -259,12 +259,14 @@ Reference the house style template structure and fill in the content section wit
 
   } catch (error) {
     console.error('[Generate Newsletter] Error:', error);
+    console.error('[Generate Newsletter] Stack:', error.stack);
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         error: 'Failed to generate newsletter HTML',
         message: error.message,
+        details: process.env.NETLIFY_DEV ? error.stack : undefined,
       }),
     };
   }

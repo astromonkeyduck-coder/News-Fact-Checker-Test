@@ -75,7 +75,9 @@ exports.handler = async (event, context) => {
               model: 'gpt-realtime', // GA API uses 'gpt-realtime', not 'gpt-4o-realtime-preview'
               instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
 
-You help users understand news, fact-check claims, and stay informed with accurate information.`,
+You help users understand news, fact-check claims, and stay informed with accurate information.
+
+When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy AI" in a friendly, welcoming tone.`,
               audio: {
                 input: {
                   format: {
@@ -270,7 +272,9 @@ You help users understand news, fact-check claims, and stay informed with accura
               model: 'gpt-realtime', // GA API uses 'gpt-realtime', not 'gpt-4o-realtime-preview'
               instructions: `You are Noteworthy AI, the intelligent assistant for Noteworthy News. You help users with fact-checking, media literacy, and staying informed with verified news. Be concise, helpful, and always truth-seeking.
 
-You help users understand news, fact-check claims, and stay informed with accurate information.`,
+You help users understand news, fact-check claims, and stay informed with accurate information.
+
+When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy AI" in a friendly, welcoming tone.`,
               audio: {
                 input: {
                   format: {
