@@ -21,6 +21,9 @@ let enhancedIsLoading = false;
 let enhancedCurrentSort = localStorage.getItem('feed-sort') || 'recent';
 let enhancedCurrentSearch = localStorage.getItem('feed-search') || '';
 let enhancedCurrentPosts = [];
+let enhancedDisplayedCount = 5; // Number of posts currently displayed
+let enhancedPostsPerChunk = 10; // Number of posts to load per scroll
+let enhancedScrollObserver = null; // Intersection Observer for infinite scroll
 let expandedPosts = new Set(); // Track which posts are expanded
 let sharedPosts = new Set(); // Track recently shared posts
 
@@ -884,9 +887,9 @@ function renderSkeletonCards(count = 5) {
 }
 
 /**
- * Load posts from API
+ * Load posts from API with chunked loading
  */
-async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', limit = 200) {
+async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', limit = 200, resetDisplayCount = true) {
   // Prevent concurrent loads and infinite recursion
   if (enhancedIsLoading) {
     console.warn('[Enhanced Feed] Already loading, skipping duplicate call');
@@ -901,8 +904,47 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
     return;
   }
   
-  // Show skeleton
-  container.innerHTML = renderSkeletonCards(5);
+  // Reset display count if this is a fresh load
+  if (resetDisplayCount) {
+    enhancedDisplayedCount = 5;
+    
+    // Try to load from cache first for instant display
+    try {
+      const cached = localStorage.getItem(ENHANCED_CACHE_KEY);
+      if (cached) {
+        const { posts, timestamp } = JSON.parse(cached);
+        // Use cache if less than 5 minutes old
+        if (posts && posts.length > 0 && Date.now() - timestamp < 300000) {
+          enhancedCurrentPosts = posts;
+          // Render first 5 posts instantly from cache
+          renderEnhancedFeed();
+          setupInfiniteScroll();
+          // Continue to fetch fresh data in background
+        }
+      }
+    } catch (e) {
+      console.warn('[Enhanced Feed] Cache read failed:', e);
+    }
+    
+    // Show skeleton only if we don't have cached posts
+    if (enhancedCurrentPosts.length === 0) {
+      container.innerHTML = renderSkeletonCards(5);
+    }
+  } else {
+    // Add loading indicator at the bottom for additional posts
+    const loadingIndicator = document.getElementById('enhanced-feed-loading');
+    if (!loadingIndicator) {
+      const loader = document.createElement('div');
+      loader.id = 'enhanced-feed-loading';
+      loader.style.cssText = `
+        padding: 2rem;
+        text-align: center;
+        color: rgba(255,255,255,0.7);
+      `;
+      loader.innerHTML = '<div style="font-size: 1.5rem; margin-bottom: 0.5rem;">⏳</div><p>Loading more posts...</p>';
+      container.appendChild(loader);
+    }
+  }
   
   try {
     const response = await fetch(`${endpoint}?limit=${limit}`);
@@ -921,7 +963,13 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
       timestamp: Date.now(),
     }));
     
+    // Render with chunked display (will update if cache was used)
     renderEnhancedFeed();
+    
+    // Set up infinite scroll after initial render
+    if (resetDisplayCount) {
+      setupInfiniteScroll();
+    }
   } catch (error) {
     console.error('[Enhanced Feed] Load error:', error);
     const errorId = 'enhanced-feed-error-' + Date.now();
@@ -960,6 +1008,11 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
       });
     }
   } finally {
+    // Remove loading indicator
+    const loadingIndicator = document.getElementById('enhanced-feed-loading');
+    if (loadingIndicator) {
+      loadingIndicator.remove();
+    }
     enhancedIsLoading = false;
   }
 }
@@ -1007,7 +1060,7 @@ function sortEnhancedPosts(posts, sortMode) {
 }
 
 /**
- * Render enhanced feed
+ * Render enhanced feed with chunked display
  */
 function renderEnhancedFeed() {
   const container = document.getElementById('articlesTrack');
@@ -1025,7 +1078,26 @@ function renderEnhancedFeed() {
     return;
   }
   
-  container.innerHTML = sorted.map(post => renderEnhancedPostCard(post)).join('');
+  // Only render posts up to the displayed count
+  const postsToRender = sorted.slice(0, enhancedDisplayedCount);
+  container.innerHTML = postsToRender.map(post => renderEnhancedPostCard(post)).join('');
+  
+  // Add sentinel element for infinite scroll if there are more posts to load
+  if (enhancedDisplayedCount < sorted.length) {
+    let sentinel = document.getElementById('enhanced-feed-sentinel');
+    if (!sentinel) {
+      sentinel = document.createElement('div');
+      sentinel.id = 'enhanced-feed-sentinel';
+      sentinel.style.cssText = 'height: 1px; width: 100%;';
+      container.appendChild(sentinel);
+    }
+  } else {
+    // Remove sentinel if all posts are displayed
+    const sentinel = document.getElementById('enhanced-feed-sentinel');
+    if (sentinel) {
+      sentinel.remove();
+    }
+  }
   
   // Add CSS animations if not already added
   if (!document.getElementById('enhanced-feed-styles')) {
@@ -1051,9 +1123,104 @@ function renderEnhancedFeed() {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
       }
+      #enhanced-feed-loading {
+        animation: pulse 1.5s ease-in-out infinite;
+      }
     `;
     document.head.appendChild(style);
   }
+}
+
+/**
+ * Load more posts when user scrolls near bottom
+ */
+function loadMorePosts() {
+  // Filter and sort to get total available posts
+  let filtered = searchEnhancedPosts(enhancedCurrentPosts, enhancedCurrentSearch);
+  const pinned = filtered.filter(p => p.isPinned);
+  const unpinned = filtered.filter(p => !p.isPinned);
+  const sorted = [...pinned, ...sortEnhancedPosts(unpinned, enhancedCurrentSort)];
+  
+  // Check if there are more posts to load
+  if (enhancedDisplayedCount >= sorted.length) {
+    // No more posts to load, remove observer
+    if (enhancedScrollObserver) {
+      enhancedScrollObserver.disconnect();
+      enhancedScrollObserver = null;
+    }
+    return;
+  }
+  
+  // Increase displayed count
+  enhancedDisplayedCount = Math.min(enhancedDisplayedCount + enhancedPostsPerChunk, sorted.length);
+  
+  // Re-render with more posts
+  renderEnhancedFeed();
+  
+  // Re-setup observer for next batch
+  setupInfiniteScroll();
+}
+
+/**
+ * Set up infinite scroll using Intersection Observer
+ */
+function setupInfiniteScroll() {
+  const container = document.getElementById('articlesTrack');
+  if (!container) return;
+  
+  // Disconnect existing observer
+  if (enhancedScrollObserver) {
+    enhancedScrollObserver.disconnect();
+  }
+  
+  // Check if we have more posts to load
+  let filtered = searchEnhancedPosts(enhancedCurrentPosts, enhancedCurrentSearch);
+  const pinned = filtered.filter(p => p.isPinned);
+  const unpinned = filtered.filter(p => !p.isPinned);
+  const sorted = [...pinned, ...sortEnhancedPosts(unpinned, enhancedCurrentSort)];
+  
+  if (enhancedDisplayedCount >= sorted.length) {
+    // All posts are already displayed
+    return;
+  }
+  
+  // Find the sentinel element (should already exist from renderEnhancedFeed)
+  const sentinel = document.getElementById('enhanced-feed-sentinel');
+  if (!sentinel) {
+    // If sentinel doesn't exist, renderEnhancedFeed should have created it
+    // But just in case, create it here
+    const newSentinel = document.createElement('div');
+    newSentinel.id = 'enhanced-feed-sentinel';
+    newSentinel.style.cssText = 'height: 1px; width: 100%;';
+    container.appendChild(newSentinel);
+    // Use the newly created sentinel
+    enhancedScrollObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !enhancedIsLoading) {
+          loadMorePosts();
+        }
+      });
+    }, {
+      rootMargin: '200px', // Start loading when 200px away from bottom
+      threshold: 0.1
+    });
+    enhancedScrollObserver.observe(newSentinel);
+    return;
+  }
+  
+  // Set up Intersection Observer on existing sentinel
+  enhancedScrollObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !enhancedIsLoading) {
+        loadMorePosts();
+      }
+    });
+  }, {
+    rootMargin: '200px', // Start loading when 200px away from bottom
+    threshold: 0.1
+  });
+  
+  enhancedScrollObserver.observe(sentinel);
 }
 
 /**
@@ -1140,7 +1307,15 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
       searchTimeout = setTimeout(() => {
         enhancedCurrentSearch = e.target.value;
         localStorage.setItem('feed-search', enhancedCurrentSearch);
+        // Reset display count when search changes
+        enhancedDisplayedCount = 5;
+        // Disconnect observer before re-rendering
+        if (enhancedScrollObserver) {
+          enhancedScrollObserver.disconnect();
+          enhancedScrollObserver = null;
+        }
         renderEnhancedFeed();
+        setupInfiniteScroll();
       }, 300);
     });
   }
@@ -1149,7 +1324,15 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
     sortSelect.addEventListener('change', (e) => {
       enhancedCurrentSort = e.target.value;
       localStorage.setItem('feed-sort', enhancedCurrentSort);
+      // Reset display count when sort changes
+      enhancedDisplayedCount = 5;
+      // Disconnect observer before re-rendering
+      if (enhancedScrollObserver) {
+        enhancedScrollObserver.disconnect();
+        enhancedScrollObserver = null;
+      }
       renderEnhancedFeed();
+      setupInfiniteScroll();
     });
   }
 }

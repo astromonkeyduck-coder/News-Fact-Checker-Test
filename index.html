@@ -6098,7 +6098,7 @@
             font-weight: 500;
         }
         
-        /* Headline - Fixed height */
+        /* Headline - Auto-resize to fit */
         .hero-module-headline {
             font-size: 1.125rem;
             font-weight: 700;
@@ -6107,11 +6107,13 @@
             margin: 0 0 0.5rem 0;
             padding: 0;
             letter-spacing: -0.01em;
-            min-height: 2.6em; /* ~2 lines */
             flex-shrink: 0;
+            overflow: hidden;
+            word-wrap: break-word;
+            hyphens: auto;
         }
         
-        /* Subhead - Fixed height */
+        /* Subhead - Auto-resize to fit */
         .hero-module-subhead {
             font-size: 0.813rem;
             line-height: 1.4;
@@ -6119,8 +6121,10 @@
             margin: 0 0 0.75rem 0;
             padding: 0;
             font-weight: 400;
-            min-height: 2.8em; /* ~2 lines */
             flex: 1;
+            overflow: hidden;
+            word-wrap: break-word;
+            hyphens: auto;
         }
         
         /* CTA Row */
@@ -6774,6 +6778,32 @@
             max-width: 100%;
         }
         
+        .about-section-image {
+            display: block;
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .about-section-image:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        @media (max-width: 768px) {
+            .about-section > div[style*="display: flex"] {
+                flex-direction: column !important;
+            }
+            .about-section-image {
+                max-width: 100%;
+                margin-top: 1.5rem;
+            }
+        }
+        
         .footer {
             text-align: center;
             padding: 50px 0;
@@ -7408,7 +7438,8 @@
             border-radius: 25px;
             padding: 50px 40px;
             margin: 60px auto;
-            max-width: 900px;
+            max-width: 1200px;
+            width: 90%;
             backdrop-filter: blur(15px);
             box-shadow: 0 20px 60px rgba(74, 158, 255, 0.2),
                         0 0 0 1px rgba(255, 255, 255, 0.1) inset;
@@ -7476,6 +7507,27 @@
             z-index: 1;
             font-weight: 800;
             letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: nowrap;
+            gap: 0.5rem;
+        }
+        
+        @media (max-width: 1024px) {
+            .news-cta {
+                max-width: 95%;
+            }
+            .news-cta h3 {
+                font-size: 2rem;
+                flex-wrap: wrap;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .news-cta h3 {
+                font-size: 1.75rem;
+            }
         }
         
         /* Mailbox SVG icon styling */
@@ -9644,9 +9696,14 @@
             .news-cta {
                 padding: 35px 25px;
                 margin: 40px 20px;
+                width: calc(100% - 40px);
+                max-width: 100%;
             }
             .news-cta h3 {
-                font-size: 2rem;
+                font-size: 1.75rem;
+                white-space: normal;
+                flex-direction: column;
+                gap: 0.25rem;
             }
             .news-cta p {
                 font-size: 1.1rem;
@@ -9691,6 +9748,56 @@
             .about-text {
                 font-size: 1rem;
                 line-height: 1.6;
+            }
+            .about-section > div[style*="display: flex"] {
+                flex-direction: column !important;
+            }
+            .about-section-image {
+                max-width: 100% !important;
+                margin-top: 1.5rem !important;
+            }
+        }
+        
+        /* Image Modal Styles */
+        #imageModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10000;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+        }
+        
+        #expandedImage {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            animation: fadeInScale 0.3s ease-out;
+        }
+        
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            #expandedImage {
+                max-width: 95%;
+                max-height: 85%;
             }
         }
         
@@ -11376,7 +11483,7 @@
         
         .tunnel-transition .news-section {
             opacity: 0.95;
-            transform: scale(1.03) translateY(3px);
+            transform: translateY(3px);
             filter: blur(0.2px);
         }
         
@@ -13575,8 +13682,15 @@
         <!-- Load breaking news IMMEDIATELY - critical priority -->
         <script>
         (function() {
+            // Track if content has loaded successfully to prevent reset
+            let contentLoaded = false;
+            
             // HERO: Latest Breaking News - Load immediately using prefetched data if available
             async function loadLatestBreakingNews(retryCount = 0) {
+                // Don't reload if content is already loaded
+                if (contentLoaded) {
+                    return;
+                }
                 const container = document.getElementById('heroModuleContainer');
                 const labelEl = document.getElementById('heroModuleLabel');
                 const headlineEl = document.getElementById('heroModuleHeadline');
@@ -13630,15 +13744,17 @@
                     }
                     
                     if (!Array.isArray(posts) || posts.length === 0) {
-                        // Don't show "No news available" - keep retrying
-                        if (retryCount < 5) {
+                        // Don't show "No news available" - keep retrying (but only if not loaded)
+                        if (!contentLoaded && retryCount < 5) {
                             setTimeout(() => loadLatestBreakingNews(retryCount + 1), 1000);
                             return;
                         }
-                        // Only show error after many retries
-                        headlineEl.textContent = 'Loading...';
-                        subheadEl.textContent = '';
-                        setTimeout(() => loadLatestBreakingNews(0), 2000);
+                        // If already loaded, don't reset
+                        if (contentLoaded) {
+                            return;
+                        }
+                        // Only retry if we haven't loaded anything
+                        setTimeout(() => loadLatestBreakingNews(retryCount + 1), 2000);
                         return;
                     }
                     
@@ -13695,6 +13811,14 @@
                     
                     headlineEl.textContent = headline || 'BREAKING:';
                     subheadEl.textContent = subhead || '';
+                    
+                    // Mark as loaded first to prevent reloads
+                    contentLoaded = true;
+                    
+                    // Auto-resize text to fit container (after a brief delay to ensure rendering)
+                    setTimeout(() => {
+                        autoResizeText(headlineEl, subheadEl);
+                    }, 50);
                     
                     // Update timestamp - try multiple date field names and formats
                     const postDate = latestPost.datePosted || latestPost.createdAt || latestPost.created_at || latestPost.Date || latestPost.date || latestPost.timestamp;
@@ -13784,52 +13908,132 @@
                     
                 } catch (error) {
                     console.error('[Hero Module] Error loading breaking news:', error);
-                    // Don't show error message - keep retrying aggressively
-                    if (retryCount < 10) {
-                        setTimeout(() => loadLatestBreakingNews(retryCount + 1), 500);
+                    // Only retry if content hasn't loaded yet
+                    if (!contentLoaded && retryCount < 5) {
+                        setTimeout(() => loadLatestBreakingNews(retryCount + 1), 1000);
                         return;
                     }
-                    // Only after many retries, show loading state
-                    headlineEl.textContent = 'Loading...';
-                    subheadEl.textContent = '';
-                    // Keep retrying
-                    setTimeout(() => loadLatestBreakingNews(0), 1000);
+                    // If content already loaded, don't reset it
+                    if (contentLoaded) {
+                        return;
+                    }
+                    // Only show error if we haven't loaded anything yet
+                    if (retryCount < 5) {
+                        // Keep trying silently
+                        setTimeout(() => loadLatestBreakingNews(retryCount + 1), 2000);
+                    }
                 }
             }
             
-            // Start loading immediately - multiple attempts
+            // Auto-resize text function to fit fixed container
+            function autoResizeText(headlineEl, subheadEl) {
+                if (!headlineEl || !subheadEl) return;
+                
+                const container = headlineEl.closest('.hero-module-container');
+                if (!container) return;
+                
+                // Reset to base sizes first
+                headlineEl.style.fontSize = '';
+                subheadEl.style.fontSize = '';
+                
+                // Get computed styles
+                const headlineStyle = window.getComputedStyle(headlineEl);
+                const subheadStyle = window.getComputedStyle(subheadEl);
+                
+                // Get available space (container height minus fixed elements)
+                const containerHeight = container.offsetHeight;
+                const containerPadding = parseFloat(window.getComputedStyle(container).paddingTop) + parseFloat(window.getComputedStyle(container).paddingBottom);
+                const statusRow = container.querySelector('.hero-module-status');
+                const ctaRow = container.querySelector('.hero-module-cta');
+                const statusHeight = statusRow ? statusRow.offsetHeight : 20;
+                const ctaHeight = ctaRow ? ctaRow.offsetHeight : 40;
+                const margins = parseFloat(headlineStyle.marginBottom) + parseFloat(subheadStyle.marginBottom);
+                
+                const availableHeight = containerHeight - containerPadding - statusHeight - ctaHeight - margins;
+                
+                // Start with base font sizes (from CSS)
+                let headlineSize = parseFloat(headlineStyle.fontSize);
+                let subheadSize = parseFloat(subheadStyle.fontSize);
+                
+                // Measure current text height
+                headlineEl.style.fontSize = headlineSize + 'px';
+                subheadEl.style.fontSize = subheadSize + 'px';
+                
+                let headlineHeight = headlineEl.scrollHeight;
+                let subheadHeight = subheadEl.scrollHeight;
+                let totalHeight = headlineHeight + subheadHeight;
+                
+                // If text overflows, reduce font size proportionally
+                if (totalHeight > availableHeight) {
+                    const scale = (availableHeight / totalHeight) * 0.9; // 90% to leave padding
+                    headlineSize = Math.max(12, headlineSize * scale); // Min 12px
+                    subheadSize = Math.max(10, subheadSize * scale); // Min 10px
+                    
+                    headlineEl.style.fontSize = headlineSize + 'px';
+                    subheadEl.style.fontSize = subheadSize + 'px';
+                }
+            }
+            
+            // Start loading immediately
             loadLatestBreakingNews();
             
-            // Also try when DOM is ready (backup)
+            // Also try when DOM is ready (backup) - but only if not loaded
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', function() {
-                    const headline = document.getElementById('heroModuleHeadline');
-                    if (headline && (headline.textContent === 'Loading latest news...' || headline.textContent === 'Loading...')) {
-                        loadLatestBreakingNews();
+                    if (!contentLoaded) {
+                        const headline = document.getElementById('heroModuleHeadline');
+                        if (headline && (headline.textContent === 'Loading latest news...' || headline.textContent === 'Loading...')) {
+                            loadLatestBreakingNews();
+                        }
                     }
                 });
             } else {
-                // DOM already ready, try again
-                setTimeout(() => {
+                // DOM already ready, try once more if not loaded
+                if (!contentLoaded) {
+                    setTimeout(() => {
+                        if (!contentLoaded) {
+                            const headline = document.getElementById('heroModuleHeadline');
+                            if (headline && (headline.textContent === 'Loading latest news...' || headline.textContent === 'Loading...')) {
+                                loadLatestBreakingNews();
+                            }
+                        }
+                    }, 500);
+                }
+            }
+            
+            // Single retry after 3 seconds if still loading - but only once
+            setTimeout(function() {
+                if (!contentLoaded) {
                     const headline = document.getElementById('heroModuleHeadline');
                     if (headline && (headline.textContent === 'Loading latest news...' || headline.textContent === 'Loading...')) {
                         loadLatestBreakingNews();
                     }
-                }, 100);
-            }
-            
-            // Aggressive retry every 2 seconds until loaded
-            const retryInterval = setInterval(function() {
-                const headline = document.getElementById('heroModuleHeadline');
-                if (headline && (headline.textContent === 'Loading latest news...' || headline.textContent === 'Loading...' || headline.textContent === 'No news available at this time.')) {
-                    loadLatestBreakingNews();
-                } else {
-                    clearInterval(retryInterval); // Stop retrying once loaded
                 }
-            }, 2000);
+            }, 3000);
             
-            // Refresh every 5 minutes
-            setInterval(loadLatestBreakingNews, 300000);
+            // Refresh every 5 minutes (only if content was loaded)
+            setInterval(function() {
+                if (contentLoaded) {
+                    // Reset flag to allow refresh
+                    contentLoaded = false;
+                    loadLatestBreakingNews();
+                }
+            }, 300000);
+            
+            // Re-adjust text size on window resize
+            let resizeTimeout;
+            window.addEventListener('resize', function() {
+                if (contentLoaded) {
+                    clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(function() {
+                        const headlineEl = document.getElementById('heroModuleHeadline');
+                        const subheadEl = document.getElementById('heroModuleSubhead');
+                        if (headlineEl && subheadEl) {
+                            autoResizeText(headlineEl, subheadEl);
+                        }
+                    }, 100);
+                }
+            });
         })();
         </script>
         
@@ -13899,33 +14103,55 @@
                 <h3><span class="mailbox-icon">
                     <svg width="56" height="56" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <defs>
-                            <linearGradient id="mailboxGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#4FACFE;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#9B59B6;stop-opacity:1" />
+                            <linearGradient id="mailGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#4A9EFF;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#5BB5FF;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#6BC5FF;stop-opacity:1" />
                             </linearGradient>
-                            <linearGradient id="birdGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
-                            </linearGradient>
+                            <filter id="mailGlow" x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur stdDeviation="2" result="blur"/>
+                                <feMerge>
+                                    <feMergeNode in="blur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
                         </defs>
-                        <!-- Mailbox post -->
-                        <rect x="9" y="14" width="2" height="6" fill="url(#mailboxGrad)" rx="1"/>
-                        <!-- Mailbox body -->
-                        <rect x="5" y="8" width="10" height="8" fill="url(#mailboxGrad)" rx="1" stroke="url(#mailboxGrad)" stroke-width="1.5"/>
-                        <!-- Mailbox door/flap -->
-                        <path d="M5 8 L10 6 L15 8" stroke="url(#mailboxGrad)" stroke-width="1.5" fill="url(#mailboxGrad)" stroke-linejoin="round"/>
-                        <!-- Mail slot -->
-                        <rect x="8" y="10" width="4" height="1.5" fill="rgba(0,0,0,0.3)" rx="0.75"/>
-                        <!-- Bird body -->
-                        <ellipse cx="12" cy="4" rx="2.5" ry="2" fill="url(#birdGrad)" stroke="url(#birdGrad)" stroke-width="1.5"/>
-                        <!-- Bird head -->
-                        <circle cx="13.5" cy="3" r="1.2" fill="url(#birdGrad)"/>
-                        <!-- Bird beak -->
-                        <path d="M14.5 3 L16 2.5 L14.5 3.5 Z" fill="url(#birdGrad)"/>
-                        <!-- Bird wing -->
-                        <ellipse cx="11" cy="4.5" rx="1.2" ry="1.5" fill="url(#birdGrad)" opacity="0.8"/>
-                        <!-- Bird tail -->
-                        <path d="M9.5 4.5 L8 6 L9.5 5.5 Z" fill="url(#birdGrad)"/>
+                        <!-- Envelope body -->
+                        <rect x="3" y="6" width="18" height="13" rx="2" 
+                              stroke="url(#mailGrad)" 
+                              stroke-width="1.8" 
+                              stroke-linecap="round" 
+                              stroke-linejoin="round" 
+                              fill="none"
+                              filter="url(#mailGlow)"/>
+                        <!-- Envelope flap -->
+                        <path d="M3 8l9 6 9-6" 
+                              stroke="url(#mailGrad)" 
+                              stroke-width="1.8" 
+                              stroke-linecap="round" 
+                              stroke-linejoin="round" 
+                              fill="none"
+                              filter="url(#mailGlow)"/>
+                        <!-- Inner folds for depth -->
+                        <path d="M3 19l7-5.5" 
+                              stroke="url(#mailGrad)" 
+                              stroke-width="1.2" 
+                              stroke-linecap="round" 
+                              stroke-linejoin="round" 
+                              fill="none"
+                              opacity="0.6"/>
+                        <path d="M21 19l-7-5.5" 
+                              stroke="url(#mailGrad)" 
+                              stroke-width="1.2" 
+                              stroke-linecap="round" 
+                              stroke-linejoin="round" 
+                              fill="none"
+                              opacity="0.6"/>
+                        <!-- Subtle notification indicator -->
+                        <circle cx="18.5" cy="7.5" r="2.5" fill="#FF6B6B" opacity="0.9">
+                            <animate attributeName="opacity" values="0.9;0.6;0.9" dur="2s" repeatCount="indefinite"/>
+                        </circle>
+                        <circle cx="18.5" cy="7.5" r="1.5" fill="#FFFFFF"/>
                     </svg>
                 </span> Stay Informed with Noteworthy News</h3>
                 <p>Get the latest fact-checked stories and media literacy insights delivered directly to your inbox</p>
@@ -14411,10 +14637,49 @@
         <!-- About Section -->
         <div class="about-section" id="about-section">
             <h2 class="about-title">About Noteworthy News</h2>
-            <p class="about-text">
-                Three lifelong friends founded Noteworthy News to address the overwhelming pace of modern news. Breaking reports often flood social media, making it hard to distinguish what is confirmed, what is developing, and what is false. Our platform was created to slow that process just enough to make understanding possible. Political decisions, economic pressures, social behaviors, and global trends are interconnected, and reporting should reflect that! Using traditional journalistic standards, we clearly distinguish between verified information and ongoing developments. We also prioritize media literacy. Through interactive games and educational resources, we encourage readers to think critically about how news is produced, how narratives form, and how misinformation spreads. From breaking events to in-depth analysis, Noteworthy News aims to help readers stay grounded in what is happening while maintaining a broader perspective on why it matters. In a digital world where more people rely on social media for news, this platform takes its responsibility to share accurate, contextual, and meaningful information seriously.
-            </p>
+            <div style="display: flex; gap: 2rem; align-items: flex-start; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 300px;">
+                    <p class="about-text">
+                        Three lifelong friends founded Noteworthy News to address the overwhelming pace of modern news. Breaking reports often flood social media, making it hard to distinguish what is confirmed, what is developing, and what is false. Our platform was created to slow that process just enough to make understanding possible. Political decisions, economic pressures, social behaviors, and global trends are interconnected, and reporting should reflect that! Using traditional journalistic standards, we clearly distinguish between verified information and ongoing developments. We also prioritize media literacy. Through interactive games and educational resources, we encourage readers to think critically about how news is produced, how narratives form, and how misinformation spreads. From breaking events to in-depth analysis, Noteworthy News aims to help readers stay grounded in what is happening while maintaining a broader perspective on why it matters. In a digital world where more people rely on social media for news, this platform takes its responsibility to share accurate, contextual, and meaningful information seriously.
+                    </p>
+                </div>
+                <div style="flex: 0 0 auto; max-width: 400px;">
+                    <img src="G8FzNCgWoAEpbdM.jpeg" alt="Noteworthy News" class="about-section-image" onclick="expandImage(this.src)">
+                </div>
+            </div>
     </div>
+    
+    <!-- Image Modal/Lightbox -->
+    <div id="imageModal" onclick="closeImageModal()">
+        <img id="expandedImage" src="" alt="Expanded view">
+    </div>
+    
+    <script>
+        function expandImage(src) {
+            const modal = document.getElementById('imageModal');
+            const img = document.getElementById('expandedImage');
+            if (modal && img) {
+                img.src = src;
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+        
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            if (modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        }
+        
+        // Close on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+    </script>
     
         <!-- Premium Noteworthy Chat (will be mounted to body via JS) -->
         <div id="noteworthyChatContainer"></div>
