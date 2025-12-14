@@ -13501,7 +13501,7 @@
             <!-- Center Group: Main Navigation -->
             <div class="header-center">
                 <nav class="main-nav" id="mainNav">
-                    <ul>
+                    <ul class="nav-links">
                         <li><a href="#news-section" class="nav-link">News</a></li>
                         <li><a href="#geography-game-section" class="nav-link">Games</a></li>
                         <li><a href="#credibility-section" class="nav-link">Credibility</a></li>
@@ -13510,10 +13510,23 @@
                         <li><a href="profile.html" class="nav-link" id="profileLink" style="display: none;">Profile</a></li>
                         <li><a href="my-reading-list.html" class="nav-link" id="readingListLink" style="display: none;">Reading List</a></li>
                     </ul>
+                    <button class="nav-menu-button" id="navMenuButton" aria-label="Navigation menu" style="display: none;">
+                        <span>☰</span>
+                    </button>
+                    <div class="nav-dropdown" id="navDropdown" style="display: none;">
+                        <a href="#news-section" class="nav-link">News</a>
+                        <a href="#geography-game-section" class="nav-link">Games</a>
+                        <a href="#credibility-section" class="nav-link">Credibility</a>
+                        <a href="#about-section" class="nav-link">About</a>
+                        <a href="#ai-assistant-section" class="nav-link">AI Chat</a>
+                        <a href="profile.html" class="nav-link" id="dropdownProfileLink" style="display: none;">Profile</a>
+                        <a href="my-reading-list.html" class="nav-link" id="dropdownReadingListLink" style="display: none;">Reading List</a>
+                    </div>
                 </nav>
             </div>
             
             <div class="header-right">
+                <div class="last-update maintenance-pill" title="Scheduled Maintenance: December 18, 2025">Scheduled Maintenance: December 18, 2025</div>
                 <!-- Header Actions: Auth Buttons + Mute (never shrink) -->
                 <div class="header-actions">
                     <div class="auth-buttons-container" id="authButtonsContainer">
@@ -19160,56 +19173,116 @@
         })();
     </script>
     
-    <!-- Header No-Cutoff Guard - Ensures Sign In, Sign Up, and mute are never cut off -->
+    <!-- Header No-Wrap Guard - Ensures header never wraps and right controls stay visible -->
     <script>
         (function() {
             'use strict';
             
-            function ensureHeaderNoCutoff() {
-                const header = document.querySelector('.main-header');
-                const headerActions = document.querySelector('.header-actions');
-                const maintenancePill = document.querySelector('.maintenance-pill, .last-update');
+            // Nav menu toggle functionality
+            function initNavMenu() {
+                const navMenuButton = document.getElementById('navMenuButton');
+                const navDropdown = document.getElementById('navDropdown');
                 
-                if (!header || !headerActions) {
-                    return;
+                if (!navMenuButton || !navDropdown) return;
+                
+                // Toggle dropdown on button click
+                navMenuButton.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const isOpen = navDropdown.style.display !== 'none';
+                    navDropdown.style.display = isOpen ? 'none' : 'flex';
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!navMenuButton.contains(e.target) && !navDropdown.contains(e.target)) {
+                        navDropdown.style.display = 'none';
+                    }
+                });
+                
+                // Sync profile/reading list links visibility
+                const profileLink = document.getElementById('profileLink');
+                const readingListLink = document.getElementById('readingListLink');
+                const dropdownProfileLink = document.getElementById('dropdownProfileLink');
+                const dropdownReadingListLink = document.getElementById('dropdownReadingListLink');
+                
+                function syncLinkVisibility() {
+                    if (profileLink && dropdownProfileLink) {
+                        dropdownProfileLink.style.display = profileLink.style.display;
+                    }
+                    if (readingListLink && dropdownReadingListLink) {
+                        dropdownReadingListLink.style.display = readingListLink.style.display;
+                    }
                 }
                 
-                // Remove existing tight class
-                header.classList.remove('header--tight');
-                
-                // Check if header-actions is cut off (right edge exceeds window width)
-                const actionsRect = headerActions.getBoundingClientRect();
-                const cutoff = actionsRect.right > window.innerWidth - 4;
-                
-                // Apply tight class to hide maintenance pill if cutoff detected
-                header.classList.toggle('header--tight', cutoff);
-                
-                // Also hide pill directly via style if needed (extra safety)
-                if (maintenancePill) {
-                    if (cutoff) {
-                        maintenancePill.style.display = 'none';
-                    } else {
-                        maintenancePill.style.display = '';
-                    }
+                // Watch for visibility changes
+                if (profileLink || readingListLink) {
+                    const observer = new MutationObserver(syncLinkVisibility);
+                    [profileLink, readingListLink].forEach(link => {
+                        if (link) {
+                            observer.observe(link, { attributes: true, attributeFilter: ['style'] });
+                        }
+                    });
+                    syncLinkVisibility();
                 }
             }
             
-            // Run on load and resize
-            function initNoCutoffGuard() {
-                ensureHeaderNoCutoff();
+            // Runtime guard to prevent wrapping
+            function enforceHeaderSingleRow() {
+                const header = document.querySelector('.header-container');
+                const headerInner = document.querySelector('.header-container');
+                const actions = document.querySelector('.header-actions');
+                const pill = document.querySelector('.maintenance-pill, .last-update');
+                const navLinks = document.querySelector('.nav-links');
+                const navBtn = document.getElementById('navMenuButton');
+                const mainHeader = document.querySelector('.main-header');
+                
+                if (!headerInner || !actions || !mainHeader) return;
+                
+                const headerH = headerInner.getBoundingClientRect().height;
+                const actionsH = actions.getBoundingClientRect().height;
+                
+                // If actions are taller than one line or header is too tall, something wrapped
+                const wrapped = actionsH > 48 || headerH > 90;
+                
+                if (wrapped) {
+                    mainHeader.classList.add('header--compact');
+                    if (pill) pill.style.display = 'none';
+                    if (navLinks && navBtn) {
+                        navLinks.style.display = 'none';
+                        navBtn.style.display = 'inline-flex';
+                    }
+                } else {
+                    mainHeader.classList.remove('header--compact');
+                }
+                
+                // Also check for cutoff
+                const actionsRect = actions.getBoundingClientRect();
+                const cutoff = actionsRect.right > window.innerWidth - 4;
+                
+                mainHeader.classList.toggle('header--tight', cutoff);
+                
+                if (pill && cutoff) {
+                    pill.style.display = 'none';
+                }
+            }
+            
+            // Initialize everything
+            function initHeaderGuards() {
+                initNavMenu();
+                enforceHeaderSingleRow();
                 
                 let resizeTimeout;
                 window.addEventListener('resize', function() {
                     clearTimeout(resizeTimeout);
-                    resizeTimeout = setTimeout(ensureHeaderNoCutoff, 100);
+                    resizeTimeout = setTimeout(enforceHeaderSingleRow, 100);
                 });
             }
             
             // Wait for DOM to be ready
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initNoCutoffGuard);
+                document.addEventListener('DOMContentLoaded', initHeaderGuards);
             } else {
-                initNoCutoffGuard();
+                initHeaderGuards();
             }
         })();
     </script>

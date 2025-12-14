@@ -33,6 +33,7 @@ class NoteworthyChat extends HTMLElement {
     let isRecording = false;
     let audioQueue = [];
     let isPlayingAudio = false;
+    let musicStateBeforeCall = null; // Store music state when voice call starts
 
     this.root.innerHTML = `
       <style>
@@ -4073,6 +4074,48 @@ class NoteworthyChat extends HTMLElement {
       }
       
       try {
+        // Pause all background music when voice call starts
+        // This ensures the call audio is clear and not competing with background music
+        musicStateBeforeCall = null; // Reset state
+        if (typeof window.pauseAllMusicTracks === 'function') {
+          try {
+            musicStateBeforeCall = window.pauseAllMusicTracks();
+            console.log('[Voice Mode] 🎵 Paused background music for voice call');
+            if (musicStateBeforeCall && musicStateBeforeCall.wasPlaying) {
+              console.log('[Voice Mode] Music was playing, will restore after call ends');
+            }
+          } catch (err) {
+            console.warn('[Voice Mode] Could not pause background music:', err);
+          }
+        } else {
+          // Fallback: manually pause all music elements
+          const backgroundMusic = document.getElementById('backgroundMusic');
+          const backgroundMusicSecond = document.getElementById('backgroundMusicSecond');
+          const backgroundMusicThird = document.getElementById('backgroundMusicThird');
+          const backgroundMusicLoop = document.getElementById('backgroundMusicLoop');
+          
+          if (backgroundMusic && !backgroundMusic.paused) {
+            musicStateBeforeCall = { wasPlaying: true, currentTrack: backgroundMusic, currentTime: backgroundMusic.currentTime };
+            backgroundMusic.pause();
+          } else if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
+            musicStateBeforeCall = { wasPlaying: true, currentTrack: backgroundMusicSecond, currentTime: backgroundMusicSecond.currentTime };
+            backgroundMusicSecond.pause();
+          } else if (backgroundMusicThird && !backgroundMusicThird.paused) {
+            musicStateBeforeCall = { wasPlaying: true, currentTrack: backgroundMusicThird, currentTime: backgroundMusicThird.currentTime };
+            backgroundMusicThird.pause();
+          } else if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+            musicStateBeforeCall = { wasPlaying: true, currentTrack: backgroundMusicLoop, currentTime: backgroundMusicLoop.currentTime };
+            backgroundMusicLoop.pause();
+          }
+          
+          if (musicStateBeforeCall) {
+            console.log('[Voice Mode] 🎵 Paused background music (fallback method)');
+          }
+        }
+        
+        // Music state is already stored in module-level variable (musicStateBeforeCall)
+        // It will be restored in stopVoiceMode() when the call ends
+        
         // Run connectivity test first
         await testConnectivity();
         
@@ -4218,6 +4261,29 @@ class NoteworthyChat extends HTMLElement {
         let wsUrl = sessionData.websocket_url || 
           `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview&session_id=${sessionData.session_id}`;
         
+        // CRITICAL: Add ephemeral token to URL as query parameter
+        // Browser WebSocket API cannot send custom headers, so we MUST use URL parameter
+        // OpenAI Realtime API accepts ephemeral_token as a query parameter for browser connections
+        // This is the ONLY way to authenticate from browser clients
+        if (sessionData.ephemeral_token) {
+          // Check if URL already has query parameters
+          const separator = wsUrl.includes('?') ? '&' : '?';
+          // URL-encode the token to handle special characters safely
+          const encodedToken = encodeURIComponent(sessionData.ephemeral_token);
+          wsUrl = `${wsUrl}${separator}ephemeral_token=${encodedToken}`;
+          console.log('[Voice Mode] ✅ Added ephemeral token to WebSocket URL (browser authentication method)');
+          console.log('[Voice Mode] Token length:', sessionData.ephemeral_token.length, 'characters');
+        } else {
+          console.error('[Voice Mode] ❌ CRITICAL: No ephemeral token received from server!');
+          console.error('[Voice Mode] Session data received:', {
+            hasSessionId: !!sessionData.session_id,
+            hasWebsocketUrl: !!sessionData.websocket_url,
+            hasEphemeralToken: !!sessionData.ephemeral_token,
+            allKeys: Object.keys(sessionData)
+          });
+          throw new Error('No ephemeral token received - cannot authenticate WebSocket connection');
+        }
+        
         // Ensure wss:// protocol (required for HTTPS pages)
         if (window.location.protocol === 'https:' && wsUrl.startsWith('ws://')) {
           wsUrl = wsUrl.replace('ws://', 'wss://');
@@ -4263,30 +4329,18 @@ class NoteworthyChat extends HTMLElement {
             }
           }
           
-          // If we have an ephemeral token, send it as an auth message
-          if (sessionData.ephemeral_token) {
-            console.log('[Voice Mode] 🔐 Sending auth message with ephemeral token');
-            try {
-              const authMessage = JSON.stringify({
-                type: 'auth',
-                token: sessionData.ephemeral_token
-              });
-              websocket.send(authMessage);
-              if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Authenticating...';
-              // Wait for auth.success before starting
-              return;
-            } catch (e) {
-              console.error('[Voice Mode] ❌ Error sending auth message:', e);
-              console.error('[Voice Mode] Error details:', {
-                message: e.message,
-                stack: e.stack,
-                readyState: websocket.readyState
-              });
-            }
-          }
+          // Token is in URL, so authentication happens automatically during WebSocket handshake
+          // OpenAI authenticates the connection using the ephemeral_token query parameter
+          // No auth message needed - connection is already authenticated
+          console.log('[Voice Mode] ✅ WebSocket connected and authenticated (token in URL)');
           
-          // If no token or auth not needed, start immediately
-          console.log('[Voice Mode] 🎤 Starting audio capture');
+          // Set a flag to track if we've received auth confirmation
+          // Some implementations may send auth.success, but it's not required when token is in URL
+          websocket._authenticated = true;
+          
+          // Start audio capture immediately - authentication is complete
+          // If OpenAI sends auth.success message, we'll handle it but don't need to wait
+          console.log('[Voice Mode] 🎤 Starting audio capture (authenticated connection)');
           if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connected - Speak now!';
           if (voiceStatusIntegrated) {
             voiceStatusIntegrated.classList.remove('error');
@@ -4304,8 +4358,10 @@ class NoteworthyChat extends HTMLElement {
         websocket.onerror = (error) => {
           const errorTime = Date.now() - connectionStartTime;
           console.error('[Voice Mode] ❌ WebSocket error event');
-          console.error('[Voice Mode] Error details:', {
-            type: error.type,
+          
+          // Properly serialize error details
+          const errorDetails = {
+            type: error.type || 'unknown',
             time: errorTime + 'ms after connection attempt',
             readyState: websocket?.readyState,
             readyStateText: websocket?.readyState === WebSocket.CONNECTING ? 'CONNECTING' :
@@ -4313,13 +4369,30 @@ class NoteworthyChat extends HTMLElement {
                            websocket?.readyState === WebSocket.CLOSING ? 'CLOSING' :
                            websocket?.readyState === WebSocket.CLOSED ? 'CLOSED' : 'UNKNOWN',
             url: logUrl,
-            target: error.target,
-            error: error.error || 'No error object'
-          });
+            hasEphemeralToken: !!sessionData.ephemeral_token,
+            sessionId: sessionData.session_id ? 'present' : 'missing',
+            errorEvent: {
+              type: error.type,
+              target: error.target ? {
+                readyState: error.target.readyState,
+                url: error.target.url ? error.target.url.substring(0, 100) + '...' : 'no url'
+              } : 'no target',
+              error: error.error || 'No error object',
+              message: error.message || 'No message'
+            }
+          };
+          
+          console.error('[Voice Mode] Error details:', errorDetails);
+          console.error('[Voice Mode] Full error event:', error);
           
           // Try to get more error info from the error event
           if (error.target && error.target.readyState === WebSocket.CLOSED) {
             console.error('[Voice Mode] WebSocket closed unexpectedly during connection');
+          }
+          
+          // Check if this is a connection-level error (before auth)
+          if (errorTime < 5000 && !sessionData.ephemeral_token) {
+            console.error('[Voice Mode] ⚠️ Connection error before authentication - token may be missing!');
           }
           
           if (voiceStatusTextIntegrated) {
@@ -4454,6 +4527,38 @@ class NoteworthyChat extends HTMLElement {
       }
       isRecording = false;
       
+      // Restore background music if it was playing before the call
+      if (musicStateBeforeCall && musicStateBeforeCall.wasPlaying) {
+        console.log('[Voice Mode] 🎵 Restoring background music after voice call ended');
+        
+        // Try to use global music system restore function if available
+        // The music system should have saved state when we paused it
+        if (typeof window.toggleGlobalMusic === 'function' && typeof window.getGlobalMusicState === 'function') {
+          const currentState = window.getGlobalMusicState();
+          // Only restore if music is enabled (user hasn't manually muted it)
+          if (currentState.enabled && !currentState.isPlaying) {
+            // Music was enabled and playing before, restore it
+            try {
+              // toggleGlobalMusic will restore from saved state if music is enabled
+              window.toggleGlobalMusic();
+              console.log('[Voice Mode] ✅ Background music restored via global music system');
+            } catch (err) {
+              console.warn('[Voice Mode] Could not restore music via global system:', err);
+              // Fallback to manual restore
+              restoreMusicManually(musicStateBeforeCall);
+            }
+          } else if (!currentState.enabled) {
+            console.log('[Voice Mode] Music is disabled by user, not restoring');
+          }
+        } else {
+          // Fallback: manually restore music
+          restoreMusicManually(musicStateBeforeCall);
+        }
+        
+        // Clear stored music state
+        musicStateBeforeCall = null;
+      }
+      
       if (websocket) {
         // Clear retry counter
         if (websocket._retryCount) {
@@ -4479,6 +4584,24 @@ class NoteworthyChat extends HTMLElement {
       if (audioContext && audioContext.state !== 'closed') {
         audioContext.close();
         audioContext = null;
+      }
+    }
+    
+    // Helper function to manually restore background music
+    function restoreMusicManually(musicState) {
+      if (!musicState || !musicState.currentTrack) return;
+      
+      try {
+        const track = musicState.currentTrack;
+        if (track && track.tagName === 'AUDIO') {
+          track.currentTime = musicState.currentTime || 0;
+          track.play().catch(err => {
+            console.warn('[Voice Mode] Could not restore music playback:', err);
+          });
+          console.log('[Voice Mode] ✅ Background music restored manually');
+        }
+      } catch (err) {
+        console.warn('[Voice Mode] Error restoring music manually:', err);
       }
     }
     
@@ -4621,34 +4744,112 @@ class NoteworthyChat extends HTMLElement {
     function handleWebSocketMessage(event) {
       try {
         const message = JSON.parse(event.data);
-        console.log('[Voice Mode] Received WebSocket message:', message.type, message);
+        
+        // Only log non-audio messages to reduce console spam
+        if (message.type && !message.type.startsWith('response.audio.delta')) {
+          console.log('[Voice Mode] 📨 Received WebSocket message:', message.type);
+          if (message.type === 'error' || message.type === 'auth.error' || message.type === 'auth.success') {
+            console.log('[Voice Mode] Message details:', message);
+          }
+        }
         
         switch (message.type) {
           case 'auth.success':
-            // Authentication successful, start audio capture
-            console.log('[Voice Mode] ✅ Authentication successful');
-            if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connected - Speak now!';
-            if (voiceStatusIntegrated) {
-              voiceStatusIntegrated.classList.remove('error');
-              voiceStatusIntegrated.classList.add('recording');
+            // Authentication successful message (may be sent even when token is in URL)
+            // This confirms authentication worked - log it but we may already be recording
+            console.log('[Voice Mode] ✅ Received auth.success confirmation');
+            console.log('[Voice Mode] Auth success details:', {
+              event_id: message.event_id,
+              session_id: message.session_id,
+              alreadyRecording: isRecording,
+              alreadyAuthenticated: websocket._authenticated
+            });
+            
+            // Mark as authenticated (if not already)
+            websocket._authenticated = true;
+            
+            // Clear any auth timeout if it exists
+            if (websocket._authTimeout) {
+              clearTimeout(websocket._authTimeout);
+              websocket._authTimeout = null;
             }
-            if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
+            
+            // If not already recording, start now (shouldn't happen with URL auth, but handle it)
             if (!isRecording) {
+              console.log('[Voice Mode] 🎤 Starting audio capture after auth.success (delayed start)');
+              if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connected - Speak now!';
+              if (voiceStatusIntegrated) {
+                voiceStatusIntegrated.classList.remove('error');
+                voiceStatusIntegrated.classList.add('recording');
+              }
+              if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
               isRecording = true;
               startAudioCapture();
+            } else {
+              console.log('[Voice Mode] Already recording - auth.success is confirmation only');
             }
             break;
             
           case 'auth.error':
-            // Authentication failed
-            console.error('[Voice Mode] ❌ Authentication failed:', message);
-            if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Authentication failed';
+            // Authentication failed - this should NOT happen if token is in URL correctly
+            // If we get this, it means the token in URL was invalid/expired/malformed
+            const authErrorDetails = {
+              type: message.type,
+              error: message.error ? {
+                message: message.error.message || message.error,
+                code: message.error.code,
+                type: message.error.type,
+                param: message.error.param
+              } : message.error,
+              event_id: message.event_id,
+              fullMessage: message,
+              connectionMethod: 'URL parameter (ephemeral_token in query string)'
+            };
+            console.error('[Voice Mode] ❌ Authentication failed!');
+            console.error('[Voice Mode] Auth error details:', authErrorDetails);
+            console.error('[Voice Mode] Full error message:', JSON.stringify(message, null, 2));
+            
+            // Extract readable error message
+            let authErrorMsg = 'Authentication failed';
+            if (message.error) {
+              if (typeof message.error === 'string') {
+                authErrorMsg = message.error;
+              } else if (message.error.message) {
+                authErrorMsg = message.error.message;
+              } else if (message.error.code) {
+                authErrorMsg = `Auth error code: ${message.error.code}`;
+              }
+            }
+            
+            console.error('[Voice Mode] 🔐 Authentication failure reason:', authErrorMsg);
+            console.error('[Voice Mode] Possible causes:');
+            console.error('  1. Ephemeral token expired (tokens are short-lived)');
+            console.error('  2. Token was invalid or malformed');
+            console.error('  3. Token was not URL-encoded correctly');
+            console.error('  4. Session was already used or closed');
+            console.error('  5. Token was missing from URL (should not happen)');
+            console.error('[Voice Mode] Attempting to restart with fresh session...');
+            
+            if (voiceStatusTextIntegrated) {
+              voiceStatusTextIntegrated.textContent = `Auth failed: ${authErrorMsg}`;
+            }
             if (voiceStatusIntegrated) {
               voiceStatusIntegrated.classList.remove('recording');
               voiceStatusIntegrated.classList.add('error');
             }
             if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
+            
+            // Mark as not authenticated
+            websocket._authenticated = false;
+            
+            // Stop current connection and get a fresh token
             stopVoiceMode();
+            setTimeout(() => {
+              if (voiceModeActive) {
+                console.log('[Voice Mode] 🔄 Restarting voice mode with fresh session and new token...');
+                startVoiceMode();
+              }
+            }, 2000);
             break;
             
           case 'session.updated':
@@ -4769,15 +4970,76 @@ class NoteworthyChat extends HTMLElement {
             break;
             
           case 'error':
-            console.error('WebSocket error message:', message);
-            console.error('Error details:', {
+            // Properly serialize error for logging
+            const errorDetails = {
               type: message.type,
-              error: message.error,
+              error: message.error ? {
+                message: message.error.message || message.error,
+                code: message.error.code,
+                type: message.error.type,
+                param: message.error.param
+              } : null,
               event_id: message.event_id,
-              fullMessage: JSON.stringify(message, null, 2)
-            });
-            const errorMsg = message.error?.message || message.message || 'Unknown error';
-            if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = `Error: ${errorMsg}`;
+              fullMessage: message
+            };
+            console.error('[Voice Mode] ❌ WebSocket error message received:', errorDetails);
+            console.error('[Voice Mode] Full error object:', JSON.stringify(message, null, 2));
+            
+            // Extract readable error message
+            let errorMsg = 'Unknown error';
+            if (message.error) {
+              if (typeof message.error === 'string') {
+                errorMsg = message.error;
+              } else if (message.error.message) {
+                errorMsg = message.error.message;
+              } else if (message.error.code) {
+                errorMsg = `Error code: ${message.error.code}`;
+              }
+            } else if (message.message) {
+              errorMsg = message.message;
+            }
+            
+            // Check for authentication errors specifically
+            if (errorMsg.toLowerCase().includes('authentication') || 
+                errorMsg.toLowerCase().includes('bearer') || 
+                errorMsg.toLowerCase().includes('token') ||
+                errorMsg.toLowerCase().includes('unauthorized') ||
+                errorMsg.toLowerCase().includes('forbidden')) {
+              console.error('[Voice Mode] 🔐 Authentication error detected in error message!');
+              console.error('[Voice Mode] Error message:', errorMsg);
+              console.error('[Voice Mode] This indicates the ephemeral token in URL was:');
+              console.error('  1. Missing from URL (should not happen - we check for this)');
+              console.error('  2. Invalid or malformed');
+              console.error('  3. Expired (tokens are short-lived, typically 1-10 minutes)');
+              console.error('  4. Not URL-encoded correctly (special characters not escaped)');
+              console.error('  5. Session was already closed or used');
+              console.error('[Voice Mode] Connection method: URL parameter (ephemeral_token in query string)');
+              console.error('[Voice Mode] Attempting to restart with fresh session and new token...');
+              
+              // Mark as not authenticated
+              if (websocket) {
+                websocket._authenticated = false;
+                websocket.close();
+                websocket = null;
+              }
+              
+              // Restart voice mode to get a fresh token
+              setTimeout(() => {
+                if (voiceModeActive) {
+                  stopVoiceMode();
+                  setTimeout(() => {
+                    if (voiceModeActive) {
+                      console.log('[Voice Mode] 🔄 Restarting with fresh session...');
+                      startVoiceMode();
+                    }
+                  }, 1000);
+                }
+              }, 2000);
+            }
+            
+            if (voiceStatusTextIntegrated) {
+              voiceStatusTextIntegrated.textContent = `Error: ${errorMsg}`;
+            }
             if (voiceStatusIntegrated) {
               voiceStatusIntegrated.classList.remove('recording');
               voiceStatusIntegrated.classList.add('error');
