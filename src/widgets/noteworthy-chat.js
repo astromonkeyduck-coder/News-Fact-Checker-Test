@@ -4040,30 +4040,28 @@ class NoteworthyChat extends HTMLElement {
           throw new Error('No ephemeral token received from server');
         }
         
+        // Connect to WebSocket without token in URL
+        // The token will be sent as an auth message after connection
         const wsUrl = sessionData.websocket_url || 
           `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview&session_id=${sessionData.session_id}`;
         
-        // Append ephemeral token as query parameter (browser WebSocket doesn't support headers)
-        const separator = wsUrl.includes('?') ? '&' : '?';
-        const finalWsUrl = `${wsUrl}${separator}ephemeral_token=${encodeURIComponent(sessionData.ephemeral_token)}`;
-        
-        console.log('[Voice Mode] Connecting to WebSocket:', finalWsUrl.substring(0, 150) + '...');
+        console.log('[Voice Mode] Connecting to WebSocket:', wsUrl.substring(0, 100) + '...');
         console.log('[Voice Mode] Session ID:', sessionData.session_id);
         console.log('[Voice Mode] Has ephemeral token:', !!sessionData.ephemeral_token);
         
-        websocket = new WebSocket(finalWsUrl);
+        websocket = new WebSocket(wsUrl);
         
         websocket.onopen = () => {
-          console.log('[Voice Mode] WebSocket connected successfully');
-          // Session is already configured on the server, no need to send configuration
-          if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connected - Speak now!';
-          if (voiceStatusIntegrated) {
-            voiceStatusIntegrated.classList.remove('error');
-            voiceStatusIntegrated.classList.add('recording');
-          }
-          if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
-          isRecording = true;
-          startAudioCapture();
+          console.log('[Voice Mode] WebSocket opened, sending auth message...');
+          
+          // Send authentication message with ephemeral token
+          const authMessage = {
+            type: 'auth',
+            token: sessionData.ephemeral_token,
+          };
+          websocket.send(JSON.stringify(authMessage));
+          
+          if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Authenticating...';
         };
         
         websocket.onmessage = (event) => {
@@ -4209,6 +4207,31 @@ class NoteworthyChat extends HTMLElement {
         const message = JSON.parse(event.data);
         
         switch (message.type) {
+          case 'auth.success':
+            // Authentication successful, start audio capture
+            console.log('[Voice Mode] Authentication successful');
+            if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connected - Speak now!';
+            if (voiceStatusIntegrated) {
+              voiceStatusIntegrated.classList.remove('error');
+              voiceStatusIntegrated.classList.add('recording');
+            }
+            if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
+            isRecording = true;
+            startAudioCapture();
+            break;
+            
+          case 'auth.error':
+            // Authentication failed
+            console.error('[Voice Mode] Authentication failed:', message);
+            if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Authentication failed';
+            if (voiceStatusIntegrated) {
+              voiceStatusIntegrated.classList.remove('recording');
+              voiceStatusIntegrated.classList.add('error');
+            }
+            if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
+            stopVoiceMode();
+            break;
+            
           case 'response.audio_transcript.done':
             // Full transcript available
             if (message.transcript) {
