@@ -1723,7 +1723,20 @@ export class NoteworthyChat extends HTMLElement {
           case 'auth.success':
             // Authentication successful (confirmation - auth already happened via subprotocols)
             console.log('[Voice Mode] ✅ Received auth.success confirmation');
-            console.log('[Voice Mode] Authentication confirmed: WebSocket subprotocol method works!');
+            if (websocket) {
+              console.log('[Voice Mode] Authentication confirmed: WebSocket subprotocol method works!');
+              
+              // Mark as authenticated (if not already)
+              (websocket as any)._authenticated = true;
+              
+              // Clear any auth timeout if it exists
+              if ((websocket as any)._authTimeout) {
+                clearTimeout((websocket as any)._authTimeout);
+                (websocket as any)._authTimeout = null;
+              }
+            } else {
+              console.warn('[Voice Mode] ⚠️ auth.success received but websocket is null');
+            }
             
             // If not already recording, start now
             if (!isRecording) {
@@ -1912,9 +1925,28 @@ export class NoteworthyChat extends HTMLElement {
     }
     
     async function playAudioChunk(audioBase64: string) {
-      if (!audioContext) return;
+      if (!audioContext) {
+        console.warn('[Voice Mode] ⚠️ Cannot play audio: AudioContext not initialized');
+        return;
+      }
       
       try {
+        // CRITICAL: Resume AudioContext if suspended (browsers suspend until user interaction)
+        if (audioContext.state === 'suspended') {
+          console.log('[Voice Mode] 🔊 Resuming suspended AudioContext...');
+          await audioContext.resume();
+          console.log('[Voice Mode] ✅ AudioContext resumed, state:', audioContext.state);
+        }
+        
+        // Check if audio is enabled (check audio toggle state)
+        // The audio toggle uses 'active' class when enabled, and localStorage 'noteworthy-ai-audio'
+        const audioToggle = root.querySelector('#audioToggle');
+        const audioEnabled = localStorage.getItem('noteworthy-ai-audio') === 'true';
+        if (audioToggle && !audioEnabled) {
+          console.log('[Voice Mode] 🔇 Audio is disabled (toggle is off), skipping playback');
+          return;
+        }
+        
         // Decode base64 to binary
         const binaryString = atob(audioBase64);
         const bytes = new Uint8Array(binaryString.length);
@@ -1938,8 +1970,10 @@ export class NoteworthyChat extends HTMLElement {
         source.connect(audioContext.destination);
         source.start();
         
+        console.log('[Voice Mode] 🔊 Playing audio chunk, length:', float32.length, 'samples');
+        
       } catch (error) {
-        console.error('Error playing audio chunk:', error);
+        console.error('[Voice Mode] ❌ Error playing audio chunk:', error);
       }
     }
     

@@ -47,7 +47,19 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const body = JSON.parse(event.body || '{}');
+    let body;
+    try {
+      body = JSON.parse(event.body || '{}');
+    } catch (parseError) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Invalid JSON in request body',
+          message: parseError.message,
+        }),
+      };
+    }
     const { subject, preheader, promptText, attachments = [], styleReference } = body;
 
     // Validate required fields
@@ -142,6 +154,11 @@ When you see [[Image: Title]], insert an <img> tag with:
 - alt: The image title
 - style: "${STYLE_GUIDE.imageStyle};margin:${STYLE_GUIDE.imageMargin}"
 
+IMPORTANT: Your response must start with:
+1. A date paragraph: <p style="margin:0 0 30px 0;color:#9ca3af!important;font-size:14px">[Current Date]</p>
+2. A greeting: <p style="margin:0 0 30px 0;color:#f9fafb!important;font-size:16px;line-height:1.5">Hey {{FULL_NAME}},</p>
+3. Then the newsletter content
+
 Return ONLY the HTML content that goes inside the <td style="padding:50px 40px;background-color:#141b2b!important"> tag. Do not include the outer structure.`;
 
     const userPrompt = `Generate newsletter content based on this prompt:
@@ -181,8 +198,15 @@ Reference the house style template structure and fill in the content section wit
       throw new Error(`OpenAI API error: ${openaiResponse.status} ${errorText}`);
     }
 
-    const completion = await openaiResponse.json();
-    const generatedContent = completion.choices?.[0]?.message?.content || '';
+    let completion;
+    try {
+      completion = await openaiResponse.json();
+    } catch (jsonError) {
+      console.error('[Generate Newsletter] Failed to parse OpenAI response as JSON');
+      throw new Error('Invalid response format from OpenAI API');
+    }
+    
+    const generatedContent = completion?.choices?.[0]?.message?.content || '';
     
     if (!generatedContent || generatedContent.trim() === '') {
       return {
@@ -208,12 +232,19 @@ Reference the house style template structure and fill in the content section wit
     // For now, we'll keep placeholders and let the frontend handle image uploads
     // But we can replace [[Image: Title]] with proper img tags
     attachments.forEach(att => {
+      if (!att.title || !att.dataUrl) {
+        console.warn('[Generate Newsletter] Skipping attachment with missing title or dataUrl:', att);
+        return;
+      }
       const imageToken = `[[Image: ${att.title}]]`;
-      const imageTag = `<img src="${att.dataUrl}" alt="${att.title.replace(/"/g, '&quot;')}" style="${STYLE_GUIDE.imageStyle};margin:${STYLE_GUIDE.imageMargin}" />`;
+      const safeTitle = (att.title || '').replace(/"/g, '&quot;');
+      const imageTag = `<img src="${att.dataUrl}" alt="${safeTitle}" style="${STYLE_GUIDE.imageStyle};margin:${STYLE_GUIDE.imageMargin}" />`;
       htmlContent = htmlContent.replace(new RegExp(imageToken.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), imageTag);
     });
 
     // Insert generated content into house template
+    // The AI should generate content that includes date and greeting
+    // If it doesn't, we'll add them
     const datePlaceholder = new Date().toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
@@ -221,9 +252,32 @@ Reference the house style template structure and fill in the content section wit
       day: 'numeric' 
     });
     
-    const fullHtml = houseTemplate
-      .replace('{{DATE_PLACEHOLDER}}', datePlaceholder)
-      .replace('<!-- CONTENT_PLACEHOLDER -->', htmlContent);
+    // Ensure the generated content includes date and greeting if missing
+    let finalContent = htmlContent.trim();
+    
+    // Check if date is already present (check for date placeholder or actual date text)
+    const dateCheck = datePlaceholder && datePlaceholder.length >= 10 
+                      ? datePlaceholder.toLowerCase().substring(0, 10) 
+                      : '';
+    const hasDate = finalContent.includes('{{DATE_PLACEHOLDER}}') || 
+                    (dateCheck && finalContent.toLowerCase().includes(dateCheck)) ||
+                    /(monday|tuesday|wednesday|thursday|friday|saturday|sunday).*\d{4}/i.test(finalContent);
+    
+    if (!hasDate) {
+      // Add date and greeting if missing
+      finalContent = `<p style="margin:0 0 30px 0;color:#9ca3af!important;font-size:14px">${datePlaceholder}</p>\n<p style="margin:0 0 30px 0;color:#f9fafb!important;font-size:16px;line-height:1.5">Hey {{FULL_NAME}},</p>\n${finalContent}`;
+    } else {
+      // Replace date placeholder if present
+      finalContent = finalContent.replace(/\{\{DATE_PLACEHOLDER\}\}/g, datePlaceholder);
+    }
+    
+    // Verify template has placeholder before replacing
+    if (!houseTemplate.includes('<!-- CONTENT_PLACEHOLDER -->')) {
+      console.error('[Generate Newsletter] Template missing CONTENT_PLACEHOLDER!');
+      throw new Error('Template structure error: CONTENT_PLACEHOLDER not found');
+    }
+    
+    const fullHtml = houseTemplate.replace('<!-- CONTENT_PLACEHOLDER -->', finalContent);
 
     // Validate HTML structure
     const warnings = [];
@@ -234,14 +288,20 @@ Reference the house style template structure and fill in the content section wit
       warnings.push('HTML is very large - may cause email client issues');
     }
 
-    // Extract sections for metadata
+    // Extract sections for metadata (use finalContent to include date/greeting if added)
     const sections = [];
-    const sectionMatches = htmlContent.match(/<p[^>]*style="[^"]*font-size:11px[^"]*letter-spacing:0\.14em[^"]*"[^>]*>([^<]+)<\/p>/g);
+    const sectionMatches = finalContent.match(/<p[^>]*style="[^"]*font-size:11px[^"]*letter-spacing:0\.14em[^"]*"[^>]*>([^<]+)<\/p>/g);
     if (sectionMatches) {
       sections.push(...sectionMatches.map(m => {
         const textMatch = m.match(/>([^<]+)</);
         return textMatch ? textMatch[1].trim() : '';
       }).filter(Boolean));
+    }
+
+    // Final validation - ensure we have valid HTML
+    if (!fullHtml || fullHtml.trim().length === 0) {
+      console.error('[Generate Newsletter] Generated HTML is empty after template insertion');
+      throw new Error('Generated HTML is empty');
     }
 
     console.log('[Generate Newsletter] Successfully generated HTML, length:', fullHtml.length);

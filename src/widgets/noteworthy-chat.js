@@ -5147,11 +5147,18 @@ class NoteworthyChat extends HTMLElement {
           }
         } else if (message.type === 'response.output_audio.delta') {
           // Log first few audio deltas for debugging, then silence
-          if (!websocket._audioDeltaCount) websocket._audioDeltaCount = 0;
-          websocket._audioDeltaCount++;
-          if (websocket._audioDeltaCount <= 3) {
-            console.log('[Voice Mode] 🔊 Audio delta received (', websocket._audioDeltaCount, '), length:', message.delta?.length || 0);
+          if (websocket) {
+            if (!websocket._audioDeltaCount) websocket._audioDeltaCount = 0;
+            websocket._audioDeltaCount++;
+            if (websocket._audioDeltaCount <= 3) {
+              console.log('[Voice Mode] 🔊 Audio delta received (', websocket._audioDeltaCount, '), length:', message.delta?.length || 0);
+            }
           }
+        }
+        
+        // Debug: Log message type before switch
+        if (message.type === 'response.output_audio.delta') {
+          console.log('[Voice Mode] 🔍 DEBUG: About to switch on message.type:', message.type, 'typeof:', typeof message.type);
         }
         
         switch (message.type) {
@@ -5159,25 +5166,29 @@ class NoteworthyChat extends HTMLElement {
             // Authentication successful message (may be sent even when token is in URL)
             // This confirms authentication worked - log it but we may already be recording
             console.log('[Voice Mode] ✅ Received auth.success confirmation');
-            console.log('[Voice Mode] Auth success details:', {
-              event_id: message.event_id,
-              session_id: message.session_id,
-              alreadyRecording: isRecording,
-              alreadyAuthenticated: websocket._authenticated,
-              connectionMethod: 'WebSocket subprotocols',
-              protocol: websocket.protocol || 'none'
-            });
-            
-            // DIAGNOSTIC: Log that authentication succeeded with subprotocol method
-            console.log('[Voice Mode] ✅ Authentication confirmed: WebSocket subprotocol method works!');
-            
-            // Mark as authenticated (if not already)
-            websocket._authenticated = true;
-            
-            // Clear any auth timeout if it exists
-            if (websocket._authTimeout) {
-              clearTimeout(websocket._authTimeout);
-              websocket._authTimeout = null;
+            if (websocket) {
+              console.log('[Voice Mode] Auth success details:', {
+                event_id: message.event_id,
+                session_id: message.session_id,
+                alreadyRecording: isRecording,
+                alreadyAuthenticated: websocket._authenticated,
+                connectionMethod: 'WebSocket subprotocols',
+                protocol: websocket.protocol || 'none'
+              });
+              
+              // DIAGNOSTIC: Log that authentication succeeded with subprotocol method
+              console.log('[Voice Mode] ✅ Authentication confirmed: WebSocket subprotocol method works!');
+              
+              // Mark as authenticated (if not already)
+              websocket._authenticated = true;
+              
+              // Clear any auth timeout if it exists
+              if (websocket._authTimeout) {
+                clearTimeout(websocket._authTimeout);
+                websocket._authTimeout = null;
+              }
+            } else {
+              console.warn('[Voice Mode] ⚠️ auth.success received but websocket is null');
             }
             
             // If not already recording, start now (shouldn't happen with URL auth, but handle it)
@@ -5345,11 +5356,12 @@ class NoteworthyChat extends HTMLElement {
             
           case 'response.output_audio.delta':
             // Play audio chunks from OpenAI Realtime API
+            console.log('[Voice Mode] ✅ CASE MATCHED: response.output_audio.delta');
             if (message.delta) {
               console.log('[Voice Mode] 🔊 Received audio delta, length:', message.delta?.length || 0);
               
               // Show "Speaking..." status on first audio chunk
-              if (!websocket._isSpeaking) {
+              if (websocket && !websocket._isSpeaking) {
                 websocket._isSpeaking = true;
                 if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Speaking...';
                 if (voiceStatusText) voiceStatusText.textContent = 'Speaking...';
@@ -5365,7 +5377,7 @@ class NoteworthyChat extends HTMLElement {
           case 'response.output_audio.done':
             // Audio output complete
             console.log('[Voice Mode] ✅ Audio output complete');
-            websocket._isSpeaking = false;
+            if (websocket) websocket._isSpeaking = false;
             if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Listening...';
             if (voiceStatusText) voiceStatusText.textContent = 'Listening...';
             break;
@@ -5400,7 +5412,7 @@ class NoteworthyChat extends HTMLElement {
             }
             
             // Reset speaking state when response is done
-            websocket._isSpeaking = false;
+            if (websocket) websocket._isSpeaking = false;
             if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Listening...';
             if (voiceStatusText) voiceStatusText.textContent = 'Listening...';
             if (voiceStatusIntegrated) {
@@ -5415,23 +5427,25 @@ class NoteworthyChat extends HTMLElement {
           case 'response.content.delta':
             // Text content is being streamed - we'll collect it and show when done
             // Store in a temporary variable for now
-            if (!websocket._textBuffer) websocket._textBuffer = '';
-            const deltaText = message.delta || message.text || message.content || '';
-            if (deltaText) {
-              websocket._textBuffer += deltaText;
+            if (websocket) {
+              if (!websocket._textBuffer) websocket._textBuffer = '';
+              const deltaText = message.delta || message.text || message.content || '';
+              if (deltaText) {
+                websocket._textBuffer += deltaText;
+              }
             }
             break;
             
           case 'response.text.done':
           case 'response.content.done':
             // Text response complete - show in sidebar if it's substantial
-            const fullText = message.text || message.content || websocket._textBuffer || '';
+            const fullText = message.text || message.content || (websocket?._textBuffer || '');
             if (voiceModeActive && fullText && fullText.length > 100) {
               console.log('[Voice Mode] 📝 Text response complete, showing in sidebar');
               showInVoiceSidebar('essay', { text: fullText });
             }
             // Clear buffer
-            if (websocket._textBuffer) websocket._textBuffer = '';
+            if (websocket && websocket._textBuffer) websocket._textBuffer = '';
             break;
             
           case 'conversation.item.input_audio_transcription.completed':
@@ -5533,8 +5547,16 @@ class NoteworthyChat extends HTMLElement {
             
           default:
             // Log any unhandled message types for debugging
-            if (message.type && !message.type.startsWith('response.audio.delta')) {
+            // Note: Filter should match the actual message type format (response.output_audio.delta)
+            if (message.type && !message.type.startsWith('response.output_audio.delta')) {
               console.log('[Voice Mode] Unhandled message type:', message.type, message);
+            } else if (message.type === 'response.output_audio.delta') {
+              // This shouldn't happen - if we get here, the case didn't match
+              console.error('[Voice Mode] ❌ ERROR: response.output_audio.delta fell through to default case!', {
+                messageType: message.type,
+                messageTypeLength: message.type?.length,
+                messageTypeCharCodes: message.type?.split('').map(c => c.charCodeAt(0))
+              });
             }
             break;
         }

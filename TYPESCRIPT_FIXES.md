@@ -1,169 +1,97 @@
-# TypeScript File Fixes - noteworthy-chat.ts
+# TypeScript File Fixes Applied
 
 ## Issues Found and Fixed
 
-### ✅ Issue 1: Wrong Authentication Method
-**Problem**: TypeScript file was using OLD authentication method:
-- Using URL with `session_id` and `ephemeral_token` query parameters
-- Sending auth message after connection
-- NOT using WebSocket subprotocols
+### 1. **Missing AudioContext Resume Logic** ✅ FIXED
+- **Location**: `playAudioChunk()` function (line 1914)
+- **Issue**: TypeScript version was missing critical AudioContext resume logic
+- **Fix**: Added check for `audioContext.state === 'suspended'` and resume logic
+- **Impact**: Audio would not play in browsers that suspend AudioContext until user interaction
 
-**Fix Applied**:
-- ✅ Removed `ephemeral_token` and `session_id` from URL
-- ✅ Added WebSocket subprotocols: `["realtime", "openai-insecure-api-key.{token}"]`
-- ✅ Removed auth message sending (authentication happens via subprotocols)
-- ✅ Updated to match JavaScript implementation
+### 2. **Missing Audio Enabled Check** ✅ FIXED
+- **Location**: `playAudioChunk()` function (line 1914)
+- **Issue**: TypeScript version didn't check if audio toggle was enabled
+- **Fix**: Added check for `localStorage.getItem('noteworthy-ai-audio') === 'true'`
+- **Impact**: Audio would play even when user disabled it via toggle
 
----
+### 3. **Missing Null Safety in auth.success** ✅ FIXED
+- **Location**: `auth.success` case (line 1723)
+- **Issue**: Accessing websocket properties without null check
+- **Fix**: Added `if (websocket)` guard before accessing websocket properties
+- **Impact**: Potential runtime error if websocket is null when auth.success arrives
 
-### ✅ Issue 2: TypeScript Linter Error
-**Problem**: Line 1547 - `'websocket' is possibly 'null'`
+### 4. **Improved Error Logging** ✅ FIXED
+- **Location**: `playAudioChunk()` function
+- **Issue**: Generic error messages
+- **Fix**: Added more descriptive console warnings and error messages
+- **Impact**: Better debugging experience
 
-**Fix Applied**:
-- ✅ Fixed null check by ensuring websocket is created before accessing
-- ✅ Added proper type casting for token storage
-- ✅ All linter errors resolved
+## Code Changes Summary
 
----
-
-### ✅ Issue 3: Error Handling
-**Problem**: Error handler didn't stop retrying on auth errors
-
-**Fix Applied**:
-- ✅ Added check for authentication errors
-- ✅ Stop retrying immediately on auth errors
-- ✅ Show "Auth failed (client config). Fix token transport." message
-- ✅ Match JavaScript implementation behavior
-
----
-
-### ✅ Issue 4: Duplicate Case Statement
-**Problem**: `response.audio_transcript.delta` case appeared twice
-
-**Fix Applied**:
-- ✅ Removed duplicate case
-- ✅ Consolidated into single handler
-
----
-
-### ✅ Issue 5: Token Redaction
-**Problem**: Tokens not redacted in logs
-
-**Fix Applied**:
-- ✅ Redact tokens in logs (show only first 8 chars)
-- ✅ Match JavaScript implementation
-
----
-
-### ✅ Issue 6: Reconnection Logic
-**Problem**: Reconnected on all closes, including auth errors
-
-**Fix Applied**:
-- ✅ Only reconnect on clean closes (code 1000)
-- ✅ Don't reconnect on auth errors
-- ✅ Improved close code handling
-
----
-
-## Changes Made
-
-### File: `src/widgets/noteworthy-chat.ts`
-
-#### WebSocket Creation (Lines ~1530-1581)
-**Before**:
+### playAudioChunk() Function
+**Before:**
 ```typescript
-const wsUrl = `wss://api.openai.com/v1/realtime?model=...&session_id=...`;
-websocket = new WebSocket(wsUrl);
-websocket.onopen = () => {
-  // Send auth message
-  websocket.send(JSON.stringify({ type: 'auth', token: ... }));
-};
+async function playAudioChunk(audioBase64: string) {
+  if (!audioContext) return;
+  // ... decode and play
+}
 ```
 
-**After**:
+**After:**
 ```typescript
-const wsUrl = `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`;
-const protocols = ["realtime", `openai-insecure-api-key.${ephemeralToken}`];
-websocket = new WebSocket(wsUrl, protocols);
-websocket.onopen = () => {
-  // Auth already happened via subprotocols - start immediately
-  isRecording = true;
-  startAudioCapture();
-};
-```
-
-#### Error Handling (Lines ~1797-1801)
-**Before**:
-```typescript
-case 'error':
-  console.error('WebSocket error:', message);
-  voiceStatusText.textContent = `Error: ${message.message || 'Unknown error'}`;
-  break;
-```
-
-**After**:
-```typescript
-case 'error':
-  // Check for auth errors - stop retrying
-  if (isAuthError) {
-    voiceStatusText.textContent = 'Auth failed (client config). Fix token transport.';
-    stopVoiceMode(); // Don't retry
-  } else {
-    voiceStatusText.textContent = `Error: ${errorMsg}`;
-    stopVoiceMode(); // Stop on all errors
+async function playAudioChunk(audioBase64: string) {
+  if (!audioContext) {
+    console.warn('[Voice Mode] ⚠️ Cannot play audio: AudioContext not initialized');
+    return;
   }
-  break;
+  
+  // Resume AudioContext if suspended
+  if (audioContext.state === 'suspended') {
+    await audioContext.resume();
+  }
+  
+  // Check if audio is enabled
+  const audioToggle = root.querySelector('#audioToggle');
+  const audioEnabled = localStorage.getItem('noteworthy-ai-audio') === 'true';
+  if (audioToggle && !audioEnabled) {
+    return;
+  }
+  
+  // ... decode and play with better logging
+}
 ```
 
-#### Auth Error Handling (Lines ~1700-1710)
-**Before**:
+### auth.success Case
+**Before:**
 ```typescript
-case 'auth.error':
-  console.error('[Voice Mode] Authentication failed:', message);
-  voiceStatusText.textContent = 'Authentication failed';
-  stopVoiceMode();
-  break;
+case 'auth.success':
+  console.log('[Voice Mode] ✅ Received auth.success confirmation');
+  // Directly access websocket properties
 ```
 
-**After**:
+**After:**
 ```typescript
-case 'auth.error':
-  console.error('[Voice Mode] ❌ Authentication failed - CLIENT CONFIG ISSUE');
-  console.error('[Voice Mode] DO NOT RETRY');
-  voiceStatusText.textContent = 'Auth failed (client config). Fix token transport.';
-  stopVoiceMode(); // Don't retry
-  break;
+case 'auth.success':
+  console.log('[Voice Mode] ✅ Received auth.success confirmation');
+  if (websocket) {
+    // Safe access to websocket properties
+    (websocket as any)._authenticated = true;
+    // ...
+  } else {
+    console.warn('[Voice Mode] ⚠️ auth.success received but websocket is null');
+  }
 ```
 
----
+## Verification Status
 
-## Verification
+✅ **All critical issues fixed**
+✅ **No linter errors**
+✅ **TypeScript compilation should succeed**
+✅ **Null safety improved**
+✅ **Audio playback should work correctly**
 
-### ✅ Linter Errors
-- **Before**: 1 error (websocket possibly null)
-- **After**: 0 errors ✅
+## Notes
 
-### ✅ Authentication Method
-- **Before**: URL parameters + auth message (WRONG)
-- **After**: WebSocket subprotocols (CORRECT) ✅
-
-### ✅ Error Handling
-- **Before**: Retried on all errors
-- **After**: Stops on auth errors, matches JS implementation ✅
-
-### ✅ Token Security
-- **Before**: Full tokens in logs
-- **After**: Redacted (first 8 chars only) ✅
-
----
-
-## Status
-
-✅ **ALL ISSUES FIXED**
-
-The TypeScript file now matches the JavaScript implementation and uses the correct subprotocol authentication method.
-
----
-
-**Date**: December 14, 2025  
-**Files Modified**: `src/widgets/noteworthy-chat.ts`
+- The TypeScript file uses a simpler UI structure (`voiceStatusText` instead of `voiceStatusTextIntegrated`)
+- The TypeScript version doesn't have `response.content.delta`/`response.content.done` cases, which is fine as it appears to be a different implementation
+- Both JavaScript and TypeScript files now have consistent null safety patterns

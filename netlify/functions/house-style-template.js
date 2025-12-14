@@ -42,9 +42,6 @@ function getHouseStyleTemplate() {
           <tr>
             <td style="padding:50px 40px;background-color:#141b2b!important">
               <!-- CONTENT_PLACEHOLDER -->
-              <p style="margin:0 0 30px 0;color:#9ca3af!important;font-size:14px">{{DATE_PLACEHOLDER}}</p>
-              <p style="margin:0 0 30px 0;color:#f9fafb!important;font-size:16px;line-height:1.5">Hey {{FULL_NAME}},</p>
-              <!-- AI GENERATED CONTENT GOES HERE -->
             </td>
           </tr>
         </table>
@@ -102,6 +99,7 @@ const STYLE_GUIDE = {
   
   // Image styles
   imageStyle: 'display:block;width:100%;max-width:100%;border-radius:8px',
+  imageMargin: '10px 0',
   
   // Section label style
   sectionLabelStyle: 'font-size:11px;letter-spacing:0.14em;color:#3b82f6!important;text-transform:uppercase;font-weight:600',
