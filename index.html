@@ -32,6 +32,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
+    <!-- CRITICAL: Prefetch breaking news API for instant loading -->
+    <link rel="prefetch" href="/.netlify/functions/posts-read?limit=100" as="fetch" crossorigin="anonymous">
+    <link rel="dns-prefetch" href="/.netlify">
+    
     <!-- Security -->
     <meta name="referrer" content="strict-origin-when-cross-origin">
     
@@ -130,6 +134,36 @@
         }
     </script>
     <script src="christmas-theme-loader.js"></script>
+    
+    <!-- CRITICAL: Start loading breaking news IMMEDIATELY - before DOM ready -->
+    <script>
+    (function() {
+        // Start fetching breaking news data immediately - don't wait for DOM
+        let breakingNewsData = null;
+        let breakingNewsPromise = null;
+        
+        // Start fetch immediately
+        breakingNewsPromise = fetch('/.netlify/functions/posts-read?limit=100', {
+            priority: 'high',
+            cache: 'no-cache'
+        })
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+        })
+        .then(posts => {
+            breakingNewsData = posts;
+            return posts;
+        })
+        .catch(error => {
+            console.error('[Hero Module] Early fetch error:', error);
+            return null;
+        });
+        
+        // Make data available globally for the hero module script
+        window.__BREAKING_NEWS_DATA__ = breakingNewsPromise;
+    })();
+    </script>
     
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5427142458403577"
@@ -5450,6 +5484,7 @@
         .welcome-location {
             margin-top: 15px;
             font-size: clamp(1rem, 2.5vw, 1.5rem);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, rgba(74, 158, 255, 0.9) 0%, rgba(91, 181, 255, 0.85) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -5994,7 +6029,7 @@
             }
         }
         
-        /* HERO MODULE: Modern News Module */
+        /* HERO MODULE: Latest Breaking News - Fixed height and improved loading */
         .hero-module-container {
             position: relative;
             display: block;
@@ -6013,6 +6048,10 @@
             text-align: left;
             cursor: pointer;
             transition: background 0.2s ease;
+            /* Fixed height to prevent layout shifts */
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
         }
         
         .hero-module-container:hover {
@@ -6032,14 +6071,21 @@
             margin-bottom: 0.5rem;
             font-size: 0.688rem;
             line-height: 1.2;
+            flex-shrink: 0;
         }
         
         .hero-module-label {
-            color: rgba(255, 255, 255, 0.8);
+            display: inline-block;
+            color: #ffffff;
             font-size: 0.625rem;
-            font-weight: 600;
-            letter-spacing: 0.08em;
+            font-weight: 700;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
+            background: #dc2626;
+            border: 1px solid #b91c1c;
+            padding: 0.25rem 0.625rem;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
         }
         
         .hero-module-updated {
@@ -6052,32 +6098,37 @@
             font-weight: 500;
         }
         
-        /* Headline */
+        /* Headline - Fixed height */
         .hero-module-headline {
             font-size: 1.125rem;
             font-weight: 700;
-            line-height: 1.25;
+            line-height: 1.3;
             color: #ffffff;
-            margin: 0 0 0.375rem 0;
+            margin: 0 0 0.5rem 0;
             padding: 0;
             letter-spacing: -0.01em;
+            min-height: 2.6em; /* ~2 lines */
+            flex-shrink: 0;
         }
         
-        /* Subhead */
+        /* Subhead - Fixed height */
         .hero-module-subhead {
             font-size: 0.813rem;
             line-height: 1.4;
             color: rgba(255, 255, 255, 0.85);
-            margin: 0 0 0.625rem 0;
+            margin: 0 0 0.75rem 0;
             padding: 0;
             font-weight: 400;
+            min-height: 2.8em; /* ~2 lines */
+            flex: 1;
         }
         
         /* CTA Row */
         .hero-module-cta {
             display: flex;
             gap: 0.5rem;
-            margin-bottom: 0.625rem;
+            margin-top: auto;
+            flex-shrink: 0;
         }
         
         .hero-module-btn {
@@ -6115,35 +6166,11 @@
             border-color: rgba(255, 255, 255, 0.3);
         }
         
-        /* Divider */
-        .hero-module-divider {
-            height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 0 0 0.5rem 0;
-        }
-        
-        /* Quick Links */
-        .hero-module-links {
-            display: flex;
-            gap: 1rem;
-            font-size: 0.688rem;
-        }
-        
-        .hero-module-link {
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            transition: color 0.2s ease;
-            font-weight: 500;
-        }
-        
-        .hero-module-link:hover {
-            color: rgba(255, 255, 255, 0.95);
-        }
-        
         /* Responsive: Center on small screens */
         @media (max-width: 768px) {
             .hero-module-container {
                 text-align: center;
+                min-height: 160px;
             }
             
             .hero-module-cta {
@@ -6154,8 +6181,14 @@
                 width: 100%;
             }
             
-            .hero-module-links {
-                justify-content: center;
+            .hero-module-headline {
+                min-height: 2.4em;
+                font-size: 1rem;
+            }
+            
+            .hero-module-subhead {
+                min-height: 2.6em;
+                font-size: 0.75rem;
             }
         }
         
@@ -13534,10 +13567,271 @@
             
             <!-- CTA Row -->
             <div class="hero-module-cta">
-                <a href="#" class="hero-module-btn hero-module-btn-primary" id="heroModuleReadBtn" onclick="event.stopPropagation();">Read Full Update</a>
+                <a href="#news-section" class="hero-module-btn hero-module-btn-primary" id="heroModuleReadBtn" onclick="event.stopPropagation();">Read Full Update</a>
                 <a href="#news-section" class="hero-module-btn hero-module-btn-secondary" id="heroModuleViewAllBtn" onclick="event.stopPropagation();">View All News</a>
             </div>
         </div>
+        
+        <!-- Load breaking news IMMEDIATELY - critical priority -->
+        <script>
+        (function() {
+            // HERO: Latest Breaking News - Load immediately using prefetched data if available
+            async function loadLatestBreakingNews(retryCount = 0) {
+                const container = document.getElementById('heroModuleContainer');
+                const labelEl = document.getElementById('heroModuleLabel');
+                const headlineEl = document.getElementById('heroModuleHeadline');
+                const subheadEl = document.getElementById('heroModuleSubhead');
+                const timeEl = document.getElementById('heroModuleTime');
+                const readBtn = document.getElementById('heroModuleReadBtn');
+                const viewAllBtn = document.getElementById('heroModuleViewAllBtn');
+                
+                if (!container || !labelEl || !headlineEl || !subheadEl || !timeEl || !readBtn || !viewAllBtn) {
+                    // Elements not ready, retry quickly
+                    if (retryCount < 20) {
+                        setTimeout(() => loadLatestBreakingNews(retryCount + 1), 50);
+                    }
+                    return;
+                }
+                
+                try {
+                    let posts = null;
+                    
+                    // First, try to use prefetched data from head
+                    if (window.__BREAKING_NEWS_DATA__) {
+                        try {
+                            posts = await window.__BREAKING_NEWS_DATA__;
+                            if (posts && Array.isArray(posts) && posts.length > 0) {
+                                // Use prefetched data - instant load!
+                            } else {
+                                posts = null; // Fall through to fetch
+                            }
+                        } catch (e) {
+                            posts = null; // Fall through to fetch
+                        }
+                    }
+                    
+                    // If no prefetched data, fetch now
+                    if (!posts) {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+                        
+                        const response = await fetch('/.netlify/functions/posts-read?limit=100', {
+                            signal: controller.signal,
+                            priority: 'high',
+                            cache: 'no-cache'
+                        });
+                        clearTimeout(timeoutId);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        
+                        posts = await response.json();
+                    }
+                    
+                    if (!Array.isArray(posts) || posts.length === 0) {
+                        // Don't show "No news available" - keep retrying
+                        if (retryCount < 5) {
+                            setTimeout(() => loadLatestBreakingNews(retryCount + 1), 1000);
+                            return;
+                        }
+                        // Only show error after many retries
+                        headlineEl.textContent = 'Loading...';
+                        subheadEl.textContent = '';
+                        setTimeout(() => loadLatestBreakingNews(0), 2000);
+                        return;
+                    }
+                    
+                    // Find breaking news post
+                    let breakingPost = posts.find(post => {
+                        if (!post) return false;
+                        const text = (post.text || post.title || post.story || '').toUpperCase();
+                        return text.includes('BREAKING') || post.breaking === true || post.category === 'breaking';
+                    });
+                    
+                    const latestPost = breakingPost || posts[0];
+                    if (!latestPost) {
+                        throw new Error('No valid posts found');
+                    }
+                    
+                    const isBreaking = breakingPost !== undefined;
+                    labelEl.textContent = isBreaking ? 'LATEST BREAKING NEWS' : 'LATEST NEWS';
+                    
+                    // Get the main text content
+                    const mainText = (latestPost.text || latestPost.title || latestPost.story || '').trim();
+                    
+                    // Check for ":" first - if found, split on first colon
+                    let headline = '';
+                    let subhead = '';
+                    
+                    if (mainText.includes(':')) {
+                        // Split on first colon
+                        const colonIndex = mainText.indexOf(':');
+                        headline = mainText.substring(0, colonIndex).trim();
+                        subhead = mainText.substring(colonIndex + 1).trim();
+                        
+                        // Remove "BREAKING" prefix from headline if present
+                        headline = headline.replace(/^BREAKING\s*/i, '').trim();
+                        
+                        // Limit headline length
+                        if (headline.length > 100) {
+                            headline = headline.substring(0, 97) + '...';
+                        }
+                        
+                        // Limit subhead length
+                        if (subhead.length > 150) {
+                            subhead = subhead.substring(0, 147) + '...';
+                        }
+                    } else {
+                        // No colon found - headline is "BREAKING:" and content is subhead
+                        headline = 'BREAKING:';
+                        subhead = mainText;
+                        
+                        // Limit subhead length
+                        if (subhead.length > 150) {
+                            subhead = subhead.substring(0, 147) + '...';
+                        }
+                    }
+                    
+                    headlineEl.textContent = headline || 'BREAKING:';
+                    subheadEl.textContent = subhead || '';
+                    
+                    // Update timestamp - try multiple date field names and formats
+                    const postDate = latestPost.datePosted || latestPost.createdAt || latestPost.created_at || latestPost.Date || latestPost.date || latestPost.timestamp;
+                    
+                    if (postDate) {
+                        try {
+                            let date = null;
+                            
+                            // Try parsing as Date object first
+                            if (postDate instanceof Date) {
+                                date = postDate;
+                            } else if (typeof postDate === 'string') {
+                                // Try parsing as ISO string
+                                date = new Date(postDate);
+                                
+                                // If that fails, try parsing as timestamp (milliseconds or seconds)
+                                if (isNaN(date.getTime())) {
+                                    const timestamp = parseInt(postDate, 10);
+                                    if (!isNaN(timestamp)) {
+                                        // If timestamp is in seconds (less than year 2000 in ms), convert to milliseconds
+                                        date = new Date(timestamp < 946684800000 ? timestamp * 1000 : timestamp);
+                                    }
+                                }
+                            } else if (typeof postDate === 'number') {
+                                // If it's a number, treat as timestamp
+                                date = new Date(postDate < 946684800000 ? postDate * 1000 : postDate);
+                            }
+                            
+                            if (date && !isNaN(date.getTime())) {
+                                const timeString = date.toLocaleTimeString('en-US', {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
+                                });
+                                timeEl.textContent = timeString;
+                            } else {
+                                // Fallback: use current time if date parsing fails
+                                const now = new Date();
+                                const timeString = now.toLocaleTimeString('en-US', {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
+                                });
+                                timeEl.textContent = timeString;
+                                console.warn('[Hero Module] Could not parse post date:', postDate, 'Using current time');
+                            }
+                        } catch (e) {
+                            // Fallback: use current time on error
+                            const now = new Date();
+                            const timeString = now.toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                            });
+                            timeEl.textContent = timeString;
+                            console.error('[Hero Module] Error parsing date:', e, 'Post date value:', postDate);
+                        }
+                    } else {
+                        // No date field found - use current time
+                        const now = new Date();
+                        const timeString = now.toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                        });
+                        timeEl.textContent = timeString;
+                        console.warn('[Hero Module] No date field found in post:', latestPost);
+                    }
+                    
+                    // All buttons and container click go to news section
+                    container.onclick = function(e) {
+                        if (e.target.closest('.hero-module-btn')) {
+                            return;
+                        }
+                        window.location.href = '#news-section';
+                    };
+                    
+                    readBtn.href = '#news-section';
+                    viewAllBtn.href = '#news-section';
+                    
+                    container.onkeydown = function(e) {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            window.location.href = '#news-section';
+                        }
+                    };
+                    
+                } catch (error) {
+                    console.error('[Hero Module] Error loading breaking news:', error);
+                    // Don't show error message - keep retrying aggressively
+                    if (retryCount < 10) {
+                        setTimeout(() => loadLatestBreakingNews(retryCount + 1), 500);
+                        return;
+                    }
+                    // Only after many retries, show loading state
+                    headlineEl.textContent = 'Loading...';
+                    subheadEl.textContent = '';
+                    // Keep retrying
+                    setTimeout(() => loadLatestBreakingNews(0), 1000);
+                }
+            }
+            
+            // Start loading immediately - multiple attempts
+            loadLatestBreakingNews();
+            
+            // Also try when DOM is ready (backup)
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    const headline = document.getElementById('heroModuleHeadline');
+                    if (headline && (headline.textContent === 'Loading latest news...' || headline.textContent === 'Loading...')) {
+                        loadLatestBreakingNews();
+                    }
+                });
+            } else {
+                // DOM already ready, try again
+                setTimeout(() => {
+                    const headline = document.getElementById('heroModuleHeadline');
+                    if (headline && (headline.textContent === 'Loading latest news...' || headline.textContent === 'Loading...')) {
+                        loadLatestBreakingNews();
+                    }
+                }, 100);
+            }
+            
+            // Aggressive retry every 2 seconds until loaded
+            const retryInterval = setInterval(function() {
+                const headline = document.getElementById('heroModuleHeadline');
+                if (headline && (headline.textContent === 'Loading latest news...' || headline.textContent === 'Loading...' || headline.textContent === 'No news available at this time.')) {
+                    loadLatestBreakingNews();
+                } else {
+                    clearInterval(retryInterval); // Stop retrying once loaded
+                }
+            }, 2000);
+            
+            // Refresh every 5 minutes
+            setInterval(loadLatestBreakingNews, 300000);
+        })();
+        </script>
         
         <!-- Hero Stats Section -->
         <div class="hero-stats-container">
@@ -13551,8 +13845,8 @@
                 <div class="hero-stat-label-small">Likes</div>
             </div>
             
-            <div class="hero-stat-card" data-number="29.9M">
-                <div class="hero-stat-number-small">29.9M</div>
+            <div class="hero-stat-card" data-number="29.9M+">
+                <div class="hero-stat-number-small">29.9M+</div>
                 <div class="hero-stat-label-small">Total Impressions</div>
             </div>
             
@@ -13990,7 +14284,7 @@
             <p class="credibility-subtitle">Trusted by millions across the globe</p>
             
             <div class="stats-hero-container">
-                <div class="hero-stat-main" data-metric="impressions" data-number="29.9M">
+                <div class="hero-stat-main" data-metric="impressions" data-number="29.9M+">
                     <div class="hero-stat-icon">
                         <svg width="96" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <defs>
@@ -14009,7 +14303,7 @@
                             <rect x="19" y="5" width="2.2" height="15" fill="url(#impressionsGrad)" rx="1.1"/>
                         </svg>
                     </div>
-                    <div class="hero-stat-number">29.9M</div>
+                    <div class="hero-stat-number">29.9M+</div>
                     <div class="hero-stat-label">Total Impressions</div>
                     <div class="hero-stat-description">Reaching millions with fact-checked news every day</div>
                 </div>
@@ -14187,150 +14481,6 @@
     
     <script src="script.js"></script>
     <script>
-        // HERO: Latest Breaking News - Fetch and display latest breaking news post
-        async function loadLatestBreakingNews() {
-            const container = document.getElementById('heroModuleContainer');
-            const labelEl = document.getElementById('heroModuleLabel');
-            const headlineEl = document.getElementById('heroModuleHeadline');
-            const subheadEl = document.getElementById('heroModuleSubhead');
-            const timeEl = document.getElementById('heroModuleTime');
-            const readBtn = document.getElementById('heroModuleReadBtn');
-            
-            if (!container || !labelEl || !headlineEl || !subheadEl || !timeEl || !readBtn) {
-                return;
-            }
-            
-            try {
-                // Fetch posts from API
-                const response = await fetch('/.netlify/functions/posts-read?limit=100');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch posts');
-                }
-                
-                const posts = await response.json();
-                if (!Array.isArray(posts) || posts.length === 0) {
-                    // No posts available
-                    labelEl.textContent = 'LATEST NEWS';
-                    headlineEl.textContent = 'No news available at this time.';
-                    subheadEl.textContent = '';
-                    timeEl.textContent = '--:-- --';
-                    container.onclick = null;
-                    readBtn.href = '#news-section';
-                    return;
-                }
-                
-                // Find breaking news post (text contains "BREAKING" or has breaking flag)
-                let breakingPost = posts.find(post => {
-                    const text = (post.text || post.title || post.story || '').toUpperCase();
-                    return text.includes('BREAKING') || post.breaking === true || post.category === 'breaking';
-                });
-                
-                // If no breaking post, use most recent post
-                const latestPost = breakingPost || posts[0];
-                const isBreaking = breakingPost !== undefined;
-                
-                // Update label
-                labelEl.textContent = isBreaking ? 'LATEST BREAKING NEWS' : 'LATEST NEWS';
-                
-                // Extract headline
-                let headline = latestPost.title || '';
-                if (!headline) {
-                    // If no title, use text but limit length and remove BREAKING prefix
-                    const text = latestPost.text || latestPost.story || 'Untitled';
-                    headline = text.replace(/^BREAKING:\s*/i, '').trim();
-                    // Limit headline to ~80 characters
-                    if (headline.length > 80) {
-                        headline = headline.substring(0, 77) + '...';
-                    }
-                } else {
-                    // Remove BREAKING prefix from title if present
-                    headline = headline.replace(/^BREAKING:\s*/i, '').trim();
-                }
-                headlineEl.textContent = headline;
-                
-                // Extract subhead (first 1-2 sentences from story or text, excluding title)
-                let subhead = '';
-                const storyText = latestPost.story || (latestPost.title ? '' : latestPost.text) || '';
-                if (storyText) {
-                    // Get first 1-2 sentences (split by period, exclamation, or question mark)
-                    const sentences = storyText.match(/[^.!?]+[.!?]+/g) || [];
-                    if (sentences.length > 0) {
-                        subhead = sentences.slice(0, 2).join(' ').trim();
-                        // Limit length to ~150 characters
-                        if (subhead.length > 150) {
-                            subhead = subhead.substring(0, 147) + '...';
-                        }
-                    } else {
-                        // Fallback: use first 150 chars if no sentence breaks
-                        subhead = storyText.substring(0, 150).trim();
-                        if (storyText.length > 150) {
-                            subhead += '...';
-                        }
-                    }
-                }
-                subheadEl.textContent = subhead;
-                
-                // Update timestamp
-                const postDate = latestPost.datePosted || latestPost.createdAt || latestPost.created_at || latestPost.Date;
-                if (postDate) {
-                    const date = new Date(postDate);
-                    const timeString = date.toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true
-                    });
-                    timeEl.textContent = timeString;
-                } else {
-                    timeEl.textContent = '--:-- --';
-                }
-                
-                // Set up click behavior - navigate to post
-                // Prioritize article page over external links for consistency
-                const postId = latestPost.id;
-                const postUrl = postId ? `article.html?id=${encodeURIComponent(postId)}` : (latestPost.link || latestPost.url || '#news-section');
-                container.onclick = function(e) {
-                    // Don't navigate if clicking on buttons (they handle their own clicks)
-                    if (e.target.closest('.hero-module-btn')) {
-                        return;
-                    }
-                    window.location.href = postUrl;
-                };
-                
-                // Update button links
-                readBtn.href = postUrl;
-                
-                // Add keyboard support
-                container.onkeydown = function(e) {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        window.location.href = postUrl;
-                    }
-                };
-                
-            } catch (error) {
-                console.error('[Hero Module] Error loading breaking news:', error);
-                labelEl.textContent = 'LATEST NEWS';
-                headlineEl.textContent = 'Unable to load latest news.';
-                subheadEl.textContent = '';
-                timeEl.textContent = '--:-- --';
-            }
-        }
-        
-        // HERO MODULE: Update live time display (fallback if no post time available)
-        function updateHeroModuleTime() {
-            const timeElement = document.getElementById('heroModuleTime');
-            if (!timeElement || timeElement.textContent === '--:-- --') {
-                return; // Don't override post timestamp
-            }
-        }
-        
-        // Load breaking news on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadLatestBreakingNews();
-            // Refresh every 5 minutes
-            setInterval(loadLatestBreakingNews, 300000);
-        });
-        
         // Initialize animated country flags
         function initCountryFlags() {
             const flagsContainer = document.getElementById('flagsBackground');

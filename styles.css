@@ -1804,23 +1804,28 @@ html, body {
         }
     }
 
-    /* Welcome Location - Minimal */
+    /* Welcome Location - Consistent with desktop */
     .welcome-location {
         display: block !important;
         font-size: 0.875rem !important;
-        color: rgba(255, 255, 255, 0.7) !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        background: linear-gradient(135deg, rgba(74, 158, 255, 0.9) 0%, rgba(91, 181, 255, 0.85) 100%) !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        background-clip: text !important;
         margin-top: 0.5rem !important;
-        font-weight: 400 !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.05em !important;
         text-align: center !important;
     }
 
-    /* HERO MODULE: Mobile Styles - Maintain Same Height */
+    /* HERO MODULE: Mobile Styles - Fixed Height */
     .hero-module-container {
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 auto 1.5rem !important;
         padding: 0.625rem 1rem !important;
-        min-height: auto !important;
+        min-height: 160px !important;
         text-align: center !important;
     }
     
@@ -1831,6 +1836,7 @@ html, body {
     
     .hero-module-label {
         font-size: 0.5rem !important;
+        padding: 0.188rem 0.5rem !important;
     }
     
     .hero-module-updated {
@@ -1841,34 +1847,26 @@ html, body {
         font-size: 0.938rem !important;
         margin-bottom: 0.313rem !important;
         line-height: 1.25 !important;
+        min-height: 2.4em !important;
     }
     
     .hero-module-subhead {
         font-size: 0.688rem !important;
         line-height: 1.35 !important;
         margin-bottom: 0.563rem !important;
+        min-height: 2.6em !important;
     }
     
     .hero-module-cta {
         flex-direction: column !important;
         gap: 0.438rem !important;
-        margin-bottom: 0.563rem !important;
+        margin-top: auto !important;
     }
     
     .hero-module-btn {
         width: 100% !important;
         padding: 0.438rem 0.75rem !important;
         font-size: 0.688rem !important;
-    }
-    
-    .hero-module-divider {
-        margin: 0 0 0.438rem 0 !important;
-    }
-    
-    .hero-module-links {
-        font-size: 0.625rem !important;
-        gap: 0.875rem !important;
-        justify-content: center !important;
     }
 
     /* Hero Stats - Compact Grid with 29.9M Featured (MOBILE ONLY) */

@@ -7,9 +7,41 @@
 const fs = require('fs');
 const path = require('path');
 
-// Parse date string like "Sun, Nov 9, 2025" to ISO
+// Parse date string like "Sat, Dec 13, 2025" to ISO
 function parseDate(dateStr) {
   try {
+    if (!dateStr || dateStr.trim() === '') {
+      return null;
+    }
+    
+    // Handle format: "Sat, Dec 13, 2025" or "Sun, Nov 9, 2025"
+    const dateMatch = dateStr.match(/(\w+),\s+(\w+)\s+(\d+),\s+(\d+)/);
+    if (dateMatch) {
+      const [, dayOfWeek, monthName, day, year] = dateMatch;
+      
+      const monthMap = {
+        'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+        'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+      };
+      
+      const month = monthMap[monthName];
+      if (month === undefined) {
+        console.warn(`Invalid month name: ${monthName} in date ${dateStr}`);
+        return null;
+      }
+      
+      // Create date at noon UTC to avoid timezone issues
+      const date = new Date(Date.UTC(parseInt(year), month, parseInt(day), 12, 0, 0));
+      
+      if (isNaN(date.getTime())) {
+        console.warn(`Invalid date: ${dateStr}`);
+        return null;
+      }
+      
+      return date.toISOString();
+    }
+    
+    // Fallback to standard Date parsing
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) {
       console.warn(`Invalid date: ${dateStr}`);

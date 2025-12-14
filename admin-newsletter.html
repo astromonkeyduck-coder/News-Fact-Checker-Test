@@ -1333,8 +1333,27 @@
             console.log('selectTemplate called with:', templateId, element);
             if (!templateId) {
                 console.error('No templateId provided to selectTemplate');
+                showStatus('Error: No template ID provided', 'error');
                 return;
             }
+            
+            // Verify template exists
+            if (!window.newsletterTemplates || !window.newsletterTemplates[templateId]) {
+                console.error('Template not found in window.newsletterTemplates:', templateId);
+                console.log('Available templates:', Object.keys(window.newsletterTemplates || {}));
+                showStatus('Error: Template not found. Please refresh the page.', 'error');
+                return;
+            }
+            
+            const template = window.newsletterTemplates[templateId];
+            console.log('Selected template:', {
+                id: template.id,
+                name: template.name,
+                subject: template.subject,
+                hasHtml: !!template.html,
+                hasText: !!template.text,
+                htmlLength: template.html?.length || 0
+            });
             
             selectedTemplateId = templateId;
             
@@ -1347,13 +1366,17 @@
                 console.log('Template card selected:', templateId);
                 
                 // Cool effects when selecting!
-                playSelectionSound();
-                triggerSelectionConfetti(element);
+                if (typeof playSelectionSound === 'function') {
+                    playSelectionSound();
+                }
+                if (typeof triggerSelectionConfetti === 'function') {
+                    triggerSelectionConfetti(element);
+                }
             } else {
                 console.warn('No element provided to selectTemplate');
             }
             
-            showStatus('Template selected. Ready to send.', 'info');
+            showStatus(`Template "${template.name || template.subject}" selected. Ready to send.`, 'success');
         }
         
         // Function to select a past newsletter as a template
@@ -1361,8 +1384,27 @@
             console.log('selectNewsletterTemplate called with:', templateId, element);
             if (!templateId) {
                 console.error('No templateId provided to selectNewsletterTemplate');
+                showStatus('Error: No template ID provided', 'error');
                 return;
             }
+            
+            // Verify template exists
+            if (!window.newsletterTemplates || !window.newsletterTemplates[templateId]) {
+                console.error('Newsletter template not found in window.newsletterTemplates:', templateId);
+                console.log('Available templates:', Object.keys(window.newsletterTemplates || {}));
+                showStatus('Error: Newsletter template not found. Please refresh the page.', 'error');
+                return;
+            }
+            
+            const template = window.newsletterTemplates[templateId];
+            console.log('Selected newsletter template:', {
+                id: template.id,
+                name: template.name,
+                subject: template.subject,
+                hasHtml: !!template.html,
+                hasText: !!template.text,
+                htmlLength: template.html?.length || 0
+            });
             
             selectedTemplateId = templateId;
             
@@ -1375,15 +1417,18 @@
                 console.log('Newsletter card selected:', templateId);
                 
                 // Cool effects when selecting!
-                playSelectionSound();
-                triggerSelectionConfetti(element);
+                if (typeof playSelectionSound === 'function') {
+                    playSelectionSound();
+                }
+                if (typeof triggerSelectionConfetti === 'function') {
+                    triggerSelectionConfetti(element);
+                }
             } else {
                 console.warn('No element provided to selectNewsletterTemplate');
             }
             
-            const newsletterData = window.newsletterTemplates && window.newsletterTemplates[templateId];
-            const newsletterName = newsletterData ? newsletterData.subject : 'Past Newsletter';
-            showStatus(`Past newsletter "${newsletterName}" selected. Ready to send.`, 'info');
+            const newsletterName = template.subject || template.name || 'Past Newsletter';
+            showStatus(`Past newsletter "${newsletterName}" selected. Ready to send.`, 'success');
         }
         
         // Play a selection sound effect
@@ -1568,6 +1613,9 @@
                         if (!template.html && template.previewHtml) {
                             template.html = template.previewHtml;
                         }
+                        if (!template.previewHtml && template.html) {
+                            template.previewHtml = template.html;
+                        }
                         if (!template.subject) {
                             template.subject = template.name || 'Newsletter';
                         }
@@ -1575,16 +1623,23 @@
                         if (!template.id) {
                             template.id = `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                         }
+                        // Generate text version if missing
+                        if (!template.text && template.html) {
+                            template.text = template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+                        }
                         window.newsletterTemplates[template.id] = {
                             id: template.id,
                             name: template.name || 'Unnamed Template',
                             subject: template.subject || 'Newsletter',
                             html: template.html || '',
                             text: template.text || '',
-                            previewHtml: template.previewHtml || template.html || ''
+                            previewHtml: template.previewHtml || template.html || '',
+                            createdAt: template.createdAt,
+                            updatedAt: template.updatedAt
                         };
                     });
                     console.log('Stored templates in window.newsletterTemplates:', Object.keys(window.newsletterTemplates).length);
+                    console.log('Template IDs:', Object.keys(window.newsletterTemplates));
                 } else {
                     console.warn('No templates found in response. Response structure:', Object.keys(data || {}));
                     grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No templates found</p><p style="font-size:0.8rem;color:var(--terminal-amber);margin-top:0.5rem;">Templates will be auto-loaded from the email templates directory on first use.</p></div>';
@@ -1610,6 +1665,20 @@
                                 });
                             }
                             
+                            // Store preview HTML in a way that can be retrieved later
+                            // Use base64 encoding to avoid HTML entity issues
+                            // Use try-catch to handle any encoding errors gracefully
+                            let previewHtmlBase64 = '';
+                            if (hasPreview) {
+                                try {
+                                    // Encode to base64 safely
+                                    previewHtmlBase64 = btoa(unescape(encodeURIComponent(previewHtml)));
+                                } catch (e) {
+                                    console.warn('Failed to encode preview HTML to base64:', e);
+                                    // Fallback: use empty string, will rely on direct HTML parameter
+                                }
+                            }
+                            
                             return `
                             <div class="preview-card expanded" data-template-id="${template.id}" data-is-template="true">
                                 <div class="preview-title">${escapeHtml(template.name || 'Unnamed Template')}</div>
@@ -1617,7 +1686,7 @@
                                 <div class="preview-date">${formatDate(template.updatedAt)}</div>
                                 ${hasPreview ? `
                                 <button class="preview-toggle" data-preview-id="${previewId}">Hide Preview</button>
-                                <div id="${previewId}" class="email-preview" data-html="${escapeHtml(previewHtml.replace(/"/g, '&quot;'))}"></div>
+                                <div id="${previewId}" class="email-preview" data-html-base64="${previewHtmlBase64}"></div>
                                 ` : '<div style="margin-top:1rem;color:var(--terminal-amber);font-size:0.8rem;">No preview available</div>'}
                             </div>
                         `;
@@ -1628,16 +1697,26 @@
                             const previewId = `template-preview-${index}`;
                             const previewHtml = template.previewHtml || template.html || '';
                             if (previewHtml && previewHtml.trim().length > 0) {
-                                // Use longer delay to ensure DOM is ready
-                                setTimeout(() => {
-                                    const previewDiv = document.getElementById(previewId);
-                                    if (previewDiv) {
-                                        console.log('Setting up preview for template:', template.name, previewId);
-                                        setupPreviewIframe(previewId, previewHtml);
-                                    } else {
-                                        console.error('Preview div not found:', previewId);
-                                    }
-                                }, 500);
+                                // Use requestAnimationFrame for better timing
+                                requestAnimationFrame(() => {
+                                    setTimeout(() => {
+                                        const previewDiv = document.getElementById(previewId);
+                                        if (previewDiv) {
+                                            console.log('Setting up preview for template:', template.name, previewId);
+                                            // Pass the HTML directly - setupPreviewIframe will also check data-html-base64 as fallback
+                                            setupPreviewIframe(previewId, previewHtml);
+                                        } else {
+                                            console.error('Preview div not found:', previewId);
+                                            // Retry once more after a longer delay
+                                            setTimeout(() => {
+                                                const retryDiv = document.getElementById(previewId);
+                                                if (retryDiv) {
+                                                    setupPreviewIframe(previewId, previewHtml);
+                                                }
+                                            }, 1000);
+                                        }
+                                    }, 100);
+                                });
                             } else {
                                 console.warn('Template missing previewHtml/html:', template.name, template.id);
                             }
@@ -1730,6 +1809,20 @@
                                 emailsSent: newsletter.emailsSent || 0
                             };
                             
+                            // Store preview HTML in a way that can be retrieved later
+                            // Use base64 encoding to avoid HTML entity issues
+                            // Use try-catch to handle any encoding errors gracefully
+                            let previewHtmlBase64 = '';
+                            if (hasPreview) {
+                                try {
+                                    // Encode to base64 safely
+                                    previewHtmlBase64 = btoa(unescape(encodeURIComponent(previewHtml)));
+                                } catch (e) {
+                                    console.warn('Failed to encode preview HTML to base64:', e);
+                                    // Fallback: use empty string, will rely on direct HTML parameter
+                                }
+                            }
+                            
                             return `
                             <div class="preview-card expanded" data-template-id="${templateId}" data-newsletter-id="${templateId}" data-is-newsletter="true">
                                 <div class="preview-title">${escapeHtml(newsletter.subject || 'No subject')}</div>
@@ -1737,7 +1830,7 @@
                                 <div class="preview-badge">Sent to ${newsletter.emailsSent || 0} subscribers</div>
                                 ${hasPreview ? `
                                 <button class="preview-toggle" data-preview-id="${previewId}">Hide Preview</button>
-                                <div id="${previewId}" class="email-preview" data-html="${escapeHtml(previewHtml.replace(/"/g, '&quot;'))}"></div>
+                                <div id="${previewId}" class="email-preview" data-html-base64="${previewHtmlBase64}"></div>
                                 ` : '<div style="margin-top:1rem;color:var(--terminal-amber);font-size:0.8rem;">No preview available</div>'}
                             </div>
                         `;
@@ -1748,16 +1841,26 @@
                             const previewId = `newsletter-preview-${index}`;
                             const previewHtml = newsletter.previewHtml || newsletter.html || '';
                             if (previewHtml && previewHtml.trim().length > 0) {
-                                // Use longer delay to ensure DOM is ready
-                                setTimeout(() => {
-                                    const previewDiv = document.getElementById(previewId);
-                                    if (previewDiv) {
-                                        console.log('Setting up preview for newsletter:', newsletter.subject, previewId);
-                                        setupPreviewIframe(previewId, previewHtml);
-                                    } else {
-                                        console.error('Preview div not found:', previewId);
-                                    }
-                                }, 500);
+                                // Use requestAnimationFrame for better timing
+                                requestAnimationFrame(() => {
+                                    setTimeout(() => {
+                                        const previewDiv = document.getElementById(previewId);
+                                        if (previewDiv) {
+                                            console.log('Setting up preview for newsletter:', newsletter.subject, previewId);
+                                            // Pass the HTML directly - setupPreviewIframe will also check data-html-base64 as fallback
+                                            setupPreviewIframe(previewId, previewHtml);
+                                        } else {
+                                            console.error('Preview div not found:', previewId);
+                                            // Retry once more after a longer delay
+                                            setTimeout(() => {
+                                                const retryDiv = document.getElementById(previewId);
+                                                if (retryDiv) {
+                                                    setupPreviewIframe(previewId, previewHtml);
+                                                }
+                                            }, 1000);
+                                        }
+                                    }, 100);
+                                });
                             } else {
                                 // Don't show warning for newsletters without preview - just skip rendering
                                 console.log('Newsletter without preview HTML (this is okay for old newsletters):', newsletter.subject);
@@ -1894,10 +1997,22 @@
                         // Try to get HTML from data attribute if not provided
                         let htmlToUse = html;
                         if (!htmlToUse) {
-                            const dataHtml = previewDiv.getAttribute('data-html');
-                            if (dataHtml) {
-                                // Decode HTML entities
-                                htmlToUse = decodeHtmlEntities(dataHtml);
+                            // Try base64 first (new method)
+                            const dataHtmlBase64 = previewDiv.getAttribute('data-html-base64');
+                            if (dataHtmlBase64) {
+                                try {
+                                    htmlToUse = decodeURIComponent(escape(atob(dataHtmlBase64)));
+                                } catch (e) {
+                                    console.warn('Failed to decode base64 HTML:', e);
+                                }
+                            }
+                            // Fallback to old method
+                            if (!htmlToUse) {
+                                const dataHtml = previewDiv.getAttribute('data-html');
+                                if (dataHtml) {
+                                    // Decode HTML entities
+                                    htmlToUse = decodeHtmlEntities(dataHtml);
+                                }
                             }
                         }
                         if (htmlToUse && htmlToUse.trim()) {
@@ -1915,10 +2030,22 @@
             // Try to get HTML from data attribute if not provided
             let htmlToUse = html;
             if (!htmlToUse) {
-                const dataHtml = previewDiv.getAttribute('data-html');
-                if (dataHtml) {
-                    // Decode HTML entities
-                    htmlToUse = decodeHtmlEntities(dataHtml);
+                // Try base64 first (new method)
+                const dataHtmlBase64 = previewDiv.getAttribute('data-html-base64');
+                if (dataHtmlBase64) {
+                    try {
+                        htmlToUse = decodeURIComponent(escape(atob(dataHtmlBase64)));
+                    } catch (e) {
+                        console.warn('Failed to decode base64 HTML:', e);
+                    }
+                }
+                // Fallback to old method
+                if (!htmlToUse) {
+                    const dataHtml = previewDiv.getAttribute('data-html');
+                    if (dataHtml) {
+                        // Decode HTML entities
+                        htmlToUse = decodeHtmlEntities(dataHtml);
+                    }
                 }
             }
             if (!htmlToUse || !htmlToUse.trim()) {
