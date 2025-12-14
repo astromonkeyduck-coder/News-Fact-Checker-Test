@@ -18955,7 +18955,8 @@
             }
             
             navDropdowns.forEach(dropdown => {
-                const trigger = dropdown.querySelector('> a');
+                // Fix: Use :scope > a or find first anchor child (direct child selector)
+                const trigger = dropdown.querySelector(':scope > a') || dropdown.querySelector('a');
                 const menu = dropdown.querySelector('.dropdown-menu');
                 
                 if (!trigger || !menu) return;

@@ -34,6 +34,8 @@ class NoteworthyChat extends HTMLElement {
     let audioQueue = [];
     let isPlayingAudio = false;
     let musicStateBeforeCall = null; // Store music state when voice call starts
+    let authRetryCount = 0; // Track authentication retry attempts
+    const MAX_AUTH_RETRIES = 3; // Maximum authentication retries before giving up
 
     this.root.innerHTML = `
       <style>
@@ -4073,6 +4075,9 @@ class NoteworthyChat extends HTMLElement {
         return;
       }
       
+      // Reset retry counter on new attempt
+      authRetryCount = 0;
+      
       try {
         // Pause all background music when voice call starts
         // This ensures the call audio is clear and not competing with background music
@@ -4273,6 +4278,12 @@ class NoteworthyChat extends HTMLElement {
           wsUrl = `${wsUrl}${separator}ephemeral_token=${encodedToken}`;
           console.log('[Voice Mode] ✅ Added ephemeral token to WebSocket URL (browser authentication method)');
           console.log('[Voice Mode] Token length:', sessionData.ephemeral_token.length, 'characters');
+          console.log('[Voice Mode] Full WebSocket URL (redacted):', wsUrl.replace(/ephemeral_token=[^&]+/, 'ephemeral_token=***'));
+          // Verify token is actually in URL
+          if (!wsUrl.includes('ephemeral_token=')) {
+            console.error('[Voice Mode] ❌ CRITICAL: Token was not added to URL!');
+            throw new Error('Failed to add ephemeral token to WebSocket URL');
+          }
         } else {
           console.error('[Voice Mode] ❌ CRITICAL: No ephemeral token received from server!');
           console.error('[Voice Mode] Session data received:', {
@@ -4458,7 +4469,7 @@ class NoteworthyChat extends HTMLElement {
           if (statusDotIntegrated) statusDotIntegrated.style.background = 'rgba(255, 255, 255, 0.5)';
           
           // Exponential backoff reconnection (max 3 retries)
-          if (voiceModeActive) {
+          if (voiceModeActive && websocket) {
             const retryCount = (websocket._retryCount || 0) + 1;
             websocket._retryCount = retryCount;
             
@@ -4511,6 +4522,8 @@ class NoteworthyChat extends HTMLElement {
     
     function stopVoiceMode() {
       voiceModeActive = false;
+      // Reset retry counter when stopping
+      authRetryCount = 0;
       if (voiceModeToggle) voiceModeToggle.classList.remove('active');
       if (voiceStatusIntegrated) {
         voiceStatusIntegrated.style.display = 'none';
@@ -4828,28 +4841,47 @@ class NoteworthyChat extends HTMLElement {
             console.error('  3. Token was not URL-encoded correctly');
             console.error('  4. Session was already used or closed');
             console.error('  5. Token was missing from URL (should not happen)');
-            console.error('[Voice Mode] Attempting to restart with fresh session...');
             
-            if (voiceStatusTextIntegrated) {
-              voiceStatusTextIntegrated.textContent = `Auth failed: ${authErrorMsg}`;
-            }
-            if (voiceStatusIntegrated) {
-              voiceStatusIntegrated.classList.remove('recording');
-              voiceStatusIntegrated.classList.add('error');
-            }
-            if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
+            // Increment retry counter
+            authRetryCount++;
             
-            // Mark as not authenticated
-            websocket._authenticated = false;
-            
-            // Stop current connection and get a fresh token
-            stopVoiceMode();
-            setTimeout(() => {
-              if (voiceModeActive) {
-                console.log('[Voice Mode] 🔄 Restarting voice mode with fresh session and new token...');
-                startVoiceMode();
+            if (authRetryCount <= MAX_AUTH_RETRIES) {
+              console.error(`[Voice Mode] Attempting to restart with fresh session (attempt ${authRetryCount}/${MAX_AUTH_RETRIES})...`);
+              
+              if (voiceStatusTextIntegrated) {
+                voiceStatusTextIntegrated.textContent = `Auth failed: ${authErrorMsg} (retrying...)`;
               }
-            }, 2000);
+              if (voiceStatusIntegrated) {
+                voiceStatusIntegrated.classList.remove('recording');
+                voiceStatusIntegrated.classList.add('error');
+              }
+              if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
+              
+              // Mark as not authenticated
+              if (websocket) {
+                websocket._authenticated = false;
+              }
+              
+              // Stop current connection and get a fresh token
+              stopVoiceMode();
+              setTimeout(() => {
+                if (voiceModeActive) {
+                  console.log('[Voice Mode] 🔄 Restarting voice mode with fresh session and new token...');
+                  startVoiceMode();
+                }
+              }, 2000);
+            } else {
+              console.error(`[Voice Mode] ❌ Max authentication retries (${MAX_AUTH_RETRIES}) reached. Stopping retry attempts.`);
+              if (voiceStatusTextIntegrated) {
+                voiceStatusTextIntegrated.textContent = 'Authentication failed. Please try again later.';
+              }
+              if (voiceStatusIntegrated) {
+                voiceStatusIntegrated.classList.add('error');
+                voiceStatusIntegrated.classList.remove('recording');
+              }
+              if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
+              stopVoiceMode();
+            }
             break;
             
           case 'session.updated':
@@ -5014,27 +5046,50 @@ class NoteworthyChat extends HTMLElement {
               console.error('  4. Not URL-encoded correctly (special characters not escaped)');
               console.error('  5. Session was already closed or used');
               console.error('[Voice Mode] Connection method: URL parameter (ephemeral_token in query string)');
-              console.error('[Voice Mode] Attempting to restart with fresh session and new token...');
               
-              // Mark as not authenticated
-              if (websocket) {
-                websocket._authenticated = false;
-                websocket.close();
-                websocket = null;
-              }
+              // Increment retry counter
+              authRetryCount++;
               
-              // Restart voice mode to get a fresh token
-              setTimeout(() => {
-                if (voiceModeActive) {
-                  stopVoiceMode();
-                  setTimeout(() => {
-                    if (voiceModeActive) {
-                      console.log('[Voice Mode] 🔄 Restarting with fresh session...');
-                      startVoiceMode();
-                    }
-                  }, 1000);
+              if (authRetryCount <= MAX_AUTH_RETRIES) {
+                console.error(`[Voice Mode] Attempting to restart with fresh session and new token (attempt ${authRetryCount}/${MAX_AUTH_RETRIES})...`);
+                
+                // Mark as not authenticated
+                if (websocket) {
+                  websocket._authenticated = false;
+                  websocket.close();
+                  websocket = null;
                 }
-              }, 2000);
+                
+                // Restart voice mode to get a fresh token
+                setTimeout(() => {
+                  if (voiceModeActive) {
+                    stopVoiceMode();
+                    setTimeout(() => {
+                      if (voiceModeActive) {
+                        console.log('[Voice Mode] 🔄 Restarting with fresh session...');
+                        startVoiceMode();
+                      }
+                    }, 1000);
+                  }
+                }, 2000);
+              } else {
+                console.error(`[Voice Mode] ❌ Max authentication retries (${MAX_AUTH_RETRIES}) reached. Stopping retry attempts.`);
+                console.error('[Voice Mode] Possible causes:');
+                console.error('  1. Backend is not generating valid ephemeral tokens');
+                console.error('  2. OpenAI API key is invalid or expired');
+                console.error('  3. Network/proxy is stripping query parameters');
+                console.error('  4. Token format is incorrect');
+                
+                // Stop voice mode and show error
+                stopVoiceMode();
+                if (voiceStatusTextIntegrated) {
+                  voiceStatusTextIntegrated.textContent = 'Authentication failed. Please try again later.';
+                }
+                if (voiceStatusIntegrated) {
+                  voiceStatusIntegrated.classList.add('error');
+                  voiceStatusIntegrated.classList.remove('recording');
+                }
+              }
             }
             
             if (voiceStatusTextIntegrated) {
