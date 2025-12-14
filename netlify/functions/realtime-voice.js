@@ -156,14 +156,22 @@ You help users understand news, fact-check claims, and stay informed with accura
       }
       
       // Return session details with ephemeral token
+      // CRITICAL: Return format must be: { "ephemeralToken": "ek_...", "model": "...", "voice": "..." }
+      // Return the string token value, not the whole object
+      // Never return the real API key
+      const tokenPreview = ephemeralToken.substring(0, 8) + '...';
+      console.log('✅ [GET] Returning session with token (redacted):', tokenPreview);
+      
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
+          ephemeralToken: ephemeralToken, // String token value from client_secret.value
+          model: 'gpt-4o-realtime-preview',
+          voice: voice,
+          // Optional: include session_id for internal tracking/logging only
           session_id: sessionData.id,
-          expires_at: expiresAt || sessionData.expires_at,
-          ephemeral_token: ephemeralToken,
-          websocket_url: `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview&session_id=${sessionData.id}`,
+          expires_at: expiresAt || sessionData.expires_at
         }),
       };
     }
@@ -455,41 +463,34 @@ You help users understand news, fact-check claims, and stay informed with accura
       }
       
       console.log('✅ [POST] Returning session with token to client');
-      console.log('📋 [POST] Token being sent (first 30 chars):', ephemeralToken.substring(0, 30) + '...');
+      
+      // Redact token in logs (show only first 8 chars)
+      const tokenPreview = ephemeralToken.substring(0, 8) + '...';
+      console.log('📋 [POST] Token being sent (redacted):', tokenPreview);
       console.log('📋 [POST] Token length:', ephemeralToken.length);
       
       // CRITICAL VALIDATION: Verify token format - MUST start with 'ek_' for ephemeral tokens
-      // OpenAI ephemeral tokens from client_secret always start with 'ek_'
-      // If it doesn't, the token is invalid and will cause authentication failures
       if (!ephemeralToken.startsWith('ek_')) {
         console.error('❌ [POST] CRITICAL: Token does not start with "ek_" - INVALID FORMAT!');
-        console.error('❌ [POST] Token preview:', ephemeralToken.substring(0, 50));
-        console.error('❌ [POST] This token will NOT work for authentication!');
-        console.error('❌ [POST] Possible causes:');
-        console.error('   1. API returned wrong token format');
-        console.error('   2. Token extraction from wrong field');
-        console.error('   3. API version mismatch');
-        
-        // Still return it, but log the error - let frontend handle it
-        // Frontend will detect auth failure and retry
-      } else {
-        console.log('✅ [POST] Token format validated: starts with "ek_" (correct format)');
+        console.error('❌ [POST] Token preview:', tokenPreview);
+        throw new Error('Invalid token format - token must start with "ek_"');
       }
       
-      // Additional validation: token should be reasonable length
-      if (ephemeralToken.length < 20 || ephemeralToken.length > 200) {
-        console.warn('⚠️ [POST] Token length unusual:', ephemeralToken.length, '(expected 30-50 chars)');
-      }
+      console.log('✅ [POST] Token format validated: starts with "ek_" (correct format)');
       
+      // Return response in required format: { "ephemeralToken": "ek_...", "model": "...", "voice": "..." }
+      // Note: Return the string token value, not the whole object
+      // Never return the real API key
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          session_id: sessionData.id,
-          expires_at: expiresAt || sessionData.expires_at,
-          ephemeral_token: ephemeralToken,
-          websocket_url: `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview&session_id=${sessionData.id}`,
+          ephemeralToken: ephemeralToken, // String token value from client_secret.value
+          model: 'gpt-4o-realtime-preview',
           voice: voice,
+          // Optional: include session_id for internal tracking/logging only
+          session_id: sessionData.id,
+          expires_at: expiresAt || sessionData.expires_at
         }),
       };
     }

@@ -4265,154 +4265,82 @@ class NoteworthyChat extends HTMLElement {
         try {
           const text = await sessionRes.text();
           sessionData = text ? JSON.parse(text) : {};
+          // Support both ephemeralToken and ephemeral_token for compatibility
+          const receivedToken = sessionData.ephemeralToken || sessionData.ephemeral_token;
+          const tokenPreview = receivedToken ? receivedToken.substring(0, 8) + '...' : 'none';
+          
           console.log('[Voice Mode] Session response received:', {
             hasSessionId: !!sessionData.session_id,
-            hasEphemeralToken: !!sessionData.ephemeral_token,
-            hasWebsocketUrl: !!sessionData.websocket_url,
+            hasEphemeralToken: !!receivedToken,
             allKeys: Object.keys(sessionData),
-            tokenLength: sessionData.ephemeral_token ? sessionData.ephemeral_token.length : 0,
-            tokenPreview: sessionData.ephemeral_token ? sessionData.ephemeral_token.substring(0, 30) + '...' : 'none',
-            tokenStartsWithEk: sessionData.ephemeral_token ? sessionData.ephemeral_token.startsWith('ek_') : false
+            tokenLength: receivedToken ? receivedToken.length : 0,
+            tokenPreview: tokenPreview,
+            tokenStartsWithEk: receivedToken ? receivedToken.startsWith('ek_') : false
           });
           
           // CRITICAL VALIDATION: Check token format immediately upon receipt
-          if (sessionData.ephemeral_token && !sessionData.ephemeral_token.startsWith('ek_')) {
+          if (receivedToken && !receivedToken.startsWith('ek_')) {
             console.error('[Voice Mode] ❌ CRITICAL: Received token does not start with "ek_"!');
-            console.error('[Voice Mode] Token from server:', sessionData.ephemeral_token.substring(0, 50));
+            console.error('[Voice Mode] Token from server (redacted):', tokenPreview);
             console.error('[Voice Mode] This token format is INVALID and will cause authentication failure!');
             console.error('[Voice Mode] Backend should return token starting with "ek_" from client_secret.value');
+            throw new Error('Invalid token format received from server');
           }
         } catch (e) {
           console.error('[Voice Mode] Failed to parse session response:', e);
           throw new Error('Invalid response from server');
         }
         
-        // Connect directly to OpenAI WebSocket using ephemeral token
-        // Note: Browser WebSocket API doesn't support custom headers
-        // OpenAI Realtime API accepts ephemeral token as query parameter for browser connections
-        if (!sessionData.ephemeral_token) {
-          throw new Error('No ephemeral token received from server');
-        }
+        // CRITICAL FIX: OpenAI Realtime API authenticates via WebSocket SUBPROTOCOLS, not URL parameters
+        // Browser WebSockets cannot send headers, so we use subprotocols array
+        // Format: ["realtime", "openai-insecure-api-key.{ephemeralToken}"]
         
-        // Connect to WebSocket with session_id
-        // The session is pre-authenticated when created server-side
-        if (!sessionData.session_id) {
-          throw new Error('No session_id received from server');
-        }
-        
-        // Use the websocket_url from server, or construct it with session_id
-        let wsUrl = sessionData.websocket_url || 
-          `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview&session_id=${sessionData.session_id}`;
-        
-        // CRITICAL: Add ephemeral token to URL as query parameter
-        // Browser WebSocket API cannot send custom headers, so we MUST use URL parameter
-        // OpenAI Realtime API accepts ephemeral_token as a query parameter for browser connections
-        // This is the ONLY way to authenticate from browser clients
-        if (sessionData.ephemeral_token) {
-          // Check if URL already has query parameters
-          const separator = wsUrl.includes('?') ? '&' : '?';
-          
-          // CRITICAL: Token must be added to URL for browser WebSocket authentication
-          // Browser WebSocket API cannot send headers, so token MUST be in URL
-          // OpenAI Realtime API accepts ephemeral_token as query parameter
-          const token = sessionData.ephemeral_token;
-          
-          // CRITICAL VALIDATION: OpenAI ephemeral tokens MUST start with 'ek_'
-          // Tokens from client_secret.value always have this format
-          // If token doesn't start with 'ek_', authentication will fail
-          if (!token.startsWith('ek_')) {
-            console.error('[Voice Mode] ❌ CRITICAL: Token does not start with "ek_" - INVALID FORMAT!');
-            console.error('[Voice Mode] Token preview:', token.substring(0, 50));
-            console.error('[Voice Mode] Token length:', token.length);
-            console.error('[Voice Mode] This token will cause authentication failure!');
-            console.error('[Voice Mode] Possible causes:');
-            console.error('   1. Backend returned wrong token format');
-            console.error('   2. Token extraction error');
-            console.error('   3. API version mismatch');
-            
-            // Still try to connect, but expect it to fail
-            // Retry logic will handle it and get a fresh token
-          } else {
-            console.log('[Voice Mode] ✅ Token format validated: starts with "ek_" (correct format)');
-          }
-          
-          // Additional validation: token length should be reasonable
-          if (token.length < 20 || token.length > 200) {
-            console.warn('[Voice Mode] ⚠️ Token length unusual:', token.length, '(expected 30-50 chars)');
-          }
-          
-          // Add token to URL - use & since websocket_url already has query params
-          // CRITICAL: Do NOT URL-encode the token - OpenAI expects it as-is
-          // The compiled version that works uses direct concatenation without encoding
-          wsUrl = `${wsUrl}${separator}ephemeral_token=${token}`;
-          
-          // Verify the token was added correctly (check for exact match)
-          const tokenInUrl = wsUrl.includes(`ephemeral_token=${token}`);
-          if (!tokenInUrl) {
-            console.error('[Voice Mode] ❌ CRITICAL: Token not found in URL after adding!');
-            console.error('[Voice Mode] Expected token:', token.substring(0, 20) + '...');
-            console.error('[Voice Mode] URL contains ephemeral_token:', wsUrl.includes('ephemeral_token='));
-            throw new Error('Token was not properly added to WebSocket URL');
-          }
-          
-          console.log('[Voice Mode] ✅ Added ephemeral token to WebSocket URL');
-          console.log('[Voice Mode] ✅ Verified token is in URL');
-          console.log('[Voice Mode] Token format check:', {
-            startsWithEk: token.startsWith('ek_'),
-            length: token.length,
-            preview: token.substring(0, 20) + '...'
-          });
-          console.log('[Voice Mode] URL verification:', {
-            hasEphemeralToken: wsUrl.includes('ephemeral_token='),
-            hasSessionId: wsUrl.includes('session_id='),
-            hasModel: wsUrl.includes('model='),
-            fullUrlRedacted: wsUrl.replace(/ephemeral_token=[^&]+/, 'ephemeral_token=***')
-          });
-          
-          // Verify token is actually in URL
-          if (!wsUrl.includes('ephemeral_token=')) {
-            console.error('[Voice Mode] ❌ CRITICAL: Token was not added to URL!');
-            throw new Error('Failed to add ephemeral token to WebSocket URL');
-          }
-          
-          // Log the actual URL structure for debugging (redact token)
-          try {
-            const urlObj = new URL(wsUrl);
-            console.log('[Voice Mode] URL structure:', {
-              protocol: urlObj.protocol,
-              host: urlObj.host,
-              pathname: urlObj.pathname,
-              hasModel: urlObj.searchParams.has('model'),
-              hasSessionId: urlObj.searchParams.has('session_id'),
-              hasEphemeralToken: urlObj.searchParams.has('ephemeral_token'),
-              allParams: Array.from(urlObj.searchParams.keys())
-            });
-          } catch (urlError) {
-            console.warn('[Voice Mode] Could not parse URL for debugging:', urlError);
-          }
-        } else {
+        if (!sessionData.ephemeralToken && !sessionData.ephemeral_token) {
           console.error('[Voice Mode] ❌ CRITICAL: No ephemeral token received from server!');
           console.error('[Voice Mode] Session data received:', {
             hasSessionId: !!sessionData.session_id,
             hasWebsocketUrl: !!sessionData.websocket_url,
-            hasEphemeralToken: !!sessionData.ephemeral_token,
+            hasEphemeralToken: !!sessionData.ephemeralToken || !!sessionData.ephemeral_token,
             allKeys: Object.keys(sessionData)
           });
           throw new Error('No ephemeral token received - cannot authenticate WebSocket connection');
         }
         
-        // Ensure wss:// protocol (required for HTTPS pages)
-        if (window.location.protocol === 'https:' && wsUrl.startsWith('ws://')) {
-          wsUrl = wsUrl.replace('ws://', 'wss://');
-          console.warn('[Voice Mode] Upgraded ws:// to wss:// for secure connection');
+        // Get token (support both ephemeralToken and ephemeral_token for compatibility)
+        // Store in module scope so error handlers can access it
+        const ephemeralToken = sessionData.ephemeralToken || sessionData.ephemeral_token;
+        
+        // Validate token format
+        if (!ephemeralToken.startsWith('ek_')) {
+          console.error('[Voice Mode] ❌ CRITICAL: Token does not start with "ek_" - INVALID FORMAT!');
+          console.error('[Voice Mode] Token preview:', ephemeralToken.substring(0, 8) + '...');
+          throw new Error('Invalid token format - token must start with "ek_"');
         }
         
-        // Redact sensitive info from logs
-        const logUrl = wsUrl.replace(/session_id=[^&]+/, 'session_id=***').replace(/ephemeral_token=[^&]+/, 'ephemeral_token=***');
-        console.log('[Voice Mode] 🔌 Connecting to WebSocket:', logUrl);
-        console.log('[Voice Mode] Session ID:', sessionData.session_id);
-        console.log('[Voice Mode] Has ephemeral token:', !!sessionData.ephemeral_token);
-        console.log('[Voice Mode] Connection time:', new Date().toISOString());
+        // Redact token in logs (show only first 8 chars)
+        const tokenPreview = ephemeralToken.substring(0, 8) + '...';
+        console.log('[Voice Mode] ✅ Ephemeral token received (redacted):', tokenPreview);
+        console.log('[Voice Mode] Token format validated: starts with "ek_"');
+        console.log('[Voice Mode] Token length:', ephemeralToken.length, 'characters');
+        
+        // Construct WebSocket URL - ONLY model parameter, NO token or session_id in URL
+        const model = sessionData.model || 'gpt-4o-realtime-preview';
+        const wsUrl = `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`;
+        
+        // CRITICAL: Use WebSocket subprotocols for authentication
+        // Format: ["realtime", "openai-insecure-api-key.{ephemeralToken}"]
+        const protocols = [
+          "realtime",
+          `openai-insecure-api-key.${ephemeralToken}`
+        ];
+        
+        // Store token in module scope for error handlers (before creating websocket)
+        // We'll attach it to websocket after creation
+        
+        console.log('[Voice Mode] 🔌 Creating WebSocket with subprotocol authentication...');
+        console.log('[Voice Mode] URL:', wsUrl);
+        console.log('[Voice Mode] Protocols:', ['realtime', `openai-insecure-api-key.${tokenPreview}`]);
+        console.log('[Voice Mode] Session ID (for logging only):', sessionData.session_id || 'not provided');
         
         // Prevent multiple parallel connections
         if (websocket && (websocket.readyState === WebSocket.CONNECTING || websocket.readyState === WebSocket.OPEN)) {
@@ -4425,44 +4353,11 @@ class NoteworthyChat extends HTMLElement {
         const messageQueue = [];
         let connectionStartTime = Date.now();
         
-        // EXPERT: Create WebSocket connection with token in URL
-        // CRITICAL: Browser WebSocket API does NOT support custom headers
-        // OpenAI Realtime API accepts ephemeral_token as URL query parameter for browser clients
-        // This is the ONLY authentication method that works in browsers
-        console.log('[Voice Mode] 🔌 Creating WebSocket connection...');
-        console.log('[Voice Mode] Final URL structure (redacted):', wsUrl.replace(/ephemeral_token=[^&]+/, 'ephemeral_token=***'));
+        // Create WebSocket with subprotocols (this is the correct authentication method)
+        websocket = new WebSocket(wsUrl, protocols);
         
-        // Verify URL before connecting
-        if (!wsUrl.includes('ephemeral_token=')) {
-          console.error('[Voice Mode] ❌ CRITICAL: Token missing from URL before connection!');
-          throw new Error('Ephemeral token not in WebSocket URL - cannot authenticate');
-        }
-        
-        // FINAL VERIFICATION: Double-check token is in URL before creating WebSocket
-        // This is the last chance to catch any issues before connection
-        const preConnectionCheck = {
-          urlHasToken: wsUrl.includes('ephemeral_token='),
-          urlHasSessionId: wsUrl.includes('session_id='),
-          urlHasModel: wsUrl.includes('model='),
-          urlProtocol: wsUrl.startsWith('wss://') ? 'wss' : wsUrl.startsWith('ws://') ? 'ws' : 'unknown',
-          tokenFormat: sessionData.ephemeral_token ? (sessionData.ephemeral_token.startsWith('ek_') ? 'valid' : 'invalid') : 'missing'
-        };
-        
-        console.log('[Voice Mode] 🔍 Pre-connection verification:', preConnectionCheck);
-        
-        if (!preConnectionCheck.urlHasToken) {
-          console.error('[Voice Mode] ❌ CRITICAL: Token missing in final check!');
-          throw new Error('Ephemeral token not in URL - cannot proceed with connection');
-        }
-        
-        if (preConnectionCheck.tokenFormat === 'invalid') {
-          console.error('[Voice Mode] ❌ CRITICAL: Token format invalid in final check!');
-          console.error('[Voice Mode] Token:', sessionData.ephemeral_token.substring(0, 50));
-          // Still try to connect - retry logic will handle failure
-        }
-        
-        console.log('[Voice Mode] ✅ All pre-connection checks passed - creating WebSocket...');
-        websocket = new WebSocket(wsUrl);
+        // Store token on websocket for error handlers
+        websocket._ephemeralToken = ephemeralToken;
         
         websocket.onopen = (event) => {
           const connectTime = Date.now() - connectionStartTime;
@@ -4472,47 +4367,20 @@ class NoteworthyChat extends HTMLElement {
           console.log('[Voice Mode] Protocol:', websocket.protocol || 'none');
           console.log('[Voice Mode] Extensions:', websocket.extensions || 'none');
           
-          // Log the actual URL used (redacted) - this helps verify token was included
-          const actualUrl = websocket.url || wsUrl;
-          console.log('[Voice Mode] URL used (redacted):', actualUrl.replace(/ephemeral_token=[^&]+/, 'ephemeral_token=***'));
-          console.log('[Voice Mode] URL contains token param:', actualUrl.includes('ephemeral_token='));
-          
-          // SUCCESS DIAGNOSTIC: Connection opened = authentication likely succeeded
-          // If we get here, the WebSocket handshake completed, which means OpenAI accepted the connection
-          console.log('[Voice Mode] ✅ SUCCESS: WebSocket handshake completed - authentication appears successful!');
+          // SUCCESS: Connection opened = authentication succeeded via subprotocols
+          // If we get here, the WebSocket handshake completed with subprotocol authentication
+          console.log('[Voice Mode] ✅ SUCCESS: WebSocket handshake completed - subprotocol authentication successful!');
           console.log('[Voice Mode] 📊 Connection stats:', {
             attemptId: connectionAttempts.length > 0 ? connectionAttempts[connectionAttempts.length - 1].id : 'unknown',
             connectionTime: connectTime + 'ms',
             retryCount: authRetryCount,
-            tokenFormat: sessionData.ephemeral_token?.startsWith('ek_') ? 'valid' : 'invalid',
-            urlHasToken: actualUrl.includes('ephemeral_token='),
             protocol: websocket.protocol || 'none',
-            readyState: websocket.readyState
-          });
-          console.log('[Voice Mode] 📊 Connection stats:', {
-            attemptId: connectionAttempts[connectionAttempts.length - 1]?.id || 'unknown',
-            connectionTime: connectTime + 'ms',
-            retryCount: authRetryCount,
-            tokenFormat: sessionData.ephemeral_token?.startsWith('ek_') ? 'valid' : 'invalid',
-            urlHasToken: actualUrl.includes('ephemeral_token=')
+            url: wsUrl,
+            authenticationMethod: 'WebSocket subprotocols'
           });
           
-          // EXPERT NOTE: With token in URL, authentication happens automatically during WebSocket handshake
-          // The compiled version that WORKS does NOT send an auth message - only uses URL parameter
-          // OpenAI authenticates the connection using the ephemeral_token query parameter
+          // Authentication happens via subprotocols during WebSocket handshake
           // No auth message needed - connection is already authenticated when onopen fires
-          
-          // DIAGNOSTIC: Verify token is still in URL after connection
-          // Sometimes browsers/proxies might modify URLs, so we verify
-          const finalUrlCheck = websocket.url || wsUrl;
-          if (!finalUrlCheck.includes('ephemeral_token=')) {
-            console.error('[Voice Mode] ❌ CRITICAL: Token missing from URL after connection!');
-            console.error('[Voice Mode] This should never happen - URL may have been modified');
-            console.error('[Voice Mode] Original URL had token:', wsUrl.includes('ephemeral_token='));
-            console.error('[Voice Mode] Actual URL has token:', finalUrlCheck.includes('ephemeral_token='));
-          } else {
-            console.log('[Voice Mode] ✅ Verified: Token still present in URL after connection');
-          }
           
           // Send queued messages
           while (messageQueue.length > 0) {
@@ -4961,12 +4829,12 @@ class NoteworthyChat extends HTMLElement {
               session_id: message.session_id,
               alreadyRecording: isRecording,
               alreadyAuthenticated: websocket._authenticated,
-              connectionMethod: 'URL parameter (ephemeral_token in query string)',
-              tokenWasInUrl: wsUrl.includes('ephemeral_token=')
+              connectionMethod: 'WebSocket subprotocols',
+              protocol: websocket.protocol || 'none'
             });
             
-            // DIAGNOSTIC: Log that authentication succeeded with URL method
-            console.log('[Voice Mode] ✅ Authentication confirmed: URL parameter method works!');
+            // DIAGNOSTIC: Log that authentication succeeded with subprotocol method
+            console.log('[Voice Mode] ✅ Authentication confirmed: WebSocket subprotocol method works!');
             
             // Mark as authenticated (if not already)
             websocket._authenticated = true;
@@ -4994,8 +4862,7 @@ class NoteworthyChat extends HTMLElement {
             break;
             
           case 'auth.error':
-            // Authentication failed - this should NOT happen if token is in URL correctly
-            // If we get this, it means the token in URL was invalid/expired/malformed
+            // Authentication failed - DO NOT RETRY (client config issue)
             const authErrorDetails = {
               type: message.type,
               error: message.error ? {
@@ -5006,7 +4873,7 @@ class NoteworthyChat extends HTMLElement {
               } : message.error,
               event_id: message.event_id,
               fullMessage: message,
-              connectionMethod: 'URL parameter (ephemeral_token in query string)'
+              connectionMethod: 'WebSocket subprotocols'
             };
             console.error('[Voice Mode] ❌ Authentication failed!');
             console.error('[Voice Mode] Auth error details:', authErrorDetails);
@@ -5024,54 +4891,29 @@ class NoteworthyChat extends HTMLElement {
               }
             }
             
-            console.error('[Voice Mode] 🔐 Authentication failure reason:', authErrorMsg);
-            console.error('[Voice Mode] Possible causes:');
-            console.error('  1. Ephemeral token expired (tokens are short-lived)');
-            console.error('  2. Token was invalid or malformed');
-            console.error('  3. Token was not URL-encoded correctly');
-            console.error('  4. Session was already used or closed');
-            console.error('  5. Token was missing from URL (should not happen)');
+            console.error('[Voice Mode] 🔐 Authentication failure - CLIENT CONFIG ISSUE');
+            console.error('[Voice Mode] DO NOT RETRY - This indicates a problem with subprotocol authentication');
             
-            // Increment retry counter
-            authRetryCount++;
+            // Stop immediately - don't retry auth errors
+            stopVoiceMode();
             
-            if (authRetryCount <= MAX_AUTH_RETRIES) {
-              console.error(`[Voice Mode] Attempting to restart with fresh session (attempt ${authRetryCount}/${MAX_AUTH_RETRIES})...`);
-              
-              if (voiceStatusTextIntegrated) {
-                voiceStatusTextIntegrated.textContent = `Auth failed: ${authErrorMsg} (retrying...)`;
-              }
+            if (voiceStatusTextIntegrated) {
+              voiceStatusTextIntegrated.textContent = 'Auth failed (client config). Fix token transport.';
+            }
             if (voiceStatusIntegrated) {
-              voiceStatusIntegrated.classList.remove('recording');
               voiceStatusIntegrated.classList.add('error');
+              voiceStatusIntegrated.classList.remove('recording');
             }
             if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
-              
-              // Mark as not authenticated
-              if (websocket) {
-                websocket._authenticated = false;
-              }
-              
-              // Stop current connection and get a fresh token
-            stopVoiceMode();
-              setTimeout(() => {
-                if (voiceModeActive) {
-                  console.log('[Voice Mode] 🔄 Restarting voice mode with fresh session and new token...');
-                  startVoiceMode();
-                }
-              }, 2000);
-            } else {
-              console.error(`[Voice Mode] ❌ Max authentication retries (${MAX_AUTH_RETRIES}) reached. Stopping retry attempts.`);
-              if (voiceStatusTextIntegrated) {
-                voiceStatusTextIntegrated.textContent = 'Authentication failed. Please try again later.';
-              }
-              if (voiceStatusIntegrated) {
-                voiceStatusIntegrated.classList.add('error');
-                voiceStatusIntegrated.classList.remove('recording');
-              }
-              if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
-              stopVoiceMode();
-            }
+            
+            // Log diagnostic info
+            const diagnosticToken = websocket?._ephemeralToken || 'not available';
+            console.error('[Voice Mode] Diagnostic info:', {
+              tokenReceived: !!diagnosticToken && diagnosticToken !== 'not available',
+              tokenFormat: diagnosticToken && diagnosticToken !== 'not available' ? (diagnosticToken.startsWith('ek_') ? 'valid' : 'invalid') : 'missing',
+              tokenPreview: diagnosticToken && diagnosticToken !== 'not available' ? diagnosticToken.substring(0, 8) + '...' : 'none',
+              protocol: websocket?.protocol || 'none'
+            });
             break;
             
           case 'session.updated':
@@ -5221,67 +5063,47 @@ class NoteworthyChat extends HTMLElement {
               errorMsg = message.message;
             }
             
-            // Check for authentication errors specifically
-            if (errorMsg.toLowerCase().includes('authentication') || 
-                errorMsg.toLowerCase().includes('bearer') || 
-                errorMsg.toLowerCase().includes('token') ||
-                errorMsg.toLowerCase().includes('unauthorized') ||
-                errorMsg.toLowerCase().includes('forbidden')) {
-              console.error('[Voice Mode] 🔐 Authentication error detected in error message!');
+            // CRITICAL: Check for authentication errors - DO NOT RETRY
+            // If server says "Missing bearer" or "authentication", it's a client config issue
+            const isAuthError = errorMsg.toLowerCase().includes('authentication') || 
+                                errorMsg.toLowerCase().includes('bearer') || 
+                                errorMsg.toLowerCase().includes('missing bearer') ||
+                                errorMsg.toLowerCase().includes('unauthorized') ||
+                                errorMsg.toLowerCase().includes('forbidden');
+            
+            if (isAuthError) {
+              console.error('[Voice Mode] 🔐 Authentication error detected - CLIENT CONFIG ISSUE');
               console.error('[Voice Mode] Error message:', errorMsg);
-              console.error('[Voice Mode] This indicates the ephemeral token in URL was:');
-              console.error('  1. Missing from URL (should not happen - we check for this)');
-              console.error('  2. Invalid or malformed');
-              console.error('  3. Expired (tokens are short-lived, typically 1-10 minutes)');
-              console.error('  4. Not URL-encoded correctly (special characters not escaped)');
-              console.error('  5. Session was already closed or used');
-              console.error('[Voice Mode] Connection method: URL parameter (ephemeral_token in query string)');
+              console.error('[Voice Mode] This indicates a problem with token transport/subprotocols');
+              console.error('[Voice Mode] DO NOT RETRY - This is a configuration issue, not a transient error');
               
-              // Increment retry counter
-              authRetryCount++;
+              // Stop retrying immediately - this is a client config problem
+              stopVoiceMode();
               
-              if (authRetryCount <= MAX_AUTH_RETRIES) {
-                console.error(`[Voice Mode] Attempting to restart with fresh session and new token (attempt ${authRetryCount}/${MAX_AUTH_RETRIES})...`);
-                
-                // Mark as not authenticated
-                if (websocket) {
-                  websocket._authenticated = false;
-                  websocket.close();
-                  websocket = null;
-                }
-                
-                // Restart voice mode to get a fresh token
-                setTimeout(() => {
-                  if (voiceModeActive) {
-                    stopVoiceMode();
-                    setTimeout(() => {
-                      if (voiceModeActive) {
-                        console.log('[Voice Mode] 🔄 Restarting with fresh session...');
-                        startVoiceMode();
-                      }
-                    }, 1000);
-                  }
-                }, 2000);
-              } else {
-                console.error(`[Voice Mode] ❌ Max authentication retries (${MAX_AUTH_RETRIES}) reached. Stopping retry attempts.`);
-                console.error('[Voice Mode] Possible causes:');
-                console.error('  1. Backend is not generating valid ephemeral tokens');
-                console.error('  2. OpenAI API key is invalid or expired');
-                console.error('  3. Network/proxy is stripping query parameters');
-                console.error('  4. Token format is incorrect');
-                
-                // Stop voice mode and show error
-                stopVoiceMode();
-                if (voiceStatusTextIntegrated) {
-                  voiceStatusTextIntegrated.textContent = 'Authentication failed. Please try again later.';
-                }
-                if (voiceStatusIntegrated) {
-                  voiceStatusIntegrated.classList.add('error');
-                  voiceStatusIntegrated.classList.remove('recording');
-                }
+              if (voiceStatusTextIntegrated) {
+                voiceStatusTextIntegrated.textContent = 'Auth failed (client config). Fix token transport.';
               }
+              if (voiceStatusIntegrated) {
+                voiceStatusIntegrated.classList.add('error');
+                voiceStatusIntegrated.classList.remove('recording');
+              }
+              if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
+              
+              // Log diagnostic info
+              const diagnosticToken = websocket?._ephemeralToken || 'not available';
+              console.error('[Voice Mode] Diagnostic info:', {
+                tokenReceived: !!diagnosticToken && diagnosticToken !== 'not available',
+                tokenFormat: diagnosticToken && diagnosticToken !== 'not available' ? (diagnosticToken.startsWith('ek_') ? 'valid' : 'invalid') : 'missing',
+                tokenPreview: diagnosticToken && diagnosticToken !== 'not available' ? diagnosticToken.substring(0, 8) + '...' : 'none',
+                protocol: websocket?.protocol || 'none',
+                url: websocket?.url || 'not available'
+              });
+              
+              // Don't continue - stop here
+              break;
             }
             
+            // For non-auth errors, show error but don't stop (let retry logic handle if needed)
             if (voiceStatusTextIntegrated) {
               voiceStatusTextIntegrated.textContent = `Error: ${errorMsg}`;
             }
