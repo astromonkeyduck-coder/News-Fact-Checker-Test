@@ -1529,24 +1529,55 @@ export class NoteworthyChat extends HTMLElement {
         
         const sessionData = await sessionRes.json();
         
-        // Connect to OpenAI WebSocket (without token in URL)
-        // The token will be sent as an auth message after connection
-        const wsUrl = sessionData.websocket_url || `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview&session_id=${sessionData.session_id}`;
+        // CRITICAL FIX: OpenAI Realtime API authenticates via WebSocket SUBPROTOCOLS, not URL parameters
+        // Browser WebSockets cannot send headers, so we use subprotocols array
+        // Format: ["realtime", "openai-insecure-api-key.{ephemeralToken}"]
         
-        console.log('[Voice Mode] Connecting to WebSocket:', wsUrl.substring(0, 100) + '...');
-        websocket = new WebSocket(wsUrl);
+        // Get token (support both ephemeralToken and ephemeral_token for compatibility)
+        const ephemeralToken = (sessionData as any).ephemeralToken || (sessionData as any).ephemeral_token;
+        
+        if (!ephemeralToken) {
+          throw new Error('No ephemeral token received from server');
+        }
+        
+        // Validate token format
+        if (!ephemeralToken.startsWith('ek_')) {
+          throw new Error('Invalid token format - token must start with "ek_"');
+        }
+        
+        // Redact token in logs (show only first 8 chars)
+        const tokenPreview = ephemeralToken.substring(0, 8) + '...';
+        console.log('[Voice Mode] ✅ Ephemeral token received (redacted):', tokenPreview);
+        
+        // Construct WebSocket URL - ONLY model parameter, NO token or session_id in URL
+        const model = (sessionData as any).model || 'gpt-4o-realtime-preview';
+        const wsUrl = `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`;
+        
+        // CRITICAL: Use WebSocket subprotocols for authentication
+        // Format: ["realtime", "openai-insecure-api-key.{ephemeralToken}"]
+        const protocols = [
+          "realtime",
+          `openai-insecure-api-key.${ephemeralToken}`
+        ];
+        
+        console.log('[Voice Mode] 🔌 Creating WebSocket with subprotocol authentication...');
+        console.log('[Voice Mode] URL:', wsUrl);
+        console.log('[Voice Mode] Protocols:', ['realtime', `openai-insecure-api-key.${tokenPreview}`]);
+        
+        websocket = new WebSocket(wsUrl, protocols);
+        
+        // Store token on websocket for error handlers
+        (websocket as any)._ephemeralToken = ephemeralToken;
         
         websocket.onopen = () => {
-          console.log('[Voice Mode] WebSocket opened, sending auth message...');
+          console.log('[Voice Mode] ✅ WebSocket opened - subprotocol authentication successful!');
           
-          // Send authentication message with ephemeral token
-          const authMessage = {
-            type: 'auth',
-            token: sessionData.ephemeral_token,
-          };
-          websocket.send(JSON.stringify(authMessage));
-          
-          voiceStatusText.textContent = 'Authenticating...';
+          // Authentication happens via subprotocols during WebSocket handshake
+          // No auth message needed - connection is already authenticated when onopen fires
+          voiceStatusText.textContent = 'Connected - Speak now!';
+          voiceStatus.classList.remove('recording');
+          isRecording = true;
+          startAudioCapture();
         };
         
         websocket.onmessage = (event) => {
@@ -1566,16 +1597,27 @@ export class NoteworthyChat extends HTMLElement {
           voiceStatus.classList.add('recording');
         };
         
-        websocket.onclose = () => {
-          voiceStatusText.textContent = 'Disconnected';
+        websocket.onclose = (event) => {
+          const closeCode = event.code || 'unknown';
+          const wasClean = event.wasClean !== undefined ? event.wasClean : false;
+          
+          console.log('[Voice Mode] 🔌 WebSocket closed');
+          console.log('[Voice Mode] Close code:', closeCode, wasClean ? '(clean)' : '(unclean)');
+          
+          voiceStatusText.textContent = wasClean ? 'Disconnected' : `Disconnected (code ${closeCode})`;
           voiceStatus.classList.add('recording');
-          if (voiceModeActive) {
-            // Try to reconnect
+          
+          // Only reconnect if it was a clean close and voice mode is still active
+          // Don't reconnect on auth errors (they're handled in error handler)
+          if (voiceModeActive && wasClean && closeCode === 1000) {
+            console.log('[Voice Mode] Clean close - attempting reconnection...');
             setTimeout(() => {
               if (voiceModeActive) {
                 startVoiceMode();
               }
             }, 2000);
+          } else {
+            console.log('[Voice Mode] Not reconnecting - unclean close or auth error');
           }
         };
         
@@ -1659,47 +1701,51 @@ export class NoteworthyChat extends HTMLElement {
         
         switch (message.type) {
           case 'auth.success':
-            // Authentication successful, start audio capture
-            console.log('[Voice Mode] Authentication successful');
-            voiceStatusText.textContent = 'Connected - Speak now!';
-            voiceStatus.classList.remove('recording');
-            isRecording = true;
-            startAudioCapture();
+            // Authentication successful (confirmation - auth already happened via subprotocols)
+            console.log('[Voice Mode] ✅ Received auth.success confirmation');
+            console.log('[Voice Mode] Authentication confirmed: WebSocket subprotocol method works!');
+            
+            // If not already recording, start now
+            if (!isRecording) {
+              voiceStatusText.textContent = 'Connected - Speak now!';
+              voiceStatus.classList.remove('recording');
+              isRecording = true;
+              startAudioCapture();
+            } else {
+              console.log('[Voice Mode] Already recording - auth.success is confirmation only');
+            }
             break;
             
           case 'auth.error':
-            // Authentication failed
-            console.error('[Voice Mode] Authentication failed:', message);
-            voiceStatusText.textContent = 'Authentication failed';
+            // Authentication failed - DO NOT RETRY (client config issue)
+            console.error('[Voice Mode] ❌ Authentication failed - CLIENT CONFIG ISSUE');
+            console.error('[Voice Mode] DO NOT RETRY - This indicates a problem with subprotocol authentication');
+            voiceStatusText.textContent = 'Auth failed (client config). Fix token transport.';
             voiceStatus.classList.add('recording');
             stopVoiceMode();
             break;
             
           case 'response.audio_transcript.delta':
-            // Show transcript in real-time
-            if (message.delta) {
-              // Update status or show in chat
+            // Partial transcript (could show in real-time if desired)
+            if ((message as any).delta) {
+              // Update status or show in chat if needed
             }
             break;
             
           case 'response.audio_transcript.done':
             // Full transcript available
-            if (message.transcript) {
+            if ((message as any).transcript) {
               const aiGroup = document.createElement('div');
               aiGroup.className = 'message-group ai-msg-group';
               aiGroup.innerHTML = `
                 <div class="message-avatar">NW</div>
                 <div class="message-content">
-                  <div class="reply">🎤 ${message.transcript}</div>
+                  <div class="reply">🎤 ${(message as any).transcript}</div>
                 </div>
               `;
               body.appendChild(aiGroup);
               body.scrollTop = body.scrollHeight;
             }
-            break;
-            
-          case 'response.audio_transcript.delta':
-            // Partial transcript (could show in real-time if desired)
             break;
             
           case 'response.function_call_arguments.done':
@@ -1795,9 +1841,28 @@ export class NoteworthyChat extends HTMLElement {
             break;
             
           case 'error':
-            console.error('WebSocket error:', message);
-            voiceStatusText.textContent = `Error: ${message.message || 'Unknown error'}`;
-            voiceStatus.classList.add('recording');
+            // CRITICAL: If type === "error", stop retrying and show UI error
+            const errorMsg = (message as any).error?.message || (message as any).error || (message as any).message || 'Unknown error';
+            console.error('[Voice Mode] ❌ Error message received - stopping retries');
+            console.error('[Voice Mode] Error:', errorMsg);
+            
+            // Check for authentication errors - DO NOT RETRY
+            const isAuthError = errorMsg.toLowerCase().includes('authentication') || 
+                                errorMsg.toLowerCase().includes('bearer') || 
+                                errorMsg.toLowerCase().includes('missing bearer') ||
+                                errorMsg.toLowerCase().includes('unauthorized') ||
+                                errorMsg.toLowerCase().includes('forbidden');
+            
+            if (isAuthError) {
+              console.error('[Voice Mode] 🔐 Authentication error detected - CLIENT CONFIG ISSUE');
+              console.error('[Voice Mode] DO NOT RETRY - This is a configuration issue, not a transient error');
+              voiceStatusText.textContent = 'Auth failed (client config). Fix token transport.';
+            } else {
+              voiceStatusText.textContent = `Error: ${errorMsg}`;
+            }
+            
+            // Stop voice mode immediately - don't retry on errors
+            stopVoiceMode();
             break;
             
           case 'session.updated':
