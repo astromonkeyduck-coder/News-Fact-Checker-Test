@@ -3478,13 +3478,31 @@
                 return;
             }
             
-            const untitledImages = newsletterState.attachments.filter(a => !a.title || a.title.trim() === '');
+            // Validate attachments have meaningful titles
+            const untitledImages = newsletterState.attachments.filter(a => {
+                const title = (a.title || '').trim();
+                return !title || title === '' || /^untitled\s+image\s+\d+$/i.test(title);
+            });
             if (untitledImages.length > 0) {
-                showStatus('All images must have titles before generating', 'error');
+                showStatus('All images must have descriptive titles (not "Untitled Image X") before generating', 'error');
                 untitledImages.forEach(img => {
-                    const input = document.querySelector(`[data-attachment-id="${img.id}"].attachment-title-input`);
-                    if (input) input.focus();
+                    const item = document.querySelector(`[data-attachment-id="${img.id}"]`);
+                    if (item) {
+                        const input = item.querySelector('.attachment-title-input') || item.querySelector('input[type="text"]');
+                        if (input) {
+                            input.focus();
+                            input.style.borderColor = 'var(--terminal-red)';
+                            input.style.borderWidth = '2px';
+                        }
+                    }
                 });
+                return;
+            }
+            
+            // Validate attachments have dataUrls
+            const imagesWithoutData = newsletterState.attachments.filter(a => !a.dataUrl || !a.dataUrl.startsWith('data:'));
+            if (imagesWithoutData.length > 0) {
+                showStatus('All images must have valid image data. Please re-upload any missing images.', 'error');
                 return;
             }
             
@@ -3523,18 +3541,45 @@
                 
                 if (!response.ok) {
                     let errorData;
+                    let errorText = '';
                     try {
-                        const text = await response.text();
+                        errorText = await response.text();
                         try {
-                            errorData = JSON.parse(text);
+                            errorData = JSON.parse(errorText);
                         } catch (e) {
-                            errorData = { error: text || `Server error: ${response.status} ${response.statusText}` };
+                            errorData = { error: errorText || `Server error: ${response.status} ${response.statusText}` };
                         }
                     } catch (e) {
                         errorData = { error: `Server error: ${response.status} ${response.statusText}` };
                     }
-                    console.error('Generation API error:', errorData);
-                    throw new Error(errorData.error || errorData.message || `Failed to generate newsletter (${response.status})`);
+                    // Log full error details
+                    // Log full error details
+                    const errorLog = {
+                        status: response.status,
+                        statusText: response.statusText,
+                        errorData: errorData,
+                        errorDataString: JSON.stringify(errorData, null, 2),
+                        rawText: errorText.substring(0, 1000)
+                    };
+                    console.error('Generation API error:', errorLog);
+                    console.error('Generation API error (stringified):', JSON.stringify(errorLog, null, 2));
+                    
+                    // Extract error message with priority: error > message > details > status
+                    let errorMessage = errorData.error || errorData.message || errorData.details;
+                    if (!errorMessage && errorData.name) {
+                        errorMessage = `${errorData.name}: ${errorData.message || 'Unknown error'}`;
+                    }
+                    if (!errorMessage) {
+                        errorMessage = `Failed to generate newsletter (${response.status} ${response.statusText})`;
+                    }
+                    
+                    // Create error object with all details
+                    const error = new Error(errorMessage);
+                    error.status = response.status;
+                    error.errorData = errorData;
+                    error.rawText = errorText;
+                    
+                    throw error;
                 }
                 
                 const data = await response.json();
@@ -3581,23 +3626,76 @@
                 }
                 
             } catch (error) {
-                console.error('Generation error:', error);
-                let errorMessage = error.message || 'Unknown error occurred';
+                console.error('Generation error caught:', error);
+                
+                // Extract error message - check multiple sources
+                let errorMessage = 'Unknown error occurred';
+                
+                // Check error.errorData first (from our custom error object)
+                if (error.errorData) {
+                    errorMessage = error.errorData.error || error.errorData.message || error.errorData.details || errorMessage;
+                    console.error('Error from errorData:', error.errorData);
+                }
+                
+                // Check error.message
+                if (error.message && errorMessage === 'Unknown error occurred') {
+                    errorMessage = error.message;
+                }
+                
+                // Check error.error (if nested)
+                if (error.error && typeof error.error === 'string') {
+                    errorMessage = error.error;
+                }
+                
+                // Check error.rawText if available
+                if (error.rawText && errorMessage.includes('Unknown')) {
+                    try {
+                        const parsed = JSON.parse(error.rawText);
+                        errorMessage = parsed.error || parsed.message || errorMessage;
+                    } catch (e) {
+                        // Not JSON, use as-is
+                        if (error.rawText.length < 200) {
+                            errorMessage = error.rawText;
+                        }
+                    }
+                }
                 
                 // Provide more helpful error messages
-                if (errorMessage.includes('AI generation service not configured')) {
+                if (errorMessage.includes('AI generation service not configured') || errorMessage.includes('OPENAI_API_KEY')) {
                     errorMessage = 'OpenAI API key not configured. Please set OPENAI_API_KEY in Netlify environment variables.';
+                } else if (errorMessage.includes('All image attachments must have')) {
+                    errorMessage = errorMessage; // Keep the specific validation message
+                } else if (errorMessage.includes('All image attachments must have valid image data')) {
+                    errorMessage = errorMessage; // Keep the specific validation message
+                } else if (errorMessage.includes('Network error')) {
+                    errorMessage = `Network error: ${errorMessage}. Check your internet connection.`;
+                } else if (errorMessage.includes('OpenAI API error')) {
+                    errorMessage = errorMessage; // Keep OpenAI error details
                 } else if (errorMessage.includes('500') || errorMessage.includes('Server error')) {
-                    errorMessage = 'Server error occurred. Check console for details. This may be due to missing OPENAI_API_KEY or an API error.';
+                    errorMessage = `Server error: ${errorMessage}. Check browser console (F12) for full details.`;
+                } else if (errorMessage.includes('Invalid response format')) {
+                    errorMessage = 'OpenAI API returned invalid response. Please try again.';
+                } else if (errorMessage.includes('Template structure error')) {
+                    errorMessage = 'Template structure error. Please contact support.';
+                } else if (errorMessage.includes('Failed to generate newsletter HTML')) {
+                    // Generic error - show that we need more info
+                    errorMessage = `${errorMessage}. Check browser console (F12) for details.`;
                 }
                 
                 showStatus(`Generation failed: ${errorMessage}`, 'error');
                 
-                // Log more details in console for debugging
-                console.error('Full error:', error);
+                // Log comprehensive error details for debugging
+                console.error('=== FULL ERROR DETAILS ===');
+                console.error('Error object:', error);
+                console.error('Error message:', errorMessage);
+                console.error('Error status:', error.status);
+                console.error('Error errorData:', error.errorData);
+                console.error('Error rawText:', error.rawText?.substring(0, 500));
+                console.error('Error stringified:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
                 if (error.stack) {
                     console.error('Stack trace:', error.stack);
                 }
+                console.error('=== END ERROR DETAILS ===');
             } finally {
                 // Restore button state
                 if (generateBtn) {
@@ -3653,15 +3751,25 @@
             const generateBtn = document.getElementById('generateBtn');
             const promptText = document.getElementById('promptText').value.trim();
             const hasValidPrompt = promptText.length >= 20;
+            // Check if all images have meaningful titles (not "Untitled Image X")
             const allImagesTitled = newsletterState.attachments.length === 0 || 
-                newsletterState.attachments.every(a => a.title && a.title.trim() !== '');
+                newsletterState.attachments.every(a => {
+                    const title = (a.title || '').trim();
+                    return title !== '' && !/^untitled\s+image\s+\d+$/i.test(title);
+                });
             
-            generateBtn.disabled = !hasValidPrompt || !allImagesTitled;
+            // Check if all images have dataUrls
+            const allImagesHaveData = newsletterState.attachments.length === 0 ||
+                newsletterState.attachments.every(a => a.dataUrl && a.dataUrl.startsWith('data:'));
+            
+            generateBtn.disabled = !hasValidPrompt || !allImagesTitled || !allImagesHaveData;
             
             if (!hasValidPrompt) {
                 generateBtn.title = 'Prompt must be at least 20 characters';
             } else if (!allImagesTitled) {
-                generateBtn.title = 'All images must have titles';
+                generateBtn.title = 'All images must have descriptive titles (not "Untitled Image X")';
+            } else if (!allImagesHaveData) {
+                generateBtn.title = 'All images must have valid image data';
             } else {
                 generateBtn.title = '';
             }

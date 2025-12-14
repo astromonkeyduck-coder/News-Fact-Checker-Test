@@ -2637,42 +2637,45 @@ class NoteworthyChat extends HTMLElement {
       </div>
     `;
 
-    const wrap = this.root.querySelector('.wrap');
-    const launcher = this.root.querySelector('.launcher');
-    const closeBtn = this.root.querySelector('.close');
-    const input = this.root.querySelector('#chatInput');
-    const fileInput = this.root.querySelector('#fileInput');
-    const fileUploadBtn = this.root.querySelector('#fileUploadBtn');
-    const voiceModeToggle = this.root.querySelector('#voiceModeToggle');
-    const voiceControlIntegrated = this.root.querySelector('#voiceControlIntegrated');
-    const voiceControlToggle = this.root.querySelector('#voiceControlToggle');
-    const voiceControlHeader = this.root.querySelector('#voiceControlHeader');
-    const voiceList = this.root.querySelector('#voiceList');
-    const voiceStatusIntegrated = this.root.querySelector('#voiceStatusIntegrated');
-    const voiceStatusTextIntegrated = this.root.querySelector('#voiceStatusTextIntegrated');
-    const statusDotIntegrated = this.root.querySelector('#statusDotIntegrated');
-    const voiceStartBtnIntegrated = this.root.querySelector('#voiceStartBtnIntegrated');
-    const voiceStopBtnIntegrated = this.root.querySelector('#voiceStopBtnIntegrated');
+    // Capture root for use in nested functions
+    const root = this.root;
+    
+    const wrap = root.querySelector('.wrap');
+    const launcher = root.querySelector('.launcher');
+    const closeBtn = root.querySelector('.close');
+    const input = root.querySelector('#chatInput');
+    const fileInput = root.querySelector('#fileInput');
+    const fileUploadBtn = root.querySelector('#fileUploadBtn');
+    const voiceModeToggle = root.querySelector('#voiceModeToggle');
+    const voiceControlIntegrated = root.querySelector('#voiceControlIntegrated');
+    const voiceControlToggle = root.querySelector('#voiceControlToggle');
+    const voiceControlHeader = root.querySelector('#voiceControlHeader');
+    const voiceList = root.querySelector('#voiceList');
+    const voiceStatusIntegrated = root.querySelector('#voiceStatusIntegrated');
+    const voiceStatusTextIntegrated = root.querySelector('#voiceStatusTextIntegrated');
+    const statusDotIntegrated = root.querySelector('#statusDotIntegrated');
+    const voiceStartBtnIntegrated = root.querySelector('#voiceStartBtnIntegrated');
+    const voiceStopBtnIntegrated = root.querySelector('#voiceStopBtnIntegrated');
     
     // Legacy popup elements (hidden)
-    const voiceControlPanel = this.root.querySelector('#voiceControlPanel');
-    const voicePanelClose = this.root.querySelector('#voicePanelClose');
-    const voiceSelect = this.root.querySelector('#voiceSelect');
-    const voiceStatusGroup = this.root.querySelector('#voiceStatusGroup');
-    const voiceStatus = this.root.querySelector('#voiceStatus');
-    const voiceStatusText = this.root.querySelector('#voiceStatusText');
-    const statusDot = this.root.querySelector('#statusDot');
-    const voiceStartBtn = this.root.querySelector('#voiceStartBtn');
-    const voiceStopBtn = this.root.querySelector('#voiceStopBtn');
-    const send = this.root.querySelector('#sendButton');
-    const body = this.root.querySelector('.body');
-    const head = this.root.querySelector('.head');
-    const resizeHandle = this.root.querySelector('.resize-handle');
+    const voiceControlPanel = root.querySelector('#voiceControlPanel');
+    const voicePanelClose = root.querySelector('#voicePanelClose');
+    const voiceSelect = root.querySelector('#voiceSelect');
+    const voiceStatusGroup = root.querySelector('#voiceStatusGroup');
+    const voiceStatus = root.querySelector('#voiceStatus');
+    const voiceStatusText = root.querySelector('#voiceStatusText');
+    const statusDot = root.querySelector('#statusDot');
+    const voiceStartBtn = root.querySelector('#voiceStartBtn');
+    const voiceStopBtn = root.querySelector('#voiceStopBtn');
+    const send = root.querySelector('#sendButton');
+    const body = root.querySelector('.body');
+    const head = root.querySelector('.head');
+    const resizeHandle = root.querySelector('.resize-handle');
     
     // Voice sidebar elements - declared early to avoid temporal dead zone
-    const voiceCallSidebar = this.root.querySelector('#voiceCallSidebar');
-    const voiceSidebarContent = this.root.querySelector('#voiceSidebarContent');
-    const voiceSidebarClose = this.root.querySelector('#voiceSidebarClose');
+    const voiceCallSidebar = root.querySelector('#voiceCallSidebar');
+    const voiceSidebarContent = root.querySelector('#voiceSidebarContent');
+    const voiceSidebarClose = root.querySelector('#voiceSidebarClose');
     
     // Capture endpoint for use in voice mode (this.getAttribute won't work in nested functions)
     // Note: endpoint is already declared at the top of connectedCallback, so we reference it
@@ -2772,7 +2775,7 @@ class NoteworthyChat extends HTMLElement {
     }
     
     // Voice option selection
-    const voiceActionsIntegrated = this.root.querySelector('#voiceActionsIntegrated');
+    const voiceActionsIntegrated = root.querySelector('#voiceActionsIntegrated');
     
     // Show button on initial load since Cove is default active
     if (voiceActionsIntegrated) {
@@ -2862,13 +2865,70 @@ class NoteworthyChat extends HTMLElement {
       });
     }
     
+    // DEBUG: Verify button exists
+    console.log('[Voice Mode] 🔍 Setting up end call button handlers...');
+    console.log('[Voice Mode] 🔍 voiceStopBtnIntegrated found:', !!voiceStopBtnIntegrated);
+    console.log('[Voice Mode] 🔍 voiceStopBtn found:', !!voiceStopBtn);
+    
+    // Use event delegation on root to catch clicks even if button is recreated
+    root.addEventListener('click', (e) => {
+      const target = e.target.closest('#voiceStopBtnIntegrated, #voiceStopBtn');
+      if (target) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('[Voice Mode] 🛑 End call button clicked via event delegation - CALLING stopVoiceMode');
+        console.log('[Voice Mode] 🔍 Button ID:', target.id);
+        try {
+          stopVoiceMode();
+          console.log('[Voice Mode] ✅ stopVoiceMode() completed');
+        } catch (error) {
+          console.error('[Voice Mode] ❌ ERROR in stopVoiceMode():', error);
+          console.error('[Voice Mode] Error stack:', error.stack);
+        }
+        return false;
+      }
+    });
+    
+    // Also attach direct handlers as backup
     if (voiceStopBtnIntegrated) {
-      voiceStopBtnIntegrated.addEventListener('click', () => {
-        stopVoiceMode();
+      console.log('[Voice Mode] ✅ Attaching direct click handler to voiceStopBtnIntegrated');
+      voiceStopBtnIntegrated.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('[Voice Mode] 🛑 End call button clicked (direct handler) - CALLING stopVoiceMode');
+        try {
+          stopVoiceMode();
+          console.log('[Voice Mode] ✅ stopVoiceMode() completed');
+        } catch (error) {
+          console.error('[Voice Mode] ❌ ERROR in stopVoiceMode():', error);
+          console.error('[Voice Mode] Error stack:', error.stack);
+        }
       });
+      console.log('[Voice Mode] ✅ Direct handler attached to voiceStopBtnIntegrated');
+    } else {
+      console.error('[Voice Mode] ❌ voiceStopBtnIntegrated NOT FOUND! Button may not exist in DOM');
     }
     
-    const tip = this.root.querySelector('.tip');
+    // Legacy stop button (fallback)
+    if (voiceStopBtn) {
+      console.log('[Voice Mode] ✅ Attaching direct click handler to legacy voiceStopBtn');
+      voiceStopBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('[Voice Mode] 🛑 Legacy end call button clicked - CALLING stopVoiceMode');
+        try {
+          stopVoiceMode();
+          console.log('[Voice Mode] ✅ stopVoiceMode() completed');
+        } catch (error) {
+          console.error('[Voice Mode] ❌ ERROR in stopVoiceMode():', error);
+          console.error('[Voice Mode] Error stack:', error.stack);
+        }
+      });
+    } else {
+      console.log('[Voice Mode] ℹ️ Legacy voiceStopBtn not found (this is OK if using integrated version)');
+    }
+    
+    const tip = root.querySelector('.tip');
     
     // Track uploaded files
     let uploadedFiles = [];
@@ -3022,10 +3082,8 @@ class NoteworthyChat extends HTMLElement {
     }
     
     // Store reference to root for use in nested functions
-    const rootRef = this.root;
-    
-    const audioToggle = this.root.querySelector('#audioToggle');
-    const voiceInputToggle = this.root.querySelector('#voiceInputToggle');
+    const audioToggle = root.querySelector('#audioToggle');
+    const voiceInputToggle = root.querySelector('#voiceInputToggle');
     
     // Audio settings
     let audioEnabled = localStorage.getItem('noteworthy-ai-audio') === 'true';
@@ -4356,7 +4414,25 @@ class NoteworthyChat extends HTMLElement {
         if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connecting...';
         if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
         if (voiceStartBtnIntegrated) voiceStartBtnIntegrated.style.display = 'none';
-        if (voiceStopBtnIntegrated) voiceStopBtnIntegrated.style.display = 'flex';
+        if (voiceStopBtnIntegrated) {
+          voiceStopBtnIntegrated.style.display = 'flex';
+          console.log('[Voice Mode] ✅ End call button should now be visible');
+          // Verify button is actually visible and clickable
+          setTimeout(() => {
+            const rect = voiceStopBtnIntegrated.getBoundingClientRect();
+            const isVisible = rect.width > 0 && rect.height > 0;
+            const computedStyle = window.getComputedStyle(voiceStopBtnIntegrated);
+            console.log('[Voice Mode] 🔍 End call button visibility check:', {
+              display: computedStyle.display,
+              visibility: computedStyle.visibility,
+              opacity: computedStyle.opacity,
+              pointerEvents: computedStyle.pointerEvents,
+              rect: { width: rect.width, height: rect.height },
+              isVisible: isVisible,
+              hasClickHandler: voiceStopBtnIntegrated.onclick !== null || true // Event listeners don't show as onclick
+            });
+          }, 100);
+        }
         
         // Show actions panel when starting call
         if (voiceActionsIntegrated) {
@@ -4883,17 +4959,76 @@ class NoteworthyChat extends HTMLElement {
     }
     
     function stopVoiceMode() {
+      console.log('[Voice Mode] 🛑 ========== STOP VOICE MODE CALLED ==========');
+      console.log('[Voice Mode] 🛑 Stopping voice mode immediately...');
+      console.trace('[Voice Mode] Call stack:');
+      
+      // CRITICAL: Stop everything immediately - microphone and websocket first
       voiceModeActive = false;
-      // Reset retry counter when stopping
+      isRecording = false;
+      
+      // Stop microphone IMMEDIATELY
+      if (mediaStream) {
+        console.log('[Voice Mode] 🎤 Stopping microphone tracks...');
+        mediaStream.getTracks().forEach(track => {
+          track.stop();
+          console.log('[Voice Mode] ✅ Stopped track:', track.kind);
+        });
+        mediaStream = null;
+      }
+      
+      // Stop audio processing IMMEDIATELY
+      if (audioWorkletNode) {
+        console.log('[Voice Mode] 🔇 Disconnecting audio worklet...');
+        try {
+          audioWorkletNode.disconnect();
+        } catch (e) {
+          console.warn('[Voice Mode] Error disconnecting audio worklet:', e);
+        }
+        audioWorkletNode = null;
+      }
+      
+      // Close audio context IMMEDIATELY
+      if (audioContext && audioContext.state !== 'closed') {
+        console.log('[Voice Mode] 🔊 Closing audio context...');
+        try {
+          audioContext.close();
+        } catch (e) {
+          console.warn('[Voice Mode] Error closing audio context:', e);
+        }
+        audioContext = null;
+      }
+      
+      // Close websocket IMMEDIATELY
+      if (websocket) {
+        console.log('[Voice Mode] 🔌 Closing WebSocket connection...');
+        // Clear retry counter
+        if (websocket._retryCount) {
+          delete websocket._retryCount;
+        }
+        // Close immediately - don't wait
+        try {
+          if (websocket.readyState === WebSocket.OPEN || websocket.readyState === WebSocket.CONNECTING) {
+            websocket.close(1000, 'User stopped voice mode'); // Normal closure
+          }
+        } catch (e) {
+          console.warn('[Voice Mode] Error closing websocket:', e);
+        }
+        websocket = null;
+      }
+      
+      // Reset retry counter
       authRetryCount = 0;
+      
+      // Update UI after stopping everything
       if (voiceModeToggle) voiceModeToggle.classList.remove('active');
       
       // Hide sidebar when stopping voice mode
       hideVoiceSidebar();
       
       // Show voice selector options again (call ended, can change voice for next call)
-      const voiceControlContent = this.root.querySelector('#voiceControlContent');
-      const voiceSelectorIntegrated = this.root.querySelector('.voice-selector-integrated');
+      const voiceControlContent = root.querySelector('#voiceControlContent');
+      const voiceSelectorIntegrated = root.querySelector('.voice-selector-integrated');
       if (voiceControlContent) {
         voiceControlContent.style.display = '';
         console.log('[Voice Mode] 🔊 Showing voice selector (call ended)');
@@ -4915,12 +5050,8 @@ class NoteworthyChat extends HTMLElement {
       if (voiceActionsIntegrated) {
         voiceActionsIntegrated.style.display = 'flex';
       }
-      isRecording = false;
       
-      // Hide sidebar when stopping voice mode
-      hideVoiceSidebar();
-      
-      // Restore background music if it was playing before the call
+      // Restore background music if it was playing before the call (async, non-blocking)
       if (musicStateBeforeCall && musicStateBeforeCall.wasPlaying) {
         console.log('[Voice Mode] 🎵 Restoring background music after voice call ended');
         
@@ -4952,32 +5083,7 @@ class NoteworthyChat extends HTMLElement {
         musicStateBeforeCall = null;
       }
       
-      if (websocket) {
-        // Clear retry counter
-        if (websocket._retryCount) {
-          delete websocket._retryCount;
-        }
-        // Close gracefully if still open
-        if (websocket.readyState === WebSocket.OPEN || websocket.readyState === WebSocket.CONNECTING) {
-          websocket.close(1000, 'User stopped voice mode'); // Normal closure
-        }
-        websocket = null;
-      }
-      
-      if (mediaStream) {
-        mediaStream.getTracks().forEach(track => track.stop());
-        mediaStream = null;
-      }
-      
-      if (audioWorkletNode) {
-        audioWorkletNode.disconnect();
-        audioWorkletNode = null;
-      }
-      
-      if (audioContext && audioContext.state !== 'closed') {
-        audioContext.close();
-        audioContext = null;
-      }
+      console.log('[Voice Mode] ✅ Voice mode stopped completely');
     }
     
     // Helper function to manually restore background music
@@ -5058,26 +5164,56 @@ class NoteworthyChat extends HTMLElement {
           }
           
           // Handle audio data from worklet
+          let audioChunkCount = 0;
           audioWorkletNode.port.onmessage = (event) => {
-            if (event.data.type === 'audioData' && isRecording && websocket && websocket.readyState === WebSocket.OPEN) {
-              const pcm16Buffer = event.data.data;
-              const pcm16 = new Int16Array(pcm16Buffer);
-              
-              // Convert to base64 efficiently
-              const uint8Array = new Uint8Array(pcm16.buffer);
-              let binaryString = '';
-              const chunkSize = 8192;
-              for (let i = 0; i < uint8Array.length; i += chunkSize) {
-                const chunk = uint8Array.subarray(i, i + chunkSize);
-                binaryString += String.fromCharCode.apply(null, chunk);
+            if (event.data.type === 'audioData') {
+              // Debug: Log first few chunks to verify audio is being captured
+              audioChunkCount++;
+              if (audioChunkCount <= 3) {
+                console.log('[Voice Mode] 🎤 Audio chunk captured from microphone:', {
+                  chunkNumber: audioChunkCount,
+                  dataLength: event.data.data?.byteLength || 0,
+                  isRecording: isRecording,
+                  websocketExists: !!websocket,
+                  websocketState: websocket?.readyState,
+                  websocketOpen: websocket?.readyState === WebSocket.OPEN
+                });
               }
-              const base64Audio = btoa(binaryString);
               
-              // Send to OpenAI Realtime API
-              websocket.send(JSON.stringify({
-                type: 'input_audio_buffer.append',
-                audio: base64Audio,
-              }));
+              if (isRecording && websocket && websocket.readyState === WebSocket.OPEN) {
+                const pcm16Buffer = event.data.data;
+                const pcm16 = new Int16Array(pcm16Buffer);
+                
+                // Convert to base64 efficiently
+                const uint8Array = new Uint8Array(pcm16.buffer);
+                let binaryString = '';
+                const chunkSize = 8192;
+                for (let i = 0; i < uint8Array.length; i += chunkSize) {
+                  const chunk = uint8Array.subarray(i, i + chunkSize);
+                  binaryString += String.fromCharCode.apply(null, chunk);
+                }
+                const base64Audio = btoa(binaryString);
+                
+                // Send to OpenAI Realtime API
+                if (audioChunkCount <= 3) {
+                  console.log('[Voice Mode] 📤 Sending audio chunk to OpenAI:', {
+                    base64Length: base64Audio.length,
+                    pcm16Samples: pcm16.length
+                  });
+                }
+                websocket.send(JSON.stringify({
+                  type: 'input_audio_buffer.append',
+                  audio: base64Audio,
+                }));
+              } else {
+                if (audioChunkCount <= 3) {
+                  console.warn('[Voice Mode] ⚠️ Audio captured but NOT sending - conditions not met:', {
+                    isRecording: isRecording,
+                    websocketExists: !!websocket,
+                    websocketState: websocket?.readyState
+                  });
+                }
+              }
             }
           };
           
@@ -5092,8 +5228,28 @@ class NoteworthyChat extends HTMLElement {
           
           const processor = audioContext.createScriptProcessor(4096, 1, 1);
           
+          let scriptProcessorChunkCount = 0;
           processor.onaudioprocess = (e) => {
-            if (!isRecording || !websocket || websocket.readyState !== WebSocket.OPEN) return;
+            scriptProcessorChunkCount++;
+            
+            // Debug: Log first few chunks
+            if (scriptProcessorChunkCount <= 3) {
+              console.log('[Voice Mode] 🎤 Audio chunk captured (ScriptProcessor):', {
+                chunkNumber: scriptProcessorChunkCount,
+                samples: e.inputBuffer.length,
+                isRecording: isRecording,
+                websocketExists: !!websocket,
+                websocketState: websocket?.readyState,
+                websocketOpen: websocket?.readyState === WebSocket.OPEN
+              });
+            }
+            
+            if (!isRecording || !websocket || websocket.readyState !== WebSocket.OPEN) {
+              if (scriptProcessorChunkCount <= 3) {
+                console.warn('[Voice Mode] ⚠️ Audio captured but NOT sending - conditions not met');
+              }
+              return;
+            }
             
             const inputData = e.inputBuffer.getChannelData(0);
             // Convert Float32Array to Int16Array (PCM16)
@@ -5114,6 +5270,12 @@ class NoteworthyChat extends HTMLElement {
             const base64Audio = btoa(binaryString);
             
             // Send audio to WebSocket
+            if (scriptProcessorChunkCount <= 3) {
+              console.log('[Voice Mode] 📤 Sending audio chunk to OpenAI (ScriptProcessor):', {
+                base64Length: base64Audio.length,
+                pcm16Samples: pcm16.length
+              });
+            }
             websocket.send(JSON.stringify({
               type: 'input_audio_buffer.append',
               audio: base64Audio,
@@ -5125,6 +5287,17 @@ class NoteworthyChat extends HTMLElement {
           // Store reference for cleanup
           audioWorkletNode = processor; // Reuse variable for cleanup
         }
+        
+        console.log('[Voice Mode] ✅ Audio capture pipeline complete:', {
+          audioContextState: audioContext.state,
+          sampleRate: audioContext.sampleRate,
+          usingAudioWorklet: useAudioWorklet,
+          mediaStreamActive: mediaStream?.active,
+          mediaStreamTracks: mediaStream?.getTracks().length,
+          isRecording: isRecording,
+          websocketReady: websocket?.readyState === WebSocket.OPEN
+        });
+        console.log('[Voice Mode] 🎤 MICROPHONE IS NOW LISTENING - Speak and you should see audio chunks being sent!');
         
       } catch (error) {
         console.error('[Voice Mode] Error starting audio capture:', error);
@@ -5269,6 +5442,7 @@ class NoteworthyChat extends HTMLElement {
             
           case 'response.audio_transcript.done':
             // Full transcript available
+            console.log('[Voice Mode] ✅ AI RESPONSE TRANSCRIPT:', message.transcript);
             if (message.transcript) {
               const aiGroup = document.createElement('div');
               aiGroup.className = 'message-group ai-msg-group';
@@ -5280,6 +5454,9 @@ class NoteworthyChat extends HTMLElement {
               `;
               body.appendChild(aiGroup);
               body.scrollTop = body.scrollHeight;
+              console.log('[Voice Mode] ✅ AI response displayed in chat');
+            } else {
+              console.warn('[Voice Mode] ⚠️ AI transcript received but empty');
             }
             break;
             
@@ -5450,6 +5627,7 @@ class NoteworthyChat extends HTMLElement {
             
           case 'conversation.item.input_audio_transcription.completed':
             // User's speech transcribed
+            console.log('[Voice Mode] ✅ AI HEARD YOU! Transcript received:', message.transcript);
             if (message.transcript) {
               const userGroup = document.createElement('div');
               userGroup.className = 'message-group user-msg-group';
@@ -5461,6 +5639,9 @@ class NoteworthyChat extends HTMLElement {
               `;
               body.appendChild(userGroup);
               body.scrollTop = body.scrollHeight;
+              console.log('[Voice Mode] ✅ Your speech displayed in chat');
+            } else {
+              console.warn('[Voice Mode] ⚠️ Transcript received but empty');
             }
             break;
             
@@ -5582,7 +5763,7 @@ class NoteworthyChat extends HTMLElement {
         
         // Check if audio is enabled (check audio toggle state)
         // The audio toggle uses 'active' class when enabled, and localStorage 'noteworthy-ai-audio'
-        const audioToggle = this.root.querySelector('#audioToggle');
+        const audioToggle = root.querySelector('#audioToggle');
         const audioEnabled = localStorage.getItem('noteworthy-ai-audio') === 'true';
         if (audioToggle && !audioEnabled) {
           console.log('[Voice Mode] 🔇 Audio is disabled (toggle is off), skipping playback');

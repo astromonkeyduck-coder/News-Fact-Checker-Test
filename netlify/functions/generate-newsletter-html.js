@@ -73,15 +73,31 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Validate attachments have titles
-    const untitledImages = attachments.filter(a => !a.title || a.title.trim() === '');
+    // Validate attachments have titles (not empty and not default "Untitled Image X")
+    const untitledImages = attachments.filter(a => {
+      const title = (a.title || '').trim();
+      return !title || title === '' || /^untitled\s+image\s+\d+$/i.test(title);
+    });
     if (untitledImages.length > 0) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ 
-          error: 'All image attachments must have titles',
+          error: 'All image attachments must have descriptive titles (not "Untitled Image X")',
           untitledCount: untitledImages.length,
+        }),
+      };
+    }
+    
+    // Validate attachments have dataUrls
+    const imagesWithoutData = attachments.filter(a => !a.dataUrl || !a.dataUrl.startsWith('data:'));
+    if (imagesWithoutData.length > 0) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          error: 'All image attachments must have valid image data',
+          invalidCount: imagesWithoutData.length,
         }),
       };
     }
@@ -100,7 +116,16 @@ exports.handler = async (event, context) => {
     }
 
     // Get house style template
-    const houseTemplate = getHouseStyleTemplate();
+    let houseTemplate;
+    try {
+      houseTemplate = getHouseStyleTemplate();
+      if (!houseTemplate || typeof houseTemplate !== 'string') {
+        throw new Error('House style template is invalid or empty');
+      }
+    } catch (templateError) {
+      console.error('[Generate Newsletter] Failed to load house style template:', templateError);
+      throw new Error(`Failed to load template: ${templateError.message}`);
+    }
     
     // Prepare image data for OpenAI (convert base64 to URLs or keep as base64)
     // For now, we'll include image titles and let GPT reference them
@@ -174,39 +199,59 @@ Reference the house style template structure and fill in the content section wit
 
     // Call OpenAI API using fetch (available in Node 18+)
     console.log('[Generate Newsletter] Calling OpenAI with prompt length:', promptText.length);
+    console.log('[Generate Newsletter] Attachments count:', attachments.length);
+    console.log('[Generate Newsletter] System prompt length:', systemPrompt.length);
+    console.log('[Generate Newsletter] User prompt length:', userPrompt.length);
     
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o', // Use latest model for best HTML generation
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.7,
-        max_tokens: 4000,
-      }),
-    });
+    let openaiResponse;
+    try {
+      openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openaiApiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o', // Use latest model for best HTML generation
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.7,
+          max_tokens: 4000,
+        }),
+      });
+    } catch (fetchError) {
+      console.error('[Generate Newsletter] Fetch error:', fetchError);
+      throw new Error(`Network error calling OpenAI API: ${fetchError.message}`);
+    }
 
     if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text();
-      console.error('[Generate Newsletter] OpenAI API error:', errorText);
-      throw new Error(`OpenAI API error: ${openaiResponse.status} ${errorText}`);
+      let errorText = '';
+      try {
+        errorText = await openaiResponse.text();
+        console.error('[Generate Newsletter] OpenAI API error response:', {
+          status: openaiResponse.status,
+          statusText: openaiResponse.statusText,
+          body: errorText.substring(0, 500)
+        });
+      } catch (textError) {
+        console.error('[Generate Newsletter] Failed to read error response:', textError);
+      }
+      throw new Error(`OpenAI API error: ${openaiResponse.status} ${errorText || openaiResponse.statusText}`);
     }
 
     let completion;
     try {
       completion = await openaiResponse.json();
+      console.log('[Generate Newsletter] OpenAI response received, choices:', completion?.choices?.length || 0);
     } catch (jsonError) {
-      console.error('[Generate Newsletter] Failed to parse OpenAI response as JSON');
-      throw new Error('Invalid response format from OpenAI API');
+      console.error('[Generate Newsletter] Failed to parse OpenAI response as JSON:', jsonError);
+      throw new Error(`Invalid response format from OpenAI API: ${jsonError.message}`);
     }
     
     const generatedContent = completion?.choices?.[0]?.message?.content || '';
+    console.log('[Generate Newsletter] Generated content length:', generatedContent.length);
     
     if (!generatedContent || generatedContent.trim() === '') {
       return {
@@ -318,16 +363,50 @@ Reference the house style template structure and fill in the content section wit
     };
 
   } catch (error) {
+    console.error('[Generate Newsletter] ========== ERROR CAUGHT ==========');
+    console.error('[Generate Newsletter] Error type:', typeof error);
     console.error('[Generate Newsletter] Error:', error);
-    console.error('[Generate Newsletter] Stack:', error.stack);
+    console.error('[Generate Newsletter] Error name:', error.name);
+    console.error('[Generate Newsletter] Error message:', error.message);
+    console.error('[Generate Newsletter] Error stack:', error.stack);
+    console.error('[Generate Newsletter] Error toString:', error.toString());
+    console.error('[Generate Newsletter] ===================================');
+    
+    // Always provide detailed error information
+    const errorDetails = {
+      error: 'Failed to generate newsletter HTML',
+      message: error.message || 'Unknown error',
+      name: error.name || 'Error',
+    };
+    
+    // Always include the error message
+    if (error.message) {
+      errorDetails.message = error.message;
+      errorDetails.error = error.message; // Also set as main error field
+    }
+    
+    // Include additional context
+    if (error.cause) {
+      errorDetails.cause = error.cause.toString();
+    }
+    
+    // Include stack trace in dev mode or if explicitly requested
+    const isDev = process.env.NETLIFY_DEV || process.env.DEBUG;
+    if (isDev) {
+      errorDetails.details = error.stack;
+      errorDetails.fullError = error.toString();
+      errorDetails.stack = error.stack;
+    } else {
+      // In production, still include error message as details
+      errorDetails.details = error.message || 'No additional details available';
+    }
+    
+    console.error('[Generate Newsletter] Returning error response:', JSON.stringify(errorDetails, null, 2));
+    
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({
-        error: 'Failed to generate newsletter HTML',
-        message: error.message,
-        details: process.env.NETLIFY_DEV ? error.stack : undefined,
-      }),
+      body: JSON.stringify(errorDetails),
     };
   }
 };
