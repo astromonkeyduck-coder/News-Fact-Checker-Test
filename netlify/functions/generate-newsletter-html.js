@@ -355,12 +355,13 @@ Reference the house style template structure and fill in the content section wit
     console.log('[Generate Newsletter] System prompt length:', systemPrompt.length);
     console.log('[Generate Newsletter] User prompt length:', userPrompt.length);
     
+    // Use Responses API with web search for current breaking news
+    // This enables the AI to access real-time information from the web
+    // Note: Responses API is in preview - using Chat Completions for now with enhanced prompts
+    const useResponsesAPI = false; // Set to true when Responses API is stable and available
+    
     let openaiResponse;
     try {
-      // Use Responses API with web search for current breaking news
-      // This enables the AI to access real-time information from the web
-      // Note: Responses API is in preview - using Chat Completions for now with enhanced prompts
-      const useResponsesAPI = false; // Set to true when Responses API is stable and available
       
       if (useResponsesAPI) {
         // Responses API format (for future use when API is stable)

@@ -38,6 +38,8 @@ class NoteworthyChat extends HTMLElement {
     let authRetryCount = 0; // Track authentication retry attempts
     const MAX_AUTH_RETRIES = 3; // Maximum authentication retries before giving up
     let connectionAttempts = []; // Track connection attempts for diagnostics
+    const displayedTranscripts = new Set(); // Track displayed transcripts to prevent duplicates
+    let hasActiveResponse = false; // Track if there's an active response in progress
 
     this.root.innerHTML = `
       <style>
@@ -4677,6 +4679,9 @@ class NoteworthyChat extends HTMLElement {
         
         // Run connectivity test first
         await testConnectivity();
+
+        // Clear displayed transcripts for new call
+        displayedTranscripts.clear();
         
         voiceModeActive = true;
         // CRITICAL: Cancel any text-to-speech immediately when voice mode starts
@@ -5016,6 +5021,12 @@ class NoteworthyChat extends HTMLElement {
             voiceControlHeader.style.display = 'none';
           }
           
+          // Ensure End Call button stays visible during the call
+          if (voiceStopBtnIntegrated) {
+            voiceStopBtnIntegrated.style.display = 'flex';
+            console.log('[Voice Mode] ✅ End call button visible during call');
+          }
+          
           // Play start call sound effect
           playCallSound('start');
           
@@ -5030,6 +5041,7 @@ class NoteworthyChat extends HTMLElement {
               try {
                 // Send response.create to trigger AI to generate and speak the greeting
                 // The instructions in the session already tell it to greet with "Hey, It's Noteworthy AI"
+                hasActiveResponse = true; // Mark as active before sending
                 websocket.send(JSON.stringify({
                   type: 'response.create'
                 }));
@@ -5265,10 +5277,14 @@ class NoteworthyChat extends HTMLElement {
       console.log('[Voice Mode] 🛑 ========== STOP VOICE MODE CALLED ==========');
       console.log('[Voice Mode] 🛑 Stopping voice mode immediately...');
       console.trace('[Voice Mode] Call stack:');
-      
+
       // CRITICAL: Stop everything immediately - microphone and websocket first
       voiceModeActive = false;
       isRecording = false;
+      hasActiveResponse = false; // Reset response tracking
+      
+      // Clear displayed transcripts to prevent duplicates on next call
+      displayedTranscripts.clear();
       
       // Clear the periodic text-to-speech check
       if (voiceModeSpeechCheckInterval) {
@@ -5789,7 +5805,16 @@ class NoteworthyChat extends HTMLElement {
             });
             const transcript = message.transcript || message.text || '';
             console.log('[Voice Mode] ✅ AI RESPONSE TRANSCRIPT:', transcript);
-            if (transcript) {
+            
+            // Check if we've already displayed this transcript
+            const transcriptKey = `ai-${transcript}`;
+            if (transcript && !displayedTranscripts.has(transcriptKey)) {
+              displayedTranscripts.add(transcriptKey);
+              
+              // Remove any live transcript element first
+              const liveMsgGroup = root.querySelector('#ai-msg-live');
+              if (liveMsgGroup) liveMsgGroup.remove();
+              
               const aiGroup = document.createElement('div');
               aiGroup.className = 'message-group ai-msg-group';
               aiGroup.innerHTML = `
@@ -5800,7 +5825,9 @@ class NoteworthyChat extends HTMLElement {
               `;
               body.appendChild(aiGroup);
               body.scrollTop = body.scrollHeight;
-              console.log('[Voice Mode] ✅ AI response displayed in chat');
+              console.log('[Voice Mode] ✅ AI transcript displayed (deduplicated)');
+            } else if (transcript) {
+              console.log('[Voice Mode] ⏭️ Skipping duplicate AI transcript');
             } else {
               console.warn('[Voice Mode] ⚠️ AI transcript received but empty');
             }
@@ -5885,6 +5912,12 @@ class NoteworthyChat extends HTMLElement {
                     
                     console.log('[Voice Mode] ✅ Image generated:', imageUrl.substring(0, 50) + '...');
                     
+                    // Check websocket is still valid
+                    if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+                      console.error('[Voice Mode] ❌ WebSocket not available for sending function result');
+                      return;
+                    }
+                    
                     // Send function result back using conversation.item.create
                     websocket.send(JSON.stringify({
                       type: 'conversation.item.create',
@@ -5898,37 +5931,89 @@ class NoteworthyChat extends HTMLElement {
                       }
                     }));
                     
-                    // Then trigger response.create to continue the conversation
-                    websocket.send(JSON.stringify({
-                      type: 'response.create'
-                    }));
+                    // Wait for any active response to finish before creating a new one
+                    const waitForResponse = () => {
+                      if (hasActiveResponse) {
+                        console.log('[Voice Mode] ⏳ Waiting for active response to finish before creating new one...');
+                        setTimeout(waitForResponse, 100);
+                        return;
+                      }
+                      
+                      // Mark as active before sending
+                      hasActiveResponse = true;
+                      
+                      // Then trigger response.create to continue the conversation
+                      if (websocket && websocket.readyState === WebSocket.OPEN) {
+                        websocket.send(JSON.stringify({
+                          type: 'response.create'
+                        }));
+                        console.log('[Voice Mode] ✅ Function result sent to AI, triggering response');
+                      } else {
+                        console.error('[Voice Mode] ❌ WebSocket not available for response.create');
+                        hasActiveResponse = false;
+                      }
+                    };
                     
-                    console.log('[Voice Mode] ✅ Function result sent to AI, triggering response');
+                    waitForResponse();
                   } else {
                     console.error('[Voice Mode] ❌ Image generation returned no URL');
                     // Send error result
+                    if (websocket && websocket.readyState === WebSocket.OPEN) {
+                      websocket.send(JSON.stringify({
+                        type: 'conversation.item.create',
+                        item: {
+                          type: 'function_call_output',
+                          call_id: message.call_id,
+                          output: JSON.stringify({ error: 'Failed to generate image' })
+                        }
+                      }));
+                      
+                      // Wait for active response before creating new one
+                      const waitForResponse = () => {
+                        if (hasActiveResponse) {
+                          setTimeout(waitForResponse, 100);
+                          return;
+                        }
+                        hasActiveResponse = true;
+                        if (websocket && websocket.readyState === WebSocket.OPEN) {
+                          websocket.send(JSON.stringify({ type: 'response.create' }));
+                        } else {
+                          hasActiveResponse = false;
+                        }
+                      };
+                      waitForResponse();
+                    }
+                  }
+                })
+                .catch(error => {
+                  console.error('[Voice Mode] ❌ Image generation error:', error);
+                  if (websocket && websocket.readyState === WebSocket.OPEN) {
                     websocket.send(JSON.stringify({
                       type: 'conversation.item.create',
                       item: {
                         type: 'function_call_output',
                         call_id: message.call_id,
-                        output: JSON.stringify({ error: 'Failed to generate image' })
+                        output: JSON.stringify({ error: error.message || 'Failed to generate image' })
                       }
                     }));
-                    websocket.send(JSON.stringify({ type: 'response.create' }));
+                    
+                    // Wait for active response before creating new one
+                    const waitForResponse = () => {
+                      if (hasActiveResponse) {
+                        setTimeout(waitForResponse, 100);
+                        return;
+                      }
+                      hasActiveResponse = true;
+                      if (websocket && websocket.readyState === WebSocket.OPEN) {
+                        websocket.send(JSON.stringify({ type: 'response.create' }));
+                      } else {
+                        hasActiveResponse = false;
+                      }
+                    };
+                    waitForResponse();
+                  } else {
+                    console.error('[Voice Mode] ❌ WebSocket not available for error response');
                   }
-                })
-                .catch(error => {
-                  console.error('[Voice Mode] ❌ Image generation error:', error);
-                  websocket.send(JSON.stringify({
-                    type: 'conversation.item.create',
-                    item: {
-                      type: 'function_call_output',
-                      call_id: message.call_id,
-                      output: JSON.stringify({ error: error.message || 'Failed to generate image' })
-                    }
-                  }));
-                  websocket.send(JSON.stringify({ type: 'response.create' }));
                 });
               } else {
                 console.error('[Voice Mode] ❌ No prompt provided for image generation');
@@ -5963,6 +6048,12 @@ class NoteworthyChat extends HTMLElement {
                       url: r.url
                     }));
                     
+                    // Check websocket is still valid
+                    if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+                      console.error('[Voice Mode] ❌ WebSocket not available for sending search results');
+                      return;
+                    }
+                    
                     // Send function result back
                     websocket.send(JSON.stringify({
                       type: 'conversation.item.create',
@@ -5976,55 +6067,120 @@ class NoteworthyChat extends HTMLElement {
                       }
                     }));
                     
-                    // Trigger response.create to continue conversation
-                    websocket.send(JSON.stringify({
-                      type: 'response.create'
-                    }));
+                    // Wait for any active response to finish before creating a new one
+                    const waitForResponse = () => {
+                      if (hasActiveResponse) {
+                        console.log('[Voice Mode] ⏳ Waiting for active response to finish before creating new one...');
+                        setTimeout(waitForResponse, 100);
+                        return;
+                      }
+                      
+                      // Mark as active before sending
+                      hasActiveResponse = true;
+                      
+                      // Trigger response.create to continue conversation
+                      if (websocket && websocket.readyState === WebSocket.OPEN) {
+                        websocket.send(JSON.stringify({
+                          type: 'response.create'
+                        }));
+                        console.log('[Voice Mode] ✅ Web search results sent to AI');
+                      } else {
+                        console.error('[Voice Mode] ❌ WebSocket not available for response.create');
+                        hasActiveResponse = false;
+                      }
+                    };
                     
-                    console.log('[Voice Mode] ✅ Web search results sent to AI');
+                    waitForResponse();
                   } else {
                     console.warn('[Voice Mode] ⚠️ Web search returned no results');
+                    if (websocket && websocket.readyState === WebSocket.OPEN) {
+                      websocket.send(JSON.stringify({
+                        type: 'conversation.item.create',
+                        item: {
+                          type: 'function_call_output',
+                          call_id: message.call_id,
+                          output: JSON.stringify({ 
+                            results: [],
+                            query: searchQuery,
+                            note: 'No results found'
+                          })
+                        }
+                      }));
+                      
+                      const waitForResponse = () => {
+                        if (hasActiveResponse) {
+                          setTimeout(waitForResponse, 100);
+                          return;
+                        }
+                        hasActiveResponse = true;
+                        if (websocket && websocket.readyState === WebSocket.OPEN) {
+                          websocket.send(JSON.stringify({ type: 'response.create' }));
+                        } else {
+                          hasActiveResponse = false;
+                        }
+                      };
+                      waitForResponse();
+                    }
+                  }
+                })
+                .catch(error => {
+                  console.error('[Voice Mode] ❌ Web search error:', error);
+                  if (websocket && websocket.readyState === WebSocket.OPEN) {
                     websocket.send(JSON.stringify({
                       type: 'conversation.item.create',
                       item: {
                         type: 'function_call_output',
                         call_id: message.call_id,
                         output: JSON.stringify({ 
-                          results: [],
-                          query: searchQuery,
-                          note: 'No results found'
+                          error: error.message || 'Web search failed',
+                          results: []
                         })
                       }
                     }));
-                    websocket.send(JSON.stringify({ type: 'response.create' }));
+                    
+                    const waitForResponse = () => {
+                      if (hasActiveResponse) {
+                        setTimeout(waitForResponse, 100);
+                        return;
+                      }
+                      hasActiveResponse = true;
+                      if (websocket && websocket.readyState === WebSocket.OPEN) {
+                        websocket.send(JSON.stringify({ type: 'response.create' }));
+                      } else {
+                        hasActiveResponse = false;
+                      }
+                    };
+                    waitForResponse();
+                  } else {
+                    console.error('[Voice Mode] ❌ WebSocket not available for error response');
                   }
-                })
-                .catch(error => {
-                  console.error('[Voice Mode] ❌ Web search error:', error);
+                });
+              } else {
+                console.error('[Voice Mode] ❌ No query provided for web search');
+                if (websocket && websocket.readyState === WebSocket.OPEN) {
                   websocket.send(JSON.stringify({
                     type: 'conversation.item.create',
                     item: {
                       type: 'function_call_output',
                       call_id: message.call_id,
-                      output: JSON.stringify({ 
-                        error: error.message || 'Web search failed',
-                        results: []
-                      })
+                      output: JSON.stringify({ error: 'No search query provided' })
                     }
                   }));
-                  websocket.send(JSON.stringify({ type: 'response.create' }));
-                });
-              } else {
-                console.error('[Voice Mode] ❌ No query provided for web search');
-                websocket.send(JSON.stringify({
-                  type: 'conversation.item.create',
-                  item: {
-                    type: 'function_call_output',
-                    call_id: message.call_id,
-                    output: JSON.stringify({ error: 'No search query provided' })
-                  }
-                }));
-                websocket.send(JSON.stringify({ type: 'response.create' }));
+                  
+                  const waitForResponse = () => {
+                    if (hasActiveResponse) {
+                      setTimeout(waitForResponse, 100);
+                      return;
+                    }
+                    hasActiveResponse = true;
+                    if (websocket && websocket.readyState === WebSocket.OPEN) {
+                      websocket.send(JSON.stringify({ type: 'response.create' }));
+                    } else {
+                      hasActiveResponse = false;
+                    }
+                  };
+                  waitForResponse();
+                }
               }
             }
             break;
@@ -6038,6 +6194,13 @@ class NoteworthyChat extends HTMLElement {
           case 'response.output_audio.delta':
             // Play audio chunks from OpenAI Realtime API
             console.log('[Voice Mode] ✅ CASE MATCHED: response.output_audio.delta');
+            
+            // Mark response as active when first audio chunk arrives
+            if (!hasActiveResponse) {
+              hasActiveResponse = true;
+              console.log('[Voice Mode] 📢 Response started (first audio chunk)');
+            }
+            
             if (message.delta) {
               console.log('[Voice Mode] 🔊 Received audio delta, length:', message.delta?.length || 0);
               
@@ -6064,6 +6227,10 @@ class NoteworthyChat extends HTMLElement {
             break;
             
           case 'response.done':
+            // Response complete - mark as no longer active
+            hasActiveResponse = false;
+            console.log('[Voice Mode] ✅ Response done, can now create new responses');
+            
             // Response complete - check if there's text content (essay) to show in sidebar
             if (voiceModeActive && message.response && message.response.output) {
               // Check for text content in the response
@@ -6137,7 +6304,12 @@ class NoteworthyChat extends HTMLElement {
               fullMessage: message
             });
             console.log('[Voice Mode] ✅ AI HEARD YOU! Transcript received:', message.transcript);
-            if (message.transcript) {
+            
+            // Check if we've already displayed this transcript
+            const userTranscriptKey = `user-${message.transcript}`;
+            if (message.transcript && !displayedTranscripts.has(userTranscriptKey)) {
+              displayedTranscripts.add(userTranscriptKey);
+              
               const userGroup = document.createElement('div');
               userGroup.className = 'message-group user-msg-group';
               userGroup.innerHTML = `
@@ -6148,7 +6320,9 @@ class NoteworthyChat extends HTMLElement {
               `;
               body.appendChild(userGroup);
               body.scrollTop = body.scrollHeight;
-              console.log('[Voice Mode] ✅ Your speech displayed in chat');
+              console.log('[Voice Mode] ✅ Your speech displayed in chat (deduplicated)');
+            } else if (message.transcript) {
+              console.log('[Voice Mode] ⏭️ Skipping duplicate user transcript');
             } else {
               console.warn('[Voice Mode] ⚠️ Transcript received but empty');
             }
@@ -6287,18 +6461,24 @@ class NoteworthyChat extends HTMLElement {
                 const contentArray = Array.isArray(message.item.content) ? message.item.content : [message.item.content];
                 contentArray.forEach(content => {
                   if (content.type === 'input_audio' && content.transcript) {
-                    console.log('[Voice Mode] ✅ Found user transcript in conversation.item.added:', content.transcript);
-                    const userGroup = document.createElement('div');
-                    userGroup.className = 'message-group user-msg-group';
-                    userGroup.innerHTML = `
-                      <div class="message-avatar">You</div>
-                      <div class="message-content">
-                        <div class="user-msg">🎤 ${content.transcript}</div>
-                      </div>
-                    `;
-                    body.appendChild(userGroup);
-                    body.scrollTop = body.scrollHeight;
-                    console.log('[Voice Mode] ✅ Your speech displayed in chat');
+                    const userKey = `user-${content.transcript}`;
+                    if (!displayedTranscripts.has(userKey)) {
+                      displayedTranscripts.add(userKey);
+                      console.log('[Voice Mode] ✅ Found user transcript in conversation.item.added:', content.transcript);
+                      const userGroup = document.createElement('div');
+                      userGroup.className = 'message-group user-msg-group';
+                      userGroup.innerHTML = `
+                        <div class="message-avatar">You</div>
+                        <div class="message-content">
+                          <div class="user-msg">🎤 ${content.transcript}</div>
+                        </div>
+                      `;
+                      body.appendChild(userGroup);
+                      body.scrollTop = body.scrollHeight;
+                      console.log('[Voice Mode] ✅ Your speech displayed in chat (deduplicated)');
+                    } else {
+                      console.log('[Voice Mode] ⏭️ Skipping duplicate user transcript from conversation.item.added');
+                    }
                   }
                 });
               }
@@ -6309,18 +6489,29 @@ class NoteworthyChat extends HTMLElement {
                 const contentArray = Array.isArray(message.item.content) ? message.item.content : [message.item.content];
                 contentArray.forEach(content => {
                   if (content.type === 'output_audio' && content.transcript) {
-                    console.log('[Voice Mode] ✅ Found AI transcript in conversation.item.added:', content.transcript);
-                    const aiGroup = document.createElement('div');
-                    aiGroup.className = 'message-group ai-msg-group';
-                    aiGroup.innerHTML = `
-                      <div class="message-avatar">NW</div>
-                      <div class="message-content">
-                        <div class="reply">🎤 ${content.transcript}</div>
-                      </div>
-                    `;
-                    body.appendChild(aiGroup);
-                    body.scrollTop = body.scrollHeight;
-                    console.log('[Voice Mode] ✅ AI response displayed in chat');
+                    const aiKey = `ai-${content.transcript}`;
+                    if (!displayedTranscripts.has(aiKey)) {
+                      displayedTranscripts.add(aiKey);
+                      console.log('[Voice Mode] ✅ Found AI transcript in conversation.item.added:', content.transcript);
+                      
+                      // Remove any live transcript element first
+                      const liveMsgGroup = root.querySelector('#ai-msg-live');
+                      if (liveMsgGroup) liveMsgGroup.remove();
+                      
+                      const aiGroup = document.createElement('div');
+                      aiGroup.className = 'message-group ai-msg-group';
+                      aiGroup.innerHTML = `
+                        <div class="message-avatar">NW</div>
+                        <div class="message-content">
+                          <div class="reply">🎤 ${content.transcript}</div>
+                        </div>
+                      `;
+                      body.appendChild(aiGroup);
+                      body.scrollTop = body.scrollHeight;
+                      console.log('[Voice Mode] ✅ AI response displayed in chat (deduplicated)');
+                    } else {
+                      console.log('[Voice Mode] ⏭️ Skipping duplicate AI transcript from conversation.item.added');
+                    }
                   }
                 });
               }
@@ -6373,56 +6564,68 @@ class NoteworthyChat extends HTMLElement {
               
               if (transcript && messageType.includes('input_audio')) {
                 // User transcript
-                console.log('[Voice Mode] ✅ EXTRACTED USER TRANSCRIPT from default case:', transcript);
-                const userGroup = document.createElement('div');
-                userGroup.className = 'message-group user-msg-group';
-                userGroup.innerHTML = `
-                  <div class="message-avatar">You</div>
-                  <div class="message-content">
-                    <div class="user-msg">🎤 ${transcript}</div>
-                  </div>
-                `;
-                body.appendChild(userGroup);
-                body.scrollTop = body.scrollHeight;
+                const userKey = `user-${transcript}`;
+                if (!displayedTranscripts.has(userKey)) {
+                  displayedTranscripts.add(userKey);
+                  console.log('[Voice Mode] ✅ EXTRACTED USER TRANSCRIPT from default case:', transcript);
+                  const userGroup = document.createElement('div');
+                  userGroup.className = 'message-group user-msg-group';
+                  userGroup.innerHTML = `
+                    <div class="message-avatar">You</div>
+                    <div class="message-content">
+                      <div class="user-msg">🎤 ${transcript}</div>
+                    </div>
+                  `;
+                  body.appendChild(userGroup);
+                  body.scrollTop = body.scrollHeight;
+                } else {
+                  console.log('[Voice Mode] ⏭️ Skipping duplicate user transcript from default case');
+                }
               } else if (transcript && messageType.includes('output_audio')) {
                 // AI transcript
-                console.log('[Voice Mode] ✅ EXTRACTED AI TRANSCRIPT from default case:', transcript);
-                if (messageType.includes('delta')) {
-                  // Real-time update
-                  let transcriptElement = root.querySelector('#ai-transcript-live');
-                  if (!transcriptElement) {
+                const aiKey = `ai-${transcript}`;
+                if (!displayedTranscripts.has(aiKey)) {
+                  displayedTranscripts.add(aiKey);
+                  console.log('[Voice Mode] ✅ EXTRACTED AI TRANSCRIPT from default case:', transcript);
+                  if (messageType.includes('delta')) {
+                    // Real-time update
+                    let transcriptElement = root.querySelector('#ai-transcript-live');
+                    if (!transcriptElement) {
+                      const aiGroup = document.createElement('div');
+                      aiGroup.className = 'message-group ai-msg-group';
+                      aiGroup.id = 'ai-msg-live';
+                      aiGroup.innerHTML = `
+                        <div class="message-avatar">NW</div>
+                        <div class="message-content">
+                          <div class="reply" id="ai-transcript-live">🎤 </div>
+                        </div>
+                      `;
+                      body.appendChild(aiGroup);
+                      body.scrollTop = body.scrollHeight;
+                      transcriptElement = root.querySelector('#ai-transcript-live');
+                    }
+                    if (transcriptElement) {
+                      transcriptElement.textContent += transcript;
+                      body.scrollTop = body.scrollHeight;
+                    }
+                  } else {
+                    // Final transcript
+                    const liveMsgGroup = root.querySelector('#ai-msg-live');
+                    if (liveMsgGroup) liveMsgGroup.remove();
+                    
                     const aiGroup = document.createElement('div');
                     aiGroup.className = 'message-group ai-msg-group';
-                    aiGroup.id = 'ai-msg-live';
                     aiGroup.innerHTML = `
                       <div class="message-avatar">NW</div>
                       <div class="message-content">
-                        <div class="reply" id="ai-transcript-live">🎤 </div>
+                        <div class="reply">🎤 ${transcript}</div>
                       </div>
                     `;
                     body.appendChild(aiGroup);
                     body.scrollTop = body.scrollHeight;
-                    transcriptElement = root.querySelector('#ai-transcript-live');
-                  }
-                  if (transcriptElement) {
-                    transcriptElement.textContent += transcript;
-                    body.scrollTop = body.scrollHeight;
                   }
                 } else {
-                  // Final transcript
-                  const liveMsgGroup = root.querySelector('#ai-msg-live');
-                  if (liveMsgGroup) liveMsgGroup.remove();
-                  
-                  const aiGroup = document.createElement('div');
-                  aiGroup.className = 'message-group ai-msg-group';
-                  aiGroup.innerHTML = `
-                    <div class="message-avatar">NW</div>
-                    <div class="message-content">
-                      <div class="reply">🎤 ${transcript}</div>
-                    </div>
-                  `;
-                  body.appendChild(aiGroup);
-                  body.scrollTop = body.scrollHeight;
+                  console.log('[Voice Mode] ⏭️ Skipping duplicate AI transcript from default case');
                 }
               }
             }

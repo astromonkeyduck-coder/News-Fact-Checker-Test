@@ -1017,7 +1017,7 @@ RESPONSE STYLE:
         body: JSON.stringify({
           model: "gpt-4o",
           temperature: 0.4,
-          max_tokens: 450,
+          max_tokens: 1200, // Increased for country spotlight (needs 300-400 words)
           messages: messages,
           tools: [
             {
@@ -1124,7 +1124,7 @@ RESPONSE STYLE:
             body: JSON.stringify({
               model: "gpt-4o",
               temperature: 0.4,
-              max_tokens: 600, // Increased for more detailed responses with search results
+              max_tokens: 1200, // Increased for country spotlight and detailed responses with search results
               messages: messages,
               tools: [
                 {
