@@ -2669,6 +2669,11 @@ class NoteworthyChat extends HTMLElement {
     const head = this.root.querySelector('.head');
     const resizeHandle = this.root.querySelector('.resize-handle');
     
+    // Voice sidebar elements - declared early to avoid temporal dead zone
+    const voiceCallSidebar = this.root.querySelector('#voiceCallSidebar');
+    const voiceSidebarContent = this.root.querySelector('#voiceSidebarContent');
+    const voiceSidebarClose = this.root.querySelector('#voiceSidebarClose');
+    
     // Capture endpoint for use in voice mode (this.getAttribute won't work in nested functions)
     // Note: endpoint is already declared at the top of connectedCallback, so we reference it
     
@@ -4566,6 +4571,8 @@ class NoteworthyChat extends HTMLElement {
         
         // Store token on websocket for error handlers
         websocket._ephemeralToken = ephemeralToken;
+        // Initialize speaking state flag
+        websocket._isSpeaking = false;
         
         websocket.onopen = (event) => {
           const connectTime = Date.now() - connectionStartTime;
@@ -4623,8 +4630,8 @@ class NoteworthyChat extends HTMLElement {
           startAudioCapture();
           
           // Hide voice selector options since call is active (voice already selected)
-          const voiceControlContent = root.querySelector('#voiceControlContent');
-          const voiceSelectorIntegrated = root.querySelector('.voice-selector-integrated');
+          const voiceControlContent = this.root.querySelector('#voiceControlContent');
+          const voiceSelectorIntegrated = this.root.querySelector('.voice-selector-integrated');
           if (voiceControlContent) {
             voiceControlContent.style.display = 'none';
             console.log('[Voice Mode] 🔇 Hiding voice selector (call active)');
@@ -4815,11 +4822,7 @@ class NoteworthyChat extends HTMLElement {
       }
     }
     
-    // Voice sidebar functions
-    const voiceCallSidebar = root.querySelector('#voiceCallSidebar');
-    const voiceSidebarContent = root.querySelector('#voiceSidebarContent');
-    const voiceSidebarClose = root.querySelector('#voiceSidebarClose');
-    
+    // Voice sidebar functions (variables declared earlier to avoid temporal dead zone)
     function showVoiceSidebar() {
       if (voiceCallSidebar) {
         voiceCallSidebar.style.display = 'flex';
@@ -4889,8 +4892,8 @@ class NoteworthyChat extends HTMLElement {
       hideVoiceSidebar();
       
       // Show voice selector options again (call ended, can change voice for next call)
-      const voiceControlContent = root.querySelector('#voiceControlContent');
-      const voiceSelectorIntegrated = root.querySelector('.voice-selector-integrated');
+      const voiceControlContent = this.root.querySelector('#voiceControlContent');
+      const voiceSelectorIntegrated = this.root.querySelector('.voice-selector-integrated');
       if (voiceControlContent) {
         voiceControlContent.style.display = '';
         console.log('[Voice Mode] 🔊 Showing voice selector (call ended)');
@@ -5136,10 +5139,18 @@ class NoteworthyChat extends HTMLElement {
         const message = JSON.parse(event.data);
         
         // Only log non-audio messages to reduce console spam
-        if (message.type && !message.type.startsWith('response.audio.delta')) {
+        // Note: OpenAI Realtime API uses 'response.output_audio.delta' not 'response.audio.delta'
+        if (message.type && !message.type.startsWith('response.output_audio.delta')) {
           console.log('[Voice Mode] 📨 Received WebSocket message:', message.type);
           if (message.type === 'error' || message.type === 'auth.error' || message.type === 'auth.success') {
             console.log('[Voice Mode] Message details:', message);
+          }
+        } else if (message.type === 'response.output_audio.delta') {
+          // Log first few audio deltas for debugging, then silence
+          if (!websocket._audioDeltaCount) websocket._audioDeltaCount = 0;
+          websocket._audioDeltaCount++;
+          if (websocket._audioDeltaCount <= 3) {
+            console.log('[Voice Mode] 🔊 Audio delta received (', websocket._audioDeltaCount, '), length:', message.delta?.length || 0);
           }
         }
         
@@ -5332,11 +5343,31 @@ class NoteworthyChat extends HTMLElement {
             if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Listening...';
             break;
             
-          case 'response.audio.delta':
-            // Play audio chunks
+          case 'response.output_audio.delta':
+            // Play audio chunks from OpenAI Realtime API
             if (message.delta) {
+              console.log('[Voice Mode] 🔊 Received audio delta, length:', message.delta?.length || 0);
+              
+              // Show "Speaking..." status on first audio chunk
+              if (!websocket._isSpeaking) {
+                websocket._isSpeaking = true;
+                if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Speaking...';
+                if (voiceStatusText) voiceStatusText.textContent = 'Speaking...';
+                if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
+                if (statusDot) statusDot.style.background = '#4A90E2';
+                console.log('[Voice Mode] 🗣️ Status updated to: Speaking...');
+              }
+              
               playAudioChunk(message.delta);
             }
+            break;
+            
+          case 'response.output_audio.done':
+            // Audio output complete
+            console.log('[Voice Mode] ✅ Audio output complete');
+            websocket._isSpeaking = false;
+            if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Listening...';
+            if (voiceStatusText) voiceStatusText.textContent = 'Listening...';
             break;
             
           case 'response.done':
@@ -5368,12 +5399,16 @@ class NoteworthyChat extends HTMLElement {
               }
             }
             
+            // Reset speaking state when response is done
+            websocket._isSpeaking = false;
             if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Listening...';
+            if (voiceStatusText) voiceStatusText.textContent = 'Listening...';
             if (voiceStatusIntegrated) {
               voiceStatusIntegrated.classList.remove('error');
               voiceStatusIntegrated.classList.add('recording');
             }
             if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
+            if (statusDot) statusDot.style.background = '#4A90E2';
             break;
             
           case 'response.text.delta':
@@ -5525,7 +5560,7 @@ class NoteworthyChat extends HTMLElement {
         
         // Check if audio is enabled (check audio toggle state)
         // The audio toggle uses 'active' class when enabled, and localStorage 'noteworthy-ai-audio'
-        const audioToggle = root.querySelector('#audioToggle');
+        const audioToggle = this.root.querySelector('#audioToggle');
         const audioEnabled = localStorage.getItem('noteworthy-ai-audio') === 'true';
         if (audioToggle && !audioEnabled) {
           console.log('[Voice Mode] 🔇 Audio is disabled (toggle is off), skipping playback');

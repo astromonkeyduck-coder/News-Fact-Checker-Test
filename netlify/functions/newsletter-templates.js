@@ -155,6 +155,22 @@ exports.handler = async (event, context) => {
                   }
                 }
                 
+                // If still empty and this is the Nov 26, 2025 newsletter, try to load from file
+                if ((!html || html.trim() === '') && lastSend.timestamp && lastSend.timestamp.includes('2025-11-26')) {
+                  try {
+                    const fs = require('fs');
+                    const path = require('path');
+                    const newsletterFile = path.join(__dirname, '../../newsletter-2025-11-26.html');
+                    if (fs.existsSync(newsletterFile)) {
+                      const fileContent = fs.readFileSync(newsletterFile, 'utf8');
+                      html = fileContent;
+                      console.log('Loaded HTML from newsletter-2025-11-26.html file');
+                    }
+                  } catch (e) {
+                    console.log('Error loading newsletter file:', e.message);
+                  }
+                }
+                
                 // If we have html but no previewHtml, generate preview from html
                 if (html && (!previewHtml || previewHtml.trim() === '')) {
                   previewHtml = html
@@ -171,9 +187,9 @@ exports.handler = async (event, context) => {
                   subject: lastSend.subject,
                   timestamp: lastSend.timestamp,
                   emailsSent: lastSend.emailsSent || 0,
-                  html: lastSend.html || '', // Include original HTML (for resending)
+                  html: html || lastSend.html || '', // Use loaded HTML or fallback
                   previewHtml: previewHtml || '', // Include preview HTML (for preview display)
-                  text: lastSend.text || '', // Include text version
+                  text: lastSend.text || (html ? html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim() : ''), // Generate text from HTML if available
                 });
               }
             }

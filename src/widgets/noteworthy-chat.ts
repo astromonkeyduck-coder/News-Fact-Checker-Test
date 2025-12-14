@@ -1569,6 +1569,8 @@ export class NoteworthyChat extends HTMLElement {
         
         // Store token on websocket for error handlers
         (websocket as any)._ephemeralToken = ephemeralToken;
+        // Initialize speaking state flag
+        (websocket as any)._isSpeaking = false;
         
         websocket.onopen = () => {
           console.log('[Voice Mode] ✅ WebSocket opened - subprotocol authentication successful!');
@@ -1829,15 +1831,32 @@ export class NoteworthyChat extends HTMLElement {
             voiceStatusText.textContent = 'Listening...';
             break;
             
-          case 'response.audio.delta':
-            // Play audio chunks
+          case 'response.output_audio.delta':
+            // Play audio chunks from OpenAI Realtime API
             if (message.delta) {
+              console.log('[Voice Mode] 🔊 Received audio delta, length:', message.delta?.length || 0);
+              
+              // Show "Speaking..." status on first audio chunk
+              if (websocket && !(websocket as any)._isSpeaking) {
+                (websocket as any)._isSpeaking = true;
+                voiceStatusText.textContent = 'Speaking...';
+                console.log('[Voice Mode] 🗣️ Status updated to: Speaking...');
+              }
+              
               playAudioChunk(message.delta);
             }
             break;
             
+          case 'response.output_audio.done':
+            // Audio output complete
+            console.log('[Voice Mode] ✅ Audio output complete');
+            if (websocket) (websocket as any)._isSpeaking = false;
+            voiceStatusText.textContent = 'Listening...';
+            break;
+            
           case 'response.done':
             // Response complete
+            if (websocket) (websocket as any)._isSpeaking = false;
             voiceStatusText.textContent = 'Listening...';
             voiceStatus.classList.remove('recording');
             break;
