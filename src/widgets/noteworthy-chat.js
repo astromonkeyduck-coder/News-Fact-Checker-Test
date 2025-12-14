@@ -4112,12 +4112,14 @@ class NoteworthyChat extends HTMLElement {
         
         websocket.onopen = () => {
           console.log('[Voice Mode] WebSocket opened, sending auth message...');
+          console.log('[Voice Mode] Ephemeral token (first 20 chars):', sessionData.ephemeral_token?.substring(0, 20));
           
           // Send authentication message with ephemeral token
           const authMessage = {
             type: 'auth',
             token: sessionData.ephemeral_token,
           };
+          console.log('[Voice Mode] Sending auth message:', { type: authMessage.type, tokenLength: authMessage.token?.length });
           websocket.send(JSON.stringify(authMessage));
           
           if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Authenticating...';
@@ -4129,7 +4131,13 @@ class NoteworthyChat extends HTMLElement {
         
         websocket.onerror = (error) => {
           console.error('WebSocket error:', error);
-          if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connection error';
+          console.error('WebSocket error details:', {
+            type: error.type,
+            target: error.target,
+            readyState: websocket?.readyState,
+            url: websocket?.url?.substring(0, 100)
+          });
+          if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connection error - Check console';
           if (voiceStatusIntegrated) {
             voiceStatusIntegrated.classList.remove('recording');
             voiceStatusIntegrated.classList.add('error');
@@ -4264,6 +4272,7 @@ class NoteworthyChat extends HTMLElement {
     function handleWebSocketMessage(event) {
       try {
         const message = JSON.parse(event.data);
+        console.log('[Voice Mode] Received WebSocket message:', message.type, message);
         
         switch (message.type) {
           case 'auth.success':
@@ -4404,17 +4413,32 @@ class NoteworthyChat extends HTMLElement {
             break;
             
           case 'error':
-            console.error('WebSocket error:', message);
-            if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = `Error: ${message.message || 'Unknown error'}`;
+            console.error('WebSocket error message:', message);
+            console.error('Error details:', {
+              type: message.type,
+              error: message.error,
+              event_id: message.event_id,
+              fullMessage: JSON.stringify(message, null, 2)
+            });
+            const errorMsg = message.error?.message || message.message || 'Unknown error';
+            if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = `Error: ${errorMsg}`;
             if (voiceStatusIntegrated) {
               voiceStatusIntegrated.classList.remove('recording');
               voiceStatusIntegrated.classList.add('error');
             }
             if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
             break;
+            
+          default:
+            // Log any unhandled message types for debugging
+            if (message.type && !message.type.startsWith('response.audio.delta')) {
+              console.log('[Voice Mode] Unhandled message type:', message.type, message);
+            }
+            break;
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
+        console.error('Raw message data:', event.data);
       }
     }
     

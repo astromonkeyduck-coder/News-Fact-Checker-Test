@@ -43,7 +43,14 @@ exports.handler = async (event, context) => {
 
     // Handle GET request - create a new session with ephemeral token
     if (event.httpMethod === "GET") {
-      const voice = event.queryStringParameters?.voice || 'cove';
+      let voice = event.queryStringParameters?.voice || 'alloy';
+      
+      // Validate voice is supported
+      const SUPPORTED_VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse', 'marin', 'cedar'];
+      if (!SUPPORTED_VOICES.includes(voice)) {
+        console.warn(`Unsupported voice "${voice}" requested, defaulting to "alloy"`);
+        voice = 'alloy';
+      }
       
       // Create a session with OpenAI Realtime API
       const requestBody = {
@@ -208,7 +215,14 @@ You help users understand news, fact-check claims, and stay informed with accura
         }
       }
       
-      const voice = body.voice || 'cove';
+      let voice = body.voice || 'alloy';
+      
+      // Validate voice is supported
+      const SUPPORTED_VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse', 'marin', 'cedar'];
+      if (!SUPPORTED_VOICES.includes(voice)) {
+        console.warn(`Unsupported voice "${voice}" requested, defaulting to "alloy"`);
+        voice = 'alloy';
+      }
       console.log('Creating session with voice:', voice, 'from body:', body);
       
       const response = await fetch('https://api.openai.com/v1/realtime/sessions', {
