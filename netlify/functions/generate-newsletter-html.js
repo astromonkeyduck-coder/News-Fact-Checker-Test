@@ -60,7 +60,10 @@ exports.handler = async (event, context) => {
         }),
       };
     }
-    const { subject, preheader, promptText, attachments = [], styleReference } = body;
+    const { subject, preheader, promptText, attachments: rawAttachments, styleReference } = body;
+    
+    // Ensure attachments is always an array
+    const attachments = Array.isArray(rawAttachments) ? rawAttachments : (rawAttachments ? [rawAttachments] : []);
 
     // Validate required fields
     if (!promptText || promptText.trim().length < 20) {
@@ -74,32 +77,35 @@ exports.handler = async (event, context) => {
     }
 
     // Validate attachments have titles (not empty and not default "Untitled Image X")
-    const untitledImages = attachments.filter(a => {
-      const title = (a.title || '').trim();
-      return !title || title === '' || /^untitled\s+image\s+\d+$/i.test(title);
-    });
-    if (untitledImages.length > 0) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ 
-          error: 'All image attachments must have descriptive titles (not "Untitled Image X")',
-          untitledCount: untitledImages.length,
-        }),
-      };
-    }
-    
-    // Validate attachments have dataUrls
-    const imagesWithoutData = attachments.filter(a => !a.dataUrl || !a.dataUrl.startsWith('data:'));
-    if (imagesWithoutData.length > 0) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ 
-          error: 'All image attachments must have valid image data',
-          invalidCount: imagesWithoutData.length,
-        }),
-      };
+    // Only validate if there are attachments
+    if (attachments.length > 0) {
+      const untitledImages = attachments.filter(a => {
+        const title = (a.title || '').trim();
+        return !title || title === '' || /^untitled\s+image\s+\d+$/i.test(title);
+      });
+      if (untitledImages.length > 0) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: 'All image attachments must have descriptive titles (not "Untitled Image X")',
+            untitledCount: untitledImages.length,
+          }),
+        };
+      }
+      
+      // Validate attachments have dataUrls
+      const imagesWithoutData = attachments.filter(a => !a.dataUrl || !a.dataUrl.startsWith('data:'));
+      if (imagesWithoutData.length > 0) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: 'All image attachments must have valid image data',
+            invalidCount: imagesWithoutData.length,
+          }),
+        };
+      }
     }
 
     // Check for OpenAI API key
@@ -172,9 +178,9 @@ CONTENT REQUIREMENTS:
 - Include "What we're watching next" or similar forward-looking sections when appropriate
 
 IMAGES:
-${imageReferences.map(img => `- [[Image: ${img.title}]] (${img.placementHint})`).join('\n')}
+${imageReferences.length > 0 ? imageReferences.map(img => `- [[Image: ${img.title}]] (${img.placementHint})`).join('\n') : 'No images provided.'}
 
-When you see [[Image: Title]], insert an <img> tag with:
+${imageReferences.length > 0 ? `When you see [[Image: Title]], insert an <img> tag with:` : ''}
 - src: Use a placeholder URL like "https://noteworthynews.co/placeholder-[title].jpg" (replace [title] with the image title in lowercase, replacing spaces with hyphens)
 - alt: The image title
 - style: "${STYLE_GUIDE.imageStyle};margin:${STYLE_GUIDE.imageMargin}"
