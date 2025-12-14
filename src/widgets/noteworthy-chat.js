@@ -4373,28 +4373,54 @@ class NoteworthyChat extends HTMLElement {
             console.warn('[Voice Mode] Could not pause background music:', err);
           }
         } else {
-          // Fallback: manually pause all music elements
+          // Fallback: manually pause ALL music elements (not just the first one)
+          // This ensures NO background music plays during the voice call
           const backgroundMusic = document.getElementById('backgroundMusic');
           const backgroundMusicSecond = document.getElementById('backgroundMusicSecond');
           const backgroundMusicThird = document.getElementById('backgroundMusicThird');
           const backgroundMusicLoop = document.getElementById('backgroundMusicLoop');
           
+          // Pause ALL playing music tracks - don't use else if, pause everything
+          let anyMusicWasPlaying = false;
+          
           if (backgroundMusic && !backgroundMusic.paused) {
             musicStateBeforeCall = { wasPlaying: true, currentTrack: backgroundMusic, currentTime: backgroundMusic.currentTime };
             backgroundMusic.pause();
-          } else if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
-            musicStateBeforeCall = { wasPlaying: true, currentTrack: backgroundMusicSecond, currentTime: backgroundMusicSecond.currentTime };
-            backgroundMusicSecond.pause();
-          } else if (backgroundMusicThird && !backgroundMusicThird.paused) {
-            musicStateBeforeCall = { wasPlaying: true, currentTrack: backgroundMusicThird, currentTime: backgroundMusicThird.currentTime };
-            backgroundMusicThird.pause();
-          } else if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
-            musicStateBeforeCall = { wasPlaying: true, currentTrack: backgroundMusicLoop, currentTime: backgroundMusicLoop.currentTime };
-            backgroundMusicLoop.pause();
+            anyMusicWasPlaying = true;
+            console.log('[Voice Mode] 🎵 Paused backgroundMusic');
           }
           
-          if (musicStateBeforeCall) {
-            console.log('[Voice Mode] 🎵 Paused background music (fallback method)');
+          if (backgroundMusicSecond && !backgroundMusicSecond.paused) {
+            if (!musicStateBeforeCall) {
+              musicStateBeforeCall = { wasPlaying: true, currentTrack: backgroundMusicSecond, currentTime: backgroundMusicSecond.currentTime };
+            }
+            backgroundMusicSecond.pause();
+            anyMusicWasPlaying = true;
+            console.log('[Voice Mode] 🎵 Paused backgroundMusicSecond');
+          }
+          
+          if (backgroundMusicThird && !backgroundMusicThird.paused) {
+            if (!musicStateBeforeCall) {
+              musicStateBeforeCall = { wasPlaying: true, currentTrack: backgroundMusicThird, currentTime: backgroundMusicThird.currentTime };
+            }
+            backgroundMusicThird.pause();
+            anyMusicWasPlaying = true;
+            console.log('[Voice Mode] 🎵 Paused backgroundMusicThird');
+          }
+          
+          if (backgroundMusicLoop && !backgroundMusicLoop.paused) {
+            if (!musicStateBeforeCall) {
+              musicStateBeforeCall = { wasPlaying: true, currentTrack: backgroundMusicLoop, currentTime: backgroundMusicLoop.currentTime };
+            }
+            backgroundMusicLoop.pause();
+            anyMusicWasPlaying = true;
+            console.log('[Voice Mode] 🎵 Paused backgroundMusicLoop');
+          }
+          
+          if (anyMusicWasPlaying) {
+            console.log('[Voice Mode] 🎵 ✅ ALL background music paused for voice call - you will ONLY hear the AI');
+          } else {
+            console.log('[Voice Mode] 🎵 No background music was playing');
           }
         }
         
@@ -5441,15 +5467,17 @@ class NoteworthyChat extends HTMLElement {
             break;
             
           case 'response.audio_transcript.done':
-            // Full transcript available
-            console.log('[Voice Mode] ✅ AI RESPONSE TRANSCRIPT:', message.transcript);
-            if (message.transcript) {
+          case 'response.output_audio_transcript.done':
+            // Full transcript available (handle both old and new message types)
+            const transcript = message.transcript || message.text || '';
+            console.log('[Voice Mode] ✅ AI RESPONSE TRANSCRIPT:', transcript);
+            if (transcript) {
               const aiGroup = document.createElement('div');
               aiGroup.className = 'message-group ai-msg-group';
               aiGroup.innerHTML = `
                 <div class="message-avatar">NW</div>
                 <div class="message-content">
-                  <div class="reply">🎤 ${message.transcript}</div>
+                  <div class="reply">🎤 ${transcript}</div>
                 </div>
               `;
               body.appendChild(aiGroup);
@@ -5457,6 +5485,35 @@ class NoteworthyChat extends HTMLElement {
               console.log('[Voice Mode] ✅ AI response displayed in chat');
             } else {
               console.warn('[Voice Mode] ⚠️ AI transcript received but empty');
+            }
+            break;
+            
+          case 'response.output_audio_transcript.delta':
+            // Real-time transcript updates as AI speaks
+            if (message.delta) {
+              // Find or create a transcript element for this response
+              let transcriptElement = root.querySelector('#ai-transcript-live');
+              if (!transcriptElement) {
+                // Create a new message group for live transcript
+                const aiGroup = document.createElement('div');
+                aiGroup.className = 'message-group ai-msg-group';
+                aiGroup.id = 'ai-msg-live';
+                aiGroup.innerHTML = `
+                  <div class="message-avatar">NW</div>
+                  <div class="message-content">
+                    <div class="reply" id="ai-transcript-live">🎤 </div>
+                  </div>
+                `;
+                body.appendChild(aiGroup);
+                body.scrollTop = body.scrollHeight;
+                transcriptElement = root.querySelector('#ai-transcript-live');
+              }
+              
+              // Append the delta to the transcript
+              if (transcriptElement) {
+                transcriptElement.textContent += message.delta;
+                body.scrollTop = body.scrollHeight;
+              }
             }
             break;
             

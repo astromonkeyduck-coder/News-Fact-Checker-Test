@@ -175,7 +175,7 @@ IMAGES:
 ${imageReferences.map(img => `- [[Image: ${img.title}]] (${img.placementHint})`).join('\n')}
 
 When you see [[Image: Title]], insert an <img> tag with:
-- src: Use a placeholder URL like "https://noteworthynews.co/placeholder-${img.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}.jpg"
+- src: Use a placeholder URL like "https://noteworthynews.co/placeholder-[title].jpg" (replace [title] with the image title in lowercase, replacing spaces with hyphens)
 - alt: The image title
 - style: "${STYLE_GUIDE.imageStyle};margin:${STYLE_GUIDE.imageMargin}"
 
