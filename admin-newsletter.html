@@ -1015,6 +1015,29 @@
         </form>
             </div>
         </div>
+        
+        <!-- Post Manager Section -->
+        <div style="margin-top: 3rem; padding-top: 3rem; border-top: 2px solid var(--terminal-border);">
+            <div class="card" style="background: var(--terminal-bg-dark); border: 2px solid var(--terminal-border);">
+                <div class="card-header">
+                    <span class="card-icon">📝</span>
+                    <h3 class="card-title">Post Manager</h3>
+                    <a href="admin-posts-manager.html" target="_blank" style="margin-left: auto; color: var(--terminal-blue); text-decoration: none; font-size: 0.85rem;">
+                        Open in New Tab →
+                    </a>
+                </div>
+                <div style="padding: 2rem;">
+                    <p style="color: var(--terminal-text-dim); margin-bottom: 1.5rem; font-size: 0.9rem; line-height: 1.6;">
+                        Manage and add posts to your website. Use URL paste, manual entry, screenshot OCR (with paste support), CSV upload, or copy-paste text detection.
+                    </p>
+                    <iframe 
+                        src="admin-posts-manager.html" 
+                        style="width: 100%; height: 1200px; border: 1px solid var(--terminal-border); border-radius: 8px; background: var(--terminal-bg); box-shadow: inset 0 0 20px rgba(0, 255, 65, 0.1);"
+                        title="Post Manager"
+                    ></iframe>
+                </div>
+            </div>
+        </div>
     </div>
     
     <!-- Confetti Canvas -->
@@ -1065,11 +1088,19 @@
     </div>
     
     <script>
+        // Global state
         let selectedTemplateId = null;
+        let selectedItem = null; // { type: 'template'|'history', id, name, html, subject, ... }
         let adminToken = sessionStorage.getItem('adminNewsletterToken');
         let backgroundMusic = null;
         let warningMusic = null;
         let backgroundMusicCurrentTime = 0;
+        
+        // Init guard to prevent duplicate calls
+        window.__adminNewsletterInitDone = false;
+        
+        // Debug mode
+        const DEBUG = location.hostname.includes("localhost") || location.search.includes("debug=1");
         
         // Security: Rate limiting for login attempts
         const MAX_LOGIN_ATTEMPTS = 5;
@@ -1172,22 +1203,40 @@
             }
         }
         
-        // Authentication with session expiration check
-        const storedToken = getAdminToken();
-        if (storedToken) {
-            fetch(`/.netlify/functions/newsletter-templates?token=${encodeURIComponent(storedToken)}`)
-                .then(response => {
-                    if (response.ok || response.status === 200) {
-                        showMainContent();
-                        loadTemplates();
-                        loadNewsletterHistory();
-                    } else {
+        // Initialize admin newsletter (called once)
+        function initAdminNewsletter() {
+            if (window.__adminNewsletterInitDone) {
+                if (DEBUG) console.log('Init already done, skipping duplicate init');
+                return;
+            }
+            window.__adminNewsletterInitDone = true;
+            
+            // Initialize button states
+            updateSendButtonStates();
+            
+            const storedToken = getAdminToken();
+            if (storedToken) {
+                fetch(`/.netlify/functions/newsletter-templates?token=${encodeURIComponent(storedToken)}`)
+                    .then(response => {
+                        if (response.ok || response.status === 200) {
+                            showMainContent();
+                            loadTemplates();
+                            loadNewsletterHistory();
+                        } else {
+                            sessionStorage.removeItem('adminNewsletterToken');
+                        }
+                    })
+                    .catch(() => {
                         sessionStorage.removeItem('adminNewsletterToken');
-                    }
-                })
-                .catch(() => {
-                    sessionStorage.removeItem('adminNewsletterToken');
-                });
+                    });
+            }
+        }
+        
+        // Call init on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAdminNewsletter);
+        } else {
+            initAdminNewsletter();
         }
 
         async function checkPassword() {
@@ -1258,8 +1307,12 @@
                     
                     showMainContent();
                     startBackgroundMusic();
-                    loadTemplates();
-                    loadNewsletterHistory();
+                    if (!window.__adminNewsletterInitDone) {
+                        initAdminNewsletter();
+                    } else {
+                        loadTemplates();
+                        loadNewsletterHistory();
+                    }
                 } else if (response.status === 401) {
                     // Failed login - increment attempts
                     const attemptData = saveLoginAttempt(true);
@@ -1290,8 +1343,12 @@
                         passwordInput.value = '';
                         showMainContent();
                         startBackgroundMusic();
-                        loadTemplates();
-                        loadNewsletterHistory();
+                        if (!window.__adminNewsletterInitDone) {
+                            initAdminNewsletter();
+                        } else {
+                            loadTemplates();
+                            loadNewsletterHistory();
+                        }
                     } else {
                         const attemptData = saveLoginAttempt(true);
                         errorEl.textContent = 'Authentication failed. Please try again.';
@@ -1330,7 +1387,7 @@
         
         // Selection functions - defined early so they're available
         function selectTemplate(templateId, element) {
-            console.log('selectTemplate called with:', templateId, element);
+            if (DEBUG) console.log('selectTemplate called with:', templateId, element);
             if (!templateId) {
                 console.error('No templateId provided to selectTemplate');
                 showStatus('Error: No template ID provided', 'error');
@@ -1340,22 +1397,30 @@
             // Verify template exists
             if (!window.newsletterTemplates || !window.newsletterTemplates[templateId]) {
                 console.error('Template not found in window.newsletterTemplates:', templateId);
-                console.log('Available templates:', Object.keys(window.newsletterTemplates || {}));
+                if (DEBUG) console.log('Available templates:', Object.keys(window.newsletterTemplates || {}));
                 showStatus('Error: Template not found. Please refresh the page.', 'error');
                 return;
             }
             
-            const template = window.newsletterTemplates[templateId];
-            console.log('Selected template:', {
-                id: template.id,
-                name: template.name,
-                subject: template.subject,
-                hasHtml: !!template.html,
-                hasText: !!template.text,
-                htmlLength: template.html?.length || 0
-            });
+            const item = window.newsletterTemplates[templateId];
+            if (item.type !== 'template') {
+                console.error('Item is not a template:', item.type);
+                showStatus('Error: Selected item is not a template', 'error');
+                return;
+            }
+            
+            if (DEBUG) {
+                console.log('Selected template:', {
+                    id: item.id,
+                    name: item.name,
+                    subject: item.subject,
+                    hasHtml: !!item.html,
+                    htmlLength: item.html?.length || 0
+                });
+            }
             
             selectedTemplateId = templateId;
+            selectedItem = item;
             
             // Update UI
             document.querySelectorAll('.preview-card').forEach(card => {
@@ -1363,7 +1428,7 @@
             });
             if (element) {
                 element.classList.add('selected');
-                console.log('Template card selected:', templateId);
+                if (DEBUG) console.log('Template card selected:', templateId);
                 
                 // Cool effects when selecting!
                 if (typeof playSelectionSound === 'function') {
@@ -1376,12 +1441,20 @@
                 console.warn('No element provided to selectTemplate');
             }
             
-            showStatus(`Template "${template.name || template.subject}" selected. Ready to send.`, 'success');
+            // Update send button states
+            updateSendButtonStates();
+            
+            // Open editor if available
+            if (typeof openEditor === 'function') {
+                openEditor(item);
+            }
+            
+            showStatus(`Template "${item.name || item.subject}" selected. Ready to send.`, 'success');
         }
         
         // Function to select a past newsletter as a template
         function selectNewsletterTemplate(templateId, element) {
-            console.log('selectNewsletterTemplate called with:', templateId, element);
+            if (DEBUG) console.log('selectNewsletterTemplate called with:', templateId, element);
             if (!templateId) {
                 console.error('No templateId provided to selectNewsletterTemplate');
                 showStatus('Error: No template ID provided', 'error');
@@ -1390,23 +1463,31 @@
             
             // Verify template exists
             if (!window.newsletterTemplates || !window.newsletterTemplates[templateId]) {
-                console.error('Newsletter template not found in window.newsletterTemplates:', templateId);
-                console.log('Available templates:', Object.keys(window.newsletterTemplates || {}));
-                showStatus('Error: Newsletter template not found. Please refresh the page.', 'error');
+                console.error('Newsletter not found in window.newsletterTemplates:', templateId);
+                if (DEBUG) console.log('Available items:', Object.keys(window.newsletterTemplates || {}));
+                showStatus('Error: Newsletter not found. Please refresh the page.', 'error');
                 return;
             }
             
-            const template = window.newsletterTemplates[templateId];
-            console.log('Selected newsletter template:', {
-                id: template.id,
-                name: template.name,
-                subject: template.subject,
-                hasHtml: !!template.html,
-                hasText: !!template.text,
-                htmlLength: template.html?.length || 0
-            });
+            const item = window.newsletterTemplates[templateId];
+            if (item.type !== 'history') {
+                console.error('Item is not a history entry:', item.type);
+                showStatus('Error: Selected item is not a newsletter history entry', 'error');
+                return;
+            }
+            
+            if (DEBUG) {
+                console.log('Selected newsletter:', {
+                    id: item.id,
+                    name: item.name,
+                    subject: item.subject,
+                    hasHtml: !!item.html,
+                    htmlLength: item.html?.length || 0
+                });
+            }
             
             selectedTemplateId = templateId;
+            selectedItem = item;
             
             // Update UI
             document.querySelectorAll('.preview-card').forEach(card => {
@@ -1414,7 +1495,7 @@
             });
             if (element) {
                 element.classList.add('selected');
-                console.log('Newsletter card selected:', templateId);
+                if (DEBUG) console.log('Newsletter card selected:', templateId);
                 
                 // Cool effects when selecting!
                 if (typeof playSelectionSound === 'function') {
@@ -1427,8 +1508,53 @@
                 console.warn('No element provided to selectNewsletterTemplate');
             }
             
-            const newsletterName = template.subject || template.name || 'Past Newsletter';
-            showStatus(`Past newsletter "${newsletterName}" selected. Ready to send.`, 'success');
+            // Update send button states
+            updateSendButtonStates();
+            
+            // Open editor if HTML is available
+            if (item.html && typeof openEditor === 'function') {
+                openEditor(item);
+            }
+            
+            const newsletterName = item.subject || item.name || 'Past Newsletter';
+            if (item.html && item.html.trim() !== '') {
+                showStatus(`Past newsletter "${newsletterName}" selected. Ready to send.`, 'success');
+            } else {
+                showStatus(`Past newsletter "${newsletterName}" selected (view only - HTML not available for resend).`, 'info');
+            }
+        }
+        
+        // Update send button states based on selection
+        function updateSendButtonStates() {
+            const sendBtn = document.getElementById('sendBtn');
+            const testBtn = document.getElementById('testBtn');
+            
+            if (!selectedItem) {
+                if (sendBtn) sendBtn.disabled = true;
+                if (testBtn) testBtn.disabled = true;
+                return;
+            }
+            
+            const hasHtml = selectedItem.html && selectedItem.html.trim() !== '';
+            const canSend = hasHtml;
+            
+            if (sendBtn) {
+                sendBtn.disabled = !canSend;
+                if (!canSend && selectedItem.type === 'history') {
+                    sendBtn.title = 'This past newsletter has no stored HTML, so it cannot be resent. Convert it into a template or regenerate HTML.';
+                } else {
+                    sendBtn.title = '';
+                }
+            }
+            
+            if (testBtn) {
+                testBtn.disabled = !canSend;
+                if (!canSend && selectedItem.type === 'history') {
+                    testBtn.title = 'This past newsletter has no stored HTML, so it cannot be sent. Convert it into a template or regenerate HTML.';
+                } else {
+                    testBtn.title = '';
+                }
+            }
         }
         
         // Play a selection sound effect
@@ -1567,92 +1693,121 @@
             // This is a placeholder - implement based on actual stats structure
         }
         
-        // Load templates
+        // Load templates with diagnostics
         async function loadTemplates() {
             try {
                 const token = getAdminToken();
-                console.log('Loading templates...');
-                const response = await fetch(`/.netlify/functions/newsletter-templates?token=${encodeURIComponent(token || '')}`);
+                const url = `/.netlify/functions/newsletter-templates?token=${encodeURIComponent(token || '')}`;
+                
+                if (DEBUG) {
+                    console.log('Loading templates...');
+                    console.log('Request URL:', url);
+                    console.log('Request method: GET');
+                    console.log('Headers:', { 'Content-Type': 'application/json' });
+                }
+                
+                const response = await fetch(url);
+                
+                if (DEBUG) {
+                    console.log('Response status:', response.status, response.statusText);
+                }
                 
                 if (!response.ok) {
-                    console.error('Failed to load templates:', response.status, response.statusText);
                     const errorText = await response.text();
-                    console.error('Error response:', errorText);
-                    document.getElementById('templatesGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading templates: ' + response.status + '</p><p style="font-size:0.8rem;color:var(--terminal-amber);margin-top:0.5rem;">' + escapeHtml(errorText) + '</p></div>';
+                    if (DEBUG) {
+                        console.error('Failed to load templates:', response.status, response.statusText);
+                        console.error('Error response:', errorText);
+                    }
+                    document.getElementById('templatesGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading templates: ' + response.status + '</p><p style="font-size:0.8rem;color:var(--terminal-amber);margin-top:0.5rem;">' + escapeHtml(errorText.substring(0, 200)) + '</p></div>';
                     return;
                 }
                 
                 const responseText = await response.text();
-                console.log('Raw templates response:', responseText.substring(0, 500));
+                if (DEBUG) {
+                    console.log('Raw templates response:', responseText.substring(0, 500));
+                }
+                
                 let data;
                 try {
                     data = JSON.parse(responseText);
                 } catch (e) {
-                    console.error('Failed to parse templates response:', e.message);
-                    console.error('Response text:', responseText);
+                    if (DEBUG) {
+                        console.error('Failed to parse templates response:', e.message);
+                        console.error('Response text:', responseText);
+                    }
                     document.getElementById('templatesGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error parsing templates response</p></div>';
                     return;
                 }
                 
-                console.log('Templates response:', data);
-                console.log('Templates loaded:', data.templates?.length || 0, 'templates');
+                if (DEBUG) {
+                    console.log('Templates response:', data);
+                }
+                
                 const grid = document.getElementById('templatesGrid');
                 
                 // Handle case where response might be an array directly or have different structure
                 let templates = data.templates || data || [];
                 if (!Array.isArray(templates)) {
-                    console.warn('Templates is not an array, response structure:', data);
+                    if (DEBUG) console.warn('Templates is not an array, response structure:', data);
                     templates = [];
+                }
+                
+                if (DEBUG) {
+                    console.log('Templates loaded:', templates.length, 'templates');
                 }
                 
                 // Store templates in window for selection and sending
                 if (templates && templates.length > 0) {
                     window.newsletterTemplates = window.newsletterTemplates || {};
                     templates.forEach(template => {
-                        // Ensure template has all required fields
-                        // First, ensure html exists - prefer html, fallback to previewHtml
-                        if (!template.html || template.html.trim() === '') {
-                            if (template.previewHtml && template.previewHtml.trim() !== '') {
-                                template.html = template.previewHtml;
-                            }
-                        }
-                        // Ensure previewHtml exists - prefer previewHtml, fallback to html
-                        if (!template.previewHtml || template.previewHtml.trim() === '') {
-                            if (template.html && template.html.trim() !== '') {
-                                template.previewHtml = template.html;
-                            }
+                        // Normalize template data with explicit type
+                        const finalHtml = template.html || template.previewHtml || '';
+                        const finalPreviewHtml = template.previewHtml || template.html || '';
+                        
+                        if (!template.id) {
+                            template.id = `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                         }
                         if (!template.subject) {
                             template.subject = template.name || 'Newsletter';
                         }
-                        // Ensure template has an id
-                        if (!template.id) {
-                            template.id = `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                        if (!template.text && finalHtml) {
+                            template.text = finalHtml.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
                         }
-                        // Generate text version if missing
-                        if (!template.text && template.html) {
-                            template.text = template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-                        }
-                        // Final check: ensure we have at least html or previewHtml
-                        const finalHtml = (template.html && template.html.trim() !== '') ? template.html : (template.previewHtml && template.previewHtml.trim() !== '') ? template.previewHtml : '';
-                        const finalPreviewHtml = (template.previewHtml && template.previewHtml.trim() !== '') ? template.previewHtml : finalHtml;
                         
+                        // Store with explicit type flag
                         window.newsletterTemplates[template.id] = {
+                            type: 'template',
                             id: template.id,
                             name: template.name || 'Unnamed Template',
                             subject: template.subject || 'Newsletter',
-                            html: finalHtml, // Ensure html is set (use previewHtml if html is missing)
+                            html: finalHtml,
                             text: template.text || '',
-                            previewHtml: finalPreviewHtml, // Ensure previewHtml is set (use html if previewHtml is missing)
+                            previewHtml: finalPreviewHtml,
                             createdAt: template.createdAt,
                             updatedAt: template.updatedAt
                         };
                     });
-                    console.log('Stored templates in window.newsletterTemplates:', Object.keys(window.newsletterTemplates).length);
-                    console.log('Template IDs:', Object.keys(window.newsletterTemplates));
+                    if (DEBUG) {
+                        console.log('Stored templates in window.newsletterTemplates:', Object.keys(window.newsletterTemplates).length);
+                    }
                 } else {
-                    console.warn('No templates found in response. Response structure:', Object.keys(data || {}));
-                    grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No templates found</p><p style="font-size:0.8rem;color:var(--terminal-amber);margin-top:0.5rem;">Templates will be auto-loaded from the email templates directory on first use.</p></div>';
+                    if (DEBUG) {
+                        console.warn('No templates found in response. Response structure:', Object.keys(data || {}));
+                    }
+                    // Show actionable empty state with Create Template button
+                    grid.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <p>No templates found</p>
+                            <p style="font-size:0.8rem;color:var(--terminal-amber);margin-top:0.5rem;margin-bottom:1rem;">
+                                Create your first template to get started.
+                            </p>
+                            <button class="btn btn-primary" onclick="createNewTemplate()" style="margin-top:1rem;">
+                                <span>➕</span>
+                                <span>Create Template</span>
+                            </button>
+                        </div>
+                    `;
                     return;
                 }
                 
@@ -1690,7 +1845,7 @@
                             }
                             
                             return `
-                            <div class="preview-card expanded" data-template-id="${template.id}" data-is-template="true">
+                            <div class="preview-card expanded" data-template-id="${template.id}" data-item-type="template" data-is-template="true">
                                 <div class="preview-title">${escapeHtml(template.name || 'Unnamed Template')}</div>
                                 <div class="preview-subject">${escapeHtml(template.subject || 'No subject')}</div>
                                 <div class="preview-date">${formatDate(template.updatedAt)}</div>
@@ -1738,7 +1893,7 @@
                             if (templatesGrid) {
                                 // Use event delegation - attach to grid, works for all cards
                                 templatesGrid.addEventListener('click', function(e) {
-                                    const card = e.target.closest('[data-is-template="true"]');
+                                    const card = e.target.closest('[data-item-type="template"]');
                                     if (!card) return;
                                     
                                     // Don't trigger if clicking on preview toggle, preview, or iframe
@@ -1751,7 +1906,7 @@
                                     
                                     const templateId = card.getAttribute('data-template-id');
                                     if (templateId) {
-                                        console.log('Selecting template:', templateId);
+                                        if (DEBUG) console.log('Selecting template:', templateId);
                                         if (typeof selectTemplate === 'function') {
                                             selectTemplate(templateId, card);
                                         } else {
@@ -1759,7 +1914,7 @@
                                         }
                                     }
                                 });
-                                console.log('Template selection handlers attached to grid');
+                                if (DEBUG) console.log('Template selection handlers attached to grid');
                             } else {
                                 console.error('templatesGrid element not found');
                             }
@@ -1780,15 +1935,19 @@
                 const response = await fetch(`/.netlify/functions/newsletter-templates?history=true&token=${encodeURIComponent(token || '')}`);
                 
                 if (!response.ok) {
-                    console.error('Failed to load newsletter history:', response.status, response.statusText);
-                    const errorText = await response.text();
-                    console.error('Error response:', errorText);
+                    if (DEBUG) {
+                        console.error('Failed to load newsletter history:', response.status, response.statusText);
+                        const errorText = await response.text();
+                        console.error('Error response:', errorText);
+                    }
                     document.getElementById('newslettersGrid').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading history: ' + response.status + '</p></div>';
                     return;
                 }
                 
                 const data = await response.json();
-                console.log('Newsletter history loaded:', data.newsletters?.length || 0, 'newsletters');
+                if (DEBUG) {
+                    console.log('Newsletter history loaded:', data.newsletters?.length || 0, 'newsletters');
+                }
                 const grid = document.getElementById('newslettersGrid');
                 
                 if (data.newsletters && data.newsletters.length > 0) {
@@ -1799,25 +1958,25 @@
                         
                         grid.innerHTML = data.newsletters.map((newsletter, index) => {
                             const previewId = `newsletter-preview-${index}`;
-                            // Check for previewHtml or html field - prefer html for sending, previewHtml for preview
+                            // Check for previewHtml or html field
                             const previewHtml = newsletter.previewHtml || newsletter.html || '';
                             const fullHtml = newsletter.html || newsletter.previewHtml || '';
                             const hasPreview = previewHtml && previewHtml.trim().length > 0;
+                            const hasHtml = fullHtml && fullHtml.trim().length > 0;
                             // Create a template ID from the newsletter ID or generate one
                             const templateId = newsletter.id || `newsletter-${index}-${Date.now()}`;
                             
-                            // Store newsletter data for later use when sending
-                            // Use fullHtml (prefer html over previewHtml) for sending
-                            // Ensure html is not empty - if it is, use previewHtml
-                            const finalHtml = (fullHtml && fullHtml.trim() !== '') ? fullHtml : (previewHtml && previewHtml.trim() !== '') ? previewHtml : '';
-                            const finalPreviewHtml = (previewHtml && previewHtml.trim() !== '') ? previewHtml : finalHtml;
+                            // Store newsletter data with explicit type flag
+                            const finalHtml = hasHtml ? fullHtml : '';
+                            const finalPreviewHtml = hasPreview ? previewHtml : '';
                             
                             window.newsletterTemplates[templateId] = {
+                                type: 'history',
                                 id: templateId,
                                 name: newsletter.subject || 'Past Newsletter',
                                 subject: newsletter.subject || 'No subject',
-                                html: finalHtml, // Use full HTML for sending (html preferred, fallback to previewHtml)
-                                previewHtml: finalPreviewHtml, // Keep previewHtml separate for preview display
+                                html: finalHtml, // May be empty for old newsletters
+                                previewHtml: finalPreviewHtml,
                                 text: newsletter.text || '',
                                 timestamp: newsletter.timestamp,
                                 emailsSent: newsletter.emailsSent || 0
@@ -1838,14 +1997,15 @@
                             }
                             
                             return `
-                            <div class="preview-card expanded" data-template-id="${templateId}" data-newsletter-id="${templateId}" data-is-newsletter="true">
+                            <div class="preview-card expanded" data-template-id="${templateId}" data-item-type="history" data-newsletter-id="${templateId}" data-is-newsletter="true" data-has-html="${hasHtml}">
                                 <div class="preview-title">${escapeHtml(newsletter.subject || 'No subject')}</div>
                                 <div class="preview-date">${formatDate(newsletter.timestamp)}</div>
                                 <div class="preview-badge">Sent to ${newsletter.emailsSent || 0} subscribers</div>
                                 ${hasPreview ? `
                                 <button class="preview-toggle" data-preview-id="${previewId}">Hide Preview</button>
                                 <div id="${previewId}" class="email-preview" data-html-base64="${previewHtmlBase64}"></div>
-                                ` : '<div style="margin-top:1rem;color:var(--terminal-amber);font-size:0.8rem;">No preview available</div>'}
+                                ` : '<div style="margin-top:1rem;color:var(--terminal-amber);font-size:0.8rem;">Preview unavailable (legacy send)</div>'}
+                                ${!hasHtml ? '<div style="margin-top:0.5rem;color:var(--terminal-red);font-size:0.75rem;font-weight:600;">⚠️ Cannot resend: HTML not available</div>' : ''}
                             </div>
                         `;
                         }).join('');
@@ -1887,7 +2047,7 @@
                             if (newslettersGrid) {
                                 // Use event delegation - attach to grid, works for all cards
                                 newslettersGrid.addEventListener('click', function(e) {
-                                    const card = e.target.closest('[data-is-newsletter="true"]');
+                                    const card = e.target.closest('[data-item-type="history"]');
                                     if (!card) return;
                                     
                                     // Don't trigger if clicking on preview toggle, preview, or iframe
@@ -1900,7 +2060,7 @@
                                     
                                     const templateId = card.getAttribute('data-template-id');
                                     if (templateId) {
-                                        console.log('Selecting newsletter:', templateId);
+                                        if (DEBUG) console.log('Selecting newsletter:', templateId);
                                         if (typeof selectNewsletterTemplate === 'function') {
                                             selectNewsletterTemplate(templateId, card);
                                         } else {
@@ -1908,7 +2068,7 @@
                                         }
                                     }
                                 });
-                                console.log('Newsletter selection handlers attached to grid');
+                                if (DEBUG) console.log('Newsletter selection handlers attached to grid');
                             } else {
                                 console.error('newslettersGrid element not found');
                             }
@@ -2078,92 +2238,7 @@
             return textarea.value;
         }
         
-        function renderPreview(previewDiv, previewId, html) {
-            try {
-                // Clear any existing content
-                previewDiv.innerHTML = '';
-                
-                // Ensure HTML is a string and not empty
-                if (!html || typeof html !== 'string' || !html.trim()) {
-                    console.error('Invalid HTML for preview:', previewId);
-                    previewDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--terminal-amber);">Preview not available</div>';
-                    return;
-                }
-                
-                // Create a complete HTML document with proper structure
-                const fullHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Preview</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            background: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-        }
-        /* Ensure email styles are preserved */
-        * {
-            box-sizing: border-box;
-        }
-    </style>
-</head>
-<body>
-    ${html}
-</body>
-</html>`;
-                
-                // Create blob URL for the HTML
-                const blob = new Blob([fullHtml], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
-                
-                // Store URL for cleanup
-                if (!window.previewBlobUrls) {
-                    window.previewBlobUrls = {};
-                }
-                // Clean up old URL if it exists
-                if (window.previewBlobUrls[previewId]) {
-                    URL.revokeObjectURL(window.previewBlobUrls[previewId]);
-                }
-                window.previewBlobUrls[previewId] = url;
-                
-                // Create iframe with proper styling
-                const iframe = document.createElement('iframe');
-                iframe.src = url;
-                iframe.style.width = '100%';
-                iframe.style.height = '600px';
-                iframe.style.border = 'none';
-                iframe.style.display = 'block';
-                iframe.style.marginTop = '12px';
-                iframe.style.borderRadius = '8px';
-                iframe.style.backgroundColor = '#ffffff';
-                iframe.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
-                
-                // Handle iframe load errors
-                iframe.onerror = function() {
-                    console.error('Error loading preview iframe:', previewId);
-                    previewDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--terminal-red);">Error loading preview</div>';
-                };
-                
-                // Show loading state
-                previewDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--terminal-text-dim);">Loading preview...</div>';
-                
-                iframe.onload = function() {
-                    console.log('Preview loaded successfully:', previewId);
-                };
-                
-                // Small delay to show loading state, then add iframe
-                setTimeout(() => {
-                    previewDiv.innerHTML = '';
-                    previewDiv.appendChild(iframe);
-                }, 100);
-            } catch (error) {
-                console.error('Error rendering preview:', error, previewId);
-                previewDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--terminal-red);">Error rendering preview</div>';
-            }
-        }
+        // renderPreview is now defined later in the file (using iframe srcdoc)
         
         function formatDate(dateString) {
             if (!dateString) return 'Unknown date';
@@ -2291,8 +2366,8 @@
         const testBtn = document.getElementById('testBtn');
         
         testBtn.addEventListener('click', async () => {
-            if (!selectedTemplateId) {
-                showStatus('Please select a template first', 'error');
+            if (!selectedItem) {
+                showStatus('Please select a template or newsletter first', 'error');
                 return;
             }
             
@@ -2302,107 +2377,43 @@
                 return;
             }
             
+            // Check if HTML is available
+            if (!selectedItem.html || selectedItem.html.trim() === '') {
+                if (selectedItem.type === 'history') {
+                    showStatus('This past newsletter has no stored HTML, so it cannot be sent. Convert it into a template or regenerate HTML.', 'error');
+                } else {
+                    showStatus('Template is missing HTML content. Please select a different template or contact support.', 'error');
+                }
+                return;
+            }
+            
             testBtn.disabled = true;
             testBtn.innerHTML = '<span class="spinner"></span> <span>Sending...</span>';
             showStatus(`Sending test email to ${testEmail}...`, 'info');
             
             try {
-                // Load template
-                const token = getAdminToken();
-                let template;
+                // Use selectedItem directly
+                const template = {
+                    id: selectedItem.id,
+                    name: selectedItem.name,
+                    subject: selectedItem.subject || selectedItem.name || 'Newsletter',
+                    html: selectedItem.html,
+                    text: selectedItem.text || selectedItem.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
+                };
                 
-                // Check if it's a past newsletter template (stored in window.newsletterTemplates)
-                if (window.newsletterTemplates && window.newsletterTemplates[selectedTemplateId]) {
-                    template = { ...window.newsletterTemplates[selectedTemplateId] };
-                    console.log('Using stored template for test:', template.subject);
-                    
-                    // Ensure template has all required fields
-                    if (!template.html && template.previewHtml) {
-                        template.html = template.previewHtml;
-                    }
-                    if (!template.subject) {
-                        template.subject = template.name || 'Newsletter';
-                    }
-                    if (!template.text && template.html) {
-                        template.text = template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-                    }
-                } else {
-                    // Try to load from blob store
-                    const templateResponse = await fetch(`/.netlify/functions/newsletter-templates?id=${selectedTemplateId}&token=${encodeURIComponent(token || '')}`);
-                    if (!templateResponse.ok) {
-                        const errorText = await templateResponse.text();
-                        console.error('Failed to load template:', templateResponse.status, errorText);
-                        throw new Error(`Failed to load template: ${templateResponse.status}`);
-                    }
-                    const responseText = await templateResponse.text();
-                    try {
-                        template = JSON.parse(responseText);
-                    } catch (e) {
-                        console.error('Failed to parse template response:', responseText);
-                        throw new Error('Invalid template data format');
-                    }
-                    
-                    // Ensure template has all required fields after loading from API
-                    if (!template.html && template.previewHtml) {
-                        template.html = template.previewHtml;
-                        console.log('Using previewHtml as html for template loaded from API');
-                    }
-                    if (!template.subject) {
-                        template.subject = template.name || 'Newsletter';
-                    }
-                    if (!template.text && template.html) {
-                        template.text = template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-                    }
-                }
-                
-                console.log('Loaded template for test:', {
-                    id: template.id,
-                    name: template.name,
-                    subject: template.subject,
-                    hasHtml: !!template.html,
-                    hasPreviewHtml: !!template.previewHtml,
-                    hasText: !!template.text,
-                    htmlLength: template.html?.length || 0,
-                    previewHtmlLength: template.previewHtml?.length || 0
-                });
-                
-                // Final check: if html is still missing, try to use previewHtml
-                if (!template.html || template.html.trim() === '') {
-                    if (template.previewHtml && template.previewHtml.trim() !== '') {
-                        template.html = template.previewHtml;
-                        console.log('Using previewHtml as html (final fallback)');
-                    } else {
-                        console.error('Template missing HTML content:', {
-                            id: template.id,
-                            name: template.name,
-                            hasHtml: !!template.html,
-                            hasPreviewHtml: !!template.previewHtml,
-                            htmlLength: template.html?.length || 0,
-                            previewHtmlLength: template.previewHtml?.length || 0
-                        });
-                        throw new Error('Template is missing HTML content. Please select a different template or contact support.');
-                    }
-                }
-                
-                // For past newsletters, we might not have text, so generate it from html
-                if (!template.text && template.html) {
-                    template.text = template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+                if (DEBUG) {
+                    console.log('Sending test email with template:', {
+                        id: template.id,
+                        name: template.name,
+                        subject: template.subject,
+                        hasHtml: !!template.html,
+                        htmlLength: template.html?.length || 0
+                    });
                 }
                 
                 // Validate template before using
-                if (!template || typeof template !== 'object') {
-                    console.error('Template validation failed - not an object:', template);
-                    throw new Error('Invalid template data received');
-                }
-                
                 if (!template.subject || !template.html || template.html.trim() === '') {
-                    console.error('Template missing required fields:', {
-                        hasSubject: !!template.subject,
-                        hasHtml: !!template.html,
-                        htmlIsEmpty: !template.html || template.html.trim() === '',
-                        template: template
-                    });
-                    throw new Error(`Template missing required fields. Subject: ${!!template.subject}, HTML: ${!!template.html && template.html.trim() !== ''}`);
+                    throw new Error('Template missing required fields');
                 }
                 
                 const response = await fetch('/.netlify/functions/send-newsletter', {
@@ -2588,105 +2599,195 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            if (!selectedTemplateId) {
-                showStatus('Please select a template first', 'error');
+            if (!selectedItem) {
+                showStatus('Please select a template or newsletter first', 'error');
                 return;
             }
             
-            // Load template first
-            try {
-                const token = getAdminToken();
-                let template;
-                
-                // Check if it's a past newsletter template (stored in window.newsletterTemplates)
-                if (window.newsletterTemplates && window.newsletterTemplates[selectedTemplateId]) {
-                    template = window.newsletterTemplates[selectedTemplateId];
-                    console.log('Using past newsletter as template:', template.subject);
-                    
-                    // For past newsletters, ensure we have html - if missing, try to use previewHtml
-                    if (!template.html || template.html.trim() === '') {
-                        if (template.previewHtml && template.previewHtml.trim() !== '') {
-                            template.html = template.previewHtml;
-                            console.log('Using previewHtml as html for past newsletter');
-                        } else {
-                            // Try to fetch the full template from the API
-                            console.log('Newsletter missing html, attempting to fetch from API...');
-                            try {
-                                const templateResponse = await fetch(`/.netlify/functions/newsletter-templates?id=${selectedTemplateId}&token=${encodeURIComponent(token || '')}`);
-                                if (templateResponse.ok) {
-                                    const fetchedTemplate = JSON.parse(await templateResponse.text());
-                                    if (fetchedTemplate.html && fetchedTemplate.html.trim() !== '') {
-                                        template.html = fetchedTemplate.html;
-                                        template.previewHtml = fetchedTemplate.previewHtml || fetchedTemplate.html;
-                                        console.log('Successfully fetched html from API');
-                                    }
-                                }
-                            } catch (fetchError) {
-                                console.warn('Could not fetch template from API:', fetchError);
-                            }
-                        }
-                    }
+            // Check if HTML is available
+            if (!selectedItem.html || selectedItem.html.trim() === '') {
+                if (selectedItem.type === 'history') {
+                    showStatus('This past newsletter has no stored HTML, so it cannot be resent. Convert it into a template or regenerate HTML.', 'error');
                 } else {
-                    // Try to load from blob store
-                    const templateResponse = await fetch(`/.netlify/functions/newsletter-templates?id=${selectedTemplateId}&token=${encodeURIComponent(token || '')}`);
-                    if (!templateResponse.ok) {
-                        throw new Error('Failed to load template');
-                    }
-                    template = JSON.parse(await templateResponse.text());
-                    
-                    // Ensure template has all required fields after loading from API
-                    if (!template.html && template.previewHtml) {
-                        template.html = template.previewHtml;
-                        console.log('Using previewHtml as html for template loaded from API');
-                    }
-                    if (!template.subject) {
-                        template.subject = template.name || 'Newsletter';
-                    }
-                    if (!template.text && template.html) {
-                        template.text = template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-                    }
+                    showStatus('Template is missing HTML content. Please select a different template or contact support.', 'error');
                 }
-                
-                // Final check: if html is still missing, try to use previewHtml
-                if (!template.html || template.html.trim() === '') {
-                    if (template.previewHtml && template.previewHtml.trim() !== '') {
-                        template.html = template.previewHtml;
-                        console.log('Using previewHtml as html (final fallback)');
-                    } else {
-                        console.error('Template missing HTML content:', {
-                            id: template.id,
-                            name: template.name,
-                            hasHtml: !!template.html,
-                            hasPreviewHtml: !!template.previewHtml
-                        });
-                        throw new Error('Invalid template: missing HTML content. This newsletter may not have HTML content available.');
-                    }
-                }
-                
-                // For past newsletters, we might not have text, so generate it from html
-                if (!template.text && template.html) {
-                    template.text = template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-                }
-                
-                // Validate template before using
-                if (!template || typeof template !== 'object' || !template.subject) {
-                    throw new Error('Invalid template: missing subject');
-                }
-                
-                if (!template.html || template.html.trim() === '') {
-                    throw new Error('Invalid template: missing HTML content. This newsletter may not have HTML content available.');
-                }
-                
-                pendingTemplate = template;
-                pendingSend = true;
-                
-                // Show nuclear warning
-                showNuclearWarning(template.name || template.subject);
-            } catch (error) {
-                console.error('Error loading template:', error);
-                showStatus('Error loading template. Please try again.', 'error');
+                return;
             }
+            
+            // Prepare template for sending
+            const template = {
+                id: selectedItem.id,
+                name: selectedItem.name,
+                subject: selectedItem.subject || selectedItem.name || 'Newsletter',
+                html: selectedItem.html,
+                text: selectedItem.text || selectedItem.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
+            };
+            
+            // Validate template
+            if (!template.subject || !template.html || template.html.trim() === '') {
+                showStatus('Template missing required fields', 'error');
+                return;
+            }
+            
+            pendingTemplate = template;
+            pendingSend = true;
+            
+            // Show nuclear warning
+            showNuclearWarning(template.name || template.subject);
         });
+        
+        // Create new template function
+        async function createNewTemplate() {
+            const starterHtml = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newsletter Template</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff;">
+                    <tr>
+                        <td style="padding: 20px;">
+                            <h1 style="color: #333333; margin: 0 0 20px 0;">Your Newsletter Title</h1>
+                            <p style="color: #666666; line-height: 1.6; margin: 0 0 15px 0;">
+                                Welcome to your newsletter! Edit this template to customize your content.
+                            </p>
+                            <p style="color: #666666; line-height: 1.6; margin: 0;">
+                                Add your content here.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`;
+            
+            const newTemplate = {
+                type: 'template',
+                id: `template-${Date.now()}`,
+                name: 'New Template',
+                subject: 'New Newsletter',
+                html: starterHtml,
+                text: 'Your Newsletter Title\n\nWelcome to your newsletter! Edit this template to customize your content.',
+                previewHtml: starterHtml,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            // Store locally first
+            if (!window.newsletterTemplates) {
+                window.newsletterTemplates = {};
+            }
+            window.newsletterTemplates[newTemplate.id] = newTemplate;
+            
+            // Select it
+            selectedTemplateId = newTemplate.id;
+            selectedItem = newTemplate;
+            
+            // Open editor
+            if (typeof openEditor === 'function') {
+                openEditor(newTemplate);
+            } else {
+                // If editor not available, just select it
+                showStatus('New template created. Please save it to persist.', 'success');
+                loadTemplates(); // Reload to show it
+            }
+        }
+        
+        // Make createNewTemplate globally accessible
+        window.createNewTemplate = createNewTemplate;
+        
+        // Basic editor function (can be enhanced later)
+        function openEditor(item) {
+            // For now, just log - can be enhanced with a modal editor
+            if (DEBUG) {
+                console.log('Opening editor for:', item.name);
+            }
+            // TODO: Implement full editor UI with Monaco or textarea
+            // For now, selection is enough - user can edit via API
+        }
+        
+        // Update preview to use iframe srcdoc (more reliable)
+        function renderPreview(previewDiv, previewId, html) {
+            try {
+                // Clear any existing content
+                previewDiv.innerHTML = '';
+                
+                // Ensure HTML is a string and not empty
+                if (!html || typeof html !== 'string' || !html.trim()) {
+                    console.error('Invalid HTML for preview:', previewId);
+                    previewDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--terminal-amber);">Preview not available</div>';
+                    return;
+                }
+                
+                // Create a complete HTML document with proper structure
+                const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Preview</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    ${html}
+</body>
+</html>`;
+                
+                // Create iframe with srcdoc (more reliable than blob URL)
+                const iframe = document.createElement('iframe');
+                iframe.srcdoc = fullHtml;
+                iframe.style.width = '100%';
+                iframe.style.height = '600px';
+                iframe.style.border = 'none';
+                iframe.style.display = 'block';
+                iframe.style.marginTop = '12px';
+                iframe.style.borderRadius = '8px';
+                iframe.style.backgroundColor = '#ffffff';
+                iframe.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                
+                // Handle iframe load errors
+                iframe.onerror = function() {
+                    console.error('Error loading preview iframe:', previewId);
+                    previewDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--terminal-red);">Error loading preview</div>';
+                };
+                
+                // Show loading state
+                previewDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--terminal-text-dim);">Loading preview...</div>';
+                
+                iframe.onload = function() {
+                    if (DEBUG) console.log('Preview loaded successfully:', previewId);
+                };
+                
+                // Small delay to show loading state, then add iframe
+                setTimeout(() => {
+                    previewDiv.innerHTML = '';
+                    previewDiv.appendChild(iframe);
+                }, 100);
+            } catch (error) {
+                console.error('Error rendering preview:', error, previewId);
+                previewDiv.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--terminal-red);">Error rendering preview</div>';
+            }
+        }
+        
+        // Make renderPreview globally accessible (override the old one)
+        window.renderPreview = renderPreview;
     </script>
     
     <!-- Cookie Consent Banner -->

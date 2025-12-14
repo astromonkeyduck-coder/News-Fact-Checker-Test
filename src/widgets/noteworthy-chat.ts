@@ -1270,6 +1270,9 @@ export class NoteworthyChat extends HTMLElement {
     let currentMode: 'chat' | 'image' = 'chat';
     let uploadedFiles: File[] = [];
     
+    // Track chat history for context
+    let chatHistory: Array<{role: string, content: any}> = [];
+    
     // Voice conversation state
     let voiceModeActive = false;
     let websocket: WebSocket | null = null;
@@ -1325,7 +1328,15 @@ export class NoteworthyChat extends HTMLElement {
     }
     
     // Handle paste events for images - works on input and entire chat container
+    // Use a flag to prevent duplicate processing when event bubbles
+    let isProcessingPaste = false;
+    
     const handlePaste = async (e: ClipboardEvent) => {
+      // Prevent duplicate processing if event bubbles from input to wrap
+      if (isProcessingPaste) {
+        return;
+      }
+      
       const items = e.clipboardData?.items;
       if (!items) return;
       
@@ -1347,7 +1358,9 @@ export class NoteworthyChat extends HTMLElement {
       }
       
       if (imageFiles.length > 0) {
+        isProcessingPaste = true; // Set flag to prevent duplicate
         e.preventDefault(); // Prevent default paste behavior
+        e.stopPropagation(); // Stop event from bubbling to parent
         
         // Process the pasted images
         handleFiles(imageFiles);
@@ -1360,17 +1373,23 @@ export class NoteworthyChat extends HTMLElement {
             input.placeholder = originalPlaceholder;
           }, 2000);
         }
+        
+        // Reset flag after a short delay
+        setTimeout(() => {
+          isProcessingPaste = false;
+        }, 100);
       }
     };
     
-    // Add paste listener to input field
+    // Add paste listener to input field (with capture phase to catch it first)
     if (input) {
-      input.addEventListener('paste', handlePaste);
+      input.addEventListener('paste', handlePaste, true);
     }
     
     // Add paste listener to the entire chat container (so it works even when input isn't focused)
+    // Use capture: false so input handler processes first
     if (wrap) {
-      wrap.addEventListener('paste', handlePaste);
+      wrap.addEventListener('paste', handlePaste, false);
       // Make the chat container focusable for paste events
       if (!wrap.hasAttribute('tabindex')) {
         wrap.setAttribute('tabindex', '-1');
@@ -2203,7 +2222,11 @@ export class NoteworthyChat extends HTMLElement {
 
     async function ask() {
       const message = input.value.trim();
-      if (!message) return;
+      const hasFiles = uploadedFiles.length > 0;
+      
+      // Allow sending if there's a message OR files
+      if (!message && !hasFiles) return;
+      
       input.value = '';
       send.disabled = true;
 
@@ -2221,15 +2244,51 @@ export class NoteworthyChat extends HTMLElement {
         return;
       }
 
+      // Store files for sending (before clearing uploadedFiles)
+      const filesToSend = [...uploadedFiles];
+
       // Show user message with avatar
       const userGroup = document.createElement('div');
       userGroup.className = 'message-group user-msg-group';
+      
+      const userMsgContent = document.createElement('div');
+      userMsgContent.className = 'user-msg';
+      
+      // Add uploaded images/files to message
+      if (filesToSend.length > 0) {
+        filesToSend.forEach(file => {
+          if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const img = document.createElement('img');
+              img.src = e.target?.result as string;
+              img.style.maxWidth = '200px';
+              img.style.maxHeight = '200px';
+              img.style.marginTop = '8px';
+              img.style.borderRadius = '8px';
+              img.alt = file.name;
+              userMsgContent.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      }
+      
+      // Add text message
+      if (message) {
+        const textNode = document.createElement('div');
+        textNode.textContent = message;
+        if (filesToSend.length > 0) {
+          textNode.style.marginTop = '8px';
+        }
+        userMsgContent.appendChild(textNode);
+      }
+      
       userGroup.innerHTML = `
         <div class="message-avatar">You</div>
-        <div class="message-content">
-          <div class="user-msg">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-        </div>
+        <div class="message-content"></div>
       `;
+      (userGroup.querySelector('.message-content') as HTMLElement).appendChild(userMsgContent);
       body.appendChild(userGroup);
       body.scrollTop = body.scrollHeight;
 
@@ -2248,11 +2307,52 @@ export class NoteworthyChat extends HTMLElement {
       body.scrollTop = body.scrollHeight;
 
       try {
+        // Prepare request body with chat history
+        let requestBody: string;
+        let fileData: Array<{name: string, type: string, size: number, data: string}> | null = null;
+        
+        if (filesToSend.length > 0) {
+          // Convert files to base64 for JSON
+          const filePromises = filesToSend.map(file => {
+            return new Promise<{name: string, type: string, size: number, data: string}>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (e) => {
+                const result = e.target?.result as string;
+                const base64 = result.split(',')[1];
+                resolve({
+                  name: file.name,
+                  type: file.type,
+                  size: file.size,
+                  data: base64
+                });
+              };
+              reader.readAsDataURL(file);
+            });
+          });
+          
+          fileData = await Promise.all(filePromises);
+          requestBody = JSON.stringify({ 
+            message: message || '',
+            files: fileData,
+            chatHistory: chatHistory
+          });
+          
+          // Clear uploaded files after sending
+          uploadedFiles = [];
+          updateFilePreview();
+        } else {
+          // Regular JSON request with chat history
+          requestBody = JSON.stringify({ 
+            message: message,
+            chatHistory: chatHistory
+          });
+        }
+        
         // Regular chat response
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message }),
+          body: requestBody,
         });
 
         if (!res.ok) {
@@ -2280,6 +2380,56 @@ export class NoteworthyChat extends HTMLElement {
         body.appendChild(aiGroup);
 
         body.scrollTop = body.scrollHeight;
+        
+        // Update chat history with user message and AI response (only on success)
+        // Store images in OpenAI format so they can be remembered and edited later
+        if (fileData && fileData.length > 0) {
+          // Build content array with text and images (matching OpenAI format)
+          const userContent: Array<{type: string, text?: string, image_url?: {url: string}}> = [];
+          
+          // Add text message if provided
+          if (message && message.trim()) {
+            userContent.push({
+              type: "text",
+              text: message
+            });
+          }
+          
+          // Add images in OpenAI format using already-converted fileData
+          fileData.forEach(file => {
+            if (file.type && file.type.startsWith("image/") && file.data) {
+              userContent.push({
+                type: "image_url",
+                image_url: {
+                  url: `data:${file.type};base64,${file.data}`
+                }
+              });
+            }
+          });
+          
+          // Add user message with images to history
+          chatHistory.push({
+            role: 'user',
+            content: userContent.length > 0 ? userContent : [{ type: "text", text: `[Uploaded ${fileData.length} file(s)]` }]
+          });
+        } else {
+          // Regular text message - simple format
+          chatHistory.push({
+            role: 'user',
+            content: message
+          });
+        }
+        
+        // Add assistant response
+        chatHistory.push({
+          role: 'assistant',
+          content: text
+        });
+        
+        // Keep only last 20 messages (10 exchanges) to avoid token limits
+        if (chatHistory.length > 20) {
+          chatHistory = chatHistory.slice(-20);
+        }
       } catch (e: any) {
         thinking.remove();
         const aiGroup = document.createElement('div');

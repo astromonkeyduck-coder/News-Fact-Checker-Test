@@ -3487,6 +3487,7 @@ class NoteworthyChat extends HTMLElement {
         
         // Prepare request body with files
         let requestBody;
+        let fileData = null; // Store fileData for chat history
         let headers = { 
           'Content-Type': 'application/json',
           'Accept': 'application/json'
@@ -3510,7 +3511,7 @@ class NoteworthyChat extends HTMLElement {
             });
           });
           
-          const fileData = await Promise.all(filePromises);
+          fileData = await Promise.all(filePromises);
           requestBody = JSON.stringify({ 
             message: message || '',
             files: fileData,
@@ -3720,10 +3721,45 @@ class NoteworthyChat extends HTMLElement {
         body.scrollTop = body.scrollHeight;
         
         // Update chat history with user message and AI response (only on success)
-        chatHistory.push({
-          role: 'user',
-          content: message || (filesToSend.length > 0 ? `[Uploaded ${filesToSend.length} file(s)]` : '')
-        });
+        // Store images in OpenAI format so they can be remembered and edited later
+        if (fileData && fileData.length > 0) {
+          // Build content array with text and images (matching OpenAI format)
+          const userContent = [];
+          
+          // Add text message if provided
+          if (message && message.trim()) {
+            userContent.push({
+              type: "text",
+              text: message
+            });
+          }
+          
+          // Add images in OpenAI format using already-converted fileData
+          fileData.forEach(file => {
+            if (file.type && file.type.startsWith("image/") && file.data) {
+              userContent.push({
+                type: "image_url",
+                image_url: {
+                  url: `data:${file.type};base64,${file.data}`
+                }
+              });
+            }
+          });
+          
+          // Add user message with images to history
+          chatHistory.push({
+            role: 'user',
+            content: userContent.length > 0 ? userContent : [{ type: "text", text: `[Uploaded ${fileData.length} file(s)]` }]
+          });
+        } else {
+          // Regular text message - simple format
+          chatHistory.push({
+            role: 'user',
+            content: message
+          });
+        }
+        
+        // Add assistant response
         chatHistory.push({
           role: 'assistant',
           content: text
@@ -3911,7 +3947,15 @@ class NoteworthyChat extends HTMLElement {
     }
     
     // Handle paste events for images - works on input and entire chat container
+    // Use a flag to prevent duplicate processing when event bubbles
+    let isProcessingPaste = false;
+    
     const handlePaste = async (e) => {
+      // Prevent duplicate processing if event bubbles from input to wrap
+      if (isProcessingPaste) {
+        return;
+      }
+      
       const items = e.clipboardData?.items;
       if (!items) return;
       
@@ -3933,7 +3977,9 @@ class NoteworthyChat extends HTMLElement {
       }
       
       if (imageFiles.length > 0) {
+        isProcessingPaste = true; // Set flag to prevent duplicate
         e.preventDefault(); // Prevent default paste behavior
+        e.stopPropagation(); // Stop event from bubbling to parent
         
         // Create a FileList-like object
         const dataTransfer = new DataTransfer();
@@ -3950,21 +3996,69 @@ class NoteworthyChat extends HTMLElement {
             input.placeholder = originalPlaceholder;
           }, 2000);
         }
+        
+        // Reset flag after a short delay
+        setTimeout(() => {
+          isProcessingPaste = false;
+        }, 100);
       }
     };
     
-    // Add paste listener to input field
+    // Add paste listener to input field (with capture phase to catch it first)
     if (input) {
-      input.addEventListener('paste', handlePaste);
+      input.addEventListener('paste', handlePaste, true);
     }
     
     // Add paste listener to the entire chat container (so it works even when input isn't focused)
+    // Use capture: false so input handler processes first
     if (wrap) {
-      wrap.addEventListener('paste', handlePaste);
+      wrap.addEventListener('paste', handlePaste, false);
       // Make the chat container focusable for paste events
       if (!wrap.hasAttribute('tabindex')) {
         wrap.setAttribute('tabindex', '-1');
       }
+    }
+    
+    // Connectivity self-test function
+    async function testConnectivity() {
+      console.log('[Voice Mode] 🔍 Running connectivity self-test...');
+      const results = {
+        https: window.location.protocol === 'https:',
+        websocketSupport: typeof WebSocket !== 'undefined',
+        audioContextSupport: typeof (window.AudioContext || window.webkitAudioContext) !== 'undefined',
+        mediaDevicesSupport: navigator.mediaDevices && navigator.mediaDevices.getUserMedia,
+      };
+      
+      // Test API endpoint
+      try {
+        const healthCheck = await fetch('/.netlify/functions/realtime-voice', {
+          method: 'OPTIONS'
+        });
+        results.apiEndpointReachable = healthCheck.status < 500;
+      } catch (e) {
+        results.apiEndpointReachable = false;
+        results.apiError = e.message;
+      }
+      
+      console.log('[Voice Mode] Connectivity test results:', results);
+      
+      if (!results.https) {
+        console.warn('[Voice Mode] ⚠️ Page is not HTTPS - some features may not work');
+      }
+      if (!results.websocketSupport) {
+        console.error('[Voice Mode] ❌ WebSocket not supported in this browser');
+      }
+      if (!results.audioContextSupport) {
+        console.error('[Voice Mode] ❌ AudioContext not supported in this browser');
+      }
+      if (!results.mediaDevicesSupport) {
+        console.error('[Voice Mode] ❌ MediaDevices API not supported in this browser');
+      }
+      if (!results.apiEndpointReachable) {
+        console.error('[Voice Mode] ❌ API endpoint not reachable:', results.apiError);
+      }
+      
+      return results;
     }
     
     // Voice mode functionality - Full Realtime API implementation
@@ -3975,6 +4069,9 @@ class NoteworthyChat extends HTMLElement {
       }
       
       try {
+        // Run connectivity test first
+        await testConnectivity();
+        
         voiceModeActive = true;
         if (voiceModeToggle) voiceModeToggle.classList.add('active');
         if (voiceStatusIntegrated) {
@@ -4025,8 +4122,16 @@ class NoteworthyChat extends HTMLElement {
           currentVoice = 'alloy';
         }
         
+        // Run connectivity test first
+        await testConnectivity();
+        
         // Request microphone permission
-        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (permissionError) {
+          console.error('[Voice Mode] ❌ Microphone permission denied:', permissionError);
+          throw new Error(`Microphone access denied: ${permissionError.message}. Please allow microphone access and try again.`);
+        }
         
         // Create audio context
         audioContext = new (window.AudioContext || window.webkitAudioContext)({
@@ -4106,36 +4211,78 @@ class NoteworthyChat extends HTMLElement {
         }
         
         // Use the websocket_url from server, or construct it with session_id
-        const wsUrl = sessionData.websocket_url || 
+        let wsUrl = sessionData.websocket_url || 
           `wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview&session_id=${sessionData.session_id}`;
         
-        console.log('[Voice Mode] Connecting to WebSocket:', wsUrl.substring(0, 120) + '...');
+        // Ensure wss:// protocol (required for HTTPS pages)
+        if (window.location.protocol === 'https:' && wsUrl.startsWith('ws://')) {
+          wsUrl = wsUrl.replace('ws://', 'wss://');
+          console.warn('[Voice Mode] Upgraded ws:// to wss:// for secure connection');
+        }
+        
+        // Redact sensitive info from logs
+        const logUrl = wsUrl.replace(/session_id=[^&]+/, 'session_id=***').replace(/ephemeral_token=[^&]+/, 'ephemeral_token=***');
+        console.log('[Voice Mode] 🔌 Connecting to WebSocket:', logUrl);
         console.log('[Voice Mode] Session ID:', sessionData.session_id);
+        console.log('[Voice Mode] Has ephemeral token:', !!sessionData.ephemeral_token);
+        console.log('[Voice Mode] Connection time:', new Date().toISOString());
+        
+        // Prevent multiple parallel connections
+        if (websocket && (websocket.readyState === WebSocket.CONNECTING || websocket.readyState === WebSocket.OPEN)) {
+          console.warn('[Voice Mode] Closing existing WebSocket before creating new one');
+          websocket.close();
+          websocket = null;
+        }
+        
+        // Message queue for messages sent before connection is ready
+        const messageQueue = [];
+        let connectionStartTime = Date.now();
         
         websocket = new WebSocket(wsUrl);
         
-        websocket.onopen = () => {
+        websocket.onopen = (event) => {
+          const connectTime = Date.now() - connectionStartTime;
           console.log('[Voice Mode] ✅ WebSocket opened successfully');
+          console.log('[Voice Mode] Connection time:', connectTime + 'ms');
+          console.log('[Voice Mode] ReadyState:', websocket.readyState, '(OPEN = 1)');
+          console.log('[Voice Mode] Protocol:', websocket.protocol || 'none');
+          console.log('[Voice Mode] Extensions:', websocket.extensions || 'none');
+          
+          // Send queued messages
+          while (messageQueue.length > 0) {
+            const queuedMsg = messageQueue.shift();
+            try {
+              websocket.send(queuedMsg);
+              console.log('[Voice Mode] Sent queued message');
+            } catch (e) {
+              console.error('[Voice Mode] Error sending queued message:', e);
+            }
+          }
           
           // If we have an ephemeral token, send it as an auth message
-          // Otherwise, the session_id connection should be sufficient
           if (sessionData.ephemeral_token) {
-            console.log('[Voice Mode] Sending auth message with ephemeral token');
+            console.log('[Voice Mode] 🔐 Sending auth message with ephemeral token');
             try {
-              websocket.send(JSON.stringify({
+              const authMessage = JSON.stringify({
                 type: 'auth',
                 token: sessionData.ephemeral_token
-              }));
+              });
+              websocket.send(authMessage);
               if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Authenticating...';
               // Wait for auth.success before starting
               return;
             } catch (e) {
-              console.error('[Voice Mode] Error sending auth message:', e);
+              console.error('[Voice Mode] ❌ Error sending auth message:', e);
+              console.error('[Voice Mode] Error details:', {
+                message: e.message,
+                stack: e.stack,
+                readyState: websocket.readyState
+              });
             }
           }
           
           // If no token or auth not needed, start immediately
-          console.log('[Voice Mode] Starting audio capture');
+          console.log('[Voice Mode] 🎤 Starting audio capture');
           if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connected - Speak now!';
           if (voiceStatusIntegrated) {
             voiceStatusIntegrated.classList.remove('error');
@@ -4151,14 +4298,29 @@ class NoteworthyChat extends HTMLElement {
         };
         
         websocket.onerror = (error) => {
-          console.error('WebSocket error:', error);
-          console.error('WebSocket error details:', {
+          const errorTime = Date.now() - connectionStartTime;
+          console.error('[Voice Mode] ❌ WebSocket error event');
+          console.error('[Voice Mode] Error details:', {
             type: error.type,
-            target: error.target,
+            time: errorTime + 'ms after connection attempt',
             readyState: websocket?.readyState,
-            url: websocket?.url?.substring(0, 100)
+            readyStateText: websocket?.readyState === WebSocket.CONNECTING ? 'CONNECTING' :
+                           websocket?.readyState === WebSocket.OPEN ? 'OPEN' :
+                           websocket?.readyState === WebSocket.CLOSING ? 'CLOSING' :
+                           websocket?.readyState === WebSocket.CLOSED ? 'CLOSED' : 'UNKNOWN',
+            url: logUrl,
+            target: error.target,
+            error: error.error || 'No error object'
           });
-          if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connection error - Check console';
+          
+          // Try to get more error info from the error event
+          if (error.target && error.target.readyState === WebSocket.CLOSED) {
+            console.error('[Voice Mode] WebSocket closed unexpectedly during connection');
+          }
+          
+          if (voiceStatusTextIntegrated) {
+            voiceStatusTextIntegrated.textContent = `Connection error (check console)`;
+          }
           if (voiceStatusIntegrated) {
             voiceStatusIntegrated.classList.remove('recording');
             voiceStatusIntegrated.classList.add('error');
@@ -4166,20 +4328,87 @@ class NoteworthyChat extends HTMLElement {
           if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
         };
         
-        websocket.onclose = () => {
-          if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Disconnected';
+        websocket.onclose = (event) => {
+          const closeTime = Date.now() - connectionStartTime;
+          const closeCode = event.code || 'unknown';
+          const closeReason = event.reason || 'No reason provided';
+          const wasClean = event.wasClean !== undefined ? event.wasClean : false;
+          
+          console.log('[Voice Mode] 🔌 WebSocket closed');
+          console.log('[Voice Mode] Close details:', {
+            code: closeCode,
+            reason: closeReason,
+            wasClean: wasClean,
+            duration: closeTime + 'ms',
+            readyState: websocket?.readyState
+          });
+          
+          // Diagnostic: Explain close codes
+          const closeCodeMeanings = {
+            1000: 'Normal closure',
+            1001: 'Going away',
+            1002: 'Protocol error',
+            1003: 'Unsupported data',
+            1006: 'Abnormal closure (no close frame)',
+            1007: 'Invalid frame payload data',
+            1008: 'Policy violation',
+            1009: 'Message too big',
+            1010: 'Extension error',
+            1011: 'Internal server error',
+            1012: 'Service restart',
+            1013: 'Try again later',
+            1014: 'Bad gateway',
+            1015: 'TLS handshake failure'
+          };
+          
+          if (closeCodeMeanings[closeCode]) {
+            console.log('[Voice Mode] Close code meaning:', closeCodeMeanings[closeCode]);
+          }
+          
+          if (voiceStatusTextIntegrated) {
+            if (closeCode === 1006) {
+              voiceStatusTextIntegrated.textContent = 'Connection lost (abnormal closure)';
+            } else if (!wasClean) {
+              voiceStatusTextIntegrated.textContent = `Disconnected (code ${closeCode})`;
+            } else {
+              voiceStatusTextIntegrated.textContent = 'Disconnected';
+            }
+          }
           if (voiceStatusIntegrated) {
             voiceStatusIntegrated.classList.remove('recording');
             voiceStatusIntegrated.classList.remove('error');
           }
           if (statusDotIntegrated) statusDotIntegrated.style.background = 'rgba(255, 255, 255, 0.5)';
+          
+          // Exponential backoff reconnection (max 3 retries)
           if (voiceModeActive) {
-            // Try to reconnect
-            setTimeout(() => {
-              if (voiceModeActive) {
-                startVoiceMode();
+            const retryCount = (websocket._retryCount || 0) + 1;
+            websocket._retryCount = retryCount;
+            
+            if (retryCount <= 3) {
+              const backoffDelay = Math.min(2000 * Math.pow(2, retryCount - 1), 10000); // 2s, 4s, 8s, max 10s
+              const jitter = Math.random() * 1000; // Add up to 1s jitter
+              const delay = backoffDelay + jitter;
+              
+              console.log(`[Voice Mode] 🔄 Retrying connection in ${Math.round(delay)}ms (attempt ${retryCount}/3)`);
+              if (voiceStatusTextIntegrated) {
+                voiceStatusTextIntegrated.textContent = `Reconnecting in ${Math.round(delay/1000)}s...`;
               }
-            }, 2000);
+              
+              setTimeout(() => {
+                if (voiceModeActive && websocket?.readyState === WebSocket.CLOSED) {
+                  console.log('[Voice Mode] 🔄 Attempting reconnection...');
+                  startVoiceMode();
+                }
+              }, delay);
+            } else {
+              console.error('[Voice Mode] ❌ Max retries reached, stopping reconnection attempts');
+              if (voiceStatusTextIntegrated) {
+                voiceStatusTextIntegrated.textContent = 'Connection failed - please try again';
+              }
+              voiceModeActive = false;
+              if (voiceModeToggle) voiceModeToggle.classList.remove('active');
+            }
           }
         };
         
@@ -4222,7 +4451,14 @@ class NoteworthyChat extends HTMLElement {
       isRecording = false;
       
       if (websocket) {
-        websocket.close();
+        // Clear retry counter
+        if (websocket._retryCount) {
+          delete websocket._retryCount;
+        }
+        // Close gracefully if still open
+        if (websocket.readyState === WebSocket.OPEN || websocket.readyState === WebSocket.CONNECTING) {
+          websocket.close(1000, 'User stopped voice mode'); // Normal closure
+        }
         websocket = null;
       }
       
@@ -4245,48 +4481,136 @@ class NoteworthyChat extends HTMLElement {
     async function startAudioCapture() {
       if (!audioContext || !mediaStream) return;
       
+      // Prevent multiple simultaneous audio graphs
+      if (audioWorkletNode) {
+        console.warn('[Voice Mode] Audio capture already active');
+        return;
+      }
+      
       try {
-        const source = audioContext.createMediaStreamSource(mediaStream);
-        // Use ScriptProcessorNode for audio processing (deprecated but widely supported)
-        // Buffer size: 4096 samples = ~170ms at 24kHz (good for real-time)
-        const processor = audioContext.createScriptProcessor(4096, 1, 1);
+        // Migrate to AudioWorkletNode (replaces deprecated ScriptProcessorNode)
+        // AudioWorklet provides better performance and is the modern standard
+        let useAudioWorklet = false;
         
-        processor.onaudioprocess = (e) => {
-          if (!isRecording || !websocket || websocket.readyState !== WebSocket.OPEN) return;
-          
-          const inputData = e.inputBuffer.getChannelData(0);
-          // Convert Float32Array to Int16Array (PCM16)
-          const pcm16 = new Int16Array(inputData.length);
-          for (let i = 0; i < inputData.length; i++) {
-            const s = Math.max(-1, Math.min(1, inputData[i]));
-            pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        if (audioContext.audioWorklet && typeof audioContext.audioWorklet.addModule === 'function') {
+          try {
+            // Load AudioWorklet processor (modern approach)
+            // Try multiple paths for the worklet file
+            const workletPaths = [
+              '/src/widgets/audio-worklet-processor.js',
+              './src/widgets/audio-worklet-processor.js',
+              'audio-worklet-processor.js'
+            ];
+            
+            let workletLoaded = false;
+            for (const workletPath of workletPaths) {
+              try {
+                await audioContext.audioWorklet.addModule(workletPath);
+                workletLoaded = true;
+                console.log('[Voice Mode] ✅ AudioWorklet loaded from:', workletPath);
+                break;
+              } catch (pathError) {
+                console.log('[Voice Mode] Failed to load worklet from', workletPath, '- trying next path');
+              }
+            }
+            
+            if (workletLoaded) {
+              useAudioWorklet = true;
+              console.log('[Voice Mode] ✅ Using AudioWorkletNode (modern)');
+            } else {
+              throw new Error('All worklet paths failed');
+            }
+          } catch (workletError) {
+            console.warn('[Voice Mode] ⚠️ AudioWorklet not available, falling back to ScriptProcessor:', workletError.message);
+            useAudioWorklet = false;
+          }
+        }
+        
+        const source = audioContext.createMediaStreamSource(mediaStream);
+        
+        if (useAudioWorklet) {
+          // Modern AudioWorklet approach
+          try {
+            audioWorkletNode = new AudioWorkletNode(audioContext, 'voice-capture-processor');
+          } catch (workletError) {
+            console.error('[Voice Mode] Failed to create AudioWorkletNode:', workletError);
+            throw new Error(`AudioWorklet initialization failed: ${workletError.message}. Falling back to ScriptProcessor.`);
           }
           
-          // Convert to base64 for OpenAI Realtime API
-          // Use more efficient conversion for large arrays
-          const uint8Array = new Uint8Array(pcm16.buffer);
-          let binaryString = '';
-          const chunkSize = 8192; // Process in chunks to avoid stack overflow
-          for (let i = 0; i < uint8Array.length; i += chunkSize) {
-            const chunk = uint8Array.subarray(i, i + chunkSize);
-            binaryString += String.fromCharCode.apply(null, chunk);
-          }
-          const base64Audio = btoa(binaryString);
+          // Handle audio data from worklet
+          audioWorkletNode.port.onmessage = (event) => {
+            if (event.data.type === 'audioData' && isRecording && websocket && websocket.readyState === WebSocket.OPEN) {
+              const pcm16Buffer = event.data.data;
+              const pcm16 = new Int16Array(pcm16Buffer);
+              
+              // Convert to base64 efficiently
+              const uint8Array = new Uint8Array(pcm16.buffer);
+              let binaryString = '';
+              const chunkSize = 8192;
+              for (let i = 0; i < uint8Array.length; i += chunkSize) {
+                const chunk = uint8Array.subarray(i, i + chunkSize);
+                binaryString += String.fromCharCode.apply(null, chunk);
+              }
+              const base64Audio = btoa(binaryString);
+              
+              // Send to OpenAI Realtime API
+              websocket.send(JSON.stringify({
+                type: 'input_audio_buffer.append',
+                audio: base64Audio,
+              }));
+            }
+          };
           
-          // Send audio to WebSocket in OpenAI's format
-          if (websocket && websocket.readyState === WebSocket.OPEN) {
+          source.connect(audioWorkletNode);
+        } else {
+          // Fallback to ScriptProcessorNode (deprecated but widely supported)
+          // Only warn once to avoid console spam
+          if (!window.__scriptProcessorWarned) {
+            console.warn('[Voice Mode] ⚠️ Using deprecated ScriptProcessorNode. AudioWorklet not available. Consider using HTTPS for AudioWorklet support.');
+            window.__scriptProcessorWarned = true;
+          }
+          
+          const processor = audioContext.createScriptProcessor(4096, 1, 1);
+          
+          processor.onaudioprocess = (e) => {
+            if (!isRecording || !websocket || websocket.readyState !== WebSocket.OPEN) return;
+            
+            const inputData = e.inputBuffer.getChannelData(0);
+            // Convert Float32Array to Int16Array (PCM16)
+            const pcm16 = new Int16Array(inputData.length);
+            for (let i = 0; i < inputData.length; i++) {
+              const s = Math.max(-1, Math.min(1, inputData[i]));
+              pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            }
+            
+            // Convert to base64 for OpenAI Realtime API
+            const uint8Array = new Uint8Array(pcm16.buffer);
+            let binaryString = '';
+            const chunkSize = 8192;
+            for (let i = 0; i < uint8Array.length; i += chunkSize) {
+              const chunk = uint8Array.subarray(i, i + chunkSize);
+              binaryString += String.fromCharCode.apply(null, chunk);
+            }
+            const base64Audio = btoa(binaryString);
+            
+            // Send audio to WebSocket
             websocket.send(JSON.stringify({
               type: 'input_audio_buffer.append',
               audio: base64Audio,
             }));
-          }
-        };
-        
-        source.connect(processor);
-        processor.connect(audioContext.destination);
+          };
+          
+          source.connect(processor);
+          processor.connect(audioContext.destination);
+          // Store reference for cleanup
+          audioWorkletNode = processor; // Reuse variable for cleanup
+        }
         
       } catch (error) {
-        console.error('Error starting audio capture:', error);
+        console.error('[Voice Mode] Error starting audio capture:', error);
+        if (voiceStatusTextIntegrated) {
+          voiceStatusTextIntegrated.textContent = `Audio error: ${error.message}`;
+        }
       }
     }
     

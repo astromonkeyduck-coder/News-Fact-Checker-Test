@@ -18,7 +18,28 @@ export function extractDateFromTweetId(tweetId: string): Date | null {
     const shift = BigInt(22);
     const shifted = id >> shift;
     const timestamp = Number(shifted) + Number(twitterEpoch);
-    return new Date(timestamp);
+    const date = new Date(timestamp);
+    
+    // Validate: date should be reasonable (not in the future, not before Twitter existed)
+    const now = Date.now();
+    const twitterStartDate = new Date('2010-11-04').getTime();
+    if (date.getTime() > now) {
+      console.warn('[EnhancedExtract] Extracted date is in the future, likely invalid:', {
+        tweetId,
+        extractedDate: date.toISOString(),
+        now: new Date().toISOString()
+      });
+      return null;
+    }
+    if (date.getTime() < twitterStartDate) {
+      console.warn('[EnhancedExtract] Extracted date is before Twitter existed, likely invalid:', {
+        tweetId,
+        extractedDate: date.toISOString()
+      });
+      return null;
+    }
+    
+    return date;
   } catch (error) {
     console.warn('[EnhancedExtract] Could not extract date from tweet ID:', tweetId, error);
     return null;
@@ -164,7 +185,23 @@ export interface EnhancedTweetData {
 export function extractEnhancedData(tweetId: string, oembedHtml: string): EnhancedTweetData {
   // Extract date from tweet ID (Snowflake timestamp)
   const dateFromId = extractDateFromTweetId(tweetId);
-  const datePosted = dateFromId ? dateFromId.toISOString() : new Date().toISOString();
+  
+  // IMPORTANT: If date extraction fails, we should NOT use current time
+  // Instead, we should return null/undefined and let the caller handle it
+  // This prevents posts from getting incorrect "just now" timestamps
+  let datePosted: string | undefined;
+  if (dateFromId) {
+    datePosted = dateFromId.toISOString();
+    console.log('[EnhancedExtract] Successfully extracted date from tweet ID:', {
+      tweetId,
+      datePosted,
+      age: Math.round((Date.now() - dateFromId.getTime()) / (1000 * 60 * 60)) + ' hours ago'
+    });
+  } else {
+    console.warn('[EnhancedExtract] Failed to extract date from tweet ID, datePosted will be undefined:', tweetId);
+    // Don't set datePosted - let the caller decide what to do
+    // This prevents overwriting existing correct dates with "now"
+  }
   
   // Extract media
   const media = extractMediaFromHtml(oembedHtml);
@@ -175,7 +212,7 @@ export function extractEnhancedData(tweetId: string, oembedHtml: string): Enhanc
   return {
     images: media.images,
     videos: media.videos,
-    datePosted,
+    datePosted, // May be undefined if extraction failed
     views: stats.views,
     likes: stats.likes,
     reposts: stats.reposts,

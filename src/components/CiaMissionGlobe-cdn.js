@@ -1268,13 +1268,35 @@ class CiaMissionGlobe {
       .atmosphereColor('#3ec9ff')
       .atmosphereAltitude(0.22);
     
+    // Fix THREE.js r155+ deprecation: Configure renderer for modern lighting
     // Enhance texture quality for maximum detail after globe loads
     setTimeout(() => {
       try {
         // Access Three.js (loaded from CDN) to enhance texture rendering
         if (typeof THREE !== 'undefined') {
+          // Fix r155+ deprecation: Configure renderer for modern lighting system
+          const renderer = this.globeInstance.renderer();
+          if (renderer) {
+            // Remove deprecated useLegacyLights (r155+ uses modern lighting by default)
+            // Configure output color space for proper sRGB rendering
+            if (renderer.outputColorSpace !== undefined) {
+              renderer.outputColorSpace = THREE.SRGBColorSpace;
+            }
+            // Set tone mapping for better visual quality (optional but recommended)
+            if (renderer.toneMapping !== undefined) {
+              renderer.toneMapping = THREE.ACESFilmicToneMapping;
+              renderer.toneMappingExposure = 1.0;
+            }
+            console.log('[Globe] ✅ Renderer configured for THREE.js r155+ (modern lighting)');
+          }
+          
           const scene = this.globeInstance.scene();
           if (scene) {
+            // Ensure scene uses modern color management
+            if (scene.background && scene.background.isColor) {
+              // Background color is already in sRGB, renderer handles conversion
+            }
+            
             scene.traverse((obj) => {
               if (obj.material) {
                 // Maximum texture filtering quality for crisp, detailed rendering
@@ -1284,6 +1306,10 @@ class CiaMissionGlobe {
                   obj.material.map.magFilter = THREE.LinearFilter;
                   obj.material.map.generateMipmaps = true;
                   obj.material.map.needsUpdate = true;
+                  // Ensure texture uses sRGB color space (r155+ requirement)
+                  if (obj.material.map.colorSpace !== undefined) {
+                    obj.material.map.colorSpace = THREE.SRGBColorSpace;
+                  }
                 }
                 // Enhance bump map for better 3D relief detail
                 if (obj.material.bumpMap) {
@@ -1301,7 +1327,7 @@ class CiaMissionGlobe {
           }
         }
       } catch (e) {
-        console.log('[Globe] Texture enhancement note:', e.message);
+        console.warn('[Globe] Texture/renderer enhancement error:', e.message);
       }
     }, 1500);
 

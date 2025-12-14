@@ -46,7 +46,7 @@ exports.handler = async (event) => {
 
     if (event.httpMethod === "POST" || event.httpMethod === "PATCH") {
       const body = JSON.parse(event.body || "{}");
-      const { postId, datePosted, views, likes, reposts, replies, engagements, bookmarks, shares, story, text, link, url } = body;
+      const { postId, datePosted, views, likes, reposts, replies, engagements, bookmarks, shares, story, text, link, url, image, images } = body;
 
       if (!postId) {
         return {
@@ -103,6 +103,14 @@ exports.handler = async (event) => {
         if (engagements !== undefined) updatedPost.engagements = engagements;
         if (bookmarks !== undefined) updatedPost.bookmarks = bookmarks;
         if (shares !== undefined) updatedPost.shares = shares;
+        
+        // Update image fields
+        if (image !== undefined && image !== null && image !== '') {
+          updatedPost.image = image;
+        }
+        if (images !== undefined && Array.isArray(images) && images.length > 0) {
+          updatedPost.images = images;
+        }
 
         // Save updated post
         await store.setJSON(postKey, updatedPost);

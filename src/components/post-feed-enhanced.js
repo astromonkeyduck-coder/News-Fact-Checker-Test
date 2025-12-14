@@ -28,6 +28,8 @@ let expandedPosts = new Set(); // Track which posts are expanded
 let sharedPosts = new Set(); // Track recently shared posts
 let enhancedEndpoint = '/.netlify/functions/posts-read'; // Current API endpoint
 let enhancedCurrentLimit = 5; // Current number of posts fetched from API
+let enhancedInitInProgress = false; // Guard against concurrent initialization
+let enhancedInitDone = false; // Track if initialization completed
 
 /**
  * Calculate reading time in minutes
@@ -57,12 +59,32 @@ function formatCount(n) {
  * Format relative time
  */
 function formatRelativeTime(dateString) {
-  if (!dateString) return 'Just now';
+  if (!dateString) {
+    console.warn('[formatRelativeTime] No dateString provided');
+    return 'Just now';
+  }
+  
   const date = new Date(dateString);
   const now = new Date();
-  if (isNaN(date.getTime())) return 'Just now';
+  
+  if (isNaN(date.getTime())) {
+    console.warn('[formatRelativeTime] Invalid date string:', dateString);
+    return 'Just now';
+  }
   
   const diffMs = now.getTime() - date.getTime();
+  
+  // Check for negative difference (date in future) - this indicates a problem
+  if (diffMs < 0) {
+    console.warn('[formatRelativeTime] Date is in the future!', {
+      dateString,
+      parsedDate: date.toISOString(),
+      now: now.toISOString(),
+      diffMs
+    });
+    // Still show relative time, but log the issue
+  }
+  
   const diffSec = Math.floor(diffMs / 1000);
   const diffMin = Math.floor(diffSec / 60);
   const diffHour = Math.floor(diffMin / 60);
@@ -1161,12 +1183,15 @@ function renderEnhancedFeed() {
   container.innerHTML = postsToRender.map(post => renderEnhancedPostCard(post)).join('');
   
   // Add sentinel element for infinite scroll if there are more posts to load
+  // Note: For horizontal scrolling, we use scroll event listener instead of sentinel
+  // But we keep sentinel for vertical scrolling compatibility
   if (enhancedDisplayedCount < sorted.length) {
     let sentinel = document.getElementById('enhanced-feed-sentinel');
     if (!sentinel) {
       sentinel = document.createElement('div');
       sentinel.id = 'enhanced-feed-sentinel';
-      sentinel.style.cssText = 'height: 100px; width: 100%; margin-top: 20px;';
+      // Sentinel for vertical scrolling (at bottom)
+      sentinel.style.cssText = 'height: 100px; width: 100%; margin-top: 20px; grid-column: 1 / -1;';
       container.appendChild(sentinel);
     }
   } else {
@@ -1235,10 +1260,15 @@ async function loadMorePosts() {
     
     // Check if there are more posts to load
     if (enhancedDisplayedCount >= newSorted.length) {
-      // No more posts to load, remove observer
+      // No more posts to load, remove observer and scroll listener
       if (enhancedScrollObserver) {
         enhancedScrollObserver.disconnect();
         enhancedScrollObserver = null;
+      }
+      const container = document.getElementById('articlesTrack');
+      if (container && container._enhancedScrollHandler) {
+        container.removeEventListener('scroll', container._enhancedScrollHandler);
+        container._enhancedScrollHandler = null;
       }
       return;
     }
@@ -1256,10 +1286,15 @@ async function loadMorePosts() {
   
   // Check if there are more posts to load from current cache
   if (enhancedDisplayedCount >= sorted.length) {
-    // No more posts to load, remove observer
+    // No more posts to load, remove observer and scroll listener
     if (enhancedScrollObserver) {
       enhancedScrollObserver.disconnect();
       enhancedScrollObserver = null;
+    }
+    const container = document.getElementById('articlesTrack');
+    if (container && container._enhancedScrollHandler) {
+      container.removeEventListener('scroll', container._enhancedScrollHandler);
+      container._enhancedScrollHandler = null;
     }
     return;
   }
@@ -1275,7 +1310,8 @@ async function loadMorePosts() {
 }
 
 /**
- * Set up infinite scroll using Intersection Observer
+ * Set up infinite scroll using Intersection Observer and scroll event listener
+ * Supports both vertical and horizontal scrolling
  */
 function setupInfiniteScroll() {
   const container = document.getElementById('articlesTrack');
@@ -1284,6 +1320,13 @@ function setupInfiniteScroll() {
   // Disconnect existing observer
   if (enhancedScrollObserver) {
     enhancedScrollObserver.disconnect();
+    enhancedScrollObserver = null;
+  }
+  
+  // Remove existing scroll listener if any
+  if (container._enhancedScrollHandler) {
+    container.removeEventListener('scroll', container._enhancedScrollHandler);
+    container._enhancedScrollHandler = null;
   }
   
   // Check if we have more posts to load
@@ -1297,16 +1340,66 @@ function setupInfiniteScroll() {
     return;
   }
   
-  // Find the sentinel element (should already exist from renderEnhancedFeed)
-  const sentinel = document.getElementById('enhanced-feed-sentinel');
-  if (!sentinel) {
-    // If sentinel doesn't exist, renderEnhancedFeed should have created it
-    // But just in case, create it here
+  // Check if container scrolls horizontally
+  const containerStyle = window.getComputedStyle(container);
+  const scrollsHorizontally = containerStyle.overflowX === 'auto' || containerStyle.overflowX === 'scroll';
+  
+  if (scrollsHorizontally) {
+    // For horizontal scrolling, use scroll event listener
+    let scrollTimeout;
+    container._enhancedScrollHandler = () => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        // Check if user has scrolled near the right edge
+        const scrollLeft = container.scrollLeft;
+        const scrollWidth = container.scrollWidth;
+        const clientWidth = container.clientWidth;
+        const distanceFromRight = scrollWidth - (scrollLeft + clientWidth);
+        
+        // Load more when within 500px of the right edge (more aggressive for horizontal)
+        if (distanceFromRight <= 500 && !enhancedIsLoading) {
+          console.log('[Enhanced Feed] Horizontal scroll detected, loading more posts', {
+            scrollLeft,
+            scrollWidth,
+            clientWidth,
+            distanceFromRight
+          });
+          loadMorePosts();
+        }
+      }, 100); // Debounce scroll events
+    };
+    
+    container.addEventListener('scroll', container._enhancedScrollHandler, { passive: true });
+    
+    // Also check immediately in case user is already scrolled to the right
+    container._enhancedScrollHandler();
+  } else {
+    // For vertical scrolling, use Intersection Observer
+    // Find the sentinel element (should already exist from renderEnhancedFeed)
+    const sentinel = document.getElementById('enhanced-feed-sentinel');
+    if (!sentinel) {
+      // If sentinel doesn't exist, create it
       const newSentinel = document.createElement('div');
       newSentinel.id = 'enhanced-feed-sentinel';
       newSentinel.style.cssText = 'height: 100px; width: 100%; margin-top: 20px;';
       container.appendChild(newSentinel);
-    // Use the newly created sentinel
+      
+      // Set up Intersection Observer
+      enhancedScrollObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && !enhancedIsLoading) {
+            loadMorePosts();
+          }
+        });
+      }, {
+        rootMargin: '300px', // Start loading when 300px away from bottom
+        threshold: 0.01
+      });
+      enhancedScrollObserver.observe(newSentinel);
+      return;
+    }
+    
+    // Set up Intersection Observer on existing sentinel
     enhancedScrollObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting && !enhancedIsLoading) {
@@ -1314,26 +1407,12 @@ function setupInfiniteScroll() {
         }
       });
     }, {
-      rootMargin: '300px', // Start loading when 300px away from bottom (more aggressive)
-      threshold: 0.01 // Lower threshold for earlier triggering
+      rootMargin: '200px', // Start loading when 200px away from bottom
+      threshold: 0.1
     });
-    enhancedScrollObserver.observe(newSentinel);
-    return;
+    
+    enhancedScrollObserver.observe(sentinel);
   }
-  
-  // Set up Intersection Observer on existing sentinel
-  enhancedScrollObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting && !enhancedIsLoading) {
-        loadMorePosts();
-      }
-    });
-  }, {
-    rootMargin: '200px', // Start loading when 200px away from bottom
-    threshold: 0.1
-  });
-  
-  enhancedScrollObserver.observe(sentinel);
 }
 
 /**
@@ -1349,6 +1428,12 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
     return;
   }
   
+  // Prevent duplicate initialization - robust guard
+  if (enhancedInitInProgress) {
+    console.warn('[Enhanced Feed] Initialization already in progress, skipping duplicate call');
+    return;
+  }
+  
   // Check if container is empty or has very little content (likely needs loading)
   const isEmpty = !container.innerHTML || 
                   container.innerHTML.trim().length < 100 || 
@@ -1357,17 +1442,18 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
                   container.innerHTML.includes('Failed to load');
   
   // Allow re-initialization if container changed or if not initialized yet
-  if (enhancedFeedInitialized && lastContainerId === containerId) {
+  if (enhancedInitDone && lastContainerId === containerId) {
     // But still try to load posts if container is empty
-    if (isEmpty) {
-      console.log('[Enhanced Feed] Already initialized but container is empty, loading posts...');
-      loadEnhancedPosts(endpoint, limit);
+    if (isEmpty && !enhancedIsLoading) {
+      console.log('[Enhanced Feed] Re-initializing for empty container');
+      // Allow re-init if container is truly empty and not loading
     } else {
-      console.warn('[Enhanced Feed] Already initialized for this container, skipping...');
+      console.warn('[Enhanced Feed] Already initialized for this container, skipping duplicate init');
+      return;
     }
-    return;
   }
   
+  enhancedInitInProgress = true;
   enhancedFeedInitialized = true;
   lastContainerId = containerId;
   
@@ -1408,8 +1494,14 @@ function initEnhancedFeed(containerId = 'articlesTrack', endpoint = '/.netlify/f
   window.renderEnhancedFeed = renderEnhancedFeed;
   }
   
-  // Load posts
-  loadEnhancedPosts(endpoint, limit);
+  // Mark initialization as complete
+  enhancedInitDone = true;
+  enhancedInitInProgress = false;
+  
+  // Load posts (only once)
+  if (!enhancedIsLoading) {
+    loadEnhancedPosts(endpoint, limit);
+  }
   
   // Set up search and sort handlers (if controls exist)
   const searchInput = document.querySelector('.feed-search-input');

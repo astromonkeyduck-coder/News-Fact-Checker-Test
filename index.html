@@ -28,8 +28,8 @@
     <!-- RSS Feed -->
     <link rel="alternate" type="application/rss+xml" title="Noteworthy News RSS Feed" href="/.netlify/functions/rss-feed">
     
-    <!-- CRITICAL: Preload breaking news API for instant loading (HIGHEST PRIORITY) - MUST BE FIRST -->
-    <link rel="preload" href="/.netlify/functions/posts-read?limit=100" as="fetch" crossorigin="anonymous" fetchpriority="high">
+    <!-- Prefetch breaking news API for faster loading (not preload since it's used via JS fetch) -->
+    <link rel="prefetch" href="/.netlify/functions/posts-read?limit=100" as="fetch" crossorigin="anonymous">
     <link rel="dns-prefetch" href="/.netlify">
     
     <!-- Performance Optimizations -->
@@ -13684,7 +13684,7 @@
                 <span class="hero-module-updated">Updated <span class="hero-module-time" id="heroModuleTime">--:-- --</span></span>
             </div>
             
-            <!-- Content Row with Image and Text -->
+            <!-- Content Row with Text -->
             <div class="hero-module-content-row">
                 <div class="hero-module-text-content">
                     <!-- Headline -->
@@ -13692,11 +13692,6 @@
                     
                     <!-- Subhead -->
                     <p class="hero-module-subhead" id="heroModuleSubhead"></p>
-                </div>
-                
-                <!-- Image -->
-                <div class="hero-module-image-wrapper">
-                    <img src="G8FzNCgWoAEpbdM.jpeg" alt="Breaking News" class="hero-module-image" onclick="event.stopPropagation(); expandImage(this.src)">
                 </div>
             </div>
             
@@ -16484,7 +16479,7 @@
             // Try to load posts immediately if script is already loaded
             if (window.renderPostFeedEnhanced) {
                 console.log('[X Posts] Enhanced feed available immediately, loading posts...');
-                window.renderPostFeedEnhanced('articlesTrack', '/.netlify/functions/posts-read', 5);
+                window.renderPostFeedEnhanced('articlesTrack', '/.netlify/functions/posts-read', 20);
             } else if (window.renderPostFeedV2) {
                 console.log('[X Posts] V2 feed available immediately, loading posts...');
                 window.renderPostFeedV2('articlesTrack', '/.netlify/functions/posts-read', 5);

@@ -1,6 +1,7 @@
 /**
- * Retrieve and serve uploaded images stored in Netlify Blobs
+ * Retrieve and serve uploaded images and videos stored in Netlify Blobs
  * GET /.netlify/functions/get-uploaded-image?key=upload-1234567890-abc123.png
+ * Supports both "post-media" and "uploaded-images" stores
  */
 
 const { getStore } = require("@netlify/blobs");
@@ -51,27 +52,66 @@ exports.handler = async (event, context) => {
     const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
     const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
     
-    let store;
-    try {
-      if (siteID && token) {
-        store = getStore({
-          name: "uploaded-images",
-          siteID: siteID,
-          token: token,
-        });
-      } else {
-        store = getStore({ name: "uploaded-images" });
+    // Try multiple stores: post-media (new), uploaded-images (legacy)
+    const storeNames = ["post-media", "uploaded-images"];
+    let store = null;
+    let foundStore = null;
+    
+    // Try to find the media in any of the stores
+    for (const name of storeNames) {
+      try {
+        let testStore;
+        if (siteID && token) {
+          testStore = getStore({
+            name: name,
+            siteID: siteID,
+            token: token,
+          });
+        } else {
+          testStore = getStore({ name: name });
+        }
+        
+        // Try to get the item to see if it exists in this store
+        try {
+          const testData = await testStore.get(imageKey, { type: "arrayBuffer" });
+          if (testData) {
+            store = testStore;
+            foundStore = name;
+            break;
+          }
+        } catch (getErr) {
+          // Item doesn't exist in this store, try next
+          continue;
+        }
+      } catch (storeErr) {
+        // Store creation failed, try next
+        continue;
       }
-    } catch (storeErr) {
-      console.error('[get-uploaded-image] Failed to create store:', storeErr);
-      return {
-        statusCode: 500,
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          error: "Storage configuration error",
-          message: storeErr.message 
-        }),
-      };
+    }
+    
+    // If not found in any store, use the first one as default (will return 404 later)
+    if (!store) {
+      try {
+        if (siteID && token) {
+          store = getStore({
+            name: storeNames[0],
+            siteID: siteID,
+            token: token,
+          });
+        } else {
+          store = getStore({ name: storeNames[0] });
+        }
+      } catch (storeErr) {
+        console.error('[get-uploaded-image] Failed to create store:', storeErr);
+        return {
+          statusCode: 500,
+          headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            error: "Storage configuration error",
+            message: storeErr.message 
+          }),
+        };
+      }
     }
 
     // Check if requesting metadata
@@ -113,7 +153,7 @@ exports.handler = async (event, context) => {
         return {
           statusCode: 404,
           headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify({ error: "Image not found" }),
+          body: JSON.stringify({ error: "Media not found" }),
         };
       }
 
@@ -127,6 +167,12 @@ exports.handler = async (event, context) => {
         contentType = "image/webp";
       } else if (imageKey.endsWith('.svg')) {
         contentType = "image/svg+xml";
+      } else if (imageKey.endsWith('.mp4')) {
+        contentType = "video/mp4";
+      } else if (imageKey.endsWith('.webm')) {
+        contentType = "video/webm";
+      } else if (imageKey.endsWith('.mov')) {
+        contentType = "video/quicktime";
       }
 
       // Convert ArrayBuffer to Buffer for response

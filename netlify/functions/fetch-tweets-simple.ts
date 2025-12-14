@@ -44,6 +44,14 @@ function oEmbedToCard(oembed: any, tweetUrl: string): any {
   // Use first image as main image for backward compatibility
   const mainImage = enhanced.images && enhanced.images.length > 0 ? enhanced.images[0] : null;
   
+  // If date extraction failed, we need a fallback, but log a warning
+  // The Snowflake extraction should work for all valid tweet IDs, so this is rare
+  let datePosted = enhanced.datePosted;
+  if (!datePosted) {
+    console.warn('[fetch-tweets-simple] Date extraction failed for tweet:', tweetId, '- using current time as fallback');
+    datePosted = new Date().toISOString();
+  }
+  
   return {
     id: tweetId,
     image: mainImage,
@@ -51,7 +59,7 @@ function oEmbedToCard(oembed: any, tweetUrl: string): any {
     videos: enhanced.videos.length > 0 ? enhanced.videos : undefined,
     title: toTitle(text) || text.substring(0, 80) + (text.length > 80 ? '...' : ''),
     story: text,
-    datePosted: enhanced.datePosted,
+    datePosted,
     link: tweetUrl,
     postType,
     readTime: readTimeFromText(text),
@@ -177,14 +185,17 @@ export const handler: Handler = async (event) => {
       
       // If post doesn't exist, fetch and create it
       if (!postExists) {
+        // Convert to Card format
+        const card = oEmbedToCard(oembed, tweetUrl);
 
-      // Convert to Card format
-      const card = oEmbedToCard(oembed, tweetUrl);
-
-      // Store post
-      await store.set(`post-${tweetId}.json`, JSON.stringify(card), {
-        contentType: "application/json",
-      });
+        // Store post
+        await store.set(`post-${tweetId}.json`, JSON.stringify(card), {
+          contentType: "application/json",
+        });
+      } else {
+        // Post already exists - preserve its existing datePosted if we're just re-adding to index
+        // Don't overwrite with potentially incorrect date from oEmbed
+        console.log('[fetch-tweets-simple] Post already exists, preserving existing data:', tweetId);
       }
 
       // Always update index (even if post already existed in storage)
