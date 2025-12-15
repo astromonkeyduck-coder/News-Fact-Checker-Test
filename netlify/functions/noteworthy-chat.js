@@ -1011,25 +1011,42 @@ RESPONSE STYLE:
 
     let r;
     try {
-      // Use OpenAI Responses API with native web_search tool for real-time breaking news
-      // This provides OpenAI's built-in, reliable web search - no scraping needed!
-      r = await fetch("https://api.openai.com/v1/responses", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o",
-          temperature: 0.4,
-          max_output_tokens: 2000, // Increased for country spotlight and detailed responses
-          tools: [{ type: "web_search" }], // OpenAI's native web search - top of the line!
-          input: messages.map(msg => ({
-            role: msg.role,
-            content: [{ type: "text", text: msg.content }]
-          })),
-        }),
-      });
+      // Use Chat Completions API with search_web function for reliable web search
+      // This is more reliable than Responses API (which may not be available or may have format issues)
+      console.log('[Noteworthy Chat] Using Chat Completions API with search_web function for reliable web search');
+      r = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            temperature: 0.4,
+            max_tokens: 2000,
+            messages: messages,
+            tools: [
+              {
+                type: "function",
+                function: {
+                  name: "search_web",
+                  description: "Search the web for real-time breaking news, current events, or any information that happened recently. Use this when the user asks about current events, breaking news, recent developments, or anything that requires up-to-date information. IMPORTANT: Always use specific, detailed search queries with location, date, and event type.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      query: {
+                        type: "string",
+                        description: "A specific, detailed search query including location, event type, and date if known (e.g., 'shooting at Brown University Rhode Island December 2024' or 'breaking news [topic] today'). Be as specific as possible."
+                      }
+                    },
+                    required: ["query"]
+                  }
+                }
+              }
+            ],
+            tool_choice: "auto" // Let the model decide when to use web search
+          }),
+        });
     } catch (fetchError) {
       console.error("[Noteworthy Chat] Error calling OpenAI API:", fetchError);
       console.error("[Noteworthy Chat] Error stack:", fetchError.stack);
@@ -1052,7 +1069,7 @@ RESPONSE STYLE:
         errorData = { message: errorText || `HTTP ${r.status}` };
       }
       
-      console.error("OpenAI API error:", r.status, errorData);
+      console.error("OpenAI API error:", r.status, JSON.stringify(errorData, null, 2));
       return {
         statusCode: r.status,
         headers,
@@ -1062,47 +1079,8 @@ RESPONSE STYLE:
       };
     }
 
-    const data = await r.json();
-    
-    // Handle Responses API format (with native web_search)
-    let reply = "No response generated.";
-    const usage = data?.usage || null;
-    
-    // Responses API returns output as an array of content items
-    if (data.output && Array.isArray(data.output)) {
-      // Find text content in the output
-      const textContent = data.output.find(item => item.type === 'text');
-      if (textContent && textContent.text) {
-        reply = textContent.text.trim();
-        console.log('[Noteworthy Chat] ✅ Response from Responses API with web search:', reply.substring(0, 100) + '...');
-      } else {
-        // Fallback: try to extract any text from output
-        const allText = data.output
-          .filter(item => item.text || item.content)
-          .map(item => item.text || item.content)
-          .join(' ')
-          .trim();
-        if (allText) {
-          reply = allText;
-        }
-      }
-    } else if (data.choices && data.choices[0]?.message?.content) {
-      // Fallback to Chat Completions format (shouldn't happen with Responses API)
-      reply = data.choices[0].message.content.trim();
-      console.log('[Noteworthy Chat] ⚠️ Unexpected Chat Completions format, using fallback');
-    }
-    
-    // Log if web search was used (Responses API handles this automatically)
-    if (data.output) {
-      const hasWebSearch = data.output.some(item => 
-        item.type === 'web_search' || 
-        item.type === 'tool_use' ||
-        item.citations
-      );
-      if (hasWebSearch) {
-        console.log('[Noteworthy Chat] ✅ Web search was used by Responses API');
-      }
-    }
+    // At this point, reply and usage are set from Chat Completions API
+    // Continue with rest of function
     
     // If an image was generated, include it in the response
     if (imageData && imageData.imageUrl) {

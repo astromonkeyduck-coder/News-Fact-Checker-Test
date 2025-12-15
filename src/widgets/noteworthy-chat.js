@@ -2900,7 +2900,7 @@ class NoteworthyChat extends HTMLElement {
         e.stopPropagation();
         console.log('[Voice Mode] 🛑 End call button clicked (direct handler) - CALLING stopVoiceMode');
         try {
-          stopVoiceMode();
+        stopVoiceMode();
           console.log('[Voice Mode] ✅ stopVoiceMode() completed');
         } catch (error) {
           console.error('[Voice Mode] ❌ ERROR in stopVoiceMode():', error);
@@ -3172,21 +3172,23 @@ class NoteworthyChat extends HTMLElement {
     // Text-to-speech function with enhanced AI voice
     function speakText(text) {
       // CRITICAL: Cancel text-to-speech if voice mode is active (we only want GPT's voice)
-      // Check this FIRST before anything else
-      if (voiceModeActive) {
-        console.log('[Voice Mode] 🔇 Blocking text-to-speech - voice mode is active (entry check)');
+      // Check this FIRST before anything else - check both the variable and the global flag
+      if (voiceModeActive || window._voiceModeActive) {
+        console.log('[Voice Mode] 🔇 BLOCKING text-to-speech - voice mode is active (entry check)');
         window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // Double cancel
         if (currentSpeech) {
           currentSpeech = null;
         }
         return;
       }
       
-      // Also check if speech is already speaking and cancel it
+      // Also check if speech is already speaking and cancel it - check both flags
       if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
-        if (voiceModeActive) {
-          console.log('[Voice Mode] 🔇 Canceling ongoing speech - voice mode is active');
+        if (voiceModeActive || window._voiceModeActive) {
+          console.log('[Voice Mode] 🔇🔇 Canceling ongoing speech - voice mode is active');
           window.speechSynthesis.cancel();
+          window.speechSynthesis.cancel(); // Double cancel
           if (currentSpeech) {
             currentSpeech = null;
           }
@@ -3224,17 +3226,25 @@ class NoteworthyChat extends HTMLElement {
         window.speechSynthesis.cancel();
       }
       
-      // FINAL CHECK: Make absolutely sure voice mode is not active
-      if (voiceModeActive) {
-        console.log('[Voice Mode] 🔇 Blocking text-to-speech - voice mode is active (final check)');
+      // FINAL CHECK: Make absolutely sure voice mode is not active - check both flags
+      if (voiceModeActive || window._voiceModeActive) {
+        console.log('[Voice Mode] 🔇🔇 BLOCKING text-to-speech - voice mode is active (final check)');
         window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // Double cancel
+        if (currentSpeech) {
+          currentSpeech = null;
+        }
         return;
       }
       
-      // FINAL CHECK before creating utterance
-      if (voiceModeActive) {
-        console.log('[Voice Mode] 🔇 Blocking text-to-speech - voice mode is active (pre-utterance check)');
+      // FINAL CHECK before creating utterance - check both flags
+      if (voiceModeActive || window._voiceModeActive) {
+        console.log('[Voice Mode] 🔇🔇 BLOCKING text-to-speech - voice mode is active (pre-utterance check)');
         window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // Double cancel
+        if (currentSpeech) {
+          currentSpeech = null;
+        }
         return;
       }
       
@@ -3286,10 +3296,11 @@ class NoteworthyChat extends HTMLElement {
       }
       
       utterance.onstart = () => {
-        // CRITICAL: Cancel if voice mode becomes active
-        if (voiceModeActive) {
-          console.log('[Voice Mode] 🔇 Canceling text-to-speech mid-speech - voice mode activated');
+        // CRITICAL: Cancel if voice mode becomes active - check both flags
+        if (voiceModeActive || window._voiceModeActive) {
+          console.log('[Voice Mode] 🔇🔇🔇 CANCELING text-to-speech mid-speech - voice mode activated');
           window.speechSynthesis.cancel();
+          window.speechSynthesis.cancel(); // Double cancel
           currentSpeech = null;
           return;
         }
@@ -3329,10 +3340,11 @@ class NoteworthyChat extends HTMLElement {
       currentSpeech = utterance;
       
       // Wait for voices to load if needed
-      // FINAL FINAL CHECK: Cancel if voice mode is active right before speaking
-      if (voiceModeActive) {
-        console.log('[Voice Mode] 🔇 Blocking text-to-speech - voice mode is active (pre-speak check)');
+      // FINAL FINAL CHECK: Cancel if voice mode is active right before speaking - check both flags
+      if (voiceModeActive || window._voiceModeActive) {
+        console.log('[Voice Mode] 🔇🔇🔇 BLOCKING text-to-speech - voice mode is active (pre-speak check)');
         window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // Double cancel
         currentSpeech = null;
         return;
       }
@@ -3342,10 +3354,11 @@ class NoteworthyChat extends HTMLElement {
         window.speechSynthesis.addEventListener('voiceschanged', function onVoicesChanged() {
           window.speechSynthesis.removeEventListener('voiceschanged', onVoicesChanged);
           
-          // Check again before speaking
-          if (voiceModeActive) {
-            console.log('[Voice Mode] 🔇 Blocking text-to-speech - voice mode is active (voices loaded check)');
+          // Check again before speaking - check both flags
+          if (voiceModeActive || window._voiceModeActive) {
+            console.log('[Voice Mode] 🔇🔇 BLOCKING text-to-speech - voice mode is active (voices loaded check)');
             window.speechSynthesis.cancel();
+            window.speechSynthesis.cancel(); // Double cancel
             currentSpeech = null;
             return;
           }
@@ -3355,22 +3368,24 @@ class NoteworthyChat extends HTMLElement {
             utterance.voice = voice;
           }
           
-          // One more check
-          if (!voiceModeActive) {
-            window.speechSynthesis.speak(utterance);
+          // One more check - check both flags
+          if (!voiceModeActive && !window._voiceModeActive) {
+          window.speechSynthesis.speak(utterance);
           } else {
-            console.log('[Voice Mode] 🔇 Blocking text-to-speech - voice mode is active (final pre-speak)');
+            console.log('[Voice Mode] 🔇 BLOCKING text-to-speech - voice mode is active (final pre-speak)');
             window.speechSynthesis.cancel();
+            window.speechSynthesis.cancel(); // Double cancel
             currentSpeech = null;
           }
         }, { once: true });
       } else {
-        // Final check before speaking
-        if (!voiceModeActive) {
-          window.speechSynthesis.speak(utterance);
+        // Final check before speaking - check both flags
+        if (!voiceModeActive && !window._voiceModeActive) {
+        window.speechSynthesis.speak(utterance);
         } else {
-          console.log('[Voice Mode] 🔇 Blocking text-to-speech - voice mode is active (immediate pre-speak)');
+          console.log('[Voice Mode] 🔇 BLOCKING text-to-speech - voice mode is active (immediate pre-speak)');
           window.speechSynthesis.cancel();
+          window.speechSynthesis.cancel(); // Double cancel
           currentSpeech = null;
         }
       }
@@ -4348,9 +4363,22 @@ class NoteworthyChat extends HTMLElement {
           chatHistory = chatHistory.slice(-20);
         }
         
-        // Text-to-speech for AI response (ONLY if NOT in voice mode - voice mode uses GPT's voice)
-        if (audioEnabled && !voiceModeActive) {
+        // CRITICAL: Text-to-speech for AI response (ONLY if NOT in voice mode - voice mode uses GPT's voice)
+        // Cancel any existing TTS first, then check voice mode
+        if (voiceModeActive) {
+          window.speechSynthesis.cancel();
+          if (currentSpeech) {
+            currentSpeech = null;
+          }
+          console.log('[Voice Mode] 🔇 Blocked TTS in ask() function - voice mode is active');
+        } else if (audioEnabled) {
+          // Double-check voice mode didn't activate between check and call
+          if (!voiceModeActive) {
           speakText(text);
+          } else {
+            console.log('[Voice Mode] 🔇 Blocked TTS - voice mode activated during check');
+            window.speechSynthesis.cancel();
+          }
         }
       } catch (e) {
         console.error('Ask function error:', e);
@@ -4740,23 +4768,47 @@ class NoteworthyChat extends HTMLElement {
         
         // Run connectivity test first
         await testConnectivity();
-
+        
         // Clear displayed transcripts for new call
         displayedTranscripts.clear();
         
+        // Set flags FIRST before anything else
         voiceModeActive = true;
+        window._voiceModeActive = true; // Set global flag FIRST
+        
+        // CRITICAL: Override speechSynthesis.speak to completely block TTS during voice mode
+        if (!window._originalSpeak) {
+          window._originalSpeak = window.speechSynthesis.speak.bind(window.speechSynthesis);
+        }
+        window.speechSynthesis.speak = function(utterance) {
+          if (window._voiceModeActive || voiceModeActive) {
+            console.log('[Voice Mode] 🔇🔇🔇 OVERRIDE: Blocking speechSynthesis.speak() call');
+            window.speechSynthesis.cancel();
+            return;
+          }
+          return window._originalSpeak(utterance);
+        };
+        
         // CRITICAL: Cancel any text-to-speech immediately when voice mode starts
-        // Cancel multiple times to ensure it's stopped
+        // Cancel multiple times to ensure it's stopped - be VERY aggressive
+        console.log('[Voice Mode] 🔇🔇🔇 FORCE-CANCELING ALL TEXT-TO-SPEECH');
         window.speechSynthesis.cancel();
-        window.speechSynthesis.cancel(); // Double cancel to be sure
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // Triple cancel
         if (currentSpeech) {
           currentSpeech = null;
         }
         
-        // Clear any pending utterances
+        // Clear any pending utterances and stop all speech
         try {
-          // Force stop all speech synthesis
-          const voices = window.speechSynthesis.getVoices();
+          // Force stop all speech synthesis - clear the queue
+          if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+          }
+          if (window.speechSynthesis.pending) {
+            window.speechSynthesis.cancel();
+          }
+          // Clear any queued utterances
           window.speechSynthesis.cancel();
         } catch (e) {
           console.warn('[Voice Mode] Error canceling speech:', e);
@@ -4767,27 +4819,28 @@ class NoteworthyChat extends HTMLElement {
           clearInterval(voiceModeSpeechCheckInterval);
         }
         voiceModeSpeechCheckInterval = setInterval(() => {
-          if (voiceModeActive) {
-            // Aggressively cancel any speech synthesis activity
+          if (voiceModeActive || window._voiceModeActive) {
+            // EXTREMELY aggressively cancel any speech synthesis activity
+            // Cancel multiple times to ensure it stops
             if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
-              console.log('[Voice Mode] 🔇 Force-canceling text-to-speech (periodic check)');
+              console.log('[Voice Mode] 🔇🔇🔇 FORCE-CANCELING text-to-speech (periodic check)');
               window.speechSynthesis.cancel();
-              window.speechSynthesis.cancel(); // Double cancel
+              window.speechSynthesis.cancel();
+              window.speechSynthesis.cancel(); // Triple cancel
               currentSpeech = null;
             }
             // Also cancel if there's any utterance queued
             if (currentSpeech) {
               console.log('[Voice Mode] 🔇 Clearing current speech reference (periodic check)');
               window.speechSynthesis.cancel();
-              window.speechSynthesis.cancel(); // Double cancel
+              window.speechSynthesis.cancel();
+              window.speechSynthesis.cancel(); // Triple cancel
               currentSpeech = null;
             }
-            // Always cancel to be safe
-            if (window.speechSynthesis.speaking) {
-              window.speechSynthesis.cancel();
-            }
+            // Always cancel to be safe - no matter what
+            window.speechSynthesis.cancel();
           }
-        }, 50); // Check every 50ms for more aggressive blocking
+        }, 25); // Check every 25ms for EXTREMELY aggressive blocking
         if (voiceModeToggle) voiceModeToggle.classList.add('active');
         if (voiceStatusIntegrated) {
           voiceStatusIntegrated.style.display = 'block';
@@ -5368,8 +5421,16 @@ class NoteworthyChat extends HTMLElement {
 
       // CRITICAL: Stop everything immediately - microphone and websocket first
       voiceModeActive = false;
+      window._voiceModeActive = false; // Clear global flag
       isRecording = false;
       hasActiveResponse = false; // Reset response tracking
+      
+      // Restore original speechSynthesis.speak function
+      if (window._originalSpeak) {
+        window.speechSynthesis.speak = window._originalSpeak;
+        window._originalSpeak = null;
+        console.log('[Voice Mode] ✅ Restored original speechSynthesis.speak');
+      }
       
       // Clear displayed transcripts to prevent duplicates on next call
       displayedTranscripts.clear();
@@ -5607,30 +5668,30 @@ class NoteworthyChat extends HTMLElement {
               }
               
               if (isRecording && websocket && websocket.readyState === WebSocket.OPEN) {
-                const pcm16Buffer = event.data.data;
-                const pcm16 = new Int16Array(pcm16Buffer);
-                
-                // Convert to base64 efficiently
-                const uint8Array = new Uint8Array(pcm16.buffer);
-                let binaryString = '';
-                const chunkSize = 8192;
-                for (let i = 0; i < uint8Array.length; i += chunkSize) {
-                  const chunk = uint8Array.subarray(i, i + chunkSize);
-                  binaryString += String.fromCharCode.apply(null, chunk);
-                }
-                const base64Audio = btoa(binaryString);
-                
-                // Send to OpenAI Realtime API
+              const pcm16Buffer = event.data.data;
+              const pcm16 = new Int16Array(pcm16Buffer);
+              
+              // Convert to base64 efficiently
+              const uint8Array = new Uint8Array(pcm16.buffer);
+              let binaryString = '';
+              const chunkSize = 8192;
+              for (let i = 0; i < uint8Array.length; i += chunkSize) {
+                const chunk = uint8Array.subarray(i, i + chunkSize);
+                binaryString += String.fromCharCode.apply(null, chunk);
+              }
+              const base64Audio = btoa(binaryString);
+              
+              // Send to OpenAI Realtime API
                 if (audioChunkCount <= 3) {
                   console.log('[Voice Mode] 📤 Sending audio chunk to OpenAI:', {
                     base64Length: base64Audio.length,
                     pcm16Samples: pcm16.length
                   });
                 }
-                websocket.send(JSON.stringify({
-                  type: 'input_audio_buffer.append',
-                  audio: base64Audio,
-                }));
+              websocket.send(JSON.stringify({
+                type: 'input_audio_buffer.append',
+                audio: base64Audio,
+              }));
               } else {
                 if (audioChunkCount <= 3) {
                   console.warn('[Voice Mode] ⚠️ Audio captured but NOT sending - conditions not met:', {
