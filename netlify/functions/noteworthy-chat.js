@@ -1079,47 +1079,107 @@ RESPONSE STYLE:
       };
     }
 
-    // Parse the OpenAI response
+    // Parse the OpenAI response and handle tool calls
     let reply = "";
     let usage = null;
     try {
-      const data = await r.json();
+      let data = await r.json();
       usage = data.usage || null;
       
-      // Extract reply from response
-      const choice = data.choices?.[0];
-      if (choice) {
-        const message = choice.message;
+      // Handle tool calls - may require follow-up API calls
+      let choice = data.choices?.[0];
+      let message = choice?.message;
+      let maxToolIterations = 3; // Prevent infinite loops
+      let toolIteration = 0;
+      
+      while (message && message.tool_calls && message.tool_calls.length > 0 && toolIteration < maxToolIterations) {
+        toolIteration++;
+        console.log(`[Noteworthy Chat] Tool call detected (iteration ${toolIteration}):`, 
+          message.tool_calls.map(tc => tc.function?.name).join(', '));
         
-        // Check if there are tool calls
-        if (message.tool_calls && message.tool_calls.length > 0) {
-          console.log(`[Noteworthy Chat] Tool call(s) detected: ${message.tool_calls.length} tool(s)`);
+        // Add assistant message with tool calls to conversation
+        messages.push({
+          role: "assistant",
+          content: message.content || null,
+          tool_calls: message.tool_calls
+        });
+        
+        // Add tool responses - since search_web isn't a real executable function,
+        // we'll tell the model we couldn't execute it, and it will respond based on its training data
+        for (const toolCall of message.tool_calls) {
+          const toolName = toolCall.function?.name || 'unknown';
+          const toolArgs = toolCall.function?.arguments ? JSON.parse(toolCall.function.arguments) : {};
           
-          // If there's content along with tool calls, use it
-          if (message.content) {
-            reply = message.content;
-          } else {
-            // Tool was called - note that search_web may not be a real OpenAI function
-            // For now, provide a message indicating the tool was used
-            // In a production system, you'd need to implement the actual tool execution
-            console.warn("[Noteworthy Chat] Tool called but no content returned. Tool execution may not be implemented.");
-            reply = "I'm processing your request and searching for current information. Please note that web search functionality may be limited.";
-          }
-        } else {
-          // Regular response with content
-          reply = message.content || "";
+          console.log(`[Noteworthy Chat] Tool call: ${toolName} with args:`, toolArgs);
+          
+          // Add tool response indicating we couldn't execute the tool
+          // The model will still generate a helpful response based on its knowledge
+          messages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            content: `I don't have access to real-time web search capabilities. However, I can provide information based on my training data up to my knowledge cutoff date. ${toolName === 'search_web' && toolArgs.query ? `Regarding "${toolArgs.query}": ` : ''}Please note that for the most current information, you should check recent news sources directly.`
+          });
+        }
+        
+        // Make follow-up API call to get the model's response after tool call
+        console.log(`[Noteworthy Chat] Making follow-up API call after tool execution...`);
+        const followUpResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            temperature: 0.4,
+            max_tokens: 2000,
+            messages: messages,
+            // Don't include tools in follow-up to prevent infinite loops
+          }),
+        });
+        
+        if (!followUpResponse.ok) {
+          const errorText = await followUpResponse.text().catch(() => 'Unknown error');
+          console.error("[Noteworthy Chat] Follow-up API call failed:", followUpResponse.status, errorText);
+          // Fall back to a helpful message
+          reply = "I encountered an issue while processing your request. Based on my knowledge, I can help answer your question, but please note that I don't have access to real-time web search. For the most current information, please check recent news sources.";
+          break;
+        }
+        
+        data = await followUpResponse.json();
+        // Accumulate usage stats
+        if (data.usage) {
+          usage = {
+            prompt_tokens: (usage?.prompt_tokens || 0) + (data.usage.prompt_tokens || 0),
+            completion_tokens: (usage?.completion_tokens || 0) + (data.usage.completion_tokens || 0),
+            total_tokens: (usage?.total_tokens || 0) + (data.usage.total_tokens || 0)
+          };
+        }
+        
+        choice = data.choices?.[0];
+        message = choice?.message;
+        
+        // If we got content, break out of the loop
+        if (message && message.content) {
+          break;
         }
       }
       
+      // Extract final reply
+      if (message) {
+        reply = message.content || "";
+      }
+      
       if (!reply) {
-        console.warn("[Noteworthy Chat] No reply content in OpenAI response:", JSON.stringify(data, null, 2));
-        reply = "I apologize, but I couldn't generate a response. Please try again.";
+        console.warn("[Noteworthy Chat] No reply content after tool handling:", JSON.stringify(data, null, 2));
+        reply = "I apologize, but I couldn't generate a response. Please try rephrasing your question.";
       }
       
       console.log("[Noteworthy Chat] OpenAI response parsed successfully:", {
         replyLength: reply.length,
         hasUsage: !!usage,
-        tokens: usage?.total_tokens || 0
+        tokens: usage?.total_tokens || 0,
+        toolIterations: toolIteration
       });
     } catch (parseError) {
       console.error("[Noteworthy Chat] Error parsing OpenAI response:", parseError);

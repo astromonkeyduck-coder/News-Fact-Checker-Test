@@ -33,12 +33,14 @@ class NoteworthyChat extends HTMLElement {
     let audioWorkletNode = null;
     let isRecording = false;
     let audioQueue = [];
-    let isPlayingAudio = false;
+    let isPlayingAudio = false; // Track if audio is currently playing to prevent overlap
+    let audioPlayQueue = []; // Queue for audio chunks to prevent overlap
     let musicStateBeforeCall = null; // Store music state when voice call starts
     let authRetryCount = 0; // Track authentication retry attempts
     const MAX_AUTH_RETRIES = 3; // Maximum authentication retries before giving up
     let connectionAttempts = []; // Track connection attempts for diagnostics
-    const displayedTranscripts = new Set(); // Track displayed transcripts to prevent duplicates
+    const displayedTranscripts = new Set();
+    const playedAudioChunks = new Set(); // Track played audio chunks to prevent duplicates
     let hasActiveResponse = false; // Track if there's an active response in progress
 
     this.root.innerHTML = `
@@ -4820,6 +4822,11 @@ class NoteworthyChat extends HTMLElement {
         
         // Clear displayed transcripts for new call
         displayedTranscripts.clear();
+        // Clear played audio chunks for new call
+        playedAudioChunks.clear();
+        // Reset audio playback state
+        isPlayingAudio = false;
+        audioPlayQueue = [];
         
         // Clear any pending utterances and stop all speech
         try {
@@ -4947,10 +4954,19 @@ class NoteworthyChat extends HTMLElement {
           throw new Error(`Microphone access denied: ${permissionError.message}. Please allow microphone access and try again.`);
         }
         
-        // Create audio context
+        // Create audio context (only if one doesn't already exist)
+        if (audioContext && audioContext.state !== 'closed') {
+          console.warn('[Voice Mode] ⚠️ AudioContext already exists, closing old one');
+          try {
+            audioContext.close();
+          } catch (e) {
+            console.warn('[Voice Mode] Error closing old AudioContext:', e);
+          }
+        }
         audioContext = new (window.AudioContext || window.webkitAudioContext)({
           sampleRate: 24000, // OpenAI Realtime API uses 24kHz
         });
+        console.log('[Voice Mode] ✅ Created new AudioContext, state:', audioContext.state);
         
         // CRITICAL: Resume AudioContext if suspended (browsers suspend until user interaction)
         // This ensures audio can play when we receive audio chunks
@@ -6384,6 +6400,12 @@ class NoteworthyChat extends HTMLElement {
             // Play audio chunks from OpenAI Realtime API
             console.log('[Voice Mode] ✅ CASE MATCHED: response.output_audio.delta');
             
+            // CRITICAL: Only process audio if voice mode is active (prevent duplicate playback)
+            if (!voiceModeActive && !window._voiceModeActive) {
+              console.warn('[Voice Mode] ⚠️ Ignoring audio delta - voice mode not active');
+              break;
+            }
+            
             // Mark response as active when first audio chunk arrives
             if (!hasActiveResponse) {
               hasActiveResponse = true;
@@ -6401,6 +6423,13 @@ class NoteworthyChat extends HTMLElement {
                 if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
                 if (statusDot) statusDot.style.background = '#4A90E2';
                 console.log('[Voice Mode] 🗣️ Status updated to: Speaking...');
+              }
+              
+              // CRITICAL: Cancel TTS immediately before playing GPT audio (prevent double voice)
+              if (voiceModeActive || window._voiceModeActive) {
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.cancel();
               }
               
               playAudioChunk(message.delta);
@@ -6825,11 +6854,15 @@ class NoteworthyChat extends HTMLElement {
               console.log('[Voice Mode] Unhandled message type:', message.type, message);
             } else if (message.type === 'response.output_audio.delta') {
               // This shouldn't happen - if we get here, the case didn't match
+              // CRITICAL: DO NOT process audio here - it's already handled in the case above
+              // This prevents duplicate audio playback
               console.error('[Voice Mode] ❌ ERROR: response.output_audio.delta fell through to default case!', {
                 messageType: message.type,
                 messageTypeLength: message.type?.length,
                 messageTypeCharCodes: message.type?.split('').map(c => c.charCodeAt(0))
               });
+              console.warn('[Voice Mode] ⚠️ IGNORING audio delta in default case to prevent duplicate playback');
+              // DO NOT call playAudioChunk here - it's already handled in the case statement above
             }
             break;
         }
@@ -6844,7 +6877,43 @@ class NoteworthyChat extends HTMLElement {
         console.warn('[Voice Mode] ⚠️ Cannot play audio: AudioContext not initialized');
         return;
       }
+
+      // CRITICAL: Check if voice mode is active - if not, don't play (prevent duplicate playback)
+      if (!voiceModeActive && !window._voiceModeActive) {
+        console.warn('[Voice Mode] ⚠️ Blocking audio playback - voice mode not active');
+        return;
+      }
+
+      // CRITICAL: Deduplicate audio chunks - prevent same audio from playing twice
+      // Use a hash of the audio data to detect duplicates
+      const audioHash = audioBase64.substring(0, 50) + audioBase64.length; // First 50 chars + length as hash
+      if (playedAudioChunks.has(audioHash)) {
+        console.warn('[Voice Mode] ⚠️ DUPLICATE AUDIO CHUNK DETECTED - skipping playback');
+        return;
+      }
+      playedAudioChunks.add(audioHash);
       
+      // Clean up old hashes (keep last 100 to prevent memory leak)
+      if (playedAudioChunks.size > 100) {
+        const firstHash = playedAudioChunks.values().next().value;
+        playedAudioChunks.delete(firstHash);
+      }
+
+      // CRITICAL: Queue audio if already playing to prevent overlap
+      if (isPlayingAudio) {
+        console.log('[Voice Mode] 🔊 Audio already playing, queuing chunk');
+        audioPlayQueue.push(audioBase64);
+        return;
+      }
+
+      // Play audio immediately
+      await playAudioChunkImmediate(audioBase64, audioHash);
+    }
+
+    async function playAudioChunkImmediate(audioBase64, audioHash) {
+      // Mark as playing
+      isPlayingAudio = true;
+
       try {
         // CRITICAL: Resume AudioContext if suspended (browsers suspend until user interaction)
         if (audioContext.state === 'suspended') {
@@ -6852,34 +6921,72 @@ class NoteworthyChat extends HTMLElement {
           await audioContext.resume();
           console.log('[Voice Mode] ✅ AudioContext resumed, state:', audioContext.state);
         }
-        
+
         // Voice call audio should ALWAYS play - audio toggle only controls text-to-speech
         // No need to check audioEnabled here - voice calls work independently
-        
+
         // Decode base64 to binary
         const binaryString = atob(audioBase64);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
           bytes[i] = binaryString.charCodeAt(i);
         }
-        
+
         // Convert PCM16 bytes to Float32Array
         const pcm16 = new Int16Array(bytes.buffer);
         const float32 = new Float32Array(pcm16.length);
         for (let i = 0; i < pcm16.length; i++) {
           float32[i] = pcm16[i] / 32768.0;
         }
-        
+
         // Create audio buffer and play
         const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
         audioBuffer.copyToChannel(float32, 0);
-        
+
         const source = audioContext.createBufferSource();
         source.buffer = audioBuffer;
+        // CRITICAL: Connect to destination only once - prevent duplicate routing
         source.connect(audioContext.destination);
-        source.start();
         
-        console.log('[Voice Mode] 🔊 Playing audio chunk, length:', float32.length, 'samples');
+        // Calculate duration of this chunk
+        const duration = float32.length / 24000; // Sample rate is 24kHz
+        
+        // Add error handler to catch any issues
+        source.onended = () => {
+          // Audio chunk finished playing - now play next in queue
+          isPlayingAudio = false;
+          
+          // Play next chunk in queue if any
+          if (audioPlayQueue.length > 0) {
+            const nextChunk = audioPlayQueue.shift();
+            const nextHash = nextChunk.substring(0, 50) + nextChunk.length;
+            playAudioChunkImmediate(nextChunk, nextHash).catch(err => {
+              console.error('[Voice Mode] ❌ Error playing queued audio:', err);
+              isPlayingAudio = false;
+            });
+          }
+        };
+        
+        source.start();
+
+        console.log('[Voice Mode] 🔊 Playing audio chunk, length:', float32.length, 'samples, duration:', duration.toFixed(3), 's, hash:', audioHash.substring(0, 20) + '...');
+        
+        // Fallback: If onended doesn't fire, reset after duration
+        setTimeout(() => {
+          if (isPlayingAudio) {
+            console.warn('[Voice Mode] ⚠️ Audio chunk timeout, resetting play state');
+            isPlayingAudio = false;
+            // Play next in queue
+            if (audioPlayQueue.length > 0) {
+              const nextChunk = audioPlayQueue.shift();
+              const nextHash = nextChunk.substring(0, 50) + nextChunk.length;
+              playAudioChunkImmediate(nextChunk, nextHash).catch(err => {
+                console.error('[Voice Mode] ❌ Error playing queued audio:', err);
+                isPlayingAudio = false;
+              });
+            }
+          }
+        }, (duration * 1000) + 100); // Add 100ms buffer
         
       } catch (error) {
         console.error('[Voice Mode] ❌ Error playing audio chunk:', error);
@@ -6890,6 +6997,16 @@ class NoteworthyChat extends HTMLElement {
           audioContextExists: !!audioContext,
           audioContextState: audioContext?.state
         });
+        isPlayingAudio = false;
+        // Try next in queue
+        if (audioPlayQueue.length > 0) {
+          const nextChunk = audioPlayQueue.shift();
+          const nextHash = nextChunk.substring(0, 50) + nextChunk.length;
+          playAudioChunkImmediate(nextChunk, nextHash).catch(err => {
+            console.error('[Voice Mode] ❌ Error playing queued audio:', err);
+            isPlayingAudio = false;
+          });
+        }
       }
     }
     
