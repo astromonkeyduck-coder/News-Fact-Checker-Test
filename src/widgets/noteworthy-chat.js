@@ -6901,9 +6901,17 @@ class NoteworthyChat extends HTMLElement {
       console.log('[Voice Mode] 🔊 Starting audio queue processing, queue length:', audioPlayQueue.length);
       
       // Process queue sequentially
+      let chunkIndex = 0;
       while (audioPlayQueue.length > 0) {
+        chunkIndex++;
+        const queueLength = audioPlayQueue.length;
         const audioBase64 = audioPlayQueue.shift();
-        if (!audioBase64) continue;
+        if (!audioBase64) {
+          console.warn('[Voice Mode] ⚠️ Empty chunk in queue, skipping');
+          continue;
+        }
+        
+        console.log('[Voice Mode] 🎵 Processing chunk', chunkIndex, 'of queue (remaining:', queueLength - 1, ')');
         
         // Deduplicate audio chunks
         const audioHash = audioBase64.substring(0, 50) + audioBase64.length;
@@ -6919,8 +6927,10 @@ class NoteworthyChat extends HTMLElement {
           playedAudioChunks.delete(firstHash);
         }
         
-        // Play this chunk and wait for it to finish
+        // CRITICAL: Play this chunk and WAIT for it to finish before next
+        console.log('[Voice Mode] ⏳ Waiting for chunk', chunkIndex, 'to finish before playing next...');
         await playAudioChunkImmediate(audioBase64, audioHash);
+        console.log('[Voice Mode] ✅ Chunk', chunkIndex, 'finished, proceeding to next chunk');
       }
       
       // Queue is empty, reset flag
@@ -6930,20 +6940,22 @@ class NoteworthyChat extends HTMLElement {
 
     async function playAudioChunkImmediate(audioBase64, audioHash) {
       // Return a promise that resolves when audio finishes
-      return new Promise(async (resolve, reject) => {
-        try {
-          if (!audioContext) {
-            console.warn('[Voice Mode] ⚠️ Cannot play audio: AudioContext not initialized');
-            resolve(); // Resolve instead of reject to continue queue
-            return;
-          }
+      return new Promise((resolve, reject) => {
+        // Use async IIFE to handle await inside Promise
+        (async () => {
+          try {
+            if (!audioContext) {
+              console.warn('[Voice Mode] ⚠️ Cannot play audio: AudioContext not initialized');
+              resolve(); // Resolve instead of reject to continue queue
+              return;
+            }
 
-          // CRITICAL: Resume AudioContext if suspended (browsers suspend until user interaction)
-          if (audioContext.state === 'suspended') {
-            console.log('[Voice Mode] 🔊 Resuming suspended AudioContext...');
-            await audioContext.resume();
-            console.log('[Voice Mode] ✅ AudioContext resumed, state:', audioContext.state);
-          }
+            // CRITICAL: Resume AudioContext if suspended (browsers suspend until user interaction)
+            if (audioContext.state === 'suspended') {
+              console.log('[Voice Mode] 🔊 Resuming suspended AudioContext...');
+              await audioContext.resume();
+              console.log('[Voice Mode] ✅ AudioContext resumed, state:', audioContext.state);
+            }
 
           // Voice call audio should ALWAYS play - audio toggle only controls text-to-speech
           // No need to check audioEnabled here - voice calls work independently
@@ -6975,19 +6987,30 @@ class NoteworthyChat extends HTMLElement {
           const duration = float32.length / 24000; // Sample rate is 24kHz
           
           let resolved = false; // Prevent double resolution
+          let timeoutId = null;
+          const startTime = Date.now();
           
           // Add error handler to catch any issues
           source.onended = () => {
-            if (resolved) return; // Prevent double resolution
+            if (resolved) {
+              console.warn('[Voice Mode] ⚠️ onended called but already resolved');
+              return; // Prevent double resolution
+            }
             resolved = true;
+            if (timeoutId) clearTimeout(timeoutId);
+            const actualDuration = ((Date.now() - startTime) / 1000).toFixed(3);
             // Audio chunk finished playing
-            console.log('[Voice Mode] ✅ Audio chunk finished, duration:', duration.toFixed(3), 's');
+            console.log('[Voice Mode] ✅ Audio chunk finished, actual duration:', actualDuration, 's (expected', duration.toFixed(3), 's)');
             resolve();
           };
           
           source.onerror = (error) => {
-            if (resolved) return; // Prevent double resolution
+            if (resolved) {
+              console.warn('[Voice Mode] ⚠️ onerror called but already resolved');
+              return; // Prevent double resolution
+            }
             resolved = true;
+            if (timeoutId) clearTimeout(timeoutId);
             console.error('[Voice Mode] ❌ Audio source error:', error);
             resolve(); // Resolve instead of reject to continue queue
           };
@@ -6995,26 +7018,34 @@ class NoteworthyChat extends HTMLElement {
           source.start();
           console.log('[Voice Mode] 🔊 Playing audio chunk, length:', float32.length, 'samples, duration:', duration.toFixed(3), 's, hash:', audioHash.substring(0, 20) + '...');
           
-          // Fallback: If onended doesn't fire, resolve after duration
-          setTimeout(() => {
-            if (resolved) return; // Prevent double resolution
-            resolved = true;
-            console.warn('[Voice Mode] ⚠️ Audio chunk timeout fallback triggered');
-            resolve();
-          }, (duration * 1000) + 200); // Add 200ms buffer
+          // CRITICAL: Calculate exact timeout - MUST wait full duration to prevent overlap
+          const timeoutMs = Math.max(Math.ceil(duration * 1000) + 150, 50); // At least 50ms, add 150ms buffer
           
-        } catch (error) {
-          console.error('[Voice Mode] ❌ Error playing audio chunk:', error);
-          console.error('[Voice Mode] AudioContext state:', audioContext?.state);
-          console.error('[Voice Mode] Error details:', {
-            message: error.message,
-            stack: error.stack,
-            audioContextExists: !!audioContext,
-            audioContextState: audioContext?.state
-          });
-          // Resolve instead of reject to continue queue processing
-          resolve();
-        }
+          // Fallback: If onended doesn't fire, resolve after duration
+          timeoutId = setTimeout(() => {
+            if (resolved) {
+              console.warn('[Voice Mode] ⚠️ Timeout triggered but already resolved');
+              return; // Prevent double resolution
+            }
+            resolved = true;
+            const actualDuration = ((Date.now() - startTime) / 1000).toFixed(3);
+            console.warn('[Voice Mode] ⚠️ Audio chunk timeout fallback triggered after', actualDuration, 's (expected', duration.toFixed(3), 's, timeout was', timeoutMs, 'ms)');
+            resolve();
+          }, timeoutMs);
+          
+          } catch (error) {
+            console.error('[Voice Mode] ❌ Error playing audio chunk:', error);
+            console.error('[Voice Mode] AudioContext state:', audioContext?.state);
+            console.error('[Voice Mode] Error details:', {
+              message: error.message,
+              stack: error.stack,
+              audioContextExists: !!audioContext,
+              audioContextState: audioContext?.state
+            });
+            // Resolve instead of reject to continue queue processing
+            resolve();
+          }
+        })(); // Execute async IIFE
       });
     }
     

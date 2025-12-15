@@ -1011,41 +1011,54 @@ RESPONSE STYLE:
 
     let r;
     try {
-      // Use Chat Completions API with search_web function for reliable web search
-      // This is more reliable than Responses API (which may not be available or may have format issues)
-      console.log('[Noteworthy Chat] Using Chat Completions API with search_web function for reliable web search');
+      // For spotlight requests, do NOT use web search tool - use knowledge base only
+      // For regular requests, use Chat Completions API with search_web function for reliable web search
+      const useWebSearch = !isSpotlightRequest;
+      
+      if (isSpotlightRequest) {
+        console.log('[Noteworthy Chat] Spotlight request detected - using knowledge base only (no web search)');
+      } else {
+        console.log('[Noteworthy Chat] Using Chat Completions API with search_web function for reliable web search');
+      }
+      
+      const requestBody = {
+        model: "gpt-4o",
+        temperature: 0.4,
+        max_tokens: 2000,
+        messages: messages,
+      };
+      
+      // Only add web search tool for non-spotlight requests
+      if (useWebSearch) {
+        requestBody.tools = [
+          {
+            type: "function",
+            function: {
+              name: "search_web",
+              description: "Search the web for real-time breaking news, current events, or any information that happened recently. Use this when the user asks about current events, breaking news, recent developments, or anything that requires up-to-date information. IMPORTANT: Always use specific, detailed search queries with location, date, and event type.",
+              parameters: {
+                type: "object",
+                properties: {
+                  query: {
+                    type: "string",
+                    description: "A specific, detailed search query including location, event type, and date if known (e.g., 'shooting at Brown University Rhode Island December 2024' or 'breaking news [topic] today'). Be as specific as possible."
+                  }
+                },
+                required: ["query"]
+              }
+            }
+          }
+        ];
+        requestBody.tool_choice = "auto"; // Let the model decide when to use web search
+      }
+      
       r = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            model: "gpt-4o",
-            temperature: 0.4,
-            max_tokens: 2000,
-            messages: messages,
-            tools: [
-              {
-                type: "function",
-                function: {
-                  name: "search_web",
-                  description: "Search the web for real-time breaking news, current events, or any information that happened recently. Use this when the user asks about current events, breaking news, recent developments, or anything that requires up-to-date information. IMPORTANT: Always use specific, detailed search queries with location, date, and event type.",
-                  parameters: {
-                    type: "object",
-                    properties: {
-                      query: {
-                        type: "string",
-                        description: "A specific, detailed search query including location, event type, and date if known (e.g., 'shooting at Brown University Rhode Island December 2024' or 'breaking news [topic] today'). Be as specific as possible."
-                      }
-                    },
-                    required: ["query"]
-                  }
-                }
-              }
-            ],
-            tool_choice: "auto" // Let the model decide when to use web search
-          }),
+          body: JSON.stringify(requestBody),
         });
     } catch (fetchError) {
       console.error("[Noteworthy Chat] Error calling OpenAI API:", fetchError);
@@ -1337,16 +1350,15 @@ RESPONSE STYLE:
       // Don't fail the request if logging fails
     });
 
-    // Check if this is a spotlight request (should not send emails)
+    // Check if this is a spotlight request (should not send emails and should NOT use web search)
     // Spotlight requests include:
     // 1. Text requests: "tell me about [country]" with "culture" and "fun facts"
     // 2. Image requests: "generate an image of the flag of [country]" or "culture of [country]"
     const lowerMessage = message ? message.toLowerCase() : '';
     const isSpotlightRequest = message && (
-      // Text request pattern
+      // Text request pattern - check for the specific spotlight prompt format
       (lowerMessage.includes('tell me about') && 
-       lowerMessage.includes('culture') &&
-       lowerMessage.includes('fun facts')) ||
+       (lowerMessage.includes('culture') || lowerMessage.includes('fun facts') || lowerMessage.includes('breaking news'))) ||
       // Image request patterns for spotlight
       (lowerMessage.includes('generate an image') && (
         lowerMessage.includes('flag of') ||
