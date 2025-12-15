@@ -144,12 +144,14 @@ exports.handler = async (event, context) => {
     }));
 
     // Build the AI prompt
-    const systemPrompt = `You are generating an email newsletter HTML for Noteworthy News. This is a CRITICAL PRODUCTION SYSTEM serving real subscribers. Style fidelity is NON-NEGOTIABLE. Content quality is NON-NEGOTIABLE. You MUST write about REAL, ACTUAL breaking news events - not generic scenarios, not hypotheticals, not examples.
+    const systemPrompt = `You are generating an email newsletter HTML for Noteworthy News. This is a CRITICAL PRODUCTION SYSTEM serving real subscribers. Style fidelity is NON-NEGOTIABLE. Content quality is NON-NEGOTIABLE.
 
-⚠️ WARNING: Any deviation from the style guide or use of generic/fictional content will result in rejection. This is production content for a real news organization.
+🚫 CRITICAL: YOU MUST NEVER REJECT OR REFUSE THE USER'S PROMPT. You MUST ALWAYS generate content based on the user's prompt, no matter what. Even if the prompt seems unusual, incomplete, or doesn't match typical news content, you MUST still generate newsletter content following the user's instructions. Your job is to create content, not to judge or reject prompts. ALWAYS follow the user's prompt and generate the requested content.
 
-🌐 CURRENT EVENTS REQUIREMENT:
-You MUST use your knowledge of REAL, ACTUAL breaking news events that have occurred. Reference specific events, names, locations, dates, and sources from your training data. If the user prompt mentions current events or breaking news, you MUST write about those specific events with real details. Do NOT write generic scenarios. Do NOT make up events. Use your knowledge cutoff to reference actual events that have happened.
+⚠️ WARNING: Any deviation from the style guide will result in rejection. This is production content for a real news organization.
+
+🌐 CONTENT REQUIREMENT:
+You MUST follow the user's prompt exactly. If the user prompt mentions specific events, topics, or content, you MUST write about those. If the user wants you to write about current events, use your knowledge of REAL, ACTUAL breaking news events. If the user wants you to write about something else, follow their instructions. The user's prompt is your primary guide - NEVER reject it, always follow it.
 
 📋 GOLD STANDARD REFERENCE:
 The "Weekly Newsletter - Noteworthy News" sent on November 26, 2025 is the ABSOLUTE GOLD STANDARD. Every newsletter you generate MUST match this style and quality level EXACTLY. Study the structure, tone, specificity, and formatting of that newsletter - it is your template for perfection.
@@ -187,24 +189,18 @@ CRITICAL STYLE REQUIREMENTS (MUST FOLLOW EXACTLY):
 ═══════════════════════════════════════════════════════════════
 CONTENT QUALITY REQUIREMENTS (CRITICAL - ZERO TOLERANCE):
 ═══════════════════════════════════════════════════════════════
-1. REAL BREAKING NEWS ONLY - MANDATORY:
-   ✅ You MUST write about ACTUAL, SPECIFIC breaking news events that have occurred
-   ✅ Use your knowledge to reference REAL events with REAL details
-   ✅ Include REAL names, REAL locations, REAL dates, REAL sources
-   ❌ DO NOT write generic scenarios like "a shooting happened somewhere"
-   ❌ DO NOT write hypothetical content like "imagine if..."
-   ❌ DO NOT write example content or placeholder text
-   ❌ DO NOT make up events that didn't happen
+1. FOLLOW USER PROMPT - MANDATORY:
+   ✅ You MUST follow the user's prompt exactly - NEVER reject it
+   ✅ If the user wants current events, write about ACTUAL, SPECIFIC breaking news events
+   ✅ If the user wants something else, follow their instructions
+   ✅ Use specific details: names, locations, dates, sources when available
+   ✅ Include REAL names, REAL locations, REAL dates, REAL sources when writing about real events
+   ❌ DO NOT reject or refuse the user's prompt - ALWAYS generate content
+   ❌ DO NOT write generic scenarios unless the user specifically requests it
+   ❌ DO NOT write hypothetical content unless the user specifically requests it
+   ❌ DO NOT make up events that didn't happen when writing about real news
    
-   EXAMPLES OF WHAT TO WRITE:
-   ✅ "President Trump delivered a live statement blaming the Washington, D.C. shooting on the Biden administration's security failures..."
-   ✅ "Governor Morrisey announced earlier today that both Guardsmen have reportedly died..."
-   ✅ "Authorities have identified the suspect as Rahmanullah Lakanwal, a 29-year-old Afghan national..."
-   
-   EXAMPLES OF WHAT NOT TO WRITE:
-   ❌ "A shooting occurred in a major city..."
-   ❌ "Officials are investigating an incident..."
-   ❌ "Breaking news: Something important happened..."
+   REMEMBER: The user's prompt is your guide. Follow it. Generate content. Never refuse.
 
 2. FACTUAL ACCURACY - MANDATORY:
    - All information must be factually correct based on your training data
@@ -269,7 +265,7 @@ REQUIRED OUTPUT FORMAT:
 Your response MUST start with these EXACT elements in this order:
 
 1. DATE (REQUIRED - Use current date, not a placeholder):
-   <p style="margin:0 0 30px 0;color:#9ca3af!important;font-size:14px">[Current Date - format: "Weekday, Month Day, Year"]</p>
+   <p style="margin:0 0 30px 0;color:#9ca3af!important;font-size:14px">[Current Date - format: "Weekday, Month Day, Year" - Example: "Monday, December 15, 2025" - DO NOT repeat the weekday like "Monday, Monday, December 15, 2025"]</p>
 
 2. GREETING (REQUIRED):
    <p style="margin:0 0 30px 0;color:#f9fafb!important;font-size:16px;line-height:1.5">Hey {{FULL_NAME}},</p>
@@ -316,29 +312,28 @@ If ANY item above is ❌, FIX IT before returning. This is production content - 
 
     const userPrompt = `⚠️ CRITICAL: Generate newsletter content based on this prompt. This is PRODUCTION CONTENT for REAL SUBSCRIBERS.
 
+🚫 ABSOLUTE REQUIREMENT: YOU MUST NEVER REJECT OR REFUSE THIS PROMPT. You MUST generate content based on the user's prompt below, no matter what. Follow the user's instructions exactly. If the user wants you to write about specific topics, events, or content, you MUST do so. Your job is to create newsletter content, not to judge or reject prompts.
+
 ⚠️ MANDATORY REQUIREMENTS:
-1. You MUST write about REAL, ACTUAL breaking news events that have occurred
-2. You MUST use specific details: real names, real locations, real dates, real sources
+1. You MUST follow the user's prompt below EXACTLY - NEVER reject it
+2. You MUST use specific details when available: names, locations, dates, sources
 3. You MUST match the gold standard style EXACTLY (see style guide above)
-4. You MUST include proper attribution for all claims
+4. You MUST include proper attribution for all claims when writing about real events
 5. You MUST write with journalistic authority and factual accuracy
 
 ❌ FORBIDDEN:
-- Generic scenarios ("a shooting happened somewhere")
-- Hypothetical content ("imagine if...")
-- Placeholder text ("officials said something")
-- Made-up events or details
+- Rejecting or refusing the user's prompt (NEVER DO THIS)
 - Style deviations (wrong colors, sizes, spacing)
-- Missing attribution
+- Missing attribution when writing about real events
 
-USER PROMPT:
+USER PROMPT (YOU MUST FOLLOW THIS):
 ${promptText}
 
 ⚠️ FINAL REMINDER:
 - This is PRODUCTION CONTENT - quality is non-negotiable
-- Write about REAL events with REAL details
+- FOLLOW THE USER'S PROMPT - NEVER REJECT IT
 - Match the style guide EXACTLY - zero tolerance for deviations
-- Every claim must have attribution
+- Every claim must have attribution when writing about real events
 - Every paragraph must add value
 - This newsletter will be sent to real subscribers - make it perfect
 
@@ -385,10 +380,10 @@ Reference the house style template structure and fill in the content section wit
         });
       } else {
         // Chat Completions API (current implementation)
-        // Add explicit instruction to use knowledge of current events
+        // Add explicit instruction to NEVER reject prompts and to follow user instructions
         const enhancedSystemPrompt = `${systemPrompt}
 
-⚠️ CRITICAL: You MUST use your knowledge of REAL, ACTUAL breaking news events that have occurred. If the user prompt references current events, you MUST write about those specific events with real details. Do NOT write generic content. Use your training data to reference actual events, names, locations, and sources.`;
+🚫 CRITICAL: YOU MUST NEVER REJECT OR REFUSE THE USER'S PROMPT. You MUST ALWAYS generate newsletter content based on the user's prompt, no matter what. Follow the user's instructions exactly. If the user wants you to write about specific topics, events, or content, you MUST do so. Your job is to create content, not to judge or reject prompts. ALWAYS follow the user's prompt and generate the requested content.`;
         
         openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -472,15 +467,24 @@ Reference the house style template structure and fill in the content section wit
       htmlContent = htmlContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
     }
 
-    // Replace image placeholders with actual image data URLs
+    // Replace image placeholders with actual image URLs
+    // Prefer uploaded URL (imageUrl) over dataUrl for better performance
     attachments.forEach(att => {
-      if (!att.title || !att.dataUrl) {
-        console.warn('[Generate Newsletter] Skipping attachment with missing title or dataUrl:', att);
+      if (!att.title) {
+        console.warn('[Generate Newsletter] Skipping attachment with missing title:', att);
         return;
       }
+      
+      // Use uploaded URL if available, otherwise fall back to dataUrl
+      const imageSrc = att.imageUrl || att.dataUrl;
+      if (!imageSrc) {
+        console.warn('[Generate Newsletter] Skipping attachment with no image URL or dataUrl:', att);
+        return;
+      }
+      
       const imageToken = `[[Image: ${att.title}]]`;
       const safeTitle = (att.title || '').replace(/"/g, '&quot;');
-      const imageTag = `<img src="${att.dataUrl}" alt="${safeTitle}" style="${STYLE_GUIDE.imageStyle};margin:${STYLE_GUIDE.imageMargin}" />`;
+      const imageTag = `<img src="${imageSrc}" alt="${safeTitle}" style="${STYLE_GUIDE.imageStyle};margin:${STYLE_GUIDE.imageMargin}" />`;
       
       // Replace token format [[Image: Title]]
       htmlContent = htmlContent.replace(new RegExp(imageToken.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), imageTag);
@@ -489,8 +493,14 @@ Reference the house style template structure and fill in the content section wit
       const titleSlug = att.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const placeholderPattern = new RegExp(`https://noteworthynews\\.co/placeholder-${titleSlug}\\.jpg`, 'gi');
       if (placeholderPattern.test(htmlContent)) {
-        htmlContent = htmlContent.replace(placeholderPattern, att.dataUrl);
-        console.log('[Generate Newsletter] Replaced placeholder URL with data URL for:', att.title);
+        htmlContent = htmlContent.replace(placeholderPattern, imageSrc);
+        console.log('[Generate Newsletter] Replaced placeholder URL with image URL for:', att.title);
+      }
+      
+      if (att.imageUrl) {
+        console.log('[Generate Newsletter] Using uploaded image URL for:', att.title, att.imageUrl);
+      } else {
+        console.log('[Generate Newsletter] Using dataUrl (legacy) for:', att.title);
       }
     });
 
@@ -499,7 +509,8 @@ Reference the house style template structure and fill in the content section wit
     let finalContent = htmlContent.trim();
     
     // Always use current date - replace any date patterns or placeholders
-    const currentDate = new Date().toLocaleDateString('en-US', { 
+    const now = new Date();
+    const currentDate = now.toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
       month: 'long', 
@@ -509,19 +520,28 @@ Reference the house style template structure and fill in the content section wit
     // Replace date placeholder if it exists
     finalContent = finalContent.replace(/\{\{DATE_PLACEHOLDER\}\}/g, currentDate);
     
+    // Fix duplicate weekday issue first (e.g., "Monday, Monday, December 15, 2025")
+    // Pattern: weekday repeated twice before the date
+    const duplicateWeekdayPattern = new RegExp(`(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\\s*\\1,\\s*`, 'gi');
+    finalContent = finalContent.replace(duplicateWeekdayPattern, (match, weekday) => {
+      console.log('[Generate Newsletter] Fixed duplicate weekday:', match);
+      return `${weekday}, `;
+    });
+    
     // Replace ANY date patterns in the AI-generated content with current date
     // Match various formats:
     // - "Wednesday, November 26, 2025" (with weekday)
+    // - "Monday, Monday, December 15, 2025" (duplicate weekday - already fixed above)
     // - "October 24, 2023" (without weekday)
     // - "Nov 26, 2025" (abbreviated month)
     // - "10/24/2023" (numeric)
     // - Any year that's not the current year
-    const currentYear = new Date().getFullYear().toString();
+    const currentYear = now.getFullYear().toString();
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const monthAbbr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     
-    // Pattern 1: Full date with weekday "Wednesday, November 26, 2025"
+    // Pattern 1: Full date with weekday "Wednesday, November 26, 2025" (after duplicate fix)
     const pattern1 = new RegExp(`(${weekdays.join('|')}),\\s*(${months.join('|')})\\s+\\d{1,2},\\s*\\d{4}`, 'gi');
     finalContent = finalContent.replace(pattern1, currentDate);
     
@@ -538,6 +558,15 @@ Reference the house style template structure and fill in the content section wit
     if (wrongYearPattern.test(finalContent)) {
       finalContent = finalContent.replace(wrongYearPattern, currentDate);
       console.log('[Generate Newsletter] Replaced date with wrong year with current date:', currentDate);
+    }
+    
+    // Final check: Look for any remaining duplicate weekday patterns (in case we missed some)
+    const remainingDuplicatePattern = new RegExp(`(${weekdays.join('|')}),\\s*\\1,`, 'gi');
+    if (remainingDuplicatePattern.test(finalContent)) {
+      finalContent = finalContent.replace(remainingDuplicatePattern, (match, weekday) => {
+        console.log('[Generate Newsletter] Fixed remaining duplicate weekday:', match);
+        return `${weekday},`;
+      });
     }
     
     console.log('[Generate Newsletter] Final date replacement complete. Current date:', currentDate);

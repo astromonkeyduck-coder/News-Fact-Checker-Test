@@ -13534,6 +13534,246 @@
         </div>
     </header>
     
+    <!-- 30M Impressions Celebration Banner -->
+    <div id="impressions-celebration-banner" class="impressions-celebration-banner" style="display: none;">
+        <div class="celebration-banner-content">
+            <div class="celebration-text">
+                <div class="celebration-message">
+                    <strong>We just hit 30M+ impressions!!!</strong>
+                    <span class="celebration-subtext">Thank you for your support and Happy Holidays!</span>
+                </div>
+            </div>
+            <button class="celebration-close" onclick="dismissImpressionsBanner()" aria-label="Close banner">
+                ✕
+            </button>
+        </div>
+    </div>
+    
+    <!-- Confetti Container -->
+    <div id="impressionsConfetti" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10000;"></div>
+    
+    <style>
+        /* 30M Impressions Celebration Banner Styles */
+        .impressions-celebration-banner {
+            position: relative;
+            width: 100%;
+            background: linear-gradient(135deg, rgba(7, 21, 42, 0.98) 0%, rgba(13, 31, 58, 0.98) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: white;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            z-index: 9999;
+            border-bottom: 1px solid rgba(79, 172, 254, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            animation: slideDown 0.5s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .celebration-banner-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+        
+        .celebration-text {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+        }
+        
+        .celebration-message {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            text-align: center;
+        }
+        
+        .celebration-message strong {
+            font-size: 1.125rem;
+            font-weight: 600;
+            line-height: 1.4;
+            color: #4FACFE;
+            letter-spacing: 0.02em;
+        }
+        
+        .celebration-subtext {
+            font-size: 0.875rem;
+            opacity: 0.85;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .celebration-close {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            min-height: 44px;
+            min-width: 44px;
+            transition: all 0.2s ease;
+        }
+        
+        .celebration-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .celebration-banner-content {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            .celebration-message strong {
+                font-size: 1rem;
+            }
+            
+            .celebration-subtext {
+                font-size: 0.813rem;
+            }
+        }
+    </style>
+    
+    <style id="impressionsConfettiStyle"></style>
+    
+    <script>
+        // Confetti function for 30M impressions celebration
+        function createImpressionsConfetti() {
+            const confettiContainer = document.getElementById('impressionsConfetti');
+            if (!confettiContainer) return;
+            
+            // Confetti colors matching site theme
+            const colors = ['#4FACFE', '#4A9EFF', '#5BB5FF', '#9B59B6', '#8E44AD', '#3498db', '#2980b9'];
+            
+            // Add CSS animation if not already added
+            if (!document.getElementById('impressionsConfettiStyle').textContent) {
+                const style = document.getElementById('impressionsConfettiStyle');
+                style.textContent = `
+                    @keyframes impressionsConfettiFall {
+                        0% {
+                            transform: translateY(0) translateX(0) rotate(0deg);
+                            opacity: 1;
+                        }
+                        100% {
+                            transform: translateY(100vh) translateX(var(--drift, 0px)) rotate(720deg);
+                            opacity: 0;
+                        }
+                    }
+                `;
+            }
+            
+            // Function to create confetti pieces
+            const createConfettiPiece = () => {
+                const confetti = document.createElement('div');
+                const size = Math.random() * 8 + 4;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const left = Math.random() * 100;
+                const duration = Math.random() * 3 + 2;
+                const delay = Math.random() * 0.5;
+                const horizontalDrift = (Math.random() - 0.5) * 200;
+                
+                confetti.style.cssText = `
+                    position: absolute;
+                    width: ${size}px;
+                    height: ${size}px;
+                    background: ${color};
+                    left: ${left}%;
+                    top: -10px;
+                    border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+                    pointer-events: none;
+                `;
+                
+                confetti.style.animation = `impressionsConfettiFall ${duration}s linear ${delay}s forwards`;
+                confetti.style.setProperty('--drift', horizontalDrift + 'px');
+                
+                confettiContainer.appendChild(confetti);
+                
+                // Remove after animation
+                setTimeout(() => {
+                    if (confetti.parentNode) {
+                        confetti.parentNode.removeChild(confetti);
+                    }
+                }, (duration + delay) * 1000);
+            };
+            
+            // Create confetti for 3 seconds
+            let confettiInterval = setInterval(() => {
+                // Create 20-30 pieces every 150ms
+                const pieces = Math.floor(Math.random() * 11) + 20;
+                for (let i = 0; i < pieces; i++) {
+                    createConfettiPiece();
+                }
+            }, 150);
+            
+            // Stop confetti after 3 seconds
+            setTimeout(() => {
+                clearInterval(confettiInterval);
+                // Clean up after remaining pieces fall
+                setTimeout(() => {
+                    if (confettiContainer) {
+                        confettiContainer.innerHTML = '';
+                    }
+                }, 3000);
+            }, 3000);
+        }
+        
+        // Dismiss banner function
+        function dismissImpressionsBanner() {
+            const banner = document.getElementById('impressions-celebration-banner');
+            if (banner) {
+                banner.style.animation = 'slideDown 0.3s ease reverse';
+                setTimeout(() => {
+                    banner.style.display = 'none';
+                }, 300);
+            }
+            sessionStorage.setItem('impressionsBannerDismissed', 'true');
+        }
+        
+        // Show 30M impressions celebration banner
+        (function() {
+            // Check if banner was dismissed
+            const bannerDismissed = sessionStorage.getItem('impressionsBannerDismissed');
+            if (bannerDismissed === 'true') {
+                return;
+            }
+            
+            // Show banner after a short delay
+            setTimeout(function() {
+                const banner = document.getElementById('impressions-celebration-banner');
+                if (banner) {
+                    banner.style.display = 'block';
+                    // Trigger confetti when banner appears
+                    createImpressionsConfetti();
+                    
+                    // Auto-dismiss after 5 seconds
+                    setTimeout(() => {
+                        dismissImpressionsBanner();
+                    }, 5000);
+                }
+            }, 500);
+        })();
+    </script>
+    
     <!-- Top Banner Ad -->
     <ins class="adsbygoogle"
          style="display:block"
@@ -14122,8 +14362,8 @@
                 <div class="hero-stat-label-small">Likes</div>
             </div>
             
-            <div class="hero-stat-card" data-number="29.9M+">
-                <div class="hero-stat-number-small">29.9M+</div>
+            <div class="hero-stat-card" data-number="30M+">
+                <div class="hero-stat-number-small">30M+</div>
                 <div class="hero-stat-label-small">Total Impressions</div>
             </div>
             
@@ -14583,7 +14823,7 @@
             <p class="credibility-subtitle">Trusted by millions across the globe</p>
             
             <div class="stats-hero-container">
-                <div class="hero-stat-main" data-metric="impressions" data-number="29.9M+">
+                <div class="hero-stat-main" data-metric="impressions" data-number="30M+">
                     <div class="hero-stat-icon">
                         <svg width="96" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <defs>
@@ -14602,7 +14842,7 @@
                             <rect x="19" y="5" width="2.2" height="15" fill="url(#impressionsGrad)" rx="1.1"/>
                         </svg>
                     </div>
-                    <div class="hero-stat-number">29.9M+</div>
+                    <div class="hero-stat-number">30M+</div>
                     <div class="hero-stat-label">Total Impressions</div>
                     <div class="hero-stat-description">Reaching millions with fact-checked news every day</div>
                 </div>

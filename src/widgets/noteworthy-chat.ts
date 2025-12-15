@@ -1283,6 +1283,7 @@ export class NoteworthyChat extends HTMLElement {
     let currentVoice = 'alloy';
     let audioQueue: Float32Array[] = [];
     let isPlayingAudio = false;
+    let audioChunkQueue: string[] = []; // Queue for audio chunks (base64 strings)
     
     // Toggle between chat and image generation modes
     if (modeToggle && modeIcon) {
@@ -1658,6 +1659,11 @@ export class NoteworthyChat extends HTMLElement {
       voiceStatus.style.display = 'none';
       isRecording = false;
       
+      // Clear audio queue to prevent leftover chunks from playing
+      audioChunkQueue = [];
+      isPlayingAudio = false;
+      console.log('[Voice Mode] 🧹 Cleared audio queue on stop');
+      
       if (websocket) {
         websocket.close();
         websocket = null;
@@ -1845,7 +1851,7 @@ export class NoteworthyChat extends HTMLElement {
             break;
             
           case 'response.output_audio.delta':
-            // Play audio chunks from OpenAI Realtime API
+            // Queue audio chunks from OpenAI Realtime API to prevent overlap
             if (message.delta) {
               console.log('[Voice Mode] 🔊 Received audio delta, length:', message.delta?.length || 0);
               
@@ -1856,22 +1862,50 @@ export class NoteworthyChat extends HTMLElement {
                 console.log('[Voice Mode] 🗣️ Status updated to: Speaking...');
               }
               
-              playAudioChunk(message.delta);
+              // Queue the audio chunk instead of playing immediately
+              audioChunkQueue.push(message.delta);
+              console.log('[Voice Mode] 📦 Queued audio chunk, queue length:', audioChunkQueue.length);
+              
+              // Start playing if not already playing
+              if (!isPlayingAudio) {
+                processAudioQueue();
+              }
             }
             break;
             
           case 'response.output_audio.done':
-            // Audio output complete
-            console.log('[Voice Mode] ✅ Audio output complete');
-            if (websocket) (websocket as any)._isSpeaking = false;
-            voiceStatusText.textContent = 'Listening...';
+            // Audio output complete - wait for queue to finish
+            console.log('[Voice Mode] ✅ Audio output complete, waiting for queue to finish...');
+            // Don't reset speaking status yet - wait for queue to finish
+            // The queue processing will continue until all chunks are played
             break;
             
           case 'response.done':
-            // Response complete
-            if (websocket) (websocket as any)._isSpeaking = false;
-            voiceStatusText.textContent = 'Listening...';
-            voiceStatus.classList.remove('recording');
+            // Response complete - wait for audio queue to finish, then update status
+            console.log('[Voice Mode] ✅ Response done, waiting for audio queue to finish...');
+            // Wait a bit for queue to process, then check if still playing
+            setTimeout(() => {
+              // Check if queue is empty and not playing
+              if (audioChunkQueue.length === 0 && !isPlayingAudio) {
+                if (websocket) (websocket as any)._isSpeaking = false;
+                voiceStatusText.textContent = 'Listening...';
+                voiceStatus.classList.remove('recording');
+                console.log('[Voice Mode] ✅ Audio queue finished, status updated to Listening');
+              } else {
+                // Still playing, check again in a bit
+                const checkInterval = setInterval(() => {
+                  if (audioChunkQueue.length === 0 && !isPlayingAudio) {
+                    clearInterval(checkInterval);
+                    if (websocket) (websocket as any)._isSpeaking = false;
+                    voiceStatusText.textContent = 'Listening...';
+                    voiceStatus.classList.remove('recording');
+                    console.log('[Voice Mode] ✅ Audio queue finished (delayed), status updated to Listening');
+                  }
+                }, 100);
+                // Clear interval after 5 seconds max
+                setTimeout(() => clearInterval(checkInterval), 5000);
+              }
+            }, 200);
             break;
             
           case 'conversation.item.input_audio_transcription.completed':
@@ -1924,57 +1958,93 @@ export class NoteworthyChat extends HTMLElement {
       }
     }
     
-    async function playAudioChunk(audioBase64: string) {
+    // Process audio queue sequentially to prevent overlap
+    async function processAudioQueue() {
+      if (isPlayingAudio || audioChunkQueue.length === 0) {
+        return;
+      }
+      
+      isPlayingAudio = true;
+      
+      while (audioChunkQueue.length > 0) {
+        const audioBase64 = audioChunkQueue.shift();
+        if (!audioBase64) continue;
+        
+        await playAudioChunk(audioBase64);
+      }
+      
+      isPlayingAudio = false;
+      console.log('[Voice Mode] ✅ Audio queue processed, all chunks played');
+    }
+    
+    async function playAudioChunk(audioBase64: string): Promise<void> {
       if (!audioContext) {
         console.warn('[Voice Mode] ⚠️ Cannot play audio: AudioContext not initialized');
         return;
       }
       
-      try {
-        // CRITICAL: Resume AudioContext if suspended (browsers suspend until user interaction)
-        if (audioContext.state === 'suspended') {
-          console.log('[Voice Mode] 🔊 Resuming suspended AudioContext...');
-          await audioContext.resume();
-          console.log('[Voice Mode] ✅ AudioContext resumed, state:', audioContext.state);
+      return new Promise((resolve, reject) => {
+        try {
+          // CRITICAL: Resume AudioContext if suspended (browsers suspend until user interaction)
+          if (audioContext!.state === 'suspended') {
+            console.log('[Voice Mode] 🔊 Resuming suspended AudioContext...');
+            audioContext!.resume().then(() => {
+              console.log('[Voice Mode] ✅ AudioContext resumed, state:', audioContext!.state);
+              continuePlayback();
+            }).catch(reject);
+            return;
+          }
+          
+          continuePlayback();
+          
+          function continuePlayback() {
+            // Check if audio is enabled (check audio toggle state)
+            // The audio toggle uses 'active' class when enabled, and localStorage 'noteworthy-ai-audio'
+            const audioToggle = root.querySelector('#audioToggle');
+            const audioEnabled = localStorage.getItem('noteworthy-ai-audio') === 'true';
+            if (audioToggle && !audioEnabled) {
+              console.log('[Voice Mode] 🔇 Audio is disabled (toggle is off), skipping playback');
+              resolve();
+              return;
+            }
+            
+            // Decode base64 to binary
+            const binaryString = atob(audioBase64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            
+            // Convert PCM16 bytes to Float32Array
+            const pcm16 = new Int16Array(bytes.buffer);
+            const float32 = new Float32Array(pcm16.length);
+            for (let i = 0; i < pcm16.length; i++) {
+              float32[i] = pcm16[i] / 32768.0;
+            }
+            
+            // Create audio buffer and play
+            const audioBuffer = audioContext!.createBuffer(1, float32.length, 24000);
+            audioBuffer.copyToChannel(float32, 0);
+            
+            const source = audioContext!.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(audioContext!.destination);
+            
+            // Wait for audio to finish before resolving
+            source.onended = () => {
+              console.log('[Voice Mode] ✅ Audio chunk finished playing');
+              resolve();
+            };
+            
+            source.start();
+            console.log('[Voice Mode] 🔊 Playing audio chunk, length:', float32.length, 'samples');
+          }
+          
+        } catch (error) {
+          console.error('[Voice Mode] ❌ Error playing audio chunk:', error);
+          reject(error);
         }
-        
-        // Check if audio is enabled (check audio toggle state)
-        // The audio toggle uses 'active' class when enabled, and localStorage 'noteworthy-ai-audio'
-        const audioToggle = root.querySelector('#audioToggle');
-        const audioEnabled = localStorage.getItem('noteworthy-ai-audio') === 'true';
-        if (audioToggle && !audioEnabled) {
-          console.log('[Voice Mode] 🔇 Audio is disabled (toggle is off), skipping playback');
-          return;
-        }
-        
-        // Decode base64 to binary
-        const binaryString = atob(audioBase64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        
-        // Convert PCM16 bytes to Float32Array
-        const pcm16 = new Int16Array(bytes.buffer);
-        const float32 = new Float32Array(pcm16.length);
-        for (let i = 0; i < pcm16.length; i++) {
-          float32[i] = pcm16[i] / 32768.0;
-        }
-        
-        // Create audio buffer and play
-        const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
-        audioBuffer.copyToChannel(float32, 0);
-        
-        const source = audioContext.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioContext.destination);
-        source.start();
-        
-        console.log('[Voice Mode] 🔊 Playing audio chunk, length:', float32.length, 'samples');
-        
-      } catch (error) {
-        console.error('[Voice Mode] ❌ Error playing audio chunk:', error);
-      }
+      });
     }
     
     // Voice mode toggle

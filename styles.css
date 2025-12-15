@@ -1926,8 +1926,8 @@ html, body {
         display: none !important;
     }
     
-    /* Featured Total Impressions Card (29.9M) - Full width at top */
-    .hero-stat-card[data-number="29.9M"] {
+    /* Featured Total Impressions Card (30M+) - Full width at top */
+    .hero-stat-card[data-number="30M+"] {
         order: -1 !important;
         flex: 0 0 100% !important;
         width: 100% !important;

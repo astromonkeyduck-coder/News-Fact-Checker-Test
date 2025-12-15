@@ -5469,6 +5469,11 @@ class NoteworthyChat extends HTMLElement {
       isRecording = false;
       hasActiveResponse = false; // Reset response tracking
       
+      // Clear audio queue to prevent leftover chunks from playing
+      audioPlayQueue = [];
+      isPlayingAudio = false;
+      console.log('[Voice Mode] 🧹 Cleared audio queue on stop');
+      
       // Restore original speechSynthesis.speak function
       if (window._originalSpeak) {
         window.speechSynthesis.speak = window._originalSpeak;
@@ -6432,7 +6437,14 @@ class NoteworthyChat extends HTMLElement {
                 window.speechSynthesis.cancel();
               }
               
-              playAudioChunk(message.delta);
+              // CRITICAL: Always queue audio chunks - never play directly to prevent overlap
+              audioPlayQueue.push(message.delta);
+              console.log('[Voice Mode] 📦 Queued audio chunk, queue length:', audioPlayQueue.length);
+              
+              // Start processing queue if not already playing
+              if (!isPlayingAudio) {
+                processAudioQueue();
+              }
             }
             break;
             
@@ -6872,142 +6884,138 @@ class NoteworthyChat extends HTMLElement {
       }
     }
     
-    async function playAudioChunk(audioBase64) {
-      if (!audioContext) {
-        console.warn('[Voice Mode] ⚠️ Cannot play audio: AudioContext not initialized');
-        return;
-      }
-
-      // CRITICAL: Check if voice mode is active - if not, don't play (prevent duplicate playback)
-      if (!voiceModeActive && !window._voiceModeActive) {
-        console.warn('[Voice Mode] ⚠️ Blocking audio playback - voice mode not active');
-        return;
-      }
-
-      // CRITICAL: Deduplicate audio chunks - prevent same audio from playing twice
-      // Use a hash of the audio data to detect duplicates
-      const audioHash = audioBase64.substring(0, 50) + audioBase64.length; // First 50 chars + length as hash
-      if (playedAudioChunks.has(audioHash)) {
-        console.warn('[Voice Mode] ⚠️ DUPLICATE AUDIO CHUNK DETECTED - skipping playback');
-        return;
-      }
-      playedAudioChunks.add(audioHash);
-      
-      // Clean up old hashes (keep last 100 to prevent memory leak)
-      if (playedAudioChunks.size > 100) {
-        const firstHash = playedAudioChunks.values().next().value;
-        playedAudioChunks.delete(firstHash);
-      }
-
-      // CRITICAL: Queue audio if already playing to prevent overlap
+    // Process audio queue sequentially - this is the ONLY way audio should be played
+    async function processAudioQueue() {
+      // CRITICAL: Check if already processing - prevent multiple simultaneous processes
       if (isPlayingAudio) {
-        console.log('[Voice Mode] 🔊 Audio already playing, queuing chunk');
-        audioPlayQueue.push(audioBase64);
         return;
       }
-
-      // Play audio immediately
-      await playAudioChunkImmediate(audioBase64, audioHash);
+      
+      // CRITICAL: Check if queue is empty
+      if (audioPlayQueue.length === 0) {
+        return;
+      }
+      
+      // CRITICAL: Set flag IMMEDIATELY to prevent race conditions
+      isPlayingAudio = true;
+      console.log('[Voice Mode] 🔊 Starting audio queue processing, queue length:', audioPlayQueue.length);
+      
+      // Process queue sequentially
+      while (audioPlayQueue.length > 0) {
+        const audioBase64 = audioPlayQueue.shift();
+        if (!audioBase64) continue;
+        
+        // Deduplicate audio chunks
+        const audioHash = audioBase64.substring(0, 50) + audioBase64.length;
+        if (playedAudioChunks.has(audioHash)) {
+          console.warn('[Voice Mode] ⚠️ DUPLICATE AUDIO CHUNK DETECTED - skipping playback');
+          continue;
+        }
+        playedAudioChunks.add(audioHash);
+        
+        // Clean up old hashes
+        if (playedAudioChunks.size > 100) {
+          const firstHash = playedAudioChunks.values().next().value;
+          playedAudioChunks.delete(firstHash);
+        }
+        
+        // Play this chunk and wait for it to finish
+        await playAudioChunkImmediate(audioBase64, audioHash);
+      }
+      
+      // Queue is empty, reset flag
+      isPlayingAudio = false;
+      console.log('[Voice Mode] ✅ Audio queue processed, all chunks played');
     }
 
     async function playAudioChunkImmediate(audioBase64, audioHash) {
-      // Mark as playing
-      isPlayingAudio = true;
+      // Return a promise that resolves when audio finishes
+      return new Promise(async (resolve, reject) => {
+        try {
+          if (!audioContext) {
+            console.warn('[Voice Mode] ⚠️ Cannot play audio: AudioContext not initialized');
+            resolve(); // Resolve instead of reject to continue queue
+            return;
+          }
 
-      try {
-        // CRITICAL: Resume AudioContext if suspended (browsers suspend until user interaction)
-        if (audioContext.state === 'suspended') {
-          console.log('[Voice Mode] 🔊 Resuming suspended AudioContext...');
-          await audioContext.resume();
-          console.log('[Voice Mode] ✅ AudioContext resumed, state:', audioContext.state);
-        }
+          // CRITICAL: Resume AudioContext if suspended (browsers suspend until user interaction)
+          if (audioContext.state === 'suspended') {
+            console.log('[Voice Mode] 🔊 Resuming suspended AudioContext...');
+            await audioContext.resume();
+            console.log('[Voice Mode] ✅ AudioContext resumed, state:', audioContext.state);
+          }
 
-        // Voice call audio should ALWAYS play - audio toggle only controls text-to-speech
-        // No need to check audioEnabled here - voice calls work independently
+          // Voice call audio should ALWAYS play - audio toggle only controls text-to-speech
+          // No need to check audioEnabled here - voice calls work independently
 
-        // Decode base64 to binary
-        const binaryString = atob(audioBase64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
+          // Decode base64 to binary
+          const binaryString = atob(audioBase64);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
 
-        // Convert PCM16 bytes to Float32Array
-        const pcm16 = new Int16Array(bytes.buffer);
-        const float32 = new Float32Array(pcm16.length);
-        for (let i = 0; i < pcm16.length; i++) {
-          float32[i] = pcm16[i] / 32768.0;
-        }
+          // Convert PCM16 bytes to Float32Array
+          const pcm16 = new Int16Array(bytes.buffer);
+          const float32 = new Float32Array(pcm16.length);
+          for (let i = 0; i < pcm16.length; i++) {
+            float32[i] = pcm16[i] / 32768.0;
+          }
 
-        // Create audio buffer and play
-        const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
-        audioBuffer.copyToChannel(float32, 0);
+          // Create audio buffer and play
+          const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
+          audioBuffer.copyToChannel(float32, 0);
 
-        const source = audioContext.createBufferSource();
-        source.buffer = audioBuffer;
-        // CRITICAL: Connect to destination only once - prevent duplicate routing
-        source.connect(audioContext.destination);
-        
-        // Calculate duration of this chunk
-        const duration = float32.length / 24000; // Sample rate is 24kHz
-        
-        // Add error handler to catch any issues
-        source.onended = () => {
-          // Audio chunk finished playing - now play next in queue
-          isPlayingAudio = false;
+          const source = audioContext.createBufferSource();
+          source.buffer = audioBuffer;
+          // CRITICAL: Connect to destination only once - prevent duplicate routing
+          source.connect(audioContext.destination);
           
-          // Play next chunk in queue if any
-          if (audioPlayQueue.length > 0) {
-            const nextChunk = audioPlayQueue.shift();
-            const nextHash = nextChunk.substring(0, 50) + nextChunk.length;
-            playAudioChunkImmediate(nextChunk, nextHash).catch(err => {
-              console.error('[Voice Mode] ❌ Error playing queued audio:', err);
-              isPlayingAudio = false;
-            });
-          }
-        };
-        
-        source.start();
-
-        console.log('[Voice Mode] 🔊 Playing audio chunk, length:', float32.length, 'samples, duration:', duration.toFixed(3), 's, hash:', audioHash.substring(0, 20) + '...');
-        
-        // Fallback: If onended doesn't fire, reset after duration
-        setTimeout(() => {
-          if (isPlayingAudio) {
-            console.warn('[Voice Mode] ⚠️ Audio chunk timeout, resetting play state');
-            isPlayingAudio = false;
-            // Play next in queue
-            if (audioPlayQueue.length > 0) {
-              const nextChunk = audioPlayQueue.shift();
-              const nextHash = nextChunk.substring(0, 50) + nextChunk.length;
-              playAudioChunkImmediate(nextChunk, nextHash).catch(err => {
-                console.error('[Voice Mode] ❌ Error playing queued audio:', err);
-                isPlayingAudio = false;
-              });
-            }
-          }
-        }, (duration * 1000) + 100); // Add 100ms buffer
-        
-      } catch (error) {
-        console.error('[Voice Mode] ❌ Error playing audio chunk:', error);
-        console.error('[Voice Mode] AudioContext state:', audioContext?.state);
-        console.error('[Voice Mode] Error details:', {
-          message: error.message,
-          stack: error.stack,
-          audioContextExists: !!audioContext,
-          audioContextState: audioContext?.state
-        });
-        isPlayingAudio = false;
-        // Try next in queue
-        if (audioPlayQueue.length > 0) {
-          const nextChunk = audioPlayQueue.shift();
-          const nextHash = nextChunk.substring(0, 50) + nextChunk.length;
-          playAudioChunkImmediate(nextChunk, nextHash).catch(err => {
-            console.error('[Voice Mode] ❌ Error playing queued audio:', err);
-            isPlayingAudio = false;
+          // Calculate duration of this chunk
+          const duration = float32.length / 24000; // Sample rate is 24kHz
+          
+          let resolved = false; // Prevent double resolution
+          
+          // Add error handler to catch any issues
+          source.onended = () => {
+            if (resolved) return; // Prevent double resolution
+            resolved = true;
+            // Audio chunk finished playing
+            console.log('[Voice Mode] ✅ Audio chunk finished, duration:', duration.toFixed(3), 's');
+            resolve();
+          };
+          
+          source.onerror = (error) => {
+            if (resolved) return; // Prevent double resolution
+            resolved = true;
+            console.error('[Voice Mode] ❌ Audio source error:', error);
+            resolve(); // Resolve instead of reject to continue queue
+          };
+          
+          source.start();
+          console.log('[Voice Mode] 🔊 Playing audio chunk, length:', float32.length, 'samples, duration:', duration.toFixed(3), 's, hash:', audioHash.substring(0, 20) + '...');
+          
+          // Fallback: If onended doesn't fire, resolve after duration
+          setTimeout(() => {
+            if (resolved) return; // Prevent double resolution
+            resolved = true;
+            console.warn('[Voice Mode] ⚠️ Audio chunk timeout fallback triggered');
+            resolve();
+          }, (duration * 1000) + 200); // Add 200ms buffer
+          
+        } catch (error) {
+          console.error('[Voice Mode] ❌ Error playing audio chunk:', error);
+          console.error('[Voice Mode] AudioContext state:', audioContext?.state);
+          console.error('[Voice Mode] Error details:', {
+            message: error.message,
+            stack: error.stack,
+            audioContextExists: !!audioContext,
+            audioContextState: audioContext?.state
           });
+          // Resolve instead of reject to continue queue processing
+          resolve();
         }
-      }
+      });
     }
     
     // Legacy handlers (kept for compatibility but not used)

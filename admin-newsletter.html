@@ -2997,10 +2997,13 @@
                     id: a.id,
                     title: a.title,
                     mimeType: a.mimeType,
-                    dataUrl: a.dataUrl, // Save full data URL for regeneration
+                    dataUrl: a.dataUrl, // Keep for preview/fallback
+                    imageUrl: a.imageUrl, // Uploaded URL (preferred)
+                    imageKey: a.imageKey, // Storage key
                     width: a.width,
                     height: a.height,
-                    placementHint: a.placementHint
+                    placementHint: a.placementHint,
+                    size: a.size
                 })),
                 generatedHtml: newsletterState.generatedHtml || html,
                 generatedAt: newsletterState.generatedAt || null
@@ -3395,39 +3398,80 @@
         // ============================================
         
         // Handle image file upload
-        function handleImageFiles(files) {
-            Array.from(files).forEach(file => {
+        async function handleImageFiles(files) {
+            for (const file of Array.from(files)) {
                 if (!file.type.startsWith('image/')) {
                     showStatus('Only image files are supported', 'error');
-                    return;
+                    continue;
                 }
                 
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const dataUrl = e.target.result;
-                    const img = new Image();
-                    img.onload = () => {
-                        const attachment = {
-                            id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                            title: '',
-                            file: file,
-                            mimeType: file.type,
-                            dataUrl: dataUrl,
-                            width: img.width,
-                            height: img.height,
-                            placementHint: 'inline'
-                        };
-                        
-                        newsletterState.attachments.push(attachment);
-                        renderAttachment(attachment);
-                        
-                        // Insert token in prompt at cursor
-                        insertImageToken(attachment.id);
+                // Show uploading status
+                const tempId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                showStatus(`Uploading ${file.name}...`, 'info');
+                
+                try {
+                    // Read file as data URL
+                    const dataUrl = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
+                    
+                    // Get image dimensions
+                    const img = await new Promise((resolve, reject) => {
+                        const img = new Image();
+                        img.onload = () => resolve(img);
+                        img.onerror = reject;
+                        img.src = dataUrl;
+                    });
+                    
+                    // Upload to Netlify
+                    const uploadResponse = await fetch('/.netlify/functions/upload-newsletter-image', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            image: dataUrl,
+                            fileName: file.name
+                        })
+                    });
+                    
+                    if (!uploadResponse.ok) {
+                        const errorData = await uploadResponse.json().catch(() => ({ error: 'Upload failed' }));
+                        throw new Error(errorData.error || 'Failed to upload image');
+                    }
+                    
+                    const uploadData = await uploadResponse.json();
+                    
+                    // Create attachment with URL instead of full dataUrl
+                    const attachment = {
+                        id: tempId,
+                        title: '',
+                        file: file,
+                        mimeType: file.type,
+                        dataUrl: dataUrl, // Keep for preview
+                        imageUrl: uploadData.url, // Store URL for newsletter generation
+                        imageKey: uploadData.key, // Store key for reference
+                        width: img.width,
+                        height: img.height,
+                        placementHint: 'inline',
+                        size: uploadData.size
                     };
-                    img.src = dataUrl;
-                };
-                reader.readAsDataURL(file);
-            });
+                    
+                    newsletterState.attachments.push(attachment);
+                    renderAttachment(attachment);
+                    
+                    // Insert token in prompt at cursor
+                    insertImageToken(attachment.id);
+                    
+                    showStatus(`✅ ${file.name} uploaded successfully`, 'success');
+                } catch (error) {
+                    console.error('Error uploading image:', error);
+                    showStatus(`Failed to upload ${file.name}: ${error.message}`, 'error');
+                }
+            }
         }
         
         // Render attachment in UI
@@ -3551,8 +3595,12 @@
                 return;
             }
             
-            // Validate attachments have dataUrls
-            const imagesWithoutData = newsletterState.attachments.filter(a => !a.dataUrl || !a.dataUrl.startsWith('data:'));
+            // Validate attachments have either imageUrl (uploaded) or dataUrl (legacy)
+            const imagesWithoutData = newsletterState.attachments.filter(a => {
+                const hasImageUrl = a.imageUrl && typeof a.imageUrl === 'string';
+                const hasDataUrl = a.dataUrl && a.dataUrl.startsWith('data:');
+                return !hasImageUrl && !hasDataUrl;
+            });
             if (imagesWithoutData.length > 0) {
                 showStatus('All images must have valid image data. Please re-upload any missing images.', 'error');
                 return;
@@ -3584,7 +3632,9 @@
                             id: a.id,
                             title: a.title,
                             mimeType: a.mimeType,
-                            dataUrl: a.dataUrl,
+                            dataUrl: a.dataUrl, // Keep for backward compatibility
+                            imageUrl: a.imageUrl, // Uploaded URL (preferred)
+                            imageKey: a.imageKey, // Storage key
                             placementHint: a.placementHint
                         })),
                         styleReference: newsletterState.styleReference

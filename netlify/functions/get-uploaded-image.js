@@ -52,8 +52,8 @@ exports.handler = async (event, context) => {
     const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
     const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
     
-    // Try multiple stores: post-media (new), uploaded-images (legacy)
-    const storeNames = ["post-media", "uploaded-images"];
+    // Try multiple stores: post-media (new), newsletter-images, uploaded-images (legacy)
+    const storeNames = ["post-media", "newsletter-images", "uploaded-images"];
     let store = null;
     let foundStore = null;
     
