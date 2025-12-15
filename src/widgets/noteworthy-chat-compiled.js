@@ -1574,9 +1574,22 @@ class NoteworthyChat extends HTMLElement {
                         voiceStatusText.textContent = 'Listening...';
                         break;
                     case 'response.audio.delta':
-                        // Play audio chunks
+                    case 'response.output_audio.delta':
+                        // CRITICAL: Queue audio chunks - NEVER play directly
+                        // This prevents overlapping audio
                         if (message.delta) {
-                            playAudioChunk(message.delta);
+                            // Queue the chunk instead of playing directly
+                            if (!window.audioPlayQueue) window.audioPlayQueue = [];
+                            if (!window.isPlayingAudio) window.isPlayingAudio = false;
+                            
+                            window.audioPlayQueue.push(message.delta);
+                            console.log('[Voice Mode] 📦 Queued audio chunk (compiled), queue length:', window.audioPlayQueue.length);
+                            
+                            // Start processing queue if not already playing
+                            if (!window.isPlayingAudio) {
+                                window.isPlayingAudio = true;
+                                processAudioQueueCompiled();
+                            }
                         }
                         break;
                     case 'response.done':
@@ -1613,32 +1626,84 @@ class NoteworthyChat extends HTMLElement {
                 console.error('Error parsing WebSocket message:', error);
             }
         }
-        async function playAudioChunk(audioBase64) {
+        // Process audio queue sequentially - prevents overlapping audio
+        async function processAudioQueueCompiled() {
+            if (!window.audioPlayQueue || window.audioPlayQueue.length === 0) {
+                window.isPlayingAudio = false;
+                return;
+            }
+            
+            while (window.audioPlayQueue.length > 0) {
+                const audioBase64 = window.audioPlayQueue.shift();
+                if (!audioBase64) continue;
+                
+                await playAudioChunkCompiled(audioBase64);
+            }
+            
+            window.isPlayingAudio = false;
+            console.log('[Voice Mode] ✅ Audio queue processed (compiled)');
+        }
+        
+        async function playAudioChunkCompiled(audioBase64) {
             if (!audioContext)
                 return;
-            try {
-                // Decode base64 to binary
-                const binaryString = atob(audioBase64);
-                const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
+            return new Promise((resolve) => {
+                try {
+                    // Decode base64 to binary
+                    const binaryString = atob(audioBase64);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    // Convert PCM16 bytes to Float32Array
+                    const pcm16 = new Int16Array(bytes.buffer);
+                    const float32 = new Float32Array(pcm16.length);
+                    for (let i = 0; i < pcm16.length; i++) {
+                        float32[i] = pcm16[i] / 32768.0;
+                    }
+                    // Create audio buffer and play
+                    const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
+                    audioBuffer.copyToChannel(float32, 0);
+                    const source = audioContext.createBufferSource();
+                    source.buffer = audioBuffer;
+                    source.connect(audioContext.destination);
+                    
+                    const duration = float32.length / 24000;
+                    source.onended = () => {
+                        console.log('[Voice Mode] ✅ Audio chunk finished (compiled), duration:', duration.toFixed(3), 's');
+                        resolve();
+                    };
+                    source.onerror = () => {
+                        console.error('[Voice Mode] ❌ Audio source error (compiled)');
+                        resolve();
+                    };
+                    
+                    source.start();
+                    console.log('[Voice Mode] 🔊 Playing audio chunk FROM QUEUE (compiled), length:', float32.length, 'samples, duration:', duration.toFixed(3), 's');
+                    
+                    // Fallback timeout
+                    setTimeout(() => {
+                        resolve();
+                    }, (duration * 1000) + 200);
                 }
-                // Convert PCM16 bytes to Float32Array
-                const pcm16 = new Int16Array(bytes.buffer);
-                const float32 = new Float32Array(pcm16.length);
-                for (let i = 0; i < pcm16.length; i++) {
-                    float32[i] = pcm16[i] / 32768.0;
+                catch (error) {
+                    console.error('Error playing audio chunk (compiled):', error);
+                    resolve();
                 }
-                // Create audio buffer and play
-                const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
-                audioBuffer.copyToChannel(float32, 0);
-                const source = audioContext.createBufferSource();
-                source.buffer = audioBuffer;
-                source.connect(audioContext.destination);
-                source.start();
-            }
-            catch (error) {
-                console.error('Error playing audio chunk:', error);
+            });
+        }
+        
+        // DEPRECATED: Old function kept for compatibility but should not be used
+        async function playAudioChunk(audioBase64) {
+            console.warn('[Voice Mode] ⚠️ DEPRECATED: playAudioChunk called directly - should use queue!');
+            // Queue instead of playing directly
+            if (!window.audioPlayQueue) window.audioPlayQueue = [];
+            if (!window.isPlayingAudio) window.isPlayingAudio = false;
+            
+            window.audioPlayQueue.push(audioBase64);
+            if (!window.isPlayingAudio) {
+                window.isPlayingAudio = true;
+                processAudioQueueCompiled();
             }
         }
         // Voice mode toggle

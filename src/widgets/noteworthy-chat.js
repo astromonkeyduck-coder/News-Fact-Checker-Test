@@ -4776,6 +4776,42 @@ class NoteworthyChat extends HTMLElement {
         voiceModeActive = true;
         window._voiceModeActive = true; // Set global flag FIRST
         
+        // CRITICAL: Set global queue guard to prevent ANY direct audio playback
+        // This ensures even cached code can't bypass the queue
+        window._audioQueueOnly = true;
+        window._audioQueueVersion = '2024-12-15-v3'; // Cache-busting version
+        console.log('[Voice Mode] 🔒 Audio queue-only mode ENABLED (v3) - all audio MUST go through queue');
+        
+        // CRITICAL: Override AudioBufferSourceNode.start() globally to block direct playback
+        // This catches ANY attempt to play audio, even from cached code
+        // FORCE override even if already set (in case cached code reset it)
+        const AudioBufferSourceNodeProto = AudioBufferSourceNode.prototype;
+        if (!window._originalBufferSourceStart) {
+          window._originalBufferSourceStart = AudioBufferSourceNodeProto.start.bind(AudioBufferSourceNodeProto);
+        }
+        
+        // ALWAYS override (even if already overridden) to ensure it's active
+        AudioBufferSourceNodeProto.start = function(...args) {
+          // Check if queue-only mode is active
+          if (window._audioQueueOnly && !window._allowDirectAudio) {
+            console.error('[Voice Mode] 🚫🚫🚫 BLOCKED AudioBufferSourceNode.start() - queue-only mode active!', {
+              queueOnlyMode: window._audioQueueOnly,
+              queueVersion: window._audioQueueVersion,
+              allowDirectAudio: window._allowDirectAudio,
+              stack: new Error().stack.substring(0, 500)
+            });
+            // DO NOT call original start - block it completely
+            return;
+          }
+          // Queue mode not active, allow normal playback
+          if (window._originalBufferSourceStart) {
+            return window._originalBufferSourceStart.apply(this, args);
+          }
+          // Fallback if original not saved (shouldn't happen)
+          return AudioBufferSourceNode.prototype.start.apply(this, args);
+        };
+        console.log('[Voice Mode] 🔒✅ Overrode AudioBufferSourceNode.start() globally (FORCED) - queue version:', window._audioQueueVersion);
+        
         // CRITICAL: Override speechSynthesis.speak to completely block TTS during voice mode
         // Do this IMMEDIATELY, before anything else
         if (!window._originalSpeak) {
@@ -5413,6 +5449,219 @@ class NoteworthyChat extends HTMLElement {
       }
     }
     
+    // Show email confirmation UI
+    function showEmailConfirmationUI(recipientEmail, subject, message, imageUrl = null, imagePrompt = null) {
+      // Remove any existing email confirmation UI
+      const existing = root.querySelector('#email-confirmation-ui');
+      if (existing) existing.remove();
+      
+      // Create confirmation UI
+      const confirmationDiv = document.createElement('div');
+      confirmationDiv.id = 'email-confirmation-ui';
+      confirmationDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        padding: 24px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        z-index: 10000;
+        border: 2px solid #4a90e2;
+      `;
+      
+      confirmationDiv.innerHTML = `
+        <h3 style="margin: 0 0 16px 0; color: #4a90e2; font-size: 20px;">📧 Confirm Email</h3>
+        <div style="margin-bottom: 16px;">
+          <strong style="color: #333;">To:</strong>
+          <div style="color: #666; margin-top: 4px;">${recipientEmail}</div>
+        </div>
+        <div style="margin-bottom: 16px;">
+          <strong style="color: #333;">Subject:</strong>
+          <div style="color: #666; margin-top: 4px;">${subject}</div>
+        </div>
+        <div style="margin-bottom: 16px;">
+          <strong style="color: #333;">Message:</strong>
+          <div style="color: #666; margin-top: 4px; white-space: pre-wrap; background: #f5f5f5; padding: 12px; border-radius: 8px;">${message}</div>
+        </div>
+        ${imageUrl ? `
+          <div style="margin-bottom: 16px;">
+            <strong style="color: #333;">Image:</strong>
+            <div style="margin-top: 8px;">
+              <img src="${imageUrl}" alt="${imagePrompt || 'Generated image'}" style="max-width: 100%; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+              ${imagePrompt ? `<p style="color: #666; font-size: 12px; margin-top: 4px; font-style: italic;">"${imagePrompt}"</p>` : ''}
+            </div>
+          </div>
+        ` : ''}
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+          <button id="email-confirm-send" style="
+            flex: 1;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+          ">✅ Send Email</button>
+          <button id="email-confirm-cancel" style="
+            flex: 1;
+            background: #ccc;
+            color: #333;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+          ">❌ Cancel</button>
+        </div>
+      `;
+      
+      document.body.appendChild(confirmationDiv);
+      
+      // Handle send button
+      const sendBtn = confirmationDiv.querySelector('#email-confirm-send');
+      sendBtn.addEventListener('click', () => {
+        sendPendingEmail(imageUrl, imagePrompt);
+        confirmationDiv.remove();
+      });
+      
+      // Handle cancel button
+      const cancelBtn = confirmationDiv.querySelector('#email-confirm-cancel');
+      cancelBtn.addEventListener('click', () => {
+        window._pendingEmail = null;
+        confirmationDiv.remove();
+        if (websocket && websocket.readyState === WebSocket.OPEN && window._pendingEmail?.call_id) {
+          // Tell AI that email was cancelled
+          websocket.send(JSON.stringify({
+            type: 'conversation.item.create',
+            item: {
+              type: 'function_call_output',
+              call_id: window._pendingEmail.call_id,
+              output: JSON.stringify({ cancelled: true, message: 'User cancelled email sending' })
+            }
+          }));
+        }
+      });
+    }
+    
+    // Send pending email
+    async function sendPendingEmail(imageUrl = null, imagePrompt = null) {
+      if (!window._pendingEmail) {
+        console.error('[Voice Mode] ❌ No pending email to send');
+        return;
+      }
+      
+      const emailData = window._pendingEmail;
+      console.log('[Voice Mode] 📧 Sending email:', emailData);
+      
+      // Update pending email with image if provided
+      if (imageUrl) {
+        emailData.image_url = imageUrl;
+        emailData.image_prompt = imagePrompt;
+      }
+      
+      // Determine base URL
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const baseUrl = isLocalhost ? 'http://localhost:8888' : window.location.origin;
+      
+      try {
+        const response = await fetch(`${baseUrl}/.netlify/functions/send-custom-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipient_email: emailData.recipient_email,
+            subject: emailData.subject,
+            message: emailData.message,
+            image_url: emailData.image_url || null,
+            image_prompt: emailData.image_prompt || null
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          console.log('[Voice Mode] ✅ Email sent successfully:', result.emailId);
+          if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = '✅ Email sent!';
+          
+          // Send success result to AI
+          if (websocket && websocket.readyState === WebSocket.OPEN && emailData.call_id) {
+            websocket.send(JSON.stringify({
+              type: 'conversation.item.create',
+              item: {
+                type: 'function_call_output',
+                call_id: emailData.call_id,
+                output: JSON.stringify({ 
+                  success: true, 
+                  message: 'Email sent successfully',
+                  emailId: result.emailId
+                })
+              }
+            }));
+            
+            // Trigger response
+            const waitForResponse = () => {
+              if (hasActiveResponse) {
+                setTimeout(waitForResponse, 100);
+                return;
+              }
+              hasActiveResponse = true;
+              if (websocket && websocket.readyState === WebSocket.OPEN) {
+                websocket.send(JSON.stringify({ type: 'response.create' }));
+              } else {
+                hasActiveResponse = false;
+              }
+            };
+            waitForResponse();
+          }
+        } else {
+          console.error('[Voice Mode] ❌ Email sending failed:', result.error);
+          if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = '❌ Email failed';
+          
+          // Send error result to AI
+          if (websocket && websocket.readyState === WebSocket.OPEN && emailData.call_id) {
+            websocket.send(JSON.stringify({
+              type: 'conversation.item.create',
+              item: {
+                type: 'function_call_output',
+                call_id: emailData.call_id,
+                output: JSON.stringify({ 
+                  success: false, 
+                  error: result.error || 'Failed to send email'
+                })
+              }
+            }));
+            
+            const waitForResponse = () => {
+              if (hasActiveResponse) {
+                setTimeout(waitForResponse, 100);
+                return;
+              }
+              hasActiveResponse = true;
+              if (websocket && websocket.readyState === WebSocket.OPEN) {
+                websocket.send(JSON.stringify({ type: 'response.create' }));
+              } else {
+                hasActiveResponse = false;
+              }
+            };
+            waitForResponse();
+          }
+        }
+      } catch (error) {
+        console.error('[Voice Mode] ❌ Email sending error:', error);
+        if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = '❌ Email error';
+      } finally {
+        window._pendingEmail = null;
+      }
+    }
+    
     function showInVoiceSidebar(type, data) {
       if (!voiceModeActive || !voiceSidebarContent) return;
       
@@ -5466,8 +5715,18 @@ class NoteworthyChat extends HTMLElement {
       // CRITICAL: Stop everything immediately - microphone and websocket first
       voiceModeActive = false;
       window._voiceModeActive = false; // Clear global flag
+      window._audioQueueOnly = false; // Disable queue-only mode
+      window._allowDirectAudio = false; // Revoke any direct audio permission
       isRecording = false;
       hasActiveResponse = false; // Reset response tracking
+      console.log('[Voice Mode] 🔓 Audio queue-only mode DISABLED');
+      
+      // Restore original AudioBufferSourceNode.start if it was overridden
+      if (window._originalBufferSourceStart) {
+        AudioBufferSourceNode.prototype.start = window._originalBufferSourceStart;
+        window._originalBufferSourceStart = null;
+        console.log('[Voice Mode] ✅ Restored original AudioBufferSourceNode.start');
+      }
       
       // Clear audio queue to prevent leftover chunks from playing
       audioPlayQueue = [];
@@ -6228,6 +6487,36 @@ class NoteworthyChat extends HTMLElement {
               } else {
                 console.error('[Voice Mode] ❌ No prompt provided for image generation');
               }
+            } else if (message.name === 'send_email') {
+              console.log('[Voice Mode] 📧 Email sending requested via function call:', {
+                recipient: functionArgs.recipient_email,
+                subject: functionArgs.subject,
+                message: functionArgs.message?.substring(0, 50) + '...'
+              });
+              
+              // Show email confirmation UI instead of sending immediately
+              // The AI will repeat back the details, and user confirms via button
+              const recipientEmail = functionArgs.recipient_email || '';
+              const emailSubject = functionArgs.subject || '';
+              const emailMessage = functionArgs.message || '';
+              
+              // Store email data for confirmation
+              window._pendingEmail = {
+                recipient_email: recipientEmail,
+                subject: emailSubject,
+                message: emailMessage,
+                call_id: message.call_id,
+                image_url: null, // Will be set if sending with image
+                image_prompt: null
+              };
+              
+              // Show confirmation UI
+              showEmailConfirmationUI(recipientEmail, emailSubject, emailMessage);
+              
+              // Tell AI that confirmation is needed (don't send function result yet)
+              // The AI should repeat back the details
+              console.log('[Voice Mode] 📧 Email confirmation UI shown, waiting for user confirmation');
+              
             } else if (message.name === 'search_web') {
               if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = '🔍 Searching the web...';
               console.log('[Voice Mode] 🔍 Web search requested via function call, query:', functionArgs.query);
@@ -6402,8 +6691,17 @@ class NoteworthyChat extends HTMLElement {
             break;
             
           case 'response.output_audio.delta':
-            // Play audio chunks from OpenAI Realtime API
-            console.log('[Voice Mode] ✅ CASE MATCHED: response.output_audio.delta');
+            // CRITICAL: Queue audio chunks - NEVER play directly
+            // VERSION: 2024-12-15-queue-fix-v3 - All audio MUST go through queue
+            // CACHE-BUST: If you see "🔊 Playing audio chunk" (without "FROM QUEUE"), clear browser cache!
+            console.log('[Voice Mode] ✅✅✅ CASE MATCHED: response.output_audio.delta (QUEUE VERSION v3 - CACHE-BUST)');
+            
+            // CRITICAL: Verify queue system is active
+            if (!window._audioQueueOnly) {
+              console.error('[Voice Mode] 🚨🚨🚨 CRITICAL: Queue-only mode not enabled! Enabling now...');
+              window._audioQueueOnly = true;
+              window._audioQueueVersion = '2024-12-15-v3';
+            }
             
             // CRITICAL: Only process audio if voice mode is active (prevent duplicate playback)
             if (!voiceModeActive && !window._voiceModeActive) {
@@ -6438,12 +6736,24 @@ class NoteworthyChat extends HTMLElement {
               }
               
               // CRITICAL: Always queue audio chunks - never play directly to prevent overlap
+              // This is the ONLY place audio should be queued - no direct playback allowed
+              console.log('[Voice Mode] 📥📥📥 AUDIO DELTA RECEIVED (v3) - queuing chunk (BEFORE queue length:', audioPlayQueue.length, ')');
               audioPlayQueue.push(message.delta);
-              console.log('[Voice Mode] 📦 Queued audio chunk, queue length:', audioPlayQueue.length);
+              console.log('[Voice Mode] 📦📦📦 ✅✅✅ Queued audio chunk (v3), queue length:', audioPlayQueue.length, 'isPlayingAudio:', isPlayingAudio, 'queueVersion:', window._audioQueueVersion);
               
               // Start processing queue if not already playing
+              // CRITICAL: Check and set flag atomically to prevent race conditions
               if (!isPlayingAudio) {
-                processAudioQueue();
+                // Set flag IMMEDIATELY before async call to prevent multiple processors
+                isPlayingAudio = true;
+                console.log('[Voice Mode] 🚀🚀🚀 Starting queue processor (v3) (flag set to true)');
+                // Don't await - let it run in background, but flag prevents duplicates
+                processAudioQueue().catch(err => {
+                  console.error('[Voice Mode] ❌ Queue processor error:', err);
+                  isPlayingAudio = false; // Reset on error
+                });
+              } else {
+                console.log('[Voice Mode] ⏸️ Queue already processing (isPlayingAudio=true), chunk will play when ready');
               }
             }
             break;
@@ -6656,6 +6966,23 @@ class NoteworthyChat extends HTMLElement {
                       prompt: output.revised_prompt || 'Generated image'
                     });
                     if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = '✅ Image generated!';
+                    
+                    // If there's a pending email, update it with the image
+                    if (window._pendingEmail) {
+                      window._pendingEmail.image_url = output.image_url;
+                      window._pendingEmail.image_prompt = output.revised_prompt || 'Generated image';
+                      // Update the confirmation UI to show the image
+                      const existingUI = root.querySelector('#email-confirmation-ui');
+                      if (existingUI) {
+                        showEmailConfirmationUI(
+                          window._pendingEmail.recipient_email,
+                          window._pendingEmail.subject,
+                          window._pendingEmail.message,
+                          output.image_url,
+                          output.revised_prompt || 'Generated image'
+                        );
+                      }
+                    }
                   } else {
                     // Show in chat if not in voice mode
                     const aiGroup = document.createElement('div');
@@ -6885,20 +7212,28 @@ class NoteworthyChat extends HTMLElement {
     }
     
     // Process audio queue sequentially - this is the ONLY way audio should be played
+    // VERSION: 2024-12-15-queue-fix-v2 - This ensures sequential playback without overlap
+    // CACHE-BUST: If you see "🔊 Playing audio chunk" (without "from QUEUE"), your browser cache needs clearing!
     async function processAudioQueue() {
-      // CRITICAL: Check if already processing - prevent multiple simultaneous processes
-      if (isPlayingAudio) {
+      // CRITICAL: Double-check flag (should already be set by caller, but be safe)
+      if (isPlayingAudio && audioPlayQueue.length === 0) {
+        console.warn('[Voice Mode] ⚠️ Queue processor called but already playing and queue empty');
         return;
       }
       
       // CRITICAL: Check if queue is empty
       if (audioPlayQueue.length === 0) {
+        console.log('[Voice Mode] ⚠️ Queue processor started but queue is empty, resetting flag');
+        isPlayingAudio = false;
         return;
       }
       
-      // CRITICAL: Set flag IMMEDIATELY to prevent race conditions
-      isPlayingAudio = true;
-      console.log('[Voice Mode] 🔊 Starting audio queue processing, queue length:', audioPlayQueue.length);
+      // Flag should already be set by caller, but ensure it's set
+      if (!isPlayingAudio) {
+        isPlayingAudio = true;
+      }
+      
+      console.log('[Voice Mode] 🔊 Starting audio queue processing, queue length:', audioPlayQueue.length, 'flag:', isPlayingAudio);
       
       // Process queue sequentially
       let chunkIndex = 0;
@@ -6935,10 +7270,35 @@ class NoteworthyChat extends HTMLElement {
       
       // Queue is empty, reset flag
       isPlayingAudio = false;
-      console.log('[Voice Mode] ✅ Audio queue processed, all chunks played');
+      console.log('[Voice Mode] ✅ Audio queue processed, all chunks played, flag reset to false');
+      
+      // CRITICAL: Check if more chunks arrived while we were processing
+      // This handles the case where chunks arrive faster than we can process them
+      if (audioPlayQueue.length > 0) {
+        console.log('[Voice Mode] 🔄 More chunks arrived during processing, restarting queue processor (queue length:', audioPlayQueue.length, ')');
+        isPlayingAudio = true;
+        processAudioQueue().catch(err => {
+          console.error('[Voice Mode] ❌ Queue processor restart error:', err);
+          isPlayingAudio = false;
+        });
+      }
     }
 
     async function playAudioChunkImmediate(audioBase64, audioHash) {
+      // CRITICAL: This function should ONLY be called from processAudioQueue
+      // If isPlayingAudio is false, something is wrong
+      if (!isPlayingAudio) {
+        console.error('[Voice Mode] ❌ CRITICAL ERROR: playAudioChunkImmediate called but isPlayingAudio is false! This should never happen!');
+        console.trace('[Voice Mode] Stack trace:');
+        // Still play the audio, but log the error
+      }
+      
+      // CRITICAL: Verify queue-only mode is enabled
+      if (!window._audioQueueOnly) {
+        console.error('[Voice Mode] ❌ CRITICAL ERROR: playAudioChunkImmediate called but queue-only mode not enabled!');
+        console.trace('[Voice Mode] Stack trace:');
+      }
+      
       // Return a promise that resolves when audio finishes
       return new Promise((resolve, reject) => {
         // Use async IIFE to handle await inside Promise
@@ -7015,8 +7375,46 @@ class NoteworthyChat extends HTMLElement {
             resolve(); // Resolve instead of reject to continue queue
           };
           
-          source.start();
-          console.log('[Voice Mode] 🔊 Playing audio chunk, length:', float32.length, 'samples, duration:', duration.toFixed(3), 's, hash:', audioHash.substring(0, 20) + '...');
+          // CRITICAL: Final check before starting playback - BLOCK if queue system not active
+          if (!isPlayingAudio || !window._audioQueueOnly) {
+            console.error('[Voice Mode] 🚫🚫🚫 BLOCKING AUDIO - queue system not active!', {
+              isPlayingAudio,
+              queueOnlyMode: window._audioQueueOnly,
+              voiceModeActive,
+              globalVoiceMode: window._voiceModeActive,
+              stack: new Error().stack.substring(0, 300)
+            });
+            // DO NOT play - resolve immediately to continue queue
+            resolve();
+            return;
+          }
+          
+          // CRITICAL: Temporarily allow direct audio ONLY for this specific source (we're in the queue)
+          // This bypasses the global AudioBufferSourceNode.start() override
+          window._allowDirectAudio = true;
+          const allowToken = Date.now(); // Unique token to prevent race conditions
+          window._allowDirectAudioToken = allowToken;
+          
+          try {
+            // Call original start method directly (bypass override)
+            if (window._originalBufferSourceStart) {
+              window._originalBufferSourceStart.call(source);
+            } else {
+              // Fallback if override not set (shouldn't happen)
+              source.start();
+            }
+            console.log('[Voice Mode] 🔊✅✅✅ Playing audio chunk FROM QUEUE (v2), length:', float32.length, 'samples, duration:', duration.toFixed(3), 's, hash:', audioHash.substring(0, 20) + '...', 'queue remaining:', audioPlayQueue.length, 'isPlayingAudio:', isPlayingAudio);
+          } catch (startError) {
+            console.error('[Voice Mode] ❌ Error starting audio source:', startError);
+            resolve(); // Resolve to continue queue
+            return;
+          } finally {
+            // Immediately revoke permission after starting
+            if (window._allowDirectAudioToken === allowToken) {
+              window._allowDirectAudio = false;
+              window._allowDirectAudioToken = null;
+            }
+          }
           
           // CRITICAL: Calculate exact timeout - MUST wait full duration to prevent overlap
           const timeoutMs = Math.max(Math.ceil(duration * 1000) + 150, 50); // At least 50ms, add 150ms buffer

@@ -1028,7 +1028,7 @@ RESPONSE STYLE:
         messages: messages,
       };
       
-      // Only add web search tool for non-spotlight requests
+      // Add tools for non-spotlight requests
       if (useWebSearch) {
         requestBody.tools = [
           {
@@ -1047,9 +1047,34 @@ RESPONSE STYLE:
                 required: ["query"]
               }
             }
+          },
+          {
+            type: "function",
+            function: {
+              name: "send_email",
+              description: "Send an email to someone. When the user asks to send an email, extract the recipient email address, subject, and message content. ALWAYS repeat back both the email address and message to confirm before actually sending. The user must confirm before the email is sent.",
+              parameters: {
+                type: "object",
+                properties: {
+                  recipient_email: {
+                    type: "string",
+                    description: "The email address of the recipient (e.g., 'john@example.com')"
+                  },
+                  subject: {
+                    type: "string",
+                    description: "The subject line of the email"
+                  },
+                  message: {
+                    type: "string",
+                    description: "The message content to send in the email body"
+                  }
+                },
+                required: ["recipient_email", "subject", "message"]
+              }
+            }
           }
         ];
-        requestBody.tool_choice = "auto"; // Let the model decide when to use web search
+        requestBody.tool_choice = "auto"; // Let the model decide when to use tools
       }
       
       r = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -1117,20 +1142,36 @@ RESPONSE STYLE:
           tool_calls: message.tool_calls
         });
         
-        // Add tool responses - since search_web isn't a real executable function,
-        // we'll tell the model we couldn't execute it, and it will respond based on its training data
+        // Execute tool calls
         for (const toolCall of message.tool_calls) {
           const toolName = toolCall.function?.name || 'unknown';
           const toolArgs = toolCall.function?.arguments ? JSON.parse(toolCall.function.arguments) : {};
-          
+
           console.log(`[Noteworthy Chat] Tool call: ${toolName} with args:`, toolArgs);
+
+          let toolResponse = '';
           
-          // Add tool response indicating we couldn't execute the tool
-          // The model will still generate a helpful response based on its knowledge
+          if (toolName === 'search_web') {
+            // For web search, tell the model we don't have real-time access
+            toolResponse = `I don't have access to real-time web search capabilities. However, I can provide information based on my training data up to my knowledge cutoff date. ${toolArgs.query ? `Regarding "${toolArgs.query}": ` : ''}Please note that for the most current information, you should check recent news sources directly.`;
+          } else if (toolName === 'send_email') {
+            // For email, return confirmation needed message
+            // The actual sending will be handled by the frontend with user confirmation
+            toolResponse = JSON.stringify({
+              confirmation_needed: true,
+              recipient_email: toolArgs.recipient_email,
+              subject: toolArgs.subject,
+              message: toolArgs.message,
+              note: 'Please confirm the email details above. The user will need to click a button to actually send the email.'
+            });
+          } else {
+            toolResponse = `Tool ${toolName} is not available.`;
+          }
+
           messages.push({
             role: "tool",
             tool_call_id: toolCall.id,
-            content: `I don't have access to real-time web search capabilities. However, I can provide information based on my training data up to my knowledge cutoff date. ${toolName === 'search_web' && toolArgs.query ? `Regarding "${toolArgs.query}": ` : ''}Please note that for the most current information, you should check recent news sources directly.`
+            content: toolResponse
           });
         }
         

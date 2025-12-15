@@ -252,6 +252,29 @@ When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy
                     },
                     required: ['query']
                   }
+                },
+                {
+                  type: 'function',
+                  name: 'send_email',
+                  description: 'Send an email to someone. When the user asks to send an email, extract the recipient email address, subject, and message content. ALWAYS repeat back both the email address and message to confirm before actually sending. The user must confirm before the email is sent.',
+                  parameters: {
+                    type: 'object',
+                    properties: {
+                      recipient_email: {
+                        type: 'string',
+                        description: 'The email address of the recipient (e.g., "john@example.com")'
+                      },
+                      subject: {
+                        type: 'string',
+                        description: 'The subject line of the email'
+                      },
+                      message: {
+                        type: 'string',
+                        description: 'The message content to send in the email body'
+                      }
+                    },
+                    required: ['recipient_email', 'subject', 'message']
+                  }
                 }
               ],
               audio: {
@@ -508,6 +531,29 @@ When a voice conversation starts, greet the user by saying "Hey, It's Noteworthy
                       }
                     },
                     required: ['query']
+                  }
+                },
+                {
+                  type: 'function',
+                  name: 'send_email',
+                  description: 'Send an email to someone. When the user asks to send an email, extract the recipient email address, subject, and message content. ALWAYS repeat back both the email address and message to confirm before actually sending. The user must confirm before the email is sent.',
+                  parameters: {
+                    type: 'object',
+                    properties: {
+                      recipient_email: {
+                        type: 'string',
+                        description: 'The email address of the recipient (e.g., "john@example.com")'
+                      },
+                      subject: {
+                        type: 'string',
+                        description: 'The subject line of the email'
+                      },
+                      message: {
+                        type: 'string',
+                        description: 'The message content to send in the email body'
+                      }
+                    },
+                    required: ['recipient_email', 'subject', 'message']
                   }
                 }
               ],
