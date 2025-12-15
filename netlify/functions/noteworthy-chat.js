@@ -1079,8 +1079,60 @@ RESPONSE STYLE:
       };
     }
 
-    // At this point, reply and usage are set from Chat Completions API
-    // Continue with rest of function
+    // Parse the OpenAI response
+    let reply = "";
+    let usage = null;
+    try {
+      const data = await r.json();
+      usage = data.usage || null;
+      
+      // Extract reply from response
+      const choice = data.choices?.[0];
+      if (choice) {
+        const message = choice.message;
+        
+        // Check if there are tool calls
+        if (message.tool_calls && message.tool_calls.length > 0) {
+          console.log(`[Noteworthy Chat] Tool call(s) detected: ${message.tool_calls.length} tool(s)`);
+          
+          // If there's content along with tool calls, use it
+          if (message.content) {
+            reply = message.content;
+          } else {
+            // Tool was called - note that search_web may not be a real OpenAI function
+            // For now, provide a message indicating the tool was used
+            // In a production system, you'd need to implement the actual tool execution
+            console.warn("[Noteworthy Chat] Tool called but no content returned. Tool execution may not be implemented.");
+            reply = "I'm processing your request and searching for current information. Please note that web search functionality may be limited.";
+          }
+        } else {
+          // Regular response with content
+          reply = message.content || "";
+        }
+      }
+      
+      if (!reply) {
+        console.warn("[Noteworthy Chat] No reply content in OpenAI response:", JSON.stringify(data, null, 2));
+        reply = "I apologize, but I couldn't generate a response. Please try again.";
+      }
+      
+      console.log("[Noteworthy Chat] OpenAI response parsed successfully:", {
+        replyLength: reply.length,
+        hasUsage: !!usage,
+        tokens: usage?.total_tokens || 0
+      });
+    } catch (parseError) {
+      console.error("[Noteworthy Chat] Error parsing OpenAI response:", parseError);
+      console.error("[Noteworthy Chat] Parse error stack:", parseError.stack);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          error: "Failed to parse OpenAI response",
+          message: parseError.message || "An error occurred while processing the AI response",
+        }),
+      };
+    }
     
     // If an image was generated, include it in the response
     if (imageData && imageData.imageUrl) {

@@ -3173,10 +3173,13 @@ class NoteworthyChat extends HTMLElement {
     function speakText(text) {
       // CRITICAL: Cancel text-to-speech if voice mode is active (we only want GPT's voice)
       // Check this FIRST before anything else - check both the variable and the global flag
+      // Cancel IMMEDIATELY, before any checks
+      window.speechSynthesis.cancel();
       if (voiceModeActive || window._voiceModeActive) {
         console.log('[Voice Mode] 🔇 BLOCKING text-to-speech - voice mode is active (entry check)');
         window.speechSynthesis.cancel();
-        window.speechSynthesis.cancel(); // Double cancel
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // Triple cancel
         if (currentSpeech) {
           currentSpeech = null;
         }
@@ -3250,6 +3253,7 @@ class NoteworthyChat extends HTMLElement {
       
       const utterance = new SpeechSynthesisUtterance(cleanText);
       currentSpeech = utterance; // Store reference to cancel if needed
+      window.currentSpeech = utterance; // Also store globally for override function
       
       // Enhanced AI voice settings
       utterance.rate = 1.05; // Slightly faster for more natural AI feel
@@ -4766,26 +4770,37 @@ class NoteworthyChat extends HTMLElement {
         // Music state is already stored in module-level variable (musicStateBeforeCall)
         // It will be restored in stopVoiceMode() when the call ends
         
-        // Run connectivity test first
-        await testConnectivity();
-        
-        // Clear displayed transcripts for new call
-        displayedTranscripts.clear();
-        
-        // Set flags FIRST before anything else
+        // CRITICAL: Set flags FIRST before anything else - BEFORE connectivity test
         voiceModeActive = true;
         window._voiceModeActive = true; // Set global flag FIRST
         
         // CRITICAL: Override speechSynthesis.speak to completely block TTS during voice mode
+        // Do this IMMEDIATELY, before anything else
         if (!window._originalSpeak) {
           window._originalSpeak = window.speechSynthesis.speak.bind(window.speechSynthesis);
         }
+        // Make override ALWAYS block if voice mode is active - no exceptions
+        // This override will catch ALL calls to speechSynthesis.speak() from anywhere
         window.speechSynthesis.speak = function(utterance) {
+          // ALWAYS cancel first, no matter what - be extremely aggressive
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.cancel();
+          
+          // Check if voice mode is active - if so, ALWAYS block
           if (window._voiceModeActive || voiceModeActive) {
-            console.log('[Voice Mode] 🔇🔇🔇 OVERRIDE: Blocking speechSynthesis.speak() call');
+            console.log('[Voice Mode] 🔇🔇🔇 OVERRIDE: Blocking speechSynthesis.speak() call - voice mode active');
             window.speechSynthesis.cancel();
-            return;
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.cancel(); // Triple cancel
+            // Also clear any current speech reference
+            if (window.currentSpeech) {
+              window.currentSpeech = null;
+            }
+            return; // NEVER call original speak if voice mode is active
           }
+          
+          // Even if flags aren't set, cancel once more to be safe
+          window.speechSynthesis.cancel();
           return window._originalSpeak(utterance);
         };
         
@@ -4794,10 +4809,17 @@ class NoteworthyChat extends HTMLElement {
         console.log('[Voice Mode] 🔇🔇🔇 FORCE-CANCELING ALL TEXT-TO-SPEECH');
         window.speechSynthesis.cancel();
         window.speechSynthesis.cancel();
-        window.speechSynthesis.cancel(); // Triple cancel
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // Quadruple cancel
         if (currentSpeech) {
           currentSpeech = null;
         }
+        
+        // Run connectivity test AFTER blocking TTS
+        await testConnectivity();
+        
+        // Clear displayed transcripts for new call
+        displayedTranscripts.clear();
         
         // Clear any pending utterances and stop all speech
         try {
@@ -4821,12 +4843,19 @@ class NoteworthyChat extends HTMLElement {
         voiceModeSpeechCheckInterval = setInterval(() => {
           if (voiceModeActive || window._voiceModeActive) {
             // EXTREMELY aggressively cancel any speech synthesis activity
-            // Cancel multiple times to ensure it stops
+            // Cancel ALWAYS, even if not speaking - be paranoid
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.cancel(); // Quadruple cancel every check
+            
+            // Cancel if speaking or pending
             if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
               console.log('[Voice Mode] 🔇🔇🔇 FORCE-CANCELING text-to-speech (periodic check)');
               window.speechSynthesis.cancel();
               window.speechSynthesis.cancel();
-              window.speechSynthesis.cancel(); // Triple cancel
+              window.speechSynthesis.cancel();
+              window.speechSynthesis.cancel(); // Quadruple cancel
               currentSpeech = null;
             }
             // Also cancel if there's any utterance queued
@@ -4834,13 +4863,12 @@ class NoteworthyChat extends HTMLElement {
               console.log('[Voice Mode] 🔇 Clearing current speech reference (periodic check)');
               window.speechSynthesis.cancel();
               window.speechSynthesis.cancel();
-              window.speechSynthesis.cancel(); // Triple cancel
+              window.speechSynthesis.cancel();
+              window.speechSynthesis.cancel(); // Quadruple cancel
               currentSpeech = null;
             }
-            // Always cancel to be safe - no matter what
-            window.speechSynthesis.cancel();
           }
-        }, 25); // Check every 25ms for EXTREMELY aggressive blocking
+        }, 10); // Check every 10ms for EXTREMELY aggressive blocking (reduced from 25ms)
         if (voiceModeToggle) voiceModeToggle.classList.add('active');
         if (voiceStatusIntegrated) {
           voiceStatusIntegrated.style.display = 'block';
@@ -5974,6 +6002,12 @@ class NoteworthyChat extends HTMLElement {
               `;
               body.appendChild(aiGroup);
               body.scrollTop = body.scrollHeight;
+              // CRITICAL: Cancel TTS immediately after adding transcript (just in case)
+              if (voiceModeActive || window._voiceModeActive) {
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.cancel();
+              }
               console.log('[Voice Mode] ✅ AI transcript displayed (deduplicated)');
             } else if (transcript) {
               console.log('[Voice Mode] ⏭️ Skipping duplicate AI transcript');
@@ -6006,6 +6040,12 @@ class NoteworthyChat extends HTMLElement {
                 `;
                 body.appendChild(aiGroup);
                 body.scrollTop = body.scrollHeight;
+                // CRITICAL: Cancel TTS immediately after adding transcript (just in case)
+                if (voiceModeActive || window._voiceModeActive) {
+                  window.speechSynthesis.cancel();
+                  window.speechSynthesis.cancel();
+                  window.speechSynthesis.cancel();
+                }
                 transcriptElement = root.querySelector('#ai-transcript-live');
               }
               
