@@ -1,0 +1,139 @@
+/**
+ * NewsCard Component - Reusable card for displaying article previews
+ * Used in sidebar, related articles, and "more coverage" sections
+ */
+
+(function() {
+    'use strict';
+
+    /**
+     * Format relative time (e.g., "2h ago", "3d ago")
+     */
+    function formatRelativeTime(dateString) {
+        try {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 7) return `${diffDays}d ago`;
+            return date.toLocaleDateString();
+        } catch {
+            return dateString || 'Recently';
+        }
+    }
+
+    /**
+     * Escape HTML to prevent XSS
+     */
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
+     * Generate stable ID for post
+     */
+    function getPostId(post) {
+        if (post.id) return post.id;
+        
+        // Create hash from content if no ID
+        const content = post.story || post.text || post.title || '';
+        if (content) {
+            let hash = 0;
+            const str = content.substring(0, 100);
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return `post-${Math.abs(hash)}`;
+        }
+        
+        return `post-${Date.now()}`;
+    }
+
+    /**
+     * Create a NewsCard HTML element
+     * @param {Object} post - Post object with id, story/text, datePosted, image, etc.
+     * @param {Object} options - Options for rendering
+     * @returns {string} HTML string for the card
+     */
+    function createNewsCard(post, options = {}) {
+        const {
+            showThumbnail = false,
+            maxTitleLength = 80,
+            className = ''
+        } = options;
+
+        const postId = getPostId(post);
+        const title = post.title || post.story || post.text || 'Untitled';
+        const shortTitle = title.length > maxTitleLength 
+            ? title.substring(0, maxTitleLength - 3) + '...' 
+            : title;
+        const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
+        const relativeTime = formatRelativeTime(datePosted);
+        const image = post.image || post.images?.[0] || null;
+        const articleUrl = `/article.html?id=${encodeURIComponent(postId)}`;
+
+        let cardHTML = `<a href="${articleUrl}" class="news-card ${className}" aria-label="Read article: ${escapeHtml(shortTitle)}">`;
+        
+        if (showThumbnail && image) {
+            cardHTML += `<img src="${escapeHtml(image)}" alt="${escapeHtml(shortTitle)}" class="news-card-thumbnail" loading="lazy">`;
+        }
+        
+        cardHTML += `
+            <h3 class="news-card-title">${escapeHtml(shortTitle)}</h3>
+            <div class="news-card-meta">
+                <span>${escapeHtml(relativeTime)}</span>
+            </div>
+        </a>`;
+
+        return cardHTML;
+    }
+
+    /**
+     * Render multiple news cards to a container
+     * @param {Array} posts - Array of post objects
+     * @param {string|HTMLElement} container - Container selector or element
+     * @param {Object} options - Options for rendering
+     */
+    function renderNewsCards(posts, container, options = {}) {
+        const containerEl = typeof container === 'string' 
+            ? document.querySelector(container) 
+            : container;
+        
+        if (!containerEl) {
+            console.warn('[NewsCard] Container not found:', container);
+            return;
+        }
+
+        if (!Array.isArray(posts) || posts.length === 0) {
+            containerEl.innerHTML = '<p style="color: rgba(255, 255, 255, 0.5); font-size: 0.9rem;">No articles available.</p>';
+            return;
+        }
+
+        const cardsHTML = posts
+            .filter(post => post && (post.story || post.text || post.title))
+            .map(post => createNewsCard(post, options))
+            .join('');
+
+        containerEl.innerHTML = cardsHTML;
+    }
+
+    // Export to global scope
+    window.NewsCard = {
+        create: createNewsCard,
+        render: renderNewsCards
+    };
+})();
+
+
+
