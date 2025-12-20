@@ -10002,59 +10002,125 @@ function initNewsletterSubscription() {
             } else {
                 // Show loading state but don't block
                 if (aiResponse) {
-                    aiResponse.innerHTML = '<p style="color: rgba(255, 255, 255, 0.7);">Loading country information...</p>';
+                    aiResponse.innerHTML = '<p style="color: rgba(255, 255, 255, 0.7);">🔍 Searching for breaking news about ' + currentCountry.name + '...</p>';
                 }
-                const textPrompt = `Tell me about ${currentCountry.name}. Please include THREE sections:
-
-1. **Culture** - Interesting cultural aspects, traditions, or customs
-2. **Fun Facts** - Surprising or fascinating facts about the country
-3. **Recent Context** - Recent historical context or notable information about ${currentCountry.name} based on your knowledge
-
-IMPORTANT REQUIREMENTS:
-- Use proper markdown formatting with ## for section headers
-- Keep it engaging and informative, around 300-400 words total
-- Do NOT use ## or ** in the middle of paragraphs - only for section headers
-- Focus on interesting, factual information about the country's culture, history, and notable characteristics`;
                 
-                textResponse = fetch('/.netlify/functions/noteworthy-chat', {
+                // FIRST: Search for breaking news about the country
+                const searchQuery = `breaking news ${currentCountry.name} today latest 2025`;
+                console.log('[Spotlight] 🔍 Searching for breaking news:', searchQuery);
+                
+                const searchPromise = fetch('/.netlify/functions/search-web', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        message: textPrompt,
-                        chatHistory: []
+                        query: searchQuery
                     })
                 }).then(response => {
                     if (!response.ok) {
-                        throw new Error(`API error: ${response.status}`);
+                        console.warn('[Spotlight] Web search failed:', response.status);
+                        return { results: [] };
                     }
                     return response.json();
-                }).then(data => {
-                    if (data.reply) {
-                        aiThinking.style.display = 'none';
-                        const formattedResponse = formatAIResponse(data.reply);
-                        aiResponse.innerHTML = formattedResponse;
-                        return formattedResponse;
-                    } else {
-                        throw new Error('No reply from AI');
-                    }
                 }).catch(error => {
-                    // Suppress 429 (rate limit) errors - expected behavior
-                    const isRateLimit = error.message?.includes('429') || error.message?.includes('rate limit');
-                    if (!isRateLimit) {
-                    console.error('Error fetching AI text content:', error);
-                    }
-                    aiThinking.style.display = 'none';
-                    if (aiResponse) {
-                        if (isRateLimit) {
-                            aiResponse.innerHTML = '<p style="color: rgba(255, 200, 100, 0.9);">⚠️ Rate limit reached. Please try again in a moment.</p>';
-                        } else {
-                        aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Unable to load AI content. Please try again later.</p>';
-                        }
-                    }
-                    return ''; // Return empty string so Promise.allSettled doesn't fail
+                    console.error('[Spotlight] Web search error:', error);
+                    return { results: [] };
                 });
+                
+                // Wait for search results, then build prompt with real-time news
+                textResponse = searchPromise.then(searchData => {
+                    const searchResults = searchData.results || [];
+                    console.log('[Spotlight] ✅ Found', searchResults.length, 'search results');
+                    
+                    // Build breaking news context from search results
+                    let breakingNewsContext = '';
+                    if (searchResults.length > 0) {
+                        breakingNewsContext = '\n\n**BREAKING NEWS CONTEXT (Real-time information from web search):**\n';
+                        searchResults.slice(0, 5).forEach((result, index) => {
+                            breakingNewsContext += `${index + 1}. **${result.title || 'News Item'}**\n`;
+                            breakingNewsContext += `   ${result.snippet || 'No details available'}\n`;
+                            if (result.url) {
+                                breakingNewsContext += `   Source: ${result.url}\n`;
+                            }
+                            breakingNewsContext += '\n';
+                        });
+                    } else {
+                        breakingNewsContext = '\n\n**Note:** Real-time web search did not return specific breaking news results. Use your knowledge to provide the most recent and relevant information available.';
+                    }
+                    
+                    const textPrompt = `You are a breaking news expert. Provide a spotlight on ${currentCountry.name} focusing on REAL, CURRENT breaking news and recent developments. 
+
+CRITICAL REQUIREMENTS:
+- Focus on BREAKING NEWS and CURRENT EVENTS (not general culture or history)
+- Use the web search results provided below as your PRIMARY source
+- If search results contain breaking news, prioritize and highlight those stories
+- Include specific details: dates, locations, names, and what makes it newsworthy
+- If no breaking news is found, provide the MOST RECENT significant developments you know about
+- Write in THREE sections:
+
+1. **🔥 Breaking News** - Current breaking news stories, recent events, or major developments happening RIGHT NOW or in the past few days/weeks
+2. **📰 Recent Developments** - Important recent news, policy changes, or significant events from the past few months
+3. **🌍 Current Context** - What's happening in ${currentCountry.name} right now that people should know about
+
+${breakingNewsContext}
+
+IMPORTANT FORMATTING:
+- Use proper markdown formatting with ## for section headers
+- Keep it engaging and informative, around 400-500 words total
+- Do NOT use ## or ** in the middle of paragraphs - only for section headers
+- Focus on REAL, VERIFIED breaking news and current events
+- Include specific dates, locations, and details when available
+- If you reference information from search results, mention it naturally in context
+- NEVER make up or invent breaking news events
+- If no real breaking news is available, say so clearly rather than fabricating stories`;
+                    
+                    // Update loading message
+                    if (aiResponse) {
+                        aiResponse.innerHTML = '<p style="color: rgba(255, 255, 255, 0.7);">🤖 Generating breaking news spotlight...</p>';
+                    }
+                    
+                    // Now call the AI with the enhanced prompt
+                    return fetch('/.netlify/functions/noteworthy-chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: textPrompt,
+                            chatHistory: []
+                        })
+                    }).then(response => {
+                        if (!response.ok) {
+                            throw new Error(`API error: ${response.status}`);
+                        }
+                        return response.json();
+                    }).then(data => {
+                        if (data.reply) {
+                            aiThinking.style.display = 'none';
+                            const formattedResponse = formatAIResponse(data.reply);
+                            aiResponse.innerHTML = formattedResponse;
+                            return formattedResponse;
+                        } else {
+                            throw new Error('No reply from AI');
+                        }
+                    }).catch(error => {
+                        // Suppress 429 (rate limit) errors - expected behavior
+                        const isRateLimit = error.message?.includes('429') || error.message?.includes('rate limit');
+                        if (!isRateLimit) {
+                            console.error('[Spotlight] Error fetching AI text content:', error);
+                        }
+                        aiThinking.style.display = 'none';
+                        if (aiResponse) {
+                            if (isRateLimit) {
+                                aiResponse.innerHTML = '<p style="color: rgba(255, 200, 100, 0.9);">⚠️ Rate limit reached. Please try again in a moment.</p>';
+                            } else {
+                                aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Unable to load breaking news. Please try again later.</p>';
+                            }
+                        }
+                        return ''; // Return empty string so Promise.allSettled doesn't fail
+                    });
+                }); // Close the searchPromise.then() chain
             }
             
             // Don't wait - let images and text load asynchronously

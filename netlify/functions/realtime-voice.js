@@ -177,7 +177,7 @@ exports.handler = async (event, context) => {
       } catch (error) {
         console.error('[Realtime Voice] Error fetching posts:', error);
       }
-      
+
       console.log('🔄 [GET] Using GA endpoint: /v1/realtime/client_secrets');
       
       let ephemeralToken;

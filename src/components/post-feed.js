@@ -935,11 +935,11 @@ function renderPosts(posts, container, originalContent = null) {
       }
       
       return `
-        <article class="x-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || index}" style="background: transparent; padding: 1rem; margin-bottom: 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+        <article class="x-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || index}" style="background: transparent; padding: 1rem; margin-bottom: 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease; cursor: pointer;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'" onclick="window.location.href='${articleLink}'">
           <div style="display: flex; gap: 0.75rem;">
             <!-- Avatar -->
             <div style="flex-shrink: 0;">
-              <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="display: block; text-decoration: none;">
+              <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="display: block; text-decoration: none;" onclick="event.stopPropagation();">
                 <img src="/IMG_5794.PNG" alt="Noteworthy News" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                 <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #1DA1F2 0%, #1a91da 100%); display: none; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; color: white; flex-shrink: 0;">
                   NW
@@ -951,10 +951,10 @@ function renderPosts(posts, container, originalContent = null) {
             <div style="flex: 1; min-width: 0;">
               <!-- Header: Username, handle, timestamp -->
               <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
-                <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="font-weight: 700; font-size: 0.938rem; color: rgb(231, 233, 234); text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Noteworthy News</a>
+                <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="font-weight: 700; font-size: 0.938rem; color: rgb(231, 233, 234); text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" onclick="event.stopPropagation();">Noteworthy News</a>
                 <span style="color: rgb(113, 118, 123); font-size: 0.938rem; line-height: 1.25rem;">@newsnoteworthy</span>
                 <span style="color: rgb(113, 118, 123); font-size: 0.938rem; line-height: 1.25rem;">·</span>
-                <a href="${articleLink}" style="color: rgb(113, 118, 123); font-size: 0.938rem; text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${formatRelativeTime(datePosted)}</a>
+                <a href="${articleLink}" style="color: rgb(113, 118, 123); font-size: 0.938rem; text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" onclick="event.stopPropagation();">${formatRelativeTime(datePosted)}</a>
               </div>
               
               <!-- Post Text -->
@@ -964,12 +964,12 @@ function renderPosts(posts, container, originalContent = null) {
               ${renderMedia(post)}
               
               <!-- Engagement Bar (Twitter-style) -->
-              <div style="display: flex; align-items: center; justify-content: space-between; max-width: 425px; margin-top: 0.75rem; padding-top: 0.5rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; max-width: 425px; margin-top: 0.75rem; padding-top: 0.5rem;" onclick="event.stopPropagation();">
                 ${renderEngagementBar(post, articleLink, twitterLink)}
               </div>
               
               <!-- Comment Section -->
-              <div class="comment-section-separated" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+              <div class="comment-section-separated" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);" onclick="event.stopPropagation();">
                 <div class="comment-section" data-article-id="post-${post.id}"></div>
               </div>
             </div>

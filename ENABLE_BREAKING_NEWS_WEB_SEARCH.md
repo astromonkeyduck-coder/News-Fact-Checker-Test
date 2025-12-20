@@ -101,3 +101,15 @@ After enabling:
 - GPT-4o: Knowledge cutoff is April 2024
 - Without web search: AI only knows events up to April 2024
 - With web search: AI can access current events in real-time
+
+
+
+
+
+
+
+
+
+
+
+

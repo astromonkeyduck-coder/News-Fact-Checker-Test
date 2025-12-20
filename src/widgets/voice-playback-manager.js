@@ -1,13 +1,15 @@
 /**
- * VoicePlaybackManager - Production-grade single-playback voice system
+ * VoicePlaybackManager - SINGLETON Production-grade single-playback voice system
  * 
+ * CRITICAL: This is a SINGLETON. Only ONE instance exists globally.
  * Ensures only one audio stream can play at any moment.
  * Implements state machine, generation IDs, and hard-stop cancellation.
  * 
  * Usage:
- *   const manager = new VoicePlaybackManager(audioContext);
- *   manager.play(audioChunks); // Cancels any existing playback
- *   manager.stop(); // Hard stop
+ *   import { voiceManager } from './voice-playback-manager.js';
+ *   voiceManager.initialize(audioContext); // Must be called once
+ *   voiceManager.play(audioChunks); // Cancels any existing playback
+ *   voiceManager.stop(); // Hard stop
  */
 
 // Set DEBUG_VOICE via window.DEBUG_VOICE or default to true
@@ -65,8 +67,12 @@ class VoicePlaybackManager {
    * Hard stop all audio playback immediately
    */
   stop() {
+    const oldGen = this.currentGeneration;
+    const oldState = this.state;
+    
     if (DEBUG_VOICE) {
-      console.log('[VoicePlaybackManager] 🛑 STOP requested, generation:', this.currentGeneration);
+      console.log(`[VoicePlaybackManager] 🛑 STOP requested, current generation: ${oldGen}, state: ${oldState}`);
+      console.trace('[VoicePlaybackManager] Stop call stack:');
     }
 
     // Increment generation to invalidate any in-flight operations
@@ -169,6 +175,7 @@ class VoicePlaybackManager {
     if (!audioChunks || audioChunks.length === 0) {
       if (DEBUG_VOICE) {
         console.warn('[VoicePlaybackManager] ⚠️ play() called with empty chunks');
+        console.trace('[VoicePlaybackManager] Empty play call stack:');
       }
       return;
     }
@@ -179,6 +186,8 @@ class VoicePlaybackManager {
     
     if (DEBUG_VOICE) {
       console.log(`[VoicePlaybackManager] ▶️ PLAY requested, generation: ${generation}, chunks: ${audioChunks.length}`);
+      console.log(`[VoicePlaybackManager] 📊 State before play: ${this.state}, currentGen: ${this.currentGeneration}, playbackGen: ${this.playbackGeneration}`);
+      console.trace('[VoicePlaybackManager] Play call stack:');
     }
 
     // CRITICAL: Cancel any existing playback IMMEDIATELY
@@ -454,7 +463,17 @@ class VoicePlaybackManager {
 
         // Start playback
         try {
+          // CRITICAL: Set global flag to allow this ONE playback call
+          if (typeof window !== 'undefined') {
+            window._allowAudioPlayback = true;
+          }
+          
           source.start(0);
+          
+          // Clear flag immediately after start
+          if (typeof window !== 'undefined') {
+            window._allowAudioPlayback = false;
+          }
           
           if (DEBUG_VOICE && !this._isCancelled(generation)) {
             console.log(`[VoicePlaybackManager] 🔊 Playing chunk (gen ${generation}), duration: ${duration.toFixed(3)}s`);
@@ -502,10 +521,15 @@ class VoicePlaybackManager {
    * Add chunks to current playback (for streaming)
    */
   addChunks(audioChunks, generation) {
+    if (DEBUG_VOICE) {
+      console.log(`[VoicePlaybackManager] 📦 addChunks() called, requested gen: ${generation}, current gen: ${this.currentGeneration}, state: ${this.state}`);
+    }
+    
     // Only add chunks if they match current generation
     if (generation !== this.currentGeneration) {
       if (DEBUG_VOICE) {
-        console.log(`[VoicePlaybackManager] ⏭️ Ignoring chunks for old generation ${generation} (current: ${this.currentGeneration})`);
+        console.log(`[VoicePlaybackManager] ⏭️ DISCARDING chunks for old generation ${generation} (current: ${this.currentGeneration})`);
+        console.trace('[VoicePlaybackManager] Old chunk discarded - call stack:');
       }
       return;
     }
@@ -537,21 +561,72 @@ class VoicePlaybackManager {
   }
 
   /**
-   * Cleanup all resources
+   * Cleanup all resources (but keep singleton alive)
    */
   destroy() {
     if (DEBUG_VOICE) {
-      console.log('[VoicePlaybackManager] 🧹 Destroying manager');
+      console.log('[VoicePlaybackManager] 🧹 Destroying manager (singleton reset)');
     }
     
     this.stop();
-    this.audioContext = null;
+    // Don't null audioContext - it might be reused
     this.onStateChange = null;
   }
+
+  /**
+   * Initialize or reinitialize with new AudioContext
+   * CRITICAL: This must be called before first use
+   */
+  initialize(audioContext) {
+    if (!audioContext) {
+      throw new Error('AudioContext is required');
+    }
+    
+    // Stop any existing playback
+    this.stop();
+    
+    this.audioContext = audioContext;
+    
+    if (DEBUG_VOICE) {
+      console.log('[VoicePlaybackManager] ✅ Initialized with AudioContext, state:', audioContext.state);
+    }
+  }
+}
+
+// SINGLETON PATTERN: Export exactly ONE instance
+let _singletonInstance = null;
+
+function getVoiceManager() {
+  if (!_singletonInstance) {
+    // Create a temporary instance (will be initialized with AudioContext later)
+    // We need a dummy AudioContext for construction, but it will be replaced
+    if (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      const dummyContext = new AudioContextClass();
+      _singletonInstance = new VoicePlaybackManager(dummyContext);
+      dummyContext.close(); // Close dummy context immediately
+      
+      if (DEBUG_VOICE) {
+        console.log('[VoicePlaybackManager] 🎯 SINGLETON created');
+      }
+    } else {
+      throw new Error('AudioContext not available - cannot create VoicePlaybackManager');
+    }
+  }
+  return _singletonInstance;
+}
+
+// Export singleton instance
+const voiceManager = getVoiceManager();
+
+// Also export class for testing (but production code should use voiceManager singleton)
+if (typeof window !== 'undefined') {
+  window.VoicePlaybackManager = VoicePlaybackManager; // For backwards compatibility
+  window.voiceManager = voiceManager; // Global access
 }
 
 // Export for use in modules
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = VoicePlaybackManager;
+  module.exports = { VoicePlaybackManager, voiceManager, getVoiceManager };
 }
 

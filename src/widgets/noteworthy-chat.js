@@ -28,12 +28,14 @@ class NoteworthyChat extends HTMLElement {
     let currentVoice = 'alloy';
     let websocket = null;
     let audioContext = null;
-    let voicePlaybackManager = null; // VoicePlaybackManager instance
+    let voiceAudioEngine = null; // VoiceAudioEngine singleton instance
+    let activeResponseId = null; // Current response ID from OpenAI
+    let activeGen = 0; // Current generation counter
     let mediaStream = null;
     let voiceModeSpeechCheckInterval = null; // Interval to periodically cancel text-to-speech during voice mode
     let audioWorkletNode = null;
     let isRecording = false;
-    let audioQueue = [];
+    // OLD: let audioQueue = []; // REMOVED - using voiceManager singleton only
     let musicStateBeforeCall = null; // Store music state when voice call starts
     let authRetryCount = 0; // Track authentication retry attempts
     const MAX_AUTH_RETRIES = 3; // Maximum authentication retries before giving up
@@ -41,6 +43,8 @@ class NoteworthyChat extends HTMLElement {
     const displayedTranscripts = new Set();
     let hasActiveResponse = false; // Track if there's an active response in progress
     let currentAudioGeneration = null; // Track current audio generation for streaming chunks
+    let voiceCallStartTime = null; // Track when voice call started
+    let voiceCallTranscripts = []; // Track conversation transcripts during call
     const DEBUG_VOICE = typeof window !== 'undefined' && window.DEBUG_VOICE !== undefined 
       ? window.DEBUG_VOICE 
       : true; // Default to true for debugging
@@ -2100,6 +2104,314 @@ class NoteworthyChat extends HTMLElement {
           }
         }
         
+        /* Premium Voice Call UI Panel - Shows during active calls */
+        .premium-call-panel {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 360px;
+          min-height: 400px;
+          background: linear-gradient(135deg, 
+            rgba(1, 31, 91, 0.95) 0%, 
+            rgba(20, 58, 146, 0.95) 50%,
+            rgba(13, 41, 104, 0.95) 100%);
+          backdrop-filter: blur(24px) saturate(200%);
+          -webkit-backdrop-filter: blur(24px) saturate(200%);
+          border: 1.5px solid rgba(74, 144, 226, 0.4);
+          border-radius: 24px;
+          box-shadow: 
+            0 24px 72px rgba(0, 0, 0, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+            0 12px 40px rgba(74, 144, 226, 0.2);
+          z-index: 2147483001;
+          display: none;
+          flex-direction: column;
+          align-items: center;
+          padding: 32px 24px;
+          transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+          opacity: 0;
+          pointer-events: none;
+        }
+        
+        .premium-call-panel.active {
+          display: flex;
+          opacity: 1;
+          pointer-events: all;
+          animation: callPanelSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        @keyframes callPanelSlideIn {
+          from {
+            transform: translate(-50%, -50%) scale(0.9);
+            opacity: 0;
+          }
+          to {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+          }
+        }
+        
+        .premium-call-header {
+          width: 100%;
+          display: flex;
+          justify-content: flex-end;
+          margin-bottom: 16px;
+        }
+        
+        .premium-call-close {
+          width: 36px;
+          height: 36px;
+          border-radius: 12px;
+          border: none;
+          background: rgba(255, 255, 255, 0.1);
+          color: rgba(255, 255, 255, 0.8);
+          font-size: 24px;
+          line-height: 1;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+        
+        .premium-call-close:hover {
+          background: rgba(255, 255, 255, 0.2);
+          color: #fff;
+          transform: scale(1.1);
+        }
+        
+        .premium-call-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          gap: 24px;
+        }
+        
+        .premium-call-logo-container {
+          position: relative;
+          width: 120px;
+          height: 120px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .premium-call-logo {
+          width: 120px;
+          height: 120px;
+          border-radius: 24px;
+          background: linear-gradient(135deg, #D4A017 0%, #F4C430 100%);
+          color: #0f0f0f;
+          font-weight: 900;
+          font-size: 48px;
+          display: grid;
+          place-items: center;
+          box-shadow: 
+            0 8px 24px rgba(212, 160, 23, 0.4),
+            inset 0 2px 0 rgba(255, 255, 255, 0.3);
+          position: relative;
+          z-index: 2;
+          transition: transform 0.3s ease;
+        }
+        
+        /* Listening state - blue glow ring + breathing pulse */
+        .premium-call-panel.state-listening .premium-call-logo {
+          animation: logoBreathing 2s ease-in-out infinite;
+        }
+        
+        .premium-call-panel.state-listening .premium-call-logo::before {
+          content: '';
+          position: absolute;
+          inset: -8px;
+          border-radius: 32px;
+          border: 3px solid rgba(74, 144, 226, 0.6);
+          animation: listeningGlow 2s ease-in-out infinite;
+          z-index: -1;
+        }
+        
+        @keyframes logoBreathing {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.03); }
+        }
+        
+        @keyframes listeningGlow {
+          0%, 100% { 
+            opacity: 0.6;
+            box-shadow: 0 0 20px rgba(74, 144, 226, 0.4);
+          }
+          50% { 
+            opacity: 1;
+            box-shadow: 0 0 40px rgba(74, 144, 226, 0.8);
+          }
+        }
+        
+        /* Speaking state - audio waves */
+        .premium-call-panel.state-speaking .premium-call-logo {
+          animation: none; /* Stop breathing when speaking */
+        }
+        
+        .premium-call-panel.state-speaking .premium-call-logo::before {
+          display: none; /* Hide listening glow when speaking */
+        }
+        
+        .audio-waves-container {
+          position: absolute;
+          inset: -40px;
+          width: calc(100% + 80px);
+          height: calc(100% + 80px);
+          display: none;
+          align-items: center;
+          justify-content: center;
+          pointer-events: none;
+        }
+        
+        .premium-call-panel.state-speaking .audio-waves-container {
+          display: flex;
+        }
+        
+        .audio-wave-ring {
+          position: absolute;
+          border-radius: 50%;
+          border: 2px solid rgba(212, 160, 23, 0.4);
+          opacity: 0;
+          animation: wavePulse 2s ease-out infinite;
+        }
+        
+        .audio-wave-ring:nth-child(1) {
+          width: 140px;
+          height: 140px;
+          animation-delay: 0s;
+        }
+        
+        .audio-wave-ring:nth-child(2) {
+          width: 180px;
+          height: 180px;
+          animation-delay: 0.3s;
+        }
+        
+        .audio-wave-ring:nth-child(3) {
+          width: 220px;
+          height: 220px;
+          animation-delay: 0.6s;
+        }
+        
+        .audio-wave-ring:nth-child(4) {
+          width: 260px;
+          height: 260px;
+          animation-delay: 0.9s;
+        }
+        
+        @keyframes wavePulse {
+          0% {
+            opacity: 0.8;
+            transform: scale(0.8);
+          }
+          100% {
+            opacity: 0;
+            transform: scale(1.2);
+          }
+        }
+        
+        /* Real-time amplitude-driven waves */
+        .audio-wave-bar {
+          position: absolute;
+          width: 4px;
+          background: linear-gradient(180deg, 
+            rgba(212, 160, 23, 0.8) 0%,
+            rgba(212, 160, 23, 0.4) 100%);
+          border-radius: 2px;
+          transform-origin: bottom center;
+          transition: height 0.1s ease-out;
+        }
+        
+        .audio-wave-bars {
+          position: absolute;
+          inset: -60px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          width: 240px;
+          height: 240px;
+        }
+        
+        .premium-call-status {
+          text-align: center;
+          color: rgba(255, 255, 255, 0.95);
+          font-size: 18px;
+          font-weight: 600;
+          letter-spacing: -0.02em;
+          min-height: 28px;
+          transition: opacity 0.3s ease;
+        }
+        
+        .premium-call-status.connecting {
+          color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .premium-call-status.listening {
+          color: #4A90E2;
+        }
+        
+        .premium-call-status.speaking {
+          color: #D4A017;
+        }
+        
+        .premium-call-end-button {
+          margin-top: 24px;
+          padding: 14px 32px;
+          border-radius: 16px;
+          border: none;
+          background: rgba(176, 0, 32, 0.9);
+          color: #fff;
+          font-size: 16px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 4px 12px rgba(176, 0, 32, 0.4);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        
+        .premium-call-end-button:hover {
+          background: rgba(176, 0, 32, 1);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(176, 0, 32, 0.6);
+        }
+        
+        .premium-call-end-button:active {
+          transform: translateY(0);
+        }
+        
+        .premium-call-end-button svg {
+          width: 20px;
+          height: 20px;
+        }
+        
+        @media (max-width: 768px) {
+          .premium-call-panel {
+            width: calc(100vw - 32px);
+            max-width: 360px;
+            padding: 24px 20px;
+          }
+          
+          .premium-call-logo-container {
+            width: 100px;
+            height: 100px;
+          }
+          
+          .premium-call-logo {
+            width: 100px;
+            height: 100px;
+            font-size: 40px;
+          }
+        }
+        
         /* Voice Call Sidebar - Shows images and essays during calls */
         .voice-call-sidebar {
           position: fixed;
@@ -2460,6 +2772,32 @@ class NoteworthyChat extends HTMLElement {
         </div>
         
         <div class="resize-handle" aria-label="Resize chat" title="Drag to resize"></div>
+      </div>
+      
+      <!-- Premium Voice Call UI Panel -->
+      <div class="premium-call-panel" id="premiumCallPanel" role="dialog" aria-label="Voice Call" aria-modal="true">
+        <div class="premium-call-header">
+          <button class="premium-call-close" id="premiumCallClose" aria-label="End call">×</button>
+        </div>
+        <div class="premium-call-content">
+          <div class="premium-call-logo-container">
+            <div class="premium-call-logo" id="premiumCallLogo">NW</div>
+            <div class="audio-waves-container" id="audioWavesContainer">
+              <div class="audio-wave-ring"></div>
+              <div class="audio-wave-ring"></div>
+              <div class="audio-wave-ring"></div>
+              <div class="audio-wave-ring"></div>
+              <div class="audio-wave-bars" id="audioWaveBars"></div>
+            </div>
+          </div>
+          <div class="premium-call-status" id="premiumCallStatus">Connecting...</div>
+          <button class="premium-call-end-button" id="premiumCallEndButton" aria-label="End call">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="6" y="6" width="12" height="12" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.2"/>
+            </svg>
+            <span>End Call</span>
+          </button>
+        </div>
       </div>
       
       <!-- Voice Call Sidebar - Shows images and essays during voice calls -->
@@ -4808,6 +5146,11 @@ class NoteworthyChat extends HTMLElement {
         voiceModeActive = true;
         window._voiceModeActive = true; // Set global flag FIRST
         
+        // Track call start time and reset transcripts
+        voiceCallStartTime = Date.now();
+        voiceCallTranscripts = [];
+        console.log('[Voice Mode] 📞 Call started, tracking transcripts for summary');
+        
         // CRITICAL: VoicePlaybackManager is now the single source of truth for audio playback
         // No need for global overrides - VoicePlaybackManager handles all playback and prevents overlap
         // Old queue guards removed - VoicePlaybackManager's state machine and generation IDs ensure single playback
@@ -4842,6 +5185,33 @@ class NoteworthyChat extends HTMLElement {
           return window._originalSpeak(utterance);
         };
         
+        // CRITICAL: Override AudioBufferSourceNode.start() to enforce manager-only playback
+        if (!window._originalBufferSourceStart) {
+          window._originalBufferSourceStart = AudioBufferSourceNode.prototype.start.bind(AudioBufferSourceNode.prototype);
+        }
+        
+        // Global guard: Only allow audio playback through voiceManager singleton
+        AudioBufferSourceNode.prototype.start = function(...args) {
+          // Check if this is from the voiceManager (it will set a flag)
+          if (!window._allowAudioPlayback) {
+            if (DEBUG_VOICE) {
+              console.error('[Voice Mode] 🚫🚫🚫 BLOCKED AudioBufferSourceNode.start() - not from voiceManager!');
+              console.trace('[Voice Mode] Blocked audio call - call stack:');
+            }
+            return; // Block completely
+          }
+          
+          // Temporarily clear flag (only one call allowed per flag set)
+          window._allowAudioPlayback = false;
+          
+          // Allow this playback
+          return window._originalBufferSourceStart.apply(this, args);
+        };
+        
+        if (DEBUG_VOICE) {
+          console.log('[Voice Mode] 🔒✅ Overrode AudioBufferSourceNode.start() globally - only voiceManager can play audio');
+        }
+        
         // CRITICAL: Cancel any text-to-speech immediately when voice mode starts
         // Cancel multiple times to ensure it's stopped - be VERY aggressive
         console.log('[Voice Mode] 🔇🔇🔇 FORCE-CANCELING ALL TEXT-TO-SPEECH');
@@ -4858,11 +5228,12 @@ class NoteworthyChat extends HTMLElement {
         
         // Clear displayed transcripts for new call
         displayedTranscripts.clear();
-        // Reset audio playback state (VoicePlaybackManager handles this)
-        if (voicePlaybackManager) {
-          voicePlaybackManager.stop();
+        // Reset audio playback state (VoiceAudioEngine handles this)
+        if (voiceAudioEngine) {
+          voiceAudioEngine.hardStop('voice mode start');
         }
-        currentAudioGeneration = null;
+        activeResponseId = null;
+        activeGen = 0;
         
         // Clear any pending utterances and stop all speech
         try {
@@ -5004,50 +5375,24 @@ class NoteworthyChat extends HTMLElement {
         });
         console.log('[Voice Mode] ✅ Created new AudioContext, state:', audioContext.state);
         
-        // CRITICAL: Initialize VoicePlaybackManager
-        if (typeof VoicePlaybackManager !== 'undefined') {
-          // Destroy old manager if exists
-          if (voicePlaybackManager) {
-            voicePlaybackManager.destroy();
+        // CRITICAL: Initialize SINGLETON VoicePlaybackManager
+        // Use global singleton instance - only ONE manager exists globally
+        if (typeof window !== 'undefined' && window.voiceManager) {
+          // Initialize singleton with AudioContext
+          window.voiceManager.initialize(audioContext);
+          voicePlaybackManager = window.voiceManager; // Use singleton
+          
+          if (DEBUG_VOICE) {
+            console.log('[Voice Mode] ✅ Using SINGLETON VoiceAudioEngine (only ONE instance globally)');
+            console.log(`[Voice Mode] Engine ID: ${voiceAudioEngine.engineId}`);
           }
-          voicePlaybackManager = new VoicePlaybackManager(audioContext);
-          voicePlaybackManager.onStateChange = (newState, oldState) => {
-            // Update UI based on state
-            if (newState === 'idle') {
-              if (oldState === 'playing' || oldState === 'stopping') {
-                // Playback finished or stopped
-                if (websocket) websocket._isSpeaking = false;
-                if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Listening...';
-                if (voiceStatusText) voiceStatusText.textContent = 'Listening...';
-                if (statusDotIntegrated) statusDotIntegrated.style.background = '#2ecc71';
-                if (statusDot) statusDot.style.background = '#2ecc71';
-                // CRITICAL: Reset response tracking when playback actually finishes
-                currentAudioGeneration = null;
-                hasActiveResponse = false;
-                console.log('[Voice Mode] ✅ Playback finished, status updated to Listening, response tracking reset');
-              }
-            } else if (newState === 'playing') {
-              // Playback started
-              if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Speaking...';
-              if (voiceStatusText) voiceStatusText.textContent = 'Speaking...';
-              if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
-              if (statusDot) statusDot.style.background = '#4A90E2';
-            } else if (newState === 'stopping') {
-              // Playback being stopped
-              if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Stopping...';
-              if (voiceStatusText) voiceStatusText.textContent = 'Stopping...';
-            } else if (newState === 'error') {
-              // Playback error
-              if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Audio error';
-              if (voiceStatusText) voiceStatusText.textContent = 'Audio error';
-              if (statusDotIntegrated) statusDotIntegrated.style.background = '#b00020';
-              if (statusDot) statusDot.style.background = '#b00020';
-              // Reset on error
-              currentAudioGeneration = null;
-              hasActiveResponse = false;
-            }
-          };
-          console.log('[Voice Mode] ✅ VoicePlaybackManager initialized');
+          
+          // Initialize premium call UI
+          initPremiumCallUI();
+        } else if (typeof window !== 'undefined' && !window.voiceAudioEngine) {
+          console.error('[Voice Mode] ❌ CRITICAL: voiceAudioEngine singleton not available!');
+          console.error('[Voice Mode] Make sure voice-audio-engine.js is loaded BEFORE noteworthy-chat.js');
+          console.error('[Voice Mode] Check index.html script order');
         } else {
           console.error('[Voice Mode] ❌ VoicePlaybackManager not loaded! Make sure voice-playback-manager.js is included.');
         }
@@ -5267,6 +5612,17 @@ class NoteworthyChat extends HTMLElement {
           }
           if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
           isRecording = true;
+          
+          // Show premium call UI panel
+          if (window._showPremiumCallPanel) {
+            window._showPremiumCallPanel();
+          }
+          
+          // Set listening state in audio engine
+          if (voiceAudioEngine) {
+            voiceAudioEngine.setListeningState(true);
+          }
+          
           startAudioCapture();
           
           // Hide ALL voice settings/controls since call is active
@@ -5324,9 +5680,32 @@ class NoteworthyChat extends HTMLElement {
           }, 500); // Small delay to ensure connection is fully ready
         };
         
-        websocket.onmessage = (event) => {
+        // CRITICAL: Ensure only ONE message handler (prevent duplicate listeners)
+        // Global guard to prevent multiple handlers across all WebSocket instances
+        if (window.__NW_VOICE_WS_BOUND__) {
+          console.warn('[Voice Mode] ⚠️ Global WebSocket handler guard detected - preventing duplicate binding');
+        }
+        
+        if (websocket._messageHandlerBound) {
+          console.warn('[Voice Mode] ⚠️ WebSocket message handler already bound, removing old handler');
+          websocket.removeEventListener('message', websocket._messageHandlerBound);
+          websocket.onmessage = null; // Clear old handler
+        }
+        
+        // Create handler function
+        const messageHandler = (event) => {
           handleWebSocketMessage(event);
         };
+        
+        // Mark as bound to prevent duplicates (both instance and global)
+        websocket._messageHandlerBound = messageHandler;
+        window.__NW_VOICE_WS_BOUND__ = true;
+        websocket.onmessage = messageHandler; // Use onmessage (not addEventListener) to ensure single handler
+        
+        if (DEBUG_VOICE) {
+          console.log('[Voice Mode] ✅ WebSocket message handler bound (single handler guaranteed)');
+          console.log('[Voice Mode] ✅ Global handler guard set: window.__NW_VOICE_WS_BOUND__ = true');
+        }
         
         websocket.onerror = (error) => {
           const errorTime = Date.now() - connectionStartTime;
@@ -5804,6 +6183,173 @@ class NoteworthyChat extends HTMLElement {
       });
     }
     
+    // Initialize Premium Call UI
+    function initPremiumCallUI() {
+      const premiumCallPanel = root.querySelector('#premiumCallPanel');
+      const premiumCallClose = root.querySelector('#premiumCallClose');
+      const premiumCallEndButton = root.querySelector('#premiumCallEndButton');
+      const premiumCallStatus = root.querySelector('#premiumCallStatus');
+      const premiumCallLogo = root.querySelector('#premiumCallLogo');
+      const audioWavesContainer = root.querySelector('#audioWavesContainer');
+      const audioWaveBars = root.querySelector('#audioWaveBars');
+      
+      if (!premiumCallPanel) {
+        console.error('[Premium Call UI] ❌ Premium call panel not found');
+        return;
+      }
+      
+      // Create audio wave bars for real-time amplitude visualization
+      if (audioWaveBars) {
+        const waveBarCount = 20;
+        for (let i = 0; i < waveBarCount; i++) {
+          const bar = document.createElement('div');
+          bar.className = 'audio-wave-bar';
+          const angle = (i / waveBarCount) * Math.PI * 2;
+          const radius = 45;
+          bar.style.position = 'absolute';
+          bar.style.left = `${50 + Math.cos(angle) * radius}%`;
+          bar.style.bottom = `${50 + Math.sin(angle) * radius}%`;
+          bar.style.width = '4px';
+          bar.style.height = '4px';
+          bar.style.transformOrigin = 'bottom center';
+          audioWaveBars.appendChild(bar);
+        }
+      }
+      
+      // End call button handlers
+      const endCall = () => {
+        if (voiceModeActive) {
+          stopVoiceMode();
+        }
+      };
+      
+      if (premiumCallClose) {
+        premiumCallClose.addEventListener('click', endCall);
+      }
+      if (premiumCallEndButton) {
+        premiumCallEndButton.addEventListener('click', endCall);
+      }
+      
+      // Connect to audio engine state callbacks
+      if (voiceAudioEngine) {
+        // Set up listening state callback
+        voiceAudioEngine.onListeningStateChange = (isListening) => {
+          if (isListening) {
+            premiumCallPanel.classList.remove('state-connecting', 'state-speaking');
+            premiumCallPanel.classList.add('state-listening');
+            if (premiumCallStatus) {
+              premiumCallStatus.textContent = 'Listening...';
+              premiumCallStatus.className = 'premium-call-status listening';
+            }
+          } else {
+            premiumCallPanel.classList.remove('state-listening');
+          }
+        };
+        
+        // Set up speaking state callback
+        voiceAudioEngine.onSpeakingStateChange = (isSpeaking) => {
+          if (isSpeaking) {
+            premiumCallPanel.classList.remove('state-connecting', 'state-listening');
+            premiumCallPanel.classList.add('state-speaking');
+            if (premiumCallStatus) {
+              premiumCallStatus.textContent = 'Speaking...';
+              premiumCallStatus.className = 'premium-call-status speaking';
+            }
+          } else {
+            premiumCallPanel.classList.remove('state-speaking');
+            // Return to listening state
+            if (voiceModeActive && isRecording) {
+              premiumCallPanel.classList.add('state-listening');
+              if (premiumCallStatus) {
+                premiumCallStatus.textContent = 'Listening...';
+                premiumCallStatus.className = 'premium-call-status listening';
+              }
+            }
+          }
+        };
+      }
+      
+      // Animate audio waves based on real-time amplitude
+      let waveAnimationFrame = null;
+      const animateWaves = () => {
+        if (!voiceModeActive || !premiumCallPanel.classList.contains('state-speaking')) {
+          waveAnimationFrame = null;
+          return;
+        }
+        
+        if (voiceAudioEngine && audioWaveBars) {
+          const amplitude = voiceAudioEngine.getAmplitude();
+          const bars = audioWaveBars.querySelectorAll('.audio-wave-bar');
+          
+          bars.forEach((bar, index) => {
+            // Create wave pattern with amplitude modulation
+            const angle = (index / bars.length) * Math.PI * 2;
+            const waveOffset = Math.sin(angle + Date.now() * 0.005) * 0.5 + 0.5;
+            const height = Math.max(4, 4 + (amplitude * 40 * waveOffset));
+            bar.style.height = `${height}px`;
+            bar.style.opacity = Math.max(0.3, amplitude * 0.8 + 0.2);
+          });
+        }
+        
+        waveAnimationFrame = requestAnimationFrame(animateWaves);
+      };
+      
+      // Start wave animation when speaking
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+            const isSpeaking = premiumCallPanel.classList.contains('state-speaking');
+            if (isSpeaking && !waveAnimationFrame) {
+              animateWaves();
+            } else if (!isSpeaking && waveAnimationFrame) {
+              cancelAnimationFrame(waveAnimationFrame);
+              waveAnimationFrame = null;
+              // Reset bars
+              if (audioWaveBars) {
+                audioWaveBars.querySelectorAll('.audio-wave-bar').forEach(bar => {
+                  bar.style.height = '4px';
+                  bar.style.opacity = '0.3';
+                });
+              }
+            }
+          }
+        });
+      });
+      
+      observer.observe(premiumCallPanel, { attributes: true, attributeFilter: ['class'] });
+      
+      // Show panel when voice mode starts
+      const showPanel = () => {
+        if (premiumCallPanel) {
+          premiumCallPanel.classList.add('active');
+          premiumCallPanel.classList.add('state-connecting');
+          if (premiumCallStatus) {
+            premiumCallStatus.textContent = 'Connecting...';
+            premiumCallStatus.className = 'premium-call-status connecting';
+          }
+        }
+      };
+      
+      // Hide panel when voice mode stops
+      const hidePanel = () => {
+        if (premiumCallPanel) {
+          premiumCallPanel.classList.remove('active', 'state-connecting', 'state-listening', 'state-speaking');
+          if (waveAnimationFrame) {
+            cancelAnimationFrame(waveAnimationFrame);
+            waveAnimationFrame = null;
+          }
+        }
+      };
+      
+      // Expose functions globally for voice mode to call
+      window._showPremiumCallPanel = showPanel;
+      window._hidePremiumCallPanel = hidePanel;
+      
+      if (DEBUG_VOICE) {
+        console.log('[Premium Call UI] ✅ Initialized premium call UI panel');
+      }
+    }
+    
     function stopVoiceMode() {
       console.log('[Voice Mode] 🛑 ========== STOP VOICE MODE CALLED ==========');
       console.log('[Voice Mode] 🛑 Stopping voice mode immediately...');
@@ -5814,6 +6360,22 @@ class NoteworthyChat extends HTMLElement {
       window._voiceModeActive = false; // Clear global flag
       isRecording = false;
       hasActiveResponse = false; // Reset response tracking
+      
+      // Hide premium call UI panel
+      if (window._hidePremiumCallPanel) {
+        window._hidePremiumCallPanel();
+      }
+      
+      // Clear listening/speaking states in audio engine
+      if (voiceAudioEngine) {
+        voiceAudioEngine.setListeningState(false);
+        voiceAudioEngine.setSpeakingState(false);
+      }
+      
+      // Clear WebSocket handler guard
+      if (typeof window !== 'undefined') {
+        window.__NW_VOICE_WS_BOUND__ = false;
+      }
       
       // CRITICAL: Stop VoicePlaybackManager immediately
       if (voicePlaybackManager) {
@@ -5827,6 +6389,18 @@ class NoteworthyChat extends HTMLElement {
         window.speechSynthesis.speak = window._originalSpeak;
         window._originalSpeak = null;
         console.log('[Voice Mode] ✅ Restored original speechSynthesis.speak');
+      }
+      
+      // Restore original AudioBufferSourceNode.start() function
+      if (window._originalBufferSourceStart) {
+        AudioBufferSourceNode.prototype.start = window._originalBufferSourceStart;
+        window._originalBufferSourceStart = null;
+        console.log('[Voice Mode] ✅ Restored original AudioBufferSourceNode.start');
+      }
+      
+      // Clear global audio guard flag
+      if (typeof window !== 'undefined') {
+        window._allowAudioPlayback = false;
       }
       
       // Clear displayed transcripts to prevent duplicates on next call
@@ -5859,10 +6433,10 @@ class NoteworthyChat extends HTMLElement {
         audioWorkletNode = null;
       }
       
-      // Destroy VoicePlaybackManager first (stops all playback)
-      if (voicePlaybackManager) {
-        voicePlaybackManager.destroy();
-        voicePlaybackManager = null;
+      // Dispose VoiceAudioEngine first (stops all playback)
+      if (voiceAudioEngine) {
+        voiceAudioEngine.dispose();
+        voiceAudioEngine = null;
       }
       
       // Close audio context IMMEDIATELY
@@ -5896,6 +6470,49 @@ class NoteworthyChat extends HTMLElement {
       
       // Reset retry counter
       authRetryCount = 0;
+      
+      // Send voice call summary email if call lasted > 30 seconds
+      if (voiceCallStartTime && voiceCallTranscripts.length > 0) {
+        const callDuration = (Date.now() - voiceCallStartTime) / 1000; // Duration in seconds
+        
+        if (callDuration >= 30) {
+          console.log(`[Voice Mode] 📧 Call lasted ${Math.round(callDuration)}s, sending summary email...`);
+          
+          // Get user email if available (from previous logs or context)
+          const userEmail = null; // Could be retrieved from user context if needed
+          
+          // Send summary request (non-blocking)
+          const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+          const baseUrl = isLocalhost ? 'http://localhost:8888' : window.location.origin;
+          
+          fetch(`${baseUrl}/.netlify/functions/send-voice-call-summary`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              duration: callDuration,
+              transcripts: voiceCallTranscripts,
+              userEmail: userEmail
+            })
+          })
+          .then(res => res.json())
+          .then(result => {
+            if (result.success) {
+              console.log('[Voice Mode] ✅ Voice call summary email sent successfully');
+            } else {
+              console.error('[Voice Mode] ❌ Failed to send summary email:', result.error);
+            }
+          })
+          .catch(error => {
+            console.error('[Voice Mode] ❌ Error sending summary email:', error);
+          });
+        } else {
+          console.log(`[Voice Mode] 📞 Call lasted ${Math.round(callDuration)}s (less than 30s, no summary email)`);
+        }
+      }
+      
+      // Reset call tracking
+      voiceCallStartTime = null;
+      voiceCallTranscripts = [];
       
       // Update UI after stopping everything
       if (voiceModeToggle) voiceModeToggle.classList.remove('active');
@@ -6241,6 +6858,24 @@ class NoteworthyChat extends HTMLElement {
         }
         
         switch (message.type) {
+          case 'response.created':
+            // NEW RESPONSE STARTED - Reset engine with new generation and response_id
+            const responseId = message.response?.id || message.id || `response_${Date.now()}`;
+            activeGen++;
+            
+            if (voiceAudioEngine) {
+              voiceAudioEngine.reset(activeGen, responseId);
+              activeResponseId = responseId;
+              
+              if (DEBUG_VOICE) {
+                console.log(`[Voice Mode] 🔄 RESPONSE.CREATED: gen=${activeGen}, responseId=${responseId}`);
+              }
+            } else {
+              console.error('[Voice Mode] ❌ response.created but voiceAudioEngine not available!');
+            }
+            hasActiveResponse = true;
+            break;
+            
           case 'auth.success':
             // Authentication successful message (may be sent even when token is in URL)
             // This confirms authentication worked - log it but we may already be recording
@@ -6362,6 +6997,15 @@ class NoteworthyChat extends HTMLElement {
             const transcriptKey = `ai-${transcript}`;
             if (transcript && !displayedTranscripts.has(transcriptKey)) {
               displayedTranscripts.add(transcriptKey);
+              
+              // Add to call transcripts for summary
+              if (voiceCallStartTime) {
+                voiceCallTranscripts.push({
+                  speaker: 'ai',
+                  text: transcript,
+                  timestamp: Date.now()
+                });
+              }
               
               // Remove any live transcript element first
               const liveMsgGroup = root.querySelector('#ai-msg-live');
@@ -6786,18 +7430,14 @@ class NoteworthyChat extends HTMLElement {
             break;
             
           case 'response.output_audio.delta':
-            // CRITICAL: Use VoicePlaybackManager for single-playback guarantee
-            console.log('[Voice Mode] ✅ CASE MATCHED: response.output_audio.delta (VoicePlaybackManager)');
-            
+            // CRITICAL: Use VoiceAudioEngine for single-playback guarantee with proper scheduling
             // CRITICAL: Only process audio if voice mode is active
             if (!voiceModeActive && !window._voiceModeActive) {
               console.warn('[Voice Mode] ⚠️ Ignoring audio delta - voice mode not active');
               break;
             }
             
-            if (message.delta) {
-              console.log('[Voice Mode] 🔊 Received audio delta, length:', message.delta?.length || 0);
-              
+            if (message.delta && voiceAudioEngine) {
               // CRITICAL: Cancel TTS immediately before playing GPT audio (prevent double voice)
               if (voiceModeActive || window._voiceModeActive) {
                 window.speechSynthesis.cancel();
@@ -6805,54 +7445,39 @@ class NoteworthyChat extends HTMLElement {
                 window.speechSynthesis.cancel();
               }
               
-              // Use VoicePlaybackManager for playback
-              if (voicePlaybackManager) {
-                // Check if this is the first chunk of a new response
-                const isNewResponse = !hasActiveResponse || currentAudioGeneration === null;
+              // Decode base64 audio to Float32Array PCM
+              try {
+                const binaryString = atob(message.delta);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                  bytes[i] = binaryString.charCodeAt(i);
+                }
                 
-                if (isNewResponse) {
-                  // NEW RESPONSE: Stop any existing playback and start fresh
-                  hasActiveResponse = true;
-                  console.log('[Voice Mode] 📢 New response started (first audio chunk)');
-                  
-                  // CRITICAL: Hard stop any existing playback immediately
-                  if (voicePlaybackManager.getState() !== 'idle') {
-                    console.log('[Voice Mode] 🛑 Stopping previous playback for new response');
-                    voicePlaybackManager.stop();
-                  }
-                  
-                  // Start new playback with first chunk
-                  // play() increments generation and sets currentGeneration synchronously
-                  voicePlaybackManager.play([message.delta]).catch(err => {
-                    console.error('[Voice Mode] ❌ Playback error:', err);
-                    currentAudioGeneration = null;
-                    hasActiveResponse = false;
-                  });
-                  
-                  // Capture generation immediately after play() call (it's set synchronously in play())
-                  currentAudioGeneration = voicePlaybackManager.getCurrentGeneration();
-                  console.log(`[Voice Mode] 📌 Started new playback, generation ID: ${currentAudioGeneration}`);
-                  
-                  // Show "Speaking..." status on first audio chunk
-                  if (websocket && !websocket._isSpeaking) {
-                    websocket._isSpeaking = true;
-                    if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Speaking...';
-                    if (voiceStatusText) voiceStatusText.textContent = 'Speaking...';
-                    if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
-                    if (statusDot) statusDot.style.background = '#4A90E2';
-                    console.log('[Voice Mode] 🗣️ Status updated to: Speaking...');
-                  }
-                } else {
-                  // SUBSEQUENT CHUNK: Add to current playback
-                  // Manager will ignore if generation doesn't match (old chunks)
-                  voicePlaybackManager.addChunks([message.delta], currentAudioGeneration);
-                  if (DEBUG_VOICE) {
-                    console.log(`[Voice Mode] 📦 Added chunk to generation ${currentAudioGeneration}`);
+                // Convert PCM16 to Float32
+                const pcm16 = new Int16Array(bytes.buffer);
+                const pcmFloat32 = new Float32Array(pcm16.length);
+                for (let i = 0; i < pcm16.length; i++) {
+                  pcmFloat32[i] = pcm16[i] / 32768.0;
+                }
+                
+                // Get response_id from message (fallback to activeResponseId)
+                const responseId = message.response?.id || message.response_id || activeResponseId || `response_${Date.now()}`;
+                
+                // Push chunk to engine (will be discarded if gen/response_id don't match)
+                voiceAudioEngine.pushPcmChunk(pcmFloat32, activeGen, responseId);
+                
+                if (DEBUG_VOICE && websocket) {
+                  if (!websocket._audioDeltaCount) websocket._audioDeltaCount = 0;
+                  websocket._audioDeltaCount++;
+                  if (websocket._audioDeltaCount <= 3) {
+                    console.log(`[Voice Mode] 🔊 Pushed PCM chunk ${websocket._audioDeltaCount}, gen=${activeGen}, responseId=${responseId}`);
                   }
                 }
-              } else {
-                console.error('[Voice Mode] ❌ VoicePlaybackManager not available! Audio will not play.');
+              } catch (error) {
+                console.error('[Voice Mode] ❌ Error processing audio delta:', error);
               }
+            } else if (!voiceAudioEngine) {
+              console.error('[Voice Mode] ❌ VoiceAudioEngine not available! Audio will not play.');
             }
             break;
             
@@ -6950,6 +7575,15 @@ class NoteworthyChat extends HTMLElement {
             const userTranscriptKey = `user-${message.transcript}`;
             if (message.transcript && !displayedTranscripts.has(userTranscriptKey)) {
               displayedTranscripts.add(userTranscriptKey);
+              
+              // Add to call transcripts for summary
+              if (voiceCallStartTime) {
+                voiceCallTranscripts.push({
+                  speaker: 'user',
+                  text: message.transcript,
+                  timestamp: Date.now()
+                });
+              }
               
               const userGroup = document.createElement('div');
               userGroup.className = 'message-group user-msg-group';
@@ -7470,6 +8104,1098 @@ class NoteworthyChat extends HTMLElement {
 }
 
 customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {

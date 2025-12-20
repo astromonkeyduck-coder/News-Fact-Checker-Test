@@ -266,26 +266,25 @@ function renderEnhancedPostCard(post) {
   const timestamp = formatRelativeTime(postDate);
   const timestampTooltip = formatAbsoluteTime(postDate);
   const postText = post.text || post.story || post.title || '';
-  let link = post.link || post.url || `https://x.com/newsnoteworthy/status/${post.id || ''}`;
   
-  // Sanitize link URL to prevent XSS
-  try {
-    const urlObj = new URL(link);
-    if (!['http:', 'https:'].includes(urlObj.protocol)) {
-      link = 'https://x.com/newsnoteworthy'; // Fallback to safe URL
-    } else {
-      // Escape special characters for HTML attribute insertion
-      link = link
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#x27;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+  // Generate article link
+  let stableId = post.id;
+  if (!stableId && postText) {
+    let hash = 0;
+    const str = postText.substring(0, 100);
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
     }
-  } catch (e) {
-    // Invalid URL, use fallback
-    link = 'https://x.com/newsnoteworthy';
+    stableId = `post-${Math.abs(hash)}`;
+  } else if (!stableId) {
+    stableId = `post-${Date.now()}`;
   }
+  const articleLink = `/article.html?id=${encodeURIComponent(stableId)}`;
+  
+  // Twitter link for external reference
+  const twitterLink = post.link || post.url || (post.id ? `https://x.com/newsnoteworthy/status/${post.id}` : 'https://x.com/newsnoteworthy');
   
   // Format story text (same as old feed)
   const formatStory = (text) => {
@@ -533,7 +532,7 @@ function renderEnhancedPostCard(post) {
     });
     
     return buttons.map(btn => `
-      <a href="${btn.href}" target="_blank" rel="noopener noreferrer" 
+      <a href="${btn.href}" ${btn.href.startsWith('http') ? 'target="_blank" rel="noopener noreferrer"' : ''} 
          class="x-engagement-btn" 
          style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; color: ${btn.color}; text-decoration: none; border-radius: 50%; transition: all 0.2s ease; min-width: 36px; justify-content: flex-start;" 
          onmouseover="this.style.color='${btn.hoverColor}'; this.style.backgroundColor='rgba(29, 155, 240, 0.1)'" 
@@ -547,10 +546,10 @@ function renderEnhancedPostCard(post) {
   
   // Use November 23rd card design style (from post-feed-v2.js)
   return `
-    <article class="feed-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || ''}" style="background: transparent; min-height: 520px; padding: 1.5rem; margin: 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease; display: grid; grid-template-rows: auto 1fr auto; box-sizing: border-box;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+    <article class="feed-post-card" role="listitem" data-post-type="${post.postType || 'text'}" data-post-id="${post.id || ''}" style="background: transparent; min-height: 520px; padding: 1.5rem; margin: 0; border-bottom: 1px solid rgba(255,255,255,0.1); transition: background 0.2s ease; display: grid; grid-template-rows: auto 1fr auto; box-sizing: border-box; cursor: pointer;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'" onclick="window.location.href='${articleLink}'">
       <div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem; align-items: flex-start;">
         <!-- Avatar -->
-        <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; text-decoration: none; display: block;">
+        <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="flex-shrink: 0; text-decoration: none; display: block;" onclick="event.stopPropagation();">
           <img src="/IMG_5794.PNG" alt="Noteworthy News" style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
           <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #1DA1F2 0%, #1a91da 100%); display: none; align-items: center; justify-content: center; font-weight: 700; font-size: 1.25rem; color: white;">
             NW
@@ -561,10 +560,10 @@ function renderEnhancedPostCard(post) {
         <div style="flex: 1; min-width: 0;">
           <!-- Header: Username, handle, timestamp -->
           <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
-            <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="font-weight: 700; font-size: 0.938rem; color: rgb(231, 233, 234); text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">Noteworthy News</a>
+            <a href="https://x.com/newsnoteworthy" target="_blank" rel="noopener noreferrer" style="font-weight: 700; font-size: 0.938rem; color: rgb(231, 233, 234); text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" onclick="event.stopPropagation();">Noteworthy News</a>
             <span style="color: rgb(113, 118, 123); font-size: 0.938rem; line-height: 1.25rem;">@newsnoteworthy</span>
             <span style="color: rgb(113, 118, 123); font-size: 0.938rem; line-height: 1.25rem;">·</span>
-            <a href="${link}" target="_blank" rel="noopener noreferrer" style="color: rgb(113, 118, 123); font-size: 0.938rem; text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${timestamp}</a>
+            <a href="${articleLink}" style="color: rgb(113, 118, 123); font-size: 0.938rem; text-decoration: none; line-height: 1.25rem;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'" onclick="event.stopPropagation();">${timestamp}</a>
           </div>
           
           <!-- Post Text -->
@@ -574,8 +573,8 @@ function renderEnhancedPostCard(post) {
           ${renderMedia(post)}
           
           <!-- Engagement Bar (Twitter-style) -->
-          <div style="display: flex; align-items: center; justify-content: space-between; max-width: 425px; margin-top: 0.75rem; padding-top: 0.5rem;">
-            ${renderEngagementBar(post, link)}
+          <div style="display: flex; align-items: center; justify-content: space-between; max-width: 425px; margin-top: 0.75rem; padding-top: 0.5rem;" onclick="event.stopPropagation();">
+            ${renderEngagementBar(post, articleLink)}
           </div>
         </div>
       </div>

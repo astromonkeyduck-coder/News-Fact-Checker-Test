@@ -110,3 +110,15 @@ After enabling:
 - **Newsletter:** Framework ready, but disabled (line 363: `useResponsesAPI = false`)
 - **Chat:** No web search capability - needs to be added
 - **Knowledge:** AI only knows events up to April 2024 without web search
+
+
+
+
+
+
+
+
+
+
+
+

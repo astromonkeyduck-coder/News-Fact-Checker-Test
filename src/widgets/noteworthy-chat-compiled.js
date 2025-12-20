@@ -1575,20 +1575,29 @@ class NoteworthyChat extends HTMLElement {
                         break;
                     case 'response.audio.delta':
                     case 'response.output_audio.delta':
-                        // CRITICAL: Queue audio chunks - NEVER play directly
-                        // This prevents overlapping audio
+                        // CRITICAL: OLD QUEUE SYSTEM DISABLED - Use voiceManager singleton only
+                        // This compiled file should NOT be used - use noteworthy-chat.js instead
                         if (message.delta) {
-                            // Queue the chunk instead of playing directly
-                            if (!window.audioPlayQueue) window.audioPlayQueue = [];
-                            if (!window.isPlayingAudio) window.isPlayingAudio = false;
+                            console.error('[Voice Mode] ❌❌❌ COMPILED FILE DETECTED - OLD QUEUE SYSTEM BLOCKED!');
+                            console.error('[Voice Mode] This file should NOT be loaded. Use noteworthy-chat.js with voiceManager singleton.');
                             
-                            window.audioPlayQueue.push(message.delta);
-                            console.log('[Voice Mode] 📦 Queued audio chunk (compiled), queue length:', window.audioPlayQueue.length);
-                            
-                            // Start processing queue if not already playing
-                            if (!window.isPlayingAudio) {
-                                window.isPlayingAudio = true;
-                                processAudioQueueCompiled();
+                            // Try to use singleton if available
+                            if (typeof window !== 'undefined' && window.voiceManager) {
+                                console.log('[Voice Mode] ✅ Redirecting to voiceManager singleton');
+                                // This is a fallback - should not happen if correct file is loaded
+                                if (!window._compiledAudioGen) window._compiledAudioGen = null;
+                                const isNew = !window._compiledAudioGen;
+                                if (isNew) {
+                                    window.voiceManager.stop(); // Stop any existing
+                                    window.voiceManager.play([message.delta]).catch(err => {
+                                        console.error('[Voice Mode] ❌ Compiled fallback playback error:', err);
+                                    });
+                                    window._compiledAudioGen = window.voiceManager.getCurrentGeneration();
+                                } else {
+                                    window.voiceManager.addChunks([message.delta], window._compiledAudioGen);
+                                }
+                            } else {
+                                console.error('[Voice Mode] ❌ voiceManager not available - audio will NOT play');
                             }
                         }
                         break;
@@ -1626,85 +1635,29 @@ class NoteworthyChat extends HTMLElement {
                 console.error('Error parsing WebSocket message:', error);
             }
         }
-        // Process audio queue sequentially - prevents overlapping audio
+        // CRITICAL: OLD QUEUE SYSTEM DISABLED - This file should NOT be used
+        // All audio must go through voiceManager singleton
         async function processAudioQueueCompiled() {
-            if (!window.audioPlayQueue || window.audioPlayQueue.length === 0) {
-                window.isPlayingAudio = false;
-                return;
+            console.error('[Voice Mode] ❌❌❌ OLD QUEUE SYSTEM BLOCKED! processAudioQueueCompiled() called');
+            console.error('[Voice Mode] This compiled file should NOT be loaded. Use noteworthy-chat.js with voiceManager singleton.');
+            // DO NOTHING - old system disabled
+            if (window.audioPlayQueue) {
+                window.audioPlayQueue = []; // Clear old queue
             }
-            
-            while (window.audioPlayQueue.length > 0) {
-                const audioBase64 = window.audioPlayQueue.shift();
-                if (!audioBase64) continue;
-                
-                await playAudioChunkCompiled(audioBase64);
-            }
-            
             window.isPlayingAudio = false;
-            console.log('[Voice Mode] ✅ Audio queue processed (compiled)');
         }
         
         async function playAudioChunkCompiled(audioBase64) {
-            if (!audioContext)
-                return;
-            return new Promise((resolve) => {
-                try {
-                    // Decode base64 to binary
-                    const binaryString = atob(audioBase64);
-                    const bytes = new Uint8Array(binaryString.length);
-                    for (let i = 0; i < binaryString.length; i++) {
-                        bytes[i] = binaryString.charCodeAt(i);
-                    }
-                    // Convert PCM16 bytes to Float32Array
-                    const pcm16 = new Int16Array(bytes.buffer);
-                    const float32 = new Float32Array(pcm16.length);
-                    for (let i = 0; i < pcm16.length; i++) {
-                        float32[i] = pcm16[i] / 32768.0;
-                    }
-                    // Create audio buffer and play
-                    const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
-                    audioBuffer.copyToChannel(float32, 0);
-                    const source = audioContext.createBufferSource();
-                    source.buffer = audioBuffer;
-                    source.connect(audioContext.destination);
-                    
-                    const duration = float32.length / 24000;
-                    source.onended = () => {
-                        console.log('[Voice Mode] ✅ Audio chunk finished (compiled), duration:', duration.toFixed(3), 's');
-                        resolve();
-                    };
-                    source.onerror = () => {
-                        console.error('[Voice Mode] ❌ Audio source error (compiled)');
-                        resolve();
-                    };
-                    
-                    source.start();
-                    console.log('[Voice Mode] 🔊 Playing audio chunk FROM QUEUE (compiled), length:', float32.length, 'samples, duration:', duration.toFixed(3), 's');
-                    
-                    // Fallback timeout
-                    setTimeout(() => {
-                        resolve();
-                    }, (duration * 1000) + 200);
-                }
-                catch (error) {
-                    console.error('Error playing audio chunk (compiled):', error);
-                    resolve();
-                }
-            });
+            console.error('[Voice Mode] ❌❌❌ OLD DIRECT PLAYBACK BLOCKED! playAudioChunkCompiled() called');
+            console.error('[Voice Mode] Direct audio playback is FORBIDDEN - must use voiceManager singleton');
+            // DO NOTHING - direct playback disabled
         }
         
-        // DEPRECATED: Old function kept for compatibility but should not be used
+        // DEPRECATED: Old function completely disabled
         async function playAudioChunk(audioBase64) {
-            console.warn('[Voice Mode] ⚠️ DEPRECATED: playAudioChunk called directly - should use queue!');
-            // Queue instead of playing directly
-            if (!window.audioPlayQueue) window.audioPlayQueue = [];
-            if (!window.isPlayingAudio) window.isPlayingAudio = false;
-            
-            window.audioPlayQueue.push(audioBase64);
-            if (!window.isPlayingAudio) {
-                window.isPlayingAudio = true;
-                processAudioQueueCompiled();
-            }
+            console.error('[Voice Mode] ❌❌❌ DEPRECATED FUNCTION BLOCKED! playAudioChunk() called');
+            console.error('[Voice Mode] Direct audio playback is FORBIDDEN - must use voiceManager singleton');
+            // DO NOTHING - old function disabled
         }
         // Voice mode toggle
         if (voiceModeToggle) {

@@ -1111,13 +1111,13 @@ RESPONSE STYLE:
       }
       
       r = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
           body: JSON.stringify(requestBody),
-        });
+    });
     } catch (fetchError) {
       console.error("[Noteworthy Chat] Error calling OpenAI API:", fetchError);
       console.error("[Noteworthy Chat] Error stack:", fetchError.stack);
