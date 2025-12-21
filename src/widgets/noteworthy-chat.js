@@ -28,9 +28,8 @@ class NoteworthyChat extends HTMLElement {
     let currentVoice = 'alloy';
     let websocket = null;
     let audioContext = null;
-    let voiceAudioEngine = null; // VoiceAudioEngine singleton instance
-    let activeResponseId = null; // Current response ID from OpenAI
-    let activeGen = 0; // Current generation counter
+    let voicePlaybackManager = null; // VoicePlaybackManager instance (legacy, being replaced)
+    let voiceAudioEngine = null; // VoiceAudioEngine singleton - THE ONLY audio output engine
     let mediaStream = null;
     let voiceModeSpeechCheckInterval = null; // Interval to periodically cancel text-to-speech during voice mode
     let audioWorkletNode = null;
@@ -42,7 +41,9 @@ class NoteworthyChat extends HTMLElement {
     let connectionAttempts = []; // Track connection attempts for diagnostics
     const displayedTranscripts = new Set();
     let hasActiveResponse = false; // Track if there's an active response in progress
-    let currentAudioGeneration = null; // Track current audio generation for streaming chunks
+    let currentAudioGeneration = null; // Track current audio generation for streaming chunks (legacy)
+    let activeResponseId = null; // Current response ID from response.created
+    let activeGen = 0; // Current generation counter (increments on each new response)
     let voiceCallStartTime = null; // Track when voice call started
     let voiceCallTranscripts = []; // Track conversation transcripts during call
     const DEBUG_VOICE = typeof window !== 'undefined' && window.DEBUG_VOICE !== undefined 
@@ -884,6 +885,242 @@ class NoteworthyChat extends HTMLElement {
         .voice-action-stop:hover {
           background: rgba(255, 255, 255, 0.15);
           border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Premium Call UI - NW Logo + States + Audio Waves */
+        .voice-call-panel {
+          position: fixed;
+          right: 24px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 320px;
+          min-height: 400px;
+          background: linear-gradient(135deg, 
+            rgba(15, 23, 42, 0.98) 0%, 
+            rgba(12, 19, 35, 0.95) 100%);
+          backdrop-filter: blur(24px) saturate(180%);
+          -webkit-backdrop-filter: blur(24px) saturate(180%);
+          border: 1.5px solid rgba(74, 144, 226, 0.3);
+          border-radius: 24px;
+          box-shadow: 
+            0 24px 64px rgba(0, 0, 0, 0.5),
+            0 8px 24px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1),
+            0 0 0 1px rgba(74, 144, 226, 0.2);
+          z-index: 2147482999;
+          display: none;
+          flex-direction: column;
+          padding: 32px;
+          gap: 24px;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          opacity: 0;
+          transform: translateY(-50%) translateX(20px) scale(0.95);
+        }
+        
+        .voice-call-panel.show {
+          display: flex;
+          opacity: 1;
+          transform: translateY(-50%) translateX(0) scale(1);
+        }
+        
+        .voice-call-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 8px;
+        }
+        
+        .voice-call-title {
+          font-size: 14px;
+          font-weight: 700;
+          color: rgba(255, 255, 255, 0.9);
+          letter-spacing: -0.02em;
+        }
+        
+        .voice-call-end-btn {
+          width: 36px;
+          height: 36px;
+          border-radius: 12px;
+          border: 1.5px solid rgba(255, 255, 255, 0.2);
+          background: rgba(255, 255, 255, 0.1);
+          color: rgba(255, 255, 255, 0.9);
+          font-size: 20px;
+          line-height: 1;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+          font-weight: 700;
+        }
+        
+        .voice-call-end-btn:hover {
+          background: rgba(176, 0, 32, 0.3);
+          border-color: rgba(176, 0, 32, 0.5);
+          color: #fff;
+          transform: scale(1.1);
+        }
+        
+        .voice-call-end-btn:focus {
+          outline: 2px solid rgba(176, 0, 32, 0.5);
+          outline-offset: 2px;
+        }
+        
+        .voice-logo-container {
+          position: relative;
+          width: 120px;
+          height: 120px;
+          margin: 0 auto 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .voice-logo {
+          width: 120px;
+          height: 120px;
+          border-radius: 30px;
+          background: linear-gradient(135deg, #D4A017 0%, #F4C430 100%);
+          color: #0f0f0f;
+          font-weight: 900;
+          font-size: 48px;
+          display: grid;
+          place-items: center;
+          box-shadow: 
+            0 8px 24px rgba(212, 160, 23, 0.4),
+            inset 0 2px 0 rgba(255, 255, 255, 0.3);
+          position: relative;
+          z-index: 2;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Listening state - blue glow + breathing pulse */
+        .voice-logo-container.listening .voice-logo {
+          animation: logoBreathing 2s ease-in-out infinite;
+          box-shadow: 
+            0 8px 24px rgba(212, 160, 23, 0.4),
+            0 0 0 4px rgba(74, 144, 226, 0.3),
+            0 0 20px rgba(74, 144, 226, 0.4),
+            inset 0 2px 0 rgba(255, 255, 255, 0.3);
+        }
+        
+        @keyframes logoBreathing {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.03); }
+        }
+        
+        .voice-logo-container.listening::before {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 140px;
+          height: 140px;
+          border-radius: 50%;
+          border: 2px dashed rgba(74, 144, 226, 0.4);
+          animation: rotateRing 8s linear infinite;
+          z-index: 1;
+        }
+        
+        @keyframes rotateRing {
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        /* Speaking state - audio waves */
+        .voice-logo-container.speaking .voice-logo {
+          box-shadow: 
+            0 8px 24px rgba(212, 160, 23, 0.4),
+            0 0 0 4px rgba(74, 144, 226, 0.2),
+            inset 0 2px 0 rgba(255, 255, 255, 0.3);
+        }
+        
+        .voice-audio-waves {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 200px;
+          height: 200px;
+          z-index: 1;
+        }
+        
+        .wave-ring {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          border-radius: 50%;
+          border: 2px solid rgba(74, 144, 226, 0.6);
+          opacity: 0;
+          transition: opacity 0.1s ease;
+        }
+        
+        .wave-ring:nth-child(1) {
+          width: 140px;
+          height: 140px;
+          margin: -70px 0 0 -70px;
+        }
+        
+        .wave-ring:nth-child(2) {
+          width: 160px;
+          height: 160px;
+          margin: -80px 0 0 -80px;
+        }
+        
+        .wave-ring:nth-child(3) {
+          width: 180px;
+          height: 180px;
+          margin: -90px 0 0 -90px;
+        }
+        
+        .wave-ring:nth-child(4) {
+          width: 200px;
+          height: 200px;
+          margin: -100px 0 0 -100px;
+        }
+        
+        .voice-status-text-premium {
+          text-align: center;
+          font-size: 16px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.9);
+          letter-spacing: -0.02em;
+          transition: color 0.3s ease;
+        }
+        
+        .voice-status-text-premium.connecting {
+          color: rgba(74, 144, 226, 0.8);
+        }
+        
+        .voice-status-text-premium.listening {
+          color: rgba(74, 144, 226, 1);
+        }
+        
+        .voice-status-text-premium.speaking {
+          color: rgba(212, 160, 23, 1);
+        }
+        
+        @media (max-width: 768px) {
+          .voice-call-panel {
+            right: 12px;
+            width: calc(100vw - 24px);
+            max-width: 320px;
+            min-height: 360px;
+            padding: 24px;
+          }
+          
+          .voice-logo-container {
+            width: 100px;
+            height: 100px;
+          }
+          
+          .voice-logo {
+            width: 100px;
+            height: 100px;
+            font-size: 40px;
+          }
         }
         
         .voice-panel-header {
@@ -2104,314 +2341,6 @@ class NoteworthyChat extends HTMLElement {
           }
         }
         
-        /* Premium Voice Call UI Panel - Shows during active calls */
-        .premium-call-panel {
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 360px;
-          min-height: 400px;
-          background: linear-gradient(135deg, 
-            rgba(1, 31, 91, 0.95) 0%, 
-            rgba(20, 58, 146, 0.95) 50%,
-            rgba(13, 41, 104, 0.95) 100%);
-          backdrop-filter: blur(24px) saturate(200%);
-          -webkit-backdrop-filter: blur(24px) saturate(200%);
-          border: 1.5px solid rgba(74, 144, 226, 0.4);
-          border-radius: 24px;
-          box-shadow: 
-            0 24px 72px rgba(0, 0, 0, 0.4),
-            0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-            0 12px 40px rgba(74, 144, 226, 0.2);
-          z-index: 2147483001;
-          display: none;
-          flex-direction: column;
-          align-items: center;
-          padding: 32px 24px;
-          transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-          opacity: 0;
-          pointer-events: none;
-        }
-        
-        .premium-call-panel.active {
-          display: flex;
-          opacity: 1;
-          pointer-events: all;
-          animation: callPanelSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        
-        @keyframes callPanelSlideIn {
-          from {
-            transform: translate(-50%, -50%) scale(0.9);
-            opacity: 0;
-          }
-          to {
-            transform: translate(-50%, -50%) scale(1);
-            opacity: 1;
-          }
-        }
-        
-        .premium-call-header {
-          width: 100%;
-          display: flex;
-          justify-content: flex-end;
-          margin-bottom: 16px;
-        }
-        
-        .premium-call-close {
-          width: 36px;
-          height: 36px;
-          border-radius: 12px;
-          border: none;
-          background: rgba(255, 255, 255, 0.1);
-          color: rgba(255, 255, 255, 0.8);
-          font-size: 24px;
-          line-height: 1;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-        }
-        
-        .premium-call-close:hover {
-          background: rgba(255, 255, 255, 0.2);
-          color: #fff;
-          transform: scale(1.1);
-        }
-        
-        .premium-call-content {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          width: 100%;
-          gap: 24px;
-        }
-        
-        .premium-call-logo-container {
-          position: relative;
-          width: 120px;
-          height: 120px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        .premium-call-logo {
-          width: 120px;
-          height: 120px;
-          border-radius: 24px;
-          background: linear-gradient(135deg, #D4A017 0%, #F4C430 100%);
-          color: #0f0f0f;
-          font-weight: 900;
-          font-size: 48px;
-          display: grid;
-          place-items: center;
-          box-shadow: 
-            0 8px 24px rgba(212, 160, 23, 0.4),
-            inset 0 2px 0 rgba(255, 255, 255, 0.3);
-          position: relative;
-          z-index: 2;
-          transition: transform 0.3s ease;
-        }
-        
-        /* Listening state - blue glow ring + breathing pulse */
-        .premium-call-panel.state-listening .premium-call-logo {
-          animation: logoBreathing 2s ease-in-out infinite;
-        }
-        
-        .premium-call-panel.state-listening .premium-call-logo::before {
-          content: '';
-          position: absolute;
-          inset: -8px;
-          border-radius: 32px;
-          border: 3px solid rgba(74, 144, 226, 0.6);
-          animation: listeningGlow 2s ease-in-out infinite;
-          z-index: -1;
-        }
-        
-        @keyframes logoBreathing {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.03); }
-        }
-        
-        @keyframes listeningGlow {
-          0%, 100% { 
-            opacity: 0.6;
-            box-shadow: 0 0 20px rgba(74, 144, 226, 0.4);
-          }
-          50% { 
-            opacity: 1;
-            box-shadow: 0 0 40px rgba(74, 144, 226, 0.8);
-          }
-        }
-        
-        /* Speaking state - audio waves */
-        .premium-call-panel.state-speaking .premium-call-logo {
-          animation: none; /* Stop breathing when speaking */
-        }
-        
-        .premium-call-panel.state-speaking .premium-call-logo::before {
-          display: none; /* Hide listening glow when speaking */
-        }
-        
-        .audio-waves-container {
-          position: absolute;
-          inset: -40px;
-          width: calc(100% + 80px);
-          height: calc(100% + 80px);
-          display: none;
-          align-items: center;
-          justify-content: center;
-          pointer-events: none;
-        }
-        
-        .premium-call-panel.state-speaking .audio-waves-container {
-          display: flex;
-        }
-        
-        .audio-wave-ring {
-          position: absolute;
-          border-radius: 50%;
-          border: 2px solid rgba(212, 160, 23, 0.4);
-          opacity: 0;
-          animation: wavePulse 2s ease-out infinite;
-        }
-        
-        .audio-wave-ring:nth-child(1) {
-          width: 140px;
-          height: 140px;
-          animation-delay: 0s;
-        }
-        
-        .audio-wave-ring:nth-child(2) {
-          width: 180px;
-          height: 180px;
-          animation-delay: 0.3s;
-        }
-        
-        .audio-wave-ring:nth-child(3) {
-          width: 220px;
-          height: 220px;
-          animation-delay: 0.6s;
-        }
-        
-        .audio-wave-ring:nth-child(4) {
-          width: 260px;
-          height: 260px;
-          animation-delay: 0.9s;
-        }
-        
-        @keyframes wavePulse {
-          0% {
-            opacity: 0.8;
-            transform: scale(0.8);
-          }
-          100% {
-            opacity: 0;
-            transform: scale(1.2);
-          }
-        }
-        
-        /* Real-time amplitude-driven waves */
-        .audio-wave-bar {
-          position: absolute;
-          width: 4px;
-          background: linear-gradient(180deg, 
-            rgba(212, 160, 23, 0.8) 0%,
-            rgba(212, 160, 23, 0.4) 100%);
-          border-radius: 2px;
-          transform-origin: bottom center;
-          transition: height 0.1s ease-out;
-        }
-        
-        .audio-wave-bars {
-          position: absolute;
-          inset: -60px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          width: 240px;
-          height: 240px;
-        }
-        
-        .premium-call-status {
-          text-align: center;
-          color: rgba(255, 255, 255, 0.95);
-          font-size: 18px;
-          font-weight: 600;
-          letter-spacing: -0.02em;
-          min-height: 28px;
-          transition: opacity 0.3s ease;
-        }
-        
-        .premium-call-status.connecting {
-          color: rgba(255, 255, 255, 0.7);
-        }
-        
-        .premium-call-status.listening {
-          color: #4A90E2;
-        }
-        
-        .premium-call-status.speaking {
-          color: #D4A017;
-        }
-        
-        .premium-call-end-button {
-          margin-top: 24px;
-          padding: 14px 32px;
-          border-radius: 16px;
-          border: none;
-          background: rgba(176, 0, 32, 0.9);
-          color: #fff;
-          font-size: 16px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.2s;
-          box-shadow: 0 4px 12px rgba(176, 0, 32, 0.4);
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        
-        .premium-call-end-button:hover {
-          background: rgba(176, 0, 32, 1);
-          transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(176, 0, 32, 0.6);
-        }
-        
-        .premium-call-end-button:active {
-          transform: translateY(0);
-        }
-        
-        .premium-call-end-button svg {
-          width: 20px;
-          height: 20px;
-        }
-        
-        @media (max-width: 768px) {
-          .premium-call-panel {
-            width: calc(100vw - 32px);
-            max-width: 360px;
-            padding: 24px 20px;
-          }
-          
-          .premium-call-logo-container {
-            width: 100px;
-            height: 100px;
-          }
-          
-          .premium-call-logo {
-            width: 100px;
-            height: 100px;
-            font-size: 40px;
-          }
-        }
-        
         /* Voice Call Sidebar - Shows images and essays during calls */
         .voice-call-sidebar {
           position: fixed;
@@ -2774,30 +2703,22 @@ class NoteworthyChat extends HTMLElement {
         <div class="resize-handle" aria-label="Resize chat" title="Drag to resize"></div>
       </div>
       
-      <!-- Premium Voice Call UI Panel -->
-      <div class="premium-call-panel" id="premiumCallPanel" role="dialog" aria-label="Voice Call" aria-modal="true">
-        <div class="premium-call-header">
-          <button class="premium-call-close" id="premiumCallClose" aria-label="End call">×</button>
+      <!-- Premium Voice Call Panel - NW Logo + States + Audio Waves -->
+      <div class="voice-call-panel" id="voiceCallPanel">
+        <div class="voice-call-header">
+          <div class="voice-call-title">Voice Call</div>
+          <button class="voice-call-end-btn" id="voiceCallEndBtn" aria-label="End call">×</button>
         </div>
-        <div class="premium-call-content">
-          <div class="premium-call-logo-container">
-            <div class="premium-call-logo" id="premiumCallLogo">NW</div>
-            <div class="audio-waves-container" id="audioWavesContainer">
-              <div class="audio-wave-ring"></div>
-              <div class="audio-wave-ring"></div>
-              <div class="audio-wave-ring"></div>
-              <div class="audio-wave-ring"></div>
-              <div class="audio-wave-bars" id="audioWaveBars"></div>
-            </div>
-          </div>
-          <div class="premium-call-status" id="premiumCallStatus">Connecting...</div>
-          <button class="premium-call-end-button" id="premiumCallEndButton" aria-label="End call">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="6" y="6" width="12" height="12" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.2"/>
-            </svg>
-            <span>End Call</span>
-          </button>
+        <div class="voice-logo-container" id="voiceLogoContainer">
+          <div class="voice-logo">NW</div>
+          <svg class="voice-audio-waves" id="voiceAudioWaves" style="display: none;">
+            <circle class="wave-ring" cx="100" cy="100" r="70" fill="none" stroke="rgba(74, 144, 226, 0.6)" stroke-width="2" opacity="0"/>
+            <circle class="wave-ring" cx="100" cy="100" r="80" fill="none" stroke="rgba(74, 144, 226, 0.5)" stroke-width="2" opacity="0"/>
+            <circle class="wave-ring" cx="100" cy="100" r="90" fill="none" stroke="rgba(74, 144, 226, 0.4)" stroke-width="2" opacity="0"/>
+            <circle class="wave-ring" cx="100" cy="100" r="100" fill="none" stroke="rgba(74, 144, 226, 0.3)" stroke-width="2" opacity="0"/>
+          </svg>
         </div>
+        <div class="voice-status-text-premium" id="voiceStatusTextPremium">Ready</div>
       </div>
       
       <!-- Voice Call Sidebar - Shows images and essays during voice calls -->
@@ -3217,7 +3138,7 @@ class NoteworthyChat extends HTMLElement {
     
     // Use event delegation on root to catch clicks even if button is recreated
     root.addEventListener('click', (e) => {
-      const target = e.target.closest('#voiceStopBtnIntegrated, #voiceStopBtn');
+      const target = e.target.closest('#voiceStopBtnIntegrated, #voiceStopBtn, #voiceCallEndBtn');
       if (target) {
         e.preventDefault();
         e.stopPropagation();
@@ -5044,6 +4965,130 @@ class NoteworthyChat extends HTMLElement {
     }
     
     // Voice mode functionality - Full Realtime API implementation
+    // Premium Call UI State Management
+    let audioWaveAnimationId = null;
+    let currentUIState = 'idle'; // 'idle' | 'connecting' | 'listening' | 'speaking'
+    
+    function updateVoiceUIState(state) {
+      const logoContainer = root.querySelector('#voiceLogoContainer');
+      const statusText = root.querySelector('#voiceStatusTextPremium');
+      const audioWaves = root.querySelector('#voiceAudioWaves');
+      
+      if (!logoContainer || !statusText) {
+        if (DEBUG_VOICE) {
+          console.warn('[Voice Mode] ⚠️ Premium call UI elements not found');
+        }
+        return;
+      }
+      
+      // Remove all state classes
+      logoContainer.classList.remove('connecting', 'listening', 'speaking');
+      statusText.classList.remove('connecting', 'listening', 'speaking');
+      
+      currentUIState = state;
+      
+      switch (state) {
+        case 'connecting':
+          logoContainer.classList.add('connecting');
+          statusText.classList.add('connecting');
+          statusText.textContent = 'Connecting...';
+          if (audioWaves) audioWaves.style.display = 'none';
+          stopAudioWaveAnimation();
+          break;
+          
+        case 'listening':
+          logoContainer.classList.add('listening');
+          statusText.classList.add('listening');
+          statusText.textContent = 'Listening...';
+          if (audioWaves) audioWaves.style.display = 'none';
+          stopAudioWaveAnimation();
+          break;
+          
+        case 'speaking':
+          logoContainer.classList.add('speaking');
+          statusText.classList.add('speaking');
+          statusText.textContent = 'Speaking...';
+          if (audioWaves) audioWaves.style.display = 'block';
+          startAudioWaveAnimation();
+          break;
+          
+        case 'idle':
+        default:
+          logoContainer.classList.remove('connecting', 'listening', 'speaking');
+          statusText.classList.remove('connecting', 'listening', 'speaking');
+          statusText.textContent = 'Ready';
+          if (audioWaves) audioWaves.style.display = 'none';
+          stopAudioWaveAnimation();
+          break;
+      }
+      
+      if (DEBUG_VOICE) {
+        console.log(`[Voice Mode] 🎨 UI State updated: ${state}`);
+      }
+    }
+    
+    // Audio wave animation using AnalyserNode
+    function startAudioWaveAnimation() {
+      if (audioWaveAnimationId) return; // Already running
+      
+      const audioWaves = root.querySelector('#voiceAudioWaves');
+      if (!audioWaves || !voiceAudioEngine) return;
+      
+      const waveRings = audioWaves.querySelectorAll('.wave-ring');
+      if (waveRings.length === 0) return;
+      
+      function animateWaves() {
+        if (currentUIState !== 'speaking' || !voiceAudioEngine) {
+          stopAudioWaveAnimation();
+          return;
+        }
+        
+        // Get real-time amplitude from VoiceAudioEngine
+        const amplitude = voiceAudioEngine.getAmplitude();
+        
+        // Map amplitude (0-1) to wave intensity
+        const intensity = Math.max(0.3, amplitude * 1.5); // Minimum 0.3, max 1.5
+        
+        // Update wave rings opacity based on amplitude
+        waveRings.forEach((ring, index) => {
+          const delay = index * 0.3;
+          const phase = (Date.now() / 1000 + delay) % 1.5;
+          const ringIntensity = intensity * (1 - phase / 1.5);
+          ring.setAttribute('opacity', Math.max(0, ringIntensity));
+          ring.setAttribute('stroke-opacity', Math.max(0.1, ringIntensity));
+        });
+        
+        audioWaveAnimationId = requestAnimationFrame(animateWaves);
+      }
+      
+      animateWaves();
+      
+      if (DEBUG_VOICE) {
+        console.log('[Voice Mode] 🌊 Audio wave animation started');
+      }
+    }
+    
+    function stopAudioWaveAnimation() {
+      if (audioWaveAnimationId) {
+        cancelAnimationFrame(audioWaveAnimationId);
+        audioWaveAnimationId = null;
+        
+        // Reset wave rings
+        const audioWaves = root.querySelector('#voiceAudioWaves');
+        if (audioWaves) {
+          const waveRings = audioWaves.querySelectorAll('.wave-ring');
+          waveRings.forEach(ring => {
+            ring.setAttribute('opacity', '0');
+            ring.setAttribute('stroke-opacity', '0');
+          });
+        }
+        
+        if (DEBUG_VOICE) {
+          console.log('[Voice Mode] 🌊 Audio wave animation stopped');
+        }
+      }
+    }
+    
     async function startVoiceMode() {
       if (voiceModeActive) {
         stopVoiceMode();
@@ -5146,6 +5191,18 @@ class NoteworthyChat extends HTMLElement {
         voiceModeActive = true;
         window._voiceModeActive = true; // Set global flag FIRST
         
+        // Update UI to connecting state
+        updateVoiceUIState('connecting');
+        
+        // Show premium call panel
+        const voiceCallPanel = root.querySelector('#voiceCallPanel');
+        if (voiceCallPanel) {
+          voiceCallPanel.classList.add('show');
+          if (DEBUG_VOICE) {
+            console.log('[Voice Mode] ✅ Premium call panel shown');
+          }
+        }
+        
         // Track call start time and reset transcripts
         voiceCallStartTime = Date.now();
         voiceCallTranscripts = [];
@@ -5230,10 +5287,15 @@ class NoteworthyChat extends HTMLElement {
         displayedTranscripts.clear();
         // Reset audio playback state (VoiceAudioEngine handles this)
         if (voiceAudioEngine) {
-          voiceAudioEngine.hardStop('voice mode start');
+          voiceAudioEngine.hardStop('voice mode restart');
         }
-        activeResponseId = null;
+        // Legacy cleanup
+        if (voicePlaybackManager) {
+          voicePlaybackManager.stop();
+        }
+        currentAudioGeneration = null;
         activeGen = 0;
+        activeResponseId = null;
         
         // Clear any pending utterances and stop all speech
         try {
@@ -5375,26 +5437,46 @@ class NoteworthyChat extends HTMLElement {
         });
         console.log('[Voice Mode] ✅ Created new AudioContext, state:', audioContext.state);
         
-        // CRITICAL: Initialize SINGLETON VoicePlaybackManager
-        // Use global singleton instance - only ONE manager exists globally
-        if (typeof window !== 'undefined' && window.voiceManager) {
+        // CRITICAL: Initialize SINGLETON VoiceAudioEngine
+        // This is THE ONLY audio output engine - enforces single pipeline with proper scheduling
+        if (typeof window !== 'undefined' && window.voiceAudioEngine) {
           // Initialize singleton with AudioContext
-          window.voiceManager.initialize(audioContext);
-          voicePlaybackManager = window.voiceManager; // Use singleton
+          window.voiceAudioEngine.initialize(audioContext);
+          voiceAudioEngine = window.voiceAudioEngine; // Use singleton
+          
+          // Wire up state callbacks for UI updates
+          voiceAudioEngine.onListeningStateChange = (isListening) => {
+            if (isListening) {
+              updateVoiceUIState('listening');
+            }
+          };
+          
+          voiceAudioEngine.onSpeakingStateChange = (isSpeaking) => {
+            if (isSpeaking) {
+              updateVoiceUIState('speaking');
+            } else {
+              // Only switch to listening if we're not connecting
+              if (currentUIState !== 'connecting') {
+                updateVoiceUIState('listening');
+              }
+            }
+          };
           
           if (DEBUG_VOICE) {
             console.log('[Voice Mode] ✅ Using SINGLETON VoiceAudioEngine (only ONE instance globally)');
-            console.log(`[Voice Mode] Engine ID: ${voiceAudioEngine.engineId}`);
+            console.log('[Voice Mode] 📊 Engine ID:', voiceAudioEngine.engineId);
           }
-          
-          // Initialize premium call UI
-          initPremiumCallUI();
         } else if (typeof window !== 'undefined' && !window.voiceAudioEngine) {
           console.error('[Voice Mode] ❌ CRITICAL: voiceAudioEngine singleton not available!');
           console.error('[Voice Mode] Make sure voice-audio-engine.js is loaded BEFORE noteworthy-chat.js');
           console.error('[Voice Mode] Check index.html script order');
         } else {
-          console.error('[Voice Mode] ❌ VoicePlaybackManager not loaded! Make sure voice-playback-manager.js is included.');
+          console.error('[Voice Mode] ❌ VoiceAudioEngine not loaded! Make sure voice-audio-engine.js is included.');
+        }
+        
+        // Legacy: Keep voicePlaybackManager reference for backwards compatibility (will be removed)
+        if (typeof window !== 'undefined' && window.voiceManager) {
+          voicePlaybackManager = window.voiceManager;
         }
         
         // CRITICAL: Resume AudioContext if suspended (browsers suspend until user interaction)
@@ -5605,6 +5687,11 @@ class NoteworthyChat extends HTMLElement {
           // Start audio capture immediately - authentication is complete
           // If OpenAI sends auth.success message, we'll handle it but don't need to wait
           console.log('[Voice Mode] 🎤 Starting audio capture (authenticated connection)');
+          
+          // Update UI to listening state
+          updateVoiceUIState('listening');
+          
+          // Legacy status updates (for compatibility)
           if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Connected - Speak now!';
           if (voiceStatusIntegrated) {
             voiceStatusIntegrated.classList.remove('error');
@@ -5612,17 +5699,6 @@ class NoteworthyChat extends HTMLElement {
           }
           if (statusDotIntegrated) statusDotIntegrated.style.background = '#4A90E2';
           isRecording = true;
-          
-          // Show premium call UI panel
-          if (window._showPremiumCallPanel) {
-            window._showPremiumCallPanel();
-          }
-          
-          // Set listening state in audio engine
-          if (voiceAudioEngine) {
-            voiceAudioEngine.setListeningState(true);
-          }
-          
           startAudioCapture();
           
           // Hide ALL voice settings/controls since call is active
@@ -5681,15 +5757,21 @@ class NoteworthyChat extends HTMLElement {
         };
         
         // CRITICAL: Ensure only ONE message handler (prevent duplicate listeners)
-        // Global guard to prevent multiple handlers across all WebSocket instances
+        // Use global guard to prevent multiple handlers across reconnections
         if (window.__NW_VOICE_WS_BOUND__) {
-          console.warn('[Voice Mode] ⚠️ Global WebSocket handler guard detected - preventing duplicate binding');
-        }
-        
-        if (websocket._messageHandlerBound) {
-          console.warn('[Voice Mode] ⚠️ WebSocket message handler already bound, removing old handler');
-          websocket.removeEventListener('message', websocket._messageHandlerBound);
-          websocket.onmessage = null; // Clear old handler
+          if (DEBUG_VOICE) {
+            console.warn('[Voice Mode] ⚠️ WebSocket handler already bound globally, cleaning up old connection');
+          }
+          // Clean up old handler if it exists
+          if (websocket._messageHandlerBound) {
+            try {
+              websocket.removeEventListener('message', websocket._messageHandlerBound);
+            } catch (e) {
+              // Ignore errors if handler was already removed
+            }
+          }
+          // Reset global guard for this new connection
+          window.__NW_VOICE_WS_BOUND__ = false;
         }
         
         // Create handler function
@@ -5697,14 +5779,15 @@ class NoteworthyChat extends HTMLElement {
           handleWebSocketMessage(event);
         };
         
-        // Mark as bound to prevent duplicates (both instance and global)
+        // Mark as bound to prevent duplicates (both on websocket and globally)
         websocket._messageHandlerBound = messageHandler;
         window.__NW_VOICE_WS_BOUND__ = true;
         websocket.onmessage = messageHandler; // Use onmessage (not addEventListener) to ensure single handler
         
         if (DEBUG_VOICE) {
           console.log('[Voice Mode] ✅ WebSocket message handler bound (single handler guaranteed)');
-          console.log('[Voice Mode] ✅ Global handler guard set: window.__NW_VOICE_WS_BOUND__ = true');
+          console.log('[Voice Mode] 📊 Handler ID:', websocket._messageHandlerBound ? 'bound' : 'not bound');
+          console.log('[Voice Mode] 📊 Global guard:', window.__NW_VOICE_WS_BOUND__);
         }
         
         websocket.onerror = (error) => {
@@ -6183,173 +6266,6 @@ class NoteworthyChat extends HTMLElement {
       });
     }
     
-    // Initialize Premium Call UI
-    function initPremiumCallUI() {
-      const premiumCallPanel = root.querySelector('#premiumCallPanel');
-      const premiumCallClose = root.querySelector('#premiumCallClose');
-      const premiumCallEndButton = root.querySelector('#premiumCallEndButton');
-      const premiumCallStatus = root.querySelector('#premiumCallStatus');
-      const premiumCallLogo = root.querySelector('#premiumCallLogo');
-      const audioWavesContainer = root.querySelector('#audioWavesContainer');
-      const audioWaveBars = root.querySelector('#audioWaveBars');
-      
-      if (!premiumCallPanel) {
-        console.error('[Premium Call UI] ❌ Premium call panel not found');
-        return;
-      }
-      
-      // Create audio wave bars for real-time amplitude visualization
-      if (audioWaveBars) {
-        const waveBarCount = 20;
-        for (let i = 0; i < waveBarCount; i++) {
-          const bar = document.createElement('div');
-          bar.className = 'audio-wave-bar';
-          const angle = (i / waveBarCount) * Math.PI * 2;
-          const radius = 45;
-          bar.style.position = 'absolute';
-          bar.style.left = `${50 + Math.cos(angle) * radius}%`;
-          bar.style.bottom = `${50 + Math.sin(angle) * radius}%`;
-          bar.style.width = '4px';
-          bar.style.height = '4px';
-          bar.style.transformOrigin = 'bottom center';
-          audioWaveBars.appendChild(bar);
-        }
-      }
-      
-      // End call button handlers
-      const endCall = () => {
-        if (voiceModeActive) {
-          stopVoiceMode();
-        }
-      };
-      
-      if (premiumCallClose) {
-        premiumCallClose.addEventListener('click', endCall);
-      }
-      if (premiumCallEndButton) {
-        premiumCallEndButton.addEventListener('click', endCall);
-      }
-      
-      // Connect to audio engine state callbacks
-      if (voiceAudioEngine) {
-        // Set up listening state callback
-        voiceAudioEngine.onListeningStateChange = (isListening) => {
-          if (isListening) {
-            premiumCallPanel.classList.remove('state-connecting', 'state-speaking');
-            premiumCallPanel.classList.add('state-listening');
-            if (premiumCallStatus) {
-              premiumCallStatus.textContent = 'Listening...';
-              premiumCallStatus.className = 'premium-call-status listening';
-            }
-          } else {
-            premiumCallPanel.classList.remove('state-listening');
-          }
-        };
-        
-        // Set up speaking state callback
-        voiceAudioEngine.onSpeakingStateChange = (isSpeaking) => {
-          if (isSpeaking) {
-            premiumCallPanel.classList.remove('state-connecting', 'state-listening');
-            premiumCallPanel.classList.add('state-speaking');
-            if (premiumCallStatus) {
-              premiumCallStatus.textContent = 'Speaking...';
-              premiumCallStatus.className = 'premium-call-status speaking';
-            }
-          } else {
-            premiumCallPanel.classList.remove('state-speaking');
-            // Return to listening state
-            if (voiceModeActive && isRecording) {
-              premiumCallPanel.classList.add('state-listening');
-              if (premiumCallStatus) {
-                premiumCallStatus.textContent = 'Listening...';
-                premiumCallStatus.className = 'premium-call-status listening';
-              }
-            }
-          }
-        };
-      }
-      
-      // Animate audio waves based on real-time amplitude
-      let waveAnimationFrame = null;
-      const animateWaves = () => {
-        if (!voiceModeActive || !premiumCallPanel.classList.contains('state-speaking')) {
-          waveAnimationFrame = null;
-          return;
-        }
-        
-        if (voiceAudioEngine && audioWaveBars) {
-          const amplitude = voiceAudioEngine.getAmplitude();
-          const bars = audioWaveBars.querySelectorAll('.audio-wave-bar');
-          
-          bars.forEach((bar, index) => {
-            // Create wave pattern with amplitude modulation
-            const angle = (index / bars.length) * Math.PI * 2;
-            const waveOffset = Math.sin(angle + Date.now() * 0.005) * 0.5 + 0.5;
-            const height = Math.max(4, 4 + (amplitude * 40 * waveOffset));
-            bar.style.height = `${height}px`;
-            bar.style.opacity = Math.max(0.3, amplitude * 0.8 + 0.2);
-          });
-        }
-        
-        waveAnimationFrame = requestAnimationFrame(animateWaves);
-      };
-      
-      // Start wave animation when speaking
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-            const isSpeaking = premiumCallPanel.classList.contains('state-speaking');
-            if (isSpeaking && !waveAnimationFrame) {
-              animateWaves();
-            } else if (!isSpeaking && waveAnimationFrame) {
-              cancelAnimationFrame(waveAnimationFrame);
-              waveAnimationFrame = null;
-              // Reset bars
-              if (audioWaveBars) {
-                audioWaveBars.querySelectorAll('.audio-wave-bar').forEach(bar => {
-                  bar.style.height = '4px';
-                  bar.style.opacity = '0.3';
-                });
-              }
-            }
-          }
-        });
-      });
-      
-      observer.observe(premiumCallPanel, { attributes: true, attributeFilter: ['class'] });
-      
-      // Show panel when voice mode starts
-      const showPanel = () => {
-        if (premiumCallPanel) {
-          premiumCallPanel.classList.add('active');
-          premiumCallPanel.classList.add('state-connecting');
-          if (premiumCallStatus) {
-            premiumCallStatus.textContent = 'Connecting...';
-            premiumCallStatus.className = 'premium-call-status connecting';
-          }
-        }
-      };
-      
-      // Hide panel when voice mode stops
-      const hidePanel = () => {
-        if (premiumCallPanel) {
-          premiumCallPanel.classList.remove('active', 'state-connecting', 'state-listening', 'state-speaking');
-          if (waveAnimationFrame) {
-            cancelAnimationFrame(waveAnimationFrame);
-            waveAnimationFrame = null;
-          }
-        }
-      };
-      
-      // Expose functions globally for voice mode to call
-      window._showPremiumCallPanel = showPanel;
-      window._hidePremiumCallPanel = hidePanel;
-      
-      if (DEBUG_VOICE) {
-        console.log('[Premium Call UI] ✅ Initialized premium call UI panel');
-      }
-    }
-    
     function stopVoiceMode() {
       console.log('[Voice Mode] 🛑 ========== STOP VOICE MODE CALLED ==========');
       console.log('[Voice Mode] 🛑 Stopping voice mode immediately...');
@@ -6361,28 +6277,20 @@ class NoteworthyChat extends HTMLElement {
       isRecording = false;
       hasActiveResponse = false; // Reset response tracking
       
-      // Hide premium call UI panel
-      if (window._hidePremiumCallPanel) {
-        window._hidePremiumCallPanel();
-      }
-      
-      // Clear listening/speaking states in audio engine
+      // CRITICAL: Stop VoiceAudioEngine immediately (THE ONLY audio output engine)
       if (voiceAudioEngine) {
-        voiceAudioEngine.setListeningState(false);
-        voiceAudioEngine.setSpeakingState(false);
+        voiceAudioEngine.hardStop('voice mode stopped');
+        console.log('[Voice Mode] 🧹 VoiceAudioEngine stopped');
       }
       
-      // Clear WebSocket handler guard
-      if (typeof window !== 'undefined') {
-        window.__NW_VOICE_WS_BOUND__ = false;
-      }
-      
-      // CRITICAL: Stop VoicePlaybackManager immediately
+      // Legacy: Stop VoicePlaybackManager (being phased out)
       if (voicePlaybackManager) {
         voicePlaybackManager.stop();
-        console.log('[Voice Mode] 🧹 VoicePlaybackManager stopped');
+        console.log('[Voice Mode] 🧹 VoicePlaybackManager stopped (legacy)');
       }
       currentAudioGeneration = null;
+      activeGen = 0;
+      activeResponseId = null;
       
       // Restore original speechSynthesis.speak function
       if (window._originalSpeak) {
@@ -6433,10 +6341,10 @@ class NoteworthyChat extends HTMLElement {
         audioWorkletNode = null;
       }
       
-      // Dispose VoiceAudioEngine first (stops all playback)
-      if (voiceAudioEngine) {
-        voiceAudioEngine.dispose();
-        voiceAudioEngine = null;
+      // Destroy VoicePlaybackManager first (stops all playback)
+      if (voicePlaybackManager) {
+        voicePlaybackManager.destroy();
+        voicePlaybackManager = null;
       }
       
       // Close audio context IMMEDIATELY
@@ -6457,6 +6365,12 @@ class NoteworthyChat extends HTMLElement {
         if (websocket._retryCount) {
           delete websocket._retryCount;
         }
+        // Clear message handler binding
+        if (websocket._messageHandlerBound) {
+          websocket._messageHandlerBound = null;
+        }
+        // Reset global guard
+        window.__NW_VOICE_WS_BOUND__ = false;
         // Close immediately - don't wait
         try {
           if (websocket.readyState === WebSocket.OPEN || websocket.readyState === WebSocket.CONNECTING) {
@@ -6513,6 +6427,18 @@ class NoteworthyChat extends HTMLElement {
       // Reset call tracking
       voiceCallStartTime = null;
       voiceCallTranscripts = [];
+      
+      // Hide premium call panel
+      const voiceCallPanel = root.querySelector('#voiceCallPanel');
+      if (voiceCallPanel) {
+        voiceCallPanel.classList.remove('show');
+        if (DEBUG_VOICE) {
+          console.log('[Voice Mode] ✅ Premium call panel hidden');
+        }
+      }
+      
+      // Update UI state to idle
+      updateVoiceUIState('idle');
       
       // Update UI after stopping everything
       if (voiceModeToggle) voiceModeToggle.classList.remove('active');
@@ -6858,24 +6784,6 @@ class NoteworthyChat extends HTMLElement {
         }
         
         switch (message.type) {
-          case 'response.created':
-            // NEW RESPONSE STARTED - Reset engine with new generation and response_id
-            const responseId = message.response?.id || message.id || `response_${Date.now()}`;
-            activeGen++;
-            
-            if (voiceAudioEngine) {
-              voiceAudioEngine.reset(activeGen, responseId);
-              activeResponseId = responseId;
-              
-              if (DEBUG_VOICE) {
-                console.log(`[Voice Mode] 🔄 RESPONSE.CREATED: gen=${activeGen}, responseId=${responseId}`);
-              }
-            } else {
-              console.error('[Voice Mode] ❌ response.created but voiceAudioEngine not available!');
-            }
-            hasActiveResponse = true;
-            break;
-            
           case 'auth.success':
             // Authentication successful message (may be sent even when token is in URL)
             // This confirms authentication worked - log it but we may already be recording
@@ -6979,6 +6887,30 @@ class NoteworthyChat extends HTMLElement {
           case 'session.updated':
             // Session update confirmed
             console.log('[Voice Mode] Session updated:', message);
+            break;
+            
+          case 'response.created':
+            // CRITICAL: New response started - set generation and response_id
+            // This is where we reset the audio engine and increment generation
+            const responseId = message.response?.id || message.response_id || `response_${Date.now()}`;
+            activeGen++;
+            activeResponseId = responseId;
+            hasActiveResponse = true;
+            
+            if (DEBUG_VOICE) {
+              console.log(`[Voice Mode] 🆕 RESPONSE.CREATED: gen=${activeGen}, responseId=${responseId}`);
+            }
+            
+            // Reset audio engine for new response
+            if (voiceAudioEngine) {
+              voiceAudioEngine.reset(activeGen, activeResponseId);
+              if (DEBUG_VOICE) {
+                console.log(`[Voice Mode] ✅ Audio engine reset for gen ${activeGen}, responseId ${activeResponseId}`);
+              }
+            }
+            
+            // Update UI to listening (AI is about to speak)
+            updateVoiceUIState('listening');
             break;
             
           case 'response.audio_transcript.done':
@@ -7431,13 +7363,17 @@ class NoteworthyChat extends HTMLElement {
             
           case 'response.output_audio.delta':
             // CRITICAL: Use VoiceAudioEngine for single-playback guarantee with proper scheduling
+            console.log('[Voice Mode] ✅ CASE MATCHED: response.output_audio.delta (VoiceAudioEngine)');
+            
             // CRITICAL: Only process audio if voice mode is active
             if (!voiceModeActive && !window._voiceModeActive) {
               console.warn('[Voice Mode] ⚠️ Ignoring audio delta - voice mode not active');
               break;
             }
             
-            if (message.delta && voiceAudioEngine) {
+            if (message.delta) {
+              console.log('[Voice Mode] 🔊 Received audio delta, length:', message.delta?.length || 0);
+              
               // CRITICAL: Cancel TTS immediately before playing GPT audio (prevent double voice)
               if (voiceModeActive || window._voiceModeActive) {
                 window.speechSynthesis.cancel();
@@ -7445,48 +7381,47 @@ class NoteworthyChat extends HTMLElement {
                 window.speechSynthesis.cancel();
               }
               
-              // Decode base64 audio to Float32Array PCM
-              try {
-                const binaryString = atob(message.delta);
-                const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
-                  bytes[i] = binaryString.charCodeAt(i);
-                }
+              // Use VoiceAudioEngine for playback (THE ONLY audio output engine)
+              if (voiceAudioEngine) {
+                // Extract response ID from message if present, otherwise use current active
+                const chunkResponseId = message.response_id || activeResponseId;
                 
-                // Convert PCM16 to Float32
-                const pcm16 = new Int16Array(bytes.buffer);
-                const pcmFloat32 = new Float32Array(pcm16.length);
-                for (let i = 0; i < pcm16.length; i++) {
-                  pcmFloat32[i] = pcm16[i] / 32768.0;
-                }
-                
-                // Get response_id from message (fallback to activeResponseId)
-                const responseId = message.response?.id || message.response_id || activeResponseId || `response_${Date.now()}`;
-                
-                // Push chunk to engine (will be discarded if gen/response_id don't match)
-                voiceAudioEngine.pushPcmChunk(pcmFloat32, activeGen, responseId);
-                
-                if (DEBUG_VOICE && websocket) {
-                  if (!websocket._audioDeltaCount) websocket._audioDeltaCount = 0;
-                  websocket._audioDeltaCount++;
-                  if (websocket._audioDeltaCount <= 3) {
-                    console.log(`[Voice Mode] 🔊 Pushed PCM chunk ${websocket._audioDeltaCount}, gen=${activeGen}, responseId=${responseId}`);
+                // Decode base64 to PCM Float32Array
+                try {
+                  const binaryString = atob(message.delta);
+                  const bytes = new Uint8Array(binaryString.length);
+                  for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
                   }
+                  
+                  // Convert PCM16 to Float32
+                  const pcm16 = new Int16Array(bytes.buffer);
+                  const float32 = new Float32Array(pcm16.length);
+                  for (let i = 0; i < pcm16.length; i++) {
+                    float32[i] = pcm16[i] / 32768.0;
+                  }
+                  
+                  // Push to audio engine (will be discarded if gen/response_id mismatch)
+                  voiceAudioEngine.pushPcmChunk(float32, activeGen, chunkResponseId);
+                  
+                  if (DEBUG_VOICE) {
+                    console.log(`[Voice Mode] ✅ Chunk pushed to engine: gen=${activeGen}, responseId=${chunkResponseId}, samples=${float32.length}`);
+                  }
+                } catch (error) {
+                  console.error('[Voice Mode] ❌ Error decoding audio delta:', error);
                 }
-              } catch (error) {
-                console.error('[Voice Mode] ❌ Error processing audio delta:', error);
+              } else {
+                console.error('[Voice Mode] ❌ VoiceAudioEngine not available! Audio will not play.');
               }
-            } else if (!voiceAudioEngine) {
-              console.error('[Voice Mode] ❌ VoiceAudioEngine not available! Audio will not play.');
             }
             break;
             
           case 'response.output_audio.done':
             // Audio output complete - all chunks received from server
             console.log('[Voice Mode] ✅ Audio output complete (all chunks received from server)');
-            // Note: Playback may still be ongoing - VoicePlaybackManager will handle completion
+            // Note: Playback may still be ongoing - VoiceAudioEngine will handle completion
             // Status will update when playback actually finishes (via state change callback)
-            // Don't clear currentAudioGeneration or hasActiveResponse yet - let playback finish naturally
+            // Don't clear activeGen/activeResponseId yet - let playback finish naturally
             break;
             
           case 'response.done':
@@ -7527,6 +7462,8 @@ class NoteworthyChat extends HTMLElement {
             
             // Reset speaking state when response is done
             if (websocket) websocket._isSpeaking = false;
+            // Update UI - will switch to listening when audio queue drains
+            // Don't force listening state here - let voiceAudioEngine state callback handle it
             if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Listening...';
             if (voiceStatusText) voiceStatusText.textContent = 'Listening...';
             if (voiceStatusIntegrated) {
@@ -7956,6 +7893,3741 @@ class NoteworthyChat extends HTMLElement {
     // - Sequential chunk processing with cancellation checks
     // See: src/widgets/voice-playback-manager.js
     // ============================================================================
+    
+    // Legacy handlers (kept for compatibility but not used)
+    
+    // Drag and drop handling on the main chat body and wrap
+    if (body && wrap) {
+      // Prevent default drag behaviors
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        body.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }, false);
+        wrap.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }, false);
+      });
+      
+      // Highlight drop zone when item is dragged over it
+      const addDragOver = (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+        }
+      };
+      
+      const removeDragOver = () => {
+        wrap.classList.remove('drag-over');
+        body.classList.remove('drag-over');
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+    }
+    
+    // Legacy handlers (kept for compatibility but not used)
+    
+    // Drag and drop handling on the main chat body and wrap
+    if (body && wrap) {
+      // Prevent default drag behaviors
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        body.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }, false);
+        wrap.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }, false);
+      });
+      
+      // Highlight drop zone when item is dragged over it
+      const addDragOver = (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+        }
+      };
+      
+      const removeDragOver = () => {
+        wrap.classList.remove('drag-over');
+        body.classList.remove('drag-over');
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+    // Legacy handlers (kept for compatibility but not used)
+    
+    // Drag and drop handling on the main chat body and wrap
+    if (body && wrap) {
+      // Prevent default drag behaviors
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        body.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }, false);
+        wrap.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }, false);
+      });
+      
+      // Highlight drop zone when item is dragged over it
+      const addDragOver = (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+        }
+      };
+      
+      const removeDragOver = () => {
+        wrap.classList.remove('drag-over');
+        body.classList.remove('drag-over');
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+}
+
+      };
+      
+      wrap.addEventListener('dragenter', addDragOver);
+      body.addEventListener('dragenter', addDragOver);
+      
+      wrap.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      body.addEventListener('dragover', (e) => {
+        if (e.dataTransfer.types.includes('Files')) {
+          wrap.classList.add('drag-over');
+          body.classList.add('drag-over');
+          e.dataTransfer.dropEffect = 'copy';
+        }
+      });
+      
+      wrap.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the wrap
+        const rect = wrap.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          removeDragOver();
+        }
+      });
+      
+      body.addEventListener('dragleave', (e) => {
+        // Only remove drag-over if we're leaving the body
+        const rect = body.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+          // Check if we're still over the wrap
+          const wrapRect = wrap.getBoundingClientRect();
+          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
+            removeDragOver();
+          }
+        }
+      });
+      
+      wrap.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+      
+      body.addEventListener('drop', (e) => {
+        removeDragOver();
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          handleFiles(files);
+        }
+      });
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function updateFilePreviewContainer() {
+      const previewContainer = rootRef.querySelector('.file-preview-container');
+      if (previewContainer && uploadedFiles.length === 0) {
+        previewContainer.remove();
+      }
+    }
+    
+    // Attach event handlers with error checking
+    if (send) {
+      send.onclick = (e) => {
+        console.log('Send button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+        ask().catch(err => {
+          console.error('Error in ask() from send button:', err);
+        });
+      };
+    } else {
+      console.error('Send button not found!');
+    }
+    
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        // Stop propagation for 'k' key to prevent keyboard shortcuts from intercepting it
+        if (e.key === 'k' || e.key === 'K') {
+          e.stopPropagation();
+        }
+        if (e.key === 'Enter' && !send.disabled) {
+          console.log('Enter key pressed');
+          e.preventDefault();
+          ask().catch(err => {
+            console.error('Error in ask() from Enter key:', err);
+          });
+        }
+      });
+    } else {
+      console.error('Input field not found!');
+    }
+
+    // Initial position and size
+    setPos(this.pos.x, this.pos.y);
+    setSize(this.size.w, this.size.h);
+  }
+
+  disconnectedCallback() {
+    // Cleanup if needed
+  }
+}
+
+customElements.define('noteworthy-chat-widget', NoteworthyChat);
+
+// ACCEPTANCE TESTS: Add test functions to window for debugging
+if (typeof window !== 'undefined') {
+  window.voiceTest = {
+    spamPlay: () => {
+      console.log('[Voice Test] 🧪 Spamming 5 play requests 200ms apart...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      let count = 0;
+      const interval = setInterval(() => {
+        count++;
+        const testChunk = btoa(String.fromCharCode(...new Array(1000).fill(0).map(() => Math.floor(Math.random() * 256))));
+        console.log(`[Voice Test] 🎯 Play request ${count}/5`);
+        window.voiceManager.play([testChunk]).catch(err => {
+          console.error(`[Voice Test] ❌ Play ${count} failed:`, err);
+        });
+        
+        if (count >= 5) {
+          clearInterval(interval);
+          console.log('[Voice Test] ✅ Spam test complete - only last should play');
+        }
+      }, 200);
+    },
+    
+    stopSpam: () => {
+      console.log('[Voice Test] 🛑 Stopping playback...');
+      if (window.voiceManager) {
+        window.voiceManager.stop();
+        console.log('[Voice Test] ✅ Stop called');
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+      }
+    },
+    
+    getState: () => {
+      if (window.voiceManager) {
+        const state = {
+          state: window.voiceManager.getState(),
+          generation: window.voiceManager.getCurrentGeneration(),
+          playbackGen: window.voiceManager.playbackGeneration
+        };
+        console.log('[Voice Test] 📊 Manager state:', state);
+        return state;
+      } else {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return null;
+      }
+    },
+    
+    testOverlap: () => {
+      console.log('[Voice Test] 🧪 Testing overlap prevention...');
+      if (!window.voiceManager) {
+        console.error('[Voice Test] ❌ voiceManager not available');
+        return;
+      }
+      
+      // Create test chunks
+      const chunk1 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      const chunk2 = btoa(String.fromCharCode(...new Array(2000).fill(0).map(() => Math.floor(Math.random() * 256))));
+      
+      console.log('[Voice Test] 🎯 Starting first playback...');
+      window.voiceManager.play([chunk1]).catch(err => console.error('[Voice Test] ❌ Play 1 failed:', err));
+      
+      setTimeout(() => {
+        console.log('[Voice Test] 🎯 Starting second playback (should cancel first)...');
+        window.voiceManager.play([chunk2]).catch(err => console.error('[Voice Test] ❌ Play 2 failed:', err));
+      }, 100);
+      
+      console.log('[Voice Test] ✅ Overlap test started - second should cancel first');
+    }
+  };
+  
+  console.log('[Voice Mode] ✅ Acceptance tests available: window.voiceTest.spamPlay(), window.voiceTest.stopSpam(), window.voiceTest.getState(), window.voiceTest.testOverlap()');
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = NoteworthyChat;
+    }
     
     // Legacy handlers (kept for compatibility but not used)
     
