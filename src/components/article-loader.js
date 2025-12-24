@@ -367,7 +367,19 @@
             const title = post.title || post.story || post.text || 'Breaking News Story';
             const story = post.story || post.text || post.title || '';
             const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
-            const image = post.image || post.images?.[0] || null;
+            
+            // Get image - handle both single image and images array
+            // Also handle newsletter images stored as get-uploaded-image URLs
+            let image = post.image || post.images?.[0] || null;
+            
+            // If image is a get-uploaded-image URL, ensure it's absolute
+            if (image && image.includes('get-uploaded-image')) {
+                if (!image.startsWith('http://') && !image.startsWith('https://')) {
+                    // Make relative URL absolute
+                    image = image.startsWith('/') ? `${SITE_URL}${image}` : `${SITE_URL}/${image}`;
+                }
+            }
+            
             const category = post.category || 'Breaking News';
             
             // Update SEO meta tags
@@ -426,9 +438,23 @@
             
             // Add hero media if available
             if (image) {
+                // Ensure image URL is absolute
+                const absoluteImageUrl = ensureAbsoluteImageUrl(image);
                 bodyHTML += `<div class="article-media">
-                    <img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" loading="lazy">
+                    <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)}" loading="lazy" onerror="this.style.display='none'; this.parentElement.innerHTML='<p style=\\'color: rgba(255,255,255,0.6); padding: 2rem; text-align: center;\\'>Image could not be loaded</p>';">
                 </div>`;
+            }
+            
+            // Also check for multiple images in post.images array
+            if (post.images && Array.isArray(post.images) && post.images.length > 0) {
+                post.images.forEach((imgUrl, idx) => {
+                    if (imgUrl && imgUrl !== image) { // Don't duplicate the hero image
+                        const absoluteImgUrl = ensureAbsoluteImageUrl(imgUrl);
+                        bodyHTML += `<div class="article-media" style="margin-top: 1.5rem;">
+                            <img src="${escapeHtml(absoluteImgUrl)}" alt="${escapeHtml(title)} - Image ${idx + 2}" loading="lazy" onerror="this.style.display='none';">
+                        </div>`;
+                    }
+                });
             }
             
             // Add post text - preserve line breaks as paragraphs

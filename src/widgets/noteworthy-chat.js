@@ -1018,12 +1018,9 @@ class NoteworthyChat extends HTMLElement {
           width: 120px;
           height: 120px;
           border-radius: 30px;
+          object-fit: contain;
           background: linear-gradient(135deg, #D4A017 0%, #F4C430 100%);
-          color: #0f0f0f;
-          font-weight: 900;
-          font-size: 48px;
-          display: grid;
-          place-items: center;
+          padding: 8px;
           box-shadow: 
             0 8px 24px rgba(212, 160, 23, 0.4),
             inset 0 2px 0 rgba(255, 255, 255, 0.3);
@@ -2409,6 +2406,12 @@ class NoteworthyChat extends HTMLElement {
           flex-direction: column;
           overflow: hidden;
           animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: none; /* Disable transition during drag */
+        }
+        
+        /* When sidebar is being dragged, use left/top positioning */
+        .voice-call-sidebar.dragging {
+          transition: none;
         }
         
         @keyframes slideInRight {
@@ -2432,6 +2435,12 @@ class NoteworthyChat extends HTMLElement {
             rgba(30, 41, 59, 0.95) 0%, 
             rgba(15, 23, 42, 0.98) 50%,
             rgba(30, 41, 59, 0.95) 100%);
+          cursor: grab;
+          user-select: none;
+        }
+        
+        .voice-sidebar-header:active {
+          cursor: grabbing;
         }
         
         .voice-sidebar-title {
@@ -2755,7 +2764,7 @@ class NoteworthyChat extends HTMLElement {
         </div>
         <button class="voice-call-end-btn" id="voiceCallEndBtn" aria-label="End call">End Call</button>
         <div class="voice-logo-container" id="voiceLogoContainer">
-          <div class="voice-logo">NW</div>
+          <img src="SantalogoEdited.png" alt="Noteworthy News" class="voice-logo" />
           <svg class="voice-audio-waves" id="voiceAudioWaves" style="display: none;">
             <circle class="wave-ring" cx="100" cy="100" r="70" fill="none" stroke="rgba(74, 144, 226, 0.6)" stroke-width="2" opacity="0"/>
             <circle class="wave-ring" cx="100" cy="100" r="80" fill="none" stroke="rgba(74, 144, 226, 0.5)" stroke-width="2" opacity="0"/>
@@ -5321,7 +5330,8 @@ class NoteworthyChat extends HTMLElement {
         
         // CRITICAL: Override AudioBufferSourceNode.start() to enforce manager-only playback
         if (!window._originalBufferSourceStart) {
-          window._originalBufferSourceStart = AudioBufferSourceNode.prototype.start.bind(AudioBufferSourceNode.prototype);
+          // Save the original method (don't bind - we'll use apply with correct 'this')
+          window._originalBufferSourceStart = AudioBufferSourceNode.prototype.start;
         }
         
         // Global guard: Only allow audio playback through voiceManager singleton
@@ -5338,7 +5348,8 @@ class NoteworthyChat extends HTMLElement {
           // Temporarily clear flag (only one call allowed per flag set)
           window._allowAudioPlayback = false;
           
-          // Allow this playback
+          // Allow this playback - call original with correct 'this' context
+          // 'this' here refers to the AudioBufferSourceNode instance
           return window._originalBufferSourceStart.apply(this, args);
         };
         
@@ -6042,7 +6053,7 @@ class NoteworthyChat extends HTMLElement {
       const existing = document.body.querySelector('#email-confirmation-ui');
       if (existing) existing.remove();
       
-      // Create confirmation UI
+      // Create confirmation UI with dark theme matching other modules
       const confirmationDiv = document.createElement('div');
       confirmationDiv.id = 'email-confirmation-ui';
       confirmationDiv.style.cssText = `
@@ -6050,78 +6061,234 @@ class NoteworthyChat extends HTMLElement {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        background: linear-gradient(135deg, 
+          rgba(18, 24, 38, 0.98) 0%, 
+          rgba(15, 23, 42, 0.96) 50%,
+          rgba(12, 19, 35, 0.98) 100%);
+        border-radius: 16px;
+        box-shadow: 
+          0 24px 64px rgba(0, 0, 0, 0.5),
+          0 8px 24px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
         padding: 24px;
-        max-width: 500px;
+        max-width: 600px;
         width: 90%;
-        max-height: 80vh;
+        max-height: 85vh;
         overflow-y: auto;
-        z-index: 10000;
-        border: 2px solid #4a90e2;
+        z-index: 2147483100;
+        border: 1.5px solid rgba(74, 144, 226, 0.3);
       `;
       
       confirmationDiv.innerHTML = `
-        <h3 style="margin: 0 0 16px 0; color: #4a90e2; font-size: 20px;">📧 Confirm Email</h3>
+        <h3 style="margin: 0 0 20px 0; color: #fff; font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+          <span>📧</span>
+          <span>Confirm Email</span>
+        </h3>
         <div style="margin-bottom: 16px;">
-          <strong style="color: #333;">To:</strong>
-          <div style="color: #666; margin-top: 4px;">${recipientEmail}</div>
+          <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 8px; font-size: 14px;">To:</label>
+          <input type="email" id="email-to-input" value="${recipientEmail}" style="
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1.5px solid rgba(74, 144, 226, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: all 0.2s;
+          " />
         </div>
         <div style="margin-bottom: 16px;">
-          <strong style="color: #333;">Subject:</strong>
-          <div style="color: #666; margin-top: 4px;">${subject}</div>
+          <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 8px; font-size: 14px;">Subject:</label>
+          <input type="text" id="email-subject-input" value="${subject}" style="
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1.5px solid rgba(74, 144, 226, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: all 0.2s;
+          " />
         </div>
         <div style="margin-bottom: 16px;">
-          <strong style="color: #333;">Message:</strong>
-          <div style="color: #666; margin-top: 4px; white-space: pre-wrap; background: #f5f5f5; padding: 12px; border-radius: 8px;">${message}</div>
+          <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 8px; font-size: 14px;">Message:</label>
+          <textarea id="email-message-input" rows="6" style="
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1.5px solid rgba(74, 144, 226, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            box-sizing: border-box;
+            white-space: pre-wrap;
+            transition: all 0.2s;
+          ">${message}</textarea>
         </div>
         ${imageUrl ? `
           <div style="margin-bottom: 16px;">
-            <strong style="color: #333;">Image:</strong>
+            <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 8px; font-size: 14px;">Image:</label>
             <div style="margin-top: 8px;">
-              <img src="${imageUrl}" alt="${imagePrompt || 'Generated image'}" style="max-width: 100%; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
-              ${imagePrompt ? `<p style="color: #666; font-size: 12px; margin-top: 4px; font-style: italic;">"${imagePrompt}"</p>` : ''}
+              <img src="${imageUrl}" alt="${imagePrompt || 'Generated image'}" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);" />
+              ${imagePrompt ? `<p style="color: rgba(255, 255, 255, 0.6); font-size: 12px; margin-top: 8px; font-style: italic;">"${imagePrompt}"</p>` : ''}
             </div>
           </div>
         ` : ''}
+        <div style="margin-bottom: 20px; padding-top: 16px; border-top: 1px solid rgba(74, 144, 226, 0.2);">
+          <label style="display: block; color: rgba(255, 255, 255, 0.9); font-weight: 600; margin-bottom: 8px; font-size: 14px;">🔒 Admin Password (Required):</label>
+          <input type="password" id="email-admin-password" placeholder="Enter admin password to send" style="
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1.5px solid rgba(74, 144, 226, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: all 0.2s;
+          " />
+          <p id="email-password-error" style="color: #f44336; margin-top: 8px; font-size: 12px; display: none;"></p>
+        </div>
         <div style="display: flex; gap: 12px; margin-top: 24px;">
           <button id="email-confirm-send" style="
             flex: 1;
-            background: #4a90e2;
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
             color: white;
             border: none;
             padding: 12px 24px;
             border-radius: 8px;
             font-size: 16px;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
           ">✅ Send Email</button>
           <button id="email-confirm-cancel" style="
             flex: 1;
-            background: #ccc;
-            color: #333;
-            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.9);
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
             padding: 12px 24px;
             border-radius: 8px;
             font-size: 16px;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s;
           ">❌ Cancel</button>
         </div>
       `;
       
       document.body.appendChild(confirmationDiv);
       
-      // Handle send button
+      // Add hover effects
       const sendBtn = confirmationDiv.querySelector('#email-confirm-send');
-      sendBtn.addEventListener('click', () => {
-        sendPendingEmail(imageUrl, imagePrompt);
-        confirmationDiv.remove();
+      const cancelBtn = confirmationDiv.querySelector('#email-confirm-cancel');
+      
+      sendBtn.addEventListener('mouseenter', () => {
+        sendBtn.style.transform = 'translateY(-2px)';
+        sendBtn.style.boxShadow = '0 6px 16px rgba(74, 144, 226, 0.4)';
+      });
+      sendBtn.addEventListener('mouseleave', () => {
+        sendBtn.style.transform = 'translateY(0)';
+        sendBtn.style.boxShadow = '0 4px 12px rgba(74, 144, 226, 0.3)';
+      });
+      
+      cancelBtn.addEventListener('mouseenter', () => {
+        cancelBtn.style.background = 'rgba(255, 255, 255, 0.15)';
+      });
+      cancelBtn.addEventListener('mouseleave', () => {
+        cancelBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+      });
+      
+      // Handle send button with admin password verification
+      sendBtn.addEventListener('click', async () => {
+        const toInput = confirmationDiv.querySelector('#email-to-input');
+        const subjectInput = confirmationDiv.querySelector('#email-subject-input');
+        const messageInput = confirmationDiv.querySelector('#email-message-input');
+        const passwordInput = confirmationDiv.querySelector('#email-admin-password');
+        const errorEl = confirmationDiv.querySelector('#email-password-error');
+        
+        const adminPassword = passwordInput.value.trim();
+        const updatedEmail = toInput.value.trim();
+        const updatedSubject = subjectInput.value.trim();
+        const updatedMessage = messageInput.value.trim();
+        
+        // Validate fields
+        if (!updatedEmail || !updatedEmail.includes('@')) {
+          errorEl.textContent = 'Please enter a valid email address';
+          errorEl.style.display = 'block';
+          return;
+        }
+        
+        if (!updatedSubject) {
+          errorEl.textContent = 'Please enter a subject';
+          errorEl.style.display = 'block';
+          return;
+        }
+        
+        if (!updatedMessage) {
+          errorEl.textContent = 'Please enter a message';
+          errorEl.style.display = 'block';
+          return;
+        }
+        
+        if (!adminPassword) {
+          errorEl.textContent = 'Admin password is required to send emails';
+          errorEl.style.display = 'block';
+          return;
+        }
+        
+        // Verify admin password by making a test API call
+        errorEl.style.display = 'none';
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Verifying...';
+        
+        try {
+          // Test admin password by calling a protected endpoint
+          const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+          const baseUrl = isLocalhost ? 'http://localhost:8888' : window.location.origin;
+          const testUrl = `/.netlify/functions/newsletter-templates?token=${encodeURIComponent(adminPassword)}`;
+          const testResponse = await fetch(testUrl, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          
+          if (!testResponse.ok && testResponse.status !== 200) {
+            errorEl.textContent = 'Invalid admin password';
+            errorEl.style.display = 'block';
+            sendBtn.disabled = false;
+            sendBtn.textContent = '✅ Send Email';
+            return;
+          }
+          
+          // Password verified - update pending email with edited values and password
+          if (window._pendingEmail) {
+            window._pendingEmail.recipient_email = updatedEmail;
+            window._pendingEmail.subject = updatedSubject;
+            window._pendingEmail.message = updatedMessage;
+            window._pendingEmail.admin_password = adminPassword;
+          }
+          
+          // Send email
+          await sendPendingEmail(imageUrl, imagePrompt);
+          confirmationDiv.remove();
+        } catch (error) {
+          console.error('Password verification error:', error);
+          errorEl.textContent = 'Failed to verify password. Please try again.';
+          errorEl.style.display = 'block';
+          sendBtn.disabled = false;
+          sendBtn.textContent = '✅ Send Email';
+        }
       });
       
       // Handle cancel button
-      const cancelBtn = confirmationDiv.querySelector('#email-confirm-cancel');
       cancelBtn.addEventListener('click', () => {
         // Store call_id before clearing _pendingEmail
         const callId = window._pendingEmail?.call_id;
@@ -6154,6 +6321,30 @@ class NoteworthyChat extends HTMLElement {
           waitForResponse();
         }
       });
+      
+      // Add focus styles to all inputs
+      const inputs = confirmationDiv.querySelectorAll('input, textarea');
+      inputs.forEach(input => {
+        input.addEventListener('focus', () => {
+          input.style.borderColor = 'rgba(74, 144, 226, 0.6)';
+          input.style.boxShadow = '0 0 0 3px rgba(74, 144, 226, 0.2)';
+          input.style.background = 'rgba(255, 255, 255, 0.08)';
+        });
+        input.addEventListener('blur', () => {
+          input.style.borderColor = 'rgba(74, 144, 226, 0.3)';
+          input.style.boxShadow = 'none';
+          input.style.background = 'rgba(255, 255, 255, 0.05)';
+        });
+      });
+      
+      // Allow Enter key to submit (but not in textarea)
+      const passwordInput = confirmationDiv.querySelector('#email-admin-password');
+      passwordInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          sendBtn.click();
+        }
+      });
     }
     
     // Send pending email (works for both voice and text chat modes)
@@ -6171,6 +6362,10 @@ class NoteworthyChat extends HTMLElement {
       if (imageUrl) {
         emailData.image_url = imageUrl;
         emailData.image_prompt = imagePrompt;
+      } else if (window._lastGeneratedImage && window._lastGeneratedImage.image_url) {
+        // If no image provided but there's a recently generated image, use it
+        emailData.image_url = window._lastGeneratedImage.image_url;
+        emailData.image_prompt = window._lastGeneratedImage.image_prompt || 'Generated image';
       }
       
       // Determine base URL
@@ -6178,6 +6373,12 @@ class NoteworthyChat extends HTMLElement {
       const baseUrl = isLocalhost ? 'http://localhost:8888' : window.location.origin;
       
       try {
+        // Admin password is required
+        if (!emailData.admin_password) {
+          console.error('[Email] ❌ Admin password required');
+          throw new Error('Admin password is required to send emails');
+        }
+        
         const response = await fetch(`${baseUrl}/.netlify/functions/send-custom-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -6186,7 +6387,8 @@ class NoteworthyChat extends HTMLElement {
             subject: emailData.subject,
             message: emailData.message,
             image_url: emailData.image_url || null,
-            image_prompt: emailData.image_prompt || null
+            image_prompt: emailData.image_prompt || null,
+            admin_password: emailData.admin_password
           })
         });
         
@@ -6341,6 +6543,116 @@ class NoteworthyChat extends HTMLElement {
       voiceSidebarClose.addEventListener('click', () => {
         hideVoiceSidebar();
       });
+    }
+    
+    // Make voice-call-sidebar draggable
+    if (voiceCallSidebar) {
+      const sidebarHeader = voiceCallSidebar.querySelector('.voice-sidebar-header');
+      if (sidebarHeader) {
+        let sidebarDragging = false;
+        let sidebarStart = null;
+        let sidebarStartPos = { x: 0, y: 0 };
+        
+        // Get initial position from computed styles
+        const getSidebarPos = () => {
+          const rect = voiceCallSidebar.getBoundingClientRect();
+          return { x: rect.left, y: rect.top };
+        };
+        
+        // Set sidebar position
+        const setSidebarPos = (x, y) => {
+          const w = window.innerWidth;
+          const h = window.innerHeight;
+          const sidebarWidth = voiceCallSidebar.offsetWidth;
+          const sidebarHeight = voiceCallSidebar.offsetHeight;
+          
+          // Clamp position to keep sidebar on screen
+          const clampedX = Math.max(0, Math.min(x, w - sidebarWidth));
+          const clampedY = Math.max(0, Math.min(y, h - sidebarHeight));
+          
+          voiceCallSidebar.style.left = clampedX + 'px';
+          voiceCallSidebar.style.top = clampedY + 'px';
+          voiceCallSidebar.style.right = 'auto';
+        };
+        
+        // Initialize position
+        const initPos = getSidebarPos();
+        sidebarStartPos = { x: initPos.x, y: initPos.y };
+        
+        // Start drag
+        const startSidebarDrag = (clientX, clientY) => {
+          sidebarDragging = true;
+          sidebarStart = { x: clientX, y: clientY };
+          sidebarStartPos = getSidebarPos();
+          sidebarHeader.style.cursor = 'grabbing';
+          voiceCallSidebar.classList.add('dragging');
+          // Switch from right positioning to left/top positioning
+          voiceCallSidebar.style.right = 'auto';
+          if (!voiceCallSidebar.style.left) {
+            voiceCallSidebar.style.left = sidebarStartPos.x + 'px';
+          }
+          if (!voiceCallSidebar.style.top) {
+            voiceCallSidebar.style.top = sidebarStartPos.y + 'px';
+          }
+        };
+        
+        // Move during drag
+        const onSidebarMove = (clientX, clientY) => {
+          if (!sidebarDragging || !sidebarStart || !sidebarStartPos) return;
+          const nx = sidebarStartPos.x + (clientX - sidebarStart.x);
+          const ny = sidebarStartPos.y + (clientY - sidebarStart.y);
+          setSidebarPos(nx, ny);
+        };
+        
+        // Stop drag
+        const stopSidebarDrag = () => {
+          sidebarDragging = false;
+          sidebarHeader.style.cursor = 'grab';
+          voiceCallSidebar.classList.remove('dragging');
+        };
+        
+        // Mouse drag handlers
+        sidebarHeader.addEventListener('mousedown', (e) => {
+          // Don't drag if clicking the close button
+          if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+          e.preventDefault();
+          startSidebarDrag(e.clientX, e.clientY);
+        });
+        
+        window.addEventListener('mousemove', (e) => {
+          if (sidebarDragging) {
+            onSidebarMove(e.clientX, e.clientY);
+          }
+        });
+        
+        window.addEventListener('mouseup', () => {
+          stopSidebarDrag();
+        });
+        
+        // Touch drag handlers for mobile
+        sidebarHeader.addEventListener('touchstart', (e) => {
+          if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+          const t = e.touches[0];
+          if (t) {
+            e.preventDefault();
+            startSidebarDrag(t.clientX, t.clientY);
+          }
+        }, { passive: false });
+        
+        window.addEventListener('touchmove', (e) => {
+          if (sidebarDragging) {
+            e.preventDefault();
+            const t = e.touches[0];
+            if (t) {
+              onSidebarMove(t.clientX, t.clientY);
+            }
+          }
+        }, { passive: false });
+        
+        window.addEventListener('touchend', () => {
+          stopSidebarDrag();
+        });
+      }
     }
     
     function stopVoiceMode() {
@@ -6509,6 +6821,16 @@ class NoteworthyChat extends HTMLElement {
       const voiceCallPanel = root.querySelector('#voiceCallPanel');
       if (voiceCallPanel) {
         voiceCallPanel.classList.remove('show');
+        // Explicitly set display to none to ensure it's hidden (override any !important rules)
+        voiceCallPanel.style.setProperty('display', 'none', 'important');
+        voiceCallPanel.style.setProperty('opacity', '0', 'important');
+        // Also hide after transition completes (if there's a transition)
+        setTimeout(() => {
+          if (voiceCallPanel && !voiceCallPanel.classList.contains('show')) {
+            voiceCallPanel.style.setProperty('display', 'none', 'important');
+            voiceCallPanel.style.setProperty('opacity', '0', 'important');
+          }
+        }, 500); // Wait for transition to complete
         if (DEBUG_VOICE) {
           console.log('[Voice Mode] ✅ Premium call panel hidden');
         }
@@ -7125,9 +7447,18 @@ class NoteworthyChat extends HTMLElement {
                 .then(data => {
                   if (data.imageUrl || data.image_url) {
                     const imageUrl = data.imageUrl || data.image_url;
+                    // Prefer storedImageUrl if available (from Netlify Blobs), otherwise use original URL
+                    const finalImageUrl = data.storedImageUrl || data.stored_image_url || imageUrl;
                     const revisedPrompt = data.revisedPrompt || data.revised_prompt || prompt;
                     
-                    console.log('[Voice Mode] ✅ Image generated:', imageUrl.substring(0, 50) + '...');
+                    console.log('[Voice Mode] ✅ Image generated:', finalImageUrl.substring(0, 50) + '...');
+                    
+                    // Store the generated image globally so it can be included in emails
+                    if (!window._lastGeneratedImage) {
+                      window._lastGeneratedImage = {};
+                    }
+                    window._lastGeneratedImage.image_url = finalImageUrl;
+                    window._lastGeneratedImage.image_prompt = revisedPrompt;
                     
                     // Check websocket is still valid
                     if (!websocket || websocket.readyState !== WebSocket.OPEN) {
@@ -7142,7 +7473,7 @@ class NoteworthyChat extends HTMLElement {
                         type: 'function_call_output',
                         call_id: message.call_id,
                         output: JSON.stringify({
-                          image_url: imageUrl,
+                          image_url: finalImageUrl,
                           revised_prompt: revisedPrompt
                         })
                       }
@@ -7258,8 +7589,20 @@ class NoteworthyChat extends HTMLElement {
                 image_prompt: null
               };
               
+              // If there's a recently generated image, include it
+              if (window._lastGeneratedImage && window._lastGeneratedImage.image_url) {
+                window._pendingEmail.image_url = window._lastGeneratedImage.image_url;
+                window._pendingEmail.image_prompt = window._lastGeneratedImage.image_prompt || 'Generated image';
+              }
+              
               // Show confirmation UI
-              showEmailConfirmationUI(recipientEmail, emailSubject, emailMessage);
+              showEmailConfirmationUI(
+                recipientEmail, 
+                emailSubject, 
+                emailMessage,
+                window._pendingEmail.image_url,
+                window._pendingEmail.image_prompt
+              );
               
               // Tell AI that confirmation is needed (don't send function result yet)
               // The AI should repeat back the details
@@ -7720,6 +8063,14 @@ class NoteworthyChat extends HTMLElement {
                 
                 if (output.image_url) {
                   console.log('[Voice Mode] ✅ Image from function call:', output.image_url.substring(0, 50) + '...');
+                  
+                  // Store the generated image globally so it can be included in emails
+                  if (!window._lastGeneratedImage) {
+                    window._lastGeneratedImage = {};
+                  }
+                  window._lastGeneratedImage.image_url = output.image_url;
+                  window._lastGeneratedImage.image_prompt = output.revised_prompt || 'Generated image';
+                  
                   // Show generated image in sidebar during voice call
                   if (voiceModeActive) {
                     showInVoiceSidebar('image', {

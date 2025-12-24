@@ -238,7 +238,26 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const { recipient_email, subject, message, image_url, image_prompt } = body;
+    const { recipient_email, subject, message, image_url, image_prompt, admin_password } = body;
+
+    // Validate admin password first
+    if (!admin_password) {
+      return {
+        statusCode: 401,
+        headers,
+        body: JSON.stringify({ error: 'Admin password is required' }),
+      };
+    }
+
+    // Verify admin password by checking against configured token
+    const adminToken = process.env.ADMIN_TOKEN || process.env.NEWSLETTER_TOKEN;
+    if (adminToken && admin_password !== adminToken) {
+      return {
+        statusCode: 401,
+        headers,
+        body: JSON.stringify({ error: 'Invalid admin password' }),
+      };
+    }
 
     // Validate required fields
     if (!recipient_email || !recipient_email.includes('@')) {

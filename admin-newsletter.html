@@ -3447,10 +3447,20 @@
                     
                     const uploadData = await uploadResponse.json();
                     
+                    // Generate a title from filename (remove extension, capitalize, replace dashes/underscores with spaces)
+                    const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
+                    const generatedTitle = fileNameWithoutExt
+                        .replace(/[-_]/g, ' ') // Replace dashes and underscores with spaces
+                        .replace(/\s+/g, ' ') // Collapse multiple spaces
+                        .trim()
+                        .split(' ')
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitalize each word
+                        .join(' ') || `Image ${newsletterState.attachments.length + 1}`; // Fallback if empty
+                    
                     // Create attachment with URL instead of full dataUrl
                     const attachment = {
                         id: tempId,
-                        title: '',
+                        title: generatedTitle, // Use generated title from filename
                         file: file,
                         mimeType: file.type,
                         dataUrl: dataUrl, // Keep for preview
@@ -3491,7 +3501,7 @@
                         class="attachment-title-input" 
                         placeholder="Image title (required)" 
                         required
-                        value="${escapeHtml(attachment.title)}"
+                        value="${escapeHtml(attachment.title || '')}"
                         data-attachment-id="${attachment.id}"
                     >
                     <div class="attachment-meta">
@@ -3538,8 +3548,9 @@
             const textBefore = promptTextarea.value.substring(0, cursorPos);
             const textAfter = promptTextarea.value.substring(cursorPos);
             
-            const defaultTitle = attachment.title || `Untitled Image ${newsletterState.attachments.length}`;
-            const token = `[[Image: ${defaultTitle}]]`;
+            // Use the actual title (should be set from filename or user input)
+            const tokenTitle = attachment.title || `Image ${newsletterState.attachments.length}`;
+            const token = `[[Image: ${tokenTitle}]]`;
             
             promptTextarea.value = textBefore + token + textAfter;
             promptTextarea.selectionStart = promptTextarea.selectionEnd = cursorPos + token.length;
