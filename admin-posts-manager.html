@@ -768,10 +768,18 @@
                     body: JSON.stringify({ tweetUrl: url })
                 });
                 
-                const createData = await createResponse.json();
+                let createData;
+                // Clone response before reading to allow fallback to text if JSON parsing fails
+                const responseClone = createResponse.clone();
+                try {
+                    createData = await createResponse.json();
+                } catch (parseError) {
+                    const text = await responseClone.text();
+                    throw new Error(`Failed to parse response: ${text.substring(0, 200)}`);
+                }
                 
                 if (!createResponse.ok) {
-                    throw new Error(createData.error || `HTTP ${createResponse.status}`);
+                    throw new Error(createData.error || createData.message || `HTTP ${createResponse.status}`);
                 }
                 
                 // Step 2: Fetch the actual post data that was just created
@@ -790,11 +798,18 @@
                 try {
                     const postsResponse = await fetch(`${API_BASE}/.netlify/functions/posts-read?limit=200`);
                     if (postsResponse.ok) {
-                        const posts = await postsResponse.json();
-                        post = Array.isArray(posts) ? posts.find(p => p.id === postId) : null;
+                        let posts;
+                        try {
+                            posts = await postsResponse.json();
+                        } catch (parseErr) {
+                            console.log('Failed to parse posts-read response');
+                        }
+                        if (Array.isArray(posts)) {
+                            post = posts.find(p => p.id === postId) || null;
+                        }
                     }
                 } catch (err) {
-                    console.log('posts-read failed, trying alternative method');
+                    console.log('posts-read failed, trying alternative method:', err.message);
                 }
                 
                 // Method 2: Try fetch-tweets-simple GET
@@ -802,11 +817,18 @@
                     try {
                         const getResponse = await fetch(`${API_BASE}/.netlify/functions/fetch-tweets-simple?limit=200`);
                         if (getResponse.ok) {
-                            const allPosts = await getResponse.json();
-                            post = Array.isArray(allPosts) ? allPosts.find(p => p.id === postId) : null;
+                            let allPosts;
+                            try {
+                                allPosts = await getResponse.json();
+                            } catch (parseErr) {
+                                console.log('Failed to parse fetch-tweets-simple response');
+                            }
+                            if (Array.isArray(allPosts)) {
+                                post = allPosts.find(p => p.id === postId) || null;
+                            }
                         }
                     } catch (err) {
-                        console.log('fetch-tweets-simple GET failed');
+                        console.log('fetch-tweets-simple GET failed:', err.message);
                     }
                 }
                 
@@ -816,11 +838,18 @@
                     try {
                         const retryResponse = await fetch(`${API_BASE}/.netlify/functions/posts-read?limit=200`);
                         if (retryResponse.ok) {
-                            const posts = await retryResponse.json();
-                            post = Array.isArray(posts) ? posts.find(p => p.id === postId) : null;
+                            let posts;
+                            try {
+                                posts = await retryResponse.json();
+                            } catch (parseErr) {
+                                console.log('Failed to parse retry posts-read response');
+                            }
+                            if (Array.isArray(posts)) {
+                                post = posts.find(p => p.id === postId) || null;
+                            }
                         }
                     } catch (err) {
-                        // Ignore
+                        console.log('Retry posts-read failed:', err.message);
                     }
                 }
                 
@@ -1008,10 +1037,18 @@
                     body: JSON.stringify({ image: imageDataUrl })
                 });
                 
-                const data = await response.json();
+                let data;
+                // Clone response before reading to allow fallback to text if JSON parsing fails
+                const responseClone = response.clone();
+                try {
+                    data = await response.json();
+                } catch (parseError) {
+                    const text = await responseClone.text();
+                    throw new Error(`Failed to parse screenshot response: ${text.substring(0, 200)}`);
+                }
                 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Failed to extract data');
+                    throw new Error(data.error || data.message || `HTTP ${response.status}: Failed to extract data`);
                 }
                 
                 // Populate form with extracted data (preserving k/M notation)
@@ -1106,13 +1143,25 @@
                     body: formData
                 });
                 
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to process CSV');
+                let data;
+                // Clone response before reading to allow fallback to text if JSON parsing fails
+                const responseClone = response.clone();
+                try {
+                    data = await response.json();
+                } catch (parseError) {
+                    const text = await responseClone.text();
+                    throw new Error(`Failed to process CSV: ${text.substring(0, 200)}`);
                 }
                 
-                showResult(`Processed ${data.processed || 0} posts. ${data.added || 0} added, ${data.updated || 0} updated.`, 'success');
+                if (!response.ok) {
+                    throw new Error(data.error || data.message || `HTTP ${response.status}: Failed to process CSV`);
+                }
+                
+                const message = data.message 
+                    ? `${data.message}. Processed ${data.processed || 0} posts. ${data.added || 0} added, ${data.updated || 0} updated.`
+                    : `Processed ${data.processed || 0} posts. ${data.added || 0} added, ${data.updated || 0} updated.`;
+                
+                showResult(message, 'success');
             } catch (error) {
                 showResult(`Error: ${error.message}`, 'error');
             }
@@ -1207,10 +1256,18 @@
                         })
                     });
                     
-                    const uploadData = await uploadResponse.json();
+                    let uploadData;
+                    // Clone response before reading to allow fallback to text if JSON parsing fails
+                    const responseClone = uploadResponse.clone();
+                    try {
+                        uploadData = await uploadResponse.json();
+                    } catch (parseError) {
+                        const text = await responseClone.text();
+                        throw new Error(`Failed to parse upload response: ${text.substring(0, 200)}`);
+                    }
                     
                     if (!uploadResponse.ok) {
-                        throw new Error(uploadData.error || 'Failed to upload media');
+                        throw new Error(uploadData.error || uploadData.message || `HTTP ${uploadResponse.status}: Failed to upload media`);
                     }
                     
                     postState.mediaUrls.push(uploadData.url);
@@ -1365,10 +1422,18 @@
                     body: JSON.stringify(postData)
                 });
                 
-                const updateData = await updateResponse.json();
+                let updateData;
+                // Clone response before reading to allow fallback to text if JSON parsing fails
+                const responseClone = updateResponse.clone();
+                try {
+                    updateData = await updateResponse.json();
+                } catch (parseError) {
+                    const text = await responseClone.text();
+                    throw new Error(`Failed to parse response: ${text.substring(0, 200)}`);
+                }
                 
                 if (!updateResponse.ok) {
-                    throw new Error(updateData.error || `HTTP ${updateResponse.status}`);
+                    throw new Error(updateData.error || updateData.message || `HTTP ${updateResponse.status}`);
                 }
                 
                 showResult(`Post ${postCreated ? 'created and ' : ''}updated successfully${allMediaUrls.length > 0 ? ` (${allMediaUrls.length} media file(s))` : ''}`, 'success');
@@ -1434,6 +1499,7 @@
     </script>
 </body>
 </html>
+
 
 
 

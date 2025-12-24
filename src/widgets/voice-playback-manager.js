@@ -28,6 +28,9 @@ class VoicePlaybackManager {
     this.isProcessingQueue = false;
     this.onStateChange = null; // Optional callback for state changes
     
+    // CRITICAL: Scheduling state to prevent overlapping chunks
+    this.nextStartTime = 0; // Scheduled start time for next chunk (in seconds, relative to audioContext.currentTime)
+    
     if (DEBUG_VOICE) {
       console.log('[VoicePlaybackManager] ✅ Initialized');
     }
@@ -89,6 +92,9 @@ class VoicePlaybackManager {
     // Clear queue
     this.chunkQueue = [];
     this.isProcessingQueue = false;
+    
+    // CRITICAL: Reset scheduling to prevent overlaps on next playback
+    this.nextStartTime = this.audioContext.currentTime;
 
     // Transition to idle
     this._transitionTo('idle', 'stopped');
@@ -199,6 +205,8 @@ class VoicePlaybackManager {
       this._hardStopAllSources();
       this.chunkQueue = [];
       this.isProcessingQueue = false;
+      // CRITICAL: Reset scheduling to prevent overlaps from previous playback
+      this.nextStartTime = this.audioContext.currentTime + 0.02; // Small safety lead (20ms)
       // Force transition to stopping then idle
       if (this.state !== 'stopping') {
         this._transitionTo('stopping', 'cancelled for new playback');
@@ -250,6 +258,9 @@ class VoicePlaybackManager {
     // Set up queue
     this.chunkQueue = [...audioChunks];
     this.isProcessingQueue = false;
+    
+    // CRITICAL: Reset scheduling for new playback (prevents overlaps from previous playback)
+    this.nextStartTime = this.audioContext.currentTime + 0.02; // Small safety lead (20ms)
 
     // Transition to playing
     this._transitionTo('playing', `generation ${generation}`);
@@ -409,6 +420,16 @@ class VoicePlaybackManager {
         // Calculate duration
         const duration = float32.length / 24000; // 24kHz sample rate
         const timeoutMs = Math.max(Math.ceil(duration * 1000) + 150, 50);
+        
+        // CRITICAL: Schedule with nextStartTime to prevent overlapping chunks
+        const scheduledStartTime = this.nextStartTime;
+        
+        // Ensure we don't schedule in the past
+        const minStartTime = this.audioContext.currentTime + 0.01; // 10ms minimum lead
+        const actualStartTime = Math.max(scheduledStartTime, minStartTime);
+        
+        // Update nextStartTime for next chunk (prevents overlaps)
+        this.nextStartTime = actualStartTime + duration;
 
         let resolved = false;
         let timeoutId = null;
@@ -464,15 +485,20 @@ class VoicePlaybackManager {
         // Start playback
         try {
           // CRITICAL: Set global flag to allow this ONE playback call
+          // Use try-finally to ensure flag is always cleared, even if start() throws or multiple chunks run concurrently
           if (typeof window !== 'undefined') {
             window._allowAudioPlayback = true;
           }
           
-          source.start(0);
-          
-          // Clear flag immediately after start
-          if (typeof window !== 'undefined') {
-            window._allowAudioPlayback = false;
+          try {
+            // CRITICAL: Use scheduled start time to prevent overlaps (not 0)
+            source.start(actualStartTime);
+          } finally {
+            // Always clear flag, even if start() throws or if another chunk is processing
+            // This prevents race conditions with concurrent chunk processing
+            if (typeof window !== 'undefined') {
+              window._allowAudioPlayback = false;
+            }
           }
           
           if (DEBUG_VOICE && !this._isCancelled(generation)) {

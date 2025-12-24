@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="app-version" content="December 21, 2025">
+    <meta name="app-version" content="December 23, 2025">
     <title>Noteworthy News - Fact-Checked Journalism & Media Literacy Games | Trusted News Source</title>
+    
+    <!-- vNext: Mobile Responsiveness Fixes -->
+    <link rel="stylesheet" href="src/styles/mobile-fixes.css">
     
     <!-- Favicon and Theme -->
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
@@ -389,10 +392,10 @@
             }
             
             if (audio) {
-                // Set properties for maximum autoplay success
+                // vNext: No autoplay - require user interaction
                 audio.volume = 0.5;
                 audio.muted = false;
-                audio.autoplay = true;
+                audio.autoplay = false; // Changed: No autoplay per vNext requirements
                 
                 // Check if music should be playing from global state
                 const musicEnabled = localStorage.getItem('globalMusicEnabled') !== 'false';
@@ -13514,10 +13517,7 @@
             </div>
             
             <div class="header-right">
-                <div class="last-update" title="Scheduled Maintenance: December 23, 2025">Scheduled Maintenance: December 23, 2025</div>
-                <!-- Auth Buttons -->
-                <div class="auth-buttons-container" id="authButtonsContainer">
-                    <button class="auth-btn signin-btn" id="signinBtn" aria-label="Sign In">Sign In</button>
+                <div class="last-update" title="Scheduled Maintenance: December 30, 2025"auth-btn signin-btn" id="signinBtn" aria-label="Sign In">Sign In</button>
                     <button class="auth-btn signup-btn" id="signupBtn" aria-label="Sign Up">Sign Up</button>
                 </div>
                 <button class="music-control-btn" id="musicControlBtn" title="Toggle Background Music">
@@ -14787,7 +14787,6 @@
                         <h4>Contact</h4>
                         <ul>
                             <li><a href="contact.html">Contact Us</a></li>
-                            <li><a href="/adminnewsletter">Admin</a></li>
                         </ul>
                     </div>
                 </div>
@@ -15172,11 +15171,8 @@
                 tipMessage.textContent = '';
                 
                 try {
-                    // Determine API endpoint
-                    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                    const endpoint = isLocalhost 
-                        ? 'http://localhost:8888/.netlify/functions/submit-tip'
-                        : '/.netlify/functions/submit-tip';
+                    // vNext: Use environment-aware endpoint (no localhost in production)
+                    const endpoint = '/.netlify/functions/submit-tip';
                     
                     console.log('Submitting tip to:', endpoint);
                     
@@ -17121,7 +17117,7 @@
                 <div style="text-align: center; margin: 15px 0; padding: 15px; background: rgba(0, 0, 0, 0.02); border: 2px solid #1a1a1a; border-radius: 0;">
                     <p style="font-size: 0.7rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: #555;">Estimated Time Until Service Restoration</p>
                     <div id="countdown" style="font-size: 2rem; font-weight: bold; font-family: 'Courier New', monospace; color: #1a1a1a; letter-spacing: 5px; margin: 10px 0;">00:00:00</div>
-                    <p style="font-size: 0.8rem; margin-top: 6px; color: #555;">7:45 PM Eastern Standard Time</p>
+                    <p style="font-size: 0.8rem; margin-top: 6px; color: #555;">December 30, 2025</p>
                     <p style="font-size: 0.75rem; margin-top: 8px; color: #666; font-style: italic;">We apologize for the extension of the maintenance period.</p>
                 </div>
                 
@@ -18536,11 +18532,13 @@
                 const now = new Date();
                 const estOffset = -5 * 60;
                 const estNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (estOffset * 60000));
-                const target = new Date(estNow);
-                target.setHours(19, 45, 0, 0); // 7:45 PM EST
                 
-                // Calculate diff BEFORE checking if we should set to tomorrow
-                // This prevents resetting the countdown when we're past the target time
+                // Calculate target date: one week from last git push (December 23, 2025) at 7:45 PM EST
+                const lastPushDate = new Date('2025-12-23T19:45:00-05:00'); // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST
+                const oneWeekInMs = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+                const target = new Date(lastPushDate.getTime() + oneWeekInMs); // December 30, 2025 7:45 PM EST
+                
+                // Calculate time difference between target and current time (both in EST)
                 const diff = target - estNow;
                 
                 // If countdown has reached zero or passed, trigger completion screen
@@ -19213,6 +19211,15 @@
                 initNoCutoffGuard();
             }
         })();
+    </script>
+    
+    <!-- vNext: Modular Homepage Initialization -->
+    <script type="module">
+        // Import modular homepage initialization
+        import { initHomepage } from './src/js/homepage/index.js';
+        
+        // Initialize homepage with deferred loading
+        initHomepage();
     </script>
     
 </body>

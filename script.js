@@ -3216,9 +3216,21 @@ class BreakingNewsGame {
         this.timeLeft = this.timeLimit;
         this.updateTimerDisplay();
         
+        // vNext: Throttle timer updates to prevent excessive DOM writes
+        let lastUpdate = 0;
+        const updateInterval = 100; // Update max 10x per second
+        
         this.timer = setInterval(() => {
             this.timeLeft--;
-            this.updateTimerDisplay();
+            
+            // Throttle DOM updates
+            const now = Date.now();
+            if (now - lastUpdate >= updateInterval || this.timeLeft <= 0) {
+                lastUpdate = now;
+                requestAnimationFrame(() => {
+                    this.updateTimerDisplay();
+                });
+            }
             
             if (this.timeLeft <= 0) {
                 this.timeUp();
@@ -3801,10 +3813,22 @@ class BreakingNewsGame {
     
     startGameTimer() {
         this.stopGameTimer(); // Clear any existing timer
+        
+        // vNext: Throttle game timer updates using requestAnimationFrame
+        let lastUpdate = 0;
+        const updateInterval = 100; // Update max 10x per second
+        
         this.gameTimerInterval = setInterval(() => {
             if (this.startTime) {
-                this.elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
-                this.updateStats();
+                const now = Date.now();
+                // Throttle DOM updates
+                if (now - lastUpdate >= updateInterval) {
+                    lastUpdate = now;
+                    this.elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
+                    requestAnimationFrame(() => {
+                        this.updateStats();
+                    });
+                }
             }
         }, 100);
     }
@@ -3819,11 +3843,23 @@ class BreakingNewsGame {
     startQuestionTimer() {
         this.stopQuestionTimer(); // Clear any existing timer
         const questionTimerValueEl = document.getElementById('questionTimerValue');
+        
+        // vNext: Throttle question timer updates using requestAnimationFrame
+        let lastUpdate = 0;
+        const updateInterval = 100; // Update max 10x per second
+        
         this.questionTimerInterval = setInterval(() => {
             if (this.questionStartTime) {
-                const elapsed = (Date.now() - this.questionStartTime) / 1000;
-                if (questionTimerValueEl) {
-                    questionTimerValueEl.textContent = `${elapsed.toFixed(1)}s`;
+                const now = Date.now();
+                // Throttle DOM updates
+                if (now - lastUpdate >= updateInterval) {
+                    lastUpdate = now;
+                    const elapsed = (Date.now() - this.questionStartTime) / 1000;
+                    if (questionTimerValueEl) {
+                        requestAnimationFrame(() => {
+                            questionTimerValueEl.textContent = `${elapsed.toFixed(1)}s`;
+                        });
+                    }
                 }
             }
         }, 100);
@@ -6841,39 +6877,36 @@ function initMouseEffects() {
 }
 
 // Initialize everything when DOM is loaded
+// vNext: Effects are now deferred via modular system
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize background music autoplay
-    initBackgroundMusic();
+    // Initialize background music autoplay (deferred - no auto-play)
+    // Music will only play on user interaction
     
-    // Initialize effects
-    initEffects();
-    initMouseEffects();
-    
-    // Initialize navigation functionality
+    // Initialize navigation functionality (critical)
     initNavigation();
     
-    // Initialize welcome text cycling
-    initWelcomeTextCycling();
+    // Initialize welcome text cycling (deferred)
+    if (typeof requestIdleCallback !== 'undefined') {
+        requestIdleCallback(() => {
+            initWelcomeTextCycling();
+            initWelcomeLocation();
+        }, { timeout: 2000 });
+    } else {
+        setTimeout(() => {
+            initWelcomeTextCycling();
+            initWelcomeLocation();
+        }, 1000);
+    }
     
-    // Initialize location display
-    initWelcomeLocation();
+    // Initialize news carousel (deferred)
+    if (typeof requestIdleCallback !== 'undefined') {
+        requestIdleCallback(initNewsCarousel, { timeout: 2000 });
+    } else {
+        setTimeout(initNewsCarousel, 1000);
+    }
     
-    // Initialize news carousel
-    initNewsCarousel();
-    
-    // Try to start music immediately on page load
-    setTimeout(() => {
-        const backgroundMusic = document.getElementById('backgroundMusic');
-        if (backgroundMusic && backgroundMusic.paused) {
-            console.log('🎵 Page loaded, attempting to start music...');
-            backgroundMusic.muted = false;
-            backgroundMusic.play().then(() => {
-                console.log('🎵 Music started on page load!');
-            }).catch(err => {
-                console.log('⚠️ Page load music start failed:', err);
-            });
-        }
-    }, 50);
+    // Effects are now handled by modular system (initEffects.js)
+    // initEffects() and initMouseEffects() are deferred
     
     // Add scroll-triggered animations
     const observerOptions = {
