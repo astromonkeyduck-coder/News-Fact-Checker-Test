@@ -8,6 +8,7 @@ import { initEffects } from './initEffects.js';
 import { initFeeds } from './initFeeds.js';
 import { initGames } from './initGames.js';
 import { initSpotlight } from './initSpotlight.js';
+import { initAccordions, autoSetupAccordions } from './accordion.js';
 import { logger } from '../../utils/logger.js';
 
 /**
@@ -30,6 +31,8 @@ export function initHomepage() {
     initFeeds();
     initGames();
     initSpotlight();
+    initAccordions();
+    autoSetupAccordions();
     logger.debug('All homepage modules initialized');
   }, 500);
 }
