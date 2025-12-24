@@ -10085,28 +10085,35 @@ function initNewsletterSubscription() {
                     const textPrompt = `You are a breaking news expert. Provide a spotlight on ${currentCountry.name} focusing on REAL, CURRENT breaking news and recent developments. 
 
 CRITICAL REQUIREMENTS:
-- Focus on BREAKING NEWS and CURRENT EVENTS (not general culture or history)
-- Use the web search results provided below as your PRIMARY source
-- If search results contain breaking news, prioritize and highlight those stories
+- Focus on BREAKING NEWS and CURRENT EVENTS (not general culture, history, or tourism)
+- Use the web search results provided below as your PRIMARY source for breaking news
+- If search results contain breaking news, prioritize and highlight those stories with specific details
 - Include specific details: dates, locations, names, and what makes it newsworthy
-- If no breaking news is found, provide the MOST RECENT significant developments you know about
-- Write in THREE sections:
+- If no breaking news is found in search results, provide the MOST RECENT significant developments you know about (but clearly indicate if this is from your knowledge base, not real-time search)
+- Write in THREE sections with clear headers:
 
-1. **🔥 Breaking News** - Current breaking news stories, recent events, or major developments happening RIGHT NOW or in the past few days/weeks
-2. **📰 Recent Developments** - Important recent news, policy changes, or significant events from the past few months
-3. **🌍 Current Context** - What's happening in ${currentCountry.name} right now that people should know about
+1. ## 🔥 Breaking News
+   Current breaking news stories, recent events, or major developments happening RIGHT NOW or in the past few days/weeks. Prioritize the most urgent and impactful stories.
+
+2. ## 📰 Recent Developments  
+   Important recent news, policy changes, or significant events from the past few months that provide context for current events.
+
+3. ## 🌍 Current Context
+   What's happening in ${currentCountry.name} right now that people should know about - political, economic, social, or environmental developments.
 
 ${breakingNewsContext}
 
-IMPORTANT FORMATTING:
-- Use proper markdown formatting with ## for section headers
+IMPORTANT FORMATTING AND CONTENT RULES:
+- Use ## for section headers (exactly as shown above)
 - Keep it engaging and informative, around 400-500 words total
-- Do NOT use ## or ** in the middle of paragraphs - only for section headers
+- Do NOT use markdown formatting (##, **, etc.) within paragraph text - only for section headers
 - Focus on REAL, VERIFIED breaking news and current events
-- Include specific dates, locations, and details when available
+- Include specific dates, locations, names, and details when available from search results
 - If you reference information from search results, mention it naturally in context
 - NEVER make up or invent breaking news events
-- If no real breaking news is available, say so clearly rather than fabricating stories`;
+- If no real breaking news is available, say so clearly rather than fabricating stories
+- If search results seem outdated or irrelevant, acknowledge this and provide the most recent verified information you have
+- Always prioritize accuracy and verification over sensationalism`;
                     
                     // Update loading message
                     if (aiResponse) {
