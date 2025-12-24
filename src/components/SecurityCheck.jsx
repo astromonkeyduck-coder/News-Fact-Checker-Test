@@ -285,3 +285,14 @@ export default function SecurityCheck({
   );
 }
 
+// Also expose globally for Babel standalone (browser environment)
+// This ensures it's available even if Babel compiles export default to CommonJS
+if (typeof window !== 'undefined') {
+  // Use setTimeout to ensure this runs after Babel compilation
+  setTimeout(() => {
+    if (typeof SecurityCheck !== 'undefined' && !window.SecurityCheck) {
+      window.SecurityCheck = SecurityCheck;
+    }
+  }, 0);
+}
+
