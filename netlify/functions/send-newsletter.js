@@ -148,6 +148,167 @@ function formatNumber(num) {
 }
 
 /**
+ * Extract images from HTML and prepare them as CID attachments
+ * Returns: { html: modifiedHtml, attachments: array of attachment objects }
+ */
+async function processImagesForEmail(htmlContent, baseUrl = 'https://noteworthynews.co') {
+  if (!htmlContent || typeof htmlContent !== 'string') {
+    return { html: htmlContent, attachments: [] };
+  }
+
+  const attachments = [];
+  const imageMap = new Map(); // Map original URLs to CID values
+  const processedUrls = new Set(); // Track processed URLs to avoid duplicates
+  
+  // Find all img tags with src attributes
+  const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+  const matches = [...htmlContent.matchAll(imgRegex)];
+  
+  console.log(`[processImagesForEmail] Found ${matches.length} images in HTML`);
+  
+  for (let i = 0; i < matches.length; i++) {
+    const match = matches[i];
+    const originalSrc = match[1];
+    const fullMatch = match[0];
+    
+    // Skip if already processed (has cid:)
+    if (originalSrc.startsWith('cid:')) {
+      continue;
+    }
+    
+    // Skip if we've already processed this URL (avoid duplicate attachments)
+    if (processedUrls.has(originalSrc)) {
+      // Just replace the URL with the existing CID
+      const existingCid = imageMap.get(originalSrc);
+      if (existingCid) {
+        const cidIdentifier = existingCid.split('@')[0];
+        const escapedSrc = originalSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const imgSrcRegex = new RegExp(`(<img[^>]+src=["'])${escapedSrc}(["'][^>]*>)`, 'gi');
+        htmlContent = htmlContent.replace(imgSrcRegex, `$1cid:${cidIdentifier}$2`);
+      }
+      continue;
+    }
+    
+    // Skip external URLs that aren't from our domain (keep them as-is)
+    if (originalSrc.startsWith('http') && !originalSrc.includes('noteworthynews.co') && !originalSrc.includes('get-uploaded-image')) {
+      console.log(`[processImagesForEmail] Skipping external image: ${originalSrc.substring(0, 50)}...`);
+      continue;
+    }
+    
+    try {
+      let imageUrl = originalSrc;
+      let imageBuffer = null;
+      let contentType = 'image/png';
+      let filename = `image-${i + 1}.png`;
+      
+      // Handle data URLs
+      if (originalSrc.startsWith('data:image/')) {
+        const dataMatch = originalSrc.match(/^data:image\/([^;]+);base64,(.+)$/);
+        if (dataMatch) {
+          contentType = `image/${dataMatch[1]}`;
+          const extension = dataMatch[1] === 'jpeg' ? 'jpg' : dataMatch[1];
+          filename = `image-${i + 1}.${extension}`;
+          imageBuffer = Buffer.from(dataMatch[2], 'base64');
+          console.log(`[processImagesForEmail] Processing data URL image: ${filename}`);
+        }
+      }
+      // Handle get-uploaded-image URLs
+      else if (originalSrc.includes('get-uploaded-image')) {
+        // Extract key from URL
+        const keyMatch = originalSrc.match(/[?&]key=([^&]+)/);
+        if (keyMatch) {
+          const imageKey = decodeURIComponent(keyMatch[1]);
+          // Construct full URL if relative
+          const fullImageUrl = originalSrc.startsWith('http') 
+            ? originalSrc 
+            : `${baseUrl}${originalSrc.startsWith('/') ? '' : '/'}${originalSrc}`;
+          
+          console.log(`[processImagesForEmail] Fetching uploaded image: ${imageKey}`);
+          
+          // Fetch the image
+          const imageResponse = await fetch(fullImageUrl);
+          if (imageResponse.ok) {
+            const arrayBuffer = await imageResponse.arrayBuffer();
+            imageBuffer = Buffer.from(arrayBuffer);
+            contentType = imageResponse.headers.get('content-type') || 'image/png';
+            
+            // Determine filename from key
+            const keyParts = imageKey.split('.');
+            if (keyParts.length > 1) {
+              filename = `image-${i + 1}.${keyParts[keyParts.length - 1]}`;
+            }
+            console.log(`[processImagesForEmail] Successfully fetched image: ${filename} (${imageBuffer.length} bytes)`);
+          } else {
+            console.warn(`[processImagesForEmail] Failed to fetch image from ${fullImageUrl}: ${imageResponse.status}`);
+            continue;
+          }
+        }
+      }
+      // Handle relative URLs that might be uploaded images
+      else if (originalSrc.startsWith('/.netlify/functions/get-uploaded-image')) {
+        const fullImageUrl = `${baseUrl}${originalSrc}`;
+        console.log(`[processImagesForEmail] Fetching relative image URL: ${fullImageUrl}`);
+        
+        const imageResponse = await fetch(fullImageUrl);
+        if (imageResponse.ok) {
+          const arrayBuffer = await imageResponse.arrayBuffer();
+          imageBuffer = Buffer.from(arrayBuffer);
+          contentType = imageResponse.headers.get('content-type') || 'image/png';
+          filename = `image-${i + 1}.png`;
+          console.log(`[processImagesForEmail] Successfully fetched relative image: ${filename} (${imageBuffer.length} bytes)`);
+        } else {
+          console.warn(`[processImagesForEmail] Failed to fetch relative image: ${imageResponse.status}`);
+          continue;
+        }
+      }
+      // Skip if we couldn't process it
+      else {
+        console.log(`[processImagesForEmail] Skipping unprocessable image URL: ${originalSrc.substring(0, 50)}...`);
+        continue;
+      }
+      
+      if (!imageBuffer) {
+        continue;
+      }
+      
+      // Generate unique CID (Content-ID for inline images)
+      // Format: unique identifier, will be referenced as cid:identifier in HTML
+      const cidIdentifier = `image-${i + 1}-${Date.now()}`;
+      const fullCid = `${cidIdentifier}@noteworthynews.co`;
+      
+      // Create attachment with CID for inline embedding
+      // Resend API format: content_id (snake_case) and content should be base64 string
+      attachments.push({
+        filename: filename,
+        content: imageBuffer.toString('base64'), // Resend expects base64 string, not Buffer
+        content_id: cidIdentifier, // Resend uses snake_case: content_id
+        content_type: contentType, // Also use snake_case for consistency
+      });
+      
+      // Mark this URL as processed
+      processedUrls.add(originalSrc);
+      
+      // Map original src to CID
+      imageMap.set(originalSrc, fullCid);
+      
+      // Replace src in HTML with CID reference (email standard format)
+      // Use global replace to handle all instances of this image URL
+      const escapedSrc = originalSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const imgSrcRegex = new RegExp(`(<img[^>]+src=["'])${escapedSrc}(["'][^>]*>)`, 'gi');
+      htmlContent = htmlContent.replace(imgSrcRegex, `$1cid:${cidIdentifier}$2`);
+      
+      console.log(`[processImagesForEmail] Replaced image ${i + 1} with CID: ${cidIdentifier}`);
+    } catch (error) {
+      console.error(`[processImagesForEmail] Error processing image ${i + 1}:`, error.message);
+      // Continue with other images even if one fails
+    }
+  }
+  
+  console.log(`[processImagesForEmail] Processed ${attachments.length} images as CID attachments`);
+  return { html: htmlContent, attachments };
+}
+
+/**
  * Format posts into HTML for newsletter - dark theme, no white background
  */
 function formatPostsForNewsletter(posts) {
@@ -513,16 +674,28 @@ exports.handler = async (event, context) => {
             .replace(/\{\{MONTH\}\}/g, monthStr)
             .replace(/\{\{YEAR\}\}/g, yearStr);
           
-        const result = await resend.emails.send({
-          from: fromEmail,
+          // Process images and embed as CID attachments
+          const siteUrl = process.env.URL || 'https://noteworthynews.co';
+          const { html: htmlWithCid, attachments: imageAttachments } = await processImagesForEmail(personalizedHtml, siteUrl);
+          
+          const emailPayload = {
+            from: fromEmail,
             to: email,
-          replyTo: 'richard@noteworthynews.co',
+            replyTo: 'richard@noteworthynews.co',
             subject: subject, // Same subject as mass email
-          html: personalizedHtml,
-          text: personalizedText,
+            html: htmlWithCid,
+            text: personalizedText,
             clickTracking: true,
             openTracking: true,
-        });
+          };
+          
+          // Add image attachments if any
+          if (imageAttachments && imageAttachments.length > 0) {
+            emailPayload.attachments = imageAttachments;
+            console.log(`📎 Added ${imageAttachments.length} image attachment(s) to email for ${email}`);
+          }
+          
+        const result = await resend.emails.send(emailPayload);
 
         if (result.error) {
           throw new Error(result.error.message || 'Unknown error');
@@ -859,16 +1032,31 @@ exports.handler = async (event, context) => {
           try {
             console.log(`  [${batchNumber}-${index + 1}] Attempt ${attempt}/${maxRetries}: Sending email...`);
             
-          const result = await resend.emails.send({
-            from: fromEmail,
-            to: email,
-            replyTo: 'richard@noteworthynews.co',
-            subject: subject,
-            html: html,
-            text: text,
+            // Process images and embed as CID attachments
+            const siteUrl = process.env.URL || 'https://noteworthynews.co';
+            const { html: htmlWithCid, attachments: imageAttachments } = await processImagesForEmail(html, siteUrl);
+            
+            const emailPayload = {
+              from: fromEmail,
+              to: email,
+              replyTo: 'richard@noteworthynews.co',
+              subject: subject,
+              html: htmlWithCid,
+              text: text,
               clickTracking: true, // Track link clicks
               openTracking: true, // Track email opens
-          });
+            };
+            
+            // Add image attachments if any
+            if (imageAttachments && imageAttachments.length > 0) {
+              emailPayload.attachments = imageAttachments;
+              if (attempt === 1 && index === 0) {
+                // Only log once per batch to avoid spam
+                console.log(`  📎 Batch ${batchNumber}: Added ${imageAttachments.length} image attachment(s) to emails`);
+              }
+            }
+            
+          const result = await resend.emails.send(emailPayload);
 
           if (result.error) {
             throw new Error(result.error.message || 'Unknown error');

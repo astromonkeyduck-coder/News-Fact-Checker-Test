@@ -203,8 +203,10 @@ async function updatePost(postData) {
     }
     
     const result = await response.json();
+    console.log(`[process-csv-posts] Successfully updated post ${postId} - now live on site`);
     return { success: true, postId };
   } catch (error) {
+    console.error(`[process-csv-posts] Failed to update post ${postId}:`, error.message);
     return { success: false, postId, error: error.message };
   }
 }
@@ -320,8 +322,9 @@ exports.handler = async (event) => {
       processed: 0,
     };
 
-    // Process first 10 posts synchronously (to avoid timeout)
-    for (let i = 0; i < Math.min(posts.length, 10); i++) {
+    // Process first 40 posts synchronously (to avoid timeout)
+    const maxPosts = Math.min(posts.length, 40);
+    for (let i = 0; i < maxPosts; i++) {
       const post = posts[i];
       
       // Add post
@@ -347,14 +350,14 @@ exports.handler = async (event) => {
     }
 
     // For remaining posts, return info that they need to be processed in batches
-    if (posts.length > 10) {
+    if (posts.length > 40) {
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
           ...results,
-          message: `Processed first 10 posts. ${posts.length - 10} remaining. Please process in smaller batches or use the script directly.`,
-          remaining: posts.length - 10,
+          message: `✅ Successfully processed first 40 posts - they are now live on the site! ${posts.length - 40} remaining. Upload the CSV again to process the next batch.`,
+          remaining: posts.length - 40,
         }),
       };
     }
@@ -362,7 +365,10 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify(results),
+      body: JSON.stringify({
+        ...results,
+        message: `✅ All ${results.processed} posts have been processed and are now live on the site!`,
+      }),
     };
   } catch (error) {
     console.error('[process-csv-posts] Error:', error);

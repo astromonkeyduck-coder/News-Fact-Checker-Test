@@ -2386,7 +2386,9 @@
             }
             
             .last-update {
-                display: none; /* Hide last update on smaller screens */
+                display: flex !important; /* Keep visible as badge */
+                font-size: 0.7rem;
+                padding: 4px 8px;
             }
         }
         
@@ -13517,7 +13519,9 @@
             </div>
             
             <div class="header-right">
-                <div class="last-update" title="Scheduled Maintenance: December 30, 2025"auth-btn signup-btn" id="signupBtn" aria-label="Sign Up">Sign Up</button>
+                <div class="last-update" title="Scheduled Maintenance: December 30, 2025"auth-buttons-container" id="authButtonsContainer">
+                    <button class="auth-btn signin-btn" id="signinBtn" aria-label="Sign In">Sign In</button>
+                    <button class="auth-btn signup-btn" id="signupBtn" aria-label="Sign Up">Sign Up</button>
                 </div>
                 <button class="music-control-btn" id="musicControlBtn" title="Toggle Background Music">
                     <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M9 18V5l9-2v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/><circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/></svg></span>
@@ -15583,46 +15587,12 @@
             }
         }
         
-        // Track if user has scrolled past landing page
-        let hasScrolledPastLanding = false;
-        let refreshTimeout = null;
-        
         window.addEventListener('scroll', function() {
             const now = Date.now();
             if (now - lastScrollTime < scrollThrottle) {
                 return; // Skip if too soon
             }
             lastScrollTime = now;
-            
-            const scrollY = window.scrollY || window.pageYOffset;
-            const heroSection = document.querySelector('.hero-section');
-            const heroHeight = heroSection ? heroSection.offsetHeight || window.innerHeight : window.innerHeight;
-            
-            // Check if user has scrolled past the landing page (hero section)
-            if (scrollY > heroHeight) {
-                hasScrolledPastLanding = true;
-            }
-            
-            // Check if user has scrolled back to the top
-            if (scrollY <= 50 && hasScrolledPastLanding) {
-                // User scrolled back to top after being below landing page
-                // Clear any existing refresh timeout
-                if (refreshTimeout) {
-                    clearTimeout(refreshTimeout);
-                }
-                
-                // Set a small delay before refreshing to avoid flicker
-                refreshTimeout = setTimeout(function() {
-                    // Only refresh if still at the top
-                    const currentScroll = window.scrollY || window.pageYOffset;
-                    if (currentScroll <= 50) {
-                        // Reset the flag before refresh
-                        hasScrolledPastLanding = false;
-                        // Refresh the page
-                        window.location.reload();
-                    }
-                }, 300);
-            }
             
             // Ensure hero section displays correctly when scrolling
             ensureHeroSectionDisplay();
@@ -18533,7 +18503,7 @@
                 const estNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (estOffset * 60000));
                 
                 // Calculate target date: one week from last git push (December 23, 2025) at 7:45 PM EST
-                const lastPushDate = new Date('2025-12-23T19:45:00-05:00'); // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST
+                const lastPushDate = new Date('2025-12-23T19:45:00-05:00'); // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST
                 const oneWeekInMs = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
                 const target = new Date(lastPushDate.getTime() + oneWeekInMs); // December 30, 2025 7:45 PM EST
                 

@@ -2869,8 +2869,10 @@
             }
             
             // Use srcdoc with proper escaping
+            // Note: Using only allow-scripts (not allow-same-origin) for security
+            // srcdoc creates its own origin, so allow-same-origin isn't needed for preview
             const iframe = document.createElement('iframe');
-            iframe.sandbox = 'allow-same-origin allow-scripts';
+            iframe.sandbox = 'allow-scripts';
             iframe.srcdoc = fullHtml;
             iframe.style.width = '100%';
             iframe.style.height = '600px';

@@ -106,11 +106,9 @@ class VoiceAudioEngine {
     this.activeGen = gen;
     this.activeResponseId = responseId;
     
-    // Reset scheduling to current time
-    this.nextStartTime = Math.max(
-      this.audioContext.currentTime + 0.02, // Small safety lead (20ms)
-      this.nextStartTime // Don't go backwards
-    );
+    // CRITICAL: Always reset scheduling to current time (don't preserve old nextStartTime)
+    // This ensures no overlaps from previous response
+    this.nextStartTime = this.audioContext.currentTime + 0.02; // Small safety lead (20ms)
     
     this.queueDrained = false;
     

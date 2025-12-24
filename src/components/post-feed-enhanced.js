@@ -267,9 +267,22 @@ function renderEnhancedPostCard(post) {
   const timestampTooltip = formatAbsoluteTime(postDate);
   const postText = post.text || post.story || post.title || '';
   
-  // Generate article link
-  let stableId = post.id;
+  // Use the actual post ID - this MUST match what's stored in the database
+  // Priority: post.id > post.postId > extract from post.link/url > fallback hash
+  let stableId = post.id || post.postId;
+  
+  // If no ID, try to extract from link/url (Twitter/X status URLs contain the post ID)
+  if (!stableId && (post.link || post.url)) {
+    const url = post.link || post.url;
+    const match = url.match(/status\/(\d+)/);
+    if (match && match[1]) {
+      stableId = match[1];
+    }
+  }
+  
+  // Last resort: create hash (but this won't match database, so article won't load)
   if (!stableId && postText) {
+    console.warn(`[PostFeedEnhanced] Post has no ID, creating hash (article page won't work)`);
     let hash = 0;
     const str = postText.substring(0, 100);
     for (let i = 0; i < str.length; i++) {
@@ -281,6 +294,7 @@ function renderEnhancedPostCard(post) {
   } else if (!stableId) {
     stableId = `post-${Date.now()}`;
   }
+  
   const articleLink = `/article.html?id=${encodeURIComponent(stableId)}`;
   
   // Twitter link for external reference

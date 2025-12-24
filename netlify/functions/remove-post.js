@@ -84,26 +84,48 @@ exports.handler = async (event) => {
       };
     }
 
+    // Delete post from storage (if it exists)
+    const postKey = `post-${postId}.json`;
+    let deletedFromStorage = false;
+    try {
+      const postExists = await store.get(postKey);
+      if (postExists) {
+        await store.delete(postKey);
+        deletedFromStorage = true;
+        console.log(`[remove-post] Deleted post ${postId} from storage`);
+      }
+    } catch (err) {
+      // Post doesn't exist in storage, that's okay
+      console.log(`[remove-post] Post ${postId} not found in storage (may have been deleted already)`);
+    }
+
     // Remove post from index
     const existingIds = indexData.ids || [];
     const existingUrls = indexData.urls || [];
     
-    // Filter out the post ID
+    // Filter out the post ID (remove all instances to prevent duplicates)
     const filteredIds = existingIds.filter(id => id !== postId);
     const filteredUrls = existingUrls.filter((url, idx) => existingIds[idx] !== postId);
     
-    // Save updated index
-    await store.set("index.json", JSON.stringify({ ids: filteredIds, urls: filteredUrls }), {
-      contentType: "application/json",
-    });
+    let removedFromIndex = false;
+    if (filteredIds.length < existingIds.length) {
+      // Save updated index
+      await store.set("index.json", JSON.stringify({ ids: filteredIds, urls: filteredUrls }), {
+        contentType: "application/json",
+      });
+      removedFromIndex = true;
+      console.log(`[remove-post] Removed post ${postId} from index`);
+    }
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({ 
         success: true, 
-        message: `Post ${postId} removed from index`,
-        removed: true,
+        message: `Post ${postId} deleted${removedFromIndex ? ' from index' : ''}${deletedFromStorage ? ' and storage' : ''}`,
+        removed: removedFromIndex || deletedFromStorage,
+        deletedFromStorage: deletedFromStorage,
+        removedFromIndex: removedFromIndex,
         previousCount: existingIds.length,
         newCount: filteredIds.length
       }),

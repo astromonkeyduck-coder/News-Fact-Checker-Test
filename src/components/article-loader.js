@@ -335,14 +335,33 @@
                 throw new Error('Invalid response format from API');
             }
             
-            // Find the post
-            const post = posts.find(p => p.id === articleId || p.id === `post-${articleId}`);
+            console.log('[ArticleLoader] Fetched', posts.length, 'posts, looking for articleId:', articleId);
+            
+            // Find the post - try multiple ID formats
+            // Posts can have id as: articleId, post-{articleId}, or stored as postId field
+            const post = posts.find(p => {
+                // Direct match
+                if (p.id === articleId) return true;
+                // Match with post- prefix
+                if (p.id === `post-${articleId}`) return true;
+                // Match postId field if it exists
+                if (p.postId === articleId || p.postId === `post-${articleId}`) return true;
+                // Match if articleId has post- prefix and p.id doesn't
+                if (articleId.startsWith('post-') && p.id === articleId.substring(5)) return true;
+                // Match if p.id has post- prefix and articleId doesn't
+                if (p.id && p.id.startsWith('post-') && p.id.substring(5) === articleId) return true;
+                return false;
+            });
             
             if (!post) {
+                console.error('[ArticleLoader] Post not found. ArticleId:', articleId);
+                console.log('[ArticleLoader] First 5 post IDs:', posts.slice(0, 5).map(p => ({ id: p.id, postId: p.postId, title: (p.title || p.story || p.text || '').substring(0, 50) })));
                 headingElement.textContent = 'Article Not Found';
-                bodyElement.innerHTML = '<p>Article not found. Please return to the <a href="/index.html" style="color: #4A90E2;">homepage</a>.</p>';
+                bodyElement.innerHTML = `<p>Article with ID "${articleId}" not found. Please return to the <a href="/index.html" style="color: #4A90E2;">homepage</a>.</p><p style="margin-top: 1rem; font-size: 0.875rem; color: rgba(255,255,255,0.6);">Debug: Found ${posts.length} posts total.</p>`;
                 return;
             }
+            
+            console.log('[ArticleLoader] Found post:', { id: post.id, postId: post.postId, title: (post.title || post.story || post.text || '').substring(0, 50) });
 
             // Extract post data
             const title = post.title || post.story || post.text || 'Breaking News Story';

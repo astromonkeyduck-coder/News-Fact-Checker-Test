@@ -540,8 +540,7 @@
                                 <input 
                                     type="text" 
                                     id="postId" 
-                                    placeholder="2000243348691640646"
-                                    required
+                                    placeholder="2000243348691640646 (auto-filled from CSV/URL)"
                                 >
                             </div>
                             
@@ -630,6 +629,44 @@
                             <button type="submit" class="btn btn-primary btn-block">Publish Post</button>
                         </form>
                         <div id="result" class="result"></div>
+                    </div>
+                </div>
+                
+                <!-- Section D: Remove Posts -->
+                <div class="section" style="margin-top: 24px; border-color: var(--error);">
+                    <div class="section-header">
+                        <div>
+                            <div class="section-title" style="color: var(--error);">🗑️ Remove Posts</div>
+                            <div class="section-subtitle">Delete posts from the website</div>
+                        </div>
+                    </div>
+                    <div class="section-content">
+                        <div class="form-group">
+                            <label for="deletePostId">Post ID to Delete</label>
+                            <div style="display: flex; gap: 8px;">
+                                <input 
+                                    type="text" 
+                                    id="deletePostId" 
+                                    placeholder="Enter post ID (e.g., 2000243348691640646)"
+                                    style="flex: 1;"
+                                >
+                                <button class="btn btn-secondary" onclick="searchPost(event)" style="white-space: nowrap;">Search</button>
+                            </div>
+                        </div>
+                        
+                        <div id="postSearchResult" style="margin-top: 16px; display: none;">
+                            <div class="form-group" style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
+                                <div style="margin-bottom: 12px;">
+                                    <strong>Post Found:</strong>
+                                    <div id="foundPostInfo" style="margin-top: 8px; color: var(--text-secondary); font-size: 14px;"></div>
+                                </div>
+                                <button class="btn" id="deletePostBtn" onclick="deletePost(event)" style="background: var(--error); color: white; width: 100%;">
+                                    🗑️ Delete This Post
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="deleteResult" class="result" style="margin-top: 16px;"></div>
                     </div>
                 </div>
             </div>
@@ -1159,9 +1196,13 @@
                 
                 const message = data.message 
                     ? `${data.message}. Processed ${data.processed || 0} posts. ${data.added || 0} added, ${data.updated || 0} updated.`
-                    : `Processed ${data.processed || 0} posts. ${data.added || 0} added, ${data.updated || 0} updated.`;
+                    : `✅ Successfully processed ${data.processed || 0} posts. ${data.added || 0} added, ${data.updated || 0} updated. Posts are now live on the site!`;
                 
-                showResult(message, 'success');
+                if (data.remaining) {
+                    showResult(`${message} ${data.remaining} posts remaining. Upload the CSV again to process the next batch.`, 'info');
+                } else {
+                    showResult(message, 'success');
+                }
             } catch (error) {
                 showResult(`Error: ${error.message}`, 'error');
             }
@@ -1328,14 +1369,7 @@
             const postLink = document.getElementById('postLink').value.trim();
             const postDate = document.getElementById('postDate').value;
             
-            if (!postId) {
-                showResult('Post ID is required', 'error');
-                btn.disabled = false;
-                btn.textContent = 'Publish Post';
-                document.getElementById('postForm').classList.remove('loading');
-                return;
-            }
-            
+            // Post ID is optional - can be auto-generated from link if not provided
             if (!headline) {
                 showResult('Headline/Story is required', 'error');
                 btn.disabled = false;
@@ -1360,8 +1394,25 @@
                 return;
             }
             
+            // Auto-extract post ID from link if not provided
+            let finalPostId = postId;
+            if (!finalPostId && postLink) {
+                const postIdMatch = postLink.match(/status\/(\d+)/);
+                if (postIdMatch) {
+                    finalPostId = postIdMatch[1];
+                }
+            }
+            
+            if (!finalPostId) {
+                showResult('Post ID is required. Please enter it or provide a valid post link.', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Publish Post';
+                document.getElementById('postForm').classList.remove('loading');
+                return;
+            }
+            
             const postData = {
-                postId: postId,
+                postId: finalPostId,
                 datePosted: new Date(postDate).toISOString(),
                 story: headline,
                 text: headline,
@@ -1388,16 +1439,43 @@
                 }
             });
             
+            // Check if post already exists BEFORE submitting (to prevent accidental duplicates)
+            let postExists = false;
+            let existingPost = null;
+            try {
+                const checkResponse = await fetch(`${API_BASE}/.netlify/functions/posts-read?limit=500`);
+                if (checkResponse.ok) {
+                    const allPosts = await checkResponse.json();
+                    existingPost = Array.isArray(allPosts) ? allPosts.find(p => p.id === finalPostId || p.postId === finalPostId) : null;
+                    postExists = !!existingPost;
+                    
+                    if (postExists) {
+                        // Post already exists - warn user but allow update (not duplicate creation)
+                        const existingStory = existingPost.story || existingPost.text || 'No story';
+                        const existingDate = existingPost.datePosted ? new Date(existingPost.datePosted).toLocaleDateString() : 'Unknown date';
+                        showResult(`⚠️ Post with ID ${finalPostId} already exists (posted: ${existingDate}). This will UPDATE the existing post, not create a duplicate. Click "Publish Post" again to confirm the update.`, 'warning');
+                        btn.disabled = false;
+                        btn.textContent = 'Publish Post';
+                        document.getElementById('postForm').classList.remove('loading');
+                        return;
+                    }
+                }
+            } catch (checkErr) {
+                console.log('Could not check for duplicates, proceeding anyway:', checkErr.message);
+                // Continue if check fails - better to allow than block
+            }
+            
             btn.disabled = true;
             btn.textContent = 'Publishing...';
             document.getElementById('postForm').classList.add('loading');
             
             try {
                 // Step 1: Try to create post via fetch-tweets-simple if it's a valid X/Twitter URL
+                // BUT skip this if post already exists (to avoid duplicate index entries)
                 let postCreated = false;
                 const isTwitterUrl = postData.link && postData.link.match(/https?:\/\/(x\.com|twitter\.com)\//);
                 
-                if (isTwitterUrl) {
+                if (isTwitterUrl && !postExists) {
                     try {
                         const createResponse = await fetch(`${API_BASE}/.netlify/functions/fetch-tweets-simple`, {
                             method: 'POST',
@@ -1496,6 +1574,139 @@
             const plainNum = parseFloat(str);
             return isNaN(plainNum) ? undefined : Math.round(plainNum);
         }
+        
+        // Search for a post by ID
+        async function searchPost(e) {
+            if (e) e.preventDefault();
+            const postId = document.getElementById('deletePostId').value.trim();
+            const resultDiv = document.getElementById('postSearchResult');
+            const infoDiv = document.getElementById('foundPostInfo');
+            const deleteBtn = document.getElementById('deletePostBtn');
+            const deleteResult = document.getElementById('deleteResult');
+            
+            if (!postId) {
+                showDeleteResult('Please enter a post ID', 'error');
+                return;
+            }
+            
+            deleteResult.style.display = 'none';
+            infoDiv.textContent = 'Searching...';
+            resultDiv.style.display = 'block';
+            deleteBtn.disabled = true;
+            
+            try {
+                // Search in all posts
+                const response = await fetch(`${API_BASE}/.netlify/functions/posts-read?limit=500`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const allPosts = await response.json();
+                const foundPost = Array.isArray(allPosts) 
+                    ? allPosts.find(p => p.id === postId || p.postId === postId)
+                    : null;
+                
+                if (!foundPost) {
+                    infoDiv.innerHTML = `<span style="color: var(--error);">❌ Post not found. It may have already been deleted or doesn't exist.</span>`;
+                    deleteBtn.disabled = true;
+                    deleteBtn.style.opacity = '0.5';
+                    return;
+                }
+                
+                // Show post info
+                const story = foundPost.story || foundPost.text || 'No story';
+                const date = foundPost.datePosted ? new Date(foundPost.datePosted).toLocaleString() : 'Unknown date';
+                const link = foundPost.link || foundPost.url || 'No link';
+                const views = foundPost.views ? foundPost.views.toLocaleString() : '0';
+                const likes = foundPost.likes ? foundPost.likes.toLocaleString() : '0';
+                
+                infoDiv.innerHTML = `
+                    <div style="margin-bottom: 8px;"><strong>Story:</strong> ${story.substring(0, 100)}${story.length > 100 ? '...' : ''}</div>
+                    <div style="margin-bottom: 8px;"><strong>Date:</strong> ${date}</div>
+                    <div style="margin-bottom: 8px;"><strong>Link:</strong> <a href="${link}" target="_blank" style="color: var(--accent);">${link}</a></div>
+                    <div><strong>Stats:</strong> ${views} views, ${likes} likes</div>
+                `;
+                
+                deleteBtn.disabled = false;
+                deleteBtn.style.opacity = '1';
+                deleteBtn.dataset.postId = postId;
+            } catch (error) {
+                infoDiv.innerHTML = `<span style="color: var(--error);">❌ Error searching: ${error.message}</span>`;
+                deleteBtn.disabled = true;
+                deleteBtn.style.opacity = '0.5';
+            }
+        }
+        
+        // Delete a post
+        async function deletePost(e) {
+            if (e) e.preventDefault();
+            const deleteBtn = document.getElementById('deletePostBtn');
+            const postId = deleteBtn.dataset.postId || document.getElementById('deletePostId').value.trim();
+            
+            if (!postId) {
+                showDeleteResult('No post ID to delete', 'error');
+                return;
+            }
+            
+            // Confirm deletion
+            if (!confirm(`⚠️ Are you sure you want to DELETE post ${postId}?\n\nThis will:\n- Remove it from the website\n- Delete it from storage\n- Remove it from the index\n\nThis action cannot be undone!`)) {
+                return;
+            }
+            
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'Deleting...';
+            showDeleteResult('Deleting post...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/.netlify/functions/remove-post`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ postId: postId })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || data.message || `HTTP ${response.status}`);
+                }
+                
+                if (data.success) {
+                    showDeleteResult(`✅ Post ${postId} deleted successfully! ${data.deletedFromStorage ? 'Removed from storage' : ''} ${data.removedFromIndex ? 'and index' : ''}.`, 'success');
+                    
+                    // Clear search result
+                    document.getElementById('postSearchResult').style.display = 'none';
+                    document.getElementById('deletePostId').value = '';
+                    document.getElementById('foundPostInfo').textContent = '';
+                    deleteBtn.dataset.postId = '';
+                } else {
+                    showDeleteResult(`⚠️ ${data.message || 'Post may not have existed'}`, 'warning');
+                }
+            } catch (error) {
+                showDeleteResult(`❌ Error deleting post: ${error.message}`, 'error');
+            } finally {
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = '🗑️ Delete This Post';
+            }
+        }
+        
+        // Show delete result message
+        function showDeleteResult(message, type = 'info') {
+            const result = document.getElementById('deleteResult');
+            result.className = `result ${type}`;
+            result.textContent = message;
+            result.style.display = 'block';
+            setTimeout(() => {
+                result.style.display = 'none';
+            }, 10000);
+        }
+        
+        // Allow Enter key to search
+        document.getElementById('deletePostId')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                searchPost();
+            }
+        });
     </script>
 </body>
 </html>

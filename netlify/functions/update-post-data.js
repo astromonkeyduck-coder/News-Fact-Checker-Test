@@ -119,6 +119,7 @@ exports.handler = async (event) => {
         await store.setJSON(postKey, updatedPost);
         
         // If this is a new post, add it to the index so it appears on the site
+        // CRITICAL: Always check for duplicates in index to prevent duplicates
         if (isNewPost) {
           try {
             let indexData = { ids: [], urls: [] };
@@ -131,14 +132,18 @@ exports.handler = async (event) => {
               // Index doesn't exist yet, will create it
             }
             
-            // Add post to index if not already there
+            // Add post to index if not already there (DUPLICATE PREVENTION)
             const existingIds = indexData.ids || [];
             const existingUrls = indexData.urls || [];
             
+            // Remove any existing instances of this postId to prevent duplicates
+            const filteredIds = existingIds.filter(id => id !== postId);
+            const filteredUrls = existingUrls.filter((url, idx) => existingIds[idx] !== postId);
+            
             if (!existingIds.includes(postId)) {
-              // Prepend new post to index
-              const newIds = [postId, ...existingIds];
-              const newUrls = [updatedPost.link || updatedPost.url, ...existingUrls];
+              // Prepend new post to index (only if not already there)
+              const newIds = [postId, ...filteredIds];
+              const newUrls = [updatedPost.link || updatedPost.url, ...filteredUrls];
               
               // Cap at 200 posts
               const updatedIds = newIds.slice(0, 200);
@@ -149,10 +154,50 @@ exports.handler = async (event) => {
               });
               
               console.log(`[update-post-data] Added new post ${postId} to index`);
+            } else {
+              console.log(`[update-post-data] Post ${postId} already in index, skipping to prevent duplicate`);
             }
           } catch (indexErr) {
             console.error('[update-post-data] Failed to update index:', indexErr);
             // Don't fail the whole request if index update fails
+          }
+        } else {
+          // Even for existing posts, ensure no duplicates in index
+          try {
+            let indexData = { ids: [], urls: [] };
+            try {
+              const indexBlob = await store.get("index.json", { type: "json" });
+              if (indexBlob) {
+                indexData = indexBlob;
+              }
+            } catch (err) {
+              // Index doesn't exist yet
+            }
+            
+            const existingIds = indexData.ids || [];
+            const existingUrls = indexData.urls || [];
+            
+            // Check if postId appears multiple times in index (duplicate detection)
+            const duplicateCount = existingIds.filter(id => id === postId).length;
+            if (duplicateCount > 1) {
+              console.log(`[update-post-data] ⚠️ Found ${duplicateCount} duplicate entries for post ${postId} in index, removing duplicates`);
+              
+              // Remove all instances, then add back once
+              const filteredIds = existingIds.filter(id => id !== postId);
+              const filteredUrls = existingUrls.filter((url, idx) => existingIds[idx] !== postId);
+              
+              // Add back at the beginning (most recent)
+              const deduplicatedIds = [postId, ...filteredIds].slice(0, 200);
+              const deduplicatedUrls = [updatedPost.link || updatedPost.url, ...filteredUrls].slice(0, 200);
+              
+              await store.set("index.json", JSON.stringify({ ids: deduplicatedIds, urls: deduplicatedUrls }), {
+                contentType: "application/json",
+              });
+              
+              console.log(`[update-post-data] ✅ Removed duplicates for post ${postId}`);
+            }
+          } catch (indexErr) {
+            console.error('[update-post-data] Failed to check/clean index:', indexErr);
           }
         }
 

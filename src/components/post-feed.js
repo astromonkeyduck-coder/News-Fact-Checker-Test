@@ -895,22 +895,34 @@ function renderPosts(posts, container, originalContent = null) {
       // Extract fields with multiple fallbacks
       const fullStory = post.story || post.text || post.html?.replace(/<[^>]*>/g, '') || '';
       // Link to article page instead of Twitter
-      // Generate stable ID: use post.id if available, otherwise create hash from content
-      let stableId = post.id;
+      // Use the actual post ID - this MUST match what's stored in the database
+      // Priority: post.id > post.postId > extract from post.link/url > fallback hash
+      let stableId = post.id || post.postId;
+      
+      // If no ID, try to extract from link/url (Twitter/X status URLs contain the post ID)
+      if (!stableId && (post.link || post.url)) {
+        const url = post.link || post.url;
+        const match = url.match(/status\/(\d+)/);
+        if (match && match[1]) {
+          stableId = match[1];
+        }
+      }
+      
+      // Last resort: create hash (but this won't match database, so article won't load)
       if (!stableId && fullStory) {
-        // Create a simple hash from the story content for stable IDs
+        console.warn(`[PostFeed] Post at index ${index} has no ID, creating hash (article page won't work)`);
         let hash = 0;
-        const str = fullStory.substring(0, 100); // Use first 100 chars for hash
+        const str = fullStory.substring(0, 100);
         for (let i = 0; i < str.length; i++) {
           const char = str.charCodeAt(i);
           hash = ((hash << 5) - hash) + char;
-          hash = hash & hash; // Convert to 32-bit integer
+          hash = hash & hash;
         }
         stableId = `post-${Math.abs(hash)}`;
       } else if (!stableId) {
-        // Last resort: use timestamp-based ID (less ideal but better than index)
         stableId = `post-${Date.now()}-${index}`;
       }
+      
       const articleLink = `/article.html?id=${encodeURIComponent(stableId)}`;
       // Only create Twitter link if we have a valid post.id or valid link
       const twitterLink = post.link || post.url || (post.id ? `https://x.com/newsnoteworthy/status/${post.id}` : null);

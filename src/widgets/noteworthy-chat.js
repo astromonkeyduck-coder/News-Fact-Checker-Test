@@ -918,9 +918,16 @@ class NoteworthyChat extends HTMLElement {
         }
         
         .voice-call-panel.show {
-          display: flex;
-          opacity: 1;
+          display: flex !important;
+          opacity: 1 !important;
           transform: translateY(-50%) translateX(0) scale(1);
+        }
+        
+        /* CRITICAL: Ensure End Call button is ALWAYS visible when panel is shown */
+        .voice-call-panel.show #voiceCallEndBtn {
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
         }
         
         .voice-call-header {
@@ -934,9 +941,12 @@ class NoteworthyChat extends HTMLElement {
         #voiceCallEndBtn {
           position: relative;
           width: 100%;
-          margin-top: auto;
-          margin-bottom: 0;
+          margin-top: 0;
+          margin-bottom: 24px;
           z-index: 10;
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
         }
         
         .voice-call-title {
@@ -5018,10 +5028,16 @@ class NoteworthyChat extends HTMLElement {
       }
       
       // CRITICAL: Always ensure End Call button is visible during active states
-      if (voiceCallEndBtn && (state === 'connecting' || state === 'listening' || state === 'speaking')) {
+      // Also check if panel is shown - if so, button should ALWAYS be visible
+      const voiceCallPanel = root.querySelector('#voiceCallPanel');
+      const isPanelShown = voiceCallPanel && voiceCallPanel.classList.contains('show');
+      
+      if (voiceCallEndBtn && (isPanelShown || state === 'connecting' || state === 'listening' || state === 'speaking')) {
         voiceCallEndBtn.style.display = 'flex';
         voiceCallEndBtn.style.visibility = 'visible';
         voiceCallEndBtn.style.opacity = '1';
+        voiceCallEndBtn.style.position = 'relative';
+        voiceCallEndBtn.style.zIndex = '1000';
       }
       
       // Remove all state classes
@@ -5242,6 +5258,10 @@ class NoteworthyChat extends HTMLElement {
         const voiceCallEndBtn = root.querySelector('#voiceCallEndBtn');
         if (voiceCallPanel) {
           voiceCallPanel.classList.add('show');
+          // Force display with inline style as backup
+          voiceCallPanel.style.display = 'flex';
+          voiceCallPanel.style.visibility = 'visible';
+          voiceCallPanel.style.opacity = '1';
           if (DEBUG_VOICE) {
             console.log('[Voice Mode] ✅ Premium call panel shown');
           }
@@ -5251,9 +5271,13 @@ class NoteworthyChat extends HTMLElement {
           voiceCallEndBtn.style.display = 'flex';
           voiceCallEndBtn.style.visibility = 'visible';
           voiceCallEndBtn.style.opacity = '1';
+          voiceCallEndBtn.style.position = 'relative';
+          voiceCallEndBtn.style.zIndex = '1000';
           if (DEBUG_VOICE) {
             console.log('[Voice Mode] ✅ End Call button made visible');
           }
+        } else {
+          console.error('[Voice Mode] ❌ CRITICAL: voiceCallEndBtn NOT FOUND!');
         }
         
         // Track call start time and reset transcripts
