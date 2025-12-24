@@ -103,14 +103,30 @@ function showSpotlightError() {
   const container = document.querySelector('.spotlight-section, #countrySpotlight');
   if (!container) return;
   
-  container.innerHTML = `
-    <div class="spotlight-error" style="padding: 20px; text-align: center; color: rgba(255,255,255,0.7);">
-      <p>Failed to load country spotlight</p>
-      <button onclick="window.initSpotlight?.()" style="margin-top: 10px; padding: 8px 16px; background: rgba(74, 144, 226, 0.2); border: 1px solid rgba(74, 144, 226, 0.4); color: #4A90E2; border-radius: 6px; cursor: pointer;">
-        Retry
-      </button>
-    </div>
-  `;
+  // vNext: Use DOM creation instead of innerHTML for security
+  container.innerHTML = ''; // Clear first
+  
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'spotlight-error';
+  errorDiv.style.cssText = 'padding: 20px; text-align: center; color: rgba(255,255,255,0.7);';
+  
+  const errorP = document.createElement('p');
+  errorP.textContent = 'Failed to load country spotlight';
+  errorDiv.appendChild(errorP);
+  
+  const retryBtn = document.createElement('button');
+  retryBtn.textContent = 'Retry';
+  retryBtn.style.cssText = 'margin-top: 10px; padding: 8px 16px; background: rgba(74, 144, 226, 0.2); border: 1px solid rgba(74, 144, 226, 0.4); color: #4A90E2; border-radius: 6px; cursor: pointer;';
+  retryBtn.onclick = () => {
+    if (window.initSpotlight) {
+      window.initSpotlight();
+    } else {
+      loadSpotlight(); // Fallback to direct call
+    }
+  };
+  errorDiv.appendChild(retryBtn);
+  
+  container.appendChild(errorDiv);
 }
 
 /**

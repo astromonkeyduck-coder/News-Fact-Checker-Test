@@ -20,19 +20,32 @@ export function initHomepage() {
   // Core runs immediately (already done)
   initCore();
   
-  // Initialize lazy images immediately (lightweight)
-  import('./initCore.js').then(({ initLazyImages }) => {
+  // Initialize smooth scrolling
+  import('./initCore.js').then(({ initSmoothScroll, initLazyImages }) => {
+    initSmoothScroll();
     initLazyImages();
   });
   
   // Defer all non-critical modules
-  deferInit(() => {
+  deferInit(async () => {
+    const { trackModuleInit } = await import('./initCore.js');
+    
+    trackModuleInit('effects');
     initEffects();
+    
+    trackModuleInit('feeds');
     initFeeds();
+    
+    trackModuleInit('games');
     initGames();
+    
+    trackModuleInit('spotlight');
     initSpotlight();
+    
+    trackModuleInit('accordions');
     initAccordions();
     autoSetupAccordions();
+    
     logger.debug('All homepage modules initialized');
   }, 500);
 }

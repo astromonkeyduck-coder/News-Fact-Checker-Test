@@ -60,9 +60,9 @@ const QUESTION_POOL = [
 ];
 
 /**
- * Get questions for a game based on difficulty and count
+ * Get questions for a game based on difficulty, count, and seed
  */
-function getQuestions(difficulty, count) {
+function getQuestions(difficulty, count, seed) {
   // Filter by difficulty
   let filtered = QUESTION_POOL;
   
@@ -74,8 +74,10 @@ function getQuestions(difficulty, count) {
     filtered = QUESTION_POOL.filter(q => q.level >= 3);
   }
 
-  // Shuffle using seed for consistency (all players get same order)
-  const shuffled = shuffleWithSeed([...filtered], Date.now());
+  // Shuffle using provided seed for consistency (all players get same order)
+  // If no seed provided, use a default seed (should not happen in multiplayer)
+  const shuffleSeed = seed || Date.now();
+  const shuffled = shuffleWithSeed([...filtered], shuffleSeed);
   
   // Return requested count
   return shuffled.slice(0, count);
@@ -114,9 +116,11 @@ exports.handler = async (event) => {
     const { difficulty = 'medium', count = 10, seed } = event.queryStringParameters || {};
 
     // Use provided seed or generate one
-    const questionSeed = seed ? parseInt(seed) : Date.now();
+    // CRITICAL: Parse seed as integer for deterministic shuffling
+    const questionSeed = seed ? parseInt(seed, 10) : Date.now();
     
-    const questions = getQuestions(difficulty, parseInt(count));
+    // CRITICAL: Pass seed to getQuestions so all players get same question order
+    const questions = getQuestions(difficulty, parseInt(count, 10), questionSeed);
 
     return {
       statusCode: 200,

@@ -206,3 +206,85 @@ html {
   }
 }
 
+/* vNext: Improve "Latest Breaking News" visual hierarchy */
+.news-section,
+#news-section,
+.breaking-news-section {
+  position: relative;
+  z-index: 1;
+}
+
+.news-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #4A9EFF, #5BB5FF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.news-subtitle {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 2rem;
+  max-width: 600px;
+}
+
+/* Ensure news cards are visually dominant */
+.article-card,
+.feed-post-card {
+  margin-bottom: 1.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.article-card:hover,
+.feed-post-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(74, 144, 226, 0.2);
+}
+
+/* Consistent button behavior for news cards */
+.article-link,
+.article-card button {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.article-link:hover,
+.article-card button:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* Hero module (Latest Breaking News) - Make visually dominant */
+.hero-module-container {
+  position: relative;
+  z-index: 2;
+  margin-bottom: 2rem;
+}
+
+.hero-module-headline {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 0.5rem;
+}
+
+.hero-module-btn {
+  min-height: 44px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.hero-module-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+

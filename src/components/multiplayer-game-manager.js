@@ -60,7 +60,7 @@ class MultiplayerGameManager {
       
       return { roomId: this.roomId, room: this.room };
     } catch (error) {
-      console.error('[MultiplayerGameManager] Error creating room:', error);
+      logger.error('[MultiplayerGameManager] Error creating room:', error);
       this.emit('error', { error: error.message });
       throw error;
     }
@@ -102,7 +102,7 @@ class MultiplayerGameManager {
       
       return { room: this.room };
     } catch (error) {
-      console.error('[MultiplayerGameManager] Error joining room:', error);
+      logger.error('[MultiplayerGameManager] Error joining room:', error);
       this.emit('error', { error: error.message });
       throw error;
     }
@@ -140,7 +140,7 @@ class MultiplayerGameManager {
       this.emit('room-left');
       this.render();
     } catch (error) {
-      console.error('[MultiplayerGameManager] Error leaving room:', error);
+      logger.error('[MultiplayerGameManager] Error leaving room:', error);
     }
   }
 
@@ -177,7 +177,7 @@ class MultiplayerGameManager {
       this.emit('game-starting', { room: this.room });
       this.render();
     } catch (error) {
-      console.error('[MultiplayerGameManager] Error starting game:', error);
+      logger.error('[MultiplayerGameManager] Error starting game:', error);
       this.emit('error', { error: error.message });
       throw error;
     }
@@ -616,7 +616,7 @@ class MultiplayerGameManager {
       try {
         cb(data);
       } catch (error) {
-        console.error(`[MultiplayerGameManager] Error in event listener:`, error);
+        logger.error(`[MultiplayerGameManager] Error in event listener:`, error);
       }
     });
   }

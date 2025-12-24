@@ -229,7 +229,10 @@ exports.handler = async (event) => {
     
     // Handle multipart/form-data (FormData uploads)
     if (contentType.includes('multipart/form-data')) {
-      const boundaryMatch = contentType.match(/boundary=(.+)/);
+      // CRITICAL: Use non-greedy regex to capture only boundary value, not trailing parameters
+      // Example: "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW; charset=utf-8"
+      // Should capture: "----WebKitFormBoundary7MA4YWxkTrZu0gW" not "----WebKitFormBoundary7MA4YWxkTrZu0gW; charset=utf-8"
+      const boundaryMatch = contentType.match(/boundary=([^;\s]+)/);
       if (boundaryMatch) {
         const boundary = boundaryMatch[1].trim();
         let bodyText = event.body;

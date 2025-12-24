@@ -13,11 +13,6 @@ function initKeyboardShortcuts() {
   let helpModal = null;
   
   function handleKeyboardShortcut(e) {
-    // #region agent log
-    if (e.key === 'k' || e.key === 'K') {
-      fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'keyboard-shortcuts.js:15',message:'K key pressed in keyboard handler',data:{key:e.key,targetTagName:e.target.tagName,targetType:e.target.type,isContentEditable:e.target.isContentEditable,activeElementTag:document.activeElement?.tagName,activeElementType:document.activeElement?.type,isShadowRoot:!!e.target.getRootNode?.()?.host},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'A'})}).catch(()=>{});
-    }
-    // #endregion
     // Don't trigger if typing in input, textarea, or contenteditable
     const target = e.target;
     const activeElement = document.activeElement;
@@ -101,9 +96,6 @@ function initKeyboardShortcuts() {
 
       case 'k':
       case 'ArrowUp':
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/1b084fb8-c291-4b9d-9bfc-ed7a542cc0dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'keyboard-shortcuts.js:52',message:'K key intercepted - preventing default',data:{targetTagName:e.target.tagName,activeElementTag:document.activeElement?.tagName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         // Navigate to previous article/item
         e.preventDefault();
         navigatePrev();

@@ -5,6 +5,7 @@
  */
 
 import RealtimeLeaderboard from '../utils/realtime-leaderboard.js';
+import { logger } from '../utils/logger.js';
 
 class RealtimeLeaderboardComponent {
   constructor(container, userId, gameType = 'fact-checker', options = {}) {
@@ -78,17 +79,17 @@ class RealtimeLeaderboardComponent {
 
     // Connection status
     this.realtime.on('connected', () => {
-      console.log('[RealtimeLeaderboardComponent] Real-time connection established');
+      logger.debug('[RealtimeLeaderboardComponent] Real-time connection established');
       this.updateConnectionStatus(true);
     });
 
     this.realtime.on('disconnected', () => {
-      console.log('[RealtimeLeaderboardComponent] Real-time connection lost');
+      logger.debug('[RealtimeLeaderboardComponent] Real-time connection lost');
       this.updateConnectionStatus(false);
     });
 
     this.realtime.on('error', (error) => {
-      console.error('[RealtimeLeaderboardComponent] Real-time error:', error);
+      logger.error('[RealtimeLeaderboardComponent] Real-time error:', error);
     });
   }
 

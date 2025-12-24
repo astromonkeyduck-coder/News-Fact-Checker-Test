@@ -3,6 +3,14 @@
  * Allows authenticated users to comment on articles
  */
 
+// vNext: Use logger utility (available via window.logger)
+const logger = typeof window !== 'undefined' && window.logger ? window.logger : {
+  log: (...args) => console.log(...args),
+  debug: (...args) => console.debug(...args),
+  warn: (...args) => console.warn(...args),
+  error: (...args) => console.error(...args)
+};
+
 class CommentSection {
   constructor(articleId) {
     this.articleId = articleId;
@@ -22,7 +30,7 @@ class CommentSection {
           this.user = await window.auth0.getUser();
         }
       } catch (err) {
-        console.log('[Comments] Could not check auth:', err);
+        logger.debug('[Comments] Could not check auth:', err);
       }
     }
     
@@ -39,30 +47,30 @@ class CommentSection {
         ? `http://localhost:8888/.netlify/functions/comments-api?articleId=${encodeURIComponent(this.articleId)}`
         : `/.netlify/functions/comments-api?articleId=${encodeURIComponent(this.articleId)}`;
       
-      console.log('[Comments] Loading comments from:', endpoint);
+      logger.debug('[Comments] Loading comments from:', endpoint);
       const response = await fetch(endpoint);
       
       if (response.ok) {
         const data = await response.json();
         this.comments = data.comments || [];
-        console.log('[Comments] Loaded', this.comments.length, 'comments from API');
+        logger.debug('[Comments] Loaded', this.comments.length, 'comments from API');
       } else {
         // If API fails, fall back to localStorage for backward compatibility
-        console.warn('[Comments] API load failed (status:', response.status, '), trying localStorage');
+        logger.warn('[Comments] API load failed (status:', response.status, '), trying localStorage');
         const saved = localStorage.getItem(this.commentKey);
         if (saved) {
           this.comments = JSON.parse(saved);
-          console.log('[Comments] Loaded', this.comments.length, 'comments from localStorage');
+          logger.debug('[Comments] Loaded', this.comments.length, 'comments from localStorage');
         }
       }
     } catch (err) {
-      console.error('[Comments] Error loading comments:', err);
+      logger.error('[Comments] Error loading comments:', err);
       // Fall back to localStorage
       try {
         const saved = localStorage.getItem(this.commentKey);
         if (saved) {
           this.comments = JSON.parse(saved);
-          console.log('[Comments] Loaded', this.comments.length, 'comments from localStorage (fallback)');
+          logger.debug('[Comments] Loaded', this.comments.length, 'comments from localStorage (fallback)');
         }
       } catch (localErr) {
         this.comments = [];
@@ -75,7 +83,7 @@ class CommentSection {
     try {
       localStorage.setItem(this.commentKey, JSON.stringify(this.comments));
     } catch (err) {
-      console.error('[Comments] Error saving to localStorage:', err);
+      logger.error('[Comments] Error saving to localStorage:', err);
     }
   }
   
@@ -97,7 +105,7 @@ class CommentSection {
         ? 'http://localhost:8888/.netlify/functions/comments-api'
         : '/.netlify/functions/comments-api';
       
-      console.log('[Comments] Posting comment to:', endpoint);
+      logger.debug('[Comments] Posting comment to:', endpoint);
       
       // Save to API (visible across all devices)
       const response = await fetch(endpoint, {
@@ -114,11 +122,11 @@ class CommentSection {
         }),
       });
       
-      console.log('[Comments] Response status:', response.status, response.statusText);
+      logger.debug('[Comments] Response status:', response.status, response.statusText);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('[Comments] Comment saved successfully:', data);
+        logger.debug('[Comments] Comment saved successfully:', data);
         // Add new comment to beginning of array
         this.comments.unshift(data.comment);
         // Also save to localStorage for backward compatibility
@@ -130,10 +138,10 @@ class CommentSection {
         try {
           errorData = await response.json();
           errorMessage = errorData.error || errorData.message || errorMessage;
-          console.error('[Comments] API error response:', errorData);
+          logger.error('[Comments] API error response:', errorData);
         } catch (parseErr) {
           const text = await response.text();
-          console.error('[Comments] API error (non-JSON):', text, 'Status:', response.status);
+          logger.error('[Comments] API error (non-JSON):', text, 'Status:', response.status);
           errorMessage = `Error ${response.status}: ${text || response.statusText || errorMessage}`;
         }
         
@@ -151,8 +159,8 @@ class CommentSection {
         }
       }
     } catch (err) {
-      console.error('[Comments] Network error posting comment:', err);
-      console.error('[Comments] Error details:', {
+      logger.error('[Comments] Network error posting comment:', err);
+      logger.error('[Comments] Error details:', {
         message: err.message,
         stack: err.stack,
         name: err.name
@@ -358,13 +366,13 @@ class CommentSection {
         this.saveComments();
         // Re-render
         this.render();
-        console.log(`[Comments] Deleted comment ${commentId}`);
+        logger.debug(`[Comments] Deleted comment ${commentId}`);
       } else {
         const error = await response.json();
         alert(error.error || 'Failed to delete comment. Please try again.');
       }
     } catch (err) {
-      console.error('[Comments] Error deleting comment:', err);
+      logger.error('[Comments] Error deleting comment:', err);
       // Fallback: delete from local array only
       this.comments.splice(commentIndex, 1);
       this.saveComments();
@@ -429,7 +437,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   if (container && container.offsetParent !== null) {
                     section.render();
                   }
-                }).catch(err => console.log('[Comments] Could not update user:', err));
+                }).catch(err => logger.debug('[Comments] Could not update user:', err));
               }
             });
           }

@@ -62,16 +62,32 @@ function loadGameEmbed(section) {
  */
 function showMobileGameButton(section, gameType) {
   const gameUrl = gameType === 'fact-checker' ? '/game.html' : '/geography-game.html';
+  const gameName = gameType === 'fact-checker' ? 'Fact Checker' : 'Geography';
   
-  section.innerHTML = `
-    <div class="mobile-game-prompt" style="padding: 40px 20px; text-align: center;">
-      <h3 style="color: white; margin-bottom: 16px;">Play ${gameType === 'fact-checker' ? 'Fact Checker' : 'Geography'} Game</h3>
-      <p style="color: rgba(255,255,255,0.7); margin-bottom: 24px;">For the best experience, open this game in full screen</p>
-      <a href="${gameUrl}" style="display: inline-block; padding: 12px 24px; background: rgba(74, 144, 226, 0.2); border: 1px solid rgba(74, 144, 226, 0.4); color: #4A90E2; border-radius: 6px; text-decoration: none; font-weight: 600;">
-        Open Game
-      </a>
-    </div>
-  `;
+  // vNext: Use DOM creation instead of innerHTML for security
+  section.innerHTML = ''; // Clear first
+  
+  const promptDiv = document.createElement('div');
+  promptDiv.className = 'mobile-game-prompt';
+  promptDiv.style.cssText = 'padding: 40px 20px; text-align: center;';
+  
+  const h3 = document.createElement('h3');
+  h3.textContent = `Play ${gameName} Game`;
+  h3.style.cssText = 'color: white; margin-bottom: 16px;';
+  promptDiv.appendChild(h3);
+  
+  const p = document.createElement('p');
+  p.textContent = 'For the best experience, open this game in full screen';
+  p.style.cssText = 'color: rgba(255,255,255,0.7); margin-bottom: 24px;';
+  promptDiv.appendChild(p);
+  
+  const link = document.createElement('a');
+  link.href = gameUrl;
+  link.textContent = 'Open Game';
+  link.style.cssText = 'display: inline-block; padding: 12px 24px; background: rgba(74, 144, 226, 0.2); border: 1px solid rgba(74, 144, 226, 0.4); color: #4A90E2; border-radius: 6px; text-decoration: none; font-weight: 600;';
+  promptDiv.appendChild(link);
+  
+  section.appendChild(promptDiv);
 }
 
 export default { initGames };

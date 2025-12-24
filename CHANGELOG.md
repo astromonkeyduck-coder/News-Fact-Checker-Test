@@ -38,19 +38,21 @@ Before deploying vNext, verify:
 - Improved modal sizing for mobile viewports
 
 ### Code Hygiene
-- Replaced all `console.log` with logger utility (disabled in production)
-- Removed localhost references from production code
-- Fixed HTML validity issues (duplicate tags, nesting)
+- Logger utility ready for console.log replacement (disabled in production)
+- ⚠️ Console.log replacement pending (3,929 instances - utilities ready)
+- ⚠️ Localhost references cleanup pending (28 files)
+- ⚠️ HTML validity check pending
 - Improved error handling with user-safe fallbacks
 - Added retry logic for Country Spotlight with localStorage caching
-- Removed debug code from production builds
+- Performance timing logs added (time-to-first-interaction, module timing)
 
 ### Reliability + Security
-- Audited and sanitized all `innerHTML` usage
+- Sanitized critical `innerHTML` usage (initFeeds, initGames, initSpotlight, comments)
 - Added input validation and sanitization
-- Implemented rate limiting for tip submission
+- Implemented rate limiting for tip submission (3 per 15 min per IP)
 - Fixed XSS vulnerabilities in user-generated content
-- Improved error boundaries
+- HTML sanitization utilities created
+- ⚠️ Remaining innerHTML audit pending (361 instances - utilities ready)
 
 ### UX Polish
 - Collapsed secondary sections into accordions on mobile

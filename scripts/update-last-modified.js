@@ -13,20 +13,22 @@ const indexHtmlPath = path.join(__dirname, '..', 'index.html');
 // Get current date in the format: "Month Day, Year"
 // Uses local timezone (system timezone) - Node.js Date methods already use local time
 function getFormattedDate() {
-  const now = new Date();
-  
+  return getFormattedDateForDate(new Date());
+}
+
+// Get formatted date for a specific Date object
+function getFormattedDateForDate(date) {
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
   
   // getMonth(), getDate() return LOCAL time values
-  const month = months[now.getMonth()];
-  const day = now.getDate();
-  const year = now.getFullYear();
+  const month = months[date.getMonth()];
+  const day = date.getDate();
+  const year = date.getFullYear();
   
   const formatted = `${month} ${day}, ${year}`;
-  console.log(`[Timestamp] Formatted: ${formatted}`);
   
   return formatted;
 }
@@ -61,17 +63,49 @@ try {
     fs.writeFileSync(indexHtmlPath, content, 'utf8');
     console.log(`✅ Updated Last Update timestamp to: ${getFormattedDate()}`);
   } else if (scheduledMaintenancePattern.test(content)) {
-    // If Scheduled Maintenance is found, don't update it (it has a specific date)
-    // Just update the app-version meta tag
+    // If Scheduled Maintenance is found, update it to one week from today
+    const oneWeekFromNow = new Date();
+    oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
+    const maintenanceDate = getFormattedDateForDate(oneWeekFromNow);
+    const newScheduledMaintenance = `Scheduled Maintenance: ${maintenanceDate}`;
+    content = content.replace(scheduledMaintenancePattern, newScheduledMaintenance);
+    
+    // Also update the title attribute
+    const titlePattern = /title="Scheduled Maintenance: [^"]+"/;
+    const newTitle = `title="Scheduled Maintenance: ${maintenanceDate}"`;
+    if (titlePattern.test(content)) {
+      content = content.replace(titlePattern, newTitle);
+    }
+    
+    // Also update the maintenance date in the overlay document (after the countdown)
+    const countdownSectionPattern = /(<div id="countdown"[^>]*>[^<]+<\/div>\s*<p style="font-size: 0\.8rem; margin-top: 6px; color: #555;">)[^<]+(<\/p>)/;
+    if (countdownSectionPattern.test(content)) {
+      content = content.replace(countdownSectionPattern, `$1${maintenanceDate}$2`);
+    }
+    
+    // Update the JavaScript date calculation to use current date as last push date
+    const lastPushDatePattern = /const lastPushDate = new Date\('[^']+'\);/;
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const hours = '19';
+    const minutes = '45';
+    const newLastPushDate = `const lastPushDate = new Date('${year}-${month}-${day}T${hours}:${minutes}:00-05:00'); // ${getFormattedDateForDate(today)} 7:45 PM EST`;
+    if (lastPushDatePattern.test(content)) {
+      content = content.replace(lastPushDatePattern, newLastPushDate);
+    }
+    
+    // Also update the app-version meta tag
     const versionMetaPattern = /<meta name="app-version" content="[^"]*">/;
     const newVersionMeta = `<meta name="app-version" content="${getFormattedDate()}">`;
     if (versionMetaPattern.test(content)) {
       content = content.replace(versionMetaPattern, newVersionMeta);
-      fs.writeFileSync(indexHtmlPath, content, 'utf8');
-      console.log(`✅ Found Scheduled Maintenance (not updating), updated app-version to: ${getFormattedDate()}`);
-    } else {
-      console.log('ℹ️  Found Scheduled Maintenance (not updating date)');
     }
+    
+    fs.writeFileSync(indexHtmlPath, content, 'utf8');
+    console.log(`✅ Updated Scheduled Maintenance to: ${maintenanceDate} (one week from today)`);
+    console.log(`✅ Updated last push date reference to: ${getFormattedDateForDate(today)}`);
   } else {
     console.warn('⚠️  Could not find "Last Update" or "Scheduled Maintenance" pattern in index.html');
     // Don't fail the build, just warn

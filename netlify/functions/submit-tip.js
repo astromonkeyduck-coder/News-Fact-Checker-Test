@@ -36,6 +36,77 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    // vNext: Rate limiting - IP-based rate limiting using Netlify Blobs (persists across invocations)
+    const getClientIP = (event) => {
+      return event.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+             event.headers['x-real-ip'] ||
+             event.requestContext?.identity?.sourceIp ||
+             'unknown';
+    };
+    
+    const clientIP = getClientIP(event);
+    
+    // Rate limiting using Netlify Blobs (persists across serverless function invocations)
+    // Allow 3 submissions per 15 minutes per IP
+    let rateLimitData = null;
+    const now = Date.now();
+    const rateLimitKey = `tip-rate-limit:${clientIP}`;
+    
+    // Try to use Netlify Blobs for persistent rate limiting
+    try {
+      if (process.env.NETLIFY_SITE_ID && process.env.NETLIFY_BLOB_READ_WRITE_TOKEN) {
+        const { getStore } = require("@netlify/blobs");
+        const rateLimitStore = getStore({
+          name: "rate-limits",
+          siteID: process.env.NETLIFY_SITE_ID,
+          token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+        });
+        
+        // Get existing rate limit data
+        const stored = await rateLimitStore.get(rateLimitKey);
+        if (stored) {
+          rateLimitData = JSON.parse(stored);
+        }
+        
+        // Initialize if missing or expired
+        if (!rateLimitData || now > rateLimitData.resetAt) {
+          rateLimitData = { count: 0, resetAt: now + 900000 }; // 15 min window
+        }
+        
+        // Check rate limit
+        if (rateLimitData.count >= 3) {
+          const resetIn = Math.ceil((rateLimitData.resetAt - now) / 1000);
+          return {
+            statusCode: 429,
+            headers: {
+              ...headers,
+              'Retry-After': resetIn.toString(),
+            },
+            body: JSON.stringify({
+              error: 'Rate limit exceeded',
+              message: `Too many tip submissions. Please try again in ${resetIn} second(s).`,
+              resetIn,
+            }),
+          };
+        }
+        
+        // Increment counter
+        rateLimitData.count++;
+        await rateLimitStore.set(rateLimitKey, JSON.stringify(rateLimitData), {
+          metadata: { resetAt: rateLimitData.resetAt },
+          expiry: Math.ceil((rateLimitData.resetAt - now) / 1000), // TTL in seconds
+        });
+      } else {
+        // Fallback: If Blobs not configured, log warning but allow request
+        // (Better to allow than block all requests if misconfigured)
+        console.warn('[Submit Tip] Rate limiting disabled: Netlify Blobs not configured');
+      }
+    } catch (rateLimitError) {
+      // If rate limiting fails, log but don't block the request
+      // (Better to allow than block all requests if there's an error)
+      console.error('[Submit Tip] Rate limiting error (allowing request):', rateLimitError);
+    }
+    
     // Check if API key is configured
     if (!process.env.RESEND_API_KEY) {
       console.error('RESEND_API_KEY is not set in environment variables');
@@ -95,9 +166,20 @@ exports.handler = async (event, context) => {
     const tipEmail = isAnonymous ? 'Anonymous submission' : (email || 'Not provided');
     const anonymityStatus = isAnonymous ? 'Yes - Anonymous' : 'No - Contact info provided';
     
+    // vNext: Sanitize tip content - strip HTML tags and escape
+    const sanitizeText = (text) => {
+      return String(text)
+        .replace(/<[^>]*>/g, '') // Strip HTML tags
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+    };
+    
     // Format tip content for email (escape HTML and handle newlines)
-    const tipContent = String(tip)
-      .replace(/&/g, '&amp;')
+    const tipContent = sanitizeText(tip)
+      .replace(/&amp;/g, '&amp;') // Re-escape after sanitization
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')

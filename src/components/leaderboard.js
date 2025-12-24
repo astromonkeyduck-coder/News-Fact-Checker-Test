@@ -53,10 +53,10 @@ class Leaderboard {
             } else {
                 // Container doesn't exist yet, will be created on render
                 // We'll initialize after render is called
-                console.log('[Leaderboard] Container not found yet, will initialize after render');
+                logger.debug('[Leaderboard] Container not found yet, will initialize after render');
             }
         } catch (error) {
-            console.log('[Leaderboard] Real-time updates not available:', error.message);
+            logger.debug('Real-time updates not available:', error.message);
             this.enableRealtime = false;
         }
     }
@@ -80,18 +80,18 @@ class Leaderboard {
 
     async loadScores(limit = 10) {
         try {
-            console.log(`[Leaderboard] Loading scores for ${this.gameType}, limit: ${limit}`);
+            logger.debug(`[Leaderboard] Loading scores for ${this.gameType}, limit: ${limit}`);
             const response = await fetch(`/.netlify/functions/leaderboard?gameType=${this.gameType}&limit=${limit}`);
             
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`[Leaderboard] Failed to load scores: ${response.status} ${response.statusText}`, errorText);
+                logger.error(`[Leaderboard] Failed to load scores: ${response.status} ${response.statusText}`, errorText);
                 this.scores = [];
                 return;
             }
             
                 const data = await response.json();
-            console.log(`[Leaderboard] Loaded ${data.scores?.length || 0} scores`, data);
+            logger.debug(`[Leaderboard] Loaded ${data.scores?.length || 0} scores`, data);
                 this.scores = data.scores || [];
                 
                 // Update real-time component if available
@@ -99,14 +99,14 @@ class Leaderboard {
                     this.realtimeComponent.updateLeaderboard(this.scores);
                 }
         } catch (error) {
-            console.error('[Leaderboard] Failed to load scores:', error);
+            logger.error('Failed to load scores:', error);
             this.scores = [];
         }
     }
 
     async submitScore(scoreData) {
         try {
-            console.log('[Leaderboard] Submitting score:', scoreData);
+            logger.debug('[Leaderboard] Submitting score:', scoreData);
             const response = await fetch('/.netlify/functions/leaderboard', {
                 method: 'POST',
                 headers: {
@@ -120,12 +120,12 @@ class Leaderboard {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`[Leaderboard] Failed to submit score: ${response.status} ${response.statusText}`, errorText);
+                logger.error(`[Leaderboard] Failed to submit score: ${response.status} ${response.statusText}`, errorText);
                 return false;
             }
 
             const result = await response.json();
-            console.log('[Leaderboard] Score submitted successfully:', result);
+            logger.debug('[Leaderboard] Score submitted successfully:', result);
                 await this.loadScores();
                 this.render();
                 
@@ -136,7 +136,7 @@ class Leaderboard {
                 
                 return true;
         } catch (error) {
-            console.error('[Leaderboard] Failed to submit score:', error);
+            logger.error('Failed to submit score:', error);
             return false;
         }
     }
@@ -272,13 +272,13 @@ class Leaderboard {
         // Ensure container exists - if not, render it first
         let container = document.getElementById('leaderboard-container');
         if (!container) {
-            console.log('[Leaderboard] Container not found, rendering first...');
+            logger.debug('[Leaderboard] Container not found, rendering first...');
             this.render();
             container = document.getElementById('leaderboard-container');
         }
         
         if (container) {
-            console.log('[Leaderboard] Showing leaderboard, scores:', this.scores.length);
+            logger.debug('[Leaderboard] Showing leaderboard, scores:', this.scores.length);
             container.style.display = 'flex';
             container.style.visibility = 'visible';
             container.style.opacity = '1';
@@ -289,11 +289,11 @@ class Leaderboard {
                 modal.style.display = 'block';
                 modal.style.visibility = 'visible';
             } else {
-                console.warn('[Leaderboard] Modal not found, re-rendering...');
+                logger.warn('[Leaderboard] Modal not found, re-rendering...');
                 this.render();
             }
         } else {
-            console.error('[Leaderboard] Container still not found after render!');
+            logger.error('[Leaderboard] Container still not found after render!');
         }
     }
 

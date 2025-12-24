@@ -8,20 +8,61 @@ import { logger } from '../../utils/logger.js';
 
 // Performance tracking
 const perfStart = performance.now();
+let firstInteractionTime = null;
+let modulesInitialized = {};
+
+/**
+ * Track time to first interaction
+ */
+function trackFirstInteraction() {
+  if (firstInteractionTime) return; // Already tracked
+  
+  firstInteractionTime = performance.now();
+  const tti = firstInteractionTime - perfStart;
+  logger.performance('Time to First Interaction (TTI)', tti);
+  
+  // Remove listeners after first interaction
+  ['click', 'keydown', 'touchstart'].forEach(event => {
+    document.removeEventListener(event, trackFirstInteraction, { once: true });
+  });
+}
 
 /**
  * Initialize core homepage functionality
  * Only critical features that block first paint
  */
 export function initCore() {
-  logger.performance('initCore', performance.now() - perfStart);
+  const coreTime = performance.now() - perfStart;
+  logger.performance('initCore', coreTime);
+  modulesInitialized.core = coreTime;
   
   // Critical: Start breaking news fetch immediately (already in HTML)
   // Critical: Initialize logger
   // Critical: Set up error boundaries
   
+  // Track first interaction
+  ['click', 'keydown', 'touchstart'].forEach(event => {
+    document.addEventListener(event, trackFirstInteraction, { once: true });
+  });
+  
   // Everything else is deferred
   logger.debug('Core initialization complete');
+}
+
+/**
+ * Track module initialization time
+ */
+export function trackModuleInit(moduleName) {
+  const time = performance.now() - perfStart;
+  modulesInitialized[moduleName] = time;
+  logger.performance(`${moduleName} initialized`, time);
+}
+
+/**
+ * Get all module initialization times (for debugging)
+ */
+export function getModuleTimings() {
+  return { ...modulesInitialized };
 }
 
 /**
@@ -47,6 +88,45 @@ export function deferInit(callback, delay = 0) {
   } else {
     setTimeout(callback, delay || 100);
   }
+}
+
+/**
+ * Initialize smooth scrolling with reduced motion support
+ */
+export function initSmoothScroll() {
+  // Check for reduced motion preference
+  if (prefersReducedMotion()) {
+    // Disable smooth scroll if user prefers reduced motion
+    document.documentElement.style.scrollBehavior = 'auto';
+    return;
+  }
+  
+  // Enable smooth scroll
+  if ('scrollBehavior' in document.documentElement.style) {
+    document.documentElement.style.scrollBehavior = 'smooth';
+  }
+  
+  // Handle anchor links
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      const href = this.getAttribute('href');
+      if (href === '#' || !href) return;
+      
+      const targetId = href.substring(1);
+      const targetElement = document.getElementById(targetId);
+      
+      if (targetElement) {
+        e.preventDefault();
+        const offset = 80; // Header height
+        const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - offset;
+        
+        window.scrollTo({
+          top: targetPosition,
+          behavior: prefersReducedMotion() ? 'auto' : 'smooth'
+        });
+      }
+    });
+  });
 }
 
 /**
