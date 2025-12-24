@@ -37,8 +37,8 @@
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script>
-        // Fix for Babel standalone: Define module/exports before Babel compiles
-        // This prevents "exports is not defined" errors
+        // Fix for Babel standalone: Define module/exports/require before Babel compiles
+        // This prevents "exports is not defined" and "require is not defined" errors
         (function() {
             const moduleObj = { exports: {} };
             Object.defineProperty(window, 'module', {
@@ -51,6 +51,22 @@
                 set: function(val) { moduleObj.exports = val; },
                 configurable: true
             });
+            // Polyfill require for Babel standalone (maps to global React/ReactDOM)
+            window.require = function(name) {
+                if (name === 'react') {
+                    if (typeof React === 'undefined') {
+                        throw new Error('React is not loaded yet');
+                    }
+                    return React;
+                }
+                if (name === 'react-dom') {
+                    if (typeof ReactDOM === 'undefined') {
+                        throw new Error('ReactDOM is not loaded yet');
+                    }
+                    return ReactDOM;
+                }
+                throw new Error('Module not found: ' + name);
+            };
         })();
     </script>
     

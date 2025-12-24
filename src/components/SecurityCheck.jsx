@@ -10,7 +10,8 @@
  *   />
  */
 
-import React, { useState, useEffect } from 'react';
+// Use global React (loaded from CDN) instead of import for Babel standalone compatibility
+const { useState, useEffect } = React;
 
 // Security config - will be loaded separately or defined inline
 // For Babel standalone, we'll use a default config and allow override via props

@@ -8213,68 +8213,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -8416,68 +8354,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -8619,68 +8495,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -8822,68 +8636,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -9025,68 +8777,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -9458,68 +9148,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -9661,68 +9289,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -9864,68 +9430,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -10067,68 +9571,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -10270,68 +9712,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -10703,68 +10083,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -10906,68 +10224,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -11109,68 +10365,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -11312,68 +10506,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -11515,68 +10647,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -11948,68 +11018,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -12151,68 +11159,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -12354,68 +11300,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -12557,68 +11441,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -12760,68 +11582,6 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = NoteworthyChat;
 }
 
-      };
-      
-      wrap.addEventListener('dragenter', addDragOver);
-      body.addEventListener('dragenter', addDragOver);
-      
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      body.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('Files')) {
-          wrap.classList.add('drag-over');
-          body.classList.add('drag-over');
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      
-      wrap.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the wrap
-        const rect = wrap.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          removeDragOver();
-        }
-      });
-      
-      body.addEventListener('dragleave', (e) => {
-        // Only remove drag-over if we're leaving the body
-        const rect = body.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
-        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-          // Check if we're still over the wrap
-          const wrapRect = wrap.getBoundingClientRect();
-          if (x < wrapRect.left || x > wrapRect.right || y < wrapRect.top || y > wrapRect.bottom) {
-            removeDragOver();
-          }
-        }
-      });
-      
-      wrap.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-      
-      body.addEventListener('drop', (e) => {
-        removeDragOver();
-        const files = e.dataTransfer.files;
-        if (files && files.length > 0) {
-          handleFiles(files);
-        }
-      });
-    }
-    
     function formatFileSize(bytes) {
       if (bytes === 0) return '0 Bytes';
       const k = 1024;
