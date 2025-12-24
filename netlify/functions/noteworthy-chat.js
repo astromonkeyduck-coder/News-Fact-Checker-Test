@@ -51,7 +51,9 @@ async function fetchRecentPosts(event, limit = 10) {
     // Fetch posts in parallel
     const postPromises = postIds.map(async (id) => {
       try {
-        const post = await store.get(id, { type: "json" });
+        // Posts are stored with key format: post-${id}.json
+        const postKey = `post-${id}.json`;
+        const post = await store.get(postKey, { type: "json" });
         return post;
       } catch (err) {
         console.error(`[Noteworthy Chat] Error fetching post ${id}:`, err);

@@ -887,31 +887,33 @@ class NoteworthyChat extends HTMLElement {
           border-color: rgba(255, 255, 255, 0.3);
         }
         
-        /* Premium Call UI - NW Logo + States + Audio Waves */
+        /* Premium Secure Briefing UI - Intel Dashboard Aesthetic */
         .voice-call-panel {
           position: fixed;
           right: 24px;
           top: 50%;
           transform: translateY(-50%);
-          width: 320px;
-          min-height: 400px;
+          width: 380px;
+          min-height: 480px;
           background: linear-gradient(135deg, 
-            rgba(15, 23, 42, 0.98) 0%, 
-            rgba(12, 19, 35, 0.95) 100%);
-          backdrop-filter: blur(24px) saturate(180%);
-          -webkit-backdrop-filter: blur(24px) saturate(180%);
-          border: 1.5px solid rgba(74, 144, 226, 0.3);
-          border-radius: 24px;
+            rgba(8, 12, 22, 0.95) 0%, 
+            rgba(5, 9, 18, 0.98) 50%,
+            rgba(8, 12, 22, 0.95) 100%);
+          backdrop-filter: blur(32px) saturate(180%);
+          -webkit-backdrop-filter: blur(32px) saturate(180%);
+          border: 1px solid rgba(74, 144, 226, 0.15);
+          border-radius: 28px;
           box-shadow: 
-            0 24px 64px rgba(0, 0, 0, 0.5),
-            0 8px 24px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            0 0 0 1px rgba(74, 144, 226, 0.2);
+            0 32px 80px rgba(0, 0, 0, 0.6),
+            0 12px 32px rgba(0, 0, 0, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(74, 144, 226, 0.1);
           z-index: 2147482999;
           display: none;
           flex-direction: column;
-          padding: 32px;
-          gap: 24px;
+          padding: 36px 32px;
+          gap: 32px;
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           opacity: 0;
           transform: translateY(-50%) translateX(20px) scale(0.95);
@@ -923,6 +925,342 @@ class NoteworthyChat extends HTMLElement {
           transform: translateY(-50%) translateX(0) scale(1);
         }
         
+        /* Header with title and status chip */
+        .voice-call-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 8px;
+        }
+        
+        .voice-call-title-group {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex: 1;
+        }
+        
+        .voice-call-title {
+          font-size: 18px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.95);
+          letter-spacing: -0.03em;
+          margin: 0;
+        }
+        
+        .voice-status-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 10px;
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.7);
+          transition: all 0.3s ease;
+        }
+        
+        .voice-status-chip.listening {
+          background: rgba(74, 144, 226, 0.15);
+          border-color: rgba(74, 144, 226, 0.3);
+          color: rgba(147, 197, 253, 0.9);
+        }
+        
+        .voice-status-chip.speaking {
+          background: rgba(212, 160, 23, 0.15);
+          border-color: rgba(212, 160, 23, 0.3);
+          color: rgba(252, 211, 77, 0.9);
+        }
+        
+        .voice-status-chip.processing {
+          background: rgba(255, 255, 255, 0.12);
+          border-color: rgba(255, 255, 255, 0.2);
+          color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .voice-status-chip.error {
+          background: rgba(220, 38, 38, 0.15);
+          border-color: rgba(220, 38, 38, 0.3);
+          color: rgba(248, 113, 113, 0.9);
+        }
+        
+        .status-chip-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: currentColor;
+          animation: statusPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes statusPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(0.9); }
+        }
+        
+        .status-chip-text {
+          font-size: 10px;
+        }
+        
+        /* Orb/Core Container */
+        .voice-orb-container {
+          position: relative;
+          width: 160px;
+          height: 160px;
+          margin: 0 auto 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        /* Outer ring with gradient */
+        .orb-outer-ring {
+          position: absolute;
+          width: 160px;
+          height: 160px;
+          border-radius: 50%;
+          border: 2px solid transparent;
+          background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(212, 160, 23, 0.2)) padding-box,
+                      linear-gradient(135deg, rgba(74, 144, 226, 0.4), rgba(212, 160, 23, 0.4)) border-box;
+          opacity: 0.6;
+          transition: all 0.4s ease;
+        }
+        
+        .voice-orb-container.listening .orb-outer-ring {
+          animation: orbRingPulse 2.5s ease-in-out infinite;
+          box-shadow: 0 0 24px rgba(74, 144, 226, 0.3);
+        }
+        
+        .voice-orb-container.speaking .orb-outer-ring {
+          box-shadow: 0 0 32px rgba(212, 160, 23, 0.4);
+        }
+        
+        @keyframes orbRingPulse {
+          0%, 100% { transform: scale(1); opacity: 0.6; }
+          50% { transform: scale(1.05); opacity: 0.8; }
+        }
+        
+        /* Waveform rings for speaking state */
+        .voice-waveform-rings {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 240px;
+          height: 240px;
+          z-index: 1;
+          pointer-events: none;
+        }
+        
+        .waveform-ring {
+          transform-origin: center;
+          transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        
+        /* Processing spinner ring */
+        .orb-processing-ring {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 180px;
+          height: 180px;
+          border-radius: 50%;
+          border: 2px dashed rgba(255, 255, 255, 0.3);
+          border-top-color: rgba(212, 160, 23, 0.6);
+          animation: processingRotate 2s linear infinite;
+          z-index: 1;
+        }
+        
+        @keyframes processingRotate {
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        /* Inner core with NW logo */
+        .orb-core {
+          position: relative;
+          width: 120px;
+          height: 120px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, 
+            rgba(212, 160, 23, 0.2) 0%, 
+            rgba(212, 160, 23, 0.1) 100%);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 2px solid rgba(212, 160, 23, 0.3);
+          box-shadow: 
+            0 8px 24px rgba(0, 0, 0, 0.4),
+            inset 0 2px 8px rgba(255, 255, 255, 0.1),
+            inset 0 -2px 8px rgba(0, 0, 0, 0.2),
+            0 0 0 1px rgba(212, 160, 23, 0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .voice-orb-container.listening .orb-core {
+          animation: orbBreathing 2.5s ease-in-out infinite;
+          box-shadow: 
+            0 8px 24px rgba(0, 0, 0, 0.4),
+            0 0 0 4px rgba(74, 144, 226, 0.3),
+            0 0 32px rgba(74, 144, 226, 0.4),
+            inset 0 2px 8px rgba(255, 255, 255, 0.1),
+            inset 0 -2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .voice-orb-container.speaking .orb-core {
+          box-shadow: 
+            0 8px 24px rgba(0, 0, 0, 0.4),
+            0 0 0 4px rgba(212, 160, 23, 0.4),
+            0 0 40px rgba(212, 160, 23, 0.5),
+            inset 0 2px 8px rgba(255, 255, 255, 0.15),
+            inset 0 -2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        @keyframes orbBreathing {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.02); }
+        }
+        
+        .orb-logo {
+          width: 80px;
+          height: 80px;
+          object-fit: contain;
+          filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+          z-index: 3;
+          position: relative;
+        }
+        
+        .orb-inner-glow {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          background: radial-gradient(circle at center, rgba(212, 160, 23, 0.2) 0%, transparent 70%);
+          z-index: 1;
+        }
+        
+        /* Listening halo */
+        .orb-listening-halo {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 200px;
+          height: 200px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(74, 144, 226, 0.15) 0%, transparent 70%);
+          animation: haloRipple 3s ease-in-out infinite;
+          z-index: 0;
+        }
+        
+        @keyframes haloRipple {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+          50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.3; }
+        }
+        
+        /* Status text group */
+        .voice-status-text-group {
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        
+        .voice-status-primary {
+          font-size: 17px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.95);
+          letter-spacing: -0.02em;
+          transition: color 0.3s ease;
+        }
+        
+        .voice-status-primary.listening {
+          color: rgba(147, 197, 253, 1);
+        }
+        
+        .voice-status-primary.speaking {
+          color: rgba(252, 211, 77, 1);
+        }
+        
+        .voice-status-primary.processing {
+          color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .voice-status-secondary {
+          font-size: 12px;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.5);
+          letter-spacing: 0.02em;
+        }
+        
+        /* Controls */
+        .voice-controls {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+          justify-content: center;
+          margin-top: auto;
+        }
+        
+        .voice-control-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 12px 20px;
+          border-radius: 14px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          background: rgba(255, 255, 255, 0.06);
+          color: rgba(255, 255, 255, 0.8);
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          min-height: 44px;
+        }
+        
+        .voice-control-btn svg {
+          width: 18px;
+          height: 18px;
+        }
+        
+        .voice-control-btn:hover {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(255, 255, 255, 0.2);
+          transform: translateY(-1px);
+        }
+        
+        .voice-control-btn:active {
+          transform: translateY(0) scale(0.98);
+        }
+        
+        .voice-control-btn:focus {
+          outline: 2px solid rgba(74, 144, 226, 0.5);
+          outline-offset: 2px;
+        }
+        
+        .voice-control-end {
+          background: rgba(220, 38, 38, 0.15);
+          border-color: rgba(220, 38, 38, 0.3);
+          color: rgba(248, 113, 113, 0.9);
+        }
+        
+        .voice-control-end:hover {
+          background: rgba(220, 38, 38, 0.25);
+          border-color: rgba(220, 38, 38, 0.5);
+          color: rgba(248, 113, 113, 1);
+        }
+        
         /* CRITICAL: Ensure End Call button is ALWAYS visible when panel is shown */
         .voice-call-panel.show #voiceCallEndBtn {
           display: flex !important;
@@ -930,238 +1268,55 @@ class NoteworthyChat extends HTMLElement {
           opacity: 1 !important;
         }
         
-        .voice-call-header {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 16px;
-        }
-        
-        /* Make End Call button always visible and prominent */
-        #voiceCallEndBtn {
-          position: relative;
-          width: 100%;
-          margin-top: 0;
-          margin-bottom: 24px;
-          z-index: 10;
-          display: flex !important;
-          visibility: visible !important;
-          opacity: 1 !important;
-        }
-        
-        .voice-call-title {
-          font-size: 14px;
-          font-weight: 700;
-          color: rgba(255, 255, 255, 0.9);
-          letter-spacing: -0.02em;
-        }
-        
-        .voice-call-end-btn {
-          min-width: 120px;
-          height: 48px;
-          padding: 0 20px;
-          border-radius: 16px;
-          border: 2px solid rgba(176, 0, 32, 0.6);
-          background: linear-gradient(135deg, rgba(176, 0, 32, 0.9) 0%, rgba(200, 0, 40, 0.85) 100%);
-          color: #fff;
-          font-size: 15px;
-          font-weight: 700;
-          line-height: 1;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          transition: all 0.2s;
-          box-shadow: 
-            0 4px 12px rgba(176, 0, 32, 0.4),
-            0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-          letter-spacing: 0.02em;
-        }
-        
-        .voice-call-end-btn::before {
-          content: '📞';
-          font-size: 18px;
-          display: inline-block;
-        }
-        
-        .voice-call-end-btn:hover {
-          background: linear-gradient(135deg, rgba(200, 0, 40, 1) 0%, rgba(220, 0, 50, 0.95) 100%);
-          border-color: rgba(220, 0, 50, 0.8);
-          color: #fff;
-          transform: translateY(-2px) scale(1.02);
-          box-shadow: 
-            0 6px 16px rgba(176, 0, 32, 0.5),
-            0 0 0 1px rgba(255, 255, 255, 0.15) inset;
-        }
-        
-        .voice-call-end-btn:active {
-          transform: translateY(0) scale(0.98);
-        }
-        
-        .voice-call-end-btn:focus {
-          outline: 3px solid rgba(176, 0, 32, 0.6);
-          outline-offset: 3px;
-        }
-        
-        .voice-logo-container {
-          position: relative;
-          width: 120px;
-          height: 120px;
-          margin: 0 auto 24px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        .voice-logo {
-          width: 120px;
-          height: 120px;
-          border-radius: 30px;
-          object-fit: contain;
-          background: linear-gradient(135deg, #D4A017 0%, #F4C430 100%);
-          padding: 8px;
-          box-shadow: 
-            0 8px 24px rgba(212, 160, 23, 0.4),
-            inset 0 2px 0 rgba(255, 255, 255, 0.3);
-          position: relative;
-          z-index: 2;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        /* Listening state - blue glow + breathing pulse */
-        .voice-logo-container.listening .voice-logo {
-          animation: logoBreathing 2s ease-in-out infinite;
-          box-shadow: 
-            0 8px 24px rgba(212, 160, 23, 0.4),
-            0 0 0 4px rgba(74, 144, 226, 0.3),
-            0 0 20px rgba(74, 144, 226, 0.4),
-            inset 0 2px 0 rgba(255, 255, 255, 0.3);
-        }
-        
-        @keyframes logoBreathing {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.03); }
-        }
-        
-        .voice-logo-container.listening::before {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 140px;
-          height: 140px;
-          border-radius: 50%;
-          border: 2px dashed rgba(74, 144, 226, 0.4);
-          animation: rotateRing 8s linear infinite;
-          z-index: 1;
-        }
-        
-        @keyframes rotateRing {
-          from { transform: translate(-50%, -50%) rotate(0deg); }
-          to { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-        
-        /* Speaking state - audio waves */
-        .voice-logo-container.speaking .voice-logo {
-          box-shadow: 
-            0 8px 24px rgba(212, 160, 23, 0.4),
-            0 0 0 4px rgba(74, 144, 226, 0.2),
-            inset 0 2px 0 rgba(255, 255, 255, 0.3);
-        }
-        
-        .voice-audio-waves {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 200px;
-          height: 200px;
-          z-index: 1;
-        }
-        
-        .wave-ring {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          border-radius: 50%;
-          border: 2px solid rgba(74, 144, 226, 0.6);
-          opacity: 0;
-          transition: opacity 0.1s ease;
-        }
-        
-        .wave-ring:nth-child(1) {
-          width: 140px;
-          height: 140px;
-          margin: -70px 0 0 -70px;
-        }
-        
-        .wave-ring:nth-child(2) {
-          width: 160px;
-          height: 160px;
-          margin: -80px 0 0 -80px;
-        }
-        
-        .wave-ring:nth-child(3) {
-          width: 180px;
-          height: 180px;
-          margin: -90px 0 0 -90px;
-        }
-        
-        .wave-ring:nth-child(4) {
-          width: 200px;
-          height: 200px;
-          margin: -100px 0 0 -100px;
-        }
-        
-        .voice-status-text-premium {
-          text-align: center;
-          font-size: 16px;
-          font-weight: 600;
-          color: rgba(255, 255, 255, 0.9);
-          letter-spacing: -0.02em;
-          transition: color 0.3s ease;
-        }
-        
-        .voice-status-text-premium.connecting {
-          color: rgba(74, 144, 226, 0.8);
-        }
-        
-        .voice-status-text-premium.listening {
-          color: rgba(74, 144, 226, 1);
-        }
-        
-        .voice-status-text-premium.speaking {
-          color: rgba(212, 160, 23, 1);
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+          .orb-outer-ring,
+          .orb-core,
+          .orb-listening-halo,
+          .orb-processing-ring,
+          .status-chip-dot {
+            animation: none !important;
+          }
+          
+          .voice-orb-container.listening .orb-core,
+          .voice-orb-container.speaking .orb-core {
+            animation: none !important;
+          }
         }
         
         @media (max-width: 768px) {
           .voice-call-panel {
             right: 12px;
             width: calc(100vw - 24px);
-            max-width: 320px;
-            min-height: 360px;
-            padding: 24px;
+            max-width: 360px;
+            min-height: 420px;
+            padding: 28px 24px;
+            gap: 28px;
           }
           
-          .voice-logo-container {
+          .voice-orb-container {
+            width: 140px;
+            height: 140px;
+            margin-bottom: 28px;
+          }
+          
+          .orb-core {
             width: 100px;
             height: 100px;
           }
           
-          .voice-logo {
-            width: 100px;
-            height: 100px;
-            font-size: 40px;
+          .orb-logo {
+            width: 70px;
+            height: 70px;
           }
           
-          .voice-call-end-btn {
-            min-width: 100%;
-            height: 52px;
-            font-size: 16px;
-            padding: 0 24px;
+          .voice-controls {
+            flex-direction: column;
+            gap: 10px;
+          }
+          
+          .voice-control-btn {
+            width: 100%;
           }
         }
         
@@ -2757,22 +2912,58 @@ class NoteworthyChat extends HTMLElement {
         <div class="resize-handle" aria-label="Resize chat" title="Drag to resize"></div>
       </div>
       
-      <!-- Premium Voice Call Panel - NW Logo + States + Audio Waves -->
-      <div class="voice-call-panel" id="voiceCallPanel">
+      <!-- Premium Secure Briefing Panel - Intel Dashboard Aesthetic -->
+      <div class="voice-call-panel" id="voiceCallPanel" role="dialog" aria-label="Secure Briefing" aria-modal="true">
         <div class="voice-call-header">
-          <div class="voice-call-title">Voice Call</div>
+          <div class="voice-call-title-group">
+            <h2 class="voice-call-title">Secure Briefing</h2>
+            <div class="voice-status-chip" id="voiceStatusChip" aria-live="polite">
+              <span class="status-chip-dot"></span>
+              <span class="status-chip-text">IDLE</span>
+            </div>
+          </div>
         </div>
-        <button class="voice-call-end-btn" id="voiceCallEndBtn" aria-label="End call">End Call</button>
-        <div class="voice-logo-container" id="voiceLogoContainer">
-          <img src="SantalogoEdited.png" alt="Noteworthy News" class="voice-logo" />
-          <svg class="voice-audio-waves" id="voiceAudioWaves" style="display: none;">
-            <circle class="wave-ring" cx="100" cy="100" r="70" fill="none" stroke="rgba(74, 144, 226, 0.6)" stroke-width="2" opacity="0"/>
-            <circle class="wave-ring" cx="100" cy="100" r="80" fill="none" stroke="rgba(74, 144, 226, 0.5)" stroke-width="2" opacity="0"/>
-            <circle class="wave-ring" cx="100" cy="100" r="90" fill="none" stroke="rgba(74, 144, 226, 0.4)" stroke-width="2" opacity="0"/>
-            <circle class="wave-ring" cx="100" cy="100" r="100" fill="none" stroke="rgba(74, 144, 226, 0.3)" stroke-width="2" opacity="0"/>
+        
+        <div class="voice-orb-container" id="voiceOrbContainer">
+          <!-- Outer ring with gradient -->
+          <div class="orb-outer-ring" id="orbOuterRing"></div>
+          <!-- Waveform rings for speaking state -->
+          <svg class="voice-waveform-rings" id="voiceWaveformRings" style="display: none;" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <circle class="waveform-ring" cx="100" cy="100" r="70" fill="none" stroke="rgba(212, 160, 23, 0.4)" stroke-width="1.5" opacity="0"/>
+            <circle class="waveform-ring" cx="100" cy="100" r="85" fill="none" stroke="rgba(212, 160, 23, 0.35)" stroke-width="1.5" opacity="0"/>
+            <circle class="waveform-ring" cx="100" cy="100" r="100" fill="none" stroke="rgba(212, 160, 23, 0.3)" stroke-width="1.5" opacity="0"/>
+            <circle class="waveform-ring" cx="100" cy="100" r="115" fill="none" stroke="rgba(212, 160, 23, 0.25)" stroke-width="1.5" opacity="0"/>
           </svg>
+          <!-- Processing spinner ring -->
+          <div class="orb-processing-ring" id="orbProcessingRing" style="display: none;"></div>
+          <!-- Inner core with NW logo -->
+          <div class="orb-core" id="orbCore">
+            <img src="SantalogoEdited.png" alt="Noteworthy News" class="orb-logo" id="orbLogo" />
+            <div class="orb-inner-glow"></div>
+          </div>
+          <!-- Listening halo -->
+          <div class="orb-listening-halo" id="orbListeningHalo" style="display: none;"></div>
         </div>
-        <div class="voice-status-text-premium" id="voiceStatusTextPremium">Ready</div>
+        
+        <div class="voice-status-text-group">
+          <div class="voice-status-primary" id="voiceStatusPrimary">Ready</div>
+          <div class="voice-status-secondary" id="voiceStatusSecondary">Secure link established</div>
+        </div>
+        
+        <div class="voice-controls">
+          <button class="voice-control-btn voice-control-mute" id="voiceControlMute" aria-label="Mute" title="Mute microphone" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </button>
+          <button class="voice-control-btn voice-control-end" id="voiceCallEndBtn" aria-label="End call">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16 8l-8 8M8 8l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>End Call</span>
+          </button>
+        </div>
       </div>
       
       <!-- Voice Call Sidebar - Shows images and essays during voice calls -->
