@@ -194,8 +194,22 @@ class VoiceAudioEngine {
         }
       };
       
-      // Schedule playback
-      source.start(actualStartTime);
+      // CRITICAL: Set global flag to allow this ONE playback call (bypasses AudioBufferSourceNode override)
+      // Use try-finally to ensure flag is always cleared, even if start() throws or multiple chunks run concurrently
+      if (typeof window !== 'undefined') {
+        window._allowAudioPlayback = true;
+      }
+      
+      try {
+        // Schedule playback (synchronous call)
+        source.start(actualStartTime);
+      } finally {
+        // Always clear flag, even if start() throws or if another chunk is processing
+        // This prevents race conditions with concurrent chunk processing
+        if (typeof window !== 'undefined') {
+          window._allowAudioPlayback = false;
+        }
+      }
       
       if (DEBUG_VOICE) {
         console.log(`[VoiceAudioEngine] 🔊 SCHEDULED chunk: startTime=${actualStartTime.toFixed(3)}, duration=${duration.toFixed(3)}, nextStartTime=${this.nextStartTime.toFixed(3)}, gen=${gen}, responseId=${responseId}`);

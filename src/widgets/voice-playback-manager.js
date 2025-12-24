@@ -464,15 +464,19 @@ class VoicePlaybackManager {
         // Start playback
         try {
           // CRITICAL: Set global flag to allow this ONE playback call
+          // Use try-finally to ensure flag is always cleared, even if start() throws or multiple chunks run concurrently
           if (typeof window !== 'undefined') {
             window._allowAudioPlayback = true;
           }
           
-          source.start(0);
-          
-          // Clear flag immediately after start
-          if (typeof window !== 'undefined') {
-            window._allowAudioPlayback = false;
+          try {
+            source.start(0);
+          } finally {
+            // Always clear flag, even if start() throws or if another chunk is processing
+            // This prevents race conditions with concurrent chunk processing
+            if (typeof window !== 'undefined') {
+              window._allowAudioPlayback = false;
+            }
           }
           
           if (DEBUG_VOICE && !this._isCancelled(generation)) {

@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="app-version" content="December 21, 2025">
+    <meta name="app-version" content="December 23, 2025">
     <title>Noteworthy News - Fact-Checked Journalism & Media Literacy Games | Trusted News Source</title>
+    
+    <!-- vNext: Mobile Responsiveness Fixes -->
+    <link rel="stylesheet" href="src/styles/mobile-fixes.css">
     
     <!-- Favicon and Theme -->
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
@@ -19213,6 +19216,15 @@
                 initNoCutoffGuard();
             }
         })();
+    </script>
+    
+    <!-- vNext: Modular Homepage Initialization -->
+    <script type="module">
+        // Import modular homepage initialization
+        import { initHomepage } from './src/js/homepage/index.js';
+        
+        // Initialize homepage with deferred loading
+        initHomepage();
     </script>
     
 </body>

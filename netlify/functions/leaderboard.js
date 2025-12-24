@@ -203,6 +203,23 @@ exports.handler = async (event, context) => {
         // Don't fail the request if logging fails
       });
 
+      // Broadcast score update for real-time leaderboard (non-blocking)
+      try {
+        const { broadcastScoreUpdate } = require("./leaderboard-broadcast");
+        broadcastScoreUpdate(gameType, {
+          userId: finalUserId,
+          userName: filteredUserName,
+          score: newScore.score,
+          ...newScore
+        }).catch(err => {
+          console.error("[Leaderboard] Failed to broadcast score update:", err);
+          // Don't fail the request if broadcast fails
+        });
+      } catch (error) {
+        // Broadcast module not available or Redis not configured - graceful degradation
+        console.log("[Leaderboard] Real-time broadcast not available (this is OK)");
+      }
+
       return {
         statusCode: 200,
         headers,

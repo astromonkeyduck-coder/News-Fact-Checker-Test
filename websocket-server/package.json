@@ -1,0 +1,28 @@
+{
+  "name": "noteworthy-multiplayer-websocket",
+  "version": "1.0.0",
+  "description": "WebSocket server for Noteworthy News multiplayer games",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "ioredis": "^5.3.2",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "websocket",
+    "multiplayer",
+    "game"
+  ],
+  "author": "Noteworthy News",
+  "license": "MIT"
+}
+

@@ -1450,7 +1450,7 @@
                 <span class="security-badge">SYSTEM ACCESS REQUIRED</span>
             </div>
             <form onsubmit="event.preventDefault(); checkPassword(); return false;">
-                <input type="password" id="adminPassword" class="login-input" placeholder="Newsletter Key" onkeypress="if(event.key==='Enter') { event.preventDefault(); checkPassword(); }">
+                <input type="password" id="adminPassword" class="login-input" placeholder="Newsletter Key" autocomplete="new-password" onkeypress="if(event.key==='Enter') { event.preventDefault(); checkPassword(); }">
             </form>
             <button class="login-btn" id="authenticateBtn" onclick="checkPassword()">Authenticate</button>
             <p id="loginError" class="login-error"></p>

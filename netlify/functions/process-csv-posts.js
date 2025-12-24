@@ -225,31 +225,54 @@ exports.handler = async (event) => {
   try {
     // Parse CSV from request body
     let csvText = null;
+    const contentType = event.headers['content-type'] || event.headers['Content-Type'] || '';
     
-    if (event.isBase64Encoded && event.body) {
-      // Try to decode base64
-      try {
-        const decoded = Buffer.from(event.body, 'base64').toString('utf-8');
-        // Check if it's multipart form data
-        const boundary = event.headers['content-type']?.match(/boundary=(.+)/)?.[1];
-        if (boundary) {
-          const parts = decoded.split(`--${boundary}`);
-          for (const part of parts) {
-            if (part.includes('Content-Disposition: form-data') && part.includes('name="csv"')) {
-              const csvMatch = part.match(/\r\n\r\n([\s\S]+?)\r\n--/);
-              if (csvMatch) {
-                csvText = csvMatch[1].trim();
-              }
+    // Handle multipart/form-data (FormData uploads)
+    if (contentType.includes('multipart/form-data')) {
+      const boundaryMatch = contentType.match(/boundary=(.+)/);
+      if (boundaryMatch) {
+        const boundary = boundaryMatch[1].trim();
+        let bodyText = event.body;
+        
+        // Decode if base64 encoded
+        if (event.isBase64Encoded && bodyText) {
+          try {
+            bodyText = Buffer.from(bodyText, 'base64').toString('utf-8');
+          } catch (e) {
+            return {
+              statusCode: 400,
+              headers,
+              body: JSON.stringify({ error: "Failed to decode base64 body", details: e.message }),
+            };
+          }
+        }
+        
+        // Split by boundary
+        const parts = bodyText.split(`--${boundary}`);
+        for (const part of parts) {
+          // Look for the CSV field
+          if (part.includes('Content-Disposition') && (part.includes('name="csv"') || part.includes("name='csv'"))) {
+            // Extract content after headers (look for double CRLF or double LF)
+            const contentMatch = part.match(/(?:\r\n\r\n|\n\n)([\s\S]+?)(?:\r\n--|\n--|$)/);
+            if (contentMatch) {
+              csvText = contentMatch[1].trim();
+              // Remove trailing boundary markers if present
+              csvText = csvText.replace(/--\s*$/, '').trim();
+              break;
             }
           }
-        } else {
-          csvText = decoded;
         }
+      }
+    } else if (event.isBase64Encoded && event.body) {
+      // Try to decode base64 (non-multipart)
+      try {
+        const decoded = Buffer.from(event.body, 'base64').toString('utf-8');
+        csvText = decoded;
       } catch (e) {
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: "Failed to decode CSV file" }),
+          body: JSON.stringify({ error: "Failed to decode CSV file", details: e.message }),
         };
       }
     } else if (event.body) {
@@ -258,15 +281,19 @@ exports.handler = async (event) => {
         const body = JSON.parse(event.body);
         csvText = body.csv || body.content || event.body;
       } catch (e) {
+        // If not JSON, treat as plain text CSV
         csvText = event.body;
       }
     }
 
-    if (!csvText) {
+    if (!csvText || csvText.trim() === '') {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: "No CSV data provided" }),
+        body: JSON.stringify({ 
+          error: "No CSV data provided",
+          details: `Content-Type: ${contentType}, Body length: ${event.body?.length || 0}, Base64: ${event.isBase64Encoded}`
+        }),
       };
     }
 
@@ -345,6 +372,7 @@ exports.handler = async (event) => {
     };
   }
 };
+
 
 
 

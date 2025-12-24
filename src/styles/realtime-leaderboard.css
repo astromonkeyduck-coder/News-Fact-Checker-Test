@@ -1,0 +1,337 @@
+/**
+ * Real-Time Leaderboard Styles
+ * Newsroom aesthetic - clean, fast, credible
+ * Mission: Signal over noise, credibility at speed
+ */
+
+/* Leaderboard Container */
+.leaderboard-realtime {
+  background: rgba(15, 15, 35, 0.6);
+  border: 1px solid rgba(74, 144, 226, 0.2);
+  border-radius: 8px;
+  padding: 20px;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Header */
+.leaderboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(74, 144, 226, 0.2);
+}
+
+.leaderboard-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.leaderboard-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.875rem;
+}
+
+/* Presence Indicator */
+.presence-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.presence-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #2ecc71;
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.presence-dot::before {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #2ecc71;
+  border-radius: 50%;
+  opacity: 0.5;
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.active-users {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+/* Real-time Badge */
+.realtime-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(74, 144, 226, 0.1);
+  border: 1px solid rgba(74, 144, 226, 0.2);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.realtime-badge.connected {
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(74, 144, 226, 0.4);
+  background: rgba(74, 144, 226, 0.15);
+}
+
+.realtime-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.realtime-badge.connected .realtime-dot {
+  background: #2ecc71;
+  animation: pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 4px rgba(46, 204, 113, 0.5);
+}
+
+/* Leaderboard List */
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.leaderboard-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.leaderboard-list::-webkit-scrollbar-track {
+  background: rgba(74, 144, 226, 0.1);
+  border-radius: 3px;
+}
+
+.leaderboard-list::-webkit-scrollbar-thumb {
+  background: rgba(74, 144, 226, 0.4);
+  border-radius: 3px;
+}
+
+.leaderboard-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 144, 226, 0.6);
+}
+
+/* Leaderboard Item */
+.leaderboard-item {
+  display: grid;
+  grid-template-columns: 40px 1fr auto 120px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  background: rgba(74, 144, 226, 0.05);
+  border: 1px solid rgba(74, 144, 226, 0.1);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.leaderboard-item:hover {
+  background: rgba(74, 144, 226, 0.1);
+  border-color: rgba(74, 144, 226, 0.3);
+  transform: translateX(2px);
+}
+
+.leaderboard-item.current-user {
+  background: rgba(74, 144, 226, 0.15);
+  border-color: #4A90E2;
+  box-shadow: 0 0 10px rgba(74, 144, 226, 0.2);
+}
+
+/* Rank */
+.leaderboard-item .rank {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #4A90E2;
+  text-align: center;
+  min-width: 40px;
+}
+
+.leaderboard-item.current-user .rank {
+  color: #6BB3FF;
+}
+
+/* Name */
+.leaderboard-item .name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: white;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Presence Badge */
+.presence-badge {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #2ecc71;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: pulse 2s ease-in-out infinite;
+  margin-left: 6px;
+  box-shadow: 0 0 4px rgba(46, 204, 113, 0.4);
+}
+
+.presence-badge.active {
+  background: #2ecc71;
+}
+
+.presence-badge:not(.active) {
+  display: none;
+}
+
+/* Score */
+.leaderboard-item .score {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #4A90E2;
+  text-align: right;
+  min-width: 80px;
+}
+
+.leaderboard-item.current-user .score {
+  color: #6BB3FF;
+}
+
+/* Metrics */
+.leaderboard-item .metrics {
+  display: flex;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(74, 144, 226, 0.1);
+}
+
+.metric {
+  padding: 2px 6px;
+  background: rgba(74, 144, 226, 0.1);
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.metric.accuracy {
+  color: #2ecc71;
+}
+
+.metric.speed {
+  color: #4A90E2;
+}
+
+/* Empty State */
+.leaderboard-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .leaderboard-realtime {
+    padding: 16px;
+  }
+  
+  .leaderboard-item {
+    grid-template-columns: 35px 1fr auto;
+    gap: 8px;
+  }
+  
+  .leaderboard-item .metrics {
+    grid-column: 1 / -1;
+  }
+  
+  .leaderboard-item .score {
+    font-size: 1rem;
+    min-width: 70px;
+  }
+  
+  .leaderboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .leaderboard-meta {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Animation for new entries */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.leaderboard-item {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Top three styling (if needed) */
+.leaderboard-item.top-three {
+  background: rgba(255, 215, 0, 0.1);
+  border-color: rgba(255, 215, 0, 0.3);
+}
+
+.leaderboard-item.top-three .rank {
+  color: #FFD700;
+}
+

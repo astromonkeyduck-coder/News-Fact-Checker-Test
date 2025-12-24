@@ -11,11 +11,12 @@
  *   logger.warn('Deprecated API used');
  */
 
+// vNext: Production detection - only dev on localhost/netlify preview
 const isDevelopment = 
   typeof window !== 'undefined' && 
   (window.location.hostname === 'localhost' || 
    window.location.hostname === '127.0.0.1' ||
-   window.location.hostname.includes('.netlify.app'));
+   (window.location.hostname.includes('.netlify.app') && !window.location.hostname.includes('noteworthynews.co')));
 
 const isProduction = !isDevelopment;
 

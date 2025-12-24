@@ -926,8 +926,17 @@ class NoteworthyChat extends HTMLElement {
         .voice-call-header {
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          margin-bottom: 8px;
+          justify-content: center;
+          margin-bottom: 16px;
+        }
+        
+        /* Make End Call button always visible and prominent */
+        #voiceCallEndBtn {
+          position: relative;
+          width: 100%;
+          margin-top: auto;
+          margin-bottom: 0;
+          z-index: 10;
         }
         
         .voice-call-title {
@@ -938,32 +947,51 @@ class NoteworthyChat extends HTMLElement {
         }
         
         .voice-call-end-btn {
-          width: 36px;
-          height: 36px;
-          border-radius: 12px;
-          border: 1.5px solid rgba(255, 255, 255, 0.2);
-          background: rgba(255, 255, 255, 0.1);
-          color: rgba(255, 255, 255, 0.9);
-          font-size: 20px;
+          min-width: 120px;
+          height: 48px;
+          padding: 0 20px;
+          border-radius: 16px;
+          border: 2px solid rgba(176, 0, 32, 0.6);
+          background: linear-gradient(135deg, rgba(176, 0, 32, 0.9) 0%, rgba(200, 0, 40, 0.85) 100%);
+          color: #fff;
+          font-size: 15px;
+          font-weight: 700;
           line-height: 1;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
+          gap: 8px;
           transition: all 0.2s;
-          font-weight: 700;
+          box-shadow: 
+            0 4px 12px rgba(176, 0, 32, 0.4),
+            0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+          letter-spacing: 0.02em;
+        }
+        
+        .voice-call-end-btn::before {
+          content: '📞';
+          font-size: 18px;
+          display: inline-block;
         }
         
         .voice-call-end-btn:hover {
-          background: rgba(176, 0, 32, 0.3);
-          border-color: rgba(176, 0, 32, 0.5);
+          background: linear-gradient(135deg, rgba(200, 0, 40, 1) 0%, rgba(220, 0, 50, 0.95) 100%);
+          border-color: rgba(220, 0, 50, 0.8);
           color: #fff;
-          transform: scale(1.1);
+          transform: translateY(-2px) scale(1.02);
+          box-shadow: 
+            0 6px 16px rgba(176, 0, 32, 0.5),
+            0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+        }
+        
+        .voice-call-end-btn:active {
+          transform: translateY(0) scale(0.98);
         }
         
         .voice-call-end-btn:focus {
-          outline: 2px solid rgba(176, 0, 32, 0.5);
-          outline-offset: 2px;
+          outline: 3px solid rgba(176, 0, 32, 0.6);
+          outline-offset: 3px;
         }
         
         .voice-logo-container {
@@ -1120,6 +1148,13 @@ class NoteworthyChat extends HTMLElement {
             width: 100px;
             height: 100px;
             font-size: 40px;
+          }
+          
+          .voice-call-end-btn {
+            min-width: 100%;
+            height: 52px;
+            font-size: 16px;
+            padding: 0 24px;
           }
         }
         
@@ -2707,8 +2742,8 @@ class NoteworthyChat extends HTMLElement {
       <div class="voice-call-panel" id="voiceCallPanel">
         <div class="voice-call-header">
           <div class="voice-call-title">Voice Call</div>
-          <button class="voice-call-end-btn" id="voiceCallEndBtn" aria-label="End call">×</button>
         </div>
+        <button class="voice-call-end-btn" id="voiceCallEndBtn" aria-label="End call">End Call</button>
         <div class="voice-logo-container" id="voiceLogoContainer">
           <div class="voice-logo">NW</div>
           <svg class="voice-audio-waves" id="voiceAudioWaves" style="display: none;">
@@ -4973,12 +5008,20 @@ class NoteworthyChat extends HTMLElement {
       const logoContainer = root.querySelector('#voiceLogoContainer');
       const statusText = root.querySelector('#voiceStatusTextPremium');
       const audioWaves = root.querySelector('#voiceAudioWaves');
+      const voiceCallEndBtn = root.querySelector('#voiceCallEndBtn');
       
       if (!logoContainer || !statusText) {
         if (DEBUG_VOICE) {
           console.warn('[Voice Mode] ⚠️ Premium call UI elements not found');
         }
         return;
+      }
+      
+      // CRITICAL: Always ensure End Call button is visible during active states
+      if (voiceCallEndBtn && (state === 'connecting' || state === 'listening' || state === 'speaking')) {
+        voiceCallEndBtn.style.display = 'flex';
+        voiceCallEndBtn.style.visibility = 'visible';
+        voiceCallEndBtn.style.opacity = '1';
       }
       
       // Remove all state classes
@@ -5196,10 +5239,20 @@ class NoteworthyChat extends HTMLElement {
         
         // Show premium call panel
         const voiceCallPanel = root.querySelector('#voiceCallPanel');
+        const voiceCallEndBtn = root.querySelector('#voiceCallEndBtn');
         if (voiceCallPanel) {
           voiceCallPanel.classList.add('show');
           if (DEBUG_VOICE) {
             console.log('[Voice Mode] ✅ Premium call panel shown');
+          }
+        }
+        // CRITICAL: Ensure End Call button is always visible during voice calls
+        if (voiceCallEndBtn) {
+          voiceCallEndBtn.style.display = 'flex';
+          voiceCallEndBtn.style.visibility = 'visible';
+          voiceCallEndBtn.style.opacity = '1';
+          if (DEBUG_VOICE) {
+            console.log('[Voice Mode] ✅ End Call button made visible');
           }
         }
         
@@ -7386,6 +7439,18 @@ class NoteworthyChat extends HTMLElement {
                 // Extract response ID from message if present, otherwise use current active
                 const chunkResponseId = message.response_id || activeResponseId;
                 
+                // CRITICAL: If activeGen/activeResponseId aren't set yet (response.created not received),
+                // initialize them now to prevent chunk discarding
+                if (activeGen === 0 && !activeResponseId) {
+                  activeGen = 1;
+                  activeResponseId = chunkResponseId || `response_${Date.now()}`;
+                  if (DEBUG_VOICE) {
+                    console.log(`[Voice Mode] ⚠️ Auto-initialized gen/responseId from first audio chunk: gen=${activeGen}, responseId=${activeResponseId}`);
+                  }
+                  // Reset audio engine with the new gen/responseId
+                  voiceAudioEngine.reset(activeGen, activeResponseId);
+                }
+                
                 // Decode base64 to PCM Float32Array
                 try {
                   const binaryString = atob(message.delta);
@@ -7402,10 +7467,10 @@ class NoteworthyChat extends HTMLElement {
                   }
                   
                   // Push to audio engine (will be discarded if gen/response_id mismatch)
-                  voiceAudioEngine.pushPcmChunk(float32, activeGen, chunkResponseId);
+                  voiceAudioEngine.pushPcmChunk(float32, activeGen, chunkResponseId || activeResponseId);
                   
                   if (DEBUG_VOICE) {
-                    console.log(`[Voice Mode] ✅ Chunk pushed to engine: gen=${activeGen}, responseId=${chunkResponseId}, samples=${float32.length}`);
+                    console.log(`[Voice Mode] ✅ Chunk pushed to engine: gen=${activeGen}, responseId=${chunkResponseId || activeResponseId}, samples=${float32.length}`);
                   }
                 } catch (error) {
                   console.error('[Voice Mode] ❌ Error decoding audio delta:', error);

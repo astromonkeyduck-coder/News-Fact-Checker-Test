@@ -195,39 +195,95 @@ class CommentSection {
     const userName = this.user ? (this.user.name || this.user.nickname || this.user.email?.split('@')[0]) : '';
     const userId = this.user ? (this.user.sub || this.user.email) : '';
     
-    container.innerHTML = `
-      <div class="comments-header">
-        <h3>Comments (${this.comments.length})</h3>
-      </div>
-      
-      <form class="comment-form" onsubmit="event.preventDefault(); window.commentSections['${this.articleId}'].submitComment(this);">
-        <textarea 
-          class="comment-input" 
-          placeholder="Share your thoughts..." 
-          required 
-          minlength="3"
-          rows="3"
-          data-preserve-on-render="true">${this.escapeHtml(preservedText)}</textarea>
-        <button type="submit" class="comment-submit-btn">Post Comment</button>
-      </form>
-      
-      <div class="comments-list">
-        ${this.comments.length === 0 ? '<p class="no-comments">No comments yet. Be the first to comment!</p>' : ''}
-        ${this.comments.map(comment => {
-          const isOwnComment = isAuthenticated && userId && (comment.authorId === userId || comment.authorEmail === this.user?.email);
-          return `
-          <div class="comment-item" data-comment-id="${comment.id}">
-            <div class="comment-author">
-              <strong>${this.escapeHtml(comment.author)}</strong>
-              <span class="comment-date">${comment.date}</span>
-              ${isOwnComment ? `<button class="comment-delete-btn" onclick="window.commentSections['${this.articleId}'].deleteComment('${comment.id}')" title="Delete your comment" aria-label="Delete comment">🗑️</button>` : ''}
-            </div>
-            <div class="comment-text">${this.escapeHtml(comment.text)}</div>
-          </div>
-        `;
-        }).join('')}
-      </div>
-    `;
+    // vNext: Use DOM creation instead of innerHTML for security
+    container.innerHTML = ''; // Clear first
+    
+    // Create header
+    const header = document.createElement('div');
+    header.className = 'comments-header';
+    const headerTitle = document.createElement('h3');
+    headerTitle.textContent = `Comments (${this.comments.length})`;
+    header.appendChild(headerTitle);
+    container.appendChild(header);
+    
+    // Create form
+    const form = document.createElement('form');
+    form.className = 'comment-form';
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      this.submitComment(form);
+    };
+    
+    const textarea = document.createElement('textarea');
+    textarea.className = 'comment-input';
+    textarea.placeholder = 'Share your thoughts...';
+    textarea.required = true;
+    textarea.minLength = 3;
+    textarea.rows = 3;
+    textarea.setAttribute('data-preserve-on-render', 'true');
+    if (preservedText) {
+      textarea.value = preservedText;
+    }
+    form.appendChild(textarea);
+    
+    const submitBtn = document.createElement('button');
+    submitBtn.type = 'submit';
+    submitBtn.className = 'comment-submit-btn';
+    submitBtn.textContent = 'Post Comment';
+    form.appendChild(submitBtn);
+    container.appendChild(form);
+    
+    // Create comments list
+    const commentsList = document.createElement('div');
+    commentsList.className = 'comments-list';
+    
+    if (this.comments.length === 0) {
+      const noComments = document.createElement('p');
+      noComments.className = 'no-comments';
+      noComments.textContent = 'No comments yet. Be the first to comment!';
+      commentsList.appendChild(noComments);
+    } else {
+      this.comments.forEach(comment => {
+        const isOwnComment = isAuthenticated && userId && (comment.authorId === userId || comment.authorEmail === this.user?.email);
+        
+        const commentItem = document.createElement('div');
+        commentItem.className = 'comment-item';
+        commentItem.setAttribute('data-comment-id', comment.id);
+        
+        const authorDiv = document.createElement('div');
+        authorDiv.className = 'comment-author';
+        
+        const authorStrong = document.createElement('strong');
+        authorStrong.textContent = this.escapeHtml(comment.author);
+        authorDiv.appendChild(authorStrong);
+        
+        const dateSpan = document.createElement('span');
+        dateSpan.className = 'comment-date';
+        dateSpan.textContent = comment.date;
+        authorDiv.appendChild(dateSpan);
+        
+        if (isOwnComment) {
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'comment-delete-btn';
+          deleteBtn.title = 'Delete your comment';
+          deleteBtn.setAttribute('aria-label', 'Delete comment');
+          deleteBtn.textContent = '🗑️';
+          deleteBtn.onclick = () => this.deleteComment(comment.id);
+          authorDiv.appendChild(deleteBtn);
+        }
+        
+        commentItem.appendChild(authorDiv);
+        
+        const textDiv = document.createElement('div');
+        textDiv.className = 'comment-text';
+        textDiv.textContent = this.escapeHtml(comment.text);
+        commentItem.appendChild(textDiv);
+        
+        commentsList.appendChild(commentItem);
+      });
+    }
+    
+    container.appendChild(commentsList);
     
     // Restore textarea value and focus if it was preserved
     if (preservedText) {

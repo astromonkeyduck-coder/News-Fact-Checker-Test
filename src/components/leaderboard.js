@@ -3,11 +3,79 @@ class Leaderboard {
         this.gameType = gameType;
         this.scores = [];
         this.isOpen = false;
+        this.realtimeComponent = null;
+        this.userId = null;
+        this.enableRealtime = true; // Can be disabled if WebSocket not available
     }
 
     async init() {
         await this.loadScores();
         this.render();
+        
+        // Initialize real-time updates if available (after render so container exists)
+        if (this.enableRealtime) {
+            // Small delay to ensure DOM is ready
+            setTimeout(() => {
+                this.initRealtime();
+            }, 100);
+        }
+    }
+    
+    /**
+     * Initialize real-time leaderboard component
+     */
+    async initRealtime() {
+        try {
+            // Try to get userId from localStorage or generate one
+            this.userId = this.getUserId();
+            
+            // Dynamically import real-time component
+            const { default: RealtimeLeaderboardComponent } = await import('./leaderboard-realtime.js');
+            
+            // Find container for real-time updates (wait for render if needed)
+            // We'll initialize after the first render
+            // The realtime component will enhance the existing leaderboard display
+            const listContainer = document.getElementById('leaderboardList');
+            if (listContainer) {
+                this.realtimeComponent = new RealtimeLeaderboardComponent(
+                    listContainer,
+                    this.userId,
+                    this.gameType,
+                    {
+                        showPresence: true,
+                        showMetrics: true,
+                        limit: 10
+                    }
+                );
+                
+                // Update real-time component when scores load
+                this.realtimeComponent.updateLeaderboard(this.scores);
+            } else {
+                // Container doesn't exist yet, will be created on render
+                // We'll initialize after render is called
+                console.log('[Leaderboard] Container not found yet, will initialize after render');
+            }
+        } catch (error) {
+            console.log('[Leaderboard] Real-time updates not available:', error.message);
+            this.enableRealtime = false;
+        }
+    }
+    
+    /**
+     * Get or generate user ID
+     */
+    getUserId() {
+        try {
+            let userId = localStorage.getItem('noteworthy_user_id');
+            if (!userId) {
+                userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+                localStorage.setItem('noteworthy_user_id', userId);
+            }
+            return userId;
+        } catch (error) {
+            // Fallback if localStorage not available
+            return `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        }
     }
 
     async loadScores(limit = 10) {
@@ -25,6 +93,11 @@ class Leaderboard {
                 const data = await response.json();
             console.log(`[Leaderboard] Loaded ${data.scores?.length || 0} scores`, data);
                 this.scores = data.scores || [];
+                
+                // Update real-time component if available
+                if (this.realtimeComponent) {
+                    this.realtimeComponent.updateLeaderboard(this.scores);
+                }
         } catch (error) {
             console.error('[Leaderboard] Failed to load scores:', error);
             this.scores = [];
@@ -55,6 +128,12 @@ class Leaderboard {
             console.log('[Leaderboard] Score submitted successfully:', result);
                 await this.loadScores();
                 this.render();
+                
+                // Update real-time component if available
+                if (this.realtimeComponent) {
+                    this.realtimeComponent.updateLeaderboard(this.scores);
+                }
+                
                 return true;
         } catch (error) {
             console.error('[Leaderboard] Failed to submit score:', error);

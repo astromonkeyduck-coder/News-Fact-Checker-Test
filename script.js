@@ -6841,39 +6841,36 @@ function initMouseEffects() {
 }
 
 // Initialize everything when DOM is loaded
+// vNext: Effects are now deferred via modular system
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize background music autoplay
-    initBackgroundMusic();
+    // Initialize background music autoplay (deferred - no auto-play)
+    // Music will only play on user interaction
     
-    // Initialize effects
-    initEffects();
-    initMouseEffects();
-    
-    // Initialize navigation functionality
+    // Initialize navigation functionality (critical)
     initNavigation();
     
-    // Initialize welcome text cycling
-    initWelcomeTextCycling();
+    // Initialize welcome text cycling (deferred)
+    if (typeof requestIdleCallback !== 'undefined') {
+        requestIdleCallback(() => {
+            initWelcomeTextCycling();
+            initWelcomeLocation();
+        }, { timeout: 2000 });
+    } else {
+        setTimeout(() => {
+            initWelcomeTextCycling();
+            initWelcomeLocation();
+        }, 1000);
+    }
     
-    // Initialize location display
-    initWelcomeLocation();
+    // Initialize news carousel (deferred)
+    if (typeof requestIdleCallback !== 'undefined') {
+        requestIdleCallback(initNewsCarousel, { timeout: 2000 });
+    } else {
+        setTimeout(initNewsCarousel, 1000);
+    }
     
-    // Initialize news carousel
-    initNewsCarousel();
-    
-    // Try to start music immediately on page load
-    setTimeout(() => {
-        const backgroundMusic = document.getElementById('backgroundMusic');
-        if (backgroundMusic && backgroundMusic.paused) {
-            console.log('🎵 Page loaded, attempting to start music...');
-            backgroundMusic.muted = false;
-            backgroundMusic.play().then(() => {
-                console.log('🎵 Music started on page load!');
-            }).catch(err => {
-                console.log('⚠️ Page load music start failed:', err);
-            });
-        }
-    }, 50);
+    // Effects are now handled by modular system (initEffects.js)
+    // initEffects() and initMouseEffects() are deferred
     
     // Add scroll-triggered animations
     const observerOptions = {
