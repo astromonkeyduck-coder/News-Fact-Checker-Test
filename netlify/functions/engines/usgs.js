@@ -477,8 +477,11 @@ async function storeEvent(event, logger) {
 
 /**
  * Process a single earthquake feature
+ * @param {Object} feature - USGS GeoJSON feature
+ * @param {Object} logger - Logger instance
+ * @param {boolean} forceEmail - If true, send email even if alert_sent is true (for most recent earthquake)
  */
-async function processEarthquake(feature, logger) {
+async function processEarthquake(feature, logger, forceEmail = false) {
   const props = feature.properties;
   const eventId = feature.id;
   
@@ -557,7 +560,15 @@ async function processEarthquake(feature, logger) {
   
   // Send email alert for ALL earthquakes (user requested)
   // Removed magnitude >= 7.0 check - now sends for all
-  if (!storedEvent.alert_sent || isNew) {
+  // If forceEmail is true (most recent earthquake), send even if alert_sent is true
+  if (!storedEvent.alert_sent || isNew || forceEmail) {
+    // If forcing email, temporarily reset alert_sent so sendEmailAlert will process it
+    const originalAlertSent = storedEvent.alert_sent;
+    if (forceEmail && storedEvent.alert_sent) {
+      storedEvent.alert_sent = false;
+      logger.info('Forcing email for most recent earthquake', { canonical_id: canonicalId });
+    }
+    
     const alertSent = await sendEmailAlert(storedEvent, imageUrl, logger);
     if (alertSent) {
       // Update alert_sent status
@@ -571,6 +582,9 @@ async function processEarthquake(feature, logger) {
       
       storedEvent.alert_sent = true;
       storedEvent.alert_sent_at = new Date().toISOString();
+    } else if (forceEmail && originalAlertSent) {
+      // Restore original status if email failed
+      storedEvent.alert_sent = originalAlertSent;
     }
   }
   
@@ -604,9 +618,13 @@ async function run(logger) {
     let countErrors = 0;
     
     // Process each earthquake
-    for (const feature of feedData.features) {
+    // Always send email for the first (most recent) earthquake, even if alert_sent is true
+    for (let i = 0; i < feedData.features.length; i++) {
+      const feature = feedData.features[i];
+      const isMostRecent = i === 0; // First earthquake is most recent
+      
       try {
-        const result = await processEarthquake(feature, logger);
+        const result = await processEarthquake(feature, logger, isMostRecent);
         if (result) {
           if (result.isNew) {
             countNew++;

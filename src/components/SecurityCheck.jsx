@@ -66,14 +66,19 @@ function SecuritySpinner() {
       {/* Shield icon overlay - static, not rotating */}
       <div
         style={{
-          position: 'relative',
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
           fontSize: '20px',
           color: '#4A90E2',
           opacity: 0.8,
-          zIndex: 1,
+          zIndex: 2,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          pointerEvents: 'none',
+          willChange: 'auto'
         }}
       >
         🛡️

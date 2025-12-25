@@ -1,84 +1,59 @@
-# How to Schedule ingest-all Function
+# How Netlify Scheduled Functions Work
 
-## ⚠️ IMPORTANT: Netlify Scheduled Functions May Not Be Available
+## Automatic Scheduling (No Dashboard Step Needed!)
 
-If you don't see a "Schedule" tab in Netlify Dashboard, you need to use an **external cron service** instead.
+**Netlify automatically schedules functions based on the `exports.config` export in the function file.**
 
----
-
-## ✅ Solution: Use External Cron Service (FREE & RELIABLE)
-
-### Option 1: cron-job.org (Recommended - Free & Easy)
-
-1. **Sign up for free account:**
-   - Go to: https://cron-job.org
-   - Sign up (free, no credit card needed)
-
-2. **Create a new cron job:**
-   - Click **"Create cronjob"**
-   - **Title:** `Noteworthy News - Ingest All Events`
-   - **Address (URL):** 
-     ```
-     https://noteworthynews.co/.netlify/functions/ingest-all
-     ```
-   - **Schedule:** Select **"Every 5 minutes"** or enter: `*/5 * * * *`
-   - **Request method:** `GET` or `POST` (both work)
-   - **Active:** ✅ Checked
-   - Click **"Create cronjob"**
-
-3. **Test it:**
-   - Click **"Run now"** to test
-   - Check Netlify logs to verify it ran
+When the function is deployed, Netlify automatically detects the schedule configuration and sets it up. **There is no dashboard step required.**
 
 ---
 
-### Option 2: EasyCron (Free Tier Available)
+## Current Configuration
 
-1. **Sign up:** https://www.easycron.com
-2. **Create cron job:**
-   - **URL:** `https://noteworthynews.co/.netlify/functions/ingest-all`
-   - **Schedule:** `*/5 * * * *` (every 5 minutes)
-   - **HTTP Method:** `GET` or `POST`
+The `ingest-all` function is already configured in `netlify/functions/ingest-all.js`:
 
----
-
-### Option 3: GitHub Actions (If you use GitHub)
-
-Create `.github/workflows/ingest-all.yml`:
-
-```yaml
-name: Ingest All Events
-
-on:
-  schedule:
-    - cron: '*/5 * * * *'  # Every 5 minutes
-  workflow_dispatch:  # Allow manual trigger
-
-jobs:
-  ingest:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger ingest-all
-        run: |
-          curl -X POST https://noteworthynews.co/.netlify/functions/ingest-all
+```javascript
+exports.config = {
+  schedule: '*/5 * * * *', // Every 5 minutes
+};
 ```
 
----
-
-### Option 4: Uptime Robot (Free - 50 monitors)
-
-1. **Sign up:** https://uptimerobot.com
-2. **Add Monitor:**
-   - **Type:** HTTP(s)
-   - **URL:** `https://noteworthynews.co/.netlify/functions/ingest-all`
-   - **Interval:** 5 minutes
-   - **Alert Contacts:** (optional)
+**This is all you need!** Once deployed, Netlify will automatically schedule it.
 
 ---
 
-## 🧪 Test the Function First
+## Requirements for Scheduled Functions
 
-Before setting up the cron, test that the function works:
+✅ **Function location:** `netlify/functions/ingest-all.js`  
+✅ **Config export:** `exports.config` with `schedule` property  
+✅ **Schedule format:** Valid cron expression (e.g., `'*/5 * * * *'`)  
+✅ **Handler export:** `exports.handler` (standard Netlify function format)  
+
+All of these are already correct!
+
+---
+
+## What Happens on Deploy
+
+1. Netlify builds the function
+2. Detects `exports.config` with `schedule` property
+3. **Automatically schedules** the function to run every 5 minutes
+4. No dashboard configuration needed!
+
+---
+
+## Verify It's Scheduled
+
+After deployment, check:
+1. **Netlify Dashboard** → **Functions** → `ingest-all`
+2. Look for schedule indicator or "Scheduled" badge
+3. Check **Logs** - should see runs every 5 minutes automatically
+
+---
+
+## Manual Trigger (For Testing)
+
+You can manually trigger the function to test it:
 
 ```bash
 curl -X POST "https://noteworthynews.co/.netlify/functions/ingest-all"
@@ -86,98 +61,70 @@ curl -X POST "https://noteworthynews.co/.netlify/functions/ingest-all"
 
 Or use the Netlify Dashboard:
 1. Go to **Functions** → `ingest-all`
-2. Click **"Invoke"** or **"Test"**
+2. Click **Invoke** or **Test**
+3. This will run it immediately
 
 ---
 
-## ✅ Verify It's Working
+## Verify It's Working
 
-### Check Netlify Logs:
-1. Go to **Netlify Dashboard** → **Functions** → `ingest-all` → **Logs**
-2. You should see runs every 5 minutes with:
+### Check Logs:
+1. Go to **Functions** → `ingest-all` → **Logs**
+2. Look for recent runs (should appear every 5 minutes)
+3. Check for:
    - `[ingest-all] Starting ingestion run`
    - `[ingest-all] Running engine: usgs`
    - `[ingest-all] Completed: X successful, Y failed`
 
-### Check for New Events:
-- Go to your website and check for new earthquake posts
-- Check your email for alerts (if earthquakes occur)
+### Check Function Status:
+- The function should show as "Scheduled" or have a schedule icon
+- You should see recent invocations in the logs
 
 ---
 
-## 📋 Quick Setup Checklist
+## Schedule Format (Cron)
 
-- [ ] Function `ingest-all` exists and works (test manually)
-- [ ] External cron service account created
-- [ ] Cron job created pointing to: `https://noteworthynews.co/.netlify/functions/ingest-all`
-- [ ] Schedule set to every 5 minutes (`*/5 * * * *`)
-- [ ] Cron job is **active/enabled**
-- [ ] Tested with "Run now" button
-- [ ] Verified in Netlify logs that it's running
+The schedule uses cron syntax:
+- `*/5 * * * *` = Every 5 minutes
+- `0 * * * *` = Every hour (at :00)
+- `0 */2 * * *` = Every 2 hours
+- `0 0 * * *` = Every day at midnight
 
----
-
-## 🔧 Troubleshooting
-
-### Function Not Running:
-1. **Check Netlify logs** for errors
-2. **Verify environment variables** are set:
-   - `ENABLE_USGS=true`
-   - `RESEND_API_KEY` (for emails)
-   - `NETLIFY_SITE_ID` and `NETLIFY_BLOB_READ_WRITE_TOKEN` (for posts)
-   - `AI_NOTIFICATION_EMAILS` or `ALERT_TO_EMAIL` (for alerts)
-3. **Test manually** with curl to see if function works
-4. **Check cron service logs** to see if it's calling the URL
-
-### Cron Service Not Working:
-- Make sure the URL is correct (no trailing slash)
-- Try both GET and POST methods
-- Check if your Netlify site requires authentication (it shouldn't)
-- Verify the cron service is actually running (check their dashboard)
+For every 5 minutes, use: `*/5 * * * *`
 
 ---
 
-## 📝 Current Function Configuration
+## Troubleshooting
 
-The function is already configured with:
-```javascript
-exports.config = {
-  schedule: '*/5 * * * *', // Every 5 minutes
-};
-```
+### If Schedule Doesn't Appear:
+1. Make sure you're on a Netlify plan that supports scheduled functions
+2. Check if the function has `exports.config` with schedule (it does)
+3. Try the manual trigger first to verify the function works
 
-But since Netlify's scheduled functions feature isn't available, **you must use an external cron service** to actually trigger it.
-
----
-
-## 🎯 Recommended: cron-job.org
-
-**Why cron-job.org?**
-- ✅ Free forever
-- ✅ No credit card required
-- ✅ Reliable (used by thousands)
-- ✅ Easy to set up
-- ✅ Can test immediately
-- ✅ Email notifications if cron fails
-
-**Setup time:** ~2 minutes
+### If Function Doesn't Run:
+1. Check logs for errors
+2. Verify `ENABLE_USGS=true` is set
+3. Check all environment variables are configured
+4. Try manual trigger to see if function works at all
 
 ---
 
-## 🚀 Next Steps
+## Quick Checklist
 
-1. **Fix the syntax error first** (commit the fix)
-2. **Deploy successfully**
-3. **Set up cron-job.org** (or another service)
-4. **Test it works**
-5. **Monitor logs** for the next earthquake
+- [ ] Function `ingest-all` exists in Netlify Dashboard
+- [ ] Schedule is configured (every 5 minutes)
+- [ ] `ENABLE_USGS=true` is set in environment variables
+- [ ] All required environment variables are set
+- [ ] Logs show function running every 5 minutes
 
 ---
 
-## 📞 Need Help?
+## Summary
 
-If the function still doesn't work after setting up the cron:
-1. Check Netlify function logs
-2. Verify all environment variables
-3. Test the function manually with curl
-4. Check the cron service's execution logs
+**The function is already configured correctly!**  
+Once deployed successfully, Netlify will automatically schedule it to run every 5 minutes.
+
+**No dashboard steps needed - it's all automatic!** 🎉
+
+The only thing preventing it from being scheduled right now is the syntax error in `usgs.js`, which is being fixed.
+

@@ -1870,12 +1870,30 @@ class NoteworthyChat extends HTMLElement {
         }
         
         .search-spinner {
+          display: inline-block;
           width: 16px;
           height: 16px;
           border: 2px solid rgba(212, 160, 23, 0.3);
           border-top-color: rgba(212, 160, 23, 0.9);
           border-radius: 50%;
-          animation: spin 1s linear infinite;
+          animation: searchRotate 1s linear infinite;
+          margin-right: 8px;
+          vertical-align: middle;
+        }
+        
+        .search-indicator-group {
+          animation: slideInSearch 0.3s ease-out;
+        }
+        
+        @keyframes slideInSearch {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
           align-items: center;
           gap: 12px;
@@ -4860,6 +4878,7 @@ class NoteworthyChat extends HTMLElement {
       const showSearchIndicator = (query) => {
         if (searchIndicatorShown) return; // Don't show multiple times
         searchIndicatorShown = true;
+        
         // Play search sound effect
         try {
           const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -4894,7 +4913,31 @@ class NoteworthyChat extends HTMLElement {
           console.warn('[Chat] Could not play search sound effect:', error);
         }
         
-        // Update thinking indicator to show search
+        // Create a separate search indicator message group for better visibility
+        const searchGroup = document.createElement('div');
+        searchGroup.className = 'message-group ai-msg-group search-indicator-group';
+        searchGroup.innerHTML = `
+          <div class="message-avatar">
+            <img src="/SantalogoEdited.png" alt="Noteworthy News" />
+          </div>
+          <div class="message-content">
+            <div class="thinking searching">
+              <span class="search-icon">🔍</span>
+              <span class="search-spinner"></span>
+              <span><strong>Deep Dive Research…</strong> Searching the web for: "${query || 'current information'}"</span>
+            </div>
+          </div>
+        `;
+        
+        // Insert search indicator before the thinking message
+        if (thinking && thinking.parentNode) {
+          thinking.parentNode.insertBefore(searchGroup, thinking);
+        } else {
+          body.appendChild(searchGroup);
+        }
+        body.scrollTop = body.scrollHeight;
+        
+        // Update thinking indicator to show search as well
         const thinkingContent = thinking.querySelector('.thinking');
         if (thinkingContent) {
           thinkingContent.innerHTML = `
@@ -4903,12 +4946,6 @@ class NoteworthyChat extends HTMLElement {
             <span><strong>Deep Dive Research…</strong> Searching the web for: "${query || 'current information'}"</span>
           `;
           thinkingContent.classList.add('searching');
-          // Ensure it's visible
-          if (thinking) {
-            thinking.style.display = 'block';
-            thinking.style.opacity = '1';
-          }
-          thinkingContent.style.display = 'flex';
         }
         
         // Update header subtitle
@@ -5127,13 +5164,23 @@ class NoteworthyChat extends HTMLElement {
             showSearchIndicator(data.searchQuery || 'current information');
           }
           // Keep thinking visible for a moment to show the search animation (longer if still searching)
-          const delay = data.searching ? 2000 : 1000;
+          const delay = data.searching ? 3000 : 1500;
           setTimeout(() => {
+            // Remove search indicator group if it exists
+            const searchGroup = body.querySelector('.search-indicator-group');
+            if (searchGroup && searchGroup.parentNode) {
+              searchGroup.remove();
+            }
             if (thinking && thinking.parentNode) {
               thinking.remove();
             }
           }, delay);
         } else {
+          // Remove search indicator if it exists even if no search
+          const searchGroup = body.querySelector('.search-indicator-group');
+          if (searchGroup && searchGroup.parentNode) {
+            searchGroup.remove();
+          }
           thinking.remove();
         }
         
