@@ -2818,8 +2818,58 @@ class BreakingNewsGame {
             });
         }
         
+        // Multiplayer button functionality
+        const multiplayerBtn = document.getElementById('multiplayerBtn');
+        if (multiplayerBtn) {
+            multiplayerBtn.addEventListener('click', () => {
+                this.playSound('button', 'navigation');
+                this.showMultiplayerModal();
+            });
+            multiplayerBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                this.playSound('button', 'navigation');
+                this.showMultiplayerModal();
+            });
+        }
+        
         // Add hover sounds to all buttons
         this.setupHoverSounds();
+    }
+    
+    showMultiplayerModal() {
+        // Check if MultiplayerGameManager is available
+        if (typeof MultiplayerGameManager === 'undefined') {
+            console.warn('[Game] MultiplayerGameManager not loaded');
+            alert('Multiplayer feature is coming soon! Check back later for real-time multiplayer fact-checking games.');
+            return;
+        }
+        
+        // Create or get multiplayer container
+        let container = document.getElementById('multiplayer-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'multiplayer-container';
+            container.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; background: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center;';
+            document.body.appendChild(container);
+        }
+        
+        // Initialize multiplayer game manager
+        try {
+            const userId = localStorage.getItem('noteworthy_user_id') || `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+            const userName = localStorage.getItem('noteworthy_user_name') || 'Player';
+            
+            if (!window.multiplayerManager) {
+                window.multiplayerManager = new MultiplayerGameManager(container, userId, userName);
+            }
+            
+            container.style.display = 'flex';
+        } catch (error) {
+            console.error('[Game] Error initializing multiplayer:', error);
+            alert('Multiplayer feature is currently unavailable. Please try again later.');
+            if (container) {
+                container.style.display = 'none';
+            }
+        }
     }
     
     toggleAI() {
@@ -3048,6 +3098,9 @@ class BreakingNewsGame {
     }
     
     startGame() {
+        // Dispatch gameStarted event for loading timeout fallback
+        window.dispatchEvent(new CustomEvent('gameStarted'));
+        
         this.playSound('gameStart');
         console.log('startGame called');
         this.gameState = 'playing';
