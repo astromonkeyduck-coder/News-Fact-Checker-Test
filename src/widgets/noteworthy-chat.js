@@ -1024,8 +1024,8 @@ class NoteworthyChat extends HTMLElement {
         /* Orb/Core Container */
         .voice-orb-container {
           position: relative;
-          width: 160px;
-          height: 160px;
+          width: 240px;
+          height: 240px;
           margin: 0 auto 32px;
           display: flex;
           align-items: center;
@@ -1035,8 +1035,8 @@ class NoteworthyChat extends HTMLElement {
         /* Outer ring with gradient */
         .orb-outer-ring {
           position: absolute;
-          width: 160px;
-          height: 160px;
+          width: 240px;
+          height: 240px;
           border-radius: 50%;
           border: 2px solid transparent;
           background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(212, 160, 23, 0.2)) padding-box,
@@ -1065,8 +1065,8 @@ class NoteworthyChat extends HTMLElement {
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          width: 240px;
-          height: 240px;
+          width: 360px;
+          height: 360px;
           z-index: 1;
           pointer-events: none;
         }
@@ -1082,8 +1082,8 @@ class NoteworthyChat extends HTMLElement {
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          width: 180px;
-          height: 180px;
+          width: 270px;
+          height: 270px;
           border-radius: 50%;
           border: 2px dashed rgba(255, 255, 255, 0.3);
           border-top-color: rgba(212, 160, 23, 0.6);
@@ -1099,8 +1099,8 @@ class NoteworthyChat extends HTMLElement {
         /* Inner core with NW logo */
         .orb-core {
           position: relative;
-          width: 120px;
-          height: 120px;
+          width: 180px;
+          height: 180px;
           border-radius: 50%;
           background: linear-gradient(135deg, 
             rgba(212, 160, 23, 0.2) 0%, 
@@ -1145,8 +1145,8 @@ class NoteworthyChat extends HTMLElement {
         }
         
         .orb-logo {
-          width: 80px;
-          height: 80px;
+          width: 240px;
+          height: 240px;
           object-fit: contain;
           filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
           z-index: 3;
@@ -1171,8 +1171,8 @@ class NoteworthyChat extends HTMLElement {
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          width: 200px;
-          height: 200px;
+          width: 300px;
+          height: 300px;
           border-radius: 50%;
           background: radial-gradient(circle, rgba(74, 144, 226, 0.15) 0%, transparent 70%);
           animation: haloRipple 3s ease-in-out infinite;
@@ -1343,9 +1343,39 @@ class NoteworthyChat extends HTMLElement {
             height: 100px;
           }
           
+          .voice-orb-container {
+            width: 200px;
+            height: 200px;
+          }
+          
+          .orb-outer-ring {
+            width: 200px;
+            height: 200px;
+          }
+          
+          .orb-core {
+            width: 150px;
+            height: 150px;
+          }
+          
           .orb-logo {
-            width: 70px;
-            height: 70px;
+            width: 200px;
+            height: 200px;
+          }
+          
+          .voice-waveform-rings {
+            width: 300px;
+            height: 300px;
+          }
+          
+          .orb-processing-ring {
+            width: 225px;
+            height: 225px;
+          }
+          
+          .orb-listening-halo {
+            width: 250px;
+            height: 250px;
           }
           
           .voice-controls {
