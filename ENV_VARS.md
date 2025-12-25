@@ -58,6 +58,21 @@ RSS_FEEDS_JSON=[{"name":"BBC","url":"https://feeds.bbci.co.uk/news/rss.xml","rel
 
 2. Run: `netlify dev`
 
+### Verified Events Engine Feature Flags
+
+Control which engines are enabled:
+```
+ENABLE_USGS=false          # USGS earthquake engine (Stage 3)
+ENABLE_NWS=false           # NOAA/NWS weather alerts (Stage 4)
+ENABLE_FAA=false           # FAA airspace disruptions (Stage 5)
+ENABLE_USCG=false          # US Coast Guard maritime (Stage 6)
+ENABLE_VOLCANO=false       # Volcano/ash advisories (Stage 7)
+ENABLE_EMBASSY=false       # Embassy advisories (Stage 8)
+DRY_RUN=true              # When true: no emails sent, no posts published; only logs + DB writes
+```
+
+**Default:** All engines disabled (`false`) until implemented. Enable one at a time for testing.
+
 ## Security Notes
 
 - **Never commit** `.env` file or expose these keys in client-side code

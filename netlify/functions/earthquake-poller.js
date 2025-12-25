@@ -56,11 +56,17 @@ async function fetchEventDetail(detailUrl) {
 }
 
 /**
- * Extract two distinct USGS images from event detail
- * Prefers shakemap products, falls back to other products
+ * Extract two DISTINCT USGS images from event detail
+ * Ensures images are from different product types when possible
+ * Priority order (for immediate availability):
+ * 1. Immediate products (DYFI, basic maps) - available within 0-3 minutes
+ * 2. Shakemap products - available within 5-10 minutes (best quality)
+ * 3. Other products - fallback
  */
 function extractUSGSImages(eventDetail) {
   const images = [];
+  const usedProductTypes = new Set(); // Track which product types we've used
+  const usedFilenames = new Set(); // Track filenames to avoid duplicates
   
   if (!eventDetail || !eventDetail.properties || !eventDetail.properties.products) {
     return images;
@@ -68,51 +74,199 @@ function extractUSGSImages(eventDetail) {
   
   const products = eventDetail.properties.products;
   
-  // Look for shakemap products first (most useful)
-  const shakemapProducts = products.shakemap || [];
-  const otherProducts = Object.keys(products)
-    .filter(key => key !== 'shakemap')
-    .flatMap(key => products[key] || []);
+  // Priority 1: Immediate products (DYFI, basic maps) - available within 0-3 minutes
+  const immediateProductTypes = ['dyfi', 'origin', 'location', 'moment-tensor'];
   
-  // Collect shakemap images
-  for (const product of shakemapProducts) {
-    if (product.contents && typeof product.contents === 'object') {
-      // Look for image files (png, jpg, jpeg, gif)
-      for (const [key, content] of Object.entries(product.contents)) {
-        if (content.url && /\.(png|jpg|jpeg|gif)$/i.test(key)) {
-          // Skip if we already have this URL
-          if (!images.find(img => img.url === content.url)) {
-            images.push({
-              url: content.url,
-              type: 'shakemap',
-              filename: key,
-            });
-            if (images.length >= 2) break;
+  // Priority 2: Shakemap products - available within 5-10 minutes (best quality)
+  const shakemapProducts = products.shakemap || [];
+  
+  // Priority 3: All other products (fallback)
+  const otherProductTypes = Object.keys(products)
+    .filter(key => !immediateProductTypes.includes(key) && key !== 'shakemap');
+  
+  // Strategy: Try to get one image from each product type to ensure they're different
+  // First pass: Get one image from each immediate product type
+  for (const productType of immediateProductTypes) {
+    if (images.length >= 2) break;
+    
+    const productList = products[productType] || [];
+    for (const product of productList) {
+      if (images.length >= 2) break;
+      
+      if (product.contents && typeof product.contents === 'object') {
+        for (const [key, content] of Object.entries(product.contents)) {
+          if (content.url && /\.(png|jpg|jpeg|gif)$/i.test(key)) {
+            // Skip if we already have an image from this product type (unless we only have 1 image)
+            if (images.length === 0 || !usedProductTypes.has(productType)) {
+              // Extract base filename (remove common variants like _geo, _geo_, etc.)
+              // This helps avoid getting similar images like "ciim.jpg" and "ciim_geo.jpg"
+              let baseFilename = key
+                .replace(/_geo\.(jpg|png|jpeg|gif)$/i, '.$1')  // Remove _geo before extension
+                .replace(/_geo_/gi, '_')                       // Remove _geo_ in middle
+                .replace(/_(geo|map|plot|image)\./gi, '.')     // Remove common variant suffixes
+                .toLowerCase();
+              
+              // Also check if any existing image has a similar base name
+              const isSimilar = images.some(img => {
+                const existingBase = img.filename
+                  .replace(/_geo\.(jpg|png|jpeg|gif)$/i, '.$1')
+                  .replace(/_geo_/gi, '_')
+                  .replace(/_(geo|map|plot|image)\./gi, '.')
+                  .toLowerCase();
+                // Check if base names are very similar (same core name)
+                return existingBase === baseFilename || 
+                       (baseFilename.includes(existingBase.split('_')[0]) && 
+                        existingBase.includes(baseFilename.split('_')[0]));
+              });
+              
+              if (!isSimilar && !usedFilenames.has(baseFilename) && !images.find(img => img.url === content.url)) {
+                images.push({
+                  url: content.url,
+                  type: productType,
+                  filename: key,
+                });
+                usedProductTypes.add(productType);
+                usedFilenames.add(baseFilename);
+                break; // Move to next product type
+              }
+            }
           }
         }
       }
     }
-    if (images.length >= 2) break;
   }
   
-  // If we don't have 2 images yet, look in other products
+  // Second pass: If we only have 1 image, try to get a shakemap (different type)
   if (images.length < 2) {
-    for (const product of otherProducts) {
+    for (const product of shakemapProducts) {
+      if (images.length >= 2) break;
+      
       if (product.contents && typeof product.contents === 'object') {
         for (const [key, content] of Object.entries(product.contents)) {
           if (content.url && /\.(png|jpg|jpeg|gif)$/i.test(key)) {
-            if (!images.find(img => img.url === content.url)) {
+            let baseFilename = key
+              .replace(/_geo\.(jpg|png|jpeg|gif)$/i, '.$1')
+              .replace(/_geo_/gi, '_')
+              .replace(/_(geo|map|plot|image)\./gi, '.')
+              .toLowerCase();
+            
+            const isSimilar = images.some(img => {
+              const existingBase = img.filename
+                .replace(/_geo\.(jpg|png|jpeg|gif)$/i, '.$1')
+                .replace(/_geo_/gi, '_')
+                .replace(/_(geo|map|plot|image)\./gi, '.')
+                .toLowerCase();
+              return existingBase === baseFilename || 
+                     (baseFilename.includes(existingBase.split('_')[0]) && 
+                      existingBase.includes(baseFilename.split('_')[0]));
+            });
+            
+            if (!isSimilar && !usedFilenames.has(baseFilename) && !images.find(img => img.url === content.url)) {
               images.push({
                 url: content.url,
-                type: 'product',
+                type: 'shakemap',
                 filename: key,
               });
+              usedProductTypes.add('shakemap');
+              usedFilenames.add(baseFilename);
               if (images.length >= 2) break;
             }
           }
         }
       }
+    }
+  }
+  
+  // Third pass: If we still don't have 2, look in other products (ensuring different types)
+  if (images.length < 2) {
+    for (const productType of otherProductTypes) {
       if (images.length >= 2) break;
+      
+      // Skip if we already have an image from this product type
+      if (usedProductTypes.has(productType)) continue;
+      
+      const productList = products[productType] || [];
+      for (const product of productList) {
+        if (images.length >= 2) break;
+        
+        if (product.contents && typeof product.contents === 'object') {
+          for (const [key, content] of Object.entries(product.contents)) {
+            if (content.url && /\.(png|jpg|jpeg|gif)$/i.test(key)) {
+              let baseFilename = key
+                .replace(/_geo\.(jpg|png|jpeg|gif)$/i, '.$1')
+                .replace(/_geo_/gi, '_')
+                .replace(/_(geo|map|plot|image)\./gi, '.')
+                .toLowerCase();
+              
+              const isSimilar = images.some(img => {
+                const existingBase = img.filename
+                  .replace(/_geo\.(jpg|png|jpeg|gif)$/i, '.$1')
+                  .replace(/_geo_/gi, '_')
+                  .replace(/_(geo|map|plot|image)\./gi, '.')
+                  .toLowerCase();
+                return existingBase === baseFilename || 
+                       (baseFilename.includes(existingBase.split('_')[0]) && 
+                        existingBase.includes(baseFilename.split('_')[0]));
+              });
+              
+              if (!isSimilar && !usedFilenames.has(baseFilename) && !images.find(img => img.url === content.url)) {
+                images.push({
+                  url: content.url,
+                  type: productType,
+                  filename: key,
+                });
+                usedProductTypes.add(productType);
+                usedFilenames.add(baseFilename);
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Final fallback: If we still only have 1 image, get a second one even if from same type
+  // (but still avoid duplicate filenames)
+  if (images.length === 1) {
+    for (const productType of immediateProductTypes) {
+      const productList = products[productType] || [];
+      for (const product of productList) {
+        if (images.length >= 2) break;
+        
+        if (product.contents && typeof product.contents === 'object') {
+          for (const [key, content] of Object.entries(product.contents)) {
+            if (content.url && /\.(png|jpg|jpeg|gif)$/i.test(key)) {
+              let baseFilename = key
+                .replace(/_geo\.(jpg|png|jpeg|gif)$/i, '.$1')
+                .replace(/_geo_/gi, '_')
+                .replace(/_(geo|map|plot|image)\./gi, '.')
+                .toLowerCase();
+              
+              const isSimilar = images.some(img => {
+                const existingBase = img.filename
+                  .replace(/_geo\.(jpg|png|jpeg|gif)$/i, '.$1')
+                  .replace(/_geo_/gi, '_')
+                  .replace(/_(geo|map|plot|image)\./gi, '.')
+                  .toLowerCase();
+                return existingBase === baseFilename || 
+                       (baseFilename.includes(existingBase.split('_')[0]) && 
+                        existingBase.includes(baseFilename.split('_')[0]));
+              });
+              
+              if (!isSimilar && !usedFilenames.has(baseFilename) && !images.find(img => img.url === content.url)) {
+                images.push({
+                  url: content.url,
+                  type: productType,
+                  filename: key,
+                });
+                usedFilenames.add(baseFilename);
+                break;
+              }
+            }
+          }
+        }
+      }
     }
   }
   
@@ -121,7 +275,7 @@ function extractUSGSImages(eventDetail) {
 
 /**
  * Clean location text for display
- * Converts "20 km SE of X" to broader region names
+ * Includes city and country when available
  */
 function cleanLocation(place) {
   if (!place) return "Unknown Location";
@@ -130,13 +284,14 @@ function cleanLocation(place) {
   let cleaned = place.replace(/^\d+\s*(km|mi|miles?)\s*[NESW]+\s+of\s+/i, "");
   cleaned = cleaned.replace(/^\d+\s*(km|mi|miles?)\s+/i, "");
   
-  // Extract country/region name (usually the last part)
-  const parts = cleaned.split(',').map(p => p.trim());
+  // Split by comma to get city and country
+  const parts = cleaned.split(',').map(p => p.trim()).filter(p => p);
   
-  // If it's a small town, try to get the country/region
   if (parts.length > 1) {
-    // Return the last part (usually country/region)
-    return parts[parts.length - 1].toUpperCase();
+    // Return city and country: "CITY, COUNTRY"
+    // Take last 2 parts (city, country) or just last part if only one
+    const cityCountry = parts.slice(-2).join(', ');
+    return cityCountry.toUpperCase();
   }
   
   // For single-part locations, capitalize and return

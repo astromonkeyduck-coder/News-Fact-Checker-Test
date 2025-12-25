@@ -15,22 +15,38 @@ const path = require('path');
 const TEMPLATE_WIDTH = 940;
 const TEMPLATE_HEIGHT = 788;
 
-// Text positioning (adjusted for template layout)
-// These will need fine-tuning based on actual template inspection
-const MAGNITUDE_X = 50;
-const MAGNITUDE_Y = 100;
-const LOCATION_X = 50;
-const LOCATION_Y = 150;
-const MAX_LOCATION_WIDTH = 800; // Max width for location text
+// 4K Output dimensions (3840x2160 UHD)
+const OUTPUT_4K_WIDTH = 3840;
+const OUTPUT_4K_HEIGHT = 2160;
+const ENABLE_4K = true; // Set to true to enable 4K output
 
-// Image placement area (lower section)
-const IMAGE_AREA_Y = 300;
-const IMAGE_AREA_HEIGHT = 400;
-const IMAGE_PADDING = 20;
-const IMAGE_SPACING = 10;
+// DYNAMIC TEXT PLACEMENT (2ndUSGSTemp.png has all static elements)
+// All text shares the same anchorX (left edge aligned with template's "Breaking News:" label)
+const ANCHOR_X = 50;  // X position - base left alignment
+const ALIGN_SHIFT_X = 18; // Pixel-perfect alignment shift to match "Breaking News:" label left edge
+const HEADLINE_BASELINE_Y_BASE = 200; // Base Y baseline for headline (below "Breaking News:" in template)
+const HEADLINE_BLOCK_OFFSET_Y = 100; // Offset to move entire headline block DOWN significantly (+90 to +120px range)
+const HEADLINE_BASELINE_Y = HEADLINE_BASELINE_Y_BASE + HEADLINE_BLOCK_OFFSET_Y; // Final headline baseline (300)
+const LOCATION_OFFSET = 75; // Vertical offset below headline - clear separation (+30 to +45px gap, was 40)
 
-// Color (red from template - adjust if needed)
-const RED_COLOR = '#FF0000';
+// SAFE TEXT AREA (NON-NEGOTIABLE - text must stay in left content zone)
+const SAFE_LEFT = ANCHOR_X + ALIGN_SHIFT_X; // Left edge of safe zone (after alignment shift)
+const SAFE_RIGHT_RATIO = 0.58; // Right edge at 58% of canvas width (stops before rings)
+// MAX_TEXT_WIDTH will be calculated per template: (templateWidth * SAFE_RIGHT_RATIO) - SAFE_LEFT
+
+// Headline: "M6.5 EARTHQUAKE NEAR" (magnitude + headline on same baseline)
+const HEADLINE_TEXT = "EARTHQUAKE NEAR";
+const HEADLINE_FONT_SIZE_BASE = 65; // Base size - will be auto-adjusted to fit safe area (optimized for 58% safe zone)
+const MAGNITUDE_FONT_SIZE_RATIO = 0.95; // 95% of headline (90-100% range)
+const MAGNITUDE_GAP = 18; // Gap between magnitude and "EARTHQUAKE NEAR"
+const HEADLINE_COLOR = '#FFFFFF'; // WHITE (matches template)
+const MAGNITUDE_COLOR = '#FF0000'; // RED (same red as location/template accents)
+
+// Location
+const LOCATION_FONT_SIZE_EXACT = 50; // EXACT font size (increased from 41.5px for better readability)
+const LOCATION_FONT_SIZE_MIN = 42; // Minimum size if scaling is needed (increased from 34px)
+const LOCATION_COLOR = '#FF0000'; // RED (matches template red)
+const SAFE_LEFT_MARGIN = 40; // Minimum left margin to prevent clipping
 
 /**
  * Escape text for SVG
@@ -45,50 +61,152 @@ function escapeSVGText(text) {
 }
 
 /**
- * Create SVG text overlay for magnitude
+ * Estimate text width for Roboto font
+ * Uses approximate character width based on font size
  */
-function createMagnitudeSVG(text, x, y, fontSize = 41.5) {
-  const escapedText = escapeSVGText(text);
-  return `
-    <svg width="${TEMPLATE_WIDTH}" height="${TEMPLATE_HEIGHT}">
-      <text 
-        x="${x}" 
-        y="${y}" 
-        font-family="Roboto, Arial, sans-serif" 
-        font-size="${fontSize}" 
-        font-weight="bold"
-        fill="${RED_COLOR}">
-        ${escapedText}
-      </text>
-    </svg>
-  `;
+function estimateTextWidth(text, fontSize) {
+  // Roboto average character width is approximately 0.6 * fontSize
+  const avgCharWidth = fontSize * 0.6;
+  return text.length * avgCharWidth;
 }
 
 /**
- * Create SVG text overlay for location with auto-sizing
- * Estimates text width and reduces font size if needed
+ * Create SVG overlay for dynamic text only
+ * Template (2ndUSGSTemp.png) already contains:
+ * - "Breaking News:" label
+ * - Background, map, rings, logos, USGS images, footer, banner
+ * 
+ * We only draw:
+ * - Magnitude (white): M#.#
+ * - Headline (white): EARTHQUAKE NEAR
+ * - Location (red): e.g. PAPUA NEW GUINEA
  */
-function createLocationSVG(text, x, y, maxWidth, initialSize = 41.5) {
-  // Estimate character width (approximate for Roboto)
-  const avgCharWidth = initialSize * 0.6;
-  const estimatedWidth = text.length * avgCharWidth;
+function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templateHeight, scaleFactor = 1.0) {
+  const escapedMag = escapeSVGText(magnitudeText);
+  const escapedHeadline = escapeSVGText(HEADLINE_TEXT);
+  const escapedLocation = escapeSVGText(locationText.toUpperCase());
   
-  let fontSize = initialSize;
-  if (estimatedWidth > maxWidth) {
-    // Reduce font size proportionally
-    fontSize = Math.max(20, Math.floor((maxWidth / estimatedWidth) * initialSize));
+  // Scale all constants by scaleFactor for 4K
+  const scaledAnchorX = Math.round(ANCHOR_X * scaleFactor);
+  const scaledAlignShiftX = Math.round(ALIGN_SHIFT_X * scaleFactor);
+  const scaledHeadlineBaselineY = Math.round(HEADLINE_BASELINE_Y * scaleFactor);
+  const scaledLocationOffset = Math.round(LOCATION_OFFSET * scaleFactor);
+  const scaledSafeLeft = Math.round(SAFE_LEFT * scaleFactor);
+  const scaledSafeLeftMargin = Math.round(SAFE_LEFT_MARGIN * scaleFactor);
+  const scaledMagnitudeGap = Math.round(MAGNITUDE_GAP * scaleFactor);
+  
+  // Calculate safe text area (after alignment shift) - scaled
+  const safeRight = Math.floor(templateWidth * SAFE_RIGHT_RATIO);
+  const maxTextWidth = safeRight - scaledSafeLeft;
+  
+  // Base anchor position - scaled
+  let anchorX = scaledAnchorX;
+  if (anchorX < scaledSafeLeftMargin) {
+    anchorX = scaledSafeLeftMargin;
   }
   
-  const escapedText = escapeSVGText(text);
+  // Apply pixel-perfect alignment shift to match "Breaking News:" label - scaled
+  const alignedX = anchorX + scaledAlignShiftX;
+  
+  // Calculate font sizes with safe area constraints - scaled
+  let headlineFontSize = Math.round(HEADLINE_FONT_SIZE_BASE * scaleFactor);
+  let magnitudeFontSize = Math.round(headlineFontSize * MAGNITUDE_FONT_SIZE_RATIO);
+  
+  // Measure total headline width (magnitude + gap + headline)
+  let magWidth = estimateTextWidth(magnitudeText, magnitudeFontSize);
+  let headlineWidth = estimateTextWidth(HEADLINE_TEXT, headlineFontSize);
+  let totalHeadlineWidth = magWidth + scaledMagnitudeGap + headlineWidth;
+  
+  // Auto-reduce headline font size if it exceeds safe area
+  if (totalHeadlineWidth > maxTextWidth) {
+    // Calculate scale factor to fit within safe area
+    const fitScaleFactor = maxTextWidth / totalHeadlineWidth;
+    const minHeadlineSize = Math.round(50 * scaleFactor);
+    headlineFontSize = Math.max(minHeadlineSize, Math.round(headlineFontSize * fitScaleFactor * 0.98)); // 98% for safety margin
+    magnitudeFontSize = Math.round(headlineFontSize * MAGNITUDE_FONT_SIZE_RATIO);
+    
+    // Re-measure with adjusted sizes
+    magWidth = estimateTextWidth(magnitudeText, magnitudeFontSize);
+    headlineWidth = estimateTextWidth(HEADLINE_TEXT, headlineFontSize);
+    totalHeadlineWidth = magWidth + scaledMagnitudeGap + headlineWidth;
+    
+    console.log(`[generate-earthquake-image] Headline auto-sized to ${headlineFontSize}px to fit safe area (max: ${maxTextWidth}px, actual: ${totalHeadlineWidth}px)`);
+  }
+  
+  // Position for headline line: magnitude at alignedX, headline after it (same baseline) - scaled
+  const magX = alignedX;
+  const headlineX = alignedX + magWidth + scaledMagnitudeGap;
+  const headlineY = scaledHeadlineBaselineY;
+  
+  // Position for location: directly under headline, left-aligned - scaled
+  const locationX = alignedX;
+  const locationY = scaledHeadlineBaselineY + scaledLocationOffset;
+  
+  // Location font size: scaled
+  let locationFontSize = Math.round(LOCATION_FONT_SIZE_EXACT * scaleFactor);
+  const locationFontSizeMin = Math.round(LOCATION_FONT_SIZE_MIN * scaleFactor);
+  const estimatedLocationWidth = estimateTextWidth(locationText, locationFontSize);
+  
+  // Only scale down location if it would exceed safe area
+  if (estimatedLocationWidth > maxTextWidth) {
+    const fitScaleFactor = maxTextWidth / estimatedLocationWidth;
+    locationFontSize = Math.max(locationFontSizeMin, Math.round(locationFontSize * fitScaleFactor));
+    console.log(`[generate-earthquake-image] Location scaled down to ${locationFontSize}px to prevent clipping (would be ${estimatedLocationWidth}px, max: ${maxTextWidth}px)`);
+  } else {
+    console.log(`[generate-earthquake-image] Location using exact size: ${locationFontSize}px`);
+  }
+  
+  // Use high-resolution SVG with text rendering hints for crisp text
   return `
-    <svg width="${TEMPLATE_WIDTH}" height="${TEMPLATE_HEIGHT}">
+    <svg width="${templateWidth}" height="${templateHeight}" xmlns="http://www.w3.org/2000/svg" 
+         shape-rendering="geometricPrecision" text-rendering="optimizeLegibility">
+      <defs>
+        <!-- Enable text rendering optimizations -->
+        <style>
+          text {
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+          }
+        </style>
+      </defs>
+      <!-- Magnitude: M#.# (red, inline before headline) -->
       <text 
-        x="${x}" 
-        y="${y}" 
+        x="${magX}" 
+        y="${headlineY}" 
         font-family="Roboto, Arial, sans-serif" 
-        font-size="${fontSize}" 
-        fill="${RED_COLOR}">
-        ${escapedText}
+        font-size="${magnitudeFontSize}" 
+        font-weight="bold"
+        fill="${MAGNITUDE_COLOR}"
+        text-rendering="optimizeLegibility"
+        shape-rendering="geometricPrecision">
+        ${escapedMag}
+      </text>
+      
+      <!-- Headline: EARTHQUAKE NEAR (white, same baseline as magnitude) -->
+      <text 
+        x="${headlineX}" 
+        y="${headlineY}" 
+        font-family="Roboto, Arial, sans-serif" 
+        font-size="${headlineFontSize}" 
+        font-weight="bold"
+        fill="${HEADLINE_COLOR}"
+        text-rendering="optimizeLegibility"
+        shape-rendering="geometricPrecision">
+        ${escapedHeadline}
+      </text>
+      
+      <!-- Location: e.g. PAPUA NEW GUINEA (red, below headline) -->
+      <text 
+        x="${locationX}" 
+        y="${locationY}" 
+        font-family="Roboto, Arial, sans-serif" 
+        font-size="${locationFontSize}" 
+        font-weight="bold"
+        fill="${LOCATION_COLOR}"
+        text-rendering="optimizeLegibility"
+        shape-rendering="geometricPrecision">
+        ${escapedLocation}
       </text>
     </svg>
   `;
@@ -139,11 +257,20 @@ async function prepareUSGSImage(imageBuffer, targetWidth, targetHeight) {
       top = Math.round((height - targetHeight) / 2);
     }
     
-    // Resize and crop
+    // Resize and crop with high-quality settings
+    // Use lanczos3 kernel (best quality, slower but worth it for broadcast quality)
     const processed = await image
-      .resize(width, height, { fit: 'cover' })
+      .resize(width, height, { 
+        fit: 'cover',
+        kernel: 'lanczos3',  // Best quality resampling algorithm
+        withoutEnlargement: false,  // Allow upscaling if needed
+      })
       .extract({ left, top, width: targetWidth, height: targetHeight })
-      .png()
+      .png({
+        quality: 100,        // Maximum quality
+        compressionLevel: 0, // No compression (fastest, highest quality)
+        palette: false       // Full color (no palette reduction)
+      })
       .toBuffer();
     
     return processed;
@@ -158,17 +285,18 @@ async function prepareUSGSImage(imageBuffer, targetWidth, targetHeight) {
  */
 async function generateImage(magnitude, location, usgsImages, eventId) {
   // Load template - try multiple possible paths
+  // CRITICAL: Use 2ndUSGSTemp.png (new template with all static elements)
   // In Netlify Functions, __dirname is /var/task/netlify/functions/generate-earthquake-image
   // In local dev, it's the actual project path
   const possiblePaths = [
-    path.join(__dirname, '1stUSGSTemp.png'),                    // Same directory as function (best for bundled files)
-    path.join(path.dirname(__dirname), '1stUSGSTemp.png'),     // netlify/functions/1stUSGSTemp.png
-    path.join(__dirname, '../../1stUSGSTemp.png'),             // From function dir: netlify/functions -> root
-    path.join(process.cwd(), 'netlify/functions/1stUSGSTemp.png'), // Explicit local path
-    path.join(process.cwd(), '1stUSGSTemp.png'),               // Current working directory (local dev)
-    path.resolve('./1stUSGSTemp.png'),                        // Relative to cwd
-    '/var/task/netlify/functions/1stUSGSTemp.png',            // Netlify Lambda path (functions dir)
-    '/var/task/1stUSGSTemp.png',                              // Netlify Lambda path (root)
+    path.join(__dirname, '2ndUSGSTemp.png'),                    // Same directory as function (best for bundled files)
+    path.join(path.dirname(__dirname), '2ndUSGSTemp.png'),     // netlify/functions/2ndUSGSTemp.png
+    path.join(__dirname, '../../2ndUSGSTemp.png'),             // From function dir: netlify/functions -> root
+    path.join(process.cwd(), 'netlify/functions/2ndUSGSTemp.png'), // Explicit local path
+    path.join(process.cwd(), '2ndUSGSTemp.png'),               // Current working directory (local dev)
+    path.resolve('./2ndUSGSTemp.png'),                        // Relative to cwd
+    '/var/task/netlify/functions/2ndUSGSTemp.png',            // Netlify Lambda path (functions dir)
+    '/var/task/2ndUSGSTemp.png',                              // Netlify Lambda path (root)
   ];
   
   let templateBuffer = null;
@@ -202,8 +330,8 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
     }
     
     const httpPaths = [
-      `${baseUrl}/1stUSGSTemp.png`,
-      `${baseUrl}/netlify/functions/1stUSGSTemp.png`,
+      `${baseUrl}/2ndUSGSTemp.png`,
+      `${baseUrl}/netlify/functions/2ndUSGSTemp.png`,
     ];
     
     console.log(`[generate-earthquake-image] File system paths failed, trying HTTP from: ${baseUrl}`);
@@ -239,69 +367,171 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
     throw new Error(`Template not found. Tried: ${possiblePaths.join(', ')}`);
   }
   
-  // Load template into Sharp
+  // Load template into Sharp - THIS IS THE BASE LAYER
+  // CRITICAL: 2ndUSGSTemp.png contains ALL static elements:
+  // - Background, map, rings, logos, USGS images, footer, "Breaking News:" label, banner
+  // We ONLY overlay the 3 dynamic text elements
   const template = sharp(templateBuffer);
   const templateMetadata = await template.metadata();
+  
+  // Verify template dimensions
+  const actualWidth = templateMetadata.width;
+  const actualHeight = templateMetadata.height;
+  
+  if (actualWidth !== TEMPLATE_WIDTH || actualHeight !== TEMPLATE_HEIGHT) {
+    console.warn(`[generate-earthquake-image] Template dimensions (${actualWidth}x${actualHeight}) don't match expected (${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT}), using template dimensions`);
+  }
+  
+  // Calculate scale factor for 4K output
+  let outputWidth, outputHeight, scaleFactor;
+  
+  if (ENABLE_4K) {
+    // Scale to 4K: maintain template's aspect ratio, scale to fit within 4K
+    // Use the smaller scale factor to ensure nothing gets cropped
+    const widthScale = OUTPUT_4K_WIDTH / actualWidth;
+    const heightScale = OUTPUT_4K_HEIGHT / actualHeight;
+    // Use the smaller scale to fit within 4K without cropping
+    scaleFactor = Math.min(widthScale, heightScale);
+    
+    // Calculate scaled dimensions (maintains aspect ratio)
+    outputWidth = Math.round(actualWidth * scaleFactor);
+    outputHeight = Math.round(actualHeight * scaleFactor);
+    
+    console.log(`[generate-earthquake-image] Scaling to 4K: ${actualWidth}x${actualHeight} -> ${outputWidth}x${outputHeight} (scale: ${scaleFactor.toFixed(3)})`);
+    console.log(`[generate-earthquake-image] Aspect ratio maintained, output fits within 4K bounds`);
+  } else {
+    // Use template's actual dimensions for output (original behavior)
+    outputWidth = actualWidth;
+    outputHeight = actualHeight;
+    scaleFactor = 1.0;
+  }
   
   // Format magnitude text
   const magnitudeText = `M${magnitude.toFixed(1)}`;
   
-  // Create SVG overlays for text
-  const magnitudeSVG = Buffer.from(createMagnitudeSVG(magnitudeText, MAGNITUDE_X, MAGNITUDE_Y));
-  const locationSVG = Buffer.from(createLocationSVG(location, LOCATION_X, LOCATION_Y, MAX_LOCATION_WIDTH));
+  // Create SVG overlay for ONLY the 3 dynamic text elements:
+  // 1. Magnitude (white): M#.#
+  // 2. Headline (white): EARTHQUAKE NEAR
+  // 3. Location (red): e.g. PAPUA NEW GUINEA
+  // Scale all positioning and font sizes by scaleFactor for 4K
+  const dynamicTextSVG = Buffer.from(createDynamicTextSVG(magnitudeText, location, outputWidth, outputHeight, scaleFactor));
   
-  // Composite template with text overlays
-  let composite = await template
-    .composite([
-      { input: magnitudeSVG, blend: 'over' },
-      { input: locationSVG, blend: 'over' },
-    ])
-    .toBuffer();
+  // Prepare composite inputs: start with text overlay
+  const compositeInputs = [
+    { input: dynamicTextSVG, blend: 'over' },
+  ];
   
-  // Add USGS images if available
+  // Add USGS images if provided (these are the actual earthquake-specific images from USGS)
+  // USGS image placement area (scaled for 4K)
+  const IMAGE_AREA_Y = Math.round(410 * scaleFactor); // Y position for USGS images (scaled)
+  const IMAGE_AREA_HEIGHT = Math.round(250 * scaleFactor); // Height for each USGS image (scaled)
+  const IMAGE_PADDING = Math.round(20 * scaleFactor); // Padding from edges (scaled)
+  const IMAGE_SPACING = Math.round(15 * scaleFactor); // Space between two images (scaled)
+  
   if (usgsImages && usgsImages.length > 0) {
     const numImages = Math.min(usgsImages.length, 2);
-    const imageAreaWidth = templateMetadata.width - (IMAGE_PADDING * 2);
+    const imageAreaWidth = outputWidth - (IMAGE_PADDING * 2);
     const imageWidth = numImages === 2 
       ? Math.floor((imageAreaWidth - IMAGE_SPACING) / 2)
       : imageAreaWidth;
-    const imageHeight = IMAGE_AREA_HEIGHT;
     
-    const imageInputs = [];
+    console.log(`[generate-earthquake-image] Processing ${numImages} USGS image(s) for placement`);
     
     for (let i = 0; i < numImages; i++) {
       const usgsImage = usgsImages[i];
-      const imageBuffer = await downloadImage(usgsImage.url);
+      if (!usgsImage || !usgsImage.url) {
+        console.warn(`[generate-earthquake-image] Skipping invalid USGS image at index ${i}`);
+        continue;
+      }
       
-      if (imageBuffer) {
-        const processedImage = await prepareUSGSImage(imageBuffer, imageWidth, imageHeight);
+      try {
+        console.log(`[generate-earthquake-image] Downloading USGS image ${i + 1}/${numImages}: ${usgsImage.url}`);
+        const imageBuffer = await downloadImage(usgsImage.url);
         
-        if (processedImage) {
-          // Calculate position
-          const x = IMAGE_PADDING + (i * (imageWidth + IMAGE_SPACING));
-          const y = IMAGE_AREA_Y;
+        if (imageBuffer) {
+          const processedImage = await prepareUSGSImage(imageBuffer, imageWidth, IMAGE_AREA_HEIGHT);
           
-          imageInputs.push({
-            input: processedImage,
-            left: x,
-            top: y,
-            blend: 'over',
-          });
+          if (processedImage) {
+            // Calculate position (two images side by side, or one centered)
+            const x = IMAGE_PADDING + (i * (imageWidth + IMAGE_SPACING));
+            const y = IMAGE_AREA_Y;
+            
+            compositeInputs.push({
+              input: processedImage,
+              left: x,
+              top: y,
+              blend: 'over',
+            });
+            
+            console.log(`[generate-earthquake-image] ✅ Added USGS image ${i + 1} at (${x}, ${y})`);
+          } else {
+            console.warn(`[generate-earthquake-image] Failed to process USGS image ${i + 1}`);
+          }
+        } else {
+          console.warn(`[generate-earthquake-image] Failed to download USGS image ${i + 1}`);
         }
+      } catch (error) {
+        console.error(`[generate-earthquake-image] Error processing USGS image ${i + 1}:`, error);
+        // Continue with other images even if one fails
       }
     }
-    
-    // Composite USGS images
-    if (imageInputs.length > 0) {
-      composite = await sharp(composite)
-        .composite(imageInputs)
-        .png()
-        .toBuffer();
-    }
+  } else {
+    console.log(`[generate-earthquake-image] No USGS images provided - using template's static images only`);
   }
+  
+  // Composite template (base layer with ALL static elements) with dynamic text and USGS images
+  // Layer order:
+  // 1. Template (2ndUSGSTemp.png) - contains EVERYTHING static (background, map, rings, logos, footer, banner)
+  // 2. Dynamic text overlay - only magnitude, headline, location
+  // 3. USGS images (if provided) - actual earthquake-specific images from USGS
+  
+  // Scale template to match output dimensions if 4K is enabled
+  let compositePipeline = template;
+  
+  if (ENABLE_4K && scaleFactor > 1.0) {
+    // Scale template proportionally to maintain aspect ratio
+    compositePipeline = template
+      .resize(outputWidth, outputHeight, {
+        kernel: 'lanczos3',  // Best quality resampling for upscaling
+        withoutEnlargement: false,
+      });
+    
+    console.log(`[generate-earthquake-image] Template scaled to ${outputWidth}x${outputHeight} (maintains aspect ratio)`);
+  }
+  
+  // Composite all layers
+  compositePipeline = compositePipeline.composite(compositeInputs, {
+    blend: 'over',  // Explicit blend mode for clarity
+  });
+  
+  // No additional resize needed - output is already at correct dimensions
+  // Apply sharpening and output
+  const composite = await compositePipeline
+    .sharpen({       // Apply subtle sharpening to enhance text and image clarity
+      sigma: 0.5,    // Subtle sharpening (0.5-1.0 is good for text)
+      flat: 1.0,     // Flat areas sharpening
+      jagged: 2.0    // Edge sharpening
+    })
+    .png({ 
+      quality: 100,        // Maximum quality
+      compressionLevel: 0, // No compression (fastest, highest quality)
+      palette: false,      // Full color (no palette reduction)
+      effort: 10           // Maximum compression effort (though compressionLevel: 0 means no compression)
+    })
+    .toBuffer();
+  
+  // CRITICAL RULES:
+  // - Template (2ndUSGSTemp.png) is ALWAYS the base layer
+  // - We do NOT generate backgrounds, maps, rings, logos, footer, or "Breaking News:" text
+  // - We ONLY draw the 3 dynamic text elements + actual USGS images from earthquake event
+  // - Output dimensions match template exactly (no scaling/cropping)
+  // - If template fails to load, we throw a hard error (already handled above)
   
   return composite;
 }
+
+// Export for direct testing
+exports.generateImage = generateImage;
 
 /**
  * Store generated image and return URL

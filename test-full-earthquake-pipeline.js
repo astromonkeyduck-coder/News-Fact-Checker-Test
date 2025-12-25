@@ -131,12 +131,22 @@ function extractUSGSImages(eventDetail) {
 
 function cleanLocation(place) {
   if (!place) return "Unknown Location";
+  
+  // Remove distance/direction prefixes like "20 km SE of"
   let cleaned = place.replace(/^\d+\s*(km|mi|miles?)\s*[NESW]+\s+of\s+/i, "");
   cleaned = cleaned.replace(/^\d+\s*(km|mi|miles?)\s+/i, "");
-  const parts = cleaned.split(',').map(p => p.trim());
+  
+  // Split by comma to get city and country
+  const parts = cleaned.split(',').map(p => p.trim()).filter(p => p);
+  
   if (parts.length > 1) {
-    return parts[parts.length - 1].toUpperCase();
+    // Return city and country: "CITY, COUNTRY"
+    // Take last 2 parts (city, country) or just last part if only one
+    const cityCountry = parts.slice(-2).join(', ');
+    return cityCountry.toUpperCase();
   }
+  
+  // For single-part locations, capitalize and return
   return cleaned.toUpperCase();
 }
 

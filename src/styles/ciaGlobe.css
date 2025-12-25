@@ -666,6 +666,15 @@
   gap: 0.5rem;
 }
 
+.globe-time-btn,
+.globe-category-chip {
+  cursor: pointer !important;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: auto !important;
+  transition: all 0.2s ease;
+}
+
 .globe-time-btn:hover,
 .globe-category-chip:hover {
   background: rgba(74, 158, 255, 0.25) !important;
@@ -673,8 +682,20 @@
   transform: translateY(-1px);
 }
 
+.globe-time-btn:active,
+.globe-category-chip:active {
+  transform: translateY(0);
+}
+
+.globe-toggle-label {
+  cursor: pointer !important;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .globe-toggle-label input[type="checkbox"] {
   accent-color: rgba(74, 158, 255, 0.8);
+  cursor: pointer !important;
 }
 
 /* Active Regions List */

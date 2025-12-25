@@ -1267,10 +1267,17 @@ class CiaMissionGlobe {
     // Render HUD (simplified on mobile)
     this.renderHUD(hudEl);
     
-    // Setup controls and UI
-    this.setupControls();
-    this.updateCountryAggregation();
-    this.updateActiveRegionsList();
+    // Setup controls and UI - delay to ensure DOM is ready
+    setTimeout(() => {
+      this.setupControls();
+      // Update regions list after ensuring data is ready
+      setTimeout(() => {
+        if (this.coveragePoints.length > 0 && this.countryData.size === 0) {
+          this.updateCountryAggregation();
+        }
+        this.updateActiveRegionsList();
+      }, 1000);
+    }, 500);
 
     // Initialize globe with highly detailed, realistic earth texture
     // Using high-resolution NASA Blue Marble Next Generation texture for maximum detail
@@ -1379,6 +1386,10 @@ class CiaMissionGlobe {
       // Apply initial filters after globe is ready
       if (this.allPosts.length > 0) {
         this.applyFilters();
+      } else if (this.coveragePoints.length > 0) {
+        // If we have coverage points but no posts loaded yet, still update regions
+        this.updateCountryAggregation();
+        this.updateActiveRegionsList();
       }
     }, 250);
 
@@ -1702,61 +1713,109 @@ class CiaMissionGlobe {
 
   // Setup control bar interactions
   setupControls() {
-    // Time range buttons
-    const timeButtons = document.querySelectorAll('.globe-time-btn');
-    timeButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        timeButtons.forEach(b => {
-          b.classList.remove('active');
-          b.style.background = 'rgba(74, 158, 255, 0.1)';
-          b.style.borderColor = 'rgba(74, 158, 255, 0.3)';
-          b.style.color = 'rgba(255, 255, 255, 0.8)';
+    // Wait for DOM to be ready
+    const setupControlsDelayed = () => {
+      // Time range buttons
+      const timeButtons = document.querySelectorAll('.globe-time-btn');
+      if (timeButtons.length === 0) {
+        console.warn('[Globe] Time buttons not found, retrying...');
+        setTimeout(setupControlsDelayed, 100);
+        return;
+      }
+      
+      timeButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const timeRange = btn.dataset.time || '24h';
+          
+          // Update all buttons
+          timeButtons.forEach(b => {
+            b.classList.remove('active');
+            b.style.background = 'rgba(74, 158, 255, 0.1)';
+            b.style.borderColor = 'rgba(74, 158, 255, 0.3)';
+            b.style.color = 'rgba(255, 255, 255, 0.8)';
+          });
+          
+          // Activate clicked button
+          btn.classList.add('active');
+          btn.style.background = 'rgba(74, 158, 255, 0.2)';
+          btn.style.borderColor = 'rgba(74, 158, 255, 0.4)';
+          btn.style.color = '#fff';
+          
+          this.timeRange = timeRange;
+          console.log('[Globe] Time range changed to:', this.timeRange);
+          this.applyFilters();
+        }, { once: false });
+      });
+
+      // Category chips
+      const categoryChips = document.querySelectorAll('.globe-category-chip');
+      if (categoryChips.length === 0) {
+        console.warn('[Globe] Category chips not found, retrying...');
+        setTimeout(setupControlsDelayed, 100);
+        return;
+      }
+      
+      categoryChips.forEach(chip => {
+        chip.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const category = chip.dataset.category || 'all';
+          
+          // Update all chips
+          categoryChips.forEach(c => {
+            c.classList.remove('active');
+            c.style.background = 'rgba(74, 158, 255, 0.1)';
+            c.style.borderColor = 'rgba(74, 158, 255, 0.3)';
+            c.style.color = 'rgba(255, 255, 255, 0.8)';
+          });
+          
+          // Activate clicked chip
+          chip.classList.add('active');
+          chip.style.background = 'rgba(74, 158, 255, 0.2)';
+          chip.style.borderColor = 'rgba(74, 158, 255, 0.4)';
+          chip.style.color = '#fff';
+          
+          this.selectedCategory = category;
+          console.log('[Globe] Category changed to:', this.selectedCategory);
+          this.applyFilters();
+        }, { once: false });
+      });
+
+      // Breaking only toggle
+      const breakingToggle = document.getElementById('globe-breaking-only');
+      if (breakingToggle) {
+        breakingToggle.addEventListener('change', (e) => {
+          this.breakingOnly = e.target.checked;
+          console.log('[Globe] Breaking only:', this.breakingOnly);
+          this.applyFilters();
         });
-        btn.classList.add('active');
-        btn.style.background = 'rgba(74, 158, 255, 0.2)';
-        btn.style.borderColor = 'rgba(74, 158, 255, 0.4)';
-        btn.style.color = '#fff';
-        this.timeRange = btn.dataset.time;
-        this.applyFilters();
-      });
-    });
+      } else {
+        console.warn('[Globe] Breaking toggle not found');
+      }
 
-    // Category chips
-    const categoryChips = document.querySelectorAll('.globe-category-chip');
-    categoryChips.forEach(chip => {
-      chip.addEventListener('click', () => {
-        categoryChips.forEach(c => {
-          c.classList.remove('active');
-          c.style.background = 'rgba(74, 158, 255, 0.1)';
-          c.style.borderColor = 'rgba(74, 158, 255, 0.3)';
-          c.style.color = 'rgba(255, 255, 255, 0.8)';
-        });
-        chip.classList.add('active');
-        chip.style.background = 'rgba(74, 158, 255, 0.2)';
-        chip.style.borderColor = 'rgba(74, 158, 255, 0.4)';
-        chip.style.color = '#fff';
-        this.selectedCategory = chip.dataset.category;
-        this.applyFilters();
-      });
-    });
-
-    // Breaking only toggle
-    const breakingToggle = document.getElementById('globe-breaking-only');
-    if (breakingToggle) {
-      breakingToggle.addEventListener('change', (e) => {
-        this.breakingOnly = e.target.checked;
-        this.applyFilters();
-      });
-    }
-
-    // Panel close button
-    const panelClose = document.getElementById('globe-panel-close');
-    const panelOverlay = document.getElementById('globe-panel-overlay');
-    if (panelClose) {
-      panelClose.addEventListener('click', () => this.closeCountryPanel());
-    }
-    if (panelOverlay) {
-      panelOverlay.addEventListener('click', () => this.closeCountryPanel());
+      // Panel close button
+      const panelClose = document.getElementById('globe-panel-close');
+      const panelOverlay = document.getElementById('globe-panel-overlay');
+      if (panelClose) {
+        panelClose.addEventListener('click', () => this.closeCountryPanel());
+      }
+      if (panelOverlay) {
+        panelOverlay.addEventListener('click', () => this.closeCountryPanel());
+      }
+      
+      console.log('[Globe] Controls setup complete');
+    };
+    
+    // Try immediately, then retry if needed
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupControlsDelayed);
+    } else {
+      // DOM already ready, but wait a bit for dynamic content
+      setTimeout(setupControlsDelayed, 100);
     }
   }
 
@@ -1805,8 +1864,20 @@ class CiaMissionGlobe {
 
   // Apply filters and update display
   applyFilters() {
+    if (!this.allPosts || this.allPosts.length === 0) {
+      console.warn('[Globe] No posts available for filtering');
+      return;
+    }
+    
     const timeRangeMs = this.getTimeRangeMs();
     const now = Date.now();
+    
+    console.log('[Globe] Applying filters:', {
+      timeRange: this.timeRange,
+      category: this.selectedCategory,
+      breakingOnly: this.breakingOnly,
+      totalPosts: this.allPosts.length
+    });
     
     // Filter posts
     const filteredPosts = this.allPosts.filter(post => {
@@ -1828,6 +1899,8 @@ class CiaMissionGlobe {
       
       return true;
     });
+    
+    console.log('[Globe] Filtered posts:', filteredPosts.length, 'out of', this.allPosts.length);
     
     // Re-aggregate coverage points from filtered posts
     this.updateCoveragePointsFromPosts(filteredPosts);
@@ -1914,10 +1987,20 @@ class CiaMissionGlobe {
     
     // Check if it's a known country
     const countryMap = this.getCountryMap();
-    const locationLower = location.toLowerCase();
+    const locationLower = location.toLowerCase().trim();
     
+    // First try exact match
     for (const [country, coords] of Object.entries(countryMap)) {
-      if (locationLower === country.toLowerCase() || locationLower.includes(country.toLowerCase())) {
+      const countryLower = country.toLowerCase();
+      if (locationLower === countryLower) {
+        return country;
+      }
+    }
+    
+    // Try if location contains country name
+    for (const [country, coords] of Object.entries(countryMap)) {
+      const countryLower = country.toLowerCase();
+      if (locationLower.includes(countryLower) || countryLower.includes(locationLower)) {
         return country;
       }
     }
@@ -1927,13 +2010,28 @@ class CiaMissionGlobe {
     if (parts.length > 1) {
       const lastPart = parts[parts.length - 1].toLowerCase();
       for (const [country, coords] of Object.entries(countryMap)) {
-        if (lastPart === country.toLowerCase() || lastPart.includes(country.toLowerCase())) {
+        const countryLower = country.toLowerCase();
+        if (lastPart === countryLower || lastPart.includes(countryLower) || countryLower.includes(lastPart)) {
           return country;
         }
       }
     }
     
-    // Fallback: use location as-is
+    // Check for US states and map to USA
+    const usStates = ['texas', 'california', 'florida', 'new york', 'georgia', 'ohio', 'pennsylvania', 
+                      'michigan', 'massachusetts', 'arizona', 'idaho', 'hawaii', 'nevada', 'utah',
+                      'colorado', 'north carolina', 'south carolina', 'tennessee', 'kentucky', 'louisiana',
+                      'alabama', 'mississippi', 'missouri', 'oklahoma', 'kansas', 'nebraska', 'iowa',
+                      'minnesota', 'wisconsin', 'illinois', 'indiana', 'connecticut', 'new jersey',
+                      'maryland', 'virginia', 'west virginia', 'vermont', 'new hampshire', 'maine',
+                      'rhode island', 'delaware', 'washington', 'oregon', 'montana', 'wyoming',
+                      'north dakota', 'south dakota', 'alaska'];
+    
+    if (usStates.some(state => locationLower.includes(state))) {
+      return 'United States';
+    }
+    
+    // Fallback: use location as-is (might be a country we don't have in our map)
     return location;
   }
 
@@ -1941,12 +2039,33 @@ class CiaMissionGlobe {
   updateCountryAggregation() {
     this.countryData.clear();
     
+    if (!this.coveragePoints || this.coveragePoints.length === 0) {
+      console.warn('[Globe] No coverage points to aggregate');
+      return;
+    }
+    
+    console.log('[Globe] Aggregating countries from', this.coveragePoints.length, 'coverage points');
+    
     for (const point of this.coveragePoints) {
-      const country = this.extractCountryName(point.location);
-      if (!country) continue;
+      if (!point || !point.location) continue;
       
-      const coords = this.getLocationCoordinatesSync(country);
-      if (!coords) continue;
+      const country = this.extractCountryName(point.location);
+      if (!country) {
+        console.debug('[Globe] Could not extract country from location:', point.location);
+        continue;
+      }
+      
+      // Try to get coordinates for the country
+      let coords = this.getLocationCoordinatesSync(country);
+      // If country not found, try using the point's coordinates
+      if (!coords && point.lat && point.lng) {
+        coords = { lat: point.lat, lng: point.lng };
+      }
+      
+      if (!coords) {
+        console.debug('[Globe] No coordinates for country:', country);
+        continue;
+      }
       
       if (!this.countryData.has(country)) {
         this.countryData.set(country, {
@@ -1958,7 +2077,9 @@ class CiaMissionGlobe {
       }
       
       const countryInfo = this.countryData.get(country);
-      countryInfo.count += Array.isArray(point.posts) ? point.posts.length : 1;
+      const postCount = Array.isArray(point.posts) ? point.posts.length : 1;
+      countryInfo.count += postCount;
+      
       if (Array.isArray(point.posts)) {
         countryInfo.posts.push(...point.posts);
       } else {
@@ -1974,19 +2095,42 @@ class CiaMissionGlobe {
         return bTime - aTime;
       });
     }
+    
+    console.log('[Globe] Aggregated', this.countryData.size, 'countries');
   }
 
   // Update most active regions list
   updateActiveRegionsList() {
     const regionsList = document.getElementById('globe-regions-list');
-    if (!regionsList) return;
+    if (!regionsList) {
+      console.warn('[Globe] Regions list element not found');
+      // Retry after a delay
+      setTimeout(() => this.updateActiveRegionsList(), 500);
+      return;
+    }
+    
+    console.log('[Globe] Updating active regions list, countryData size:', this.countryData.size);
+    console.log('[Globe] Coverage points:', this.coveragePoints.length);
+    
+    // If countryData is empty but we have coverage points, try to aggregate again
+    if (this.countryData.size === 0 && this.coveragePoints.length > 0) {
+      console.log('[Globe] Country data empty, re-aggregating...');
+      this.updateCountryAggregation();
+    }
     
     const sortedCountries = Array.from(this.countryData.values())
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
     
+    console.log('[Globe] Sorted countries:', sortedCountries.length);
+    
     if (sortedCountries.length === 0) {
-      regionsList.innerHTML = '<div style="color: rgba(255, 255, 255, 0.5); font-size: 0.85rem; padding: 1rem; text-align: center;">No active regions</div>';
+      regionsList.innerHTML = '<div style="color: rgba(255, 255, 255, 0.5); font-size: 0.85rem; padding: 1rem; text-align: center;">Loading regions...</div>';
+      // If we have coverage points but no countries, there might be an issue with country extraction
+      if (this.coveragePoints.length > 0) {
+        console.warn('[Globe] Have coverage points but no countries extracted. Sample locations:', 
+          this.coveragePoints.slice(0, 5).map(p => p.location));
+      }
       return;
     }
     
@@ -2004,8 +2148,12 @@ class CiaMissionGlobe {
     
     // Add click handlers
     regionsList.querySelectorAll('.globe-region-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const countryName = item.dataset.country;
+      // Remove existing listeners by cloning
+      const newItem = item.cloneNode(true);
+      item.parentNode.replaceChild(newItem, item);
+      
+      newItem.addEventListener('click', () => {
+        const countryName = newItem.dataset.country;
         this.openCountryPanel(countryName);
       });
     });

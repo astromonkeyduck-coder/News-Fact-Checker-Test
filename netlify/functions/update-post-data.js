@@ -64,9 +64,29 @@ exports.handler = async (event) => {
         
         try {
           const existing = await store.get(postKey, { type: "json" });
-          post = existing;
+          if (existing) {
+            post = existing;
+          } else {
+            // Post doesn't exist - create new one
+            isNewPost = true;
+            post = {
+              id: postId,
+              link: link || url || `https://x.com/newsnoteworthy/status/${postId}`,
+              url: url || link || `https://x.com/newsnoteworthy/status/${postId}`,
+            };
+          }
         } catch (err) {
           // Post doesn't exist - create new one
+          isNewPost = true;
+          post = {
+            id: postId,
+            link: link || url || `https://x.com/newsnoteworthy/status/${postId}`,
+            url: url || link || `https://x.com/newsnoteworthy/status/${postId}`,
+          };
+        }
+
+        // Ensure post object exists (safety check)
+        if (!post) {
           isNewPost = true;
           post = {
             id: postId,
@@ -78,10 +98,10 @@ exports.handler = async (event) => {
         // Update post with new data
         // Ensure ID and link are preserved (they might be missing in corrupted posts)
         const updatedPost = {
-          ...post,
-          id: post.id || postId, // Ensure ID is always set
-          link: link || url || post.link || `https://x.com/newsnoteworthy/status/${postId}`, // Ensure link is always set
-          url: url || link || post.url || post.link || `https://x.com/newsnoteworthy/status/${postId}`, // Ensure url is always set
+          ...(post || {}), // Safely spread post (handle null case)
+          id: (post && post.id) || postId, // Ensure ID is always set
+          link: link || url || (post && post.link) || `https://x.com/newsnoteworthy/status/${postId}`, // Ensure link is always set
+          url: url || link || (post && post.url) || (post && post.link) || `https://x.com/newsnoteworthy/status/${postId}`, // Ensure url is always set
         };
         
         // Update text/story fields - use provided values if available, otherwise keep existing
@@ -93,8 +113,8 @@ exports.handler = async (event) => {
           updatedPost.text = text;
         } else if (!updatedPost.story && !updatedPost.text) {
           // Only set default if both are missing
-          updatedPost.story = post.story || post.text || post.title || '';
-          updatedPost.text = post.text || post.story || post.title || '';
+          updatedPost.story = (post && (post.story || post.text || post.title)) || '';
+          updatedPost.text = (post && (post.text || post.story || post.title)) || '';
         }
         
         // Update other fields

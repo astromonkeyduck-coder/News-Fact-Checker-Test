@@ -1,7 +1,7 @@
 /* Base Styles - Must be first */
 html, body {
-    background: linear-gradient(180deg, #141a24 0%, #1a222e 100%) !important;
-    background-color: #141a24 !important;
+    background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
+    background-color: #07152a !important;
     margin: 0;
     padding: 0;
     padding-top: 80px; /* Space for fixed header */
@@ -81,8 +81,8 @@ img[src*="PREVIEWIMAGEBRUH"]::after {
     background: linear-gradient(
         135deg,
         rgba(29, 161, 242, 0.6),
-        rgba(0, 191, 255, 0.6),
-        rgba(64, 224, 208, 0.6),
+        rgba(138, 43, 226, 0.6),
+        rgba(255, 20, 147, 0.6),
         rgba(29, 161, 242, 0.6)
     );
     background-size: 300% 300%;
@@ -167,10 +167,10 @@ img[src*="PREVIEWIMAGEBRUH"]::after {
     border-radius: 50%;
     animation: particleFloat 8s infinite;
     box-shadow: 
-        20px 30px 0 rgba(0, 191, 255, 0.6),
-        -30px 50px 0 rgba(64, 224, 208, 0.6),
+        20px 30px 0 rgba(138, 43, 226, 0.6),
+        -30px 50px 0 rgba(255, 20, 147, 0.6),
         40px -20px 0 rgba(29, 161, 242, 0.6),
-        -50px -40px 0 rgba(0, 191, 255, 0.6);
+        -50px -40px 0 rgba(138, 43, 226, 0.6);
 }
 
 .preview-image-particles::before {
@@ -288,17 +288,17 @@ body {
     position: sticky;
     top: 0;
     z-index: 10;
-    background: rgba(24, 30, 40, 0.95) !important;
+    background: rgba(15, 15, 35, 0.95) !important;
     backdrop-filter: blur(10px);
     padding: 1rem;
     margin-bottom: 2rem;
     border-radius: 12px;
-    border: 1px solid rgba(79, 172, 254, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
     align-items: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3), 0 0 20px rgba(79, 172, 254, 0.1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 
 .feed-search-input:focus,
@@ -491,7 +491,7 @@ body {
     width: 100%;
     max-width: 420px;
     height: 100%;
-    background: rgba(24, 30, 40, 0.98);
+    background: rgba(15, 15, 35, 0.98);
     backdrop-filter: blur(20px);
     border-left: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
@@ -569,7 +569,7 @@ body {
 /* Remove old post feed styles that cause ugly overlays */
 .post-feed-controls {
     backdrop-filter: blur(5px) !important;
-    background: rgba(24, 30, 40, 0.8) !important;
+    background: rgba(15, 15, 35, 0.8) !important;
 }
 
 /* Ensure mark tags in search results have good contrast */
@@ -628,17 +628,17 @@ body {
     position: sticky;
     top: 0;
     z-index: 10;
-    background: rgba(24, 30, 40, 0.95) !important;
+    background: rgba(15, 15, 35, 0.95) !important;
     backdrop-filter: blur(10px);
     padding: 1rem;
     margin-bottom: 2rem;
     border-radius: 12px;
-    border: 1px solid rgba(79, 172, 254, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
     align-items: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3), 0 0 20px rgba(79, 172, 254, 0.1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 
 .feed-search-input:focus,
@@ -821,7 +821,7 @@ body {
     width: 100%;
     max-width: 420px;
     height: 100%;
-    background: rgba(24, 30, 40, 0.98);
+    background: rgba(15, 15, 35, 0.98);
     backdrop-filter: blur(20px);
     border-left: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
@@ -899,7 +899,7 @@ body {
 /* Remove old post feed styles that cause ugly overlays */
 .post-feed-controls {
     backdrop-filter: blur(5px) !important;
-    background: rgba(24, 30, 40, 0.8) !important;
+    background: rgba(15, 15, 35, 0.8) !important;
 }
 
 /* Ensure mark tags in search results have good contrast */
@@ -1155,13 +1155,13 @@ header.main-header,
     left: 0;
     right: 0;
     width: 100%;
-    background: rgba(20, 26, 35, 0.98);
+    background: rgba(7, 21, 42, 0.98);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(79, 172, 254, 0.15);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     z-index: 1000;
     padding: 0.6rem 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0 0 20px rgba(79, 172, 254, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     margin-bottom: 0;
     min-height: 60px;
     max-height: 60px;
@@ -2024,7 +2024,7 @@ html, body {
     .globe-section {
         padding: 3rem 1rem !important;
         margin: 2rem 0 !important;
-        background: rgba(20, 26, 35, 0.5) !important;
+        background: rgba(7, 21, 42, 0.5) !important;
     }
 
     .globe-section .news-title {
@@ -2149,7 +2149,7 @@ html, body {
         left: 0 !important;
         right: 0 !important;
         z-index: 1000 !important;
-        background: rgba(20, 26, 35, 0.98) !important;
+        background: rgba(7, 21, 42, 0.98) !important;
         backdrop-filter: blur(10px) !important;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
         height: auto !important;
@@ -2440,7 +2440,7 @@ html, body {
         left: 0 !important;
         right: 0 !important;
         bottom: 0 !important;
-        background: rgba(20, 26, 35, 0.98) !important;
+        background: rgba(7, 21, 42, 0.98) !important;
         backdrop-filter: blur(20px) !important;
         z-index: 999 !important;
         transform: translateX(-100%) !important;
@@ -3808,7 +3808,7 @@ html, body {
         width: auto !important;
         height: auto !important;
         padding: 0.75rem 1rem !important;
-        background: rgba(20, 26, 35, 0.98) !important;
+        background: rgba(7, 21, 42, 0.98) !important;
         color: white !important;
         z-index: 10000 !important;
         border: 2px solid white !important;
@@ -4137,7 +4137,7 @@ html, body {
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(135deg, rgba(20, 26, 35, 0.98) 0%, rgba(28, 36, 48, 0.98) 100%);
+    background: linear-gradient(135deg, rgba(7, 21, 42, 0.98) 0%, rgba(13, 31, 58, 0.98) 100%);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid rgba(79, 172, 254, 0.3);

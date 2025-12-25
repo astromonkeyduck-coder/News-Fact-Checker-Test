@@ -474,9 +474,13 @@ Create a detailed prompt that describes the original image exactly as it is, the
             new Promise((resolve) => setTimeout(() => resolve({ skipped: true, reason: "timeout" }), 1500))
           ]);
         } catch (err) {
-          // Silently fail - logging is not critical
+          // Logging is not critical, but log errors for debugging
+          console.error('[Generate Image] Error in logging promise:', err?.message || err);
         }
-      }).catch(() => {});
+      }).catch((err) => {
+        // Log errors in promise chain for debugging
+        console.error('[Generate Image] Error in logging promise chain:', err?.message || err);
+      });
     }
 
     // Send email notification (truly non-blocking - fire and forget)
@@ -656,7 +660,10 @@ This is an automated notification from your website.`,
       }
       // Don't fail the request if email fails - email is not critical
     }
-  }).catch(() => {});
+  }).catch((err) => {
+    // Log email promise errors for debugging (email is non-critical)
+    console.error('[Generate Image] Error in email promise chain:', err?.message || err);
+  });
     }
 
     // Return response immediately

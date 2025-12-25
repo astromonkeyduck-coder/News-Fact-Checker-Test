@@ -334,7 +334,10 @@ async function renderPostFeed(containerId, endpoint = '/.netlify/functions/posts
         // Try to get response text for debugging
         res.text().then(text => {
           console.error('[PostFeed] Response body:', text.substring(0, 500));
-        }).catch(() => {});
+        }).catch((err) => {
+          // Response body may already be consumed, log for debugging
+          console.debug('[PostFeed] Could not read response text:', err?.message || err);
+        });
         return; // Exit early, no error thrown
       }
       
