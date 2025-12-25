@@ -90,7 +90,7 @@ function extractUSGSImages(eventDetail) {
   
   // Priority 3: All other products (fallback)
   const otherProductTypes = Object.keys(products)
-    .filter(key => !immediateProductTypes.includes(key) && key !== 'shakemap'));
+    .filter(key => !immediateProductTypes.includes(key) && key !== 'shakemap');
   
   // Strategy: Try to get one image from each product type to ensure they're different
   // First pass: Get one image from each immediate product type
