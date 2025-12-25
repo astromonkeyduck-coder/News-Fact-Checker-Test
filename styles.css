@@ -1183,7 +1183,6 @@ body {
     padding: 0 1.5rem;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 1rem;
     width: 100%;
     min-height: 60px;
@@ -1194,13 +1193,14 @@ body {
 }
 
 /* Left Group: Logo + Brand - Positioned at left edge */
+/* Left Zone: Logo + Site Name */
 .header-left {
     display: flex !important;
     align-items: center !important;
     gap: 0.6rem !important;
     flex: 0 0 auto !important;
     flex-shrink: 0 !important;
-    min-width: 0 !important;
+    min-width: fit-content !important;
     margin-left: 0 !important;
     padding-left: 0 !important;
     white-space: nowrap;
@@ -1249,7 +1249,7 @@ body {
     white-space: nowrap;
 }
 
-/* Center Group: Navigation Links */
+/* Center Zone: Navigation Links */
 .header-center {
     display: flex;
     align-items: center;
@@ -1258,6 +1258,7 @@ body {
     justify-content: center;
     overflow: visible;
     position: relative;
+    flex-shrink: 1;
 }
 
 .main-nav {
@@ -1296,16 +1297,18 @@ body {
     color: #4A90E2;
 }
 
-/* Right Group: Auth Buttons + Audio */
+/* Right Zone: Actions (Maintenance + Auth + Music) */
 .header-right {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    flex: 0 1 auto;
-    min-width: 0;
+    gap: 12px;
+    flex: 0 0 auto;
+    flex-shrink: 0;
+    min-width: fit-content;
     overflow: visible;
     position: relative;
     z-index: 10;
+    white-space: nowrap;
 }
 
 /* Auth buttons container */
@@ -1346,8 +1349,9 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    flex: 0 1 auto;
-    min-width: 0;
+    flex: 0 0 auto;
+    flex-shrink: 0;
+    min-width: fit-content;
     max-width: clamp(180px, 22vw, 420px);
     padding: 6px 12px;
     background: linear-gradient(135deg, rgba(255, 204, 0, 0.15) 0%, rgba(255, 204, 0, 0.1) 100%);
@@ -1433,12 +1437,19 @@ body {
 
 @media (max-width: 700px) {
     .header-right {
-        gap: 0.4rem;
+        gap: 8px; /* Slightly reduced but still visible spacing */
     }
     
     .auth-btn {
         padding: 0.3rem 0.7rem;
         font-size: 0.8rem;
+    }
+    
+    /* Ensure header-right doesn't shrink on mobile */
+    .header-right {
+        flex: 0 0 auto !important;
+        flex-shrink: 0 !important;
+        min-width: fit-content !important;
     }
 }
 
