@@ -43,29 +43,37 @@ function SecuritySpinner() {
         width: '48px',
         height: '48px',
         margin: '0 auto 1.5rem',
-        position: 'relative'
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
       }}
     >
+      {/* Rotating border circle */}
       <div
         style={{
+          position: 'absolute',
           width: '100%',
           height: '100%',
           border: '4px solid rgba(74, 144, 226, 0.2)',
           borderTop: '4px solid #4A90E2',
           borderRadius: '50%',
-          animation: 'securitySpin 1s linear infinite'
+          animation: 'securitySpin 1s linear infinite',
+          top: 0,
+          left: 0
         }}
       />
-      {/* Shield icon overlay (optional) */}
+      {/* Shield icon overlay - static, not rotating */}
       <div
         style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
+          position: 'relative',
           fontSize: '20px',
           color: '#4A90E2',
-          opacity: 0.8
+          opacity: 0.8,
+          zIndex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}
       >
         🛡️
