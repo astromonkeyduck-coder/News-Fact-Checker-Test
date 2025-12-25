@@ -453,7 +453,8 @@ async function storeEvent(event, logger) {
         throw updateError;
       }
       
-      return { isNew: false, event: { ...existing, ...updateData } };
+      // Merge all fields: existing (from DB) + updateData + original event fields (for completeness)
+      return { isNew: false, event: { ...event, ...existing, ...updateData } };
     } else {
       // Insert new event
       const { data: inserted, error: insertError } = await supabase

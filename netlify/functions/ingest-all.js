@@ -2,7 +2,8 @@
  * Verified Events Engine - Main Ingestion Runner
  * Scheduled function that runs all enabled engines sequentially
  * 
- * Schedule: */5 * * * * (every 5 minutes)
+ * Schedule: Every 5 minutes (configure in Netlify Dashboard)
+ * Cron expression: 0,5,10,15,20,25,30,35,40,45,50,55 * * * *
  * Configure in Netlify Dashboard → Functions → ingest-all → Schedule
  */
 
