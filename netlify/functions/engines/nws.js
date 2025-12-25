@@ -163,9 +163,10 @@ async function processAlert(feature, logger) {
     }
   }
   
-  // Send email alert for ALL notable weather events (severity >= 3)
-  // User requested all alerts, so we'll send for moderate+ severity
-  if (normalizedSeverity >= 3 && (!storedEvent.alert_sent || isNew)) {
+  // Send email alert only for HIGH-SEVERITY weather events (severity >= 4)
+  // Only send for SEVERE and EXTREME weather (Tornado, Hurricane, Flash Flood, etc.)
+  // MODERATE alerts (severity 3) will create posts but NOT send emails
+  if (normalizedSeverity >= 4 && (!storedEvent.alert_sent || isNew)) {
     const alertSent = await sendEventAlert(storedEvent, 'Weather Alert', 'NWS', null);
     if (alertSent) {
       // Update alert_sent status

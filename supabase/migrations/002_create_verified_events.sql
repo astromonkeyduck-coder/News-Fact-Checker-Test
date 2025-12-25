@@ -58,15 +58,22 @@ CREATE INDEX IF NOT EXISTS idx_engine_runs_engine_started_at ON engine_runs(engi
 CREATE INDEX IF NOT EXISTS idx_engine_runs_ok ON engine_runs(ok);
 
 -- Function to update updated_at timestamp
+-- Set search_path to prevent search path injection attacks
 CREATE OR REPLACE FUNCTION update_verified_events_updated_at()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$;
 
 -- Trigger to auto-update updated_at
+-- Drop trigger if it exists to allow re-running migration
+DROP TRIGGER IF EXISTS update_verified_events_updated_at ON verified_events;
 CREATE TRIGGER update_verified_events_updated_at
     BEFORE UPDATE ON verified_events
     FOR EACH ROW
@@ -84,4 +91,68 @@ COMMENT ON TABLE engine_runs IS 'Tracks ingestion runs for each engine with succ
 COMMENT ON COLUMN engine_runs.ok IS 'Whether the run completed successfully';
 COMMENT ON COLUMN engine_runs.count_new IS 'Number of new events inserted';
 COMMENT ON COLUMN engine_runs.count_updated IS 'Number of existing events updated';
+
+-- Enable Row Level Security (RLS) for security best practices
+ALTER TABLE verified_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE engine_runs ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+-- These tables are backend-only (accessed via service role key)
+-- Service role bypasses RLS automatically, so it will still have full access
+-- These policies block anonymous/public access for security
+
+-- Drop existing policies if they exist (for idempotency)
+DROP POLICY IF EXISTS "No anonymous access to verified_events" ON verified_events;
+DROP POLICY IF EXISTS "No anonymous access to engine_runs" ON engine_runs;
+
+-- Policy: Block all anonymous/public access
+-- Service role will still work because it bypasses RLS entirely
+CREATE POLICY "No anonymous access to verified_events"
+    ON verified_events
+    FOR ALL
+    USING (false)
+    WITH CHECK (false);
+
+CREATE POLICY "No anonymous access to engine_runs"
+    ON engine_runs
+    FOR ALL
+    USING (false)
+    WITH CHECK (false);
+
+-- Verification queries (optional - uncomment to run after migration)
+-- These verify that RLS is enabled and policies are created correctly
+
+/*
+-- Verify RLS is enabled
+SELECT 
+    schemaname,
+    tablename,
+    rowsecurity as rls_enabled
+FROM pg_tables 
+WHERE schemaname = 'public' 
+AND tablename IN ('verified_events', 'engine_runs');
+
+-- Verify policies exist
+SELECT 
+    schemaname,
+    tablename,
+    policyname,
+    permissive,
+    roles,
+    cmd,
+    qual,
+    with_check
+FROM pg_policies 
+WHERE schemaname = 'public' 
+AND tablename IN ('verified_events', 'engine_runs');
+
+-- Verify trigger exists
+SELECT 
+    trigger_name,
+    event_object_table,
+    action_statement
+FROM information_schema.triggers 
+WHERE trigger_schema = 'public' 
+AND trigger_name = 'update_verified_events_updated_at';
+*/
 
