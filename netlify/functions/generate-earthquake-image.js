@@ -268,7 +268,7 @@ async function prepareUSGSImage(imageBuffer, targetWidth, targetHeight) {
       .extract({ left, top, width: targetWidth, height: targetHeight })
       .png({
         quality: 100,        // Maximum quality
-        compressionLevel: 0, // No compression (fastest, highest quality)
+        compressionLevel: 6, // Balanced compression for USGS images
         palette: false       // Full color (no palette reduction)
       })
       .toBuffer();
@@ -514,9 +514,9 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
     })
     .png({ 
       quality: 100,        // Maximum quality
-      compressionLevel: 0, // No compression (fastest, highest quality)
+      compressionLevel: 9, // Maximum compression (0-9, 9 = smallest file size)
       palette: false,      // Full color (no palette reduction)
-      effort: 10           // Maximum compression effort (though compressionLevel: 0 means no compression)
+      effort: 10           // Maximum compression effort
     })
     .toBuffer();
   

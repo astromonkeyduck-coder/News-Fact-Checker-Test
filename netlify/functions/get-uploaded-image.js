@@ -195,7 +195,9 @@ exports.handler = async (event, context) => {
       }
 
       // Check buffer size to prevent timeout (Netlify has 10s timeout for free tier, 26s for pro)
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      // Base64 encoding increases size by ~33%, so we check the raw buffer size
+      // Netlify response limit is ~6MB for base64, so ~4.5MB raw buffer max
+      const maxSize = 4.5 * 1024 * 1024; // 4.5MB raw buffer (becomes ~6MB base64)
       if (imageBuffer.length > maxSize) {
         console.warn('[get-uploaded-image] Image too large', { size: imageBuffer.length, key: imageKey });
         return {
