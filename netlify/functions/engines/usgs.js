@@ -323,10 +323,8 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
   const dryRun = isDryRun();
   const magnitude = earthquake.magnitude;
   
-  // Only send for magnitude >= 7.0 (severity >= 4)
-  if (magnitude < 7.0) {
-    return false;
-  }
+  // Send email for ALL earthquakes (user requested)
+  // Removed magnitude >= 7.0 check - now sends for all
   
   // Check if alert already sent
   if (earthquake.alert_sent) {
@@ -519,8 +517,9 @@ async function processEarthquake(feature, logger) {
   // Store event
   const { isNew, event: storedEvent } = await storeEvent(event, logger);
   
-  // Send email alert if needed (only for new events or if not already sent)
-  if (magnitude >= 7.0 && (!storedEvent.alert_sent || isNew)) {
+  // Send email alert for ALL earthquakes (user requested)
+  // Removed magnitude >= 7.0 check - now sends for all
+  if (!storedEvent.alert_sent || isNew) {
     const alertSent = await sendEmailAlert(storedEvent, imageUrl, logger);
     if (alertSent) {
       // Update alert_sent status
