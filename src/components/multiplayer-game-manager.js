@@ -641,3 +641,8 @@ class MultiplayerGameManager {
 
 export default MultiplayerGameManager;
 
+// Make it globally available for non-module scripts
+if (typeof window !== 'undefined') {
+  window.MultiplayerGameManager = MultiplayerGameManager;
+}
+

@@ -299,3 +299,8 @@ class MultiplayerGameClient {
 
 export default MultiplayerGameClient;
 
+// Make it globally available for non-module scripts
+if (typeof window !== 'undefined') {
+  window.MultiplayerGameClient = MultiplayerGameClient;
+}
+

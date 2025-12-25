@@ -2530,7 +2530,8 @@
     <script src="src/utils/logger.js"></script>
     <script src="performance-monitor.js"></script>
     <script src="src/components/leaderboard.js"></script>
-    <script src="src/components/multiplayer-game-manager.js"></script>
+    <!-- Multiplayer loaded as module to support ES6 imports -->
+    <script type="module" src="src/components/multiplayer-game-manager.js"></script>
     <script src="script.js"></script>
     <script>
         // Initialize leaderboard
