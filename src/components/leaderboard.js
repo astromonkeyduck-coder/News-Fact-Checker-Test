@@ -1,3 +1,12 @@
+// Use global logger (exposed by logger.js)
+// If logger is not available, fall back to console with a guard
+const logger = window.logger || {
+    debug: (...args) => console.log('[Leaderboard]', ...args),
+    error: (...args) => console.error('[Leaderboard]', ...args),
+    warn: (...args) => console.warn('[Leaderboard]', ...args),
+    log: (...args) => console.log('[Leaderboard]', ...args)
+};
+
 class Leaderboard {
     constructor(gameType = 'fact-checker') {
         this.gameType = gameType;
@@ -6,6 +15,9 @@ class Leaderboard {
         this.realtimeComponent = null;
         this.userId = null;
         this.enableRealtime = true; // Can be disabled if WebSocket not available
+        this.lastLoadTime = 0;
+        this.loadThrottleMs = 1000; // Minimum 1 second between loads to prevent request storms
+        this.isLoading = false;
     }
 
     async init() {
@@ -79,6 +91,20 @@ class Leaderboard {
     }
 
     async loadScores(limit = 10) {
+        // Throttle rapid requests to prevent triggering bot protection
+        const now = Date.now();
+        if (this.isLoading) {
+            logger.debug('[Leaderboard] Load already in progress, skipping');
+            return;
+        }
+        if (now - this.lastLoadTime < this.loadThrottleMs) {
+            logger.debug('[Leaderboard] Request throttled, too soon since last load');
+            return;
+        }
+        
+        this.isLoading = true;
+        this.lastLoadTime = now;
+        
         try {
             logger.debug(`[Leaderboard] Loading scores for ${this.gameType}, limit: ${limit}`);
             const response = await fetch(`/.netlify/functions/leaderboard?gameType=${this.gameType}&limit=${limit}`);
@@ -101,6 +127,8 @@ class Leaderboard {
         } catch (error) {
             logger.error('Failed to load scores:', error);
             this.scores = [];
+        } finally {
+            this.isLoading = false;
         }
     }
 
