@@ -2836,10 +2836,17 @@ class BreakingNewsGame {
         this.setupHoverSounds();
     }
     
-    showMultiplayerModal() {
+    async showMultiplayerModal() {
+        // Wait for MultiplayerGameManager to load (modules load asynchronously)
+        let attempts = 0;
+        while (typeof MultiplayerGameManager === 'undefined' && attempts < 10) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
         // Check if MultiplayerGameManager is available
         if (typeof MultiplayerGameManager === 'undefined') {
-            console.warn('[Game] MultiplayerGameManager not loaded');
+            console.warn('[Game] MultiplayerGameManager not loaded after waiting');
             alert('Multiplayer feature is coming soon! Check back later for real-time multiplayer fact-checking games.');
             return;
         }
