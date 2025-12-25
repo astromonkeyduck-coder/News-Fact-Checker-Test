@@ -503,6 +503,13 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   }
   
   const magnitude = props.mag || 0;
+  
+  // Filter out earthquakes below magnitude 2.5
+  if (magnitude < 2.5) {
+    logger.debug('Skipping earthquake below magnitude 2.5', { magnitude, eventId });
+    return null;
+  }
+  
   const place = props.place || 'Unknown Location';
   const time = props.time || Date.now();
   const locationDisplay = cleanLocation(place);

@@ -52,24 +52,33 @@ exports.handler = async (event, context) => {
     const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
     const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
     
+    // Early validation - return 500 if credentials are missing (prevents 502 timeout)
+    if (!siteID || !token) {
+      console.error('[get-uploaded-image] Missing credentials', { hasSiteID: !!siteID, hasToken: !!token });
+      return {
+        statusCode: 500,
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          error: "Storage configuration error",
+          message: "Missing NETLIFY_SITE_ID or NETLIFY_BLOB_READ_WRITE_TOKEN"
+        }),
+      };
+    }
+    
     // Try multiple stores: post-media (new), newsletter-images, uploaded-images (legacy)
     const storeNames = ["post-media", "newsletter-images", "uploaded-images"];
     let store = null;
     let foundStore = null;
     
     // Try to find the media in any of the stores
+    // Note: siteID and token are guaranteed to exist after early validation above
     for (const name of storeNames) {
       try {
-        let testStore;
-        if (siteID && token) {
-          testStore = getStore({
-            name: name,
-            siteID: siteID,
-            token: token,
-          });
-        } else {
-          testStore = getStore({ name: name });
-        }
+        const testStore = getStore({
+          name: name,
+          siteID: siteID,
+          token: token,
+        });
         
         // Try to get the item to see if it exists in this store
         try {
@@ -90,17 +99,14 @@ exports.handler = async (event, context) => {
     }
     
     // If not found in any store, use the first one as default (will return 404 later)
+    // Note: siteID and token are guaranteed to exist after early validation above
     if (!store) {
       try {
-        if (siteID && token) {
-          store = getStore({
-            name: storeNames[0],
-            siteID: siteID,
-            token: token,
-          });
-        } else {
-          store = getStore({ name: storeNames[0] });
-        }
+        store = getStore({
+          name: storeNames[0],
+          siteID: siteID,
+          token: token,
+        });
       } catch (storeErr) {
         console.error('[get-uploaded-image] Failed to create store:', storeErr);
         return {
@@ -150,10 +156,11 @@ exports.handler = async (event, context) => {
       const imageData = await store.get(imageKey, { type: "arrayBuffer" });
       
       if (!imageData) {
+        console.warn('[get-uploaded-image] Image not found', { imageKey, foundStore });
         return {
           statusCode: 404,
           headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify({ error: "Media not found" }),
+          body: JSON.stringify({ error: "Media not found", key: imageKey }),
         };
       }
 
@@ -176,7 +183,27 @@ exports.handler = async (event, context) => {
       }
 
       // Convert ArrayBuffer to Buffer for response
-      const imageBuffer = Buffer.from(imageData);
+      // Handle both ArrayBuffer and Buffer types
+      let imageBuffer;
+      if (imageData instanceof ArrayBuffer) {
+        imageBuffer = Buffer.from(imageData);
+      } else if (Buffer.isBuffer(imageData)) {
+        imageBuffer = imageData;
+      } else {
+        // Try to convert whatever we got
+        imageBuffer = Buffer.from(imageData);
+      }
+
+      // Check buffer size to prevent timeout (Netlify has 10s timeout for free tier, 26s for pro)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (imageBuffer.length > maxSize) {
+        console.warn('[get-uploaded-image] Image too large', { size: imageBuffer.length, key: imageKey });
+        return {
+          statusCode: 413,
+          headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({ error: "Image too large" }),
+        };
+      }
 
       return {
         statusCode: 200,
@@ -189,13 +216,14 @@ exports.handler = async (event, context) => {
         isBase64Encoded: true,
       };
     } catch (err) {
-      console.error('[get-uploaded-image] Error retrieving image:', err);
+      console.error('[get-uploaded-image] Error retrieving image:', err, { imageKey, foundStore });
       return {
         statusCode: 500,
         headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ 
           error: "Failed to retrieve image",
-          message: err.message 
+          message: err.message,
+          key: imageKey
         }),
       };
     }

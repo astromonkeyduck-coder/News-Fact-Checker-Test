@@ -516,6 +516,14 @@ exports.handler = async (event, context) => {
         
         // Extract earthquake data
         const magnitude = feature.properties.mag || 0;
+        
+        // Filter out earthquakes below magnitude 2.5
+        if (magnitude < 2.5) {
+          console.log(`[earthquake-poller] Skipping earthquake below magnitude 2.5: M${magnitude.toFixed(1)}`);
+          results.skipped++;
+          continue;
+        }
+        
         const place = feature.properties.place || "Unknown Location";
         const time = feature.properties.time || Date.now();
         const locationDisplay = cleanLocation(place);

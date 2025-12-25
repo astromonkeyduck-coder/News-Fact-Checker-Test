@@ -1,21 +1,22 @@
 // Use global logger (exposed by logger.js)
 // If logger is not available, fall back to console with a guard
-// Use var instead of const to allow redeclaration if script loads multiple times
-var logger;
+// Check if logger already exists to avoid redeclaration errors
+let leaderboardLogger;
 if (typeof window !== 'undefined' && window.logger) {
-    logger = window.logger;
+    leaderboardLogger = window.logger;
 } else {
-    logger = {
+    leaderboardLogger = {
         debug: (...args) => console.log('[Leaderboard]', ...args),
         error: (...args) => console.error('[Leaderboard]', ...args),
         warn: (...args) => console.warn('[Leaderboard]', ...args),
         log: (...args) => console.log('[Leaderboard]', ...args)
     };
-    // Also set on window for other scripts
-    if (typeof window !== 'undefined') {
-        window.logger = logger;
+    // Also set on window for other scripts (only if not already set)
+    if (typeof window !== 'undefined' && !window.logger) {
+        window.logger = leaderboardLogger;
     }
 }
+const logger = leaderboardLogger; // Use const for the local reference
 
 class Leaderboard {
     constructor(gameType = 'fact-checker') {
