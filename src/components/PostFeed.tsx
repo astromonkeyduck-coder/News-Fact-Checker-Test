@@ -69,7 +69,18 @@ function PostCard({ post }: { post: CardPost }) {
     <article className="article-card" data-post-type={post.postType}>
       {post.image && (
         <div className="article-image">
-          <img src={post.image} alt={post.title} loading="lazy" />
+          <img 
+            src={post.image} 
+            alt={post.title} 
+            loading="lazy"
+            onError={(e) => {
+              console.error('[PostFeed] Image failed to load:', e.currentTarget.src);
+              e.currentTarget.style.display = 'none';
+            }}
+            onLoad={() => {
+              console.log('[PostFeed] Image loaded:', post.image);
+            }}
+          />
         </div>
       )}
       <div className="article-content">

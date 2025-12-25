@@ -764,7 +764,9 @@ function renderPosts(posts, container, originalContent = null) {
         if (images.length > 0) {
           if (images.length === 1) {
             mediaHtml += `<div class="post-image-single" style="border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.2);">
-              <img src="${images[0]}" alt="Post image" loading="lazy" style="width: 100%; height: auto; display: block; max-height: 600px; object-fit: cover;" onerror="this.style.display='none';" />
+              <img src="${images[0]}" alt="Post image" loading="lazy" style="width: 100%; height: auto; display: block; max-height: 600px; object-fit: cover;" 
+                   onerror="console.error('[PostFeed] Image failed:', this.src); this.style.display='none';" 
+                   onload="console.log('[PostFeed] Image loaded:', this.src);" />
             </div>`;
           } else {
             const gridCols = Math.min(images.length, 3);

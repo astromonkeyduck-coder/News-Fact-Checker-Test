@@ -275,12 +275,21 @@ exports.handler = async (event, context) => {
         }
       }
 
+      // Log image size for debugging
+      console.log('[get-uploaded-image] Serving image', { 
+        key: imageKey, 
+        size: imageBuffer.length, 
+        contentType,
+        foundStore 
+      });
+      
       return {
         statusCode: 200,
         headers: {
           ...headers,
           "Content-Type": contentType,
           "Cache-Control": "public, max-age=31536000, immutable", // Cache for 1 year
+          "Content-Length": imageBuffer.length.toString(),
         },
         body: imageBuffer.toString('base64'),
         isBase64Encoded: true,

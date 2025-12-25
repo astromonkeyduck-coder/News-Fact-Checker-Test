@@ -110,7 +110,8 @@ function renderCards(cards, container, originalContent) {
     // Fallback image with brand colors if no image
     const imageHtml = card.image 
       ? `<div class="article-image">
-          <img src="${card.image}" alt="${(card.title || '').replace(/"/g, '&quot;')}" loading="lazy" />
+          <img src="${card.image}" alt="${(card.title || '').replace(/"/g, '&quot;')}" loading="lazy" 
+               onerror="console.error('[PostFeed] Image failed to load:', this.src); this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(46, 204, 113, 0.2))'; this.parentElement.innerHTML='<div style=\\'display: flex; align-items: center; justify-content: center; min-height: 200px;\\'><div style=\\'font-size: 48px; font-weight: 700; color: rgba(74, 144, 226, 0.8);\\'>NW</div></div>';" />
         </div>`
       : `<div class="article-image" style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(46, 204, 113, 0.2)); display: flex; align-items: center; justify-content: center; min-height: 200px;">
           <div style="font-size: 48px; font-weight: 700; color: rgba(74, 144, 226, 0.8);">NW</div>
