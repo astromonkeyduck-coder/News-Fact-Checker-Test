@@ -547,6 +547,13 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   // Generate branded image
   const imageUrl = await generateBrandedImage(magnitude, locationDisplay, usgsImages, eventId, logger);
   
+  // Log image generation result
+  if (imageUrl) {
+    logger.info('Image generated successfully', { image_url: imageUrl, eventId });
+  } else {
+    logger.warn('Image generation returned null/undefined', { magnitude, location: locationDisplay, eventId });
+  }
+  
   // Build event object
   const coordinates = feature.geometry?.coordinates;
   const event = {
@@ -574,7 +581,7 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       magnitude: magnitude, // Store magnitude in assets for easy access
       event_id: eventId, // Store event_id in assets for email alerts
     },
-    image_url: imageUrl,
+    image_url: imageUrl, // This will be null if image generation failed
     alert_sent: false,
     alert_sent_at: null,
     raw: feature,
@@ -583,23 +590,43 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   // Store event
   const { isNew, event: storedEvent } = await storeEvent(event, logger);
   
-  // Create website post for earthquakes with images
-  // Always create/update post if we have an image (for most recent earthquake or new earthquakes)
-  if (imageUrl || isNew || forceEmail) {
+  // Create website post for earthquakes
+  // Always create/update post for new earthquakes, or if we have an image
+  // This ensures posts are created even if image generation fails initially
+  if (isNew || imageUrl || forceEmail) {
     try {
       const postResult = await createPostFromEvent(storedEvent, 'Earthquake', 'USGS');
       if (postResult.exists) {
         if (postResult.updated) {
-          logger.info('Website post updated with image', { canonical_id: canonicalId, image_url: storedEvent.image_url });
+          logger.info('Website post updated', { 
+            canonical_id: canonicalId, 
+            image_url: storedEvent.image_url,
+            has_image: !!storedEvent.image_url 
+          });
         } else {
-          logger.info('Website post already exists', { canonical_id: canonicalId, has_image: !!storedEvent.image_url });
+          logger.info('Website post already exists', { 
+            canonical_id: canonicalId, 
+            has_image: !!storedEvent.image_url,
+            image_url: storedEvent.image_url 
+          });
         }
       } else {
-        logger.info('Website post created', { canonical_id: canonicalId, image_url: storedEvent.image_url });
+        logger.info('Website post created', { 
+          canonical_id: canonicalId, 
+          image_url: storedEvent.image_url,
+          has_image: !!storedEvent.image_url 
+        });
       }
     } catch (postError) {
       logger.warn('Failed to create website post', postError);
     }
+  } else {
+    logger.debug('Skipping post creation', { 
+      canonical_id: canonicalId, 
+      isNew, 
+      hasImage: !!imageUrl, 
+      forceEmail 
+    });
   }
   
   // Send email alert for ALL earthquakes (user requested)
