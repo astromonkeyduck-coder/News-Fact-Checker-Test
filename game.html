@@ -1493,9 +1493,22 @@
         }
         
         .social-icon {
-            width: 20px;
-            height: 20px;
+            width: 20px !important;
+            height: 20px !important;
+            max-width: 20px !important;
+            max-height: 20px !important;
             flex-shrink: 0;
+        }
+        
+        .social-link {
+            max-width: 100%;
+        }
+        
+        .social-link svg {
+            width: 20px !important;
+            height: 20px !important;
+            max-width: 20px !important;
+            max-height: 20px !important;
         }
         
         @media (max-width: 768px) {
@@ -2422,8 +2435,102 @@
     <!-- Background Animations -->
     
     
+    <script>
+        // CRITICAL: Iframe escape hatch - prevents Cloudflare challenge issues in iframes
+        // If this page is loaded in an iframe, force top-level navigation
+        (function() {
+            try {
+                if (window.top !== window.self) {
+                    // We're in an iframe - redirect to top level
+                    console.warn('[Game] Detected iframe embedding - redirecting to top level to avoid Cloudflare challenges');
+                    window.top.location.href = window.location.href;
+                    return; // Stop execution until redirect completes
+                }
+            } catch (e) {
+                // Cross-origin iframe - can't access top, but that's okay
+                // This means we're embedded cross-origin, which we don't support anyway
+                console.warn('[Game] Cross-origin iframe detected - game may not work properly');
+            }
+        })();
+        
+        // Loading timeout fallback - show recovery UI if game doesn't load in 8 seconds
+        let loadingTimeout;
+        let gameLoaded = false;
+        
+        function showLoadingFallback() {
+            if (gameLoaded) return;
+            
+            const fallbackHTML = `
+                <div id="game-loading-fallback" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(7, 21, 42, 0.95); z-index: 99999; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px; box-sizing: border-box;">
+                    <div style="max-width: 500px; text-align: center; color: white;">
+                        <h2 style="color: #4A9EFF; margin-bottom: 20px; font-size: 1.5rem;">Having trouble loading the game?</h2>
+                        <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 30px; line-height: 1.6;">
+                            The game is taking longer than expected to load. This might be due to network issues or browser verification.
+                        </p>
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <button id="fallback-open-full" style="padding: 12px 24px; background: rgba(74, 158, 255, 0.3); border: 2px solid #4A9EFF; color: #4A9EFF; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(74, 158, 255, 0.5)'" onmouseout="this.style.background='rgba(74, 158, 255, 0.3)'">
+                                Open in Full Page
+                            </button>
+                            <button id="fallback-refresh" style="padding: 12px 24px; background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.3); color: white; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(255, 255, 255, 0.2)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)'">
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', fallbackHTML);
+            
+            // Bind fallback buttons
+            const openFullBtn = document.getElementById('fallback-open-full');
+            const refreshBtn = document.getElementById('fallback-refresh');
+            
+            if (openFullBtn) {
+                openFullBtn.addEventListener('click', function() {
+                    // Force full page navigation with cache bust
+                    window.location.href = window.location.pathname + '?t=' + Date.now();
+                });
+            }
+            
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', function() {
+                    window.location.reload();
+                });
+            }
+        }
+        
+        // Set timeout for loading fallback (8 seconds)
+        loadingTimeout = setTimeout(showLoadingFallback, 8000);
+        
+        // Mark as loaded when DOM is ready and scripts are loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Clear timeout once game starts initializing
+            setTimeout(function() {
+                if (document.getElementById('startScreen') || document.getElementById('gameArea')) {
+                    gameLoaded = true;
+                    clearTimeout(loadingTimeout);
+                    const fallback = document.getElementById('game-loading-fallback');
+                    if (fallback) {
+                        fallback.style.display = 'none';
+                    }
+                }
+            }, 2000); // Give it 2 seconds after DOM ready
+        });
+        
+        // Also clear timeout when game actually starts
+        window.addEventListener('gameStarted', function() {
+            gameLoaded = true;
+            clearTimeout(loadingTimeout);
+            const fallback = document.getElementById('game-loading-fallback');
+            if (fallback) {
+                fallback.style.display = 'none';
+            }
+        });
+    </script>
+    <script src="src/utils/logger.js"></script>
     <script src="performance-monitor.js"></script>
     <script src="src/components/leaderboard.js"></script>
+    <script src="src/components/multiplayer-game-manager.js"></script>
     <script src="script.js"></script>
     <script>
         // Initialize leaderboard
