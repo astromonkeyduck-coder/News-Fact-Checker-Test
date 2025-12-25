@@ -6,6 +6,14 @@
 
 import MultiplayerGameClient from '../utils/multiplayer-game.js';
 
+// Logger fallback
+const logger = {
+  error: (...args) => console.error('[MultiplayerGameManager]', ...args),
+  warn: (...args) => console.warn('[MultiplayerGameManager]', ...args),
+  log: (...args) => console.log('[MultiplayerGameManager]', ...args),
+  debug: (...args) => console.debug('[MultiplayerGameManager]', ...args)
+};
+
 class MultiplayerGameManager {
   constructor(container, userId, userName) {
     this.container = container;
@@ -54,8 +62,14 @@ class MultiplayerGameManager {
       this.room = data.room;
       this.players = data.room.players || [];
       
-      // Connect WebSocket
-      this.connectWebSocket();
+      // Connect WebSocket (optional - will work without it using polling)
+      try {
+        this.connectWebSocket();
+      } catch (wsError) {
+        logger.warn('[MultiplayerGameManager] WebSocket connection failed, will use polling:', wsError);
+        // Start polling for updates if WebSocket fails
+        this.startPolling();
+      }
       
       this.emit('room-created', { roomId: this.roomId, room: this.room });
       this.render();
@@ -96,8 +110,14 @@ class MultiplayerGameManager {
       this.room = data.room;
       this.players = data.room.players || [];
       
-      // Connect WebSocket
-      this.connectWebSocket();
+      // Connect WebSocket (optional - will work without it using polling)
+      try {
+        this.connectWebSocket();
+      } catch (wsError) {
+        logger.warn('[MultiplayerGameManager] WebSocket connection failed, will use polling:', wsError);
+        // Start polling for updates if WebSocket fails
+        this.startPolling();
+      }
       
       this.emit('room-joined', { roomId, room: this.room });
       this.render();
@@ -193,64 +213,143 @@ class MultiplayerGameManager {
       this.client.disconnect();
     }
 
-    this.client = new MultiplayerGameClient(this.roomId, this.userId, this.userName);
-    
-    // Set up event listeners
-    this.client.on('connected', () => {
-      this.client.joinRoom();
-    });
+    try {
+      this.client = new MultiplayerGameClient(this.roomId, this.userId, this.userName);
+      
+      // Set up event listeners
+      this.client.on('connected', () => {
+        this.client.joinRoom();
+      });
 
-    this.client.on('room-update', (data) => {
-      this.room = data.room;
-      this.players = data.room.players || [];
-      this.render();
-      this.emit('room-updated', data);
-    });
+      this.client.on('room-update', (data) => {
+        this.room = data.room;
+        this.players = data.room.players || [];
+        this.render();
+        this.emit('room-updated', data);
+      });
 
-    this.client.on('game-started', (data) => {
-      this.room = data.room;
-      this.gameState = 'playing';
-      this.emit('game-started', data);
-      this.render();
-    });
+      this.client.on('game-started', (data) => {
+        this.room = data.room;
+        this.gameState = 'playing';
+        this.emit('game-started', data);
+        this.render();
+      });
 
-    this.client.on('question', (data) => {
-      // Handle both data formats: { question } or { payload: { question } }
-      this.currentQuestion = data.payload?.question || data.question;
-      // Ensure question has an ID
-      if (this.currentQuestion && !this.currentQuestion.id) {
-        const questionIndex = data.payload?.questionIndex || data.questionIndex || 0;
-        this.currentQuestion.id = `q_${questionIndex}`;
+      this.client.on('question', (data) => {
+        // Handle both data formats: { question } or { payload: { question } }
+        this.currentQuestion = data.payload?.question || data.question;
+        // Ensure question has an ID
+        if (this.currentQuestion && !this.currentQuestion.id) {
+          const questionIndex = data.payload?.questionIndex || data.questionIndex || 0;
+          this.currentQuestion.id = `q_${questionIndex}`;
+        }
+        this.questionStartTime = Date.now();
+        this.myAnswer = null;
+        this.results = null;
+        this.emit('question-received', data);
+        this.render();
+      });
+
+      this.client.on('results', (data) => {
+        this.results = data;
+        this.emit('results-received', data);
+        this.render();
+      });
+
+      this.client.on('game-ended', (data) => {
+        this.gameState = 'finished';
+        this.emit('game-ended', data);
+        this.render();
+      });
+
+      this.client.on('players-updated', (data) => {
+        this.players = data.players || [];
+        this.render();
+      });
+
+      this.client.on('error', (error) => {
+        logger.warn('[MultiplayerGameManager] WebSocket error, falling back to polling:', error);
+        // Fallback to polling if WebSocket fails
+        if (!this.pollingInterval) {
+          this.startPolling();
+        }
+        this.emit('error', error);
+      });
+
+      this.client.connect();
+      
+      // If WebSocket URL is not configured, it will emit an error and we'll use polling
+      if (!this.client.wsUrl) {
+        logger.warn('[MultiplayerGameManager] WebSocket URL not configured, using polling fallback');
+        this.startPolling();
       }
-      this.questionStartTime = Date.now();
-      this.myAnswer = null;
-      this.results = null;
-      this.emit('question-received', data);
-      this.render();
-    });
-
-    this.client.on('results', (data) => {
-      this.results = data;
-      this.emit('results-received', data);
-      this.render();
-    });
-
-    this.client.on('game-ended', (data) => {
-      this.gameState = 'finished';
-      this.emit('game-ended', data);
-      this.render();
-    });
-
-    this.client.on('players-updated', (data) => {
-      this.players = data.players || [];
-      this.render();
-    });
-
-    this.client.on('error', (error) => {
-      this.emit('error', error);
-    });
-
-    this.client.connect();
+    } catch (error) {
+      logger.error('[MultiplayerGameManager] Failed to initialize WebSocket client:', error);
+      this.startPolling();
+    }
+  }
+  
+  /**
+   * Start polling for room updates (fallback when WebSocket is unavailable)
+   */
+  startPolling() {
+    if (this.pollingInterval) {
+      return; // Already polling
+    }
+    
+    logger.log('[MultiplayerGameManager] Starting polling for room updates');
+    this.pollingInterval = setInterval(async () => {
+      if (!this.roomId) {
+        this.stopPolling();
+        return;
+      }
+      
+      try {
+        const response = await fetch('/.netlify/functions/game-room', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'get-state',
+            roomId: this.roomId
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.room) {
+            // Update room state
+            const oldStatus = this.room?.status;
+            this.room = data.room;
+            this.players = data.room.players || [];
+            
+            // Handle status changes
+            if (oldStatus !== this.room.status) {
+              if (this.room.status === 'playing' && this.gameState !== 'playing') {
+                this.gameState = 'playing';
+                this.emit('game-started', { room: this.room });
+              } else if (this.room.status === 'finished' && this.gameState !== 'finished') {
+                this.gameState = 'finished';
+                this.emit('game-ended', { room: this.room });
+              }
+            }
+            
+            this.render();
+          }
+        }
+      } catch (error) {
+        logger.error('[MultiplayerGameManager] Polling error:', error);
+      }
+    }, 2000); // Poll every 2 seconds
+  }
+  
+  /**
+   * Stop polling
+   */
+  stopPolling() {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
+    }
   }
 
   /**
@@ -264,11 +363,14 @@ class MultiplayerGameManager {
     const timeSpent = this.questionStartTime ? (Date.now() - this.questionStartTime) / 1000 : 0;
     this.myAnswer = answer;
 
-    if (this.client && this.client.connected) {
+    if (this.client && this.client.isConnected) {
       // Use question ID if available, otherwise use index or generate one
       const questionId = this.currentQuestion.id || 
                         `q_${this.room.questionIndex || 0}_${Date.now()}`;
       this.client.submitAnswer(questionId, answer, timeSpent);
+    } else {
+      // Fallback: submit answer via API if WebSocket not available
+      this.submitAnswerViaAPI(answer, timeSpent);
     }
 
     this.render();
@@ -278,8 +380,42 @@ class MultiplayerGameManager {
    * Request next question (when ready)
    */
   requestNextQuestion() {
-    if (this.client && this.client.connected) {
+    if (this.client && this.client.isConnected) {
       this.client.requestNextQuestion();
+    }
+    // If using polling, the next question will come automatically
+  }
+  
+  /**
+   * Submit answer via API (fallback when WebSocket unavailable)
+   */
+  async submitAnswerViaAPI(answer, timeSpent) {
+    if (!this.roomId || !this.currentQuestion) return;
+    
+    try {
+      const questionId = this.currentQuestion.id || `q_${this.room.questionIndex || 0}`;
+      const response = await fetch('/.netlify/functions/game-room', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'submit-answer',
+          roomId: this.roomId,
+          userId: this.userId,
+          questionId: questionId,
+          answer: answer,
+          timeSpent: timeSpent
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.results) {
+          this.results = data.results;
+          this.render();
+        }
+      }
+    } catch (error) {
+      logger.error('[MultiplayerGameManager] Error submitting answer via API:', error);
     }
   }
 
@@ -634,6 +770,7 @@ class MultiplayerGameManager {
    * Cleanup
    */
   destroy() {
+    this.stopPolling();
     if (this.client) {
       this.client.disconnect();
     }

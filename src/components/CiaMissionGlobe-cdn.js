@@ -929,6 +929,16 @@ class CiaMissionGlobe {
             cacheData.timestamp && (Date.now() - cacheData.timestamp < 3600000)) {
           console.log('[Globe] Using cached location data:', cacheData.coveragePoints.length, 'points');
           this.totalPosts = cacheData.totalPosts || cacheData.coveragePoints.length;
+          
+          // Also try to restore posts from cache if available
+          if (cacheData.posts && Array.isArray(cacheData.posts)) {
+            this.allPosts = cacheData.posts;
+            console.log('[Globe] Restored', this.allPosts.length, 'posts from cache');
+          } else {
+            // Load posts asynchronously if not in cache
+            this.loadPostsForFiltering();
+          }
+          
           return cacheData.coveragePoints;
         }
       }
@@ -1016,15 +1026,26 @@ class CiaMissionGlobe {
       // Add extra locations from CSV analytics (posts-with-locations.json)
       await this.addExtraLocationsFromCSV(coveragePoints);
       
-      // Cache the results for faster future loads
+      // Cache the results for faster future loads (include posts for filtering)
       try {
         localStorage.setItem(locationCacheKey, JSON.stringify({
           coveragePoints: coveragePoints,
           totalPosts: posts.length,
+          posts: posts, // Store posts for filtering
           timestamp: Date.now()
         }));
       } catch (e) {
         console.warn('[Globe] Failed to cache locations:', e);
+        // If cache is too large, try without posts
+        try {
+          localStorage.setItem(locationCacheKey, JSON.stringify({
+            coveragePoints: coveragePoints,
+            totalPosts: posts.length,
+            timestamp: Date.now()
+          }));
+        } catch (e2) {
+          console.warn('[Globe] Failed to cache even without posts:', e2);
+        }
       }
       
       this.totalPosts = posts.length;
@@ -1389,7 +1410,9 @@ class CiaMissionGlobe {
       } else if (this.coveragePoints.length > 0) {
         // If we have coverage points but no posts loaded yet, still update regions
         this.updateCountryAggregation();
-        this.updateActiveRegionsList();
+        setTimeout(() => this.updateActiveRegionsList(), 500);
+        // Try to load posts in background for filtering
+        this.loadPostsForFiltering();
       }
     }, 250);
 
@@ -1746,7 +1769,12 @@ class CiaMissionGlobe {
           
           this.timeRange = timeRange;
           console.log('[Globe] Time range changed to:', this.timeRange);
-          this.applyFilters();
+          // Load posts if needed, then apply filters
+          if (this.allPosts.length === 0) {
+            this.loadPostsForFiltering().then(() => this.applyFilters());
+          } else {
+            this.applyFilters();
+          }
         }, { once: false });
       });
 
@@ -1781,7 +1809,12 @@ class CiaMissionGlobe {
           
           this.selectedCategory = category;
           console.log('[Globe] Category changed to:', this.selectedCategory);
-          this.applyFilters();
+          // Load posts if needed, then apply filters
+          if (this.allPosts.length === 0) {
+            this.loadPostsForFiltering().then(() => this.applyFilters());
+          } else {
+            this.applyFilters();
+          }
         }, { once: false });
       });
 
@@ -1791,7 +1824,12 @@ class CiaMissionGlobe {
         breakingToggle.addEventListener('change', (e) => {
           this.breakingOnly = e.target.checked;
           console.log('[Globe] Breaking only:', this.breakingOnly);
-          this.applyFilters();
+          // Load posts if needed, then apply filters
+          if (this.allPosts.length === 0) {
+            this.loadPostsForFiltering().then(() => this.applyFilters());
+          } else {
+            this.applyFilters();
+          }
         });
       } else {
         console.warn('[Globe] Breaking toggle not found');
@@ -1864,8 +1902,12 @@ class CiaMissionGlobe {
 
   // Apply filters and update display
   applyFilters() {
+    // Don't log warning if we're still loading - just return silently
     if (!this.allPosts || this.allPosts.length === 0) {
-      console.warn('[Globe] No posts available for filtering');
+      // Try to load posts if we don't have them
+      if (this.allPosts.length === 0) {
+        this.loadPostsForFiltering();
+      }
       return;
     }
     
@@ -1951,6 +1993,47 @@ class CiaMissionGlobe {
     }
     
     this.coveragePoints = this.aggregateCoveragePoints(coveragePoints);
+  }
+
+  // Load posts for filtering (async, doesn't block)
+  async loadPostsForFiltering() {
+    if (this.allPosts && this.allPosts.length > 0) {
+      return Promise.resolve(); // Already loaded
+    }
+    
+    try {
+      // Try to get from enhanced feed cache
+      const cacheKey = 'noteworthy-posts-cache-enhanced';
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const cacheData = JSON.parse(cached);
+          if (cacheData.posts && Array.isArray(cacheData.posts)) {
+            this.allPosts = cacheData.posts;
+            console.log('[Globe] Loaded', this.allPosts.length, 'posts from cache for filtering');
+            return Promise.resolve();
+          }
+        } catch (e) {
+          console.warn('[Globe] Failed to parse cached posts:', e);
+        }
+      }
+
+      // If no cached posts, try to fetch from API
+      const response = await fetch('/.netlify/functions/posts-read?limit=500');
+      if (response.ok) {
+        const data = await response.json();
+        const posts = Array.isArray(data) ? data : (data.posts || data.data || []);
+        if (posts.length > 0) {
+          this.allPosts = posts;
+          console.log('[Globe] Loaded', this.allPosts.length, 'posts from API for filtering');
+          return Promise.resolve();
+        }
+      }
+      return Promise.resolve(); // Return even if no posts found
+    } catch (e) {
+      console.warn('[Globe] Failed to load posts for filtering:', e);
+      return Promise.resolve(); // Return promise even on error
+    }
   }
 
   // Synchronous version of getLocationCoordinates (uses cache)

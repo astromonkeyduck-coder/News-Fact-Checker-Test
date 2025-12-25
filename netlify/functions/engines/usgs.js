@@ -8,6 +8,7 @@
 const supabase = require('../lib/supabaseClient');
 const { buildCanonicalId } = require('../lib/dedupe');
 const { normalizeEarthquakeSeverity, cleanLocation } = require('../lib/normalize');
+const { createPostFromEvent } = require('../lib/createPost');
 
 // USGS GeoJSON feed URLs
 const USGS_FEEDS = {
@@ -317,7 +318,8 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
 }
 
 /**
- * Send email alert for high-severity earthquakes
+ * Send email alert for ALL earthquakes
+ * Uses HTTP call to send-earthquake-alert function which handles image attachments
  */
 async function sendEmailAlert(earthquake, imageUrl, logger) {
   const dryRun = isDryRun();
@@ -342,13 +344,23 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
   }
   
   try {
-    const baseUrl = process.env.URL || 'https://noteworthynews.co';
-    const alertResponse = await fetch(`${baseUrl}/.netlify/functions/send-earthquake-alert`, {
+    // Use the site URL or fallback to noteworthynews.co
+    const baseUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || 'https://noteworthynews.co';
+    const functionUrl = `${baseUrl}/.netlify/functions/send-earthquake-alert`;
+    
+    logger.info('Sending email alert', { 
+      url: functionUrl,
+      magnitude,
+      location: earthquake.location_display,
+      has_image: !!imageUrl
+    });
+    
+    const alertResponse = await fetch(functionUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         earthquake: {
-          event_id: earthquake.event_id,
+          event_id: earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown',
           magnitude: earthquake.magnitude,
           location_display: earthquake.location_display,
           time: earthquake.published_at,
@@ -361,14 +373,28 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
     
     if (!alertResponse.ok) {
       const errorText = await alertResponse.text();
-      logger.warn('Alert send failed', null, { status: alertResponse.status, error: errorText });
+      logger.error('Alert send failed', null, { 
+        status: alertResponse.status, 
+        statusText: alertResponse.statusText,
+        error: errorText,
+        url: functionUrl
+      });
       return false;
     }
     
-    logger.info('Email alert sent', { magnitude, location: earthquake.location_display });
+    const result = await alertResponse.json();
+    logger.info('Email alert sent successfully', { 
+      magnitude, 
+      location: earthquake.location_display,
+      result: result.message || 'success'
+    });
     return true;
   } catch (error) {
-    logger.warn('Alert send error', error);
+    logger.error('Alert send error', error, { 
+      canonical_id: earthquake.canonical_id,
+      magnitude,
+      location: earthquake.location_display
+    });
     return false;
   }
 }
@@ -412,9 +438,9 @@ async function storeEvent(event, logger) {
         updateData.image_url = event.image_url;
       }
       
-      // Preserve alert_sent status
-      if (existing.alert_sent) {
-        updateData.alert_sent = true;
+      // Preserve alert_sent status (always preserve, whether true or false)
+      updateData.alert_sent = existing.alert_sent || false;
+      if (existing.alert_sent_at) {
         updateData.alert_sent_at = existing.alert_sent_at;
       }
       
@@ -490,6 +516,7 @@ async function processEarthquake(feature, logger) {
     canonical_id: canonicalId,
     engine: 'usgs',
     event_type: 'earthquake',
+    event_id: eventId, // Add event_id for email alerts
     severity,
     title: `M${magnitude.toFixed(1)} Earthquake Near ${locationDisplay}`,
     summary: `A magnitude ${magnitude.toFixed(1)} earthquake was detected by the U.S. Geological Survey near ${locationDisplay}.`,
@@ -516,6 +543,16 @@ async function processEarthquake(feature, logger) {
   
   // Store event
   const { isNew, event: storedEvent } = await storeEvent(event, logger);
+  
+  // Create website post for new earthquakes
+  if (isNew) {
+    try {
+      await createPostFromEvent(storedEvent, 'Earthquake', 'USGS');
+      logger.info('Website post created', { canonical_id: canonicalId });
+    } catch (postError) {
+      logger.warn('Failed to create website post', postError);
+    }
+  }
   
   // Send email alert for ALL earthquakes (user requested)
   // Removed magnitude >= 7.0 check - now sends for all

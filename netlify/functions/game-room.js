@@ -60,6 +60,8 @@ exports.handler = async (event, context) => {
         return await startGame(store, roomId, userId);
       case 'list':
         return await listRooms(store);
+      case 'submit-answer':
+        return await submitAnswer(store, roomId, userId, body.questionId, body.answer, body.timeSpent);
       default:
         return {
           statusCode: 400,

@@ -10203,9 +10203,26 @@ IMPORTANT FORMATTING AND CONTENT RULES:
                             message: textPrompt,
                             chatHistory: []
                         })
-                    }).then(response => {
+                    }).then(async response => {
                         if (!response.ok) {
-                            throw new Error(`API error: ${response.status}`);
+                            // Try to get error details from response body
+                            let errorMessage = `API error: ${response.status}`;
+                            try {
+                                const errorText = await response.text();
+                                if (errorText) {
+                                    try {
+                                        const errorData = JSON.parse(errorText);
+                                        errorMessage = errorData.error || errorData.message || errorMessage;
+                                        console.error('[Spotlight] API error details:', errorData);
+                                    } catch (e) {
+                                        // If not JSON, use the text as error message
+                                        errorMessage = errorText.substring(0, 200);
+                                    }
+                                }
+                            } catch (e) {
+                                // If we can't read the response, just use status code
+                            }
+                            throw new Error(errorMessage);
                         }
                         return response.json();
                     }).then(data => {
@@ -10217,11 +10234,20 @@ IMPORTANT FORMATTING AND CONTENT RULES:
                         } else {
                             throw new Error('No reply from AI');
                         }
-                    }).catch(error => {
+                    }).catch(async error => {
                         // Suppress 429 (rate limit) errors - expected behavior
                         const isRateLimit = error.message?.includes('429') || error.message?.includes('rate limit');
                         if (!isRateLimit) {
                             console.error('[Spotlight] Error fetching AI text content:', error);
+                            // Try to get more details from the error response if available
+                            if (error.response) {
+                                try {
+                                    const errorData = await error.response.json();
+                                    console.error('[Spotlight] Error details:', errorData);
+                                } catch (e) {
+                                    // Ignore JSON parse errors
+                                }
+                            }
                         }
                         aiThinking.style.display = 'none';
                         if (aiResponse) {

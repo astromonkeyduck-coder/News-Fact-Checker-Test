@@ -1028,8 +1028,8 @@ class NoteworthyChat extends HTMLElement {
         /* Orb/Core Container */
         .voice-orb-container {
           position: relative;
-          width: 240px;
-          height: 240px;
+          width: 320px;
+          height: 320px;
           margin: 0 auto 32px;
           display: flex;
           align-items: center;
@@ -1039,8 +1039,8 @@ class NoteworthyChat extends HTMLElement {
         /* Outer ring with gradient */
         .orb-outer-ring {
           position: absolute;
-          width: 240px;
-          height: 240px;
+          width: 320px;
+          height: 320px;
           border-radius: 50%;
           border: 2px solid transparent;
           background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(212, 160, 23, 0.2)) padding-box,
@@ -1069,8 +1069,8 @@ class NoteworthyChat extends HTMLElement {
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          width: 360px;
-          height: 360px;
+          width: 480px;
+          height: 480px;
           z-index: 1;
           pointer-events: none;
         }
@@ -1103,8 +1103,8 @@ class NoteworthyChat extends HTMLElement {
         /* Inner core with NW logo */
         .orb-core {
           position: relative;
-          width: 180px;
-          height: 180px;
+          width: 280px;
+          height: 280px;
           border-radius: 50%;
           background: linear-gradient(135deg, 
             rgba(212, 160, 23, 0.2) 0%, 
@@ -1149,8 +1149,8 @@ class NoteworthyChat extends HTMLElement {
         }
         
         .orb-logo {
-          width: 240px;
-          height: 240px;
+          width: 320px;
+          height: 320px;
           object-fit: contain;
           filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
           z-index: 3;
@@ -1289,6 +1289,11 @@ class NoteworthyChat extends HTMLElement {
           opacity: 1 !important;
         }
         
+        /* Always show mute button when voice panel is active */
+        #voiceControlMute {
+          display: flex !important;
+        }
+        
         .voice-control-mute.muted {
           background: rgba(255, 100, 100, 0.2);
           border-color: rgba(255, 100, 100, 0.4);
@@ -1353,23 +1358,28 @@ class NoteworthyChat extends HTMLElement {
           }
           
           .orb-outer-ring {
-            width: 200px;
-            height: 200px;
+            width: 260px;
+            height: 260px;
           }
           
           .orb-core {
-            width: 150px;
-            height: 150px;
+            width: 240px;
+            height: 240px;
           }
           
           .orb-logo {
-            width: 200px;
-            height: 200px;
+            width: 260px;
+            height: 260px;
+          }
+          
+          .voice-orb-container {
+            width: 260px;
+            height: 260px;
           }
           
           .voice-waveform-rings {
-            width: 300px;
-            height: 300px;
+            width: 400px;
+            height: 400px;
           }
           
           .orb-processing-ring {
@@ -3194,7 +3204,7 @@ class NoteworthyChat extends HTMLElement {
         </div>
         
         <div class="voice-controls">
-          <button class="voice-control-btn voice-control-mute" id="voiceControlMute" aria-label="Mute" title="Mute microphone" style="display: none;">
+          <button class="voice-control-btn voice-control-mute" id="voiceControlMute" aria-label="Mute" title="Mute microphone">
             <svg class="mute-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block;">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
               <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
@@ -4893,6 +4903,12 @@ class NoteworthyChat extends HTMLElement {
             <span><strong>Deep Dive Research…</strong> Searching the web for: "${query || 'current information'}"</span>
           `;
           thinkingContent.classList.add('searching');
+          // Ensure it's visible
+          if (thinking) {
+            thinking.style.display = 'block';
+            thinking.style.opacity = '1';
+          }
+          thinkingContent.style.display = 'flex';
         }
         
         // Update header subtitle
@@ -5105,19 +5121,26 @@ class NoteworthyChat extends HTMLElement {
         
         console.log('API Success:', { reply: data.reply?.substring(0, 50) + '...', hasImage: !!(data.image && data.image.imageUrl), searching: data.searching, searchQuery: data.searchQuery, fullData: data });
         
-        // Check if search was performed (even if completed)
-        if (data.searchQuery) {
+        // Check if search was performed (even if completed) - show indicator BEFORE removing thinking
+        if (data.searchQuery || data.searching) {
           if (!searchIndicatorShown) {
-            showSearchIndicator(data.searchQuery);
+            showSearchIndicator(data.searchQuery || 'current information');
           }
+          // Keep thinking visible for a moment to show the search animation (longer if still searching)
+          const delay = data.searching ? 2000 : 1000;
+          setTimeout(() => {
+            if (thinking && thinking.parentNode) {
+              thinking.remove();
+            }
+          }, delay);
+        } else {
+          thinking.remove();
         }
         
         if (!data || !data.reply) {
           console.error('API response missing reply field:', data);
           throw new Error('Server did not return a valid response. Please try again.');
         }
-        
-        thinking.remove();
         
         // Restore header subtitle
         const subText = rootRef.querySelector('.sub');
@@ -5793,6 +5816,15 @@ class NoteworthyChat extends HTMLElement {
         // Map amplitude (0-1) to wave intensity
         const baseIntensity = Math.max(0.2, Math.min(1, smoothedAmplitude * 1.2));
         
+        // Scale the logo based on amplitude (grow with the waves)
+        const orbLogo = root.querySelector('.orb-logo');
+        if (orbLogo && !prefersReducedMotion) {
+          // Logo scales from 1.0 to 1.15 based on amplitude
+          const logoScale = 1.0 + (smoothedAmplitude * 0.15);
+          orbLogo.style.transform = `scale(${logoScale})`;
+          orbLogo.style.transition = 'transform 0.1s ease-out';
+        }
+        
         if (prefersReducedMotion) {
           // Static state for reduced motion
           waveRings.forEach((ring, index) => {
@@ -5800,6 +5832,10 @@ class NoteworthyChat extends HTMLElement {
             ring.setAttribute('opacity', staticOpacity);
             ring.setAttribute('stroke-opacity', staticOpacity);
           });
+          // Reset logo scale for reduced motion
+          if (orbLogo) {
+            orbLogo.style.transform = 'scale(1)';
+          }
         } else {
           // Animated waveform rings
           waveRings.forEach((ring, index) => {
@@ -5841,6 +5877,13 @@ class NoteworthyChat extends HTMLElement {
             ring.setAttribute('stroke-opacity', '0');
             ring.setAttribute('transform', 'translate(100, 100) scale(1) translate(-100, -100)');
           });
+        }
+        
+        // Reset logo scale
+        const orbLogo = root.querySelector('.orb-logo');
+        if (orbLogo) {
+          orbLogo.style.transform = 'scale(1)';
+          orbLogo.style.transition = 'transform 0.3s ease-out';
         }
         
         if (DEBUG_VOICE) {

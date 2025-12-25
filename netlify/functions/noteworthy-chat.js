@@ -1187,6 +1187,8 @@ RESPONSE STYLE:
     // Parse the OpenAI response and handle tool calls
     let reply = "";
     let usage = null;
+    let searchInProgress = false;
+    let searchQuery = '';
     try {
       let data = await r.json();
       usage = data.usage || null;
@@ -1224,6 +1226,11 @@ RESPONSE STYLE:
           if (toolName === 'search_web') {
             // Actually perform web search using the search-web function
             console.log(`[Noteworthy Chat] 🔍 Performing deep web search for: "${toolArgs.query}"`);
+            
+            // Signal that search is starting (will be sent in response)
+            searchInProgress = true;
+            searchQuery = toolArgs.query || '';
+            
             try {
               // Import and call the search-web function directly (more reliable than HTTP call)
               let searchWebHandler;
@@ -1296,17 +1303,21 @@ RESPONSE STYLE:
                   
                   toolResponse = formattedResults;
                   console.log(`[Noteworthy Chat] ✅ Web search completed: Found ${results.length} results`);
+                  searchInProgress = false; // Search completed
                 } else {
                   toolResponse = `I searched for "${toolArgs.query}" but couldn't find current information. The search may not have returned results, or the information may not be available yet. Please try rephrasing your query or check direct news sources.`;
                   console.log(`[Noteworthy Chat] ⚠️ Web search returned no results for: "${toolArgs.query}"`);
+                  searchInProgress = false; // Search completed (no results)
                 }
               } else {
                 console.error(`[Noteworthy Chat] ❌ Web search API error: ${searchResult.statusCode}`, searchData.error || 'Unknown error');
                 toolResponse = `I attempted to search for "${toolArgs.query}" but encountered an error. Please try rephrasing your query or check direct news sources for the latest information.`;
+                searchInProgress = false; // Search failed
               }
             } catch (searchError) {
               console.error(`[Noteworthy Chat] ❌ Web search error:`, searchError);
               toolResponse = `I encountered an error while searching for "${toolArgs.query}". Please try rephrasing your query or check direct news sources for the latest information.`;
+              searchInProgress = false; // Search failed
             }
           } else if (toolName === 'send_email') {
             // Store email confirmation data to include in response
@@ -2032,6 +2043,16 @@ This is an automated notification from your website.`;
       reply, 
       usage,
     };
+    
+    // Include search status if search was performed
+    if (searchInProgress || searchQuery) {
+      responseBody.searching = searchInProgress;
+      responseBody.searchQuery = searchQuery;
+      console.log("[Noteworthy Chat] Including search status in response:", {
+        searching: searchInProgress,
+        query: searchQuery
+      });
+    }
     
     // Include image data if generated
     if (imageData && imageData.imageUrl) {

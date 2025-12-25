@@ -1972,6 +1972,8 @@ html, body {
         backdrop-filter: blur(10px) !important;
         box-shadow: 0 2px 8px rgba(79, 172, 254, 0.2) !important;
         margin-bottom: 0 !important;
+        position: relative !important;
+        z-index: 2 !important; /* Ensure it's above other stat cards and animated layers */
     }
     
     .hero-stat-card[data-number="29.9M"] .hero-stat-number-small {

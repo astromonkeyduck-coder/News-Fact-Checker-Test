@@ -36,8 +36,10 @@ class MultiplayerGameClient {
    */
   connect() {
     if (!this.wsUrl) {
-      console.log('[MultiplayerGame] WebSocket URL not configured, multiplayer disabled');
-      this.emit('error', { error: 'WebSocket not configured' });
+      console.log('[MultiplayerGame] WebSocket URL not configured, will use polling fallback');
+      // Don't emit error - let the manager handle polling fallback
+      // Just mark as not connected
+      this.isConnected = false;
       return;
     }
 
