@@ -29,6 +29,12 @@
   force = false
 
 [[redirects]]
+  from = "/admin"
+  to = "/admin-newsletter.html"
+  status = 200
+  force = false
+
+[[redirects]]
   from = "/adminnewsletter"
   to = "/admin-newsletter.html"
   status = 200
@@ -74,7 +80,7 @@
     X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+    Permissions-Policy = "geolocation=(), microphone=(self), camera=()"
 
 # Stricter headers for game.html to prevent iframe embedding
 [[headers]]
