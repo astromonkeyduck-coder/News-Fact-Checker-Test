@@ -34,6 +34,7 @@ class NoteworthyChat extends HTMLElement {
     let voiceModeSpeechCheckInterval = null; // Interval to periodically cancel text-to-speech during voice mode
     let audioWorkletNode = null;
     let isRecording = false;
+    let isMuted = false; // Track mute state
     // OLD: let audioQueue = []; // REMOVED - using voiceManager singleton only
     let musicStateBeforeCall = null; // Store music state when voice call starts
     let authRetryCount = 0; // Track authentication retry attempts
@@ -917,6 +918,21 @@ class NoteworthyChat extends HTMLElement {
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           opacity: 0;
           transform: translateY(-50%) translateX(20px) scale(0.95);
+          cursor: default;
+        }
+        
+        .voice-call-panel.dragging {
+          transition: none;
+          cursor: grabbing;
+        }
+        
+        .voice-call-header {
+          cursor: grab;
+          user-select: none;
+        }
+        
+        .voice-call-header:active {
+          cursor: grabbing;
         }
         
         .voice-call-panel.show {
@@ -1262,10 +1278,32 @@ class NoteworthyChat extends HTMLElement {
         }
         
         /* CRITICAL: Ensure End Call button is ALWAYS visible when panel is shown */
-        .voice-call-panel.show #voiceCallEndBtn {
+        .voice-call-panel.show #voiceCallEndBtn,
+        .voice-call-panel.show #voiceControlMute {
           display: flex !important;
           visibility: visible !important;
           opacity: 1 !important;
+        }
+        
+        .voice-control-mute.muted {
+          background: rgba(255, 100, 100, 0.2);
+          border-color: rgba(255, 100, 100, 0.4);
+        }
+        
+        .voice-control-mute.muted .mute-icon {
+          display: none;
+        }
+        
+        .voice-control-mute.muted .unmute-icon {
+          display: block;
+        }
+        
+        .voice-control-mute:not(.muted) .mute-icon {
+          display: block;
+        }
+        
+        .voice-control-mute:not(.muted) .unmute-icon {
+          display: none;
         }
         
         /* Reduced motion support */
@@ -3092,9 +3130,14 @@ class NoteworthyChat extends HTMLElement {
         
         <div class="voice-controls">
           <button class="voice-control-btn voice-control-mute" id="voiceControlMute" aria-label="Mute" title="Mute microphone" style="display: none;">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg class="mute-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block;">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
               <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+            <svg class="unmute-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              <path d="M2 2l20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
             </svg>
           </button>
           <button class="voice-control-btn voice-control-end" id="voiceCallEndBtn" aria-label="End call">
@@ -5425,14 +5468,22 @@ class NoteworthyChat extends HTMLElement {
         return;
       }
       
-      // CRITICAL: Always ensure End Call button is visible during active states
+      // CRITICAL: Always ensure End Call and Mute buttons are visible during active states
       const voiceCallPanel = root.querySelector('#voiceCallPanel');
       const isPanelShown = voiceCallPanel && voiceCallPanel.classList.contains('show');
+      const voiceMuteBtn = root.querySelector('#voiceControlMute');
       
       if (voiceCallEndBtn && (isPanelShown || state === 'connecting' || state === 'listening' || state === 'speaking' || state === 'processing')) {
         voiceCallEndBtn.style.display = 'flex';
         voiceCallEndBtn.style.visibility = 'visible';
         voiceCallEndBtn.style.opacity = '1';
+      }
+      
+      // Show mute button when voice mode is active (not idle)
+      if (voiceMuteBtn && (isPanelShown || state === 'connecting' || state === 'listening' || state === 'speaking' || state === 'processing')) {
+        voiceMuteBtn.style.display = 'flex';
+        voiceMuteBtn.style.visibility = 'visible';
+        voiceMuteBtn.style.opacity = '1';
       }
       
       // Remove all state classes
@@ -7138,6 +7189,152 @@ class NoteworthyChat extends HTMLElement {
       }
     }
     
+    // Make voice-call-panel draggable
+    const voiceCallPanel = root.querySelector('#voiceCallPanel');
+    if (voiceCallPanel) {
+      const voiceCallHeader = voiceCallPanel.querySelector('.voice-call-header');
+      if (voiceCallHeader) {
+        let panelDragging = false;
+        let panelStart = null;
+        let panelStartPos = { x: 0, y: 0 };
+        
+        // Get initial position from computed styles
+        const getPanelPos = () => {
+          const rect = voiceCallPanel.getBoundingClientRect();
+          return { x: rect.left, y: rect.top };
+        };
+        
+        // Set panel position
+        const setPanelPos = (x, y) => {
+          const w = window.innerWidth;
+          const h = window.innerHeight;
+          const panelWidth = voiceCallPanel.offsetWidth;
+          const panelHeight = voiceCallPanel.offsetHeight;
+          
+          // Clamp position to keep panel on screen
+          const clampedX = Math.max(0, Math.min(x, w - panelWidth));
+          const clampedY = Math.max(0, Math.min(y, h - panelHeight));
+          
+          voiceCallPanel.style.left = clampedX + 'px';
+          voiceCallPanel.style.top = clampedY + 'px';
+          voiceCallPanel.style.right = 'auto';
+          voiceCallPanel.style.transform = 'none'; // Remove translateY(-50%) when dragging
+        };
+        
+        // Initialize position
+        const initPos = getPanelPos();
+        panelStartPos = { x: initPos.x, y: initPos.y };
+        
+        // Start drag
+        const startPanelDrag = (clientX, clientY) => {
+          panelDragging = true;
+          panelStart = { x: clientX, y: clientY };
+          panelStartPos = getPanelPos();
+          voiceCallHeader.style.cursor = 'grabbing';
+          voiceCallPanel.classList.add('dragging');
+          // Switch from right/top positioning to left/top positioning
+          voiceCallPanel.style.right = 'auto';
+          if (!voiceCallPanel.style.left) {
+            voiceCallPanel.style.left = panelStartPos.x + 'px';
+          }
+          if (!voiceCallPanel.style.top) {
+            voiceCallPanel.style.top = panelStartPos.y + 'px';
+          }
+        };
+        
+        // Move during drag
+        const onPanelMove = (clientX, clientY) => {
+          if (!panelDragging || !panelStart || !panelStartPos) return;
+          const nx = panelStartPos.x + (clientX - panelStart.x);
+          const ny = panelStartPos.y + (clientY - panelStart.y);
+          setPanelPos(nx, ny);
+        };
+        
+        // Stop drag
+        const stopPanelDrag = () => {
+          panelDragging = false;
+          voiceCallHeader.style.cursor = 'grab';
+          voiceCallPanel.classList.remove('dragging');
+        };
+        
+        // Mouse drag handlers
+        voiceCallHeader.addEventListener('mousedown', (e) => {
+          // Don't drag if clicking buttons or status chip
+          if (e.target.tagName === 'BUTTON' || e.target.closest('button') || 
+              e.target.closest('.voice-status-chip')) return;
+          e.preventDefault();
+          startPanelDrag(e.clientX, e.clientY);
+        });
+        
+        window.addEventListener('mousemove', (e) => {
+          if (panelDragging) {
+            onPanelMove(e.clientX, e.clientY);
+          }
+        });
+        
+        window.addEventListener('mouseup', () => {
+          stopPanelDrag();
+        });
+        
+        // Touch drag handlers for mobile
+        voiceCallHeader.addEventListener('touchstart', (e) => {
+          if (e.target.tagName === 'BUTTON' || e.target.closest('button') ||
+              e.target.closest('.voice-status-chip')) return;
+          const t = e.touches[0];
+          if (t) {
+            e.preventDefault();
+            startPanelDrag(t.clientX, t.clientY);
+          }
+        }, { passive: false });
+        
+        window.addEventListener('touchmove', (e) => {
+          if (panelDragging) {
+            e.preventDefault();
+            const t = e.touches[0];
+            if (t) {
+              onPanelMove(t.clientX, t.clientY);
+            }
+          }
+        }, { passive: false });
+        
+        window.addEventListener('touchend', () => {
+          stopPanelDrag();
+        });
+      }
+    }
+    
+    // Mute button handler
+    const voiceMuteBtn = root.querySelector('#voiceControlMute');
+    if (voiceMuteBtn) {
+      voiceMuteBtn.addEventListener('click', () => {
+        if (!mediaStream) {
+          console.warn('[Voice Mode] ⚠️ No media stream available to mute');
+          return;
+        }
+        
+        isMuted = !isMuted;
+        
+        // Toggle all audio tracks
+        const audioTracks = mediaStream.getAudioTracks();
+        audioTracks.forEach(track => {
+          track.enabled = !isMuted;
+        });
+        
+        // Update UI
+        if (isMuted) {
+          voiceMuteBtn.classList.add('muted');
+          voiceMuteBtn.setAttribute('aria-label', 'Unmute microphone');
+          voiceMuteBtn.setAttribute('title', 'Unmute microphone');
+          console.log('[Voice Mode] 🔇 Microphone muted');
+        } else {
+          voiceMuteBtn.classList.remove('muted');
+          voiceMuteBtn.setAttribute('aria-label', 'Mute microphone');
+          voiceMuteBtn.setAttribute('title', 'Mute microphone');
+          console.log('[Voice Mode] 🔊 Microphone unmuted');
+        }
+      });
+    }
+    
     function stopVoiceMode() {
       console.log('[Voice Mode] 🛑 ========== STOP VOICE MODE CALLED ==========');
       console.log('[Voice Mode] 🛑 Stopping voice mode immediately...');
@@ -7148,6 +7345,7 @@ class NoteworthyChat extends HTMLElement {
       window._voiceModeActive = false; // Clear global flag
       isRecording = false;
       hasActiveResponse = false; // Reset response tracking
+      isMuted = false; // Reset mute state
       
       // CRITICAL: Stop VoiceAudioEngine immediately (THE ONLY audio output engine)
       if (voiceAudioEngine) {
@@ -7321,6 +7519,14 @@ class NoteworthyChat extends HTMLElement {
       
       // Update UI state to idle
       updateVoiceUIState('idle');
+      
+      // Reset mute button UI
+      const voiceMuteBtn = root.querySelector('#voiceControlMute');
+      if (voiceMuteBtn) {
+        voiceMuteBtn.classList.remove('muted');
+        voiceMuteBtn.setAttribute('aria-label', 'Mute microphone');
+        voiceMuteBtn.setAttribute('title', 'Mute microphone');
+      }
       
       // Update UI after stopping everything
       if (voiceModeToggle) voiceModeToggle.classList.remove('active');
