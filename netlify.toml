@@ -53,6 +53,14 @@
   command = "netlify dev"
   port = 8888
 
+# Scheduled Functions
+# ingest-live-events runs every 5 minutes to pull fresh events
+[[plugins]]
+  package = "@netlify/plugin-scheduled-functions"
+
+[functions.ingest-live-events]
+  schedule = "*/5 * * * *"  # Every 5 minutes
+
 # Security headers to prevent unwanted iframe embedding and improve security
 [[headers]]
   for = "/*"
