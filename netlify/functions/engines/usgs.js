@@ -533,26 +533,47 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   const canonicalId = buildCanonicalId('usgs', eventId);
   
   // Fetch event detail for images
+  // CRITICAL: We MUST have at least one image, so retry if needed
   const detailUrl = props.detail;
   let eventDetail = null;
   let usgsImages = [];
   
   if (detailUrl) {
+    // Try fetching event detail (images may take a few minutes to appear)
     eventDetail = await fetchEventDetail(detailUrl, logger);
     if (eventDetail) {
       usgsImages = extractUSGSImages(eventDetail);
     }
-  }
-  
-  // Generate branded image
-  const imageUrl = await generateBrandedImage(magnitude, locationDisplay, usgsImages, eventId, logger);
-  
-  // Log image generation result
-  if (imageUrl) {
-    logger.info('Image generated successfully', { image_url: imageUrl, eventId });
+    
+    // If no images found, retry once after a short delay (images may still be processing)
+    if (usgsImages.length === 0 && eventDetail) {
+      logger.info('No USGS images found on first attempt, retrying after delay...', { eventId });
+      await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
+      eventDetail = await fetchEventDetail(detailUrl, logger);
+      if (eventDetail) {
+        usgsImages = extractUSGSImages(eventDetail);
+        if (usgsImages.length > 0) {
+          logger.info('USGS images found on retry', { count: usgsImages.length, eventId });
+        }
+      }
+    }
+    
+    // Log final image count
+    if (usgsImages.length === 0) {
+      logger.warn('⚠️ No USGS images available for earthquake - image will be generated without USGS maps', { 
+        eventId, 
+        hasDetailUrl: !!detailUrl,
+        hasEventDetail: !!eventDetail 
+      });
+    } else {
+      logger.info('USGS images extracted', { count: usgsImages.length, eventId });
+    }
   } else {
-    logger.warn('Image generation returned null/undefined', { magnitude, location: locationDisplay, eventId });
+    logger.warn('⚠️ No detail URL available for earthquake - cannot fetch USGS images', { eventId });
   }
+  
+  // Generate branded image (will use template's baked-in images if usgsImages is empty)
+  const imageUrl = await generateBrandedImage(magnitude, locationDisplay, usgsImages, eventId, logger);
   
   // Build event object
   const coordinates = feature.geometry?.coordinates;
@@ -581,7 +602,7 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       magnitude: magnitude, // Store magnitude in assets for easy access
       event_id: eventId, // Store event_id in assets for email alerts
     },
-    image_url: imageUrl, // This will be null if image generation failed
+    image_url: imageUrl,
     alert_sent: false,
     alert_sent_at: null,
     raw: feature,
@@ -590,43 +611,23 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   // Store event
   const { isNew, event: storedEvent } = await storeEvent(event, logger);
   
-  // Create website post for earthquakes
-  // Always create/update post for new earthquakes, or if we have an image
-  // This ensures posts are created even if image generation fails initially
-  if (isNew || imageUrl || forceEmail) {
+  // Create website post for earthquakes with images
+  // Always create/update post if we have an image (for most recent earthquake or new earthquakes)
+  if (imageUrl || isNew || forceEmail) {
     try {
       const postResult = await createPostFromEvent(storedEvent, 'Earthquake', 'USGS');
       if (postResult.exists) {
         if (postResult.updated) {
-          logger.info('Website post updated', { 
-            canonical_id: canonicalId, 
-            image_url: storedEvent.image_url,
-            has_image: !!storedEvent.image_url 
-          });
+          logger.info('Website post updated with image', { canonical_id: canonicalId, image_url: storedEvent.image_url });
         } else {
-          logger.info('Website post already exists', { 
-            canonical_id: canonicalId, 
-            has_image: !!storedEvent.image_url,
-            image_url: storedEvent.image_url 
-          });
+          logger.info('Website post already exists', { canonical_id: canonicalId, has_image: !!storedEvent.image_url });
         }
       } else {
-        logger.info('Website post created', { 
-          canonical_id: canonicalId, 
-          image_url: storedEvent.image_url,
-          has_image: !!storedEvent.image_url 
-        });
+        logger.info('Website post created', { canonical_id: canonicalId, image_url: storedEvent.image_url });
       }
     } catch (postError) {
       logger.warn('Failed to create website post', postError);
     }
-  } else {
-    logger.debug('Skipping post creation', { 
-      canonical_id: canonicalId, 
-      isNew, 
-      hasImage: !!imageUrl, 
-      forceEmail 
-    });
   }
   
   // Send email alert for ALL earthquakes (user requested)

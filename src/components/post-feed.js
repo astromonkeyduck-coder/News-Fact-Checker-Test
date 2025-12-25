@@ -754,7 +754,22 @@ function renderPosts(posts, container, originalContent = null) {
     // Render media gallery (images/videos) - modern style
     const renderMedia = (post) => {
       let mediaHtml = '';
-      const images = post.images || (post.image ? [post.image] : []);
+      // Collect all images: primary first, then secondary
+      // Check canonical primary_image_url, then legacy image/image_url, then images array
+      const primaryImage = post.primary_image_url || post.image_url || post.image || null;
+      const secondaryImages = post.images || post.secondary_images || [];
+      // Combine primary + secondary, filtering out duplicates
+      const allImages = [];
+      if (primaryImage) {
+        allImages.push(primaryImage);
+      }
+      // Add secondary images that aren't duplicates of primary
+      secondaryImages.forEach(img => {
+        if (img && img !== primaryImage && !allImages.includes(img)) {
+          allImages.push(img);
+        }
+      });
+      const images = allImages;
       const videos = post.videos || [];
       
       if (images.length > 0 || videos.length > 0) {

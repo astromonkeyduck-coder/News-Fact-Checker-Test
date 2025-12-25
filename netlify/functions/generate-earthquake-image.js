@@ -442,10 +442,13 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
   ];
   
   // Add USGS images if provided
+  // CRITICAL: We need at least one image, so log if none are provided
   const IMAGE_AREA_Y = Math.round(410 * scaleFactor);
   const IMAGE_AREA_HEIGHT = Math.round(250 * scaleFactor);
   const IMAGE_PADDING = Math.round(20 * scaleFactor);
   const IMAGE_SPACING = Math.round(15 * scaleFactor);
+  
+  let successfullyAddedImages = 0;
   
   if (usgsImages && usgsImages.length > 0) {
     const numImages = Math.min(usgsImages.length, 2);
@@ -474,12 +477,24 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
               top: y,
               blend: 'over',
             });
+            successfullyAddedImages++;
+            console.log(`[generate-earthquake-image] ✅ Added USGS image ${i + 1}/${numImages}`, { url: usgsImage.url.substring(0, 80) });
           }
         }
       } catch (error) {
-        console.error(`[generate-earthquake-image] Error processing USGS image ${i + 1}:`, error);
+        console.error(`[generate-earthquake-image] ❌ Error processing USGS image ${i + 1}:`, error.message);
       }
     }
+  } else {
+    console.warn(`[generate-earthquake-image] ⚠️ No USGS images provided - image will use template only (no earthquake-specific maps)`);
+  }
+  
+  // Log final image count
+  if (successfullyAddedImages === 0) {
+    console.warn(`[generate-earthquake-image] ⚠️ WARNING: No USGS images were successfully added to the final image!`);
+    console.warn(`[generate-earthquake-image] ⚠️ The template may have baked-in images, but no earthquake-specific maps will appear.`);
+  } else {
+    console.log(`[generate-earthquake-image] ✅ Successfully added ${successfullyAddedImages} USGS image(s) to final image`);
   }
   
   // Scale template to match output dimensions if 4K is enabled

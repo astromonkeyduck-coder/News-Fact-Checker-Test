@@ -47,14 +47,8 @@ async function createPostFromEvent(event, category, source) {
         }
         
         // Check if update is needed (compare normalized URLs)
-        const existingImage = existingPost.image || existingPost.image_url || existingPost.primary_image_url || '';
+        const existingImage = existingPost.image || '';
         const needsUpdate = existingImage !== imageUrl;
-        
-        console.log(`[createPost] Post ${postId} image check:`, {
-          existing: existingImage ? existingImage.substring(0, 80) : 'none',
-          new: imageUrl.substring(0, 80),
-          needsUpdate
-        });
         
         if (needsUpdate) {
           // Rebuild secondary images list (same logic as new posts)
