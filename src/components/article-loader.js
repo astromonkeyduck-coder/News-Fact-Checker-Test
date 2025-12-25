@@ -447,35 +447,49 @@
                 }
             };
             
-            // Track displayed URLs to prevent duplicates
-            const displayedUrls = new Set();
+            // STEP 1: Identify all image sources
+            const primary = post.primary_image_url || post.image_url || post.image || null;
             
-            // Add hero media if available (primary image)
-            if (image) {
-                const absoluteImageUrl = ensureAbsoluteImageUrl(image);
-                const normalizedUrl = normalizeUrl(absoluteImageUrl);
-                displayedUrls.add(normalizedUrl);
-                
+            // STEP 2: Build deduplicated secondary image list
+            const secondaryCandidates = [
+                ...(post.secondary_images || []),
+                ...(post.images || []),
+                ...(post.assets?.images || []),
+                ...(post.usgs_images || []),
+                ...(post.assets?.usgs_images || [])
+            ].filter(Boolean);
+            
+            // Normalize primary URL for comparison
+            const primaryNormalized = primary ? normalizeUrl(ensureAbsoluteImageUrl(primary)) : null;
+            
+            // Filter out primary and deduplicate
+            const secondary = secondaryCandidates
+                .map(url => ensureAbsoluteImageUrl(url))
+                .filter(url => {
+                    const normalized = normalizeUrl(url);
+                    return normalized !== primaryNormalized; // Remove primary
+                })
+                .filter((url, i, arr) => {
+                    // Deduplicate by normalized URL
+                    const normalized = normalizeUrl(url);
+                    return arr.findIndex(u => normalizeUrl(u) === normalized) === i;
+                });
+            
+            // STEP 3: Render images
+            // Render primary image ONCE if it exists
+            if (primary) {
+                const absoluteImageUrl = ensureAbsoluteImageUrl(primary);
                 bodyHTML += `<div class="article-media">
                     <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)}" loading="lazy" onerror="this.style.display='none'; this.parentElement.innerHTML='<p style=\\'color: rgba(255,255,255,0.6); padding: 2rem; text-align: center;\\'>Image could not be loaded</p>';">
                 </div>`;
             }
             
-            // Also check for multiple images in post.images array (secondary images only)
-            if (post.images && Array.isArray(post.images) && post.images.length > 0) {
-                post.images.forEach((imgUrl, idx) => {
-                    if (!imgUrl) return;
-                    
-                    const absoluteImgUrl = ensureAbsoluteImageUrl(imgUrl);
-                    const normalizedUrl = normalizeUrl(absoluteImgUrl);
-                    
-                    // Only show if not already displayed (deduplicate by normalized URL)
-                    if (!displayedUrls.has(normalizedUrl)) {
-                        displayedUrls.add(normalizedUrl);
-                        bodyHTML += `<div class="article-media" style="margin-top: 1.5rem;">
-                            <img src="${escapeHtml(absoluteImgUrl)}" alt="${escapeHtml(title)} - Image ${idx + 2}" loading="lazy" onerror="this.style.display='none';">
-                        </div>`;
-                    }
+            // Render secondary images ONLY if they exist and are different from primary
+            if (secondary.length > 0) {
+                secondary.forEach((imgUrl, idx) => {
+                    bodyHTML += `<div class="article-media" style="margin-top: 1.5rem;">
+                        <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(title)} - Image ${idx + 2}" loading="lazy" onerror="this.style.display='none';">
+                    </div>`;
                 });
             }
             

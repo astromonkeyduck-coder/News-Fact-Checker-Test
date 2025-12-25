@@ -51,13 +51,53 @@ async function createPostFromEvent(event, category, source) {
         const needsUpdate = existingImage !== imageUrl;
         
         if (needsUpdate) {
+          // Rebuild secondary images list (same logic as new posts)
+          const normalizeUrlForComparison = (url) => {
+            if (!url) return '';
+            try {
+              const urlObj = new URL(url.startsWith('http') ? url : (url.startsWith('/') ? `https://noteworthynews.co${url}` : url));
+              return urlObj.origin + urlObj.pathname;
+            } catch {
+              return url;
+            }
+          };
+          
+          const primaryNormalized = imageUrl ? normalizeUrlForComparison(imageUrl) : null;
+          
+          const secondaryCandidates = [
+            ...(event.secondary_images || []),
+            ...(event.assets?.usgs_images || []).map(img => img.url || img),
+            ...(event.assets?.images || []),
+          ].filter(Boolean);
+          
+          const secondaryImages = secondaryCandidates
+            .map(url => {
+              const urlString = typeof url === 'string' ? url : (url.url || null);
+              if (!urlString) return null;
+              if (urlString.startsWith('/')) {
+                const baseUrl = process.env.URL || 'https://noteworthynews.co';
+                return `${baseUrl}${urlString}`;
+              }
+              return urlString;
+            })
+            .filter(Boolean)
+            .filter(url => normalizeUrlForComparison(url) !== primaryNormalized)
+            .filter((url, i, arr) => {
+              const normalized = normalizeUrlForComparison(url);
+              return arr.findIndex(u => normalizeUrlForComparison(u) === normalized) === i;
+            });
+          
           existingPost.image = imageUrl;
-          // Clear images array to prevent duplicates (only use 'image' field for primary)
-          existingPost.images = [];
+          existingPost.images = secondaryImages;
+          existingPost.secondary_images = secondaryImages;
+          if (event.assets) {
+            existingPost.assets = event.assets;
+          }
+          
           await store.set(postKey, JSON.stringify(existingPost), {
             contentType: 'application/json',
           });
-          console.log(`[createPost] Updated post ${postId} with image: ${imageUrl}`);
+          console.log(`[createPost] Updated post ${postId} with image: ${imageUrl}, secondary: ${secondaryImages.length}`);
           return { exists: true, postId, updated: true };
         }
       }
@@ -104,6 +144,53 @@ async function createPostFromEvent(event, category, source) {
     console.log(`[createPost] Setting image URL for post ${postId}: ${imageUrl}`);
   }
   
+  // Build secondary images list (exclude primary branded image)
+  // Collect from multiple sources: assets.usgs_images, secondary_images, etc.
+  const normalizeUrlForComparison = (url) => {
+    if (!url) return '';
+    try {
+      const urlObj = new URL(url.startsWith('http') ? url : (url.startsWith('/') ? `https://noteworthynews.co${url}` : url));
+      return urlObj.origin + urlObj.pathname;
+    } catch {
+      return url;
+    }
+  };
+  
+  const primaryNormalized = imageUrl ? normalizeUrlForComparison(imageUrl) : null;
+  
+  const secondaryCandidates = [
+    ...(event.secondary_images || []),
+    ...(event.assets?.usgs_images || []).map(img => img.url || img), // Extract URLs from USGS image objects
+    ...(event.assets?.images || []),
+  ].filter(Boolean);
+  
+  // Filter out primary image and deduplicate
+  const secondaryImages = secondaryCandidates
+    .map(url => {
+      // Handle both string URLs and objects with .url property
+      const urlString = typeof url === 'string' ? url : (url.url || null);
+      if (!urlString) return null;
+      // Normalize to absolute URL
+      if (urlString.startsWith('/')) {
+        const baseUrl = process.env.URL || 'https://noteworthynews.co';
+        return `${baseUrl}${urlString}`;
+      }
+      return urlString;
+    })
+    .filter(Boolean)
+    .filter(url => {
+      // Remove primary image
+      const normalized = normalizeUrlForComparison(url);
+      return normalized !== primaryNormalized;
+    })
+    .filter((url, i, arr) => {
+      // Deduplicate
+      const normalized = normalizeUrlForComparison(url);
+      return arr.findIndex(u => normalizeUrlForComparison(u) === normalized) === i;
+    });
+  
+  console.log(`[createPost] Post ${postId} - Primary: ${imageUrl ? 'yes' : 'no'}, Secondary: ${secondaryImages.length} images`);
+  
   // Create post object matching the site's post structure
   // CRITICAL: Only set 'image' field for primary image, 'images' array is for secondary images only
   // This prevents duplicates on article pages
@@ -113,7 +200,8 @@ async function createPostFromEvent(event, category, source) {
     story: summary,
     text: summary,
     image: imageUrl, // Primary image (for card deck and article hero)
-    images: [], // Secondary images only (empty for single-image posts to prevent duplicates)
+    images: secondaryImages, // Secondary images only (excludes primary, deduplicated)
+    secondary_images: secondaryImages, // Also store as secondary_images for compatibility
     link: event.source_url,
     url: event.source_url,
     datePosted: event.published_at,
@@ -125,6 +213,8 @@ async function createPostFromEvent(event, category, source) {
     eventId: event.canonical_id,
     severity: event.severity,
     event_type: event.event_type,
+    // Store assets for reference (but don't use for rendering)
+    assets: event.assets || {},
   };
   
   // Store post
