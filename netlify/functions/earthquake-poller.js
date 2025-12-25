@@ -5,7 +5,8 @@
  * Schedule: Every 3 minutes (configure in Netlify dashboard)
  * 
  * Environment Variables Required:
- * - ALERT_TO_EMAIL: Email address to receive alerts for magnitude >= 7.0
+ * - ALERT_TO_EMAIL: Email address to receive alerts for all earthquakes
+ * - AI_NOTIFICATION_EMAILS: Comma-separated list or JSON array of email addresses
  * - RESEND_API_KEY: Resend API key for sending emails
  * - NETLIFY_SITE_ID: Netlify site ID (auto-set in Netlify)
  * - NETLIFY_BLOB_READ_WRITE_TOKEN: Netlify Blob token (auto-set in Netlify)
@@ -572,8 +573,8 @@ exports.handler = async (event, context) => {
           }
         }
         
-        // Send email alert for magnitude >= 7.0
-        if (magnitude >= 7.0 && !testMode) {
+        // Send email alert for ALL earthquakes (temporary: for testing/monitoring)
+        if (!testMode) {
           try {
             // Check if AI_NOTIFICATION_EMAILS or ALERT_TO_EMAIL is configured
             const hasEmailConfig = process.env.AI_NOTIFICATION_EMAILS || process.env.ALERT_TO_EMAIL;

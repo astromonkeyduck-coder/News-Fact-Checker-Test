@@ -1,5 +1,5 @@
 /**
- * Send email alert for earthquakes with magnitude >= 7.0
+ * Send email alert for all earthquakes
  * 
  * POST /.netlify/functions/send-earthquake-alert
  * Body: { earthquake: {...}, imageUrl: "..." }
@@ -137,28 +137,18 @@ exports.handler = async (event, context) => {
       };
     }
     
-    // Only send for magnitude >= 7.0
-    if (earthquake.magnitude < 7.0) {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          success: true,
-          message: "Alert not sent (magnitude < 7.0)",
-        }),
-      };
-    }
-    
     const resend = new Resend(process.env.RESEND_API_KEY);
     
     // Format time
     const eventTime = formatTime(earthquake.time_ms || earthquake.time);
     
-    // Build subject
-    const subject = `BREAKING: Strong Earthquake Near ${earthquake.location_display} (M${earthquake.magnitude.toFixed(1)})`;
+    // Build subject (works for all magnitudes)
+    const magnitude = earthquake.magnitude.toFixed(1);
+    const severity = magnitude >= 7.0 ? "Strong" : magnitude >= 5.0 ? "Moderate" : "Earthquake";
+    const subject = `BREAKING: ${severity} Earthquake Near ${earthquake.location_display} (M${magnitude})`;
     
     // Build message (common-person wording, no jargon)
-    const message = `BREAKING: A strong magnitude ${earthquake.magnitude.toFixed(1)} earthquake was detected by the U.S. Geological Survey near ${earthquake.location_display} at ${eventTime}.\n\nSee attached image.`;
+    const message = `BREAKING: A magnitude ${magnitude} earthquake was detected by the U.S. Geological Survey near ${earthquake.location_display} at ${eventTime}.\n\nSee attached image.`;
     
     // Build email content (same for all recipients)
     const baseEmailContent = {
@@ -167,9 +157,9 @@ exports.handler = async (event, context) => {
       text: message,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #d32f2f; margin-bottom: 20px;">BREAKING: Strong Earthquake Detected</h2>
+          <h2 style="color: #d32f2f; margin-bottom: 20px;">BREAKING: Earthquake Detected</h2>
           <p style="font-size: 16px; line-height: 1.6; color: #333;">
-            A strong magnitude <strong>${earthquake.magnitude.toFixed(1)}</strong> earthquake was detected by the U.S. Geological Survey near <strong>${earthquake.location_display}</strong> at ${eventTime}.
+            A magnitude <strong>${earthquake.magnitude.toFixed(1)}</strong> earthquake was detected by the U.S. Geological Survey near <strong>${earthquake.location_display}</strong> at ${eventTime}.
           </p>
           <p style="font-size: 14px; color: #666; margin-top: 20px;">
             See attached image for details.

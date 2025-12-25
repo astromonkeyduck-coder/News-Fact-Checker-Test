@@ -1,268 +1,138 @@
-# What's Next: Implementation Roadmap
+# Next Steps - All Alert Engines
 
-## ✅ Current Status
+## ✅ What's Complete (Ready to Enable!)
 
-**Phase 1:** ✅ COMPLETE - Real-Time Leaderboards & Presence  
-**Phase 2:** ✅ COMPLETE - Multiplayer v1 (Room Management & UI)
+### 1. USGS (Earthquakes)
+- **Status:** ✅ Already working!
+- **Action:** None needed
 
----
+### 2. NWS (Weather Alerts)
+- **Status:** ✅ Fully implemented
+- **Data Source:** `https://api.weather.gov/alerts/active` (public API)
+- **Action:** Add `ENABLE_NWS=true` to Netlify environment variables
 
-## 🎯 Immediate Next Steps (Priority Order)
+### 3. Volcano (USGS)
+- **Status:** ✅ Fully implemented
+- **Data Source:** `https://volcanoes.usgs.gov/rss/vhpcaprss.xml` (RSS feed)
+- **Action:** Add `ENABLE_VOLCANO=true` to Netlify environment variables
 
-### 1. **Test Phase 2 Implementation** ⚡ HIGH PRIORITY
-
-**What to Test:**
-- [ ] Click "Multiplayer" button in game header
-- [ ] Create a room (should get room code)
-- [ ] Join a room with room code
-- [ ] Verify player list displays correctly
-- [ ] Test leaving a room
-- [ ] Test host controls (start game button)
-
-**Expected Behavior:**
-- Room creation/joining works via API
-- UI renders correctly
-- Error handling works
-- Styling matches site aesthetic
-
-**Time:** 30-60 minutes
+### 4. Embassy (State Department)
+- **Status:** ✅ Fully implemented
+- **Data Sources:** 11 RSS feeds (travel advisories, security, regional, press)
+- **Action:** Add `ENABLE_EMBASSY=true` to Netlify environment variables
 
 ---
 
-### 2. **Deploy WebSocket Server** 🚀 HIGH PRIORITY
+## ⚠️ What's Left (Need Data Sources)
 
-**What's Needed:**
-- Deploy `websocket-server/` to Railway or Render
-- Configure Redis connection
-- Set environment variables
-- Test WebSocket connection
+### 5. FAA (Airspace/NOTAMs)
+- **Status:** ⚠️ Code ready, needs data source
+- **What's Needed:** Find FAA NOTAM API endpoint or public feed
+- **Options:**
+  - FAA NOTAM API (may require authentication)
+  - Aviation Weather Center NOTAM endpoint
+  - Public NOTAM feeds
 
-**Steps:**
-1. **Choose Platform:**
-   - Railway (recommended - easy setup)
-   - Render (good alternative)
-   - Fly.io (if you prefer)
+### 6. USCG (Maritime)
+- **Status:** ⚠️ Code ready, needs data source
+- **What's Needed:** Find USCG maritime alert feed
+- **Options:**
+  - USCG Navigation Center feeds
+  - Local Notice to Mariners RSS
+  - Maritime alert APIs
 
-2. **Deploy:**
-   ```bash
-   cd websocket-server
-   # Follow websocket-server/README.md
+---
+
+## 🚀 Immediate Next Steps
+
+### Step 1: Enable Completed Engines (Do This Now!)
+
+1. **Go to Netlify Dashboard:**
+   - Your Site → **Site Settings** → **Environment Variables**
+
+2. **Add these environment variables:**
+   ```
+   ENABLE_NWS=true
+   ENABLE_VOLCANO=true
+   ENABLE_EMBASSY=true
    ```
 
-3. **Configure:**
-   - Set `REDIS_URL` environment variable
-   - Set `PORT` (usually auto-set by platform)
-   - Optionally set `NETLIFY_SITE_ID` and `NETLIFY_BLOB_READ_WRITE_TOKEN`
+3. **Deploy:**
+   - The engines will start running automatically via `ingest-all.js` (every 5 minutes)
 
-4. **Update Site:**
-   - Add WebSocket URL to site config:
-   ```javascript
-   window.NOTEWORTHY_CONFIG = {
-     websocketUrl: 'wss://your-server.railway.app'
-   };
-   ```
+### Step 2: Test the Engines
 
-**Time:** 1-2 hours
+After enabling, you can test by:
+- Checking Netlify function logs
+- Checking Supabase `verified_events` table
+- Checking your website for new posts
+- Checking email for alerts (if notable events occur)
 
----
+### Step 3: Find Data Sources for FAA & USCG
 
-### 3. **Test Full Multiplayer Flow** 🎮 MEDIUM PRIORITY
+**For FAA:**
+- Research FAA NOTAM API access
+- Check Aviation Weather Center for NOTAM endpoints
+- Look for public NOTAM feeds
 
-**What to Test:**
-- [ ] WebSocket connects successfully
-- [ ] Real-time player updates (join/leave)
-- [ ] Host can start game
-- [ ] Questions synchronized across players
-- [ ] Answers submitted and validated
-- [ ] Results broadcast correctly
-- [ ] Score calculation accurate
-- [ ] Disconnect handling works
+**For USCG:**
+- Research USCG Navigation Center feeds
+- Check for Local Notice to Mariners RSS
+- Look for maritime alert APIs
 
-**Test Scenarios:**
-1. **2 Players:**
-   - Create room, join with second browser
-   - Start game, verify synchronization
-   - Submit answers, verify results
-
-2. **Multiple Players (3-8):**
-   - Test with maximum players
-   - Verify all see same question
-   - Test answer timing
-
-3. **Edge Cases:**
-   - Player disconnects mid-game
-   - Late join (after game started)
-   - Network interruption
-
-**Time:** 2-4 hours
+Once you find the data sources, I can integrate them quickly!
 
 ---
 
-## 📋 Phase 3: Collaborative Fact-Checking (Future)
+## 📊 Current Status Summary
 
-**When to Start:** After Phase 2 is proven and stable
+**✅ Ready to Use (4 engines):**
+- USGS (Earthquakes) - Working
+- NWS (Weather) - Ready
+- Volcano - Ready
+- Embassy - Ready
 
-### Overview
-Multiple users reviewing the same claim/article with:
-- Agreement/disagreement indicators
-- Evidence linking (sources cited, confidence level)
-- Real-time updates when consensus shifts
-- Think: Wikipedia + OSINT + newsroom verification
-
-### Key Features:
-1. **Review Submission System**
-   - Users submit verdicts (factual/misleading)
-   - Confidence levels
-   - Evidence citations
-
-2. **Consensus Calculation**
-   - Weighted consensus based on user credibility
-   - Confidence aggregation
-   - Disagreement indicators
-
-3. **Evidence Linking**
-   - Source citations
-   - Cross-references
-   - Verification chains
-
-4. **Real-Time Updates**
-   - Live consensus changes
-   - New evidence notifications
-   - Disagreement alerts
-
-**Timeline:** 3-4 weeks (after Phase 2 proven)
+**⚠️ Need Data Sources (2 engines):**
+- FAA (Airspace) - Code ready
+- USCG (Maritime) - Code ready
 
 ---
 
-## 🔧 Infrastructure Setup (If Not Done)
+## 🎯 Recommended Action Plan
 
-### Required Services:
-
-1. **Redis** (for real-time state)
-   - Upstash (recommended - serverless)
-   - Redis Cloud
-   - Self-hosted
-
-2. **PostgreSQL** (for persistence - optional for Phase 2)
-   - Supabase (recommended)
-   - Neon
-   - Railway
-
-3. **WebSocket Server Hosting**
-   - Railway (easiest)
-   - Render
-   - Fly.io
-
-### Environment Variables Needed:
-
-**Netlify:**
-- `NETLIFY_SITE_ID`
-- `NETLIFY_BLOB_READ_WRITE_TOKEN`
-- `REDIS_URL` (for broadcast function)
-- `WEBSOCKET_URL` (for client connection)
-
-**WebSocket Server:**
-- `REDIS_URL`
-- `PORT` (auto-set by platform)
-- `NETLIFY_SITE_ID` (optional)
-- `NETLIFY_BLOB_READ_WRITE_TOKEN` (optional)
+1. **Right Now:** Enable NWS, Volcano, and Embassy engines
+2. **Test:** Let them run for a day and see what alerts come through
+3. **Then:** Research FAA and USCG data sources
+4. **Finally:** Complete the last 2 engines
 
 ---
 
-## 📊 Recommended Timeline
+## What Each Engine Does
 
-### Week 1: Testing & Deployment
-- **Day 1-2:** Test Phase 2 room management
-- **Day 3-4:** Deploy WebSocket server
-- **Day 5:** Test full multiplayer flow
+### NWS (Weather)
+- Fetches active weather alerts
+- Filters for notable alerts (Tornado, Hurricane, Flood, Severe Weather)
+- Creates posts and sends emails for severity >= 3
 
-### Week 2: Refinement
-- Fix any issues found
-- Performance optimization
-- User experience improvements
-- Documentation updates
+### Volcano
+- Fetches volcano alerts from USGS RSS
+- Filters for Watch/Warning/Advisory levels
+- Creates posts and sends emails for severity >= 3
 
-### Week 3+: Phase 3 (If Phase 2 Successful)
-- Start collaborative fact-checking
-- Build review system
-- Implement consensus calculation
+### Embassy
+- Fetches from 11 State Department RSS feeds
+- Processes travel advisories, security alerts, regional updates
+- Creates posts and sends emails for Level 3+ or security alerts
 
----
-
-## 🎯 Success Criteria
-
-### Phase 2 Complete When:
-- ✅ Room management works reliably
-- ✅ WebSocket server deployed and stable
-- ✅ Full multiplayer tested with 2-8 players
-- ✅ No critical bugs
-- ✅ Performance acceptable
-
-### Ready for Phase 3 When:
-- ✅ Phase 2 stable in production
-- ✅ User feedback positive
-- ✅ No critical issues
-- ✅ Infrastructure proven
+All engines:
+- ✅ Store events in database
+- ✅ Create website posts automatically
+- ✅ Send email alerts for notable events
+- ✅ Deduplicate by canonical_id
+- ✅ No image generation (as requested)
 
 ---
 
-## 💡 Quick Wins (Optional)
+## Ready to Enable?
 
-While testing Phase 2, consider:
-
-1. **Expand Question Pool**
-   - Add more questions to `game-questions.js`
-   - Load from same source as `script.js`
-
-2. **Improve Error Messages**
-   - More user-friendly error handling
-   - Better connection status indicators
-
-3. **Add Analytics**
-   - Track room creation/joining
-   - Monitor WebSocket connections
-   - Measure game completion rates
-
----
-
-## 🚨 Blockers to Address
-
-1. **WebSocket Server Deployment**
-   - Must deploy before full multiplayer works
-   - Can test room management without it
-
-2. **Redis Configuration**
-   - Needed for real-time features
-   - Can use Upstash free tier
-
-3. **Question Pool**
-   - Currently minimal (5 questions)
-   - Should expand for production
-
----
-
-## 📝 Next Action Items
-
-**Immediate (This Week):**
-1. [ ] Test multiplayer button and room creation
-2. [ ] Deploy WebSocket server to Railway
-3. [ ] Configure Redis connection
-4. [ ] Test with 2 players
-
-**Short-term (Next 2 Weeks):**
-1. [ ] Full multiplayer testing
-2. [ ] Bug fixes and refinements
-3. [ ] Expand question pool
-4. [ ] Performance optimization
-
-**Long-term (After Phase 2 Proven):**
-1. [ ] Start Phase 3 planning
-2. [ ] Design collaborative fact-checking UI
-3. [ ] Build review submission system
-
----
-
-**Status:** Ready to test Phase 2 and deploy WebSocket server  
-**Next Milestone:** Full multiplayer working end-to-end  
-**Timeline:** 1-2 weeks to production-ready Phase 2
-
+Just add those 3 environment variables and you'll have 4 working alert engines! 🚀

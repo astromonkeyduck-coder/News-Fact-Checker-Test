@@ -1629,9 +1629,9 @@
                     <div id="tab-send" class="tab-content">
                         <form id="sendForm">
                             <div class="form-group">
-                                <label for="testEmail">Test Email Address</label>
-                                <input type="email" id="testEmail" placeholder="your-email@example.com" required>
-                                <div class="help-text">Send a test email to preview before sending to your full audience</div>
+                                <label for="testEmail">Test Email Address(es)</label>
+                                <input type="text" id="testEmail" placeholder="your-email@example.com, colleague@example.com" required>
+                                <div class="help-text">Send a test email to preview before sending to your full audience. Separate multiple emails with commas.</div>
                             </div>
                             
                             <div class="form-actions">
@@ -2147,6 +2147,21 @@
         function showMainContent() {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainContent').style.display = 'block';
+            
+            // Initialize tutorial after login (only if not completed)
+            // Wait a bit for tutorial script to load, then check
+            setTimeout(() => {
+                if (typeof window.initTutorial === 'function') {
+                    window.initTutorial();
+                } else {
+                    // If tutorial not loaded yet, wait a bit more
+                    setTimeout(() => {
+                        if (typeof window.initTutorial === 'function') {
+                            window.initTutorial();
+                        }
+                    }, 500);
+                }
+            }, 500);
         }
 
         // Helper to get token from session storage
@@ -2916,7 +2931,7 @@
                 if (!canSend) {
                     testBtn.title = sendBtn?.title || 'Cannot send test email';
                 } else if (!testEmail) {
-                    testBtn.title = 'Please enter a test email address';
+                    testBtn.title = 'Please enter at least one test email address (separate multiple with commas)';
                 } else {
                     testBtn.title = '';
                 }
@@ -3986,9 +4001,25 @@
                 return;
             }
             
-            const testEmail = document.getElementById('testEmail').value.trim();
-            if (!testEmail) {
-                showStatus('Please enter a test email address', 'error');
+            const testEmailInput = document.getElementById('testEmail').value.trim();
+            if (!testEmailInput) {
+                showStatus('Please enter at least one test email address', 'error');
+                return;
+            }
+            
+            // Parse comma-separated emails
+            const testEmails = testEmailInput.split(',').map(email => email.trim()).filter(email => email);
+            
+            if (testEmails.length === 0) {
+                showStatus('Please enter at least one valid email address', 'error');
+                return;
+            }
+            
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const invalidEmails = testEmails.filter(email => !emailRegex.test(email));
+            if (invalidEmails.length > 0) {
+                showStatus(`Invalid email address(es): ${invalidEmails.join(', ')}`, 'error');
                 return;
             }
             
@@ -4006,8 +4037,9 @@
             const testBtn = document.getElementById('testBtn');
             testBtn.disabled = true;
             const originalText = testBtn.innerHTML;
+            const emailCount = testEmails.length;
             testBtn.innerHTML = '<span class="spinner"></span> <span>Sending...</span>';
-            showStatus(`Sending test email to ${testEmail}...`, 'info');
+            showStatus(`Sending test email${emailCount > 1 ? 's' : ''} to ${emailCount} recipient${emailCount > 1 ? 's' : ''}...`, 'info');
             
             try {
                 const response = await fetch('/.netlify/functions/send-newsletter', {
@@ -4020,7 +4052,7 @@
                         subject: template.subject,
                         html: template.html,
                         text: template.text || template.html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim(),
-                        testEmail: testEmail,
+                        sendToEmails: testEmails, // Use sendToEmails array instead of testEmail
                         token: getAdminToken() || '',
                     }),
                 });
@@ -4029,7 +4061,8 @@
                 
                 if (response.ok && data.success) {
                     triggerConfetti();
-                    showStatus(`✓ Test email sent successfully to ${testEmail}! Check your inbox.`, 'success');
+                    const emailList = emailCount <= 3 ? testEmails.join(', ') : `${testEmails.slice(0, 2).join(', ')} and ${emailCount - 2} more`;
+                    showStatus(`✓ Test email${emailCount > 1 ? 's' : ''} sent successfully to ${emailCount} recipient${emailCount > 1 ? 's' : ''} (${emailList})! Check your inbox.`, 'success');
                 } else {
                     showStatus(data.error || data.message || 'Failed to send test email', 'error');
                 }
@@ -4446,11 +4479,11 @@
                                 <strong>How to send a test:</strong>
                                 <ol>
                                     <li>Click the "Send" tab</li>
-                                    <li>Enter your email address</li>
+                                    <li>Enter your email address (or multiple addresses separated by commas)</li>
                                     <li>Click "Send Test Email"</li>
                                 </ol>
                             </div>
-                            <p class="tutorial-tip">📧 <strong>Important:</strong> Always test first to make sure everything looks perfect!</p>
+                            <p class="tutorial-tip">📧 <strong>Important:</strong> Always test first to make sure everything looks perfect! You can send to multiple people by separating emails with commas.</p>
                         </div>
                     `,
                     highlight: '.editor-tab[data-tab="send"]',
@@ -4469,6 +4502,12 @@
             
             // Initialize tutorial
             function initTutorial() {
+                // Only show tutorial if user is logged in (mainContent is visible)
+                const mainContent = document.getElementById('mainContent');
+                if (!mainContent || mainContent.style.display === 'none') {
+                    return; // Don't show tutorial if not logged in
+                }
+                
                 if (hasCompletedTutorial) {
                     return; // Don't show tutorial if already completed
                 }
@@ -4478,6 +4517,9 @@
                     startTutorial();
                 }, 1000);
             }
+            
+            // Expose initTutorial globally so it can be called after login
+            window.initTutorial = initTutorial;
             
             // Start tutorial
             function startTutorial() {
@@ -4647,12 +4689,8 @@
             document.getElementById('tutorialCompleteBtn').addEventListener('click', completeTutorial);
             document.getElementById('tutorialSkipBtn').addEventListener('click', skipTutorial);
             
-            // Start tutorial on page load (if not completed)
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initTutorial);
-            } else {
-                initTutorial();
-            }
+            // Tutorial will be initialized after login via initTutorialAfterLogin()
+            // Don't auto-start on page load - wait for login
         })();
     </script>
     

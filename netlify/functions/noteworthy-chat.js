@@ -1226,7 +1226,43 @@ RESPONSE STYLE:
             console.log(`[Noteworthy Chat] 🔍 Performing deep web search for: "${toolArgs.query}"`);
             try {
               // Import and call the search-web function directly (more reliable than HTTP call)
-              const searchWebHandler = require('./search-web').handler;
+              let searchWebHandler;
+              try {
+                searchWebHandler = require('./search-web').handler;
+              } catch (requireError) {
+                console.error('[Noteworthy Chat] Failed to require search-web:', requireError);
+                // Fallback: try to call via HTTP if require fails
+                const searchUrl = `${event.headers['x-forwarded-proto'] || 'https'}://${event.headers.host || event.headers['x-forwarded-host'] || 'noteworthynews.co'}/.netlify/functions/search-web`;
+                const searchResponse = await fetch(searchUrl, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ query: toolArgs.query || '' })
+                });
+                
+                if (searchResponse.ok) {
+                  const searchData = await searchResponse.json();
+                  const results = searchData.results || [];
+                  if (results.length > 0) {
+                    let formattedResults = `Deep web research results for "${toolArgs.query}":\n\n`;
+                    results.forEach((result, index) => {
+                      formattedResults += `${index + 1}. **${result.title || 'Result'}**\n`;
+                      formattedResults += `   ${result.snippet || 'No details available'}\n`;
+                      if (result.url) {
+                        formattedResults += `   Source: ${result.url}\n`;
+                      }
+                      formattedResults += '\n';
+                    });
+                    toolResponse = formattedResults;
+                  } else {
+                    toolResponse = `I searched for "${toolArgs.query}" but couldn't find current information. Please try rephrasing your query.`;
+                  }
+                } else {
+                  throw new Error(`Search API returned ${searchResponse.status}`);
+                }
+                continue; // Skip to next iteration
+              }
               
               // Create a mock event object for the search-web function
               const searchEvent = {
