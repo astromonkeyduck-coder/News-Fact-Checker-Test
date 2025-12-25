@@ -200,12 +200,12 @@ class VoiceAudioEngine {
       
       try {
         // Schedule playback (synchronous call)
-        source.start(actualStartTime);
+      source.start(actualStartTime);
       } finally {
         // Always clear flag, even if start() throws or if another chunk is processing
         // This prevents race conditions with concurrent chunk processing
-        if (typeof window !== 'undefined') {
-          window._allowAudioPlayback = false;
+      if (typeof window !== 'undefined') {
+        window._allowAudioPlayback = false;
         }
       }
       

@@ -158,25 +158,34 @@ async function prepareUSGSImage(imageBuffer, targetWidth, targetHeight) {
  */
 async function generateImage(magnitude, location, usgsImages, eventId) {
   // Load template - try multiple possible paths
+  // In Netlify Functions, __dirname is /var/task/netlify/functions/generate-earthquake-image
+  // In local dev, it's the actual project path
   const possiblePaths = [
-    path.join(__dirname, '../../1stUSGSTemp.png'),
-    path.join(process.cwd(), '1stUSGSTemp.png'),
-    path.resolve('./1stUSGSTemp.png'),
+    path.join(__dirname, '../../1stUSGSTemp.png'),  // From function dir: netlify/functions -> root
+    path.join(__dirname, '../../../1stUSGSTemp.png'), // If nested deeper
+    path.join(process.cwd(), '1stUSGSTemp.png'),     // Current working directory
+    path.resolve('./1stUSGSTemp.png'),               // Relative to cwd
+    path.resolve(__dirname, '../../1stUSGSTemp.png'), // Absolute from function
+    '/var/task/1stUSGSTemp.png',                     // Netlify Lambda path
   ];
   
   let templateBuffer = null;
   let templatePath = null;
   
+  console.log(`[generate-earthquake-image] Looking for template. __dirname: ${__dirname}, cwd: ${process.cwd()}`);
+  
   for (const templatePathCandidate of possiblePaths) {
+    console.log(`[generate-earthquake-image] Checking: ${templatePathCandidate}`);
     if (fs.existsSync(templatePathCandidate)) {
       templatePath = templatePathCandidate;
       templateBuffer = fs.readFileSync(templatePathCandidate);
-      console.log(`[generate-earthquake-image] Loaded template from: ${templatePath}`);
+      console.log(`[generate-earthquake-image] ✅ Loaded template from: ${templatePath}`);
       break;
     }
   }
   
   if (!templateBuffer) {
+    console.error(`[generate-earthquake-image] ❌ Template not found. Tried paths:`, possiblePaths);
     throw new Error(`Template not found. Tried: ${possiblePaths.join(', ')}`);
   }
   
