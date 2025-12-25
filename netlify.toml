@@ -47,3 +47,19 @@
   command = "netlify dev"
   port = 8888
 
+# Security headers to prevent unwanted iframe embedding and improve security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+
+# Stricter headers for game.html to prevent iframe embedding
+[[headers]]
+  for = "/game.html"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    Content-Security-Policy = "frame-ancestors 'self'"
+
