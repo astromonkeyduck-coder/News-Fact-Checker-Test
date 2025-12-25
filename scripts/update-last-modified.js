@@ -40,7 +40,9 @@ try {
   // Find and replace the Last Update line
   // Pattern: Last Update: [any date/time format]
   const lastUpdatePattern = /Last Update:\s*[^<]+/;
-  const scheduledMaintenancePattern = /Scheduled Maintenance:\s*[^<]+/;
+  // FIXED: More specific pattern that only matches the content inside the div, not across HTML structure
+  // Match: "Scheduled Maintenance: [date]" inside the div content (between > and </div>)
+  const scheduledMaintenanceContentPattern = />Scheduled Maintenance:\s*[^<]+</;
   const newLastUpdate = `Last Update: ${getFormattedDate()}`;
   
   if (lastUpdatePattern.test(content)) {
@@ -62,13 +64,14 @@ try {
     // Write back to file
     fs.writeFileSync(indexHtmlPath, content, 'utf8');
     console.log(`✅ Updated Last Update timestamp to: ${getFormattedDate()}`);
-  } else if (scheduledMaintenancePattern.test(content)) {
+  } else if (scheduledMaintenanceContentPattern.test(content)) {
     // If Scheduled Maintenance is found, update it to one week from today
     const oneWeekFromNow = new Date();
     oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
     const maintenanceDate = getFormattedDateForDate(oneWeekFromNow);
-    const newScheduledMaintenance = `Scheduled Maintenance: ${maintenanceDate}`;
-    content = content.replace(scheduledMaintenancePattern, newScheduledMaintenance);
+    // Replace only the content part (between > and <)
+    const newScheduledMaintenance = `>Scheduled Maintenance: ${maintenanceDate}<`;
+    content = content.replace(scheduledMaintenanceContentPattern, newScheduledMaintenance);
     
     // Also update the title attribute
     const titlePattern = /title="Scheduled Maintenance: [^"]+"/;
