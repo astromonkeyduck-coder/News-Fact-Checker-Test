@@ -50,6 +50,20 @@ function createLogger(engine, runId) {
       }));
     },
     
+    debug: (message, data = {}) => {
+      // Debug logs are less verbose, only log in development or when explicitly enabled
+      if (process.env.DEBUG || process.env.NODE_ENV === 'development') {
+        console.log(JSON.stringify({
+          level: 'debug',
+          engine,
+          run_id: runId,
+          message,
+          ...data,
+          timestamp: new Date().toISOString(),
+        }));
+      }
+    },
+    
     summary: (metrics) => {
       console.log(JSON.stringify({
         level: 'summary',

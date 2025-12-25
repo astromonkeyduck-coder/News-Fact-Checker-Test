@@ -1,22 +1,35 @@
 // Use global logger (exposed by logger.js)
 // If logger is not available, fall back to console with a guard
 // Check if logger already exists to avoid redeclaration errors
-let leaderboardLogger;
-if (typeof window !== 'undefined' && window.logger) {
-    leaderboardLogger = window.logger;
-} else {
-    leaderboardLogger = {
-        debug: (...args) => console.log('[Leaderboard]', ...args),
-        error: (...args) => console.error('[Leaderboard]', ...args),
-        warn: (...args) => console.warn('[Leaderboard]', ...args),
-        log: (...args) => console.log('[Leaderboard]', ...args)
-    };
-    // Also set on window for other scripts (only if not already set)
-    if (typeof window !== 'undefined' && !window.logger) {
-        window.logger = leaderboardLogger;
-    }
-}
-const logger = leaderboardLogger; // Use const for the local reference
+(function() {
+  'use strict';
+  // Use IIFE to create isolated scope and prevent redeclaration errors
+  let leaderboardLogger;
+  if (typeof window !== 'undefined' && window.logger) {
+      leaderboardLogger = window.logger;
+  } else {
+      leaderboardLogger = {
+          debug: (...args) => console.log('[Leaderboard]', ...args),
+          error: (...args) => console.error('[Leaderboard]', ...args),
+          warn: (...args) => console.warn('[Leaderboard]', ...args),
+          log: (...args) => console.log('[Leaderboard]', ...args)
+      };
+      // Also set on window for other scripts (only if not already set)
+      if (typeof window !== 'undefined' && !window.logger) {
+          window.logger = leaderboardLogger;
+      }
+  }
+  // Export logger to this scope only (not global)
+  window.leaderboardLogger = leaderboardLogger;
+})();
+
+// Use the logger from window (safe even if redeclared elsewhere)
+const logger = window.leaderboardLogger || (typeof window !== 'undefined' && window.logger) || {
+    debug: (...args) => console.log('[Leaderboard]', ...args),
+    error: (...args) => console.error('[Leaderboard]', ...args),
+    warn: (...args) => console.warn('[Leaderboard]', ...args),
+    log: (...args) => console.log('[Leaderboard]', ...args)
+};
 
 class Leaderboard {
     constructor(gameType = 'fact-checker') {

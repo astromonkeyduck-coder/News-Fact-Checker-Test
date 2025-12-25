@@ -18,22 +18,32 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const siteID = process.env.NETLIFY_SITE_ID;
-    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
+    // Get credentials (try multiple sources)
+    const siteID = process.env.NETLIFY_SITE_ID || event.headers['x-nf-site-id'];
+    const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN || event.headers['x-nf-token'];
 
-    if (!siteID || !token) {
+    let store;
+    try {
+      if (siteID && token) {
+        store = getStore({
+          name: "x-posts",
+          siteID: siteID,
+          token: token,
+        });
+      } else {
+        // Fallback: try automatic detection
+        store = getStore({ name: "x-posts" });
+      }
+    } catch (storeErr) {
       return {
         statusCode: 500,
         headers,
-        body: JSON.stringify({ error: "Missing credentials" }),
+        body: JSON.stringify({ 
+          error: "Storage configuration error",
+          message: storeErr.message 
+        }),
       };
     }
-
-    const store = getStore({
-      name: "x-posts",
-      siteID: siteID,
-      token: token,
-    });
 
     // Read index
     let indexData = { ids: [] };
