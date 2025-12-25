@@ -568,9 +568,13 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     try {
       const postResult = await createPostFromEvent(storedEvent, 'Earthquake', 'USGS');
       if (postResult.exists) {
-        logger.info('Website post already exists', { canonical_id: canonicalId });
+        if (postResult.updated) {
+          logger.info('Website post updated with image', { canonical_id: canonicalId, image_url: storedEvent.image_url });
+        } else {
+          logger.info('Website post already exists', { canonical_id: canonicalId, has_image: !!storedEvent.image_url });
+        }
       } else {
-        logger.info('Website post created', { canonical_id: canonicalId });
+        logger.info('Website post created', { canonical_id: canonicalId, image_url: storedEvent.image_url });
       }
     } catch (postError) {
       logger.warn('Failed to create website post', postError);

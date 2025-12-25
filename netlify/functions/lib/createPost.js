@@ -36,14 +36,22 @@ async function createPostFromEvent(event, category, source) {
   try {
     existingPost = await store.get(postKey, { type: 'json' });
     if (existingPost) {
-      // Update post if image_url changed (especially for earthquakes that get images generated later)
-      if (event.image_url && existingPost.image !== event.image_url) {
-        existingPost.image = event.image_url;
-        existingPost.images = event.image_url ? [event.image_url] : [];
-        await store.set(postKey, JSON.stringify(existingPost), {
-          contentType: 'application/json',
-        });
-        return { exists: true, postId, updated: true };
+      // Always update post if we have an image_url (especially for earthquakes that get images generated later)
+      // This ensures posts get images even if they were created before the image was generated
+      if (event.image_url) {
+        const needsUpdate = existingPost.image !== event.image_url || 
+                           !existingPost.images || 
+                           existingPost.images.length === 0 ||
+                           existingPost.images[0] !== event.image_url;
+        
+        if (needsUpdate) {
+          existingPost.image = event.image_url;
+          existingPost.images = [event.image_url];
+          await store.set(postKey, JSON.stringify(existingPost), {
+            contentType: 'application/json',
+          });
+          return { exists: true, postId, updated: true };
+        }
       }
       return { exists: true, postId, updated: false };
     }

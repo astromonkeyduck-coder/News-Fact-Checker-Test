@@ -91,6 +91,26 @@
     
     <style>
         /* Premium Article Page Styles */
+        /* Override global body/html styles for article pages */
+        html body.article-page,
+        body.article-page {
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 50%, #07152a 100%) !important;
+            background-color: #07152a !important;
+            padding-top: 0 !important;
+            margin: 0;
+            min-height: 100vh;
+            color: white;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Ensure html element also has correct background when body has article-page class */
+        /* Scoped to only apply when body has article-page class (via JavaScript) */
+        html.article-page-active {
+            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 50%, #07152a 100%) !important;
+            background-color: #07152a !important;
+        }
+        
         .article-page {
             min-height: 100vh;
             background: linear-gradient(180deg, #07152a 0%, #0d1f3a 50%, #07152a 100%);
@@ -958,6 +978,15 @@
                 });
             }
         });
+    </script>
+    
+    <!-- Scope html background to article pages only -->
+    <script>
+        // Add class to html element when body has article-page class
+        // This scopes the html background gradient to article pages only
+        if (document.body.classList.contains('article-page')) {
+            document.documentElement.classList.add('article-page-active');
+        }
     </script>
     
     <!-- Cookie Consent Banner -->
