@@ -13519,7 +13519,19 @@
             </div>
             
             <div class="header-right">
-                <div class="last-update" title="Scheduled Maintenance: December 31, 2025"mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle mobile menu">
+                <div class="last-update" title="Scheduled Maintenance: December 31, 2025"auth-btn signin-btn" id="signinBtn" aria-label="Sign In">Sign In</button>
+                <button class="auth-btn signup-btn" id="signupBtn" aria-label="Sign Up">Sign Up</button>
+                <button class="music-control-btn" id="musicControlBtn" aria-label="Toggle Background Music" title="Toggle Background Music">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;">
+                        <path d="M9 18V5l9-2v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+                        <circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/>
+                        <circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Mobile Menu Toggle -->
+            <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle mobile menu">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -18493,7 +18505,7 @@
                 const estNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (estOffset * 60000));
                 
                 // Calculate target date: one week from last git push (December 23, 2025) at 7:45 PM EST
-                const lastPushDate = new Date('2025-12-24T19:45:00-05:00'); // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST
+                const lastPushDate = new Date('2025-12-24T19:45:00-05:00'); // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST
                 const oneWeekInMs = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
                 const target = new Date(lastPushDate.getTime() + oneWeekInMs); // December 30, 2025 7:45 PM EST
                 
