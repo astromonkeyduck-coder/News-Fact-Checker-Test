@@ -2839,13 +2839,13 @@ class BreakingNewsGame {
     async showMultiplayerModal() {
         // Wait for MultiplayerGameManager to load (modules load asynchronously)
         let attempts = 0;
-        while (typeof MultiplayerGameManager === 'undefined' && attempts < 10) {
+        while (typeof window.MultiplayerGameManager === 'undefined' && attempts < 20) {
             await new Promise(resolve => setTimeout(resolve, 100));
             attempts++;
         }
         
         // Check if MultiplayerGameManager is available
-        if (typeof MultiplayerGameManager === 'undefined') {
+        if (typeof window.MultiplayerGameManager === 'undefined') {
             console.warn('[Game] MultiplayerGameManager not loaded after waiting');
             alert('Multiplayer feature is coming soon! Check back later for real-time multiplayer fact-checking games.');
             return;
@@ -2866,12 +2866,18 @@ class BreakingNewsGame {
             const userName = localStorage.getItem('noteworthy_user_name') || 'Player';
             
             if (!window.multiplayerManager) {
-                window.multiplayerManager = new MultiplayerGameManager(container, userId, userName);
+                window.multiplayerManager = new window.MultiplayerGameManager(container, userId, userName);
+            }
+            
+            // Ensure the manager renders the UI
+            if (window.multiplayerManager && typeof window.multiplayerManager.render === 'function') {
+                window.multiplayerManager.render();
             }
             
             container.style.display = 'flex';
         } catch (error) {
             console.error('[Game] Error initializing multiplayer:', error);
+            console.error('[Game] Error details:', error.stack);
             alert('Multiplayer feature is currently unavailable. Please try again later.');
             if (container) {
                 container.style.display = 'none';
@@ -8215,6 +8221,7 @@ function initNewsletterSubscription() {
     }
     let isGenerating = false; // Flag to prevent multiple simultaneous generations
     let cooldownUntil = 0; // Timestamp when cooldown expires
+    let spotlightGenerationSuccessful = false; // Track if current generation succeeded
     
     // Storage keys
     const STORAGE_KEY = 'spotlight_data';
@@ -8515,7 +8522,12 @@ function initNewsletterSubscription() {
                 // If autoplay is blocked, try again after user interaction
                 document.addEventListener('click', function playOnce() {
                     if (musicElement && musicElement.paused && !isSpotlightVisible) {
-                        musicElement.play().catch(() => {});
+                        musicElement.play().catch((err) => {
+                            // Audio autoplay restrictions are expected, only log in dev
+                            if (location.hostname === 'localhost' || location.hostname.includes('127.0.0.1')) {
+                                console.debug('[Music] Audio playback blocked:', err?.message || err);
+                            }
+                        });
                     }
                     document.removeEventListener('click', playOnce);
                 }, { once: true });
@@ -8658,7 +8670,12 @@ function initNewsletterSubscription() {
                     // If autoplay is blocked, try again after user interaction
                     document.addEventListener('click', function playOnce() {
                         if (spotlightMusic && spotlightMusic.paused) {
-                            spotlightMusic.play().catch(() => {});
+                            spotlightMusic.play().catch((err) => {
+                                // Audio autoplay restrictions are expected, only log in dev
+                                if (location.hostname === 'localhost' || location.hostname.includes('127.0.0.1')) {
+                                    console.debug('[Spotlight Music] Audio playback blocked:', err?.message || err);
+                                }
+                            });
                         }
                         document.removeEventListener('click', playOnce);
                     }, { once: true });
@@ -8803,9 +8820,11 @@ function initNewsletterSubscription() {
                         window.spotlightTransitioning = true; // Expose to global scope
                         
                         if (isSpotlightVisible) {
-                            // Spotlight is now visible - pause background, play/resume country music
-                            console.log('[Spotlight] Section became visible, switching to country music');
-                            if (currentCountry && countryMusicMap[currentCountry.name]) {
+                            // Spotlight is now visible - only play music if generation was successful
+                            console.log('[Spotlight] Section became visible, checking if generation succeeded');
+                            // Only play music if generation was successful
+                            if (spotlightGenerationSuccessful && currentCountry && countryMusicMap[currentCountry.name]) {
+                                console.log('[Spotlight] Generation succeeded, switching to country music');
                                 // Save background music state BEFORE pausing
                                 saveBackgroundMusicState();
                                 // Pause background music with fade out
@@ -8822,7 +8841,11 @@ function initNewsletterSubscription() {
                                 }, 600); // Wait for fade transitions
                                 }, 100);
                             } else {
-                                console.log('[Spotlight] No country music available for current country');
+                                if (!spotlightGenerationSuccessful) {
+                                    console.log('[Spotlight] Generation not successful, not playing music');
+                                } else {
+                                    console.log('[Spotlight] No country music available for current country');
+                                }
                                 isTransitioning = false;
                                 window.spotlightTransitioning = false;
                             }
@@ -9898,48 +9921,44 @@ function initNewsletterSubscription() {
                 aiResponse: hasExistingAIResponse ? 'exists' : 'missing'
             });
             
-            // Reset placeholders for missing images (or all if forceNew)
-            // When forceNew is true, we already cleared the wrappers above, so set placeholders
-            if (!hasFlagImage && flagWrapper) {
-                // Set placeholder if wrapper is empty or doesn't have a valid image
-                const existingImg = flagWrapper.querySelector('img');
-                if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
-                    flagWrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
-                } else {
-                    console.log('[Spotlight] Flag image wrapper already has an image, skipping placeholder');
-                }
-            }
-            if (!hasCulture1Image && culture1Wrapper) {
-                const existingImg = culture1Wrapper.querySelector('img');
-                if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
-                    culture1Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
-                } else {
-                    console.log('[Spotlight] Culture1 image wrapper already has an image, skipping placeholder');
-                }
-            }
-            if (!hasCulture2Image && culture2Wrapper) {
-                const existingImg = culture2Wrapper.querySelector('img');
-                if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
-                    culture2Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
-                } else {
-                    console.log('[Spotlight] Culture2 image wrapper already has an image, skipping placeholder');
-                }
-            }
+            // DON'T set placeholders yet - wait for text generation to succeed first
+            // This prevents images from generating if text fails
             
             // Check if mobile - only generate culture images on mobile
             const isMobile = window.innerWidth <= 768;
             
-            // Generate only missing images in parallel
-            const imagePromises = [];
-            
-            // Flag image - skip on mobile
-            if (!isMobile) {
-            if (!hasFlagImage) {
-                    console.log('[Spotlight] Generating flag image for', currentCountry.name);
-                    // More specific prompt to avoid content policy violations - use descriptive, safe language
-                    const flagPrompt = `A beautiful photograph of the official national flag of ${currentCountry.name}, waving gently in a clear blue sky, high quality and detailed`;
-                imagePromises.push(
-                        generateImage(flagPrompt).then(url => {
+            // Function to generate images (only called after text succeeds)
+            const generateImagesAfterTextSuccess = () => {
+                const imagePromises = [];
+                
+                // Set placeholders now that we know text succeeded
+                if (!hasFlagImage && flagWrapper) {
+                    const existingImg = flagWrapper.querySelector('img');
+                    if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
+                        flagWrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                    }
+                }
+                if (!hasCulture1Image && culture1Wrapper) {
+                    const existingImg = culture1Wrapper.querySelector('img');
+                    if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
+                        culture1Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                    }
+                }
+                if (!hasCulture2Image && culture2Wrapper) {
+                    const existingImg = culture2Wrapper.querySelector('img');
+                    if (!existingImg || !existingImg.src || existingImg.src.includes('placeholder')) {
+                        culture2Wrapper.innerHTML = '<div class="image-loading-placeholder"><div class="image-spinner"></div><p>Generating...</p></div>';
+                    }
+                }
+                
+                // Flag image - skip on mobile
+                if (!isMobile) {
+                if (!hasFlagImage) {
+                        console.log('[Spotlight] Generating flag image for', currentCountry.name);
+                        // More specific prompt to avoid content policy violations - use descriptive, safe language
+                        const flagPrompt = `A beautiful photograph of the official national flag of ${currentCountry.name}, waving gently in a clear blue sky, high quality and detailed`;
+                    imagePromises.push(
+                            generateImage(flagPrompt).then(url => {
                             if (url) {
                                 console.log('[Spotlight] ✅ Flag image generated successfully!');
                                 console.log('[Spotlight] Full URL:', url);
@@ -9974,107 +9993,110 @@ function initNewsletterSubscription() {
                         return { type: 'flag', url: null };
                     })
                 );
-            } else {
-                // Image already exists, return it
-                console.log('Flag image already exists, skipping generation');
-                const existingUrl = flagWrapper.querySelector('img').src;
-                imagePromises.push(Promise.resolve({ type: 'flag', url: existingUrl }));
+                    } else {
+                        // Image already exists, return it
+                        console.log('Flag image already exists, skipping generation');
+                        const existingUrl = flagWrapper.querySelector('img').src;
+                        imagePromises.push(Promise.resolve({ type: 'flag', url: existingUrl }));
+                    }
+                } else {
+                    // On mobile, hide flag wrapper and skip generation
+                    if (flagWrapper) {
+                        flagWrapper.style.display = 'none';
+                    }
+                    console.log('[Spotlight] Mobile detected - skipping flag image generation');
                 }
-            } else {
-                // On mobile, hide flag wrapper and skip generation
-                if (flagWrapper) {
-                    flagWrapper.style.display = 'none';
-                }
-                console.log('[Spotlight] Mobile detected - skipping flag image generation');
-            }
-            
-            if (!hasCulture1Image) {
-                console.log('[Spotlight] Generating culture1 image for', currentCountry.name);
-                // More specific prompt to avoid content policy violations - focus on positive cultural aspects
-                const culture1Prompt = `A vibrant and colorful photograph showcasing the beautiful traditional culture and architecture of ${currentCountry.name}, featuring traditional clothing and scenic landscapes`;
-                imagePromises.push(
-                    generateImage(culture1Prompt).then(url => {
-                        if (url) {
-                            console.log('[Spotlight] ✅ Culture1 image generated successfully!');
-                            console.log('[Spotlight] Full URL:', url);
-                        loadImageIntoWrapper('culture1-image-wrapper', url);
-                        } else {
-                            // Don't add to retry queue - generateImage already handled retries
+                
+                if (!hasCulture1Image) {
+                    console.log('[Spotlight] Generating culture1 image for', currentCountry.name);
+                    // More specific prompt to avoid content policy violations - focus on positive cultural aspects
+                    const culture1Prompt = `A vibrant and colorful photograph showcasing the beautiful traditional culture and architecture of ${currentCountry.name}, featuring traditional clothing and scenic landscapes`;
+                    imagePromises.push(
+                        generateImage(culture1Prompt).then(url => {
+                            if (url) {
+                                console.log('[Spotlight] ✅ Culture1 image generated successfully!');
+                                console.log('[Spotlight] Full URL:', url);
+                            loadImageIntoWrapper('culture1-image-wrapper', url);
+                            } else {
+                                // Don't add to retry queue - generateImage already handled retries
+                                loadImageIntoWrapper('culture1-image-wrapper', null);
+                            }
+                            return { type: 'culture1', url };
+                        }).catch(error => {
+                            // Suppress error logs for 400 errors to reduce console noise
+                            if (error.status !== 400) {
+                                console.error('[Spotlight] ❌ Error generating culture1 image:', error);
+                                console.error('[Spotlight] Error details:', {
+                                    message: error.message,
+                                    stack: error.stack?.split('\n').slice(0, 3).join('\n')
+                                });
+                            }
                             loadImageIntoWrapper('culture1-image-wrapper', null);
-                        }
-                        return { type: 'culture1', url };
-                    }).catch(error => {
-                        // Suppress error logs for 400 errors to reduce console noise
-                        if (error.status !== 400) {
-                            console.error('[Spotlight] ❌ Error generating culture1 image:', error);
-                            console.error('[Spotlight] Error details:', {
-                                message: error.message,
-                                stack: error.stack?.split('\n').slice(0, 3).join('\n')
-                            });
-                        }
-                        loadImageIntoWrapper('culture1-image-wrapper', null);
-                        // Only add to retry queue if it's not a 400 error (client errors shouldn't be retried)
-                        if (error.status !== 400) {
-                            failedImageRequests.set(culture1Prompt, {
-                                wrapperId: 'culture1-image-wrapper',
-                                retryCount: 0,
-                                lastAttempt: Date.now(),
-                                status: error.status || null
-                            });
-                        }
-                        return { type: 'culture1', url: null };
-                    })
-                );
-            } else {
-                // Image already exists, return it
-                console.log('Culture1 image already exists, skipping generation');
-                const existingUrl = culture1Wrapper.querySelector('img').src;
-                imagePromises.push(Promise.resolve({ type: 'culture1', url: existingUrl }));
-            }
-            
-            if (!hasCulture2Image) {
-                console.log('[Spotlight] Generating culture2 image for', currentCountry.name);
-                // More specific prompt to avoid content policy violations - emphasize positive cultural elements
-                const culture2Prompt = `A beautiful and colorful photograph showcasing cultural festivals, traditional cuisine, and artistic traditions from ${currentCountry.name}, highlighting the rich cultural heritage`;
-                imagePromises.push(
-                    generateImage(culture2Prompt).then(url => {
-                        if (url) {
-                            console.log('[Spotlight] ✅ Culture2 image generated successfully!');
-                            console.log('[Spotlight] Full URL:', url);
-                        loadImageIntoWrapper('culture2-image-wrapper', url);
-                        } else {
-                            // Don't add to retry queue - generateImage already handled retries
+                            // Only add to retry queue if it's not a 400 error (client errors shouldn't be retried)
+                            if (error.status !== 400) {
+                                failedImageRequests.set(culture1Prompt, {
+                                    wrapperId: 'culture1-image-wrapper',
+                                    retryCount: 0,
+                                    lastAttempt: Date.now(),
+                                    status: error.status || null
+                                });
+                            }
+                            return { type: 'culture1', url: null };
+                        })
+                    );
+                } else {
+                    // Image already exists, return it
+                    console.log('Culture1 image already exists, skipping generation');
+                    const existingUrl = culture1Wrapper.querySelector('img').src;
+                    imagePromises.push(Promise.resolve({ type: 'culture1', url: existingUrl }));
+                }
+                
+                if (!hasCulture2Image) {
+                    console.log('[Spotlight] Generating culture2 image for', currentCountry.name);
+                    // More specific prompt to avoid content policy violations - emphasize positive cultural elements
+                    const culture2Prompt = `A beautiful and colorful photograph showcasing cultural festivals, traditional cuisine, and artistic traditions from ${currentCountry.name}, highlighting the rich cultural heritage`;
+                    imagePromises.push(
+                        generateImage(culture2Prompt).then(url => {
+                            if (url) {
+                                console.log('[Spotlight] ✅ Culture2 image generated successfully!');
+                                console.log('[Spotlight] Full URL:', url);
+                            loadImageIntoWrapper('culture2-image-wrapper', url);
+                            } else {
+                                // Don't add to retry queue - generateImage already handled retries
+                                loadImageIntoWrapper('culture2-image-wrapper', null);
+                            }
+                            return { type: 'culture2', url };
+                        }).catch(error => {
+                            // Suppress error logs for 400 errors to reduce console noise
+                            if (error.status !== 400) {
+                                console.error('[Spotlight] ❌ Error generating culture2 image:', error);
+                                console.error('[Spotlight] Error details:', {
+                                    message: error.message,
+                                    stack: error.stack?.split('\n').slice(0, 3).join('\n')
+                                });
+                            }
                             loadImageIntoWrapper('culture2-image-wrapper', null);
-                        }
-                        return { type: 'culture2', url };
-                    }).catch(error => {
-                        // Suppress error logs for 400 errors to reduce console noise
-                        if (error.status !== 400) {
-                            console.error('[Spotlight] ❌ Error generating culture2 image:', error);
-                            console.error('[Spotlight] Error details:', {
-                                message: error.message,
-                                stack: error.stack?.split('\n').slice(0, 3).join('\n')
-                            });
-                        }
-                        loadImageIntoWrapper('culture2-image-wrapper', null);
-                        // Only add to retry queue if it's not a 400 error (client errors shouldn't be retried)
-                        if (error.status !== 400) {
-                            failedImageRequests.set(culture2Prompt, {
-                                wrapperId: 'culture2-image-wrapper',
-                                retryCount: 0,
-                                lastAttempt: Date.now(),
-                                status: error.status || null
-                            });
-                        }
-                        return { type: 'culture2', url: null };
-                    })
-                );
-            } else {
-                // Image already exists, return it
-                console.log('Culture2 image already exists, skipping generation');
-                const existingUrl = culture2Wrapper.querySelector('img').src;
-                imagePromises.push(Promise.resolve({ type: 'culture2', url: existingUrl }));
-            }
+                            // Only add to retry queue if it's not a 400 error (client errors shouldn't be retried)
+                            if (error.status !== 400) {
+                                failedImageRequests.set(culture2Prompt, {
+                                    wrapperId: 'culture2-image-wrapper',
+                                    retryCount: 0,
+                                    lastAttempt: Date.now(),
+                                    status: error.status || null
+                                });
+                            }
+                            return { type: 'culture2', url: null };
+                        })
+                    );
+                } else {
+                    // Image already exists, return it
+                    console.log('Culture2 image already exists, skipping generation');
+                    const existingUrl = culture2Wrapper.querySelector('img').src;
+                    imagePromises.push(Promise.resolve({ type: 'culture2', url: existingUrl }));
+                }
+                
+                return imagePromises;
+            };
             
             // Call AI API for text content (only if we don't already have it)
             // Show cached text immediately if available, then update async
@@ -10214,20 +10236,54 @@ IMPORTANT FORMATTING AND CONTENT RULES:
                 }); // Close the searchPromise.then() chain
             }
             
-            // Don't wait - let images and text load asynchronously
-            // This allows the UI to be interactive immediately
-            // Save data as each piece completes
-            const allPromises = [...imagePromises, textResponse];
+            // Reset success flag at start of generation
+            spotlightGenerationSuccessful = false;
             
-            // Clear generating flag immediately after starting promises
+            // Clear generating flag immediately after starting text generation
             // This prevents blocking the UI while still allowing the promises to complete
             // The flag was set to prevent duplicate clicks, but we clear it here so UI stays responsive
             // Note: We still prevent duplicate clicks via the early return check at function start
             isGenerating = false;
             updateButtonStates();
             
-            // Process results as they complete (non-blocking - don't await)
-            Promise.allSettled(allPromises).then(settledResults => {
+            // FIRST: Generate text content and wait for it to succeed before generating images
+            // This prevents images from generating if text fails
+            textResponse.then(textResult => {
+                // Check if text generation succeeded
+                const hasValidText = textResult && textResult.trim() !== '' && !textResult.includes('⚠️');
+                
+                if (!hasValidText) {
+                    // Text generation failed - don't generate images, don't play music
+                    console.error('[Spotlight] Text generation failed - skipping image generation');
+                    spotlightGenerationSuccessful = false;
+                    stopCountryMusic();
+                    isGenerating = false;
+                    updateButtonStates();
+                    
+                    if (spotlightError) {
+                        spotlightError.style.display = 'block';
+                        const errorMsg = spotlightError.querySelector('p');
+                        if (errorMsg) {
+                            errorMsg.textContent = '⚠️ Unable to generate spotlight content. Please try again.';
+                        }
+                    }
+                    return; // Exit early - don't generate images
+                }
+                
+                // Text generation succeeded - now generate images
+                console.log('[Spotlight] Text generation succeeded, now generating images');
+                
+                // Now generate images (only after text succeeded)
+                const imagePromises = generateImagesAfterTextSuccess();
+                const allPromises = [...imagePromises, Promise.resolve(textResult)];
+                
+                // Process results as they complete (non-blocking - don't await)
+                return Promise.allSettled(allPromises);
+            }).then(settledResults => {
+                // If text failed, settledResults will be undefined (early return above)
+                if (!settledResults) {
+                    return; // Text failed, already handled above
+                }
             // Process settled results
             const results = settledResults.map((result, index) => {
                 if (result.status === 'fulfilled') {
@@ -10347,6 +10403,8 @@ IMPORTANT FORMATTING AND CONTENT RULES:
         } catch (error) {
             console.error('Spotlight error:', error);
             aiThinking.style.display = 'none';
+            // Mark generation as failed
+            spotlightGenerationSuccessful = false;
             // Stop music on error
             stopCountryMusic();
             // Don't hide content on error, just show error message

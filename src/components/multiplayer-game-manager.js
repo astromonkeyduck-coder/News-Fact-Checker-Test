@@ -22,6 +22,8 @@ class MultiplayerGameManager {
     this.results = null;
     
     this.setupEventListeners();
+    // Render initial UI (lobby)
+    this.render();
   }
 
   /**

@@ -2527,7 +2527,11 @@
             }
         });
     </script>
-    <script src="src/utils/logger.js"></script>
+    <script type="module">
+        // Load logger as module to avoid export syntax error
+        import { logger } from './src/utils/logger.js';
+        window.logger = logger;
+    </script>
     <script src="performance-monitor.js"></script>
     <script src="src/components/leaderboard.js"></script>
     <!-- Multiplayer loaded as module to support ES6 imports -->
