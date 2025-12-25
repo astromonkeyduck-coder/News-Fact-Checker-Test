@@ -436,20 +436,42 @@
             // Update article body - PRESERVE EXACT POST TEXT
             let bodyHTML = '';
             
-            // Add hero media if available
+            // Normalize URLs for comparison (remove trailing slashes, query params, etc.)
+            const normalizeUrl = (url) => {
+                if (!url) return '';
+                try {
+                    const urlObj = new URL(url.startsWith('http') ? url : ensureAbsoluteImageUrl(url));
+                    return urlObj.origin + urlObj.pathname;
+                } catch {
+                    return url;
+                }
+            };
+            
+            // Track displayed URLs to prevent duplicates
+            const displayedUrls = new Set();
+            
+            // Add hero media if available (primary image)
             if (image) {
-                // Ensure image URL is absolute
                 const absoluteImageUrl = ensureAbsoluteImageUrl(image);
+                const normalizedUrl = normalizeUrl(absoluteImageUrl);
+                displayedUrls.add(normalizedUrl);
+                
                 bodyHTML += `<div class="article-media">
                     <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)}" loading="lazy" onerror="this.style.display='none'; this.parentElement.innerHTML='<p style=\\'color: rgba(255,255,255,0.6); padding: 2rem; text-align: center;\\'>Image could not be loaded</p>';">
                 </div>`;
             }
             
-            // Also check for multiple images in post.images array
+            // Also check for multiple images in post.images array (secondary images only)
             if (post.images && Array.isArray(post.images) && post.images.length > 0) {
                 post.images.forEach((imgUrl, idx) => {
-                    if (imgUrl && imgUrl !== image) { // Don't duplicate the hero image
-                        const absoluteImgUrl = ensureAbsoluteImageUrl(imgUrl);
+                    if (!imgUrl) return;
+                    
+                    const absoluteImgUrl = ensureAbsoluteImageUrl(imgUrl);
+                    const normalizedUrl = normalizeUrl(absoluteImgUrl);
+                    
+                    // Only show if not already displayed (deduplicate by normalized URL)
+                    if (!displayedUrls.has(normalizedUrl)) {
+                        displayedUrls.add(normalizedUrl);
                         bodyHTML += `<div class="article-media" style="margin-top: 1.5rem;">
                             <img src="${escapeHtml(absoluteImgUrl)}" alt="${escapeHtml(title)} - Image ${idx + 2}" loading="lazy" onerror="this.style.display='none';">
                         </div>`;

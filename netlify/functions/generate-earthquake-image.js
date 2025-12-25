@@ -8,15 +8,29 @@
  */
 
 const sharp = require('sharp');
+const { resvg } = require('@resvg/resvg-js');
 const { getStore } = require("@netlify/blobs");
 const fs = require('fs');
 const path = require('path');
 
 // Load embedded fonts (base64)
 let FONT_DATA = null;
+let FONT_BUFFERS = { regular: null, bold: null };
 try {
   FONT_DATA = require('./fonts-base64.js');
-  console.log('[generate-earthquake-image] ✅ Loaded embedded Roboto fonts');
+  // Convert base64 data URIs to buffers for resvg
+  if (FONT_DATA.regular) {
+    const base64Data = FONT_DATA.regular.split(',')[1] || FONT_DATA.regular;
+    FONT_BUFFERS.regular = Buffer.from(base64Data, 'base64');
+  }
+  if (FONT_DATA.bold) {
+    const base64Data = FONT_DATA.bold.split(',')[1] || FONT_DATA.bold;
+    FONT_BUFFERS.bold = Buffer.from(base64Data, 'base64');
+  }
+  console.log('[generate-earthquake-image] ✅ Loaded embedded Roboto fonts', {
+    regular: !!FONT_BUFFERS.regular,
+    bold: !!FONT_BUFFERS.bold
+  });
 } catch (err) {
   console.error('[generate-earthquake-image] ⚠️ Failed to load embedded fonts:', err.message);
   FONT_DATA = { regular: null, bold: null };
@@ -151,22 +165,13 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
     console.log(`[generate-earthquake-image] Location scaled down to ${locationFontSize}px`);
   }
   
-  // Build SVG with embedded fonts
-  const fontFaceRegular = FONT_DATA.regular 
-    ? `<style>@font-face { font-family: 'Roboto'; src: url('${FONT_DATA.regular}') format('truetype'); font-weight: normal; font-style: normal; }</style>`
-    : '';
-  const fontFaceBold = FONT_DATA.bold
-    ? `<style>@font-face { font-family: 'Roboto'; src: url('${FONT_DATA.bold}') format('truetype'); font-weight: bold; font-style: normal; }</style>`
-    : '';
-  
-  const fallbackFont = FONT_DATA.regular && FONT_DATA.bold ? 'Roboto' : 'Arial, sans-serif';
+  // Use Roboto if fonts are loaded, otherwise fallback
+  const fontFamily = (FONT_BUFFERS.regular && FONT_BUFFERS.bold) ? 'Roboto' : 'Arial, sans-serif';
   
   return `
     <svg width="${templateWidth}" height="${templateHeight}" xmlns="http://www.w3.org/2000/svg" 
          shape-rendering="geometricPrecision" text-rendering="optimizeLegibility">
       <defs>
-        ${fontFaceRegular}
-        ${fontFaceBold}
         <style>
           text {
             text-rendering: optimizeLegibility;
@@ -179,7 +184,7 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
       <text 
         x="${magX}" 
         y="${headlineY}" 
-        font-family="${fallbackFont}" 
+        font-family="${fontFamily}" 
         font-size="${magnitudeFontSize}" 
         font-weight="bold"
         fill="${MAGNITUDE_COLOR}"
@@ -192,7 +197,7 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
       <text 
         x="${headlineX}" 
         y="${headlineY}" 
-        font-family="${fallbackFont}" 
+        font-family="${fontFamily}" 
         font-size="${headlineFontSize}" 
         font-weight="bold"
         fill="${HEADLINE_COLOR}"
@@ -205,7 +210,7 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
       <text 
         x="${locationX}" 
         y="${locationY}" 
-        font-family="${fallbackFont}" 
+        font-family="${fontFamily}" 
         font-size="${locationFontSize}" 
         font-weight="bold"
         fill="${LOCATION_COLOR}"
@@ -374,19 +379,49 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
   const magnitudeText = `M${magnitude.toFixed(1)}`;
   
   // Create SVG overlay with embedded fonts
-  const dynamicTextSVG = Buffer.from(createDynamicTextSVG(magnitudeText, location, outputWidth, outputHeight, scaleFactor));
+  const svgString = createDynamicTextSVG(magnitudeText, location, outputWidth, outputHeight, scaleFactor);
   
   // Validate font loading
-  if (!FONT_DATA.regular || !FONT_DATA.bold) {
-    console.error(`[generate-earthquake-image] ⚠️ WARNING: Fonts not loaded! Regular: ${!!FONT_DATA.regular}, Bold: ${!!FONT_DATA.bold}`);
+  if (!FONT_BUFFERS.regular || !FONT_BUFFERS.bold) {
+    console.error(`[generate-earthquake-image] ⚠️ WARNING: Fonts not loaded! Regular: ${!!FONT_BUFFERS.regular}, Bold: ${!!FONT_BUFFERS.bold}`);
     console.error(`[generate-earthquake-image] Text may render as tofu glyphs. Check fonts-base64.js`);
   } else {
-    console.log(`[generate-earthquake-image] ✅ Fonts loaded: Regular=${FONT_DATA.regular.substring(0, 50)}..., Bold=${FONT_DATA.bold.substring(0, 50)}...`);
+    console.log(`[generate-earthquake-image] ✅ Fonts loaded: Regular=${FONT_BUFFERS.regular.length} bytes, Bold=${FONT_BUFFERS.bold.length} bytes`);
+  }
+  
+  // Render SVG to PNG using resvg (supports embedded fonts properly)
+  let textOverlayBuffer;
+  try {
+    const fonts = [];
+    if (FONT_BUFFERS.regular) {
+      fonts.push({ name: 'Roboto', data: FONT_BUFFERS.regular });
+    }
+    if (FONT_BUFFERS.bold) {
+      fonts.push({ name: 'Roboto', data: FONT_BUFFERS.bold });
+    }
+    
+    const svgOptions = {
+      fonts: fonts.length > 0 ? fonts : undefined,
+      fitTo: { mode: 'width', value: outputWidth },
+      dpi: 96,
+    };
+    
+    const renderResult = resvg(svgString, svgOptions);
+    textOverlayBuffer = Buffer.from(renderResult);
+    
+    console.log(`[generate-earthquake-image] ✅ Rendered text overlay with resvg: ${outputWidth}x${outputHeight}, fonts: ${fonts.length}`);
+    console.log(`[generate-earthquake-image] Template dimensions: ${actualWidth}x${actualHeight}, output: ${outputWidth}x${outputHeight}`);
+    console.log(`[generate-earthquake-image] Font loaded: Regular=${!!FONT_BUFFERS.regular}, Bold=${!!FONT_BUFFERS.bold}`);
+  } catch (resvgError) {
+    console.error('[generate-earthquake-image] ⚠️ resvg rendering failed, falling back to Sharp SVG:', resvgError.message);
+    console.error('[generate-earthquake-image] resvg error details:', resvgError);
+    // Fallback to Sharp SVG rendering (may not support fonts)
+    textOverlayBuffer = Buffer.from(svgString);
   }
   
   // Prepare composite inputs
   const compositeInputs = [
-    { input: dynamicTextSVG, blend: 'over' },
+    { input: textOverlayBuffer, blend: 'over' },
   ];
   
   // Add USGS images if provided

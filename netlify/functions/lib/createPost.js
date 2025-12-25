@@ -39,17 +39,25 @@ async function createPostFromEvent(event, category, source) {
       // Always update post if we have an image_url (especially for earthquakes that get images generated later)
       // This ensures posts get images even if they were created before the image was generated
       if (event.image_url) {
-        const needsUpdate = existingPost.image !== event.image_url || 
-                           !existingPost.images || 
-                           existingPost.images.length === 0 ||
-                           existingPost.images[0] !== event.image_url;
+        // Normalize image URL
+        let imageUrl = event.image_url;
+        if (imageUrl.startsWith('/')) {
+          const baseUrl = process.env.URL || 'https://noteworthynews.co';
+          imageUrl = `${baseUrl}${imageUrl}`;
+        }
+        
+        // Check if update is needed (compare normalized URLs)
+        const existingImage = existingPost.image || '';
+        const needsUpdate = existingImage !== imageUrl;
         
         if (needsUpdate) {
-          existingPost.image = event.image_url;
-          existingPost.images = [event.image_url];
+          existingPost.image = imageUrl;
+          // Clear images array to prevent duplicates (only use 'image' field for primary)
+          existingPost.images = [];
           await store.set(postKey, JSON.stringify(existingPost), {
             contentType: 'application/json',
           });
+          console.log(`[createPost] Updated post ${postId} with image: ${imageUrl}`);
           return { exists: true, postId, updated: true };
         }
       }
@@ -84,14 +92,28 @@ async function createPostFromEvent(event, category, source) {
     summary += '...';
   }
 
+  // Normalize image URL - ensure it's a valid, accessible URL
+  let imageUrl = event.image_url || null;
+  if (imageUrl) {
+    // Ensure relative URLs are converted to absolute
+    if (imageUrl.startsWith('/')) {
+      const baseUrl = process.env.URL || 'https://noteworthynews.co';
+      imageUrl = `${baseUrl}${imageUrl}`;
+    }
+    // Log for debugging
+    console.log(`[createPost] Setting image URL for post ${postId}: ${imageUrl}`);
+  }
+  
   // Create post object matching the site's post structure
+  // CRITICAL: Only set 'image' field for primary image, 'images' array is for secondary images only
+  // This prevents duplicates on article pages
   const post = {
     id: postId,
     title: event.title,
     story: summary,
     text: summary,
-    image: event.image_url || null,
-    images: event.image_url ? [event.image_url] : [],
+    image: imageUrl, // Primary image (for card deck and article hero)
+    images: [], // Secondary images only (empty for single-image posts to prevent duplicates)
     link: event.source_url,
     url: event.source_url,
     datePosted: event.published_at,
