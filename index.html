@@ -4800,7 +4800,7 @@
             .hero-logo,
             .welcome-text {
                 position: relative;
-                z-index: 10 !important;
+                z-index: 60 !important; /* Increased to match desktop z-index and ensure visibility above western-decorations */
             }
             
             /* Hide background images on mobile for space effect, but keep the mobile background image */
@@ -6251,7 +6251,7 @@
         
         /* Hero Stats Container - Horizontal Layout */
         .hero-stats-container {
-            contain: layout style paint; /* Performance optimization - isolate rendering */
+            contain: layout style; /* Performance optimization - removed paint containment to avoid stacking context issues */
             display: flex;
             flex-direction: row;
             align-items: center;
@@ -6263,8 +6263,9 @@
             padding: 0 20px;
             box-sizing: border-box;
             position: relative;
-            z-index: 50;
+            z-index: 60; /* Increased above western-decorations (z-index: 50) to ensure visibility during animation */
             flex-wrap: wrap;
+            isolation: isolate; /* Create new stacking context to ensure stat cards are above animated background layers */
         }
         
         /* Floating animation for subtle movement */
@@ -12028,8 +12029,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            pointer-events: auto;
-            z-index: 50;
+            pointer-events: none; /* Changed to none to prevent blocking interactions with stat cards */
+            z-index: 40; /* Lowered below hero-stats-container (z-index: 60) to ensure stat cards are always visible */
         }
         
         .western-star {
@@ -18571,7 +18572,7 @@
                 const estNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (estOffset * 60000));
                 
                 // Calculate target date: one week from last git push (December 23, 2025) at 7:45 PM EST
-                const lastPushDate = new Date('2025-12-25T19:45:00-05:00'); // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST
+                const lastPushDate = new Date('2025-12-25T19:45:00-05:00'); // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST
                 const oneWeekInMs = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
                 const target = new Date(lastPushDate.getTime() + oneWeekInMs); // December 30, 2025 7:45 PM EST
                 

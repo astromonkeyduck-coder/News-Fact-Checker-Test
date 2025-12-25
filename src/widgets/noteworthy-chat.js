@@ -395,6 +395,10 @@ class NoteworthyChat extends HTMLElement {
         
         .user-msg {
           padding: 12px 16px;
+          display: block;
+          color: rgba(255, 255, 255, 0.95);
+          font-size: 14px;
+          line-height: 1.65;
           background: rgba(30, 41, 59, 0.6);
           border-radius: 12px 12px 12px 4px;
           color: rgba(255, 255, 255, 0.95);
@@ -1830,8 +1834,39 @@ class NoteworthyChat extends HTMLElement {
           object-fit: contain;
         }
         
-        .thinking {
-          display: flex;
+        .thinking.searching {
+          background: rgba(212, 160, 23, 0.15);
+          border-color: rgba(212, 160, 23, 0.3);
+          animation: searchPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes searchPulse {
+          0%, 100% { 
+            box-shadow: 0 0 0 0 rgba(212, 160, 23, 0.4);
+          }
+          50% { 
+            box-shadow: 0 0 20px 4px rgba(212, 160, 23, 0.6);
+          }
+        }
+        
+        .search-icon {
+          font-size: 20px;
+          animation: searchRotate 2s linear infinite;
+        }
+        
+        @keyframes searchRotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        
+        .search-spinner {
+          width: 16px;
+          height: 16px;
+          border: 2px solid rgba(212, 160, 23, 0.3);
+          border-top-color: rgba(212, 160, 23, 0.9);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
           align-items: center;
           gap: 12px;
           padding: 14px 16px;
@@ -2943,7 +2978,7 @@ class NoteworthyChat extends HTMLElement {
         <div class="head">
           <div class="head-left">
             <div class="logo" aria-hidden="true">
-              <img src="/IMG_5794.PNG" alt="Noteworthy News" />
+              <img src="/SantalogoEdited.png" alt="Noteworthy News" />
             </div>
             <div class="title-group">
               <div class="title">Noteworthy AI</div>
@@ -4673,7 +4708,7 @@ class NoteworthyChat extends HTMLElement {
       err.innerHTML = `<strong><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor; display: inline-block; vertical-align: middle; margin-right: 0.25rem;"><path d="M12 2L2 22h20L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Error</strong><p>${message}</p>`;
       errorGroup.innerHTML = `
         <div class="message-avatar">
-          <img src="/IMG_5794.PNG" alt="Noteworthy News" />
+          <img src="/SantalogoEdited.png" alt="Noteworthy News" />
         </div>
         <div class="message-content"></div>
       `;
@@ -4793,7 +4828,7 @@ class NoteworthyChat extends HTMLElement {
       thinking.className = 'message-group ai-msg-group';
       thinking.innerHTML = `
         <div class="message-avatar">
-          <img src="/IMG_5794.PNG" alt="Noteworthy News" />
+          <img src="/SantalogoEdited.png" alt="Noteworthy News" />
         </div>
         <div class="message-content">
           <div class="thinking">
@@ -4805,6 +4840,68 @@ class NoteworthyChat extends HTMLElement {
       `;
       body.appendChild(thinking);
       body.scrollTop = body.scrollHeight;
+      
+      // Set a timeout to show search indicator if request takes longer than 2 seconds
+      // (this likely means a web search is happening)
+      let searchTimeout = null;
+      let searchIndicatorShown = false;
+      
+      // Function to show deep dive search indicator
+      const showSearchIndicator = (query) => {
+        if (searchIndicatorShown) return; // Don't show multiple times
+        searchIndicatorShown = true;
+        // Play search sound effect
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          // Create a "search" sound (two quick beeps)
+          oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(1000, audioContext.currentTime + 0.1);
+          gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.1);
+          
+          // Second beep
+          setTimeout(() => {
+            const oscillator2 = audioContext.createOscillator();
+            const gainNode2 = audioContext.createGain();
+            oscillator2.connect(gainNode2);
+            gainNode2.connect(audioContext.destination);
+            oscillator2.frequency.setValueAtTime(1000, audioContext.currentTime);
+            oscillator2.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.1);
+            gainNode2.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            oscillator2.start(audioContext.currentTime);
+            oscillator2.stop(audioContext.currentTime + 0.1);
+          }, 120);
+        } catch (error) {
+          console.warn('[Chat] Could not play search sound effect:', error);
+        }
+        
+        // Update thinking indicator to show search
+        const thinkingContent = thinking.querySelector('.thinking');
+        if (thinkingContent) {
+          thinkingContent.innerHTML = `
+            <span class="search-icon">🔍</span>
+            <span class="search-spinner"></span>
+            <span><strong>Deep Dive Research…</strong> Searching the web for: "${query || 'current information'}"</span>
+          `;
+          thinkingContent.classList.add('searching');
+        }
+        
+        // Update header subtitle
+        if (subText) {
+          subText.textContent = '🔍 Deep Research…';
+          subText.style.color = 'rgba(74, 144, 226, 0.9)';
+          subText.style.fontWeight = '700';
+        }
+      };
 
       try {
         // Regular chat response
@@ -4830,6 +4927,13 @@ class NoteworthyChat extends HTMLElement {
           isLocalhost: isLocalhost,
           hostname: window.location.hostname
         });
+        
+        // Set timeout to show search indicator if request takes longer than 2 seconds
+        searchTimeout = setTimeout(() => {
+          if (!searchIndicatorShown) {
+            showSearchIndicator('current information');
+          }
+        }, 2000);
 
         let res;
         let lastError = null;
@@ -4883,6 +4987,11 @@ class NoteworthyChat extends HTMLElement {
           });
           console.log('Fetch response:', { ok: res.ok, status: res.status, statusText: res.statusText });
         } catch (fetchError) {
+          // Clear search timeout on error
+          if (searchTimeout) {
+            clearTimeout(searchTimeout);
+            searchTimeout = null;
+          }
           console.error('Fetch error:', fetchError);
           lastError = fetchError;
           
@@ -4921,6 +5030,12 @@ class NoteworthyChat extends HTMLElement {
           }
         }
 
+        // Clear search timeout once we get a response
+        if (searchTimeout) {
+          clearTimeout(searchTimeout);
+          searchTimeout = null;
+        }
+        
         if (!res.ok) {
           let errorText;
           let isRateLimit = false;
@@ -4982,7 +5097,20 @@ class NoteworthyChat extends HTMLElement {
           throw new Error('Invalid response from server. Please try again.');
         }
         
-        console.log('API Success:', { reply: data.reply?.substring(0, 50) + '...', hasImage: !!(data.image && data.image.imageUrl), fullData: data });
+        // Clear search timeout
+        if (searchTimeout) {
+          clearTimeout(searchTimeout);
+          searchTimeout = null;
+        }
+        
+        console.log('API Success:', { reply: data.reply?.substring(0, 50) + '...', hasImage: !!(data.image && data.image.imageUrl), searching: data.searching, searchQuery: data.searchQuery, fullData: data });
+        
+        // Check if search was performed (even if completed)
+        if (data.searchQuery) {
+          if (!searchIndicatorShown) {
+            showSearchIndicator(data.searchQuery);
+          }
+        }
         
         if (!data || !data.reply) {
           console.error('API response missing reply field:', data);
@@ -5082,7 +5210,7 @@ class NoteworthyChat extends HTMLElement {
 
         aiGroup.innerHTML = `
           <div class="message-avatar">
-            <img src="/IMG_5794.PNG" alt="Noteworthy News" />
+            <img src="/SantalogoEdited.png" alt="Noteworthy News" />
           </div>
           <div class="message-content"></div>
         `;
@@ -5262,7 +5390,7 @@ class NoteworthyChat extends HTMLElement {
         
         aiGroup.innerHTML = `
           <div class="message-avatar">
-            <img src="/IMG_5794.PNG" alt="Noteworthy News" />
+            <img src="/SantalogoEdited.png" alt="Noteworthy News" />
           </div>
           <div class="message-content"></div>
         `;
@@ -7001,7 +7129,7 @@ class NoteworthyChat extends HTMLElement {
             successGroup.className = 'message-group ai-msg-group';
             successGroup.innerHTML = `
               <div class="message-avatar">
-                <img src="/IMG_5794.PNG" alt="Noteworthy News" />
+                <img src="/SantalogoEdited.png" alt="Noteworthy News" />
               </div>
               <div class="message-content">
                 <div class="reply">
@@ -8822,7 +8950,7 @@ class NoteworthyChat extends HTMLElement {
                     const prompt = (output.revised_prompt || 'Generated image').replace(/'/g, "\\'");
                     aiGroup.innerHTML = `
                       <div class="message-avatar">
-                        <img src="/IMG_5794.PNG" alt="Noteworthy News" />
+                        <img src="/SantalogoEdited.png" alt="Noteworthy News" />
                       </div>
                       <div class="message-content">
                         <div class="reply">
