@@ -5,6 +5,7 @@
  */
 
 const { getStore } = require("@netlify/blobs");
+const sharp = require('sharp');
 
 exports.handler = async (event, context) => {
   // CORS headers
@@ -198,13 +199,80 @@ exports.handler = async (event, context) => {
       // Base64 encoding increases size by ~33%, so we check the raw buffer size
       // Netlify response limit is ~6MB for base64, so ~4.5MB raw buffer max
       const maxSize = 4.5 * 1024 * 1024; // 4.5MB raw buffer (becomes ~6MB base64)
+      
+      // If image is too large, compress it on-the-fly (for old images generated before compression)
       if (imageBuffer.length > maxSize) {
-        console.warn('[get-uploaded-image] Image too large', { size: imageBuffer.length, key: imageKey });
-        return {
-          statusCode: 413,
-          headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify({ error: "Image too large" }),
-        };
+        const originalSize = imageBuffer.length;
+        console.warn('[get-uploaded-image] Image too large, compressing on-the-fly', { 
+          originalSize, 
+          key: imageKey 
+        });
+        
+        try {
+          // Compress the image using sharp
+          const compressedBuffer = await sharp(imageBuffer)
+            .png({
+              compressionLevel: 9, // Maximum compression
+              quality: 90, // Slight quality reduction for size
+              effort: 10
+            })
+            .toBuffer();
+          
+          // If still too large after compression, try resizing
+          if (compressedBuffer.length > maxSize) {
+            const metadata = await sharp(imageBuffer).metadata();
+            const scaleFactor = Math.sqrt(maxSize / compressedBuffer.length) * 0.9; // 90% to be safe
+            
+            const resizedBuffer = await sharp(imageBuffer)
+              .resize(Math.round(metadata.width * scaleFactor), Math.round(metadata.height * scaleFactor), {
+                kernel: 'lanczos3',
+                withoutEnlargement: true
+              })
+              .png({
+                compressionLevel: 9,
+                quality: 90,
+                effort: 10
+              })
+              .toBuffer();
+            
+            if (resizedBuffer.length <= maxSize) {
+              imageBuffer = resizedBuffer;
+              console.log('[get-uploaded-image] Image resized and compressed', { 
+                originalSize,
+                finalSize: resizedBuffer.length,
+                key: imageKey 
+              });
+            } else {
+              // Still too large even after resizing - return error
+              console.error('[get-uploaded-image] Image still too large after compression and resize', { 
+                originalSize,
+                compressedSize: compressedBuffer.length,
+                resizedSize: resizedBuffer.length,
+                key: imageKey 
+              });
+              return {
+                statusCode: 413,
+                headers: { ...headers, "Content-Type": "application/json" },
+                body: JSON.stringify({ error: "Image too large even after compression" }),
+              };
+            }
+          } else {
+            imageBuffer = compressedBuffer;
+            console.log('[get-uploaded-image] Image compressed successfully', { 
+              originalSize,
+              compressedSize: compressedBuffer.length,
+              key: imageKey 
+            });
+          }
+        } catch (compressError) {
+          console.error('[get-uploaded-image] Compression failed', compressError, { key: imageKey });
+          // If compression fails, return error
+          return {
+            statusCode: 413,
+            headers: { ...headers, "Content-Type": "application/json" },
+            body: JSON.stringify({ error: "Image too large and compression failed" }),
+          };
+        }
       }
 
       return {

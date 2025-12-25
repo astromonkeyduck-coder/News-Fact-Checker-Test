@@ -24,12 +24,17 @@
 })();
 
 // Use the logger from window (safe even if redeclared elsewhere)
-const logger = window.leaderboardLogger || (typeof window !== 'undefined' && window.logger) || {
-    debug: (...args) => console.log('[Leaderboard]', ...args),
-    error: (...args) => console.error('[Leaderboard]', ...args),
-    warn: (...args) => console.warn('[Leaderboard]', ...args),
-    log: (...args) => console.log('[Leaderboard]', ...args)
-};
+// Use a unique variable name to avoid conflicts with other scripts
+const leaderboardLoggerInstance = (function() {
+    return window.leaderboardLogger || (typeof window !== 'undefined' && window.logger) || {
+        debug: (...args) => console.log('[Leaderboard]', ...args),
+        error: (...args) => console.error('[Leaderboard]', ...args),
+        warn: (...args) => console.warn('[Leaderboard]', ...args),
+        log: (...args) => console.log('[Leaderboard]', ...args)
+    };
+})();
+// Alias for convenience (but use leaderboardLoggerInstance internally to avoid conflicts)
+const logger = leaderboardLoggerInstance;
 
 class Leaderboard {
     constructor(gameType = 'fact-checker') {

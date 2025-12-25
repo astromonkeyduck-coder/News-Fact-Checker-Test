@@ -44,7 +44,7 @@
   # Use esbuild to automatically compile TypeScript functions
   node_bundler = "esbuild"
   # Include source files for TypeScript compilation
-  included_files = ["netlify/functions/**/*.ts", "src/**/*.ts", "netlify/functions/**/*.png"]
+  included_files = ["netlify/functions/**/*.ts", "src/**/*.ts", "netlify/functions/**/*.png", "netlify/functions/fonts-base64.js"]
   # Also include JavaScript functions
   directory = "netlify/functions"
 

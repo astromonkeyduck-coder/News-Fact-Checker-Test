@@ -52,7 +52,8 @@ function createLogger(engine, runId) {
     
     debug: (message, data = {}) => {
       // Debug logs are less verbose, only log in development or when explicitly enabled
-      if (process.env.DEBUG || process.env.NODE_ENV === 'development') {
+      // Always define the method (even if it doesn't log) to prevent "is not a function" errors
+      if (process.env.DEBUG || process.env.NODE_ENV === 'development' || process.env.NETLIFY_DEV) {
         console.log(JSON.stringify({
           level: 'debug',
           engine,
@@ -62,6 +63,7 @@ function createLogger(engine, runId) {
           timestamp: new Date().toISOString(),
         }));
       }
+      // Method always exists, just may not output anything
     },
     
     summary: (metrics) => {
