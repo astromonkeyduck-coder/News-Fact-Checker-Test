@@ -16,7 +16,9 @@
     "test:games": "jest --testPathPattern=GamesGallery.test.js",
     "validate:games": "node scripts/validate-game-embeds.js",
     "audit:game": "node scripts/security-audit-game.js",
-    "add:game": "node scripts/safe-add-game.js"
+    "add:game": "node scripts/safe-add-game.js",
+    "test:earthquake": "node test-earthquake-visual.js",
+    "test:earthquake-full": "node test-full-earthquake-pipeline.js"
   },
   "dependencies": {
     "@auth0/auth0-spa-js": "^2.8.0",

@@ -744,90 +744,121 @@ export class NoteworthyChat extends HTMLElement {
           }
         }
         
-        /* Tutorial Modal Styles */
+        /* Tutorial Card Styles - Sleek, Non-Intrusive */
         .tutorial-overlay {
           position: fixed;
           top: 0;
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.7);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
+          background: rgba(0, 0, 0, 0.4);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
           z-index: 2147483100;
           display: none;
-          align-items: center;
-          justify-content: center;
+          align-items: flex-start;
+          justify-content: flex-end;
           padding: 20px;
           opacity: 0;
-          transition: opacity 0.3s ease;
+          transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          pointer-events: none;
         }
         
         .tutorial-overlay.show {
           display: flex;
           opacity: 1;
+          pointer-events: all;
         }
         
         .tutorial-modal {
           background: linear-gradient(135deg, 
-            rgba(255,255,255,.98) 0%, 
-            rgba(255,255,255,.95) 100%);
-          backdrop-filter: blur(24px) saturate(200%);
-          -webkit-backdrop-filter: blur(24px) saturate(200%);
-          border-radius: 24px;
-          max-width: 700px;
-          max-height: 90vh;
+            rgba(255,255,255,.99) 0%, 
+            rgba(255,255,255,.97) 100%);
+          backdrop-filter: blur(32px) saturate(180%);
+          -webkit-backdrop-filter: blur(32px) saturate(180%);
+          border-radius: 20px;
+          max-width: 480px;
           width: 100%;
+          max-height: calc(100vh - 40px);
           box-shadow: 
-            0 24px 72px rgba(0,0,0,.3),
-            0 0 0 1px rgba(255,255,255,.6) inset;
+            0 20px 60px rgba(0,0,0,.25),
+            0 0 0 1px rgba(255,255,255,.8) inset,
+            0 8px 32px rgba(1,31,91,.15);
           display: flex;
           flex-direction: column;
           overflow: hidden;
-          animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+          animation: tutorialSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+          transform-origin: top right;
         }
         
-        @keyframes modalSlideUp {
-          from { transform: translateY(30px) scale(0.95); opacity: 0; }
-          to { transform: translateY(0) scale(1); opacity: 1; }
+        @keyframes tutorialSlideIn {
+          from { 
+            transform: translateX(20px) scale(0.96); 
+            opacity: 0; 
+          }
+          to { 
+            transform: translateX(0) scale(1); 
+            opacity: 1; 
+          }
         }
         
         .tutorial-header {
-          padding: 24px 28px;
+          padding: 16px 20px;
           background: linear-gradient(135deg, #011F5B 0%, #143A92 100%);
           color: #fff;
           display: flex;
           align-items: center;
           justify-content: space-between;
+          gap: 12px;
           border-bottom: 1px solid rgba(255,255,255,.1);
+        }
+        
+        .tutorial-header-left {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex: 1;
         }
         
         .tutorial-header h2 {
           margin: 0;
-          font-size: 24px;
+          font-size: 18px;
           font-weight: 800;
-          letter-spacing: -0.5px;
-          background: linear-gradient(135deg, #fff 0%, rgba(212,160,23,1) 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
+          letter-spacing: -0.3px;
+          color: #fff;
+        }
+        
+        .tutorial-header-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 8px;
+          background: rgba(212,160,23,.2);
+          border: 1px solid rgba(212,160,23,.4);
+          border-radius: 6px;
+          font-size: 11px;
+          font-weight: 700;
+          color: #F4C430;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
         
         .tutorial-close {
           background: rgba(255,255,255,.1);
           border: none;
           color: #fff;
-          font-size: 28px;
+          font-size: 20px;
           line-height: 1;
           cursor: pointer;
-          padding: 0;
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
+          padding: 6px;
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
           transition: all 0.2s;
+          flex-shrink: 0;
         }
         
         .tutorial-close:hover {
@@ -835,14 +866,32 @@ export class NoteworthyChat extends HTMLElement {
           transform: scale(1.1);
         }
         
+        .tutorial-skip {
+          background: transparent;
+          border: 1px solid rgba(255,255,255,.3);
+          color: rgba(255,255,255,.9);
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          padding: 6px 12px;
+          border-radius: 8px;
+          transition: all 0.2s;
+          flex-shrink: 0;
+        }
+        
+        .tutorial-skip:hover {
+          background: rgba(255,255,255,.15);
+          border-color: rgba(255,255,255,.5);
+        }
+        
         .tutorial-content {
           flex: 1;
           overflow-y: auto;
-          padding: 28px;
+          padding: 20px;
         }
         
         .tutorial-content::-webkit-scrollbar {
-          width: 8px;
+          width: 6px;
         }
         
         .tutorial-content::-webkit-scrollbar-track {
@@ -850,162 +899,230 @@ export class NoteworthyChat extends HTMLElement {
         }
         
         .tutorial-content::-webkit-scrollbar-thumb {
-          background: rgba(0,0,0,.1);
-          border-radius: 4px;
+          background: rgba(0,0,0,.12);
+          border-radius: 3px;
+        }
+        
+        .tutorial-content::-webkit-scrollbar-thumb:hover {
+          background: rgba(0,0,0,.2);
         }
         
         .tutorial-intro {
-          margin-bottom: 24px;
-          padding: 16px;
-          background: linear-gradient(135deg, rgba(212,160,23,.08) 0%, rgba(74,144,226,.08) 100%);
-          border-radius: 16px;
-          border-left: 4px solid #D4A017;
+          margin-bottom: 20px;
+          padding: 14px;
+          background: linear-gradient(135deg, rgba(212,160,23,.06) 0%, rgba(74,144,226,.06) 100%);
+          border-radius: 12px;
+          border-left: 3px solid #D4A017;
         }
         
         .tutorial-intro p {
           margin: 0;
-          font-size: 15px;
-          line-height: 1.6;
+          font-size: 14px;
+          line-height: 1.5;
           color: #1a1a1a;
+        }
+        
+        .tutorial-specs {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+          margin-bottom: 20px;
+        }
+        
+        .tutorial-spec {
+          padding: 10px 12px;
+          background: rgba(1,31,91,.04);
+          border-radius: 10px;
+          border: 1px solid rgba(1,31,91,.08);
+        }
+        
+        .tutorial-spec-label {
+          font-size: 11px;
+          font-weight: 600;
+          color: #666;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 4px;
+        }
+        
+        .tutorial-spec-value {
+          font-size: 14px;
+          font-weight: 700;
+          color: #011F5B;
+          font-family: 'SF Mono', Monaco, monospace;
         }
         
         .tutorial-steps {
           display: flex;
           flex-direction: column;
-          gap: 20px;
-          margin-bottom: 24px;
+          gap: 12px;
+          margin-bottom: 16px;
         }
         
         .tutorial-step {
-          padding: 20px;
-          background: linear-gradient(135deg, rgba(255,255,255,.6) 0%, rgba(248,250,252,.8) 100%);
-          border-radius: 16px;
-          border: 1.5px solid rgba(1,31,91,.08);
-          transition: all 0.3s ease;
+          padding: 14px;
+          background: rgba(255,255,255,.6);
+          border-radius: 12px;
+          border: 1px solid rgba(1,31,91,.08);
+          transition: all 0.2s ease;
+          cursor: pointer;
         }
         
         .tutorial-step:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(0,0,0,.1);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0,0,0,.08);
+          border-color: rgba(212,160,23,.25);
+        }
+        
+        .tutorial-step.expanded {
+          background: rgba(255,255,255,.9);
           border-color: rgba(212,160,23,.3);
         }
         
         .tutorial-step-header {
           display: flex;
           align-items: center;
-          gap: 12px;
-          margin-bottom: 12px;
+          gap: 10px;
+          margin-bottom: 8px;
         }
         
         .tutorial-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: 12px;
+          width: 32px;
+          height: 32px;
+          border-radius: 10px;
           background: linear-gradient(135deg, #D4A017 0%, #F4C430 100%);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 20px;
+          font-size: 16px;
           flex-shrink: 0;
-          box-shadow: 0 4px 12px rgba(212,160,23,.3);
+          box-shadow: 0 2px 8px rgba(212,160,23,.25);
         }
         
         .tutorial-step h3 {
           margin: 0;
-          font-size: 18px;
+          font-size: 15px;
           font-weight: 700;
           color: #011F5B;
+          flex: 1;
+        }
+        
+        .tutorial-step-toggle {
+          background: transparent;
+          border: none;
+          color: #666;
+          font-size: 18px;
+          cursor: pointer;
+          padding: 0;
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.2s;
+        }
+        
+        .tutorial-step.expanded .tutorial-step-toggle {
+          transform: rotate(180deg);
+        }
+        
+        .tutorial-step-content {
+          max-height: 0;
+          overflow: hidden;
+          transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .tutorial-step.expanded .tutorial-step-content {
+          max-height: 500px;
         }
         
         .tutorial-step p {
-          margin: 0 0 12px 0;
-          font-size: 14px;
-          line-height: 1.6;
+          margin: 8px 0 0 0;
+          font-size: 13px;
+          line-height: 1.5;
           color: #4a5568;
         }
         
         .tutorial-example {
-          margin-top: 12px;
-          padding: 12px;
-          background: rgba(1,31,91,.04);
-          border-radius: 12px;
-          border-left: 3px solid #4A90E2;
+          margin-top: 10px;
+          padding: 10px;
+          background: rgba(1,31,91,.03);
+          border-radius: 8px;
+          border-left: 2px solid #4A90E2;
         }
         
         .tutorial-example strong {
           display: block;
-          margin-bottom: 8px;
-          font-size: 13px;
+          margin-bottom: 6px;
+          font-size: 12px;
           color: #011F5B;
           font-weight: 600;
         }
         
         .tutorial-example code {
           display: block;
-          padding: 8px 12px;
-          margin: 6px 0;
+          padding: 6px 10px;
+          margin: 4px 0;
           background: rgba(255,255,255,.8);
-          border-radius: 8px;
-          font-size: 13px;
-          font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
+          border-radius: 6px;
+          font-size: 12px;
+          font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
           color: #2d3748;
-          border: 1px solid rgba(0,0,0,.06);
+          border: 1px solid rgba(0,0,0,.05);
         }
         
-        .tutorial-tips {
-          margin-top: 24px;
-          padding: 20px;
-          background: linear-gradient(135deg, rgba(212,160,23,.1) 0%, rgba(74,144,226,.1) 100%);
-          border-radius: 16px;
-          border: 1.5px solid rgba(212,160,23,.2);
+        .tutorial-shortcuts {
+          margin-top: 16px;
+          padding: 14px;
+          background: linear-gradient(135deg, rgba(212,160,23,.08) 0%, rgba(74,144,226,.08) 100%);
+          border-radius: 12px;
+          border: 1px solid rgba(212,160,23,.15);
         }
         
-        .tutorial-tips h4 {
-          margin: 0 0 16px 0;
-          font-size: 16px;
+        .tutorial-shortcuts h4 {
+          margin: 0 0 10px 0;
+          font-size: 13px;
           font-weight: 700;
+          color: #011F5B;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        
+        .tutorial-shortcuts-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+        }
+        
+        .tutorial-shortcut {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 6px 10px;
+          background: rgba(255,255,255,.6);
+          border-radius: 6px;
+          font-size: 12px;
+        }
+        
+        .tutorial-shortcut-key {
+          font-family: 'SF Mono', Monaco, monospace;
+          background: rgba(1,31,91,.1);
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 600;
           color: #011F5B;
         }
         
-        .tutorial-tips ul {
-          margin: 0;
-          padding-left: 20px;
-          list-style: none;
-        }
-        
-        .tutorial-tips li {
-          margin: 10px 0;
-          font-size: 14px;
-          line-height: 1.6;
-          color: #4a5568;
-          position: relative;
-          padding-left: 8px;
-        }
-        
-        .tutorial-tips li::before {
-          content: '→';
-          position: absolute;
-          left: -20px;
-          color: #D4A017;
-          font-weight: bold;
-        }
-        
-        .tutorial-tips code {
-          background: rgba(255,255,255,.6);
-          padding: 2px 6px;
-          border-radius: 4px;
-          font-size: 12px;
-          font-family: 'SF Mono', Monaco, monospace;
-        }
-        
         .tutorial-footer {
-          padding: 20px 28px;
-          background: rgba(248,250,252,.8);
+          padding: 14px 20px;
+          background: rgba(248,250,252,.6);
           border-top: 1px solid rgba(0,0,0,.06);
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 16px;
+          gap: 12px;
         }
         
         .tutorial-checkbox {
@@ -1013,32 +1130,32 @@ export class NoteworthyChat extends HTMLElement {
           align-items: center;
           gap: 8px;
           cursor: pointer;
-          font-size: 14px;
+          font-size: 12px;
           color: #4a5568;
         }
         
         .tutorial-checkbox input[type="checkbox"] {
-          width: 18px;
-          height: 18px;
+          width: 16px;
+          height: 16px;
           cursor: pointer;
         }
         
         .tutorial-btn-primary {
-          padding: 12px 24px;
+          padding: 8px 16px;
           background: linear-gradient(135deg, #D4A017 0%, #F4C430 100%);
           color: #0f0f0f;
           border: none;
-          border-radius: 12px;
+          border-radius: 10px;
           font-weight: 700;
-          font-size: 15px;
+          font-size: 13px;
           cursor: pointer;
           transition: all 0.2s;
-          box-shadow: 0 4px 12px rgba(212,160,23,.3);
+          box-shadow: 0 2px 8px rgba(212,160,23,.25);
         }
         
         .tutorial-btn-primary:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(212,160,23,.4);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(212,160,23,.35);
         }
         
         .tutorial-btn-primary:active {
@@ -1046,31 +1163,35 @@ export class NoteworthyChat extends HTMLElement {
         }
         
         @media (max-width: 768px) {
+          .tutorial-overlay {
+            align-items: flex-end;
+            padding: 0;
+          }
+          
           .tutorial-modal {
-            max-width: 95vw;
-            max-height: 95vh;
-            border-radius: 20px;
+            max-width: 100vw;
+            max-height: 85vh;
+            border-radius: 20px 20px 0 0;
+            animation: tutorialSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
           }
           
-          .tutorial-header {
-            padding: 20px;
+          @keyframes tutorialSlideUp {
+            from { 
+              transform: translateY(100%); 
+              opacity: 0; 
+            }
+            to { 
+              transform: translateY(0); 
+              opacity: 1; 
+            }
           }
           
-          .tutorial-header h2 {
-            font-size: 20px;
+          .tutorial-specs {
+            grid-template-columns: 1fr;
           }
           
-          .tutorial-content {
-            padding: 20px;
-          }
-          
-          .tutorial-footer {
-            flex-direction: column;
-            padding: 16px 20px;
-          }
-          
-          .tutorial-btn-primary {
-            width: 100%;
+          .tutorial-shortcuts-grid {
+            grid-template-columns: 1fr;
           }
         }
       </style>
@@ -1139,108 +1260,157 @@ export class NoteworthyChat extends HTMLElement {
         <div class="resize-handle" aria-label="Resize chat" title="Drag to resize"></div>
       </div>
       
-      <!-- Tutorial Modal -->
+      <!-- Tutorial Card -->
       <div class="tutorial-overlay" id="tutorialOverlay" role="dialog" aria-label="Tutorial" aria-modal="true">
         <div class="tutorial-modal">
           <div class="tutorial-header">
-            <h2>Welcome to Noteworthy AI!</h2>
+            <div class="tutorial-header-left">
+              <h2>Noteworthy AI</h2>
+              <span class="tutorial-header-badge">GPT-4o</span>
+            </div>
+            <button class="tutorial-skip" id="tutorialSkip">Skip</button>
             <button class="tutorial-close" aria-label="Close tutorial">×</button>
           </div>
           <div class="tutorial-content">
             <div class="tutorial-intro">
-              <p>Your elite AI assistant for fact-checking, media literacy, and staying informed. Experience cutting-edge AI capabilities including real-time voice conversations, image generation, and web search.</p>
+              <p>AI assistant for fact-checking and media literacy. Real-time voice conversations, DALL-E image generation, file analysis, and live web search.</p>
+            </div>
+            
+            <div class="tutorial-specs">
+              <div class="tutorial-spec">
+                <div class="tutorial-spec-label">Model</div>
+                <div class="tutorial-spec-value">GPT-4o</div>
+              </div>
+              <div class="tutorial-spec">
+                <div class="tutorial-spec-label">Voice Latency</div>
+                <div class="tutorial-spec-value">~232ms</div>
+              </div>
+              <div class="tutorial-spec">
+                <div class="tutorial-spec-label">Voices</div>
+                <div class="tutorial-spec-value">11 Options</div>
+              </div>
+              <div class="tutorial-spec">
+                <div class="tutorial-spec-label">Image API</div>
+                <div class="tutorial-spec-value">DALL-E</div>
+              </div>
             </div>
             
             <div class="tutorial-steps">
-              <div class="tutorial-step">
+              <div class="tutorial-step" data-step="chat">
                 <div class="tutorial-step-header">
                   <div class="tutorial-icon">💬</div>
-                  <h3>Chat & Ask Questions</h3>
+                  <h3>Chat & Fact-Check</h3>
+                  <button class="tutorial-step-toggle">▼</button>
                 </div>
-                <p>Ask about breaking news, headlines, or request fact-checks. The AI provides instant, accurate responses to help you stay informed.</p>
-                <div class="tutorial-example">
-                  <strong>Example prompts:</strong>
-                  <code>"What's the latest on [breaking news topic]?"</code>
-                  <code>"Can you fact-check this headline?"</code>
-                  <code>"Explain the context behind this news story"</code>
+                <div class="tutorial-step-content">
+                  <p>Ask about breaking news, request fact-checks, or get context on stories. The AI maintains conversation context for follow-up questions.</p>
+                  <div class="tutorial-example">
+                    <strong>Try:</strong>
+                    <code>"Fact-check this headline: [headline]"</code>
+                    <code>"Explain the context behind [news story]"</code>
+                    <code>"What are the key facts about [topic]?"</code>
+                  </div>
                 </div>
               </div>
               
-              <div class="tutorial-step">
+              <div class="tutorial-step" data-step="voice">
                 <div class="tutorial-step-header">
                   <div class="tutorial-icon">🎤</div>
-                  <h3>Real-Time Voice Conversations</h3>
+                  <h3>Real-Time Voice</h3>
+                  <button class="tutorial-step-toggle">▼</button>
                 </div>
-                <p><strong>How to start:</strong> Click the <strong>microphone button (🎤)</strong> in the input area to begin a voice conversation! Choose from 11 different voices and experience ultra-low latency (232ms) conversations. You can even ask the AI to generate images or search the web while on the call!</p>
-                <div class="tutorial-example">
-                  <strong>Try this:</strong>
-                  <code>Click 🎤 → Choose your voice → Start speaking!</code>
-                  <code>"Generate a picture of a news anchor"</code>
-                  <code>"Research breaking news on climate change"</code>
-                  <code>All while speaking naturally!</code>
+                <div class="tutorial-step-content">
+                  <p>Click the microphone button (🎤) to start real-time voice conversations. Choose from 11 natural voices. Works in both chat and image modes - you can generate images or search the web while speaking!</p>
+                  <div class="tutorial-example">
+                    <strong>Technical:</strong>
+                    <code>OpenAI Realtime API → WebSocket → Audio Worklet</code>
+                    <code>Streaming audio with ~232ms latency</code>
+                    <code>11 voices: Alloy, Ash, Ballad, Coral, Echo, Sage, Shimmer, Verse, Marin, Cedar</code>
+                  </div>
                 </div>
               </div>
               
-              <div class="tutorial-step">
+              <div class="tutorial-step" data-step="image">
                 <div class="tutorial-step-header">
                   <div class="tutorial-icon">🎨</div>
-                  <h3>Generate Images Instantly</h3>
+                  <h3>Image Generation</h3>
+                  <button class="tutorial-step-toggle">▼</button>
                 </div>
-                <p>Click the art button to switch to image generation mode. Describe what you want to see, or upload an image to generate a new one based on it!</p>
-                <div class="tutorial-example">
-                  <strong>Example prompts:</strong>
-                  <code>"Generate an image of a futuristic cityscape at sunset"</code>
-                  <code>"Create a picture of a news anchor in a modern studio"</code>
-                  <code>Or upload an image and ask to generate based on it!</code>
+                <div class="tutorial-step-content">
+                  <p>Click the mode toggle (💬→🎨) to switch to image generation mode. Generate images with DALL-E or edit existing images. Works in both text and voice modes.</p>
+                  <div class="tutorial-example">
+                    <strong>Try:</strong>
+                    <code>"Generate a news anchor in a modern studio"</code>
+                    <code>Upload image + "Make this blue" or "Change the color"</code>
+                    <code>In voice: "Generate a picture of [description]"</code>
+                  </div>
                 </div>
               </div>
               
-              <div class="tutorial-step">
+              <div class="tutorial-step" data-step="upload">
                 <div class="tutorial-step-header">
                   <div class="tutorial-icon">📎</div>
-                  <h3>Upload & Analyze Files</h3>
+                  <h3>File Analysis</h3>
+                  <button class="tutorial-step-toggle">▼</button>
                 </div>
-                <p>Upload images, PDFs, or documents for AI analysis. Click the paperclip button or drag and drop files directly into the chat. Perfect for verifying screenshots, analyzing documents, or understanding complex content.</p>
-                <div class="tutorial-example">
-                  <strong>Try this:</strong>
-                  <code>Upload a news screenshot and ask "Is this headline accurate?"</code>
-                  <code>Upload an image and ask "Generate a new image based on this"</code>
+                <div class="tutorial-step-content">
+                  <p>Upload images, PDFs, or documents for AI analysis. Click the paperclip button or drag & drop files. Perfect for verifying screenshots, analyzing documents, or fact-checking visual content.</p>
+                  <div class="tutorial-example">
+                    <strong>Supported formats:</strong>
+                    <code>PNG, JPEG, WEBP, GIF, PDF, HEIC, TIFF, BMP, SVG</code>
+                    <code>Auto-converts unsupported formats to PNG/JPEG</code>
+                    <code>Multiple files supported - upload several at once</code>
+                  </div>
                 </div>
               </div>
               
-              <div class="tutorial-step">
+              <div class="tutorial-step" data-step="search">
                 <div class="tutorial-step-header">
                   <div class="tutorial-icon">🔍</div>
-                  <h3>Real-Time Web Search</h3>
+                  <h3>Live Web Search</h3>
+                  <button class="tutorial-step-toggle">▼</button>
                 </div>
-                <p>During voice conversations, ask the AI to research breaking news or verify information. It will search the web in real-time and provide you with current, verified information from multiple sources.</p>
-                <div class="tutorial-example">
-                  <strong>Try this:</strong>
-                  <code>"Research breaking news on [topic]"</code>
-                  <code>"Verify if this claim is true"</code>
-                  <code>"Find the latest information on [subject]"</code>
+                <div class="tutorial-step-content">
+                  <p>Real-time web search during any conversation (text or voice). Uses OpenAI's native web_search tool to find current, verified information from multiple sources. Perfect for breaking news and fact-checking.</p>
+                  <div class="tutorial-example">
+                    <strong>Try:</strong>
+                    <code>"Research breaking news on [topic]"</code>
+                    <code>"Verify if [claim] is true"</code>
+                    <code>"Find the latest information on [subject]"</code>
+                    <code>In voice: "Search for [query]"</code>
+                  </div>
                 </div>
               </div>
             </div>
             
-            <div class="tutorial-tips">
-              <h4>💡 Pro Tips</h4>
-              <ul>
-                <li><strong>Resize the window:</strong> Drag the bottom-right corner to adjust the chat size</li>
-                <li><strong>Drag to move:</strong> Click and drag the header to reposition the chat window</li>
-                <li><strong>Keyboard shortcuts:</strong> Press <code>Escape</code> to close the chat or tutorial</li>
-                <li><strong>Voice mode:</strong> Choose your preferred voice from 11 options for personalized conversations</li>
-                <li><strong>Image-to-image:</strong> Upload an image in image mode to generate new images based on it</li>
-                <li><strong>Context matters:</strong> The AI remembers your conversation, so you can ask follow-up questions</li>
-              </ul>
+            <div class="tutorial-shortcuts">
+              <h4>⚡ Quick Tips</h4>
+              <div class="tutorial-shortcuts-grid">
+                <div class="tutorial-shortcut">
+                  <span>Close Chat</span>
+                  <span class="tutorial-shortcut-key">Esc</span>
+                </div>
+                <div class="tutorial-shortcut">
+                  <span>Send Message</span>
+                  <span class="tutorial-shortcut-key">Enter</span>
+                </div>
+                <div class="tutorial-shortcut">
+                  <span>Move Window</span>
+                  <span class="tutorial-shortcut-key">Drag Header</span>
+                </div>
+                <div class="tutorial-shortcut">
+                  <span>Resize</span>
+                  <span class="tutorial-shortcut-key">Drag Corner</span>
+                </div>
+              </div>
             </div>
           </div>
           <div class="tutorial-footer">
             <label class="tutorial-checkbox">
               <input type="checkbox" id="dontShowAgain" />
-              <span>Don't show this tutorial again</span>
+              <span>Don't show again</span>
             </label>
-            <button class="tutorial-btn-primary" id="tutorialGotIt">Start Chatting!</button>
+            <button class="tutorial-btn-primary" id="tutorialGotIt">Got it</button>
           </div>
         </div>
       </div>
@@ -2688,9 +2858,12 @@ export class NoteworthyChat extends HTMLElement {
     // Tutorial functionality
     const helpBtn = root.querySelector('#helpBtn') as HTMLButtonElement;
     const tutorialOverlay = root.querySelector('#tutorialOverlay') as HTMLElement;
+    const tutorialModal = tutorialOverlay?.querySelector('.tutorial-modal') as HTMLElement;
     const tutorialClose = root.querySelector('.tutorial-close') as HTMLButtonElement;
+    const tutorialSkip = root.querySelector('#tutorialSkip') as HTMLButtonElement;
     const tutorialGotIt = root.querySelector('#tutorialGotIt') as HTMLButtonElement;
     const dontShowAgain = root.querySelector('#dontShowAgain') as HTMLInputElement;
+    const tutorialSteps = root.querySelectorAll('.tutorial-step') as NodeListOf<HTMLElement>;
     
     // Check if tutorial should be shown
     const shouldShowTutorial = () => {
@@ -2698,15 +2871,21 @@ export class NoteworthyChat extends HTMLElement {
       return !dontShow;
     };
     
-    // Show tutorial
+    // Show tutorial with smooth animation
     const showTutorial = () => {
       if (tutorialOverlay) {
-        tutorialOverlay.classList.add('show');
+        // Prevent body scroll but allow overlay interaction
         document.body.style.overflow = 'hidden';
+        tutorialOverlay.classList.add('show');
+        
+        // Auto-expand first step
+        if (tutorialSteps.length > 0) {
+          tutorialSteps[0].classList.add('expanded');
+        }
       }
     };
     
-    // Hide tutorial
+    // Hide tutorial with smooth animation
     const hideTutorial = (savePreference = false) => {
       if (tutorialOverlay) {
         tutorialOverlay.classList.remove('show');
@@ -2715,8 +2894,29 @@ export class NoteworthyChat extends HTMLElement {
         if (savePreference && dontShowAgain && dontShowAgain.checked) {
           localStorage.setItem('noteworthy-ai-tutorial-dismissed', 'true');
         }
+        
+        // Collapse all steps
+        tutorialSteps.forEach(step => step.classList.remove('expanded'));
       }
     };
+    
+    // Toggle step expansion
+    tutorialSteps.forEach(step => {
+      const toggle = step.querySelector('.tutorial-step-toggle') as HTMLButtonElement;
+      if (toggle) {
+        toggle.addEventListener('click', (e) => {
+          e.stopPropagation();
+          step.classList.toggle('expanded');
+        });
+      }
+      
+      // Also toggle on step click (but not on toggle button)
+      step.addEventListener('click', (e) => {
+        if (e.target !== step.querySelector('.tutorial-step-toggle')) {
+          step.classList.toggle('expanded');
+        }
+      });
+    });
     
     // Help button click
     if (helpBtn) {
@@ -2728,37 +2928,58 @@ export class NoteworthyChat extends HTMLElement {
     
     // Tutorial close handlers
     if (tutorialClose) {
-      tutorialClose.addEventListener('click', () => hideTutorial(false));
+      tutorialClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideTutorial(false);
+      });
+    }
+    
+    if (tutorialSkip) {
+      tutorialSkip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideTutorial(false);
+      });
     }
     
     if (tutorialGotIt) {
-      tutorialGotIt.addEventListener('click', () => hideTutorial(true));
+      tutorialGotIt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hideTutorial(true);
+      });
     }
     
-    // Close tutorial on overlay click
-    if (tutorialOverlay) {
+    // Close tutorial on overlay click (but not on modal click)
+    if (tutorialOverlay && tutorialModal) {
       tutorialOverlay.addEventListener('click', (e) => {
         if (e.target === tutorialOverlay) {
           hideTutorial(false);
         }
       });
+      
+      // Prevent modal clicks from closing
+      tutorialModal.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
     }
     
     // Close tutorial on Escape key
-    document.addEventListener('keydown', (e) => {
+    const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && tutorialOverlay && tutorialOverlay.classList.contains('show')) {
         hideTutorial(false);
       }
-    });
+    };
+    document.addEventListener('keydown', handleEscape);
     
-    // Show tutorial on first open if not dismissed
+    // Show tutorial on first open if not dismissed (with delay for smooth UX)
+    let tutorialShown = false;
     launcher.addEventListener('click', () => {
-      if (wrap.classList.contains('open') && shouldShowTutorial()) {
+      if (wrap.classList.contains('open') && shouldShowTutorial() && !tutorialShown) {
         setTimeout(() => {
-          if (shouldShowTutorial()) {
+          if (shouldShowTutorial() && !tutorialShown) {
+            tutorialShown = true;
             showTutorial();
           }
-        }, 300);
+        }, 500); // Slight delay so chat opens first
       }
     });
   }

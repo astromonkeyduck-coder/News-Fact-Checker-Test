@@ -41,6 +41,12 @@
   included_files = ["netlify/functions/**/*.ts", "src/**/*.ts"]
   # Also include JavaScript functions
   directory = "netlify/functions"
+  
+  # Scheduled function: earthquake-poller
+  # Configure schedule in Netlify Dashboard → Site Settings → Scheduled Functions
+  # Recommended: */3 * * * * (every 3 minutes)
+  # [functions.earthquake-poller]
+  #   schedule = "*/3 * * * *"
 
 [dev]
   # Load .env file for local development

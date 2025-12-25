@@ -1047,11 +1047,11 @@ RESPONSE STYLE:
     let r;
     try {
       // For spotlight requests, do NOT use web search tool - use knowledge base only
-      // For regular requests, use Chat Completions API with search_web function for reliable web search
-      const useWebSearch = !isSpotlightRequest;
+      // Enable web search for ALL requests (including spotlight) to get real-time current events
+      const useWebSearch = true; // Always enable deep research
       
       if (isSpotlightRequest) {
-        console.log('[Noteworthy Chat] Spotlight request detected - using knowledge base only (no web search)');
+        console.log('[Noteworthy Chat] Spotlight request detected - enabling deep web research for current events');
       } else {
         console.log('[Noteworthy Chat] Using Chat Completions API with search_web function for reliable web search');
       }
@@ -1190,8 +1190,56 @@ RESPONSE STYLE:
           let toolResponse = '';
           
           if (toolName === 'search_web') {
-            // For web search, tell the model we don't have real-time access
-            toolResponse = `I don't have access to real-time web search capabilities. However, I can provide information based on my training data up to my knowledge cutoff date. ${toolArgs.query ? `Regarding "${toolArgs.query}": ` : ''}Please note that for the most current information, you should check recent news sources directly.`;
+            // Actually perform web search using the search-web function
+            console.log(`[Noteworthy Chat] 🔍 Performing deep web search for: "${toolArgs.query}"`);
+            try {
+              // Import and call the search-web function directly (more reliable than HTTP call)
+              const searchWebHandler = require('./search-web').handler;
+              
+              // Create a mock event object for the search-web function
+              const searchEvent = {
+                httpMethod: 'POST',
+                body: JSON.stringify({
+                  query: toolArgs.query || ''
+                }),
+                headers: event.headers || {}
+              };
+              
+              // Call the search-web function
+              const searchResult = await searchWebHandler(searchEvent);
+              
+              // Parse the response
+              const searchData = JSON.parse(searchResult.body || '{}');
+              
+              if (searchResult.statusCode === 200) {
+                const results = searchData.results || [];
+                
+                if (results.length > 0) {
+                  // Format search results for the AI
+                  let formattedResults = `Deep web research results for "${toolArgs.query}":\n\n`;
+                  results.forEach((result, index) => {
+                    formattedResults += `${index + 1}. **${result.title || 'Result'}**\n`;
+                    formattedResults += `   ${result.snippet || 'No details available'}\n`;
+                    if (result.url) {
+                      formattedResults += `   Source: ${result.url}\n`;
+                    }
+                    formattedResults += '\n';
+                  });
+                  
+                  toolResponse = formattedResults;
+                  console.log(`[Noteworthy Chat] ✅ Web search completed: Found ${results.length} results`);
+                } else {
+                  toolResponse = `I searched for "${toolArgs.query}" but couldn't find current information. The search may not have returned results, or the information may not be available yet. Please try rephrasing your query or check direct news sources.`;
+                  console.log(`[Noteworthy Chat] ⚠️ Web search returned no results for: "${toolArgs.query}"`);
+                }
+              } else {
+                console.error(`[Noteworthy Chat] ❌ Web search API error: ${searchResult.statusCode}`, searchData.error || 'Unknown error');
+                toolResponse = `I attempted to search for "${toolArgs.query}" but encountered an error. Please try rephrasing your query or check direct news sources for the latest information.`;
+              }
+            } catch (searchError) {
+              console.error(`[Noteworthy Chat] ❌ Web search error:`, searchError);
+              toolResponse = `I encountered an error while searching for "${toolArgs.query}". Please try rephrasing your query or check direct news sources for the latest information.`;
+            }
           } else if (toolName === 'send_email') {
             // Store email confirmation data to include in response
             emailConfirmationData = {

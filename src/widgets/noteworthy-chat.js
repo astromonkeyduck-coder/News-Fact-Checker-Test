@@ -2048,11 +2048,45 @@ class NoteworthyChat extends HTMLElement {
           gap: 12px;
         }
         
-        .tutorial-header h2::before {
-          content: '';
-          font-size: 28px;
-          -webkit-text-fill-color: initial;
-          filter: drop-shadow(0 2px 4px rgba(74, 144, 226, 0.3));
+        .tutorial-header-left {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex: 1;
+        }
+        
+        .tutorial-header-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 8px;
+          background: rgba(212,160,23,.2);
+          border: 1px solid rgba(212,160,23,.4);
+          border-radius: 6px;
+          font-size: 11px;
+          font-weight: 700;
+          color: #F4C430;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        
+        .tutorial-skip {
+          background: transparent;
+          border: 1px solid rgba(255,255,255,.3);
+          color: rgba(255,255,255,.9);
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          padding: 6px 12px;
+          border-radius: 8px;
+          transition: all 0.2s;
+          flex-shrink: 0;
+          margin-right: 8px;
+        }
+        
+        .tutorial-skip:hover {
+          background: rgba(255,255,255,.15);
+          border-color: rgba(255,255,255,.5);
         }
         
         .tutorial-close {
@@ -2162,6 +2196,112 @@ class NoteworthyChat extends HTMLElement {
           align-items: center;
           gap: 16px;
           margin-bottom: 14px;
+          cursor: pointer;
+        }
+        
+        .tutorial-step-toggle {
+          background: transparent;
+          border: none;
+          color: rgba(255,255,255,.6);
+          font-size: 18px;
+          cursor: pointer;
+          padding: 0;
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.2s;
+          margin-left: auto;
+        }
+        
+        .tutorial-step.expanded .tutorial-step-toggle {
+          transform: rotate(180deg);
+        }
+        
+        .tutorial-step-content {
+          max-height: 0;
+          overflow: hidden;
+          transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .tutorial-step.expanded .tutorial-step-content {
+          max-height: 500px;
+        }
+        
+        .tutorial-specs {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+          margin-bottom: 20px;
+        }
+        
+        .tutorial-spec {
+          padding: 10px 12px;
+          background: rgba(74, 144, 226, 0.08);
+          border-radius: 10px;
+          border: 1px solid rgba(74, 144, 226, 0.15);
+        }
+        
+        .tutorial-spec-label {
+          font-size: 11px;
+          font-weight: 600;
+          color: rgba(255,255,255,.6);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 4px;
+        }
+        
+        .tutorial-spec-value {
+          font-size: 14px;
+          font-weight: 700;
+          color: rgba(255,255,255,.95);
+          font-family: 'Monaco', 'Menlo', monospace;
+        }
+        
+        .tutorial-shortcuts {
+          margin-top: 16px;
+          padding: 14px;
+          background: linear-gradient(135deg, rgba(74, 144, 226, 0.12) 0%, rgba(46, 204, 113, 0.08) 100%);
+          border-radius: 12px;
+          border: 1px solid rgba(74, 144, 226, 0.2);
+        }
+        
+        .tutorial-shortcuts h4 {
+          margin: 0 0 10px 0;
+          font-size: 13px;
+          font-weight: 700;
+          color: rgba(74, 144, 226, 1);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        
+        .tutorial-shortcuts-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+        }
+        
+        .tutorial-shortcut {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 6px 10px;
+          background: rgba(0, 0, 0, 0.2);
+          border-radius: 6px;
+          font-size: 12px;
+          color: rgba(255,255,255,.85);
+        }
+        
+        .tutorial-shortcut-key {
+          font-family: 'Monaco', 'Menlo', monospace;
+          background: rgba(74, 144, 226, 0.2);
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 600;
+          color: rgba(74, 144, 226, 1);
         }
         
         .tutorial-icon {
@@ -3055,11 +3195,15 @@ class NoteworthyChat extends HTMLElement {
         </div>
       </div>
       
-      <!-- Tutorial Modal -->
+      <!-- Tutorial Card -->
       <div class="tutorial-overlay" id="tutorialOverlay" role="dialog" aria-label="Tutorial" aria-modal="true">
         <div class="tutorial-modal">
           <div class="tutorial-header">
-            <h2>Welcome to Noteworthy AI!</h2>
+            <div class="tutorial-header-left">
+              <h2>Noteworthy AI</h2>
+              <span class="tutorial-header-badge">GPT-5</span>
+            </div>
+            <button class="tutorial-skip" id="tutorialSkip">Skip</button>
             <button class="tutorial-close" aria-label="Close tutorial">×</button>
           </div>
           <div class="tutorial-content">
@@ -4096,13 +4240,14 @@ class NoteworthyChat extends HTMLElement {
     // Show tutorial
     const showTutorial = () => {
       if (tutorialOverlay) {
-        // On mobile, close chat box if open to prevent overlap
-        const isMobile = window.innerWidth <= 768;
-        if (isMobile && wrap && wrap.classList.contains('open')) {
-          wrap.classList.remove('open');
-        }
+        document.body.style.overflow = 'hidden';
         tutorialOverlay.classList.add('show');
-        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        
+        // Auto-expand first step
+        const steps = root.querySelectorAll('.tutorial-step');
+        if (steps.length > 0) {
+          steps[0].classList.add('expanded');
+        }
       }
     };
     
@@ -4156,20 +4301,60 @@ class NoteworthyChat extends HTMLElement {
     }
     
     // Tutorial event handlers
+    const tutorialSkip = root.querySelector('#tutorialSkip');
+    const tutorialModal = tutorialOverlay?.querySelector('.tutorial-modal');
+    const tutorialSteps = root.querySelectorAll('.tutorial-step');
+    
+    // Toggle step expansion
+    tutorialSteps.forEach(step => {
+      const toggle = step.querySelector('.tutorial-step-toggle');
+      if (toggle) {
+        toggle.onclick = (e) => {
+          e.stopPropagation();
+          step.classList.toggle('expanded');
+        };
+      }
+      
+      // Also toggle on step click (but not on toggle button)
+      step.onclick = (e) => {
+        if (e.target !== step.querySelector('.tutorial-step-toggle')) {
+          step.classList.toggle('expanded');
+        }
+      };
+    });
+    
     if (tutorialClose) {
-      tutorialClose.onclick = () => hideTutorial(false);
+      tutorialClose.onclick = (e) => {
+        e.stopPropagation();
+        hideTutorial(false);
+      };
+    }
+    
+    if (tutorialSkip) {
+      tutorialSkip.onclick = (e) => {
+        e.stopPropagation();
+        hideTutorial(false);
+      };
     }
     
     if (tutorialGotIt) {
-      tutorialGotIt.onclick = () => hideTutorial(true);
+      tutorialGotIt.onclick = (e) => {
+        e.stopPropagation();
+        hideTutorial(true);
+      };
     }
     
     // Close tutorial on overlay click (but not on modal click)
-    if (tutorialOverlay) {
+    if (tutorialOverlay && tutorialModal) {
       tutorialOverlay.onclick = (e) => {
         if (e.target === tutorialOverlay) {
           hideTutorial(false);
         }
+      };
+      
+      // Prevent modal clicks from closing
+      tutorialModal.onclick = (e) => {
+        e.stopPropagation();
       };
     }
     
@@ -5215,12 +5400,17 @@ class NoteworthyChat extends HTMLElement {
     let currentUIState = 'idle'; // 'idle' | 'connecting' | 'listening' | 'speaking'
     
     function updateVoiceUIState(state) {
-      const logoContainer = root.querySelector('#voiceLogoContainer');
-      const statusText = root.querySelector('#voiceStatusTextPremium');
-      const audioWaves = root.querySelector('#voiceAudioWaves');
+      const orbContainer = root.querySelector('#voiceOrbContainer');
+      const statusChip = root.querySelector('#voiceStatusChip');
+      const statusChipText = root.querySelector('.status-chip-text');
+      const statusPrimary = root.querySelector('#voiceStatusPrimary');
+      const statusSecondary = root.querySelector('#voiceStatusSecondary');
+      const waveformRings = root.querySelector('#voiceWaveformRings');
+      const processingRing = root.querySelector('#orbProcessingRing');
+      const listeningHalo = root.querySelector('#orbListeningHalo');
       const voiceCallEndBtn = root.querySelector('#voiceCallEndBtn');
       
-      if (!logoContainer || !statusText) {
+      if (!orbContainer || !statusPrimary) {
         if (DEBUG_VOICE) {
           console.warn('[Voice Mode] ⚠️ Premium call UI elements not found');
         }
@@ -5228,55 +5418,118 @@ class NoteworthyChat extends HTMLElement {
       }
       
       // CRITICAL: Always ensure End Call button is visible during active states
-      // Also check if panel is shown - if so, button should ALWAYS be visible
       const voiceCallPanel = root.querySelector('#voiceCallPanel');
       const isPanelShown = voiceCallPanel && voiceCallPanel.classList.contains('show');
       
-      if (voiceCallEndBtn && (isPanelShown || state === 'connecting' || state === 'listening' || state === 'speaking')) {
+      if (voiceCallEndBtn && (isPanelShown || state === 'connecting' || state === 'listening' || state === 'speaking' || state === 'processing')) {
         voiceCallEndBtn.style.display = 'flex';
         voiceCallEndBtn.style.visibility = 'visible';
         voiceCallEndBtn.style.opacity = '1';
-        voiceCallEndBtn.style.position = 'relative';
-        voiceCallEndBtn.style.zIndex = '1000';
       }
       
       // Remove all state classes
-      logoContainer.classList.remove('connecting', 'listening', 'speaking');
-      statusText.classList.remove('connecting', 'listening', 'speaking');
+      orbContainer.classList.remove('idle', 'connecting', 'listening', 'speaking', 'processing', 'error');
+      if (statusChip) statusChip.classList.remove('listening', 'speaking', 'processing', 'error');
+      if (statusPrimary) statusPrimary.classList.remove('listening', 'speaking', 'processing');
       
       currentUIState = state;
       
       switch (state) {
         case 'connecting':
-          logoContainer.classList.add('connecting');
-          statusText.classList.add('connecting');
-          statusText.textContent = 'Connecting...';
-          if (audioWaves) audioWaves.style.display = 'none';
+          orbContainer.classList.add('connecting');
+          if (statusChip) {
+            statusChip.classList.add('processing');
+            if (statusChipText) statusChipText.textContent = 'CONNECTING';
+          }
+          if (statusPrimary) {
+            statusPrimary.classList.add('processing');
+            statusPrimary.textContent = 'Establishing secure link...';
+          }
+          if (statusSecondary) statusSecondary.textContent = 'Initializing connection';
+          if (processingRing) processingRing.style.display = 'block';
+          if (listeningHalo) listeningHalo.style.display = 'none';
+          if (waveformRings) waveformRings.style.display = 'none';
           stopAudioWaveAnimation();
           break;
           
         case 'listening':
-          logoContainer.classList.add('listening');
-          statusText.classList.add('listening');
-          statusText.textContent = 'Listening...';
-          if (audioWaves) audioWaves.style.display = 'none';
+          orbContainer.classList.add('listening');
+          if (statusChip) {
+            statusChip.classList.add('listening');
+            if (statusChipText) statusChipText.textContent = 'LISTENING';
+          }
+          if (statusPrimary) {
+            statusPrimary.classList.add('listening');
+            statusPrimary.textContent = 'Listening...';
+          }
+          if (statusSecondary) statusSecondary.textContent = 'Awaiting input';
+          if (processingRing) processingRing.style.display = 'none';
+          if (listeningHalo) listeningHalo.style.display = 'block';
+          if (waveformRings) waveformRings.style.display = 'none';
+          stopAudioWaveAnimation();
+          break;
+          
+        case 'processing':
+          orbContainer.classList.add('processing');
+          if (statusChip) {
+            statusChip.classList.add('processing');
+            if (statusChipText) statusChipText.textContent = 'PROCESSING';
+          }
+          if (statusPrimary) {
+            statusPrimary.classList.add('processing');
+            statusPrimary.textContent = 'Analyst processing...';
+          }
+          if (statusSecondary) statusSecondary.textContent = 'Analyzing request';
+          if (processingRing) processingRing.style.display = 'block';
+          if (listeningHalo) listeningHalo.style.display = 'none';
+          if (waveformRings) waveformRings.style.display = 'none';
           stopAudioWaveAnimation();
           break;
           
         case 'speaking':
-          logoContainer.classList.add('speaking');
-          statusText.classList.add('speaking');
-          statusText.textContent = 'Speaking...';
-          if (audioWaves) audioWaves.style.display = 'block';
+          orbContainer.classList.add('speaking');
+          if (statusChip) {
+            statusChip.classList.add('speaking');
+            if (statusChipText) statusChipText.textContent = 'SPEAKING';
+          }
+          if (statusPrimary) {
+            statusPrimary.classList.add('speaking');
+            statusPrimary.textContent = 'Analyst speaking...';
+          }
+          if (statusSecondary) statusSecondary.textContent = 'Briefing in progress';
+          if (processingRing) processingRing.style.display = 'none';
+          if (listeningHalo) listeningHalo.style.display = 'none';
+          if (waveformRings) waveformRings.style.display = 'block';
           startAudioWaveAnimation();
+          break;
+          
+        case 'error':
+          orbContainer.classList.add('error');
+          if (statusChip) {
+            statusChip.classList.add('error');
+            if (statusChipText) statusChipText.textContent = 'ERROR';
+          }
+          if (statusPrimary) {
+            statusPrimary.textContent = 'Connection error';
+          }
+          if (statusSecondary) statusSecondary.textContent = 'Reconnecting...';
+          if (processingRing) processingRing.style.display = 'none';
+          if (listeningHalo) listeningHalo.style.display = 'none';
+          if (waveformRings) waveformRings.style.display = 'none';
+          stopAudioWaveAnimation();
           break;
           
         case 'idle':
         default:
-          logoContainer.classList.remove('connecting', 'listening', 'speaking');
-          statusText.classList.remove('connecting', 'listening', 'speaking');
-          statusText.textContent = 'Ready';
-          if (audioWaves) audioWaves.style.display = 'none';
+          orbContainer.classList.add('idle');
+          if (statusChip) {
+            if (statusChipText) statusChipText.textContent = 'IDLE';
+          }
+          if (statusPrimary) statusPrimary.textContent = 'Ready';
+          if (statusSecondary) statusSecondary.textContent = 'Secure link established';
+          if (processingRing) processingRing.style.display = 'none';
+          if (listeningHalo) listeningHalo.style.display = 'none';
+          if (waveformRings) waveformRings.style.display = 'none';
           stopAudioWaveAnimation();
           break;
       }
@@ -5286,36 +5539,65 @@ class NoteworthyChat extends HTMLElement {
       }
     }
     
-    // Audio wave animation using AnalyserNode
+    // Audio wave animation with amplitude smoothing
+    let smoothedAmplitude = 0;
+    const amplitudeSmoothingFactor = 0.15; // Lower = smoother, higher = more reactive
+    
     function startAudioWaveAnimation() {
       if (audioWaveAnimationId) return; // Already running
       
-      const audioWaves = root.querySelector('#voiceAudioWaves');
-      if (!audioWaves || !voiceAudioEngine) return;
+      const waveformRings = root.querySelector('#voiceWaveformRings');
+      if (!waveformRings) return;
       
-      const waveRings = audioWaves.querySelectorAll('.wave-ring');
+      const waveRings = waveformRings.querySelectorAll('.waveform-ring');
       if (waveRings.length === 0) return;
       
+      // Check for reduced motion preference
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      
       function animateWaves() {
-        if (currentUIState !== 'speaking' || !voiceAudioEngine) {
+        if (currentUIState !== 'speaking') {
           stopAudioWaveAnimation();
           return;
         }
         
-        // Get real-time amplitude from VoiceAudioEngine
-        const amplitude = voiceAudioEngine.getAmplitude();
+        // Get real-time amplitude from VoiceAudioEngine if available
+        let rawAmplitude = 0;
+        if (voiceAudioEngine && typeof voiceAudioEngine.getAmplitude === 'function') {
+          rawAmplitude = voiceAudioEngine.getAmplitude();
+        } else {
+          // Simulate gentle oscillation if amplitude not available
+          rawAmplitude = 0.4 + Math.sin(Date.now() / 500) * 0.3;
+        }
+        
+        // Smooth amplitude to prevent jittery animations
+        smoothedAmplitude = smoothedAmplitude * (1 - amplitudeSmoothingFactor) + rawAmplitude * amplitudeSmoothingFactor;
         
         // Map amplitude (0-1) to wave intensity
-        const intensity = Math.max(0.3, amplitude * 1.5); // Minimum 0.3, max 1.5
+        const baseIntensity = Math.max(0.2, Math.min(1, smoothedAmplitude * 1.2));
         
-        // Update wave rings opacity based on amplitude
-        waveRings.forEach((ring, index) => {
-          const delay = index * 0.3;
-          const phase = (Date.now() / 1000 + delay) % 1.5;
-          const ringIntensity = intensity * (1 - phase / 1.5);
-          ring.setAttribute('opacity', Math.max(0, ringIntensity));
-          ring.setAttribute('stroke-opacity', Math.max(0.1, ringIntensity));
-        });
+        if (prefersReducedMotion) {
+          // Static state for reduced motion
+          waveRings.forEach((ring, index) => {
+            const staticOpacity = 0.3 + (index * 0.1);
+            ring.setAttribute('opacity', staticOpacity);
+            ring.setAttribute('stroke-opacity', staticOpacity);
+          });
+        } else {
+          // Animated waveform rings
+          waveRings.forEach((ring, index) => {
+            const delay = index * 0.25;
+            const time = Date.now() / 1000;
+            const phase = (time + delay) % 1.8;
+            const ringIntensity = baseIntensity * (1 - phase / 1.8) * (1 - index * 0.15);
+            const opacity = Math.max(0.1, Math.min(0.8, ringIntensity));
+            const scale = 1 + (ringIntensity * 0.1);
+            
+            ring.setAttribute('opacity', opacity);
+            ring.setAttribute('stroke-opacity', opacity);
+            ring.setAttribute('transform', `translate(100, 100) scale(${scale}) translate(-100, -100)`);
+          });
+        }
         
         audioWaveAnimationId = requestAnimationFrame(animateWaves);
       }
@@ -5331,14 +5613,16 @@ class NoteworthyChat extends HTMLElement {
       if (audioWaveAnimationId) {
         cancelAnimationFrame(audioWaveAnimationId);
         audioWaveAnimationId = null;
+        smoothedAmplitude = 0;
         
         // Reset wave rings
-        const audioWaves = root.querySelector('#voiceAudioWaves');
-        if (audioWaves) {
-          const waveRings = audioWaves.querySelectorAll('.wave-ring');
+        const waveformRings = root.querySelector('#voiceWaveformRings');
+        if (waveformRings) {
+          const waveRings = waveformRings.querySelectorAll('.waveform-ring');
           waveRings.forEach(ring => {
             ring.setAttribute('opacity', '0');
             ring.setAttribute('stroke-opacity', '0');
+            ring.setAttribute('transform', 'translate(100, 100) scale(1) translate(-100, -100)');
           });
         }
         
