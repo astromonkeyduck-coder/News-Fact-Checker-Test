@@ -106,12 +106,35 @@ function renderCards(cards, container, originalContent) {
       .replace(/\n/g, '<br>');
   };
 
-  container.innerHTML = cards.map(card => {
+  container.innerHTML = cards.map((card, index) => {
+    // STEP 2: Log what we receive for first 5 cards
+    if (index < 5) {
+      console.log(`[PostFeed] Card ${index} image fields:`, {
+        image: card.image,
+        image_url: card.image_url,
+        primary_image_url: card.primary_image_url,
+        images: card.images,
+        secondary_images: card.secondary_images,
+        'assets.images': card.assets?.images,
+        'assets.usgs_images': card.assets?.usgs_images,
+        usgs_images: card.usgs_images,
+        title: (card.title || '').substring(0, 50)
+      });
+    }
+    
+    // STEP 3: Canonical image resolution
+    const primary = card.primary_image_url || card.image_url || card.image || null;
+    
+    if (index === 0) {
+      console.log(`[PostFeed] Card 0 selected image:`, primary);
+    }
+    
     // Fallback image with brand colors if no image
-    const imageHtml = card.image 
+    const imageHtml = primary 
       ? `<div class="article-image">
-          <img src="${card.image}" alt="${(card.title || '').replace(/"/g, '&quot;')}" loading="lazy" 
-               onerror="console.error('[PostFeed] Image failed to load:', this.src); this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(46, 204, 113, 0.2))'; this.parentElement.innerHTML='<div style=\\'display: flex; align-items: center; justify-content: center; min-height: 200px;\\'><div style=\\'font-size: 48px; font-weight: 700; color: rgba(74, 144, 226, 0.8);\\'>NW</div></div>';" />
+          <img src="${primary}" alt="${(card.title || '').replace(/"/g, '&quot;')}" loading="lazy" 
+               onerror="console.error('[PostFeed] Image failed to load:', this.src); this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(46, 204, 113, 0.2))'; this.parentElement.innerHTML='<div style=\\'display: flex; align-items: center; justify-content: center; min-height: 200px;\\'><div style=\\'font-size: 48px; font-weight: 700; color: rgba(74, 144, 226, 0.8);\\'>NW</div></div>';" 
+               onload="console.log('[PostFeed] Image loaded successfully:', this.src);" />
         </div>`
       : `<div class="article-image" style="background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(46, 204, 113, 0.2)); display: flex; align-items: center; justify-content: center; min-height: 200px;">
           <div style="font-size: 48px; font-weight: 700; color: rgba(74, 144, 226, 0.8);">NW</div>

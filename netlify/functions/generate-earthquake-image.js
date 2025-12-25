@@ -362,6 +362,12 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
   const actualWidth = templateMetadata.width;
   const actualHeight = templateMetadata.height;
   
+  // STEP 6: Validate template dimensions
+  console.log(`[generate-earthquake-image] Template loaded: ${actualWidth}x${actualHeight} (expected: ${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT})`);
+  if (!actualWidth || !actualHeight) {
+    throw new Error(`Invalid template dimensions: ${actualWidth}x${actualHeight}`);
+  }
+  
   if (actualWidth !== TEMPLATE_WIDTH || actualHeight !== TEMPLATE_HEIGHT) {
     console.warn(`[generate-earthquake-image] Template dimensions (${actualWidth}x${actualHeight}) don't match expected (${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT})`);
   }
@@ -387,32 +393,48 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
   // Format magnitude text
   const magnitudeText = `M${magnitude.toFixed(1)}`;
   
+  // STEP 6: Validate font loading (MANDATORY - THROW ERROR IF FAILS)
+  const fontLoaded = !!(FONT_DATA.regular && FONT_DATA.bold);
+  if (!fontLoaded) {
+    const errorMsg = `Fonts not loaded! Regular: ${!!FONT_DATA.regular}, Bold: ${!!FONT_DATA.bold}`;
+    console.error(`[generate-earthquake-image] ❌ ${errorMsg}`);
+    throw new Error(`Font loading failed: ${errorMsg}. Check fonts-base64.js`);
+  }
+  
+  // Validate font data is actually base64 (not HTML)
+  try {
+    const regularBase64 = FONT_DATA.regular.split(',')[1] || FONT_DATA.regular;
+    const boldBase64 = FONT_DATA.bold.split(',')[1] || FONT_DATA.bold;
+    const regularHeader = Buffer.from(regularBase64.substring(0, 20), 'base64').toString('hex');
+    const boldHeader = Buffer.from(boldBase64.substring(0, 20), 'base64').toString('hex');
+    
+    if (!regularHeader.startsWith('00010000') && !regularHeader.startsWith('4f54544f')) {
+      throw new Error(`Invalid font data in regular font (header: ${regularHeader.substring(0, 8)}). Font file may be corrupted.`);
+    }
+    if (!boldHeader.startsWith('00010000') && !boldHeader.startsWith('4f54544f')) {
+      throw new Error(`Invalid font data in bold font (header: ${boldHeader.substring(0, 8)}). Font file may be corrupted.`);
+    }
+    
+    console.log(`[generate-earthquake-image] ✅ Fonts validated: Regular=${FONT_DATA.regular.length} chars, Bold=${FONT_DATA.bold.length} chars`);
+  } catch (fontError) {
+    console.error(`[generate-earthquake-image] ❌ Font validation failed:`, fontError);
+    throw fontError;
+  }
+  
+  // Define fontFamily in this scope (used for logging)
+  const fontFamily = (FONT_DATA.regular && FONT_DATA.bold) ? 'Roboto' : 'Arial, sans-serif';
+  
   // Create SVG overlay with embedded fonts
   const svgString = createDynamicTextSVG(magnitudeText, location, outputWidth, outputHeight, scaleFactor);
   
-  // Validate font loading
-  if (!FONT_BUFFERS.regular || !FONT_BUFFERS.bold) {
-    console.error(`[generate-earthquake-image] ⚠️ WARNING: Fonts not loaded! Regular: ${!!FONT_BUFFERS.regular}, Bold: ${!!FONT_BUFFERS.bold}`);
-    console.error(`[generate-earthquake-image] Text may render as tofu glyphs. Check fonts-base64.js`);
-  } else {
-    console.log(`[generate-earthquake-image] ✅ Fonts loaded: Regular=${FONT_BUFFERS.regular.length} bytes, Bold=${FONT_BUFFERS.bold.length} bytes`);
-  }
-  
-  // Render SVG using Sharp (librsvg supports @font-face with data URIs)
+  // STEP 6: Render SVG using Sharp (librsvg supports @font-face with data URIs)
   // The SVG already has @font-face declarations with embedded base64 fonts
   const textOverlayBuffer = Buffer.from(svgString);
   
-  // Log font status
-  if (!FONT_DATA.regular || !FONT_DATA.bold) {
-    console.error(`[generate-earthquake-image] ⚠️ WARNING: Fonts not loaded! Regular: ${!!FONT_DATA.regular}, Bold: ${!!FONT_DATA.bold}`);
-    console.error(`[generate-earthquake-image] Text may render as tofu glyphs. Check fonts-base64.js`);
-  } else {
-    console.log(`[generate-earthquake-image] ✅ Fonts embedded in SVG: Regular=${FONT_DATA.regular.substring(0, 50)}..., Bold=${FONT_DATA.bold.substring(0, 50)}...`);
-  }
-  
-  console.log(`[generate-earthquake-image] SVG text overlay created: ${outputWidth}x${outputHeight}`);
+  console.log(`[generate-earthquake-image] ✅ SVG text overlay created: ${outputWidth}x${outputHeight}`);
   console.log(`[generate-earthquake-image] Template dimensions: ${actualWidth}x${actualHeight}, output: ${outputWidth}x${outputHeight}`);
-  console.log(`[generate-earthquake-image] Font family: ${fontFamily}`);
+  console.log(`[generate-earthquake-image] Font family: ${fontFamily}, fontLoaded: ${fontLoaded}`);
+  console.log(`[generate-earthquake-image] Text content: "${magnitudeText} EARTHQUAKE NEAR ${location}"`);
   
   // Prepare composite inputs
   const compositeInputs = [
@@ -520,7 +542,22 @@ async function storeImage(imageBuffer, eventId) {
     contentType: "image/png",
   });
   
-  const imageUrl = `/.netlify/functions/get-uploaded-image?key=${encodeURIComponent(imageKey)}`;
+  // STEP 5: Build absolute URL and validate it's accessible
+  const baseUrl = process.env.URL || 'https://noteworthynews.co';
+  const imageUrl = `${baseUrl}/.netlify/functions/get-uploaded-image?key=${encodeURIComponent(imageKey)}`;
+  
+  // STEP 5: Validate URL is accessible (HEAD request)
+  try {
+    const validateResponse = await fetch(imageUrl, { method: 'HEAD' });
+    if (!validateResponse.ok) {
+      console.warn(`[generate-earthquake-image] ⚠️ Image URL validation failed: ${validateResponse.status} ${validateResponse.statusText}`);
+    } else {
+      console.log(`[generate-earthquake-image] ✅ Image URL validated: ${imageUrl} (${validateResponse.headers.get('content-type')})`);
+    }
+  } catch (validateError) {
+    console.warn(`[generate-earthquake-image] ⚠️ Could not validate image URL:`, validateError.message);
+    // Don't fail - URL might work even if validation fails
+  }
   
   return imageUrl;
 }

@@ -87,7 +87,10 @@ async function createPostFromEvent(event, category, source) {
               return arr.findIndex(u => normalizeUrlForComparison(u) === normalized) === i;
             });
           
-          existingPost.image = imageUrl;
+          // STEP 3: Set canonical primary_image_url
+          existingPost.primary_image_url = imageUrl;
+          existingPost.image = imageUrl; // Legacy compatibility
+          existingPost.image_url = imageUrl; // Legacy compatibility
           existingPost.images = secondaryImages;
           existingPost.secondary_images = secondaryImages;
           if (event.assets) {
@@ -191,15 +194,21 @@ async function createPostFromEvent(event, category, source) {
   
   console.log(`[createPost] Post ${postId} - Primary: ${imageUrl ? 'yes' : 'no'}, Secondary: ${secondaryImages.length} images`);
   
+  // STEP 3: Canonical image field definition
+  // PRIMARY IMAGE RULE: primary_image_url is the ONE AND ONLY field for card deck and article hero
+  // SECONDARY IMAGE RULE: secondary_images[] never contains primary, always deduplicated
+  
   // Create post object matching the site's post structure
-  // CRITICAL: Only set 'image' field for primary image, 'images' array is for secondary images only
-  // This prevents duplicates on article pages
   const post = {
     id: postId,
     title: event.title,
     story: summary,
     text: summary,
-    image: imageUrl, // Primary image (for card deck and article hero)
+    // CANONICAL PRIMARY IMAGE FIELD (use this everywhere)
+    primary_image_url: imageUrl, // THE single source of truth for primary image
+    image: imageUrl, // Legacy compatibility (card deck reads this)
+    image_url: imageUrl, // Legacy compatibility
+    // SECONDARY IMAGES (never includes primary)
     images: secondaryImages, // Secondary images only (excludes primary, deduplicated)
     secondary_images: secondaryImages, // Also store as secondary_images for compatibility
     link: event.source_url,

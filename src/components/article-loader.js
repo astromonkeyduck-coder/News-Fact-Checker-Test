@@ -447,10 +447,10 @@
                 }
             };
             
-            // STEP 1: Identify all image sources
+            // STEP 3: Canonical image resolution (SINGLE SOURCE OF TRUTH)
             const primary = post.primary_image_url || post.image_url || post.image || null;
             
-            // STEP 2: Build deduplicated secondary image list
+            // STEP 4: Build deduplicated secondary image list (NEVER includes primary)
             const secondaryCandidates = [
                 ...(post.secondary_images || []),
                 ...(post.images || []),
@@ -475,7 +475,14 @@
                     return arr.findIndex(u => normalizeUrl(u) === normalized) === i;
                 });
             
-            // STEP 3: Render images
+            console.log('[ArticleLoader] Image resolution:', {
+                primary: primary ? primary.substring(0, 80) : null,
+                primaryNormalized: primaryNormalized,
+                secondaryCount: secondary.length,
+                secondary: secondary.map(s => s.substring(0, 80))
+            });
+            
+            // STEP 4: Render images (LOGIC ONLY - NO CSS)
             // Render primary image ONCE if it exists
             if (primary) {
                 const absoluteImageUrl = ensureAbsoluteImageUrl(primary);
