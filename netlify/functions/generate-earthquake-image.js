@@ -8,7 +8,6 @@
  */
 
 const sharp = require('sharp');
-const { resvg } = require('@resvg/resvg-js');
 const { getStore } = require("@netlify/blobs");
 const fs = require('fs');
 const path = require('path');
@@ -166,13 +165,23 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
   }
   
   // Use Roboto if fonts are loaded, otherwise fallback
-  const fontFamily = (FONT_BUFFERS.regular && FONT_BUFFERS.bold) ? 'Roboto' : 'Arial, sans-serif';
+  // Build @font-face declarations with base64 embedded fonts
+  const fontFaceCSS = [];
+  if (FONT_DATA.regular) {
+    fontFaceCSS.push(`@font-face { font-family: 'Roboto'; src: url('${FONT_DATA.regular}') format('truetype'); font-weight: normal; font-style: normal; }`);
+  }
+  if (FONT_DATA.bold) {
+    fontFaceCSS.push(`@font-face { font-family: 'Roboto'; src: url('${FONT_DATA.bold}') format('truetype'); font-weight: bold; font-style: normal; }`);
+  }
+  
+  const fontFamily = (FONT_DATA.regular && FONT_DATA.bold) ? 'Roboto' : 'Arial, sans-serif';
   
   return `
     <svg width="${templateWidth}" height="${templateHeight}" xmlns="http://www.w3.org/2000/svg" 
          shape-rendering="geometricPrecision" text-rendering="optimizeLegibility">
       <defs>
         <style>
+          ${fontFaceCSS.join('\n          ')}
           text {
             text-rendering: optimizeLegibility;
             -webkit-font-smoothing: antialiased;
@@ -389,35 +398,21 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
     console.log(`[generate-earthquake-image] ✅ Fonts loaded: Regular=${FONT_BUFFERS.regular.length} bytes, Bold=${FONT_BUFFERS.bold.length} bytes`);
   }
   
-  // Render SVG to PNG using resvg (supports embedded fonts properly)
-  let textOverlayBuffer;
-  try {
-    const fonts = [];
-    if (FONT_BUFFERS.regular) {
-      fonts.push({ name: 'Roboto', data: FONT_BUFFERS.regular });
-    }
-    if (FONT_BUFFERS.bold) {
-      fonts.push({ name: 'Roboto', data: FONT_BUFFERS.bold });
-    }
-    
-    const svgOptions = {
-      fonts: fonts.length > 0 ? fonts : undefined,
-      fitTo: { mode: 'width', value: outputWidth },
-      dpi: 96,
-    };
-    
-    const renderResult = resvg(svgString, svgOptions);
-    textOverlayBuffer = Buffer.from(renderResult);
-    
-    console.log(`[generate-earthquake-image] ✅ Rendered text overlay with resvg: ${outputWidth}x${outputHeight}, fonts: ${fonts.length}`);
-    console.log(`[generate-earthquake-image] Template dimensions: ${actualWidth}x${actualHeight}, output: ${outputWidth}x${outputHeight}`);
-    console.log(`[generate-earthquake-image] Font loaded: Regular=${!!FONT_BUFFERS.regular}, Bold=${!!FONT_BUFFERS.bold}`);
-  } catch (resvgError) {
-    console.error('[generate-earthquake-image] ⚠️ resvg rendering failed, falling back to Sharp SVG:', resvgError.message);
-    console.error('[generate-earthquake-image] resvg error details:', resvgError);
-    // Fallback to Sharp SVG rendering (may not support fonts)
-    textOverlayBuffer = Buffer.from(svgString);
+  // Render SVG using Sharp (librsvg supports @font-face with data URIs)
+  // The SVG already has @font-face declarations with embedded base64 fonts
+  const textOverlayBuffer = Buffer.from(svgString);
+  
+  // Log font status
+  if (!FONT_DATA.regular || !FONT_DATA.bold) {
+    console.error(`[generate-earthquake-image] ⚠️ WARNING: Fonts not loaded! Regular: ${!!FONT_DATA.regular}, Bold: ${!!FONT_DATA.bold}`);
+    console.error(`[generate-earthquake-image] Text may render as tofu glyphs. Check fonts-base64.js`);
+  } else {
+    console.log(`[generate-earthquake-image] ✅ Fonts embedded in SVG: Regular=${FONT_DATA.regular.substring(0, 50)}..., Bold=${FONT_DATA.bold.substring(0, 50)}...`);
   }
+  
+  console.log(`[generate-earthquake-image] SVG text overlay created: ${outputWidth}x${outputHeight}`);
+  console.log(`[generate-earthquake-image] Template dimensions: ${actualWidth}x${actualHeight}, output: ${outputWidth}x${outputHeight}`);
+  console.log(`[generate-earthquake-image] Font family: ${fontFamily}`);
   
   // Prepare composite inputs
   const compositeInputs = [

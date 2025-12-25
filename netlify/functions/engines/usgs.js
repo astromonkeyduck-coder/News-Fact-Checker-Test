@@ -304,7 +304,18 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
     });
     
     if (!imageResponse.ok) {
-      logger.warn('Image generation failed', null, { status: imageResponse.status });
+      const errorText = await imageResponse.text().catch(() => 'Unknown error');
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { error: errorText };
+      }
+      logger.warn('Image generation failed', null, { 
+        status: imageResponse.status, 
+        statusText: imageResponse.statusText,
+        error: errorData.error || errorText
+      });
       return null;
     }
     
@@ -312,7 +323,10 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
     logger.info('Branded image generated', { url: imageData.url });
     return imageData.url;
   } catch (error) {
-    logger.warn('Image generation error', error);
+    logger.warn('Image generation error', error, { 
+      message: error?.message,
+      stack: error?.stack 
+    });
     return null;
   }
 }
