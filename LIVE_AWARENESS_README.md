@@ -225,6 +225,21 @@ curl -X POST https://your-site.netlify.app/.netlify/functions/ai-answer \
 2. ✅ Ask about something NOT in DB → Uses web search (`used_web_search: true`)
 3. ✅ Ask about unknown topic → Says "I don't have confirmed information"
 
+## Scheduling the Ingest Function
+
+**IMPORTANT:** After deployment, configure the schedule in Netlify Dashboard:
+
+1. Go to **Netlify Dashboard** → Your Site → **Functions**
+2. Find `ingest-live-events`
+3. Click **Schedule** tab (or **Settings** → **Schedule**)
+4. Set schedule to: `*/5 * * * *` (every 5 minutes)
+5. Save
+
+**Alternative:** Trigger manually for testing:
+```bash
+curl -X POST https://your-site.netlify.app/.netlify/functions/ingest-live-events
+```
+
 ## Monitoring
 
 ### Check Ingest Status
