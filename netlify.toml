@@ -55,11 +55,10 @@
 
 # Scheduled Functions
 # ingest-live-events runs every 5 minutes to pull fresh events
-[[plugins]]
-  package = "@netlify/plugin-scheduled-functions"
-
+# Note: Schedule is configured in Netlify Dashboard → Functions → ingest-live-events
+# Or use the schedule property below (Netlify supports this natively without a plugin)
 [functions.ingest-live-events]
-  schedule = "*/5 * * * *"  # Every 5 minutes
+  schedule = "*/5 * * * *"  # Every 5 minutes (cron format)
 
 # Security headers to prevent unwanted iframe embedding and improve security
 [[headers]]
