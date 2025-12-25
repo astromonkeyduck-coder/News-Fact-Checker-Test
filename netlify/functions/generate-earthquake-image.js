@@ -161,11 +161,11 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
   // In Netlify Functions, __dirname is /var/task/netlify/functions/generate-earthquake-image
   // In local dev, it's the actual project path
   const possiblePaths = [
-    path.join(__dirname, '../../1stUSGSTemp.png'),  // From function dir: netlify/functions -> root
-    path.join(__dirname, '../../../1stUSGSTemp.png'), // If nested deeper
-    path.join(process.cwd(), '1stUSGSTemp.png'),     // Current working directory
-    path.resolve('./1stUSGSTemp.png'),               // Relative to cwd
-    path.resolve(__dirname, '../../1stUSGSTemp.png'), // Absolute from function
+    path.join(__dirname, '1stUSGSTemp.png'),        // Same directory as function (best for bundled files)
+    path.join(__dirname, '../../1stUSGSTemp.png'),   // From function dir: netlify/functions -> root
+    path.join(process.cwd(), '1stUSGSTemp.png'),    // Current working directory (local dev)
+    path.join(process.cwd(), 'netlify/functions/1stUSGSTemp.png'), // Explicit local path
+    path.resolve('./1stUSGSTemp.png'),              // Relative to cwd
     '/var/task/1stUSGSTemp.png',                     // Netlify Lambda path
   ];
   

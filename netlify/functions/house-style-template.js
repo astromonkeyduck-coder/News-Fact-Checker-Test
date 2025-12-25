@@ -99,7 +99,6 @@ const STYLE_GUIDE = {
   
   // Image styles
   imageStyle: 'display:block;width:100%;max-width:100%;border-radius:8px',
-  imageMargin: '10px 0',
   
   // Section label style
   sectionLabelStyle: 'font-size:11px;letter-spacing:0.14em;color:#3b82f6!important;text-transform:uppercase;font-weight:600',
