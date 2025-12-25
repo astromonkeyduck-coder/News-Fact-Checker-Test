@@ -323,7 +323,19 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
  */
 async function sendEmailAlert(earthquake, imageUrl, logger) {
   const dryRun = isDryRun();
-  const magnitude = earthquake.magnitude;
+  
+  // Extract magnitude from event - it might be in earthquake.magnitude, assets.magnitude, or raw.properties.mag
+  let magnitude = earthquake.magnitude;
+  if (!magnitude && earthquake.assets?.magnitude) {
+    magnitude = earthquake.assets.magnitude;
+  }
+  if (!magnitude && earthquake.raw?.properties?.mag) {
+    magnitude = earthquake.raw.properties.mag;
+  }
+  if (!magnitude) {
+    logger.error('Cannot send email: magnitude not found in event', null, { canonical_id: earthquake.canonical_id });
+    return false;
+  }
   
   // Send email for ALL earthquakes (user requested)
   // Removed magnitude >= 7.0 check - now sends for all
@@ -361,7 +373,7 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
       body: JSON.stringify({
         earthquake: {
           event_id: earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown',
-          magnitude: earthquake.magnitude,
+          magnitude: magnitude, // Use extracted magnitude
           location_display: earthquake.location_display,
           time: earthquake.published_at,
           time_ms: new Date(earthquake.published_at).getTime(),
@@ -429,7 +441,7 @@ async function storeEvent(event, logger) {
         fetched_at: event.fetched_at,
         status: event.status,
         tags: event.tags,
-        assets: event.assets,
+        assets: event.assets, // Includes magnitude
         raw: event.raw,
       };
       
@@ -538,6 +550,7 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     tags: ['earthquake', `magnitude_${Math.floor(magnitude)}`, 'disaster', 'breaking'],
     assets: {
       usgs_images: usgsImages,
+      magnitude: magnitude, // Store magnitude in assets for easy access
     },
     image_url: imageUrl,
     alert_sent: false,

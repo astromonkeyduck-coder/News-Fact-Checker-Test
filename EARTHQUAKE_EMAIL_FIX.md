@@ -1,106 +1,63 @@
-# Earthquake Email Fix - What's Happening
+# Earthquake Email Fix
 
-## The Situation
+## Problem Identified
 
-You have **TWO earthquake systems**, but only **ONE is needed**:
+The `sendEmailAlert` function was trying to access `earthquake.magnitude`, but the stored event object doesn't have a `magnitude` field. The magnitude is only stored in:
+- `raw.properties.mag` (the original USGS feature)
+- Not as a direct field on the event
 
-### System 1: `earthquake-poller.js` (Dedicated)
-- **Status:** File exists, but may not be scheduled
-- **Location:** `netlify/functions/earthquake-poller.js`
-- **Sends emails for:** ALL earthquakes
-- **Runs:** Every 3 minutes (if scheduled)
+This caused emails to fail silently because `magnitude` was `undefined`, and the email function requires it.
 
-### System 2: `engines/usgs.js` (Via ingest-all) ✅ **THIS IS RUNNING**
-- **Status:** ✅ Already running via `ingest-all` (every 5 minutes)
-- **Location:** `netlify/functions/engines/usgs.js`
-- **Sends emails for:** ✅ **NOW FIXED** - ALL earthquakes (was only >= 7.0)
-- **Runs:** Every 5 minutes automatically
+## Fix Applied
 
----
-
-## The Fix I Just Made
-
-**Updated `engines/usgs.js` to send emails for ALL earthquakes:**
-- ✅ Removed magnitude >= 7.0 check
-- ✅ Now sends emails for every earthquake
-- ✅ Same as `earthquake-poller` behavior
-
-**This means:**
-- You don't need `earthquake-poller` scheduled
-- `ingest-all` is already running and will send emails
-- After you commit/push, emails will work!
-
----
-
-## Why You Didn't Get Emails Before
-
-**The problem:**
-- `ingest-all` was running (every 5 minutes)
-- It uses `engines/usgs.js`
-- That function had `if (magnitude < 7.0) return false;`
-- So earthquakes < 7.0 didn't trigger emails
-
-**The fix:**
-- Removed the magnitude check
-- Now sends emails for ALL earthquakes
-
----
-
-## What You Need to Do
-
-### Option 1: Just Use ingest-all (Recommended)
-1. **Commit and push** the fix I just made
-2. **Verify email config** in Netlify:
-   - `AI_NOTIFICATION_EMAILS` or `ALERT_TO_EMAIL` set?
-   - `RESEND_API_KEY` set?
-3. **Wait for next earthquake** - emails should work!
-
-### Option 2: Also Schedule earthquake-poller (Optional)
-If you want a separate dedicated function:
-1. Go to **Netlify Dashboard** → **Site Settings** → **Scheduled Functions**
-2. Add new scheduled function:
-   - **Function name:** `earthquake-poller`
-   - **Schedule:** `*/3 * * * *` (every 3 minutes)
-3. Save
-
-**But you don't need this** - `ingest-all` already handles it!
-
----
-
-## How to Verify It's Working
-
-### Check Logs:
-1. Go to **Netlify Dashboard** → **Functions** → **ingest-all**
-2. Click **Logs** tab
-3. Look for:
-   - `[usgs] Email alert sent` ✅
-   - `[usgs] Alert send failed` ❌
-   - `No email configuration found` ❌
-
-### Check Database:
-- Go to Supabase → `verified_events` table
-- Look for recent earthquakes
-- Check `alert_sent` column - should be `true` if email was sent
-
-### Test Manually:
-```bash
-# Trigger ingest-all manually
-curl -X POST "https://your-site.netlify.app/.netlify/functions/ingest-all"
+### 1. Store Magnitude in Assets
+Added `magnitude` to the `assets` JSONB field when creating events:
+```javascript
+assets: {
+  usgs_images: usgsImages,
+  magnitude: magnitude, // Store magnitude in assets for easy access
+},
 ```
 
----
+### 2. Extract Magnitude from Multiple Sources
+Updated `sendEmailAlert` to extract magnitude from multiple possible locations:
+```javascript
+// Extract magnitude from event - it might be in earthquake.magnitude, assets.magnitude, or raw.properties.mag
+let magnitude = earthquake.magnitude;
+if (!magnitude && earthquake.assets?.magnitude) {
+  magnitude = earthquake.assets.magnitude;
+}
+if (!magnitude && earthquake.raw?.properties?.mag) {
+  magnitude = earthquake.raw.properties.mag;
+}
+if (!magnitude) {
+  logger.error('Cannot send email: magnitude not found in event', null, { canonical_id: earthquake.canonical_id });
+  return false;
+}
+```
 
-## Summary
+### 3. Use Extracted Magnitude
+Updated the payload sent to `send-earthquake-alert` to use the extracted magnitude:
+```javascript
+magnitude: magnitude, // Use extracted magnitude
+```
 
-**The fix is ready:**
-- ✅ `engines/usgs.js` now sends emails for ALL earthquakes
-- ✅ `ingest-all` is already running (every 5 minutes)
-- ✅ No need to schedule `earthquake-poller` separately
+## What This Fixes
 
-**Next steps:**
-1. Commit and push the fix
-2. Verify email config in Netlify
-3. Wait for next earthquake - you should get an email!
+- ✅ Emails will now be sent for earthquakes (magnitude is now accessible)
+- ✅ Works for both new and existing events
+- ✅ Falls back to `raw.properties.mag` if magnitude isn't in assets
+- ✅ Logs error if magnitude truly can't be found
 
-The "earthquake-poller not found" message is fine - you don't need it. The `ingest-all` system is handling everything!
+## Testing
 
+After deployment, check:
+1. **Function Logs**: Look for "Sending email alert" messages with magnitude values
+2. **Email Delivery**: You should receive earthquake emails
+3. **Error Logs**: If magnitude still can't be found, you'll see an error log
+
+## Next Steps
+
+1. Commit and push this fix
+2. Wait for next earthquake (or manually trigger `ingest-all`)
+3. Verify email is received with correct magnitude
