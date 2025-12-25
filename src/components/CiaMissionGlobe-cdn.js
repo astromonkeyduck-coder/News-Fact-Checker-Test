@@ -43,6 +43,13 @@ class CiaMissionGlobe {
     this.searchQuery = '';
     this.filteredPoints = null; // null = show all, array = filtered results
     
+    // Filter state
+    this.timeRange = '24h'; // '24h', '7d', '30d', 'all'
+    this.selectedCategory = 'all'; // 'all', 'conflict', 'disaster', 'aviation', 'crime', 'politics'
+    this.breakingOnly = false;
+    this.countryData = new Map(); // Map of country -> { count, posts, coordinates }
+    this.activeCountry = null; // Currently selected country
+    
     this.loadLocationCache();
     
     this.loadDependencies().then(() => this.init());
@@ -963,7 +970,7 @@ class CiaMissionGlobe {
         }
       }
       
-      // Store all posts for searching
+      // Store all posts for searching and filtering
       this.allPosts = posts;
 
       // Track how many posts per country to add slight randomization
@@ -1022,6 +1029,10 @@ class CiaMissionGlobe {
       
       this.totalPosts = posts.length;
       console.log(`[Globe] Extracted ${coveragePoints.length} locations from ${posts.length} posts + CSV data`);
+      
+      // Initialize with all posts (filters will be applied after)
+      this.coveragePoints = this.aggregateCoveragePoints(coveragePoints);
+      
       return coveragePoints;
     } catch (err) {
       console.error('[Globe] Error extracting locations from posts:', err);
@@ -1255,6 +1266,11 @@ class CiaMissionGlobe {
 
     // Render HUD (simplified on mobile)
     this.renderHUD(hudEl);
+    
+    // Setup controls and UI
+    this.setupControls();
+    this.updateCountryAggregation();
+    this.updateActiveRegionsList();
 
     // Initialize globe with highly detailed, realistic earth texture
     // Using high-resolution NASA Blue Marble Next Generation texture for maximum detail
@@ -1359,12 +1375,20 @@ class CiaMissionGlobe {
     setTimeout(() => {
       this.globeInstance.pointOfView(initialView, 0);
       this.setLoadingState(false);
+      
+      // Apply initial filters after globe is ready
+      if (this.allPosts.length > 0) {
+        this.applyFilters();
+      }
     }, 250);
 
-    // Handle point clicks
+    // Handle point clicks - open country panel
     this.globeInstance.onPointClick((point) => {
       if (point) {
-        this.setActiveOp(point);
+        const country = this.extractCountryName(point.location);
+        if (country) {
+          this.openCountryPanel(country);
+        }
       }
     });
 
@@ -1566,27 +1590,9 @@ class CiaMissionGlobe {
   renderHUD(container) {
     if (!container) return;
 
-    const totalLocations = this.coveragePoints.length;
-    const totalStories = this.totalPosts || this.coveragePoints.reduce((sum, point) => {
-      return sum + (Array.isArray(point.posts) ? point.posts.length : 1);
-    }, 0);
-    
-    const displayLocations = this.filteredPoints ? this.filteredPoints.length : totalLocations;
-    const statsLabel = this.statsLoaded 
-      ? `${displayLocations.toLocaleString()} ${this.filteredPoints ? 'matching' : ''} Locations • ${totalStories.toLocaleString()} Posts`
-      : `${displayLocations.toLocaleString()} ${this.filteredPoints ? 'matching' : ''} Locations • ${totalStories.toLocaleString()} Posts • updating...`;
-    
-    const activeMarkup = this.activeOp ? this.renderActiveLocationDetails(this.activeOp) : '<div class="globe-hud-active placeholder">Tap a pulse to preview posts</div>';
-    
-    const statusAttr = this.statsLoaded ? '' : 'data-subtext="Still loading live data..."';
-    
-    container.innerHTML = `
-      <div class="globe-hud-simple">
-        <div class="globe-hud-title">Global Coverage</div>
-        <div class="globe-hud-count" ${statusAttr}>${statsLabel}</div>
-      </div>
-      ${activeMarkup}
-    `;
+    // Remove the blocking HUD overlay - stats are now in the control bar
+    // Keep container empty or minimal to avoid blocking the globe
+    container.innerHTML = '';
     
     // Connect to posts area search bar if it exists
     const postsSearchInput = document.getElementById('globeSearchInputPosts');
@@ -1692,6 +1698,436 @@ class CiaMissionGlobe {
         </div>
       </div>
     `;
+  }
+
+  // Setup control bar interactions
+  setupControls() {
+    // Time range buttons
+    const timeButtons = document.querySelectorAll('.globe-time-btn');
+    timeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        timeButtons.forEach(b => {
+          b.classList.remove('active');
+          b.style.background = 'rgba(74, 158, 255, 0.1)';
+          b.style.borderColor = 'rgba(74, 158, 255, 0.3)';
+          b.style.color = 'rgba(255, 255, 255, 0.8)';
+        });
+        btn.classList.add('active');
+        btn.style.background = 'rgba(74, 158, 255, 0.2)';
+        btn.style.borderColor = 'rgba(74, 158, 255, 0.4)';
+        btn.style.color = '#fff';
+        this.timeRange = btn.dataset.time;
+        this.applyFilters();
+      });
+    });
+
+    // Category chips
+    const categoryChips = document.querySelectorAll('.globe-category-chip');
+    categoryChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        categoryChips.forEach(c => {
+          c.classList.remove('active');
+          c.style.background = 'rgba(74, 158, 255, 0.1)';
+          c.style.borderColor = 'rgba(74, 158, 255, 0.3)';
+          c.style.color = 'rgba(255, 255, 255, 0.8)';
+        });
+        chip.classList.add('active');
+        chip.style.background = 'rgba(74, 158, 255, 0.2)';
+        chip.style.borderColor = 'rgba(74, 158, 255, 0.4)';
+        chip.style.color = '#fff';
+        this.selectedCategory = chip.dataset.category;
+        this.applyFilters();
+      });
+    });
+
+    // Breaking only toggle
+    const breakingToggle = document.getElementById('globe-breaking-only');
+    if (breakingToggle) {
+      breakingToggle.addEventListener('change', (e) => {
+        this.breakingOnly = e.target.checked;
+        this.applyFilters();
+      });
+    }
+
+    // Panel close button
+    const panelClose = document.getElementById('globe-panel-close');
+    const panelOverlay = document.getElementById('globe-panel-overlay');
+    if (panelClose) {
+      panelClose.addEventListener('click', () => this.closeCountryPanel());
+    }
+    if (panelOverlay) {
+      panelOverlay.addEventListener('click', () => this.closeCountryPanel());
+    }
+  }
+
+  // Get time range in milliseconds
+  getTimeRangeMs() {
+    const now = Date.now();
+    switch (this.timeRange) {
+      case '24h': return 24 * 60 * 60 * 1000;
+      case '7d': return 7 * 24 * 60 * 60 * 1000;
+      case '30d': return 30 * 24 * 60 * 60 * 1000;
+      default: return Infinity;
+    }
+  }
+
+  // Check if post matches category
+  postMatchesCategory(post) {
+    if (this.selectedCategory === 'all') return true;
+    
+    const text = (post.text || post.story || post.title || '').toLowerCase();
+    const tags = (post.tags || []).map(t => t.toLowerCase());
+    const category = (post.category || '').toLowerCase();
+    
+    const searchTerms = {
+      conflict: ['war', 'conflict', 'military', 'attack', 'strike', 'bomb', 'missile', 'combat', 'battle', 'invasion'],
+      disaster: ['earthquake', 'flood', 'fire', 'hurricane', 'tornado', 'tsunami', 'disaster', 'emergency', 'evacuation'],
+      aviation: ['plane', 'aircraft', 'airport', 'flight', 'aviation', 'airline', 'crash', 'pilot'],
+      crime: ['crime', 'murder', 'arrest', 'shooting', 'robbery', 'theft', 'police', 'suspect'],
+      politics: ['election', 'president', 'congress', 'senate', 'vote', 'political', 'policy', 'government']
+    };
+    
+    const terms = searchTerms[this.selectedCategory] || [];
+    return terms.some(term => 
+      text.includes(term) || 
+      tags.some(tag => tag.includes(term)) ||
+      category.includes(term)
+    );
+  }
+
+  // Check if post is breaking
+  isBreakingPost(post) {
+    if (!this.breakingOnly) return true;
+    const category = (post.category || '').toLowerCase();
+    const text = (post.text || post.story || post.title || '').toLowerCase();
+    return category === 'breaking' || text.includes('breaking') || text.includes('🚨');
+  }
+
+  // Apply filters and update display
+  applyFilters() {
+    const timeRangeMs = this.getTimeRangeMs();
+    const now = Date.now();
+    
+    // Filter posts
+    const filteredPosts = this.allPosts.filter(post => {
+      // Time filter
+      const postTime = new Date(post.createdAt || post.datePosted || post.created_at || 0).getTime();
+      if (timeRangeMs !== Infinity && (now - postTime) > timeRangeMs) {
+        return false;
+      }
+      
+      // Category filter
+      if (!this.postMatchesCategory(post)) {
+        return false;
+      }
+      
+      // Breaking only filter
+      if (!this.isBreakingPost(post)) {
+        return false;
+      }
+      
+      return true;
+    });
+    
+    // Re-aggregate coverage points from filtered posts
+    this.updateCoveragePointsFromPosts(filteredPosts);
+    this.updateCountryAggregation();
+    this.updateActiveRegionsList();
+    this.updateGlobeDisplay();
+  }
+
+  // Update coverage points from filtered posts
+  updateCoveragePointsFromPosts(posts) {
+    const coveragePoints = [];
+    const seenLocations = new Set();
+    const countryCounts = new Map();
+
+    for (const post of posts) {
+      const location = this.extractLocationFromPost(post);
+      if (location) {
+        const coords = this.getLocationCoordinatesSync(location);
+        if (coords) {
+          const count = (countryCounts.get(location) || 0) + 1;
+          countryCounts.set(location, count);
+          
+          const isCity = this.getCityCoordinates(location) !== null;
+          const spreadRadius = isCity ? 0.5 : 2;
+          const angle = (count * 137.5) % 360;
+          const distance = isCity ? Math.min(count * 0.1, spreadRadius) : Math.min(count * 0.3, spreadRadius);
+          
+          const latOffset = (Math.cos(angle * Math.PI / 180) * distance);
+          const lngOffset = (Math.sin(angle * Math.PI / 180) * distance / Math.cos(coords.lat * Math.PI / 180));
+          
+          const postText = post.text || post.story || post.title || '';
+          const headline = postText.length > 60 ? postText.substring(0, 57) + '...' : postText;
+          
+          coveragePoints.push({
+            id: `post-${post.id || Date.now()}-${location}-${count}`,
+            lat: coords.lat + latOffset,
+            lng: coords.lng + lngOffset,
+            location: location,
+            headline: headline || `Coverage from ${location}`,
+            timestamp: post.createdAt || post.datePosted || new Date().toISOString(),
+            postId: post.id,
+            postLink: post.link || post.url || post.postLink || '',
+            category: post.category,
+            tags: post.tags
+          });
+        }
+      }
+    }
+    
+    this.coveragePoints = this.aggregateCoveragePoints(coveragePoints);
+  }
+
+  // Synchronous version of getLocationCoordinates (uses cache)
+  getLocationCoordinatesSync(locationName) {
+    if (!locationName) return null;
+    const normalized = (locationName || '').trim().toLowerCase();
+    if (!normalized) return null;
+    
+    // Check cache first
+    if (this.locationCache[normalized]) {
+      return this.locationCache[normalized];
+    }
+    
+    // Try city/state mapping
+    const cityCoords = this.getCityCoordinates(locationName);
+    if (cityCoords) {
+      this.locationCache[normalized] = cityCoords;
+      return cityCoords;
+    }
+    
+    // Try country mapping
+    const countryCoords = this.getCountryCoordinates(locationName);
+    if (countryCoords) {
+      this.locationCache[normalized] = countryCoords;
+      return countryCoords;
+    }
+    
+    return null;
+  }
+
+  // Extract country name from location string
+  extractCountryName(location) {
+    if (!location) return null;
+    
+    // Check if it's a known country
+    const countryMap = this.getCountryMap();
+    const locationLower = location.toLowerCase();
+    
+    for (const [country, coords] of Object.entries(countryMap)) {
+      if (locationLower === country.toLowerCase() || locationLower.includes(country.toLowerCase())) {
+        return country;
+      }
+    }
+    
+    // Try to extract country from "City, Country" format
+    const parts = location.split(',').map(p => p.trim());
+    if (parts.length > 1) {
+      const lastPart = parts[parts.length - 1].toLowerCase();
+      for (const [country, coords] of Object.entries(countryMap)) {
+        if (lastPart === country.toLowerCase() || lastPart.includes(country.toLowerCase())) {
+          return country;
+        }
+      }
+    }
+    
+    // Fallback: use location as-is
+    return location;
+  }
+
+  // Aggregate posts by country
+  updateCountryAggregation() {
+    this.countryData.clear();
+    
+    for (const point of this.coveragePoints) {
+      const country = this.extractCountryName(point.location);
+      if (!country) continue;
+      
+      const coords = this.getLocationCoordinatesSync(country);
+      if (!coords) continue;
+      
+      if (!this.countryData.has(country)) {
+        this.countryData.set(country, {
+          name: country,
+          count: 0,
+          posts: [],
+          coordinates: coords
+        });
+      }
+      
+      const countryInfo = this.countryData.get(country);
+      countryInfo.count += Array.isArray(point.posts) ? point.posts.length : 1;
+      if (Array.isArray(point.posts)) {
+        countryInfo.posts.push(...point.posts);
+      } else {
+        countryInfo.posts.push(this.createPostSummary(point));
+      }
+    }
+    
+    // Sort posts by timestamp
+    for (const countryInfo of this.countryData.values()) {
+      countryInfo.posts.sort((a, b) => {
+        const aTime = new Date(a.timestamp || 0).getTime();
+        const bTime = new Date(b.timestamp || 0).getTime();
+        return bTime - aTime;
+      });
+    }
+  }
+
+  // Update most active regions list
+  updateActiveRegionsList() {
+    const regionsList = document.getElementById('globe-regions-list');
+    if (!regionsList) return;
+    
+    const sortedCountries = Array.from(this.countryData.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+    
+    if (sortedCountries.length === 0) {
+      regionsList.innerHTML = '<div style="color: rgba(255, 255, 255, 0.5); font-size: 0.85rem; padding: 1rem; text-align: center;">No active regions</div>';
+      return;
+    }
+    
+    regionsList.innerHTML = sortedCountries.map((country, index) => `
+      <div class="globe-region-item ${this.activeCountry === country.name ? 'active' : ''}" 
+           data-country="${country.name}"
+           style="padding: 0.75rem; background: rgba(12, 20, 45, 0.6); border-radius: 8px; border: 1px solid rgba(74, 158, 255, 0.2); cursor: pointer; transition: all 0.2s; ${this.activeCountry === country.name ? 'border-color: rgba(74, 158, 255, 0.6); background: rgba(12, 20, 45, 0.9);' : ''}">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+          <span style="font-weight: 600; color: #5bc9ff; font-size: 0.9rem;">${country.name}</span>
+          <span style="color: rgba(255, 255, 255, 0.7); font-size: 0.85rem;">${country.count}</span>
+        </div>
+        <div style="font-size: 0.75rem; color: rgba(255, 255, 255, 0.6);">${this.timeRange} • ${this.selectedCategory}</div>
+      </div>
+    `).join('');
+    
+    // Add click handlers
+    regionsList.querySelectorAll('.globe-region-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const countryName = item.dataset.country;
+        this.openCountryPanel(countryName);
+      });
+    });
+  }
+
+  // Open country detail panel
+  openCountryPanel(countryName) {
+    const countryInfo = this.countryData.get(countryName);
+    if (!countryInfo) return;
+    
+    this.activeCountry = countryName;
+    this.updateActiveRegionsList();
+    
+    const panel = document.getElementById('globe-detail-panel');
+    const panelContent = document.getElementById('globe-panel-content');
+    const overlay = document.getElementById('globe-panel-overlay');
+    
+    if (!panel || !panelContent) return;
+    
+    const isMobile = this.isMobile();
+    
+    // Generate panel content
+    const topPosts = countryInfo.posts.slice(0, 10);
+    const postItems = topPosts.map(post => `
+      <div class="globe-panel-post" style="padding: 0.75rem; margin-bottom: 0.75rem; background: rgba(12, 20, 45, 0.6); border-radius: 8px; border: 1px solid rgba(74, 158, 255, 0.2);">
+        <div style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.95); margin-bottom: 0.5rem; line-height: 1.4;">${post.headline || 'Coverage update'}</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: rgba(255, 255, 255, 0.7);">
+          <span>${this.formatTimestamp(post.timestamp)}</span>
+          ${post.postLink ? `<a href="${post.postLink}" target="_blank" rel="noopener noreferrer" style="color: #5bc9ff; text-decoration: none; font-weight: 600;">Open</a>` : ''}
+        </div>
+      </div>
+    `).join('');
+    
+    panelContent.innerHTML = `
+      <h2 style="font-size: 1.25rem; font-weight: 700; color: #5bc9ff; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">${countryInfo.name}</h2>
+      <div style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 1.5rem;">
+        ${countryInfo.count} post${countryInfo.count === 1 ? '' : 's'} • ${this.timeRange}
+      </div>
+      <div style="margin-bottom: 1.5rem;">
+        <h3 style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.9); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Top Posts</h3>
+        <div style="max-height: ${isMobile ? '40vh' : '60vh'}; overflow-y: auto;">
+          ${postItems || '<div style="color: rgba(255, 255, 255, 0.5);">No posts found</div>'}
+        </div>
+      </div>
+      <a href="/category/?country=${encodeURIComponent(countryInfo.name)}" 
+         style="display: block; padding: 0.75rem 1rem; background: rgba(74, 158, 255, 0.2); border: 1px solid rgba(74, 158, 255, 0.4); border-radius: 8px; color: #fff; text-align: center; text-decoration: none; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.85rem; transition: all 0.2s;">
+        View all for ${countryInfo.name}
+      </a>
+    `;
+    
+    // Show panel (different behavior for mobile vs desktop)
+    if (isMobile) {
+      panel.style.bottom = '0';
+      panel.classList.add('open');
+    } else {
+      panel.style.right = '0';
+    }
+    if (overlay) {
+      overlay.style.display = 'block';
+    }
+    
+    // Focus globe on country
+    if (this.globeInstance && countryInfo.coordinates) {
+      this.globeInstance.pointOfView({
+        lat: countryInfo.coordinates.lat,
+        lng: countryInfo.coordinates.lng,
+        altitude: 1.5
+      }, 1000);
+    }
+  }
+
+  // Close country detail panel
+  closeCountryPanel() {
+    const panel = document.getElementById('globe-detail-panel');
+    const overlay = document.getElementById('globe-panel-overlay');
+    const isMobile = this.isMobile();
+    
+    if (panel) {
+      if (isMobile) {
+        panel.style.bottom = '-100vh';
+        panel.classList.remove('open');
+      } else {
+        panel.style.right = '-400px';
+      }
+    }
+    if (overlay) {
+      overlay.style.display = 'none';
+    }
+    
+    this.activeCountry = null;
+    this.updateActiveRegionsList();
+  }
+
+  // Update globe display with filtered data and country polygons
+  updateGlobeDisplay() {
+    if (!this.globeInstance) return;
+    
+    const pointsToShow = this.coveragePoints;
+    const isMobile = this.isMobile();
+    
+    // Update points
+    this.globeInstance
+      .pointsData(pointsToShow)
+      .pointLat(d => d.lat)
+      .pointLng(d => d.lng)
+      .pointLabel(d => this.getPointLabel(d, isMobile))
+      .pointColor(d => {
+        const phase = this.getPointPhase(d);
+        const pulse = (Math.sin(this.t + phase) + 1) / 2;
+        return this.getPointGlowColor(d, pulse);
+      })
+      .pointRadius(d => this.getPointBaseRadius(d, isMobile))
+      .pointAltitude(d => this.getPointBaseAltitude(d, isMobile));
+    
+    // Update HUD stats
+    this.renderHUD(document.getElementById('cia-hud-overlay'));
+  }
+
+  // Update point intensities based on country activity
+  updatePointIntensities() {
+    // Points already have intensity based on post count
+    // This is handled in aggregateCoveragePoints
   }
 
   destroy() {

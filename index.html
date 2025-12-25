@@ -1,4 +1,9 @@
 <!DOCTYPE html>
+<!-- 
+    Built with care by Richard, Co-Founder & Lead Developer of Noteworthy News
+    Tech Stack: HTML5, CSS3, JavaScript, Supabase, Netlify Functions
+    Questions? richard@noteworthynews.co
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -15,7 +20,7 @@
     <link rel="shortcut icon" type="image/png" href="IMG_5794.PNG">
     <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
     <link rel="mask-icon" href="IMG_5794.PNG" color="#0f234a">
-    <meta name="theme-color" content="#07152a">
+    <meta name="theme-color" content="#141a24">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     
@@ -45,7 +50,7 @@
     <!-- Enhanced SEO Meta Tags -->
     <meta name="description" content="Noteworthy News - Your trusted source for fact-checked journalism, media literacy education, and interactive fact-checking games. Noteworthy News delivers breaking news, fact-checked stories, and media literacy education to help you think critically about the news.">
     <meta name="keywords" content="Noteworthy News, media literacy, fact checking, journalism, news verification, fake news detection, critical thinking, digital education, news games, fact-checking games, media education, trustworthy news, verified journalism, news literacy, information literacy, digital literacy, news verification tools, fact-checking skills, media bias detection, news analysis, educational games, interactive learning, news credibility, source verification, misinformation detection, truth verification, news accuracy, reliable news sources, media watchdog, news integrity, fact verification, news validation">
-    <meta name="author" content="Noteworthy News">
+    <meta name="author" content="Richard - Noteworthy News Co-Founder & Developer">
     <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
     <meta name="googlebot" content="index, follow">
     <meta name="bingbot" content="index, follow">
@@ -1379,7 +1384,7 @@
         }
         
         ::-webkit-scrollbar-track {
-            background: rgba(15, 15, 35, 0.5);
+            background: rgba(24, 30, 40, 0.5);
             border-radius: 5px;
         }
         
@@ -1478,7 +1483,7 @@
             .main-header,
             .game-card,
             .fact-checker-section {
-                background: rgba(15, 15, 35, 0.95);
+                background: rgba(24, 30, 40, 0.95);
             }
         }
         
@@ -1541,7 +1546,7 @@
         }
         
         .main-header.scrolled {
-            background: rgba(15, 15, 35, 0.98);
+            background: rgba(24, 30, 40, 0.98);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             backdrop-filter: blur(20px);
         }
@@ -1577,7 +1582,7 @@
             position: absolute;
             top: 100%;
             left: 0;
-            background: rgba(15, 15, 35, 0.98);
+            background: rgba(24, 30, 40, 0.98);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(74, 144, 226, 0.3);
             border-radius: 8px;
@@ -1791,7 +1796,7 @@
             left: 50%;
             transform: translateX(-50%) translateY(-5px);
             padding: 8px 12px;
-            background: rgba(15, 15, 35, 0.95);
+            background: rgba(24, 30, 40, 0.95);
             color: white;
             font-size: 0.85rem;
             border-radius: 6px;
@@ -1904,7 +1909,7 @@
         /* Advanced Gradient Borders */
         .gradient-border {
             position: relative;
-            background: rgba(15, 15, 35, 0.8);
+            background: rgba(24, 30, 40, 0.8);
             border-radius: 12px;
         }
         
@@ -1981,7 +1986,7 @@
             top: 0;
             left: 0;
             right: 0;
-            background: rgba(15, 15, 35, 0.9);
+            background: rgba(24, 30, 40, 0.9);
             backdrop-filter: blur(15px);
             border-bottom: 1px solid rgba(74, 158, 255, 0.3);
             z-index: 1000;
@@ -4076,8 +4081,8 @@
             margin: 0;
             padding: 0;
             min-height: 100vh;
-            background-color: #07152a; /* Dark but not too dark navy base */
-            background-image: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%); /* Subtle gradient for depth */
+            background-color: #141a24; /* Dark but not too dark navy base */
+            background-image: linear-gradient(180deg, #141a24 0%, #1a222e 100%); /* Subtle gradient for depth */
             color-scheme: dark;
             overflow-x: hidden !important;
             overflow-y: auto !important;
@@ -4097,8 +4102,8 @@
             margin: 0;
             padding: 0;
             min-height: 100vh;
-            background-color: #07152a;
-            background-image: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+            background-color: #141a24;
+            background-image: linear-gradient(180deg, #141a24 0%, #1a222e 100%);
             color-scheme: dark;
             overflow-x: hidden !important;
             overflow-y: hidden !important; /* html handles scrolling */
@@ -4108,19 +4113,19 @@
         @supports (-webkit-touch-callout: none) {
             html, body {
                 height: -webkit-fill-available;
-                background-color: #07152a;
+                background-color: #141a24;
             }
         }
         
         /* Force background coverage for all scrollable areas */
         html {
-            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
-            background-color: #07152a !important;
+            background: linear-gradient(180deg, #141a24 0%, #1a222e 100%) !important;
+            background-color: #141a24 !important;
         }
         
         body, #root, .app {
-            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
-            background-color: #07152a !important;
+            background: linear-gradient(180deg, #141a24 0%, #1a222e 100%) !important;
+            background-color: #141a24 !important;
         }
         
         /* Additional viewport coverage */
@@ -4172,8 +4177,8 @@
         
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
-            background-color: #07152a;
+            background: linear-gradient(180deg, #141a24 0%, #1a222e 100%);
+            background-color: #141a24;
             color: white;
             line-height: 1.6;
             min-height: 100vh;
@@ -4227,8 +4232,8 @@
             left: 0;
             right: 0;
             bottom: -500vh;
-            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
-            background-color: #07152a !important;
+            background: linear-gradient(180deg, #141a24 0%, #1a222e 100%) !important;
+            background-color: #141a24 !important;
             z-index: -4;
             pointer-events: none;
             width: 100vw;
@@ -4242,8 +4247,8 @@
             left: 0;
             right: 0;
             bottom: -500vh;
-            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%) !important;
-            background-color: #07152a !important;
+            background: linear-gradient(180deg, #141a24 0%, #1a222e 100%) !important;
+            background-color: #141a24 !important;
             z-index: -3;
             pointer-events: none;
             width: 100vw;
@@ -4663,10 +4668,10 @@
         /* CHRISTMAS TEMP: Hero section background flash - alternating true red and green */
         @keyframes heroBackgroundFlash {
             0%, 100% {
-                background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+                background: linear-gradient(180deg, #141a24 0%, #1a222e 100%);
             }
             35% {
-                background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+                background: linear-gradient(180deg, #141a24 0%, #1a222e 100%);
             }
             37% {
                 background: linear-gradient(180deg, #0a1528 0%, #0e1f38 100%);
@@ -4696,10 +4701,10 @@
                 background: linear-gradient(180deg, #1a0a0f 0%, #2a1a1f 100%);
             }
             49% {
-                background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+                background: linear-gradient(180deg, #141a24 0%, #1a222e 100%);
             }
             71% {
-                background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+                background: linear-gradient(180deg, #141a24 0%, #1a222e 100%);
             }
             73% {
                 background: linear-gradient(180deg, #0a1528 0%, #0e1f38 100%);
@@ -4729,7 +4734,7 @@
                 background: linear-gradient(180deg, #0a1512 0%, #1a1f1a 100%);
             }
             85% {
-                background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+                background: linear-gradient(180deg, #141a24 0%, #1a222e 100%);
             }
         }
         
@@ -9339,9 +9344,9 @@
             left: 50%;
             transform: translateX(-50%) translateY(-10px) scale(0.9);
             background: linear-gradient(135deg, 
-                rgba(15, 15, 35, 0.98) 0%, 
-                rgba(25, 25, 55, 0.98) 50%,
-                rgba(15, 15, 35, 0.98) 100%);
+                rgba(24, 30, 40, 0.98) 0%, 
+                rgba(32, 40, 52, 0.98) 50%,
+                rgba(24, 30, 40, 0.98) 100%);
             border: 2px solid rgba(74, 158, 255, 0.6);
             border-radius: 16px;
             padding: 20px;
@@ -9975,7 +9980,7 @@
         }
         /* Professional Footer Styles */
         .site-footer {
-            background: rgba(15, 15, 35, 0.95);
+            background: rgba(24, 30, 40, 0.95);
             border-top: 1px solid rgba(74, 158, 255, 0.3);
             padding: 40px 0 20px;
             margin-top: 60px;
@@ -11033,7 +11038,7 @@
             top: 64px;
             left: 0;
             right: 0;
-            background: rgba(15, 15, 35, 0.95);
+            background: rgba(24, 30, 40, 0.95);
             backdrop-filter: blur(15px);
             z-index: 999;
             padding: 20px;
@@ -11203,7 +11208,7 @@
             top: 64px;
             left: 0;
             right: 0;
-            background: rgba(15, 15, 35, 0.95);
+            background: rgba(24, 30, 40, 0.95);
             backdrop-filter: blur(15px);
             z-index: 999;
             padding: 20px;
@@ -11365,8 +11370,8 @@
             height: 250px;
             background: 
                 linear-gradient(to top, 
-                    rgba(15, 15, 35, 0.85) 0%, 
-                    rgba(15, 15, 35, 0.6) 25%, 
+                    rgba(24, 30, 40, 0.85) 0%, 
+                    rgba(24, 30, 40, 0.6) 25%, 
                     rgba(139, 69, 19, 0.08) 50%,
                     rgba(160, 82, 45, 0.05) 75%,
                     transparent 100%),
@@ -11405,8 +11410,8 @@
                 0 2px 15px rgba(0, 0, 0, 0.3),
                 inset 0 1px 0 rgba(74, 158, 255, 0.2) !important;
             background: linear-gradient(135deg, 
-                rgba(15, 15, 35, 0.95) 0%, 
-                rgba(25, 25, 55, 0.95) 100%) !important;
+                rgba(24, 30, 40, 0.95) 0%, 
+                rgba(32, 40, 52, 0.95) 100%) !important;
         }
         
         /* Remove the complex border pattern */
@@ -12368,8 +12373,8 @@
                 0 3px 6px rgba(139, 69, 19, 0.15),
                 0 1px 2px rgba(160, 82, 45, 0.1) !important;
             background: linear-gradient(135deg, 
-                rgba(15, 15, 35, 0.9) 0%, 
-                rgba(25, 25, 55, 0.9) 50%,
+                rgba(24, 30, 40, 0.9) 0%, 
+                rgba(32, 40, 52, 0.9) 50%,
                 rgba(20, 20, 45, 0.9) 100%) !important;
             position: relative;
             overflow: hidden;
@@ -14325,9 +14330,69 @@
         </div>
 
         <!-- Global Coverage Globe Section - Below News Stories -->
-        <div class="globe-section" id="globe-section" style="padding: 3rem 1rem; background: rgba(7, 21, 42, 0.5); margin: 2rem 0;">
+        <div class="globe-section" id="globe-section" style="padding: 3rem 1rem; background: rgba(20, 26, 35, 0.5); margin: 2rem 0;">
             <h2 class="news-title" style="text-align: center; margin-bottom: 1rem;">Global Coverage Map</h2>
-            <div id="cia-globe-container" style="width: 100%; height: 600px; max-width: 1200px; margin: 0 auto; border-radius: 16px; overflow: hidden; background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%); position: relative; border: 1px solid rgba(74, 144, 226, 0.15); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;">
+            <div class="globe-wrapper" style="max-width: 1400px; margin: 0 auto; position: relative;">
+                <!-- Control Bar -->
+                <div class="globe-controls" id="globe-controls" style="margin-bottom: 1rem; padding: 1rem; background: rgba(5, 15, 35, 0.8); border-radius: 12px; border: 1px solid rgba(74, 158, 255, 0.2);">
+                    <div class="globe-controls-row" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+                        <!-- Time Range -->
+                        <div class="globe-control-group">
+                            <label style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.7); margin-right: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Time:</label>
+                            <div class="globe-time-range" style="display: flex; gap: 0.5rem;">
+                                <button class="globe-time-btn active" data-time="24h" style="padding: 0.5rem 1rem; background: rgba(74, 158, 255, 0.2); border: 1px solid rgba(74, 158, 255, 0.4); border-radius: 6px; color: #fff; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">24h</button>
+                                <button class="globe-time-btn" data-time="7d" style="padding: 0.5rem 1rem; background: rgba(74, 158, 255, 0.1); border: 1px solid rgba(74, 158, 255, 0.3); border-radius: 6px; color: rgba(255, 255, 255, 0.8); cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">7d</button>
+                                <button class="globe-time-btn" data-time="30d" style="padding: 0.5rem 1rem; background: rgba(74, 158, 255, 0.1); border: 1px solid rgba(74, 158, 255, 0.3); border-radius: 6px; color: rgba(255, 255, 255, 0.8); cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">30d</button>
+                                <button class="globe-time-btn" data-time="all" style="padding: 0.5rem 1rem; background: rgba(74, 158, 255, 0.1); border: 1px solid rgba(74, 158, 255, 0.3); border-radius: 6px; color: rgba(255, 255, 255, 0.8); cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">All</button>
+                            </div>
+                        </div>
+                        <!-- Category Chips -->
+                        <div class="globe-control-group">
+                            <label style="font-size: 0.85rem; color: rgba(255, 255, 255, 0.7); margin-right: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Category:</label>
+                            <div class="globe-category-chips" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button class="globe-category-chip active" data-category="all" style="padding: 0.5rem 1rem; background: rgba(74, 158, 255, 0.2); border: 1px solid rgba(74, 158, 255, 0.4); border-radius: 6px; color: #fff; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">All</button>
+                                <button class="globe-category-chip" data-category="conflict" style="padding: 0.5rem 1rem; background: rgba(74, 158, 255, 0.1); border: 1px solid rgba(74, 158, 255, 0.3); border-radius: 6px; color: rgba(255, 255, 255, 0.8); cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">Conflict</button>
+                                <button class="globe-category-chip" data-category="disaster" style="padding: 0.5rem 1rem; background: rgba(74, 158, 255, 0.1); border: 1px solid rgba(74, 158, 255, 0.3); border-radius: 6px; color: rgba(255, 255, 255, 0.8); cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">Disaster</button>
+                                <button class="globe-category-chip" data-category="aviation" style="padding: 0.5rem 1rem; background: rgba(74, 158, 255, 0.1); border: 1px solid rgba(74, 158, 255, 0.3); border-radius: 6px; color: rgba(255, 255, 255, 0.8); cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">Aviation</button>
+                                <button class="globe-category-chip" data-category="crime" style="padding: 0.5rem 1rem; background: rgba(74, 158, 255, 0.1); border: 1px solid rgba(74, 158, 255, 0.3); border-radius: 6px; color: rgba(255, 255, 255, 0.8); cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">Crime</button>
+                                <button class="globe-category-chip" data-category="politics" style="padding: 0.5rem 1rem; background: rgba(74, 158, 255, 0.1); border: 1px solid rgba(74, 158, 255, 0.3); border-radius: 6px; color: rgba(255, 255, 255, 0.8); cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">Politics</button>
+                            </div>
+                        </div>
+                        <!-- Breaking Only Toggle -->
+                        <div class="globe-control-group" style="margin-left: auto;">
+                            <label class="globe-toggle-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; color: rgba(255, 255, 255, 0.8);">
+                                <input type="checkbox" id="globe-breaking-only" style="width: 18px; height: 18px; cursor: pointer;">
+                                <span>Breaking only</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <!-- Map Container with Sidebar -->
+                <div class="globe-layout" style="display: flex; gap: 1rem; position: relative;">
+                    <!-- Map -->
+                    <div class="globe-map-container" style="flex: 1; position: relative;">
+                        <div id="cia-globe-container" style="width: 100%; height: 600px; border-radius: 16px; overflow: hidden; background: linear-gradient(180deg, #141a24 0%, #1a222e 100%); position: relative; border: 1px solid rgba(74, 144, 226, 0.15); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;">
+                        </div>
+                    </div>
+                    <!-- Most Active Regions List -->
+                    <div class="globe-active-regions" id="globe-active-regions" style="width: 280px; background: rgba(5, 15, 35, 0.8); border-radius: 12px; border: 1px solid rgba(74, 158, 255, 0.2); padding: 1rem; max-height: 600px; overflow-y: auto;">
+                        <h3 style="font-size: 0.9rem; color: #5bc9ff; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; font-weight: 700;">Most Active Regions</h3>
+                        <div class="globe-regions-list" id="globe-regions-list" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+                <!-- Right Side Slide-out Panel -->
+                <div class="globe-detail-panel" id="globe-detail-panel" style="position: fixed; top: 0; right: -400px; width: 400px; height: 100vh; background: rgba(5, 15, 35, 0.98); border-left: 1px solid rgba(74, 158, 255, 0.3); box-shadow: -4px 0 24px rgba(0, 0, 0, 0.5); z-index: 1000; transition: right 0.3s ease; overflow-y: auto; backdrop-filter: blur(20px);">
+                    <div style="padding: 1.5rem;">
+                        <button class="globe-panel-close" id="globe-panel-close" style="position: absolute; top: 1rem; right: 1rem; width: 32px; height: 32px; border-radius: 50%; border: 1px solid rgba(91, 201, 255, 0.4); background: transparent; color: rgba(255, 255, 255, 0.8); font-size: 20px; line-height: 1; cursor: pointer; transition: all 0.2s;">&times;</button>
+                        <div class="globe-panel-content" id="globe-panel-content">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+                <!-- Panel Overlay (for mobile) -->
+                <div class="globe-panel-overlay" id="globe-panel-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 999; backdrop-filter: blur(4px);"></div>
             </div>
         </div>
         <style>
@@ -14797,8 +14862,8 @@
                 </div>
                 <div class="footer-bottom">
                     <p>Empowering critical thinking through trusted journalism.</p>
-                    <p style="margin-top: 15px; color: rgba(255, 255, 255, 0.7); font-size: 0.85rem;">Website built and maintained by Richard, Co-Founder of Noteworthy News.</p>
-                    <p style="margin-top: 8px; color: rgba(255, 255, 255, 0.6); font-size: 0.8rem;">Press inquiries, partnerships and verified tips: <a href="mailto:richard@noteworthynews.co" style="color: #4A9EFF; text-decoration: none; transition: color 0.3s ease;">richard@noteworthynews.co</a></p>
+                    <p style="margin-top: 15px; color: rgba(255, 255, 255, 0.9); font-size: 0.9rem; font-weight: 500;">&lt;/&gt; Website designed, developed, and maintained by <strong>Richard</strong>, Co-Founder of Noteworthy News.</p>
+                    <p style="margin-top: 8px; color: rgba(255, 255, 255, 0.6); font-size: 0.8rem;">Press inquiries, partnerships, and verified tips: <a href="mailto:richard@noteworthynews.co" style="color: #4A9EFF; text-decoration: none; transition: color 0.3s ease;">richard@noteworthynews.co</a></p>
                     <div class="founders-line" style="margin-top: 25px; padding-top: 25px; border-top: 1px solid rgba(255, 255, 255, 0.15);">
                         <p style="color: rgba(255, 255, 255, 0.8); font-size: 0.85rem; margin: 0; text-align: center; letter-spacing: 0.5px; font-weight: 400;">
                             <span style="color: rgba(255, 255, 255, 0.6); font-weight: 500; margin-right: 10px;">Founders:</span>
@@ -18994,7 +19059,7 @@
                 // Create modal content
                 const modal = document.createElement('div');
                 modal.style.cssText = `
-                    background: linear-gradient(135deg, rgba(7, 21, 42, 0.98) 0%, rgba(13, 31, 58, 0.98) 100%);
+                    background: linear-gradient(135deg, rgba(20, 26, 35, 0.98) 0%, rgba(28, 36, 48, 0.98) 100%);
                     border: 2px solid rgba(74, 144, 226, 0.4);
                     border-radius: 16px;
                     padding: 2rem;
@@ -19191,6 +19256,12 @@
         
         // Initialize homepage with deferred loading
         initHomepage();
+        
+        // Developer console message
+        console.log('%c👋 Hey there, developer!', 'color: #4A90E2; font-size: 20px; font-weight: bold;');
+        console.log('%cThis site was designed, developed, and maintained by Richard, Co-Founder of Noteworthy News.', 'color: #2ECC71; font-size: 14px;');
+        console.log('%cBuilt with: HTML5, CSS3, JavaScript, Supabase, Netlify Functions, and lots of ☕', 'color: rgba(255, 255, 255, 0.8); font-size: 12px;');
+        console.log('%cInterested in the codebase or want to collaborate? Reach out: richard@noteworthynews.co', 'color: #4A90E2; font-size: 12px; font-style: italic;');
     </script>
     
 </body>

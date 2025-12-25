@@ -511,6 +511,452 @@
             box-shadow: 0 4px 20px rgba(74, 144, 226, 0.3);
         }
     </style>
+    
+    <!-- Premium Design System -->
+    <link rel="stylesheet" href="src/styles/premium-tokens.css">
+    <link rel="stylesheet" href="src/styles/premium-components.css">
+    
+    <!-- Premium Data Logging Page Styles -->
+    <style>
+        /* Premium Data Logging Page Overrides */
+        #tab-content-logs {
+            /* Use premium container */
+        }
+        
+        /* Premium Header */
+        #tab-content-logs .header {
+            background: var(--glass-bg-elevated);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            padding: var(--space-2xl);
+            border-radius: var(--radius-2xl);
+            margin-bottom: var(--space-2xl);
+            border: 1px solid var(--color-border-primary);
+            box-shadow: var(--shadow-xl), var(--shadow-glow-sm);
+        }
+        
+        #tab-content-logs .header h1 {
+            font-size: var(--font-size-4xl);
+            font-weight: var(--font-weight-extrabold);
+            margin-bottom: var(--space-md);
+            color: var(--color-text-primary);
+            letter-spacing: -0.02em;
+            line-height: var(--line-height-tight);
+        }
+        
+        #tab-content-logs .header p {
+            font-size: var(--font-size-lg);
+            color: var(--color-text-secondary);
+            font-weight: var(--font-weight-normal);
+            line-height: var(--line-height-relaxed);
+        }
+        
+        /* Premium Controls */
+        #tab-content-logs .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: var(--space-lg);
+            margin-bottom: var(--space-2xl);
+            padding: var(--space-xl);
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--color-border-primary);
+            box-shadow: var(--shadow-lg), var(--shadow-glow-sm);
+        }
+        
+        #tab-content-logs .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+        
+        #tab-content-logs .control-group label {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        #tab-content-logs .control-group input,
+        #tab-content-logs .control-group select {
+            padding: var(--space-md) var(--space-lg);
+            border: 1px solid var(--color-border-primary);
+            border-radius: var(--radius-lg);
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            color: var(--color-text-primary);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-normal);
+            transition: all var(--duration-normal) var(--easing-standard);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        #tab-content-logs .control-group input:focus,
+        #tab-content-logs .control-group select:focus {
+            outline: none;
+            border-color: var(--color-border-focus);
+            background: var(--glass-bg-elevated);
+            box-shadow: var(--shadow-md), 0 0 0 3px rgba(79, 172, 254, 0.1), var(--shadow-glow-sm);
+            transform: translateY(-1px);
+        }
+        
+        #tab-content-logs .control-group small {
+            font-size: var(--font-size-xs);
+            color: var(--color-text-tertiary);
+            margin-top: var(--space-xs);
+            font-weight: var(--font-weight-normal);
+            text-transform: none;
+            letter-spacing: 0;
+        }
+        
+        /* Premium Buttons in Controls */
+        #tab-content-logs .controls .btn {
+            padding: var(--space-md) var(--space-xl);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-semibold);
+            border-radius: var(--radius-lg);
+            transition: all var(--duration-normal) var(--easing-standard);
+            text-transform: none;
+            letter-spacing: 0;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #tab-content-logs .controls .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left var(--duration-slow) var(--easing-standard);
+        }
+        
+        #tab-content-logs .controls .btn:hover::before {
+            left: 100%;
+        }
+        
+        #tab-content-logs .controls .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg), var(--shadow-glow-md);
+        }
+        
+        #tab-content-logs .controls .btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Premium Stats Grid */
+        #tab-content-logs .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: var(--space-lg);
+            margin-bottom: var(--space-2xl);
+        }
+        
+        #tab-content-logs .stat-card {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--color-border-primary);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            text-align: center;
+            transition: all var(--duration-normal) var(--easing-standard);
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+        
+        #tab-content-logs .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--color-accent-primary), var(--color-accent-secondary));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform var(--duration-slow) var(--easing-standard);
+        }
+        
+        #tab-content-logs .stat-card:hover {
+            border-color: var(--color-border-focus);
+            box-shadow: var(--shadow-xl), var(--shadow-glow-sm);
+            transform: translateY(-4px);
+        }
+        
+        #tab-content-logs .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        #tab-content-logs .stat-card h3 {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-md);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        #tab-content-logs .stat-card .value {
+            font-size: var(--font-size-3xl);
+            font-weight: var(--font-weight-extrabold);
+            color: var(--color-text-primary);
+            line-height: var(--line-height-tight);
+            margin-bottom: var(--space-sm);
+        }
+        
+        #tab-content-logs .stat-card small {
+            font-size: var(--font-size-xs);
+            color: var(--color-text-tertiary);
+            display: block;
+        }
+        
+        /* Premium Logs Container */
+        #tab-content-logs .logs-container {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            border: 1px solid var(--color-border-primary);
+            box-shadow: var(--shadow-lg), var(--shadow-glow-sm);
+        }
+        
+        #tab-content-logs .logs-container h2 {
+            margin-bottom: var(--space-lg);
+            color: var(--color-accent-primary);
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
+        }
+        
+        #tab-content-logs #logsList {
+            max-height: 700px;
+            overflow-y: auto;
+            padding-right: var(--space-sm);
+        }
+        
+        #tab-content-logs #logsList::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #tab-content-logs #logsList::-webkit-scrollbar-track {
+            background: var(--glass-bg);
+            border-radius: var(--radius-full);
+        }
+        
+        #tab-content-logs #logsList::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, var(--color-accent-primary), var(--color-accent-secondary));
+            border-radius: var(--radius-full);
+        }
+        
+        #tab-content-logs #logsList::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, var(--color-accent-primary-hover), #3EDC81);
+        }
+        
+        /* Premium Log Entry */
+        #tab-content-logs .log-entry {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-lg);
+            border-radius: var(--radius-xl);
+            border-left: 4px solid var(--color-accent-primary);
+            font-size: var(--font-size-base);
+            transition: all var(--duration-normal) var(--easing-standard);
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #tab-content-logs .log-entry::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--color-accent-primary), var(--color-accent-secondary));
+            transition: width var(--duration-normal) var(--easing-standard);
+        }
+        
+        #tab-content-logs .log-entry:hover {
+            transform: translateX(4px);
+            box-shadow: var(--shadow-lg), var(--shadow-glow-sm);
+            border-left-width: 5px;
+        }
+        
+        #tab-content-logs .log-entry:hover::before {
+            width: 5px;
+        }
+        
+        #tab-content-logs .log-entry .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-md);
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+        }
+        
+        #tab-content-logs .log-entry .timestamp {
+            color: var(--color-text-tertiary);
+            font-size: var(--font-size-sm);
+            font-family: var(--font-family-mono);
+        }
+        
+        #tab-content-logs .log-entry .data-type {
+            display: inline-flex;
+            align-items: center;
+            background: linear-gradient(135deg, var(--color-accent-primary), var(--color-accent-secondary));
+            padding: var(--space-xs) var(--space-md);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-bold);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--color-text-primary);
+        }
+        
+        #tab-content-logs .log-entry .data-section {
+            margin-top: var(--space-md);
+        }
+        
+        #tab-content-logs .log-entry .data-row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: var(--space-md);
+            padding: var(--space-md) var(--space-lg);
+            background: rgba(79, 172, 254, 0.08);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(79, 172, 254, 0.2);
+            transition: all var(--duration-fast) var(--easing-standard);
+            gap: var(--space-sm);
+        }
+        
+        #tab-content-logs .log-entry .data-row:hover {
+            background: rgba(79, 172, 254, 0.12);
+            border-color: rgba(79, 172, 254, 0.4);
+            transform: translateX(2px);
+        }
+        
+        #tab-content-logs .log-entry .data-label {
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-accent-primary);
+            min-width: 140px;
+            font-size: var(--font-size-base);
+        }
+        
+        #tab-content-logs .log-entry .data-value {
+            color: var(--color-text-primary);
+            flex: 1;
+            word-break: break-word;
+            font-weight: var(--font-weight-normal);
+            line-height: var(--line-height-relaxed);
+        }
+        
+        #tab-content-logs .log-entry .compact-info {
+            margin-top: var(--space-lg);
+            padding-top: var(--space-md);
+            border-top: 1px solid var(--color-border-primary);
+            background: var(--glass-bg);
+            padding: var(--space-md);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-md);
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+        }
+        
+        #tab-content-logs .log-entry .compact-info span {
+            padding: var(--space-xs) var(--space-sm);
+            background: rgba(79, 172, 254, 0.05);
+            border-radius: var(--radius-sm);
+            transition: all var(--duration-fast) var(--easing-standard);
+        }
+        
+        #tab-content-logs .log-entry .compact-info span:hover {
+            background: rgba(79, 172, 254, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        /* Empty State */
+        #tab-content-logs #logsList:empty::before,
+        #tab-content-logs #logsList p:only-child {
+            display: block;
+            text-align: center;
+            padding: var(--space-3xl) var(--space-xl);
+            color: var(--color-text-tertiary);
+            font-size: var(--font-size-lg);
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            #tab-content-logs .header {
+                padding: var(--space-xl);
+            }
+            
+            #tab-content-logs .header h1 {
+                font-size: var(--font-size-2xl);
+            }
+            
+            #tab-content-logs .controls {
+                grid-template-columns: 1fr;
+                padding: var(--space-lg);
+            }
+            
+            #tab-content-logs .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            #tab-content-logs .log-entry {
+                padding: var(--space-lg);
+            }
+            
+            #tab-content-logs .log-entry .data-row {
+                flex-direction: column;
+            }
+            
+            #tab-content-logs .log-entry .data-label {
+                min-width: auto;
+                margin-bottom: var(--space-xs);
+            }
+        }
+        
+        @media (max-width: 390px) {
+            #tab-content-logs .header {
+                padding: var(--space-lg);
+            }
+            
+            #tab-content-logs .header h1 {
+                font-size: var(--font-size-xl);
+            }
+            
+            #tab-content-logs .controls {
+                padding: var(--space-md);
+                gap: var(--space-md);
+            }
+            
+            #tab-content-logs .stat-card {
+                padding: var(--space-lg);
+            }
+            
+            #tab-content-logs .stat-card .value {
+                font-size: var(--font-size-2xl);
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Login Screen -->
@@ -555,7 +1001,7 @@
                     <span style="display: inline-block; margin-left: 8px; padding: 2px 8px; background: rgba(255, 193, 7, 0.25); border-radius: 4px; font-size: 0.85rem;">🔍 Inferred</span> = Email inferred from IP/browser (may be less accurate)
                 </div>
             </div>
-            <button class="btn" onclick="logout()" style="background: linear-gradient(135deg, #f44336, #d32f2f);">Logout</button>
+            <button class="btn premium-btn premium-btn-secondary" onclick="logout()" style="background: linear-gradient(135deg, #f44336, #d32f2f);">Logout</button>
         </div>
     </div>
     
@@ -599,25 +1045,25 @@
         
         <div class="control-group" style="justify-content: flex-end; align-items: flex-end;">
             <label>&nbsp;</label>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn" onclick="loadUsers()" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">👥 View All Users</button>
-                <button class="btn" onclick="loadLogs()">📊 Load Data</button>
+            <div style="display: flex; gap: var(--space-md); flex-wrap: wrap;">
+                <button class="btn premium-btn premium-btn-secondary" onclick="loadUsers()" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">👥 View All Users</button>
+                <button class="btn premium-btn premium-btn-primary" onclick="loadLogs()">📊 Load Data</button>
             </div>
         </div>
         
         <div class="control-group" style="justify-content: flex-end;">
             <label>&nbsp;</label>
-            <button class="btn" onclick="loadAllLogs()" style="background: linear-gradient(135deg, #ff9800, #f57c00);">Load All Logs (No Date Filter)</button>
+            <button class="btn premium-btn premium-btn-secondary" onclick="loadAllLogs()" style="background: linear-gradient(135deg, #ff9800, #f57c00);">Load All Logs (No Date Filter)</button>
         </div>
         
         <div class="control-group" style="justify-content: flex-end;">
             <label>&nbsp;</label>
-            <button class="btn" onclick="exportCSV()">Export CSV</button>
+            <button class="btn premium-btn premium-btn-primary" onclick="exportCSV()">Export CSV</button>
         </div>
         
         <div class="control-group" style="justify-content: flex-end;">
             <label>&nbsp;</label>
-            <button class="btn" id="streamBtn" onclick="toggleStreaming()">Start Streaming</button>
+            <button class="btn premium-btn premium-btn-secondary" id="streamBtn" onclick="toggleStreaming()">Start Streaming</button>
         </div>
     </div>
     
@@ -789,11 +1235,16 @@
         }
     </style>
     
-    <div class="logs-container">
+    <div class="logs-container premium-card">
+        <h2 style="margin-bottom: var(--space-lg); color: var(--color-accent-primary); font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold);">Activity Logs</h2>
         <div id="logsList">
-            <p style="text-align: center; color: rgba(255, 255, 255, 0.5);">Click "Load Data" to view logs</p>
-                </div>
+            <div class="premium-empty-state">
+                <div class="premium-empty-state-icon">📊</div>
+                <div class="premium-empty-state-title">No logs loaded</div>
+                <div class="premium-empty-state-description">Click "Load Data" to view activity logs</div>
             </div>
+        </div>
+    </div>
         </div> <!-- End tab-content-logs -->
         
         <!-- User Profile Tab -->
@@ -1374,6 +1825,16 @@
             currentDate = date;
             currentType = type;
             currentLimit = limit;
+            
+            // Show loading state
+            const logsList = document.getElementById('logsList');
+            logsList.innerHTML = `
+                <div class="premium-empty-state">
+                    <div class="premium-loading" style="margin: 0 auto var(--space-lg);"></div>
+                    <div class="premium-empty-state-title">Loading logs...</div>
+                    <div class="premium-empty-state-description">Please wait while we fetch your data</div>
+                </div>
+            `;
             
             showStatus('Loading data...', 'info');
             
@@ -2007,8 +2468,15 @@
             userColorMap = new Map();
             colorIndex = 0;
             
-            if (logs.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: rgba(255, 255, 255, 0.5); padding: 40px;">No logs found for selected criteria</p>';
+            // Handle empty state
+            if (!logs || logs.length === 0) {
+                container.innerHTML = `
+                    <div class="premium-empty-state">
+                        <div class="premium-empty-state-icon">📭</div>
+                        <div class="premium-empty-state-title">No logs found</div>
+                        <div class="premium-empty-state-description">Try adjusting your filters or selecting a different date range</div>
+                    </div>
+                `;
                 return;
             }
             

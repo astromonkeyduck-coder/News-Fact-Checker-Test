@@ -4943,9 +4943,17 @@ class NoteworthyChat extends HTMLElement {
           const imageContainer = document.createElement('div');
           imageContainer.style.cssText = 'margin: 12px 0; width: 100%;';
           
+          // Add custom name/title if available
+          if (data.image.customName) {
+            const nameTitle = document.createElement('p');
+            nameTitle.style.cssText = 'font-size: 14px; color: rgba(255,255,255,0.9); margin: 0 0 8px 0; font-weight: 600;';
+            nameTitle.textContent = data.image.customName;
+            imageContainer.appendChild(nameTitle);
+          }
+          
           const imageEl = document.createElement('img');
           imageEl.src = data.image.imageUrl;
-          imageEl.alt = data.image.revisedPrompt || data.image.prompt || 'Generated image';
+          imageEl.alt = data.image.customName || data.image.revisedPrompt || data.image.prompt || 'Generated image';
           imageEl.loading = 'lazy';
           imageEl.style.cssText = 'max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.3); display: block; background: rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.2s ease;';
           
@@ -4960,7 +4968,7 @@ class NoteworthyChat extends HTMLElement {
           // Add click handler to open image in popup
           imageEl.onclick = function(e) {
             e.stopPropagation();
-            openImagePopup(this.src, data.image.revisedPrompt || data.image.prompt || 'Generated image');
+            openImagePopup(this.src, data.image.customName || data.image.revisedPrompt || data.image.prompt || 'Generated image');
           };
           
           // Add loading state

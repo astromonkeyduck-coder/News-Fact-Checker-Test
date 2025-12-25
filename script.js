@@ -9833,17 +9833,8 @@ function initNewsletterSubscription() {
             countryFlag.textContent = currentCountry.flag;
             countryName.textContent = currentCountry.name;
             
-            // If spotlight is visible, switch to new country's music
-            if (isSpotlightVisible && currentCountry && countryMusicMap[currentCountry.name]) {
-                // Stop previous country's music completely
-                if (spotlightMusic) {
-                    spotlightMusic.pause();
-                    spotlightMusic.currentTime = 0;
-                    spotlightMusic = null;
-                    window.spotlightMusic = null; // Clear window reference
-                }
-                playCountryMusic(currentCountry.name, false); // New country, start fresh
-            }
+            // DON'T play music yet - wait for successful generation
+            // Music will only play if generation succeeds (see Promise.allSettled handler)
             
             // Show content area
             spotlightLoading.style.display = 'none';
@@ -10266,6 +10257,41 @@ IMPORTANT FORMATTING AND CONTENT RULES:
             // Get AI response HTML (last result should be the formatted response)
             const aiResponseHtml = typeof results[results.length - 1] === 'string' ? results[results.length - 1] : aiResponse.innerHTML;
             
+            // Check if generation was successful - need at least AI response OR at least one image
+            const hasAiResponse = aiResponseHtml && aiResponseHtml.trim() !== '' && !aiResponseHtml.includes('⚠️');
+            const hasAtLeastOneImage = Object.keys(images).length > 0;
+            const generationSuccessful = hasAiResponse || hasAtLeastOneImage;
+            
+            if (!generationSuccessful) {
+                // Generation failed - don't play music, don't save data, show error
+                console.error('[Spotlight] Generation failed - no valid content generated');
+                stopCountryMusic(); // Ensure music is stopped
+                isGenerating = false;
+                updateButtonStates();
+                
+                if (spotlightError) {
+                    spotlightError.style.display = 'block';
+                    const errorMsg = spotlightError.querySelector('p');
+                    if (errorMsg) {
+                        errorMsg.textContent = '⚠️ Unable to generate spotlight content. Please try again.';
+                    }
+                }
+                return; // Exit early - don't save or play music
+            }
+            
+            // Generation succeeded - now play music and save data
+            // If spotlight is visible, switch to new country's music
+            if (isSpotlightVisible && currentCountry && countryMusicMap[currentCountry.name]) {
+                // Stop previous country's music completely
+                if (spotlightMusic) {
+                    spotlightMusic.pause();
+                    spotlightMusic.currentTime = 0;
+                    spotlightMusic = null;
+                    window.spotlightMusic = null; // Clear window reference
+                }
+                playCountryMusic(currentCountry.name, false); // New country, start fresh
+            }
+            
             // Save to localStorage
             const dataToSave = {
                 country: currentCountry,
@@ -10304,17 +10330,35 @@ IMPORTANT FORMATTING AND CONTENT RULES:
                    }
             }).catch(err => {
                 console.error('[Spotlight] Error processing results:', err);
-                // Ensure flag is cleared on error
+                // Generation failed - stop music and clear flags
+                stopCountryMusic(); // Ensure music is stopped on error
                 isGenerating = false;
                 updateButtonStates();
+                
+                if (spotlightError) {
+                    spotlightError.style.display = 'block';
+                    const errorMsg = spotlightError.querySelector('p');
+                    if (errorMsg) {
+                        errorMsg.textContent = '⚠️ Error generating spotlight content. Please try again.';
+                    }
+                }
             });
             
         } catch (error) {
             console.error('Spotlight error:', error);
             aiThinking.style.display = 'none';
+            // Stop music on error
+            stopCountryMusic();
             // Don't hide content on error, just show error message
             if (aiResponse) {
                 aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Unable to load all content. Some images may be missing.</p>';
+            }
+            if (spotlightError) {
+                spotlightError.style.display = 'block';
+                const errorMsg = spotlightError.querySelector('p');
+                if (errorMsg) {
+                    errorMsg.textContent = '⚠️ Error generating spotlight content. Please try again.';
+                }
             }
             // Clear generating flag on error
             isGenerating = false;

@@ -161,31 +161,81 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
   // In Netlify Functions, __dirname is /var/task/netlify/functions/generate-earthquake-image
   // In local dev, it's the actual project path
   const possiblePaths = [
-    path.join(__dirname, '1stUSGSTemp.png'),        // Same directory as function (best for bundled files)
-    path.join(__dirname, '../../1stUSGSTemp.png'),   // From function dir: netlify/functions -> root
-    path.join(process.cwd(), '1stUSGSTemp.png'),    // Current working directory (local dev)
+    path.join(__dirname, '1stUSGSTemp.png'),                    // Same directory as function (best for bundled files)
+    path.join(path.dirname(__dirname), '1stUSGSTemp.png'),     // netlify/functions/1stUSGSTemp.png
+    path.join(__dirname, '../../1stUSGSTemp.png'),             // From function dir: netlify/functions -> root
     path.join(process.cwd(), 'netlify/functions/1stUSGSTemp.png'), // Explicit local path
-    path.resolve('./1stUSGSTemp.png'),              // Relative to cwd
-    '/var/task/1stUSGSTemp.png',                     // Netlify Lambda path
+    path.join(process.cwd(), '1stUSGSTemp.png'),               // Current working directory (local dev)
+    path.resolve('./1stUSGSTemp.png'),                        // Relative to cwd
+    '/var/task/netlify/functions/1stUSGSTemp.png',            // Netlify Lambda path (functions dir)
+    '/var/task/1stUSGSTemp.png',                              // Netlify Lambda path (root)
   ];
   
   let templateBuffer = null;
   let templatePath = null;
   
   console.log(`[generate-earthquake-image] Looking for template. __dirname: ${__dirname}, cwd: ${process.cwd()}`);
+  console.log(`[generate-earthquake-image] Function file location: ${__filename}`);
   
   for (const templatePathCandidate of possiblePaths) {
     console.log(`[generate-earthquake-image] Checking: ${templatePathCandidate}`);
-    if (fs.existsSync(templatePathCandidate)) {
-      templatePath = templatePathCandidate;
-      templateBuffer = fs.readFileSync(templatePathCandidate);
-      console.log(`[generate-earthquake-image] ✅ Loaded template from: ${templatePath}`);
-      break;
+    try {
+      if (fs.existsSync(templatePathCandidate)) {
+        templatePath = templatePathCandidate;
+        templateBuffer = fs.readFileSync(templatePathCandidate);
+        console.log(`[generate-earthquake-image] ✅ Loaded template from: ${templatePath} (${templateBuffer.length} bytes)`);
+        break;
+      }
+    } catch (err) {
+      console.log(`[generate-earthquake-image] Error checking ${templatePathCandidate}: ${err.message}`);
+    }
+  }
+  
+  // If not found via file system, try fetching via HTTP (for local dev or if served as static asset)
+  if (!templateBuffer) {
+    // Determine base URL - check if we're in local dev
+    let baseUrl = 'https://noteworthynews.co';
+    if (process.env.NETLIFY_DEV || process.env.URL?.includes('localhost') || !process.env.URL) {
+      baseUrl = 'http://localhost:8888';
+    } else if (process.env.URL) {
+      baseUrl = process.env.URL;
+    }
+    
+    const httpPaths = [
+      `${baseUrl}/1stUSGSTemp.png`,
+      `${baseUrl}/netlify/functions/1stUSGSTemp.png`,
+    ];
+    
+    console.log(`[generate-earthquake-image] File system paths failed, trying HTTP from: ${baseUrl}`);
+    
+    for (const httpPath of httpPaths) {
+      try {
+        console.log(`[generate-earthquake-image] Trying HTTP: ${httpPath}`);
+        const response = await fetch(httpPath);
+        if (response.ok) {
+          const arrayBuffer = await response.arrayBuffer();
+          templateBuffer = Buffer.from(arrayBuffer);
+          templatePath = httpPath;
+          console.log(`[generate-earthquake-image] ✅ Loaded template via HTTP: ${httpPath} (${templateBuffer.length} bytes)`);
+          break;
+        } else {
+          console.log(`[generate-earthquake-image] HTTP ${response.status} for ${httpPath}`);
+        }
+      } catch (err) {
+        console.log(`[generate-earthquake-image] HTTP fetch failed for ${httpPath}: ${err.message}`);
+      }
     }
   }
   
   if (!templateBuffer) {
     console.error(`[generate-earthquake-image] ❌ Template not found. Tried paths:`, possiblePaths);
+    // List what files ARE in __dirname to help debug
+    try {
+      const dirContents = fs.readdirSync(__dirname);
+      console.error(`[generate-earthquake-image] Files in __dirname (${__dirname}):`, dirContents);
+    } catch (e) {
+      console.error(`[generate-earthquake-image] Could not list __dirname:`, e.message);
+    }
     throw new Error(`Template not found. Tried: ${possiblePaths.join(', ')}`);
   }
   

@@ -509,9 +509,32 @@ exports.handler = async (event, context) => {
       return false;
     }
     
-    // Extract the actual prompt from an image request
+    // Extract the actual prompt from an image request, and optionally a custom name/title
     function extractImagePrompt(msg) {
       let prompt = msg.trim();
+      let customName = null;
+      
+      // Check for custom name/title patterns: "name it X", "title: X", "call it X", "named X"
+      const namePatterns = [
+        /,\s*(?:name|title|call)\s+(?:it\s+)?(?:as\s+)?["']([^"']+)["']/i,
+        /,\s*(?:name|title|call)\s+(?:it\s+)?(?:as\s+)?([^,]+?)(?:\s*$|\s*[,\.])/i,
+        /\s+(?:name|title|call)\s+(?:it\s+)?(?:as\s+)?["']([^"']+)["']/i,
+        /\s+(?:name|title|call)\s+(?:it\s+)?(?:as\s+)?([^,\.]+?)(?:\s*$|\s*[,\.])/i,
+        /title:\s*["']?([^"'\n]+?)["']?(?:\s*$|\s*[,\.])/i,
+        /named\s+["']?([^"'\n]+?)["']?(?:\s*$|\s*[,\.])/i
+      ];
+      
+      // Try to extract custom name first
+      for (const pattern of namePatterns) {
+        const match = prompt.match(pattern);
+        if (match && match[1]) {
+          customName = match[1].trim();
+          // Remove the name part from the prompt
+          prompt = prompt.replace(pattern, '').trim();
+          break;
+        }
+      }
+      
       const prefixes = [
         /^(generate|create|make|draw)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing)(\s+of)?\s+/i,
         /^(show\s+me|i\s+want|give\s+me|i\s+need)\s+(an?\s+)?(image|picture|photo|visual|illustration|drawing)(\s+of)?\s+/i,
@@ -536,7 +559,10 @@ exports.handler = async (event, context) => {
         prompt = `a ${prompt}`;
       }
       
-      return prompt || msg;
+      return {
+        prompt: prompt || msg,
+        customName: customName
+      };
     }
 
     // Check if this is an image editing request (user uploaded image + edit instruction)
@@ -634,8 +660,13 @@ exports.handler = async (event, context) => {
     // Generate new image if needed (before GPT call so GPT can reference it)
     if (needsImage && !needsImageEdit) {
       try {
-        const imagePrompt = extractImagePrompt(message);
+        const imagePromptData = extractImagePrompt(message);
+        const imagePrompt = imagePromptData.prompt;
+        const customImageName = imagePromptData.customName;
         console.log("Generating image with prompt:", imagePrompt.substring(0, 100) + "...");
+        if (customImageName) {
+          console.log("Custom image name/title:", customImageName);
+        }
         
         const imageResponse = await fetch("https://api.openai.com/v1/images/generations", {
           method: "POST",
@@ -658,7 +689,8 @@ exports.handler = async (event, context) => {
           imageData = {
             imageUrl: imageResult?.data?.[0]?.url || null,
             revisedPrompt: imageResult?.data?.[0]?.revised_prompt || imagePrompt,
-            prompt: imagePrompt
+            prompt: imagePrompt,
+            customName: customImageName || null
           };
           console.log("Image generated successfully:", {
             hasUrl: !!imageData.imageUrl,
@@ -1518,6 +1550,7 @@ RESPONSE STYLE:
         imageUrl: imageData.imageUrl,
         prompt: imageData.prompt,
         revisedPrompt: imageData.revisedPrompt,
+        customName: imageData.customName || null,
       } : undefined,
       hasGeneratedImage: !!(imageData && imageData.imageUrl),
     }, event).catch(err => {
@@ -1613,8 +1646,11 @@ RESPONSE STYLE:
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
+          const safeImageName = imageData.customName
+            ? imageData.customName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+            : null;
           
-          emailSubject = '🎨 New AI Image Generated';
+          emailSubject = safeImageName ? `🎨 ${safeImageName}` : '🎨 New AI Image Generated';
           emailHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -1649,9 +1685,15 @@ RESPONSE STYLE:
               
               <!-- Generated Image -->
               <div style="background-color: #ffffff; border: 3px solid #f093fb; border-radius: 16px; padding: 20px; margin-bottom: 24px; text-align: center; box-shadow: 0 4px 16px rgba(240, 147, 251, 0.2);">
-                <p style="color: #f5576c; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin: 0 0 16px 0;">Generated Image</p>
-                <img src="${imageData.imageUrl}" alt="${safeImagePrompt}" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: block; margin: 0 auto;" />
-                <div style="margin-top: 16px; padding: 12px; background-color: #f8f9fa; border-radius: 8px;">
+                <p style="color: #f5576c; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin: 0 0 16px 0;">${safeImageName || 'Generated Image'}</p>
+                <img src="${imageData.imageUrl}" alt="${safeImageName || safeImagePrompt}" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); display: block; margin: 0 auto;" />
+                ${safeImageName ? `
+                <div style="margin-top: 16px; padding: 12px; background-color: #fff3e0; border-radius: 8px; border: 1px solid #ff9800;">
+                  <p style="color: #e65100; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 6px 0;">Image Title</p>
+                  <p style="color: #1a202c; font-size: 16px; line-height: 1.5; margin: 0; font-weight: 600;">${safeImageName}</p>
+                </div>
+                ` : ''}
+                <div style="margin-top: ${safeImageName ? '12px' : '16px'}; padding: 12px; background-color: #f8f9fa; border-radius: 8px;">
                   <p style="color: #6c757d; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 6px 0;">Prompt</p>
                   <p style="color: #1a202c; font-size: 14px; line-height: 1.5; margin: 0; font-weight: 500;">${safeImagePrompt}</p>
               </div>
@@ -1724,7 +1766,7 @@ RESPONSE STYLE:
 
 ${userEmail ? `Chat User: ${userEmail}\n` : ''}
 
-Generated Image: ${imageData.imageUrl}
+${imageData.customName ? `Image Title: ${imageData.customName}\n\n` : ''}Generated Image: ${imageData.imageUrl}
 
 Prompt: ${imageData.revisedPrompt || imageData.prompt || message}
 
@@ -1963,7 +2005,8 @@ This is an automated notification from your website.`;
         urlPreview: imageData.imageUrl.substring(0, 50) + '...',
         fullImageUrl: imageData.imageUrl,
         hasRevisedPrompt: !!imageData.revisedPrompt,
-        hasPrompt: !!imageData.prompt
+        hasPrompt: !!imageData.prompt,
+        customName: imageData.customName || null
       });
       console.log("[Noteworthy Chat] Full image data being sent:", JSON.stringify(imageData, null, 2));
     } else {
