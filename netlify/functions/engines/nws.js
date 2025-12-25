@@ -95,6 +95,10 @@ async function processAlert(feature, logger) {
     'Special Weather Statement', // Sometimes contains important info
   ];
   
+  // Normalize severity FIRST (before using it in checks)
+  const normalizedSeverity = normalizeWeatherSeverity(severity);
+  const locationDisplay = cleanLocation(areaDesc);
+  
   const isNotable = notableTypes.some(type => 
     eventType.toLowerCase().includes(type.toLowerCase()) ||
     headline.toLowerCase().includes(type.toLowerCase())
@@ -104,9 +108,6 @@ async function processAlert(feature, logger) {
   if (!isNotable && normalizedSeverity < 3) {
     return null; // Skip minor/low-severity alerts
   }
-  
-  const normalizedSeverity = normalizeWeatherSeverity(severity);
-  const locationDisplay = cleanLocation(areaDesc);
   
   // Build canonical ID from alert ID
   const canonicalId = buildCanonicalId('nws', alertId);
@@ -123,15 +124,27 @@ async function processAlert(feature, logger) {
     }
   }
   
+  // Truncate location if too long (NWS areaDesc can be extremely long)
+  const shortLocation = locationDisplay.length > 100 
+    ? locationDisplay.substring(0, 100).trim() + '...'
+    : locationDisplay;
+  
+  // Create concise summary (max 200 chars total)
+  const summaryParts = [
+    eventType,
+    shortLocation !== locationDisplay ? shortLocation : locationDisplay.split(',')[0], // Use first location if truncated
+    headline.length > 80 ? headline.substring(0, 80) + '...' : headline
+  ].filter(Boolean);
+  
   // Build event object
   const event = {
     canonical_id: canonicalId,
     engine: 'nws',
     event_type: 'weather',
     severity: normalizedSeverity,
-    title: `${eventType} - ${locationDisplay}`,
-    summary: `${eventType} issued for ${locationDisplay}. ${headline}. ${description.substring(0, 200)}...`,
-    location_display: locationDisplay,
+    title: `${eventType} - ${shortLocation}`,
+    summary: summaryParts.join('. ').substring(0, 200),
+    location_display: shortLocation,
     country_code: 'US', // NWS is US-only
     lat: lat,
     lon: lon,

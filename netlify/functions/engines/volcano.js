@@ -178,7 +178,7 @@ async function processVolcanoAlert(alert, logger) {
     event_type: 'volcano',
     severity: normalizedSeverity,
     title: `${alertLevel} - ${volcanoName}`,
-    summary: `${alertLevel} issued for ${volcanoName} (${locationDisplay}). ${description.substring(0, 200)}...`,
+    summary: `${alertLevel} issued for ${volcanoName}. ${description.substring(0, 150).trim()}${description.length > 150 ? '...' : ''}`,
     location_display: locationDisplay,
     country_code: null,
     lat: alert.lat || null,

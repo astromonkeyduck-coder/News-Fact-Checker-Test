@@ -372,7 +372,7 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         earthquake: {
-          event_id: earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown',
+          event_id: earthquake.assets?.event_id || earthquake.raw?.id || earthquake.canonical_id?.split(':')[1] || 'unknown',
           magnitude: magnitude, // Use extracted magnitude
           location_display: earthquake.location_display,
           time: earthquake.published_at,
@@ -532,7 +532,7 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     canonical_id: canonicalId,
     engine: 'usgs',
     event_type: 'earthquake',
-    event_id: eventId, // Add event_id for email alerts
+    // Note: event_id is stored in raw JSONB and assets, not as a separate column
     severity,
     title: `M${magnitude.toFixed(1)} Earthquake Near ${locationDisplay}`,
     summary: `A magnitude ${magnitude.toFixed(1)} earthquake was detected by the U.S. Geological Survey near ${locationDisplay}.`,
@@ -551,6 +551,7 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     assets: {
       usgs_images: usgsImages,
       magnitude: magnitude, // Store magnitude in assets for easy access
+      event_id: eventId, // Store event_id in assets for email alerts
     },
     image_url: imageUrl,
     alert_sent: false,
@@ -561,11 +562,16 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   // Store event
   const { isNew, event: storedEvent } = await storeEvent(event, logger);
   
-  // Create website post for new earthquakes
-  if (isNew) {
+  // Create website post for earthquakes with images
+  // Always create/update post if we have an image (for most recent earthquake or new earthquakes)
+  if (imageUrl || isNew || forceEmail) {
     try {
-      await createPostFromEvent(storedEvent, 'Earthquake', 'USGS');
-      logger.info('Website post created', { canonical_id: canonicalId });
+      const postResult = await createPostFromEvent(storedEvent, 'Earthquake', 'USGS');
+      if (postResult.exists) {
+        logger.info('Website post already exists', { canonical_id: canonicalId });
+      } else {
+        logger.info('Website post created', { canonical_id: canonicalId });
+      }
     } catch (postError) {
       logger.warn('Failed to create website post', postError);
     }

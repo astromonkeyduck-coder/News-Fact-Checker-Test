@@ -32,10 +32,20 @@ async function createPostFromEvent(event, category, source) {
   const postKey = `post-${postId}.json`;
   
   // Check if post already exists
+  let existingPost = null;
   try {
-    const existing = await store.get(postKey);
-    if (existing) {
-      return { exists: true, postId };
+    existingPost = await store.get(postKey, { type: 'json' });
+    if (existingPost) {
+      // Update post if image_url changed (especially for earthquakes that get images generated later)
+      if (event.image_url && existingPost.image !== event.image_url) {
+        existingPost.image = event.image_url;
+        existingPost.images = event.image_url ? [event.image_url] : [];
+        await store.set(postKey, JSON.stringify(existingPost), {
+          contentType: 'application/json',
+        });
+        return { exists: true, postId, updated: true };
+      }
+      return { exists: true, postId, updated: false };
     }
   } catch (err) {
     // Post doesn't exist, continue
@@ -53,12 +63,25 @@ async function createPostFromEvent(event, category, source) {
     hour12: true,
   });
   
+  // Truncate summary to reasonable length for display (max 250 chars)
+  const maxSummaryLength = 250;
+  let summary = event.summary || event.title;
+  if (summary.length > maxSummaryLength) {
+    summary = summary.substring(0, maxSummaryLength).trim();
+    // Don't cut off mid-word if possible
+    const lastSpace = summary.lastIndexOf(' ');
+    if (lastSpace > maxSummaryLength - 50) {
+      summary = summary.substring(0, lastSpace);
+    }
+    summary += '...';
+  }
+
   // Create post object matching the site's post structure
   const post = {
     id: postId,
     title: event.title,
-    story: event.summary || event.title,
-    text: event.summary || event.title,
+    story: summary,
+    text: summary,
     image: event.image_url || null,
     images: event.image_url ? [event.image_url] : [],
     link: event.source_url,
