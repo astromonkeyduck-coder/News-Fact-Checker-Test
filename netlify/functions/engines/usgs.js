@@ -545,15 +545,22 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       usgsImages = extractUSGSImages(eventDetail);
     }
     
-    // If no images found, retry once after a short delay (images may still be processing)
+    // If no images found, retry multiple times with increasing delays
+    // USGS images can take 5-10 minutes to appear after earthquake
     if (usgsImages.length === 0 && eventDetail) {
-      logger.info('No USGS images found on first attempt, retrying after delay...', { eventId });
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
-      eventDetail = await fetchEventDetail(detailUrl, logger);
-      if (eventDetail) {
-        usgsImages = extractUSGSImages(eventDetail);
-        if (usgsImages.length > 0) {
-          logger.info('USGS images found on retry', { count: usgsImages.length, eventId });
+      const maxRetries = 3;
+      const retryDelays = [3000, 5000, 7000]; // 3s, 5s, 7s
+      
+      for (let retry = 0; retry < maxRetries && usgsImages.length === 0; retry++) {
+        logger.info(`No USGS images found, retry ${retry + 1}/${maxRetries} after ${retryDelays[retry]}ms...`, { eventId });
+        await new Promise(resolve => setTimeout(resolve, retryDelays[retry]));
+        eventDetail = await fetchEventDetail(detailUrl, logger);
+        if (eventDetail) {
+          usgsImages = extractUSGSImages(eventDetail);
+          if (usgsImages.length > 0) {
+            logger.info(`✅ USGS images found on retry ${retry + 1}`, { count: usgsImages.length, eventId });
+            break;
+          }
         }
       }
     }

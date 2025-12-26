@@ -82,31 +82,61 @@ async function processAlert(feature, logger) {
     return null;
   }
   
-  // Only process notable alerts (severe/extreme weather)
-  // Filter for significant weather events that warrant alerts
-  const notableTypes = [
-    'Tornado Warning', 'Tornado Watch',
-    'Hurricane Warning', 'Hurricane Watch', 'Tropical Storm Warning',
-    'Flash Flood Warning', 'Flood Warning',
-    'Severe Thunderstorm Warning',
-    'Blizzard Warning', 'Winter Storm Warning',
-    'Extreme Heat Warning', 'Extreme Cold Warning',
-    'Tsunami Warning',
-    'Special Weather Statement', // Sometimes contains important info
-  ];
+  // CRITICAL FILTER: Only process EXTREMELY SEVERE alerts
+  // User requirement: Only Tornado, Flash Flood in major cities, or other truly severe events
+  // NO random blizzards, minor warnings, or alerts in small cities
   
   // Normalize severity FIRST (before using it in checks)
   const normalizedSeverity = normalizeWeatherSeverity(severity);
   const locationDisplay = cleanLocation(areaDesc);
   
-  const isNotable = notableTypes.some(type => 
+  // STRICT: Only these alert types are allowed (most severe only)
+  const criticalTypes = [
+    'Tornado Warning', // Always critical
+    'Tornado Watch', // Always critical
+    'Flash Flood Warning', // Only in major cities (filtered below)
+    'Extreme Wind Warning', // Always critical
+    'Hurricane Warning', // Always critical
+    'Tropical Storm Warning', // Only if severe
+  ];
+  
+  // Check if this is a critical alert type
+  const isCriticalType = criticalTypes.some(type => 
     eventType.toLowerCase().includes(type.toLowerCase()) ||
     headline.toLowerCase().includes(type.toLowerCase())
-  ) || severity === 'Extreme' || severity === 'Severe' || urgency === 'Immediate';
+  );
   
-  // Also check severity level - only process severity 3+ (Moderate, Severe, Extreme)
-  if (!isNotable && normalizedSeverity < 3) {
-    return null; // Skip minor/low-severity alerts
+  // STRICT SEVERITY REQUIREMENT: Only severity 4+ (Severe/Extreme)
+  // Severity levels: 1=Unknown, 2=Minor, 3=Moderate, 4=Severe, 5=Extreme
+  if (normalizedSeverity < 4) {
+    return null; // Skip anything below Severe
+  }
+  
+  // For Flash Flood Warning, only allow in major cities
+  if (eventType.toLowerCase().includes('flash flood') || headline.toLowerCase().includes('flash flood')) {
+    const majorCities = [
+      'new york', 'los angeles', 'chicago', 'houston', 'phoenix', 'philadelphia',
+      'san antonio', 'san diego', 'dallas', 'san jose', 'austin', 'jacksonville',
+      'fort worth', 'columbus', 'charlotte', 'san francisco', 'indianapolis',
+      'seattle', 'denver', 'washington', 'boston', 'el paso', 'detroit', 'nashville',
+      'portland', 'oklahoma city', 'las vegas', 'memphis', 'louisville', 'baltimore',
+      'milwaukee', 'albuquerque', 'tucson', 'fresno', 'sacramento', 'kansas city',
+      'mesa', 'atlanta', 'omaha', 'colorado springs', 'raleigh', 'virginia beach',
+      'miami', 'oakland', 'minneapolis', 'tulsa', 'cleveland', 'wichita', 'arlington'
+    ];
+    
+    const locationLower = locationDisplay.toLowerCase();
+    const isMajorCity = majorCities.some(city => locationLower.includes(city));
+    
+    if (!isMajorCity) {
+      logger.debug('Skipping Flash Flood Warning - not in major city', { location: locationDisplay });
+      return null; // Skip flash floods in small cities
+    }
+  }
+  
+  // Final check: Must be critical type OR Extreme severity
+  if (!isCriticalType && normalizedSeverity < 5) {
+    return null; // Skip non-critical types unless Extreme severity
   }
   
   // Build canonical ID from alert ID

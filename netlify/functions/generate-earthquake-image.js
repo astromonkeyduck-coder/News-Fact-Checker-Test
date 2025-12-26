@@ -443,12 +443,12 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
       },
     };
     
-    // If we have font buffers, register them with resvg (resvg can use buffers)
+    // If we have font buffers, register them with resvg
+    // resvg expects fontFiles to be an array of buffers directly
     if (FONT_BUFFERS.regular && FONT_BUFFERS.bold) {
-      // resvg accepts font data as buffers - register them
       svgOptions.font.fontFiles = [
-        { data: FONT_BUFFERS.regular, index: 0 },
-        { data: FONT_BUFFERS.bold, index: 0 },
+        FONT_BUFFERS.regular,
+        FONT_BUFFERS.bold,
       ];
     }
     
