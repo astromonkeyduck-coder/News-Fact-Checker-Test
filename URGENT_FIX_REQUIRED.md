@@ -4,6 +4,18 @@
 
 Your deployment is failing because environment variables exceed AWS Lambda's 4KB limit. Even though we've updated the code to use Blobs storage, **the `WRITTING_STYLE` environment variable is still set in Netlify**, causing it to be passed to all functions.
 
+## 🔒 Security Note
+
+**Your writing style will remain SECRET and SECURE!**
+
+- ✅ **Netlify Blobs is private and secure** - Only your functions can access it with the proper token
+- ✅ **No public access** - Blobs are not exposed to the internet
+- ✅ **Encrypted at rest** - Netlify encrypts all Blob storage
+- ✅ **Access controlled** - Only functions with `NETLIFY_BLOB_READ_WRITE_TOKEN` can read/write
+- ❌ **Environment variables have a 4KB limit** - This is why we must move it
+
+The migration script only needs the value temporarily to copy it to Blobs. After migration, it's stored securely in Blobs and never exposed.
+
 ## The Fix (Do This Now)
 
 ### Step 1: Remove WRITTING_STYLE from Netlify Environment Variables

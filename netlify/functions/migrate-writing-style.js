@@ -2,6 +2,11 @@
  * Migration script to move WRITTING_STYLE from environment variable to Netlify Blobs
  * This avoids the 4KB AWS Lambda environment variable limit
  * 
+ * 🔒 SECURITY: Your writing style will be stored securely in Netlify Blobs:
+ * - Private and encrypted storage
+ * - Only accessible by your functions with proper authentication
+ * - Not exposed to the public internet
+ * 
  * Run this once to migrate your writing style to Blobs storage:
  * node netlify/functions/migrate-writing-style.js
  */
@@ -45,10 +50,16 @@ async function migrateWritingStyle() {
     
     console.log('✅ Writing style successfully migrated to Netlify Blobs!');
     console.log('');
+    console.log('🔒 Security: Your writing style is now stored securely in private Blobs storage');
+    console.log('   - Encrypted at rest and in transit');
+    console.log('   - Only accessible by your functions with proper authentication');
+    console.log('   - Not exposed to the public internet');
+    console.log('');
     console.log('📝 Next steps:');
     console.log('1. Verify the migration worked by checking your functions');
-    console.log('2. You can now remove WRITTING_STYLE from your environment variables');
-    console.log('   (or keep it as a fallback for local development)');
+    console.log('2. ⚠️  IMPORTANT: Remove WRITTING_STYLE from Netlify Dashboard environment variables');
+    console.log('   (This is required for deployment to succeed - the 4KB limit)');
+    console.log('3. You can keep WRITTING_STYLE in local .env for development if needed');
     console.log('');
     console.log('💡 To update the writing style in the future, run this script again with the new content.');
     

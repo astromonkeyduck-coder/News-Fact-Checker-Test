@@ -6,6 +6,15 @@
 
 Even though the code now uses Blobs storage, if `WRITTING_STYLE` is still set as an environment variable in Netlify, it will be passed to ALL functions and cause the 4KB limit error.
 
+### 🔒 Security Note
+
+**Your writing style remains SECRET and SECURE in Blobs storage:**
+- ✅ Netlify Blobs is private - only your functions can access it
+- ✅ Encrypted at rest and in transit
+- ✅ Access controlled via `NETLIFY_BLOB_READ_WRITE_TOKEN`
+- ✅ Not exposed to the public internet
+- ❌ Environment variables have a 4KB limit (this is why we move it)
+
 ### Steps to Fix:
 
 1. **Go to Netlify Dashboard → Your Site → Site Settings → Environment Variables**
