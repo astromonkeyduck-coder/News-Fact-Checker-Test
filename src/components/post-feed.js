@@ -798,14 +798,28 @@ function renderPosts(posts, container, originalContent = null) {
             </div>`;
           } else {
             const gridCols = Math.min(images.length, 3);
+            // Escape image URLs for grid to prevent XSS (same as single image)
+            const escapeHtml = (str) => {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#x27;')
+                    .replace(/\//g, '&#x2F;');
+            };
             mediaHtml += `<div class="post-image-grid" style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); gap: 0.5rem; border-radius: 12px; overflow: hidden;">
-              ${images.slice(0, 4).map(img => `
+              ${images.slice(0, 4).map(img => {
+                const escapedImgUrl = escapeHtml(img);
+                return `
                 <div style="aspect-ratio: 1; overflow: hidden; background: rgba(0,0,0,0.2);">
-                  <img src="${img}" alt="Post image" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" 
+                  <img src="${escapedImgUrl}" alt="Post image" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" 
                        onerror="console.error('[PostFeed] Grid image failed:', this.src); this.style.display='none';" 
                        onload="console.log('[PostFeed] ✅ Grid image loaded:', this.src);" />
                 </div>
-              `).join('')}
+              `;
+              }).join('')}
             </div>`;
           }
         }

@@ -10111,31 +10111,40 @@ function initNewsletterSubscription() {
                     aiResponse.innerHTML = '<p style="color: rgba(255, 255, 255, 0.7);">🔍 Searching for breaking news about ' + currentCountry.name + '...</p>';
                 }
                 
-                // FIRST: Search for breaking news about the country
+                // FIRST: Search for breaking news about the country (with timeout and fallback)
                 const searchQuery = `breaking news ${currentCountry.name} today latest 2025`;
                 console.log('[Spotlight] 🔍 Searching for breaking news:', searchQuery);
                 
-                const searchPromise = fetch('/.netlify/functions/search-web', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        query: searchQuery
-                    })
-                }).then(response => {
-                    if (!response.ok) {
-                        console.warn('[Spotlight] Web search failed:', response.status);
+                // Create a timeout wrapper for web search (max 5 seconds)
+                const searchWithTimeout = Promise.race([
+                    fetch('/.netlify/functions/search-web', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            query: searchQuery
+                        })
+                    }).then(response => {
+                        if (!response.ok) {
+                            console.warn('[Spotlight] Web search failed:', response.status);
+                            return { results: [] };
+                        }
+                        return response.json();
+                    }).catch(error => {
+                        console.error('[Spotlight] Web search error:', error);
                         return { results: [] };
-                    }
-                    return response.json();
-                }).catch(error => {
-                    console.error('[Spotlight] Web search error:', error);
-                    return { results: [] };
-                });
+                    }),
+                    new Promise((resolve) => {
+                        setTimeout(() => {
+                            console.warn('[Spotlight] Web search timeout after 5 seconds, proceeding without search results');
+                            resolve({ results: [] });
+                        }, 5000); // 5 second timeout
+                    })
+                ]);
                 
-                // Wait for search results, then build prompt with real-time news
-                textResponse = searchPromise.then(searchData => {
+                // Wait for search results (or timeout), then build prompt with real-time news
+                textResponse = searchWithTimeout.then(searchData => {
                     const searchResults = searchData.results || [];
                     console.log('[Spotlight] ✅ Found', searchResults.length, 'search results');
                     

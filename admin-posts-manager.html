@@ -1270,42 +1270,6 @@
             </div>
         </div>
     </div>
-                        <div class="source-inputs">
-                            <div class="form-group">
-                                <label>URL</label>
-                                <div class="source-input-group">
-                                    <input 
-                                        type="url" 
-                                        id="sourceUrl" 
-                                        placeholder="https://x.com/newsnoteworthy/status/..."
-                                    >
-                                    <button class="btn btn-secondary" onclick="fetchFromUrl(event)">Fetch</button>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Screenshot</label>
-                                <div class="upload-area" id="screenshotUploadArea" tabindex="0">
-                                    <div class="upload-area-text">Drag & drop screenshot or click to select</div>
-                                    <div class="upload-area-hint">Extracts text, metrics, and metadata via OCR</div>
-                                </div>
-                                <input type="file" id="screenshotFile" accept="image/*">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>CSV File</label>
-                                <div class="upload-area" id="csvUploadArea" tabindex="0">
-                                    <div class="upload-area-text">Drag & drop CSV file or click to select</div>
-                                    <div class="upload-area-hint">Bulk import multiple posts</div>
-                                </div>
-                                <input type="file" id="csvFile" accept=".csv">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
     
     <script>
         const API_BASE = window.location.origin;
@@ -1434,6 +1398,8 @@
                 
                 const escapedPostId = escapeHtml(postId);
                 const escapedStory = escapeHtml(story);
+                const escapedViews = escapeHtml(String(views));
+                const escapedLikes = escapeHtml(String(likes));
                 
                 return `
                     <div class="post-card ${isSelected ? 'selected' : ''}" onclick="selectPost('${escapedPostId.replace(/'/g, "\\'")}')">
@@ -1443,8 +1409,8 @@
                         </div>
                         <div class="post-card-text">${escapedStory.substring(0, 150)}${story.length > 150 ? '...' : ''}</div>
                         <div class="post-card-meta">
-                            <span>👁️ ${views}</span>
-                            <span>❤️ ${likes}</span>
+                            <span>👁️ ${escapedViews}</span>
+                            <span>❤️ ${escapedLikes}</span>
                         </div>
                         <div class="post-card-actions">
                             <button class="post-card-action" onclick="event.stopPropagation(); editPost('${escapedPostId.replace(/'/g, "\\'")}')">✏️ Edit</button>

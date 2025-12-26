@@ -31,6 +31,13 @@ exports.handler = async (event) => {
     }
 
     console.log('[Web Search] Searching for:', query);
+    
+    // Add timeout using AbortController to actually abort requests (8 seconds max)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.warn('[Web Search] Search timeout after 8 seconds - aborting requests');
+      controller.abort();
+    }, 8000);
 
     // Try DuckDuckGo Instant Answer API first (fast, structured)
     try {
@@ -38,7 +45,8 @@ exports.handler = async (event) => {
       const instantResponse = await fetch(instantAnswerUrl, {
         headers: {
           'User-Agent': 'NoteworthyNews/1.0 (contact@noteworthynews.co)'
-        }
+        },
+        signal: controller.signal
       });
 
       if (instantResponse.ok) {
@@ -65,6 +73,7 @@ exports.handler = async (event) => {
             });
           }
 
+          clearTimeout(timeoutId);
           return {
             statusCode: 200,
             headers,
@@ -76,6 +85,20 @@ exports.handler = async (event) => {
         }
       }
     } catch (instantError) {
+      // Check if error is due to abort
+      if (instantError.name === 'AbortError') {
+        console.warn('[Web Search] Request aborted due to timeout');
+        clearTimeout(timeoutId);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            results: [],
+            query: query,
+            message: "Search timeout - no results found"
+          }),
+        };
+      }
       console.log('[Web Search] Instant answer failed, trying HTML search:', instantError.message);
     }
 
@@ -95,7 +118,8 @@ exports.handler = async (event) => {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
               'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
               'Accept-Language': 'en-US,en;q=0.5'
-            }
+            },
+            signal: controller.signal
           });
 
           if (htmlResponse.ok) {
@@ -160,6 +184,7 @@ exports.handler = async (event) => {
               
               if (results.length > 0) {
                 console.log('[Web Search] ✅ Found', results.length, 'results using pattern');
+                clearTimeout(timeoutId);
                 return {
                   statusCode: 200,
                   headers,
@@ -180,13 +205,17 @@ exports.handler = async (event) => {
       console.error('[Web Search] HTML search failed:', htmlError);
     }
 
+    // Clear timeout if we get here
+                clearTimeout(timeoutId);
+    
     // If both fail, try one more approach: Use DuckDuckGo's autocomplete API for suggestions
     try {
       const autocompleteUrl = `https://duckduckgo.com/ac/?q=${encodeURIComponent(query)}&type=list`;
       const autocompleteResponse = await fetch(autocompleteUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
+        },
+        signal: controller.signal
       });
       
       if (autocompleteResponse.ok) {
@@ -200,6 +229,7 @@ exports.handler = async (event) => {
           }));
           
           console.log('[Web Search] ⚠️ Returning autocomplete suggestions as fallback');
+          clearTimeout(timeoutId);
           return {
             statusCode: 200,
             headers,
@@ -212,33 +242,61 @@ exports.handler = async (event) => {
         }
       }
     } catch (autocompleteError) {
+      // Check if error is due to abort
+      if (autocompleteError.name === 'AbortError') {
+        console.warn('[Web Search] Autocomplete request aborted due to timeout');
+        clearTimeout(timeoutId);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            results: [],
+            query: query,
+            message: "Search timeout - no results found"
+          }),
+        };
+      }
       console.log('[Web Search] Autocomplete fallback failed:', autocompleteError.message);
     }
 
-    // If all methods fail, return a helpful error with search link
+    // If all methods fail, return empty results (don't break spotlight/chat)
     console.error('[Web Search] ❌ All search methods failed for query:', query);
+    clearTimeout(timeoutId);
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        results: [{
-          title: `Search: ${query}`,
-          snippet: `Unable to fetch real-time results for "${query}". The search service may be temporarily unavailable. Please try rephrasing your query or check direct news sources.`,
-          url: `https://duckduckgo.com/?q=${encodeURIComponent(query)}`
-        }],
+        results: [], // Return empty array instead of error message - let AI proceed without search
         query: query,
-        note: 'Search service temporarily unavailable - all methods failed'
+        message: "No results found - search unavailable"
       }),
     };
 
   } catch (error) {
-    console.error('[Web Search] Error:', error);
+    console.error('[Web Search] ❌ Error:', error);
+    clearTimeout(timeoutId);
+    // Check if error is due to abort
+    if (error.name === 'AbortError') {
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          results: [],
+          query: query || '',
+          message: "Search timeout - no results found"
+        }),
+      };
+    }
+    // Return empty results instead of error to prevent breaking spotlight/chat
+    // This ensures the spotlight and chat continue working even if search fails
     return {
-      statusCode: 500,
+      statusCode: 200, // Return 200 with empty results instead of 500
       headers,
-      body: JSON.stringify({
+      body: JSON.stringify({ 
+        results: [],
+        query: query || '',
         error: "Search failed",
-        message: error.message
+        message: "Search service unavailable - proceeding without web search results"
       }),
     };
   }

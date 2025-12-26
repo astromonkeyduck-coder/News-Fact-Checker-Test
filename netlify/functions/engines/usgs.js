@@ -101,10 +101,10 @@ function extractUSGSImages(eventDetail) {
     for (const product of productList) {
       if (images.length >= 2) break;
       
-    if (product.contents && typeof product.contents === 'object') {
-      for (const [key, content] of Object.entries(product.contents)) {
-        if (content.url && /\.(png|jpg|jpeg|gif)$/i.test(key)) {
-              // Skip if we already have an image from this product type (unless we only have 1 image)
+      if (product.contents && typeof product.contents === 'object') {
+        for (const [key, content] of Object.entries(product.contents)) {
+          if (content.url && /\.(png|jpg|jpeg|gif)$/i.test(key)) {
+            // Skip if we already have an image from this product type (unless we only have 1 image)
             if (images.length === 0 || !usedProductTypes.has(productType)) {
               // Extract base filename (remove common variants like _geo, _geo_, etc.)
               let baseFilename = key
@@ -126,11 +126,11 @@ function extractUSGSImages(eventDetail) {
               });
               
               if (!isSimilar && !usedFilenames.has(baseFilename) && !images.find(img => img.url === content.url)) {
-            images.push({
-              url: content.url,
+                images.push({
+                  url: content.url,
                   type: productType,
-              filename: key,
-            });
+                  filename: key,
+                });
                 usedProductTypes.add(productType);
                 usedFilenames.add(baseFilename);
                 break; // Move to next product type
