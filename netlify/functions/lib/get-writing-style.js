@@ -2,6 +2,12 @@
  * Get writing style from Netlify Blobs storage
  * This avoids the 4KB AWS Lambda environment variable limit
  * Falls back to environment variable if Blobs is not available
+ * 
+ * 🔒 SECURITY: Netlify Blobs is private and secure:
+ * - Encrypted at rest and in transit
+ * - Only accessible by functions with NETLIFY_BLOB_READ_WRITE_TOKEN
+ * - Not exposed to the public internet
+ * - Your writing style remains secret and protected
  */
 
 const { getStore } = require("@netlify/blobs");
