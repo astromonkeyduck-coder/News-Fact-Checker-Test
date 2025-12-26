@@ -17,23 +17,65 @@ const { resvg } = require('@resvg/resvg-js');
 let FONT_DATA = null;
 let FONT_BUFFERS = { regular: null, bold: null };
 try {
-  FONT_DATA = require('./fonts-base64.js');
+  // Try multiple paths for fonts-base64.js (production vs dev)
+  const fontPaths = [
+    path.join(__dirname, 'fonts-base64.js'),
+    path.join(path.dirname(__dirname), 'fonts-base64.js'),
+    path.join(__dirname, '../../fonts-base64.js'),
+    './fonts-base64.js',
+  ];
+  
+  let fontModule = null;
+  for (const fontPath of fontPaths) {
+    try {
+      if (fs.existsSync(fontPath)) {
+        fontModule = require(fontPath);
+        console.log(`[generate-earthquake-image] ✅ Found fonts-base64.js at: ${fontPath}`);
+        break;
+      }
+    } catch (pathErr) {
+      // Try next path
+    }
+  }
+  
+  // Fallback to direct require (works in most cases)
+  if (!fontModule) {
+    try {
+      fontModule = require('./fonts-base64.js');
+      console.log('[generate-earthquake-image] ✅ Loaded fonts-base64.js via require');
+    } catch (requireErr) {
+      console.error('[generate-earthquake-image] ❌ Could not load fonts-base64.js from any path:', requireErr.message);
+      throw requireErr;
+    }
+  }
+  
+  FONT_DATA = fontModule;
+  
   // Convert base64 data URIs to buffers for resvg
   if (FONT_DATA.regular) {
     const base64Data = FONT_DATA.regular.split(',')[1] || FONT_DATA.regular;
     FONT_BUFFERS.regular = Buffer.from(base64Data, 'base64');
+    console.log(`[generate-earthquake-image] ✅ Regular font buffer: ${FONT_BUFFERS.regular.length} bytes`);
   }
   if (FONT_DATA.bold) {
     const base64Data = FONT_DATA.bold.split(',')[1] || FONT_DATA.bold;
     FONT_BUFFERS.bold = Buffer.from(base64Data, 'base64');
+    console.log(`[generate-earthquake-image] ✅ Bold font buffer: ${FONT_BUFFERS.bold.length} bytes`);
   }
+  
   console.log('[generate-earthquake-image] ✅ Loaded embedded Roboto fonts', {
     regular: !!FONT_BUFFERS.regular,
-    bold: !!FONT_BUFFERS.bold
+    bold: !!FONT_BUFFERS.bold,
+    regularSize: FONT_BUFFERS.regular?.length || 0,
+    boldSize: FONT_BUFFERS.bold?.length || 0
   });
 } catch (err) {
-  console.error('[generate-earthquake-image] ⚠️ Failed to load embedded fonts:', err.message);
+  console.error('[generate-earthquake-image] ❌ CRITICAL: Failed to load embedded fonts:', err.message);
+  console.error('[generate-earthquake-image] ❌ Error stack:', err.stack);
+  console.error('[generate-earthquake-image] ❌ __dirname:', __dirname);
+  console.error('[generate-earthquake-image] ❌ process.cwd():', process.cwd());
   FONT_DATA = { regular: null, bold: null };
+  // Don't throw here - let it fail later with better error message
 }
 
 // Template dimensions (from file inspection: 940x788)
@@ -468,6 +510,15 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
   } catch (resvgError) {
     console.error('[generate-earthquake-image] ❌ resvg rendering failed:', resvgError.message);
     console.error('[generate-earthquake-image] ❌ resvg error stack:', resvgError.stack);
+    console.error('[generate-earthquake-image] ❌ resvg error details:', {
+      hasRegular: !!FONT_BUFFERS.regular,
+      hasBold: !!FONT_BUFFERS.bold,
+      regularSize: FONT_BUFFERS.regular?.length || 0,
+      boldSize: FONT_BUFFERS.bold?.length || 0,
+      svgLength: svgString.length,
+      outputWidth,
+      outputHeight
+    });
     // Don't fall back to broken rendering - throw error so we know it failed
     throw new Error(`Font rendering failed: ${resvgError.message}. Text will appear as boxes. Check font buffers and resvg configuration.`);
   }
@@ -674,12 +725,28 @@ exports.handler = async (event, context) => {
     };
     
   } catch (error) {
-    console.error('[generate-earthquake-image] Error:', error);
+    // CRITICAL: Log full error details to diagnose failures
+    console.error('[generate-earthquake-image] ❌ CRITICAL ERROR:', {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name,
+      code: error?.code,
+      magnitude,
+      location,
+      eventId,
+      hasUsgsImages: usgsImages && usgsImages.length > 0,
+      usgsImageCount: usgsImages ? usgsImages.length : 0
+    });
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
         error: error?.message || "Internal server error",
+        details: process.env.NETLIFY_DEV ? {
+          stack: error?.stack,
+          name: error?.name,
+          code: error?.code
+        } : undefined
       }),
     };
   }

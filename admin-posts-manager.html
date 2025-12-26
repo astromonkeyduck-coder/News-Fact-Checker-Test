@@ -3,8 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Post Manager - Admin</title>
+    <title>Post Control Center — Noteworthy News Admin</title>
     <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
+    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="192x192">
+    <link rel="shortcut icon" type="image/png" href="IMG_5794.PNG">
+    <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
+    <link rel="mask-icon" href="IMG_5794.PNG" color="#0f234a">
+    <meta name="theme-color" content="#0a0e1a">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -13,123 +19,460 @@
         }
         
         :root {
-            --bg-primary: #0a0a0f;
-            --bg-secondary: #141419;
-            --bg-tertiary: #1a1a20;
-            --border-color: rgba(255, 255, 255, 0.1);
-            --border-hover: rgba(255, 255, 255, 0.2);
-            --text-primary: #ffffff;
-            --text-secondary: rgba(255, 255, 255, 0.7);
-            --text-tertiary: rgba(255, 255, 255, 0.5);
-            --accent: #D4A017;
-            --accent-hover: #F4C430;
-            --success: #4caf50;
-            --error: #f44336;
-            --info: #2196f3;
+            --terminal-bg: #0a0e1a;
+            --terminal-bg-dark: #050814;
+            --terminal-text: #00ff41;
+            --terminal-text-dim: #00cc33;
+            --terminal-amber: #ffb000;
+            --terminal-red: #ff4444;
+            --terminal-blue: #00aaff;
+            --terminal-border: #1a3a2a;
+            --terminal-green: #00ff41;
+            --glow-green: rgba(0, 255, 65, 0.3);
+            --glow-amber: rgba(255, 176, 0, 0.3);
+            --glow-red: rgba(255, 68, 68, 0.3);
+            --primary: #00ff41;
+            --primary-dark: #00cc33;
+            --primary-light: #33ff66;
+            --success: #00ff41;
+            --error: #ff4444;
+            --warning: #ffb000;
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #0f172a;
+            --bg-tertiary: #1a2a1a;
+            --border: rgba(0, 255, 65, 0.2);
+            --text-primary: #00ff41;
+            --text-secondary: #00cc33;
+            --text-muted: #66ff88;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.8);
         }
         
-        html, body {
+        html {
             background: var(--bg-primary);
-            color: var(--text-primary);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--terminal-bg);
+            color: var(--terminal-text);
             min-height: 100vh;
             line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Dashboard Header */
+        .dashboard-header {
+            background: var(--terminal-bg-dark);
+            border-bottom: 2px solid var(--terminal-border);
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .logo {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--terminal-green);
+            text-shadow: 0 0 10px var(--glow-green);
+        }
+        
+        .header-badge {
+            font-size: 0.7rem;
+            color: var(--terminal-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 0.25rem 0.75rem;
+            border: 1px solid var(--terminal-border);
+            border-radius: 4px;
+        }
+        
+        .nav-link {
+            color: var(--terminal-text-dim);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        
+        .nav-link:hover {
+            color: var(--terminal-green);
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
-            padding: 24px;
+            padding: 0 2rem 2rem;
         }
         
-        .header {
-            margin-bottom: 32px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid var(--border-color);
+        .page-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--terminal-green);
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 10px var(--glow-green);
         }
         
-        .header h1 {
-            font-size: 28px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 8px;
+        .page-subtitle {
+            color: var(--terminal-text-dim);
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
         }
         
-        .header p {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-        
-        .composer-layout {
+        /* Two-Panel Layout */
+        .posts-layout {
             display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 24px;
+            grid-template-columns: 380px 1fr;
+            gap: 2rem;
+            min-height: calc(100vh - 200px);
         }
         
-        @media (max-width: 1024px) {
-            .composer-layout {
+        @media (max-width: 1200px) {
+            .posts-layout {
                 grid-template-columns: 1fr;
             }
         }
         
-        .composer-main {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
+        /* Panel Styles */
+        .panel-left {
+            background: var(--terminal-bg-dark);
+            border: 2px solid var(--terminal-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+            box-shadow: 
+                0 0 20px var(--glow-green),
+                inset 0 0 20px rgba(0, 255, 65, 0.05);
         }
         
-        .section {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
+        .panel-right {
+            background: var(--terminal-bg-dark);
+            border: 2px solid var(--terminal-border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 
+                0 0 20px var(--glow-green),
+                inset 0 0 20px rgba(0, 255, 65, 0.05);
         }
         
-        .section-header {
+        .panel-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 16px;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--terminal-border);
         }
         
-        .section-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-primary);
+        .panel-header h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--terminal-green);
+            text-shadow: 0 0 10px var(--glow-green);
         }
         
-        .section-subtitle {
-            font-size: 13px;
-            color: var(--text-tertiary);
-            margin-top: 4px;
-        }
-        
-        .collapse-btn {
-            background: none;
+        .new-post-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.75rem;
+            background: var(--terminal-green);
+            color: var(--terminal-bg);
             border: none;
-            color: var(--text-secondary);
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 700;
             cursor: pointer;
-            padding: 4px 8px;
-            font-size: 12px;
-            border-radius: 4px;
+            transition: all 0.2s;
+            text-align: center;
+            line-height: 1.2;
+        }
+        
+        .new-post-btn:hover {
+            background: var(--primary-light);
+            box-shadow: 0 0 15px var(--glow-green);
+            transform: translateY(-2px);
+        }
+        
+        .new-post-btn span:first-child {
+            font-size: 1.2rem;
+        }
+        
+        /* Search and Filter */
+        .search-filter-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-border);
+            border-radius: 8px;
+            color: var(--terminal-text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
             transition: all 0.2s;
         }
         
-        .collapse-btn:hover {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
+        .search-input:focus {
+            outline: none;
+            border-color: var(--terminal-green);
+            box-shadow: 0 0 10px var(--glow-green);
         }
         
-        .section-content {
+        .filter-options {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-chip {
+            padding: 0.5rem 1rem;
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-border);
+            border-radius: 6px;
+            color: var(--terminal-text-dim);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-chip:hover {
+            border-color: var(--terminal-green);
+            color: var(--terminal-text);
+        }
+        
+        .filter-chip.active {
+            background: var(--terminal-green);
+            color: var(--terminal-bg);
+            border-color: var(--terminal-green);
+            box-shadow: 0 0 10px var(--glow-green);
+        }
+        
+        /* Posts List */
+        .posts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .post-card {
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-border);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .post-card:hover {
+            border-color: var(--terminal-green);
+            box-shadow: 0 0 15px var(--glow-green);
+            transform: translateX(4px);
+        }
+        
+        .post-card.selected {
+            border-color: var(--terminal-green);
+            background: rgba(0, 255, 65, 0.05);
+            box-shadow: 0 0 20px var(--glow-green);
+        }
+        
+        .post-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .post-card-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--terminal-text-dim);
+            font-weight: 600;
+        }
+        
+        .post-card-date {
+            font-size: 0.7rem;
+            color: var(--terminal-text-dim);
+        }
+        
+        .post-card-text {
+            font-size: 0.85rem;
+            color: var(--terminal-text);
+            line-height: 1.4;
+            margin-bottom: 0.5rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .post-card-meta {
+            display: flex;
+            gap: 0.75rem;
+            font-size: 0.7rem;
+            color: var(--terminal-text-dim);
+        }
+        
+        .post-card-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--terminal-border);
+        }
+        
+        .post-card-action {
+            padding: 0.25rem 0.5rem;
+            background: transparent;
+            border: 1px solid var(--terminal-border);
+            border-radius: 4px;
+            color: var(--terminal-text-dim);
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .post-card-action:hover {
+            border-color: var(--terminal-green);
+            color: var(--terminal-text);
+        }
+        
+        .post-card-action.delete {
+            border-color: var(--terminal-red);
+            color: var(--terminal-red);
+        }
+        
+        .post-card-action.delete:hover {
+            background: var(--terminal-red);
+            color: white;
+        }
+        
+        /* Editor Panel */
+        .editor-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        .editor-tabs {
+            display: flex;
+            background: var(--terminal-bg);
+            border-bottom: 2px solid var(--terminal-border);
+        }
+        
+        .editor-tab {
+            flex: 1;
+            padding: 1rem;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--terminal-text-dim);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .editor-tab:hover {
+            color: var(--terminal-text);
+            background: rgba(0, 255, 65, 0.05);
+        }
+        
+        .editor-tab.active {
+            color: var(--terminal-green);
+            border-bottom-color: var(--terminal-green);
+            background: var(--terminal-bg-dark);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 2rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+        }
+        
+        .tab-content.active {
             display: block;
         }
         
-        .section-content.collapsed {
-            display: none;
+        .empty-editor-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            text-align: center;
+            color: var(--terminal-text-dim);
+        }
+        
+        .empty-editor-state h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            margin: 1rem 0 0.5rem;
+            color: var(--terminal-text);
+        }
+        
+        /* Form Sections */
+        .form-section {
+            margin-bottom: 2rem;
+        }
+        
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .form-section-header {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--terminal-border);
+        }
+        
+        .form-section-header h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--terminal-green);
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-section-desc {
+            font-size: 0.85rem;
+            color: var(--terminal-text-dim);
         }
         
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 1.5rem;
         }
         
         .form-group:last-child {
@@ -138,26 +481,29 @@
         
         label {
             display: block;
-            margin-bottom: 8px;
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--terminal-text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         
         input[type="text"],
         input[type="url"],
         input[type="number"],
         input[type="datetime-local"],
+        input[type="email"],
         textarea,
         select {
             width: 100%;
-            padding: 10px 12px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-primary);
-            font-size: 14px;
-            font-family: inherit;
+            padding: 0.75rem 1rem;
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-border);
+            border-radius: 8px;
+            color: var(--terminal-text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
             transition: all 0.2s;
         }
         
@@ -165,18 +511,41 @@
         textarea:focus,
         select:focus {
             outline: none;
-            border-color: var(--accent);
-            background: var(--bg-secondary);
+            border-color: var(--terminal-green);
+            box-shadow: 0 0 10px var(--glow-green);
+            background: rgba(0, 255, 65, 0.05);
         }
         
         input::placeholder,
         textarea::placeholder {
-            color: var(--text-tertiary);
+            color: var(--terminal-text-dim);
+            opacity: 0.5;
         }
         
         textarea {
             resize: vertical;
-            min-height: 100px;
+            min-height: 120px;
+            line-height: 1.6;
+        }
+        
+        .help-text {
+            font-size: 0.75rem;
+            color: var(--terminal-text-dim);
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+        
+        .input-with-button {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .input-with-button input {
+            flex: 1;
+        }
+        
+        .input-with-button .btn {
+            flex-shrink: 0;
         }
         
         .stats-grid {
@@ -274,35 +643,52 @@
             transform: scale(1.1);
         }
         
+        /* Buttons */
         .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: 2px solid var(--terminal-border);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--terminal-text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
-            font-family: inherit;
+        }
+        
+        .btn:hover:not(:disabled) {
+            background: rgba(0, 255, 65, 0.1);
+            border-color: var(--terminal-green);
+            color: var(--terminal-green);
+            box-shadow: 0 0 15px var(--glow-green);
+            transform: translateY(-2px);
         }
         
         .btn-primary {
-            background: var(--accent);
-            color: #000;
+            background: var(--terminal-green);
+            color: var(--terminal-bg);
+            border-color: var(--terminal-green);
         }
         
         .btn-primary:hover:not(:disabled) {
-            background: var(--accent-hover);
+            background: var(--primary-light);
+            box-shadow: 0 0 20px var(--glow-green);
         }
         
         .btn-secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--terminal-text-dim);
+            border-color: var(--terminal-border);
         }
         
         .btn-secondary:hover:not(:disabled) {
-            background: var(--bg-secondary);
-            border-color: var(--border-hover);
+            background: rgba(0, 255, 65, 0.05);
+            border-color: var(--terminal-green);
+            color: var(--terminal-text);
         }
         
         .btn:disabled {
@@ -310,60 +696,206 @@
             cursor: not-allowed;
         }
         
-        .btn-block {
-            width: 100%;
+        .form-actions {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--terminal-border);
         }
         
-        .source-inputs {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        
-        .source-input-group {
-            display: flex;
-            gap: 8px;
-        }
-        
-        .source-input-group input {
-            flex: 1;
-        }
-        
-        .source-input-group .btn {
-            flex-shrink: 0;
-        }
-        
-        .preview-pane {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
+        /* Upload Areas */
+        .upload-area {
+            border: 2px dashed var(--terminal-border);
             border-radius: 8px;
-            padding: 20px;
-            position: sticky;
-            top: 24px;
-            max-height: calc(100vh - 48px);
-            overflow-y: auto;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--terminal-bg);
+        }
+        
+        .upload-area:hover {
+            border-color: var(--terminal-green);
+            background: rgba(0, 255, 65, 0.05);
+            box-shadow: 0 0 15px var(--glow-green);
+        }
+        
+        .upload-area.dragover {
+            border-color: var(--terminal-green);
+            background: rgba(0, 255, 65, 0.1);
+            box-shadow: 0 0 20px var(--glow-green);
+        }
+        
+        .upload-area-text {
+            color: var(--terminal-text);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .upload-area-hint {
+            color: var(--terminal-text-dim);
+            font-size: 0.75rem;
+        }
+        
+        /* Media Preview */
+        .media-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        
+        .media-preview-item {
+            position: relative;
+            border: 1px solid var(--terminal-border);
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--terminal-bg);
+            aspect-ratio: 1;
+        }
+        
+        .media-preview-item img,
+        .media-preview-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .media-remove {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: rgba(255, 68, 68, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .media-remove:hover {
+            background: var(--terminal-red);
+            transform: scale(1.1);
+        }
+        
+        /* Status Messages */
+        .status-message {
+            margin-bottom: 1.5rem;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            display: none;
+        }
+        
+        .status-message.show {
+            display: block;
+        }
+        
+        .status-message.success {
+            background: rgba(0, 255, 65, 0.1);
+            border: 1px solid var(--terminal-green);
+            color: var(--terminal-green);
+        }
+        
+        .status-message.error {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid var(--terminal-red);
+            color: var(--terminal-red);
+        }
+        
+        .status-message.info {
+            background: rgba(0, 170, 255, 0.1);
+            border: 1px solid var(--terminal-blue);
+            color: var(--terminal-blue);
+        }
+        
+        .result {
+            margin-top: 1rem;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            display: none;
+        }
+        
+        .result.success {
+            background: rgba(0, 255, 65, 0.1);
+            border: 1px solid var(--terminal-green);
+            color: var(--terminal-green);
+            display: block;
+        }
+        
+        .result.error {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid var(--terminal-red);
+            color: var(--terminal-red);
+            display: block;
+        }
+        
+        .result.info {
+            background: rgba(0, 170, 255, 0.1);
+            border: 1px solid var(--terminal-blue);
+            color: var(--terminal-blue);
+            display: block;
+        }
+        
+        .result.warning {
+            background: rgba(255, 176, 0, 0.1);
+            border: 1px solid var(--terminal-amber);
+            color: var(--terminal-amber);
+            display: block;
+        }
+        
+        /* Empty States */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--terminal-text-dim);
+        }
+        
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        .empty-state p {
+            font-size: 0.9rem;
+        }
+        
+        /* Preview Container */
+        .preview-container {
+            min-height: 400px;
         }
         
         .preview-post {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
+            background: var(--terminal-bg);
+            border: 1px solid var(--terminal-border);
             border-radius: 8px;
-            padding: 16px;
+            padding: 1.5rem;
         }
         
         .preview-post-header {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
+            gap: 1rem;
+            margin-bottom: 1rem;
         }
         
         .preview-post-avatar {
-            width: 40px;
-            height: 40px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
+            background: var(--terminal-bg-dark);
+            border: 1px solid var(--terminal-border);
         }
         
         .preview-post-info {
@@ -372,26 +904,26 @@
         
         .preview-post-name {
             font-weight: 600;
-            font-size: 14px;
-            color: var(--text-primary);
+            font-size: 0.95rem;
+            color: var(--terminal-text);
         }
         
         .preview-post-handle {
-            font-size: 13px;
-            color: var(--text-tertiary);
+            font-size: 0.8rem;
+            color: var(--terminal-text-dim);
         }
         
         .preview-post-text {
-            color: var(--text-primary);
-            font-size: 14px;
-            line-height: 1.5;
-            margin-bottom: 12px;
+            color: var(--terminal-text);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
             white-space: pre-wrap;
             word-wrap: break-word;
         }
         
         .preview-post-media {
-            margin-bottom: 12px;
+            margin-bottom: 1rem;
             border-radius: 8px;
             overflow: hidden;
         }
@@ -404,93 +936,340 @@
         
         .preview-post-stats {
             display: flex;
-            gap: 16px;
-            padding-top: 12px;
-            border-top: 1px solid var(--border-color);
-            font-size: 13px;
-            color: var(--text-secondary);
+            gap: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--terminal-border);
+            font-size: 0.8rem;
+            color: var(--terminal-text-dim);
         }
         
         .preview-post-stat {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 0.5rem;
         }
         
-        .result {
-            margin-top: 16px;
-            padding: 12px 16px;
-            border-radius: 6px;
-            font-size: 13px;
-            display: none;
-        }
-        
-        .result.success {
-            background: rgba(76, 175, 80, 0.15);
-            border: 1px solid rgba(76, 175, 80, 0.3);
-            color: var(--success);
-            display: block;
-        }
-        
-        .result.error {
-            background: rgba(244, 67, 54, 0.15);
-            border: 1px solid rgba(244, 67, 54, 0.3);
-            color: var(--error);
-            display: block;
-        }
-        
-        .result.info {
-            background: rgba(33, 150, 243, 0.15);
-            border: 1px solid rgba(33, 150, 243, 0.3);
-            color: var(--info);
-            display: block;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-tertiary);
-            font-size: 13px;
-        }
-        
+        /* Loading State */
         .loading {
             opacity: 0.6;
             pointer-events: none;
         }
         
-        .icon {
+        .spinner {
             display: inline-block;
             width: 16px;
             height: 16px;
-            vertical-align: middle;
+            border: 2px solid var(--terminal-text-dim);
+            border-top-color: var(--terminal-green);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
         
         input[type="file"] {
             display: none;
         }
+        
+        /* Scrollbar Styling */
+        .panel-left::-webkit-scrollbar,
+        .tab-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .panel-left::-webkit-scrollbar-track,
+        .tab-content::-webkit-scrollbar-track {
+            background: rgba(0, 255, 65, 0.1);
+            border-radius: 4px;
+        }
+        
+        .panel-left::-webkit-scrollbar-thumb,
+        .tab-content::-webkit-scrollbar-thumb {
+            background: var(--terminal-green);
+            border-radius: 4px;
+        }
+        
+        .panel-left::-webkit-scrollbar-thumb:hover,
+        .tab-content::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-light);
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Post Manager</h1>
-            <p>Create and manage posts with multiple input methods</p>
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="logo">Noteworthy News</div>
+                <div class="header-badge">POST CONTROL CENTER</div>
+            </div>
+            <div class="header-nav">
+                <a href="index.html" class="nav-link">← Home</a>
+            </div>
         </div>
+    </div>
+    
+    <div class="container">
+        <h1 class="page-title">Post Control Center</h1>
+        <p class="page-subtitle">Create, edit, and manage posts</p>
         
-        <div class="composer-layout">
-            <div class="composer-main">
-                <!-- Section A: Source Inputs (Collapsible) -->
-                <div class="section">
-                    <div class="section-header">
-                        <div>
-                            <div class="section-title">Source Inputs</div>
-                            <div class="section-subtitle">Optional: Import data from URL, screenshot, or CSV</div>
-                        </div>
-                        <button class="collapse-btn" onclick="toggleSection('sourceInputs')">
-                            <span id="sourceInputsToggle">Collapse</span>
-                        </button>
+        <div id="statusMessage" class="status-message"></div>
+        
+        <!-- Two-Panel Layout -->
+        <div class="posts-layout">
+            <!-- Left Panel: Posts List -->
+            <div class="panel-left">
+                <div class="panel-header">
+                    <h2>Posts</h2>
+                    <button class="btn btn-primary new-post-btn" onclick="createNewPost()">
+                        <span>➕</span>
+                        <span>NEW<br>POST</span>
+                    </button>
+                </div>
+                
+                <!-- Search and Filter -->
+                <div class="search-filter-section">
+                    <input 
+                        type="text" 
+                        id="postSearch" 
+                        class="search-input" 
+                        placeholder="🔍 Search posts by ID, headline, or link..."
+                    >
+                    <div class="filter-options">
+                        <button class="filter-chip active" data-filter="all" onclick="filterPosts('all')">All</button>
+                        <button class="filter-chip" data-filter="recent" onclick="filterPosts('recent')">Recent</button>
+                        <button class="filter-chip" data-filter="popular" onclick="filterPosts('popular')">Popular</button>
                     </div>
-                    <div class="section-content" id="sourceInputs">
+                </div>
+                
+                <!-- Posts List -->
+                <div id="postsList" class="posts-list">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⏳</div>
+                        <p>Loading posts...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel: Editor + Preview -->
+            <div class="panel-right">
+                <div id="editorPanel" class="editor-panel">
+                    <!-- Editor Tabs -->
+                    <div class="editor-tabs">
+                        <button class="editor-tab active" data-tab="create" onclick="switchEditorTab('create')">Create</button>
+                        <button class="editor-tab" data-tab="preview" onclick="switchEditorTab('preview')">Preview</button>
+                        <button class="editor-tab" data-tab="remove" onclick="switchEditorTab('remove')">Remove</button>
+                    </div>
+                    
+                    <!-- Create Tab Content -->
+                    <div id="tab-create" class="tab-content active">
+                        <form id="postForm">
+                            <!-- Source Inputs Section -->
+                            <div class="form-section">
+                                <div class="form-section-header">
+                                    <h3>📥 Source Inputs (Optional)</h3>
+                                    <p class="form-section-desc">Import data from URL, screenshot, or CSV</p>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="sourceUrl">URL</label>
+                                    <div class="input-with-button">
+                                        <input 
+                                            type="url" 
+                                            id="sourceUrl" 
+                                            placeholder="https://x.com/newsnoteworthy/status/..."
+                                        >
+                                        <button type="button" class="btn btn-secondary" onclick="fetchFromUrl(event)">Fetch</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Screenshot</label>
+                                    <div class="upload-area" id="screenshotUploadArea" tabindex="0">
+                                        <div class="upload-area-text">📷 Drag & drop screenshot or click to select</div>
+                                        <div class="upload-area-hint">Extracts text, metrics, and metadata via OCR</div>
+                                    </div>
+                                    <input type="file" id="screenshotFile" accept="image/*">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>CSV File</label>
+                                    <div class="upload-area" id="csvUploadArea" tabindex="0">
+                                        <div class="upload-area-text">📊 Drag & drop CSV file or click to select</div>
+                                        <div class="upload-area-hint">Bulk import multiple posts</div>
+                                    </div>
+                                    <input type="file" id="csvFile" accept=".csv">
+                                </div>
+                            </div>
+                            
+                            <!-- Post Editor Section -->
+                            <div class="form-section">
+                                <div class="form-section-header">
+                                    <h3>✍️ Post Editor</h3>
+                                    <p class="form-section-desc">Edit all post details</p>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="postId">Post ID</label>
+                                    <input 
+                                        type="text" 
+                                        id="postId" 
+                                        placeholder="2000243348691640646 (auto-filled from CSV/URL)"
+                                    >
+                                    <div class="help-text">Auto-extracted from URL or CSV. Leave empty to auto-generate.</div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="headline">Headline / Story</label>
+                                    <textarea 
+                                        id="headline" 
+                                        rows="4"
+                                        placeholder="BREAKING: Brown University shooter in custody — NBC"
+                                        required
+                                    ></textarea>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="postLink">Post Link</label>
+                                    <input 
+                                        type="url" 
+                                        id="postLink" 
+                                        placeholder="https://x.com/newsnoteworthy/status/..."
+                                        required
+                                    >
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="postDate">Date Posted</label>
+                                    <input 
+                                        type="datetime-local" 
+                                        id="postDate" 
+                                        required
+                                    >
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Engagement Metrics</label>
+                                    <div class="stats-grid">
+                                        <div class="stat-input">
+                                            <label for="views">Views</label>
+                                            <input type="text" id="views" placeholder="12k">
+                                        </div>
+                                        <div class="stat-input">
+                                            <label for="likes">Likes</label>
+                                            <input type="text" id="likes" placeholder="1.4M">
+                                        </div>
+                                        <div class="stat-input">
+                                            <label for="reposts">Reposts</label>
+                                            <input type="text" id="reposts" placeholder="500">
+                                        </div>
+                                        <div class="stat-input">
+                                            <label for="replies">Replies</label>
+                                            <input type="text" id="replies" placeholder="8">
+                                        </div>
+                                        <div class="stat-input">
+                                            <label for="engagements">Engagements</label>
+                                            <input type="text" id="engagements" placeholder="0">
+                                        </div>
+                                        <div class="stat-input">
+                                            <label for="bookmarks">Bookmarks</label>
+                                            <input type="text" id="bookmarks" placeholder="0">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Media Attachments</label>
+                                    <div class="upload-area" id="mediaUploadArea" tabindex="0">
+                                        <div class="upload-area-text">🖼️ Drag & drop images/videos, click to select, or paste (Ctrl/Cmd+V)</div>
+                                        <div class="upload-area-hint">Supports: Images (PNG, JPEG, WEBP, GIF) and Videos (MP4, WEBM, MOV)</div>
+                                    </div>
+                                    <input 
+                                        type="file" 
+                                        id="mediaFile" 
+                                        accept="image/*,video/*" 
+                                        multiple
+                                    >
+                                    <div class="media-preview-grid" id="mediaPreview"></div>
+                                    <div class="form-group" style="margin-top: 12px;">
+                                        <label for="mediaUrl">Or enter media URL manually</label>
+                                        <input 
+                                            type="url" 
+                                            id="mediaUrl" 
+                                            placeholder="https://pbs.twimg.com/media/..."
+                                        >
+                                    </div>
+                                </div>
+                                
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">
+                                        <span>✨</span>
+                                        <span>Publish Post</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                        <div id="result" class="result"></div>
+                    </div>
+                    
+                    <!-- Preview Tab Content -->
+                    <div id="tab-preview" class="tab-content">
+                        <div id="previewContent" class="preview-container">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">👁️</div>
+                                <p>Start editing to see preview</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Remove Tab Content -->
+                    <div id="tab-remove" class="tab-content">
+                        <div class="form-section">
+                            <div class="form-section-header">
+                                <h3 style="color: var(--terminal-red);">🗑️ Remove Posts</h3>
+                                <p class="form-section-desc">Delete posts from the website</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="deletePostId">Post ID to Delete</label>
+                                <div class="input-with-button">
+                                    <input 
+                                        type="text" 
+                                        id="deletePostId" 
+                                        placeholder="Enter post ID (e.g., 2000243348691640646)"
+                                    >
+                                    <button type="button" class="btn btn-secondary" onclick="searchPost(event)">Search</button>
+                                </div>
+                            </div>
+                            
+                            <div id="postSearchResult" style="display: none;">
+                                <div class="form-group" style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; border: 1px solid var(--terminal-border);">
+                                    <div style="margin-bottom: 12px;">
+                                        <strong>Post Found:</strong>
+                                        <div id="foundPostInfo" style="margin-top: 8px; color: var(--terminal-text-dim); font-size: 14px;"></div>
+                                    </div>
+                                    <button type="button" class="btn" id="deletePostBtn" onclick="deletePost(event)" style="background: var(--terminal-red); color: white; width: 100%;">
+                                        🗑️ Delete This Post
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="deleteResult" class="result" style="margin-top: 16px;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Empty State (when no post selected) -->
+                <div id="emptyEditorState" class="empty-editor-state">
+                    <div class="empty-state-icon">📝</div>
+                    <h3>Select a post to edit</h3>
+                    <p>Choose a post from the list on the left, or create a new one</p>
+                </div>
+            </div>
+        </div>
+    </div>
                         <div class="source-inputs">
                             <div class="form-group">
                                 <label>URL</label>
@@ -524,161 +1303,6 @@
                         </div>
                     </div>
                 </div>
-                
-                <!-- Section B: Post Editor (Primary) -->
-                <div class="section">
-                    <div class="section-header">
-                        <div>
-                            <div class="section-title">Post Editor</div>
-                            <div class="section-subtitle">Edit all post details</div>
-                        </div>
-                    </div>
-                    <div class="section-content">
-                        <form id="postForm">
-                            <div class="form-group">
-                                <label for="postId">Post ID</label>
-                                <input 
-                                    type="text" 
-                                    id="postId" 
-                                    placeholder="2000243348691640646 (auto-filled from CSV/URL)"
-                                >
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="headline">Headline / Story</label>
-                                <textarea 
-                                    id="headline" 
-                                    rows="3"
-                                    placeholder="BREAKING: Brown University shooter in custody — NBC"
-                                    required
-                                ></textarea>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="postLink">Post Link</label>
-                                <input 
-                                    type="url" 
-                                    id="postLink" 
-                                    placeholder="https://x.com/newsnoteworthy/status/..."
-                                    required
-                                >
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="postDate">Date Posted</label>
-                                <input 
-                                    type="datetime-local" 
-                                    id="postDate" 
-                                    required
-                                >
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Engagement Metrics</label>
-                                <div class="stats-grid">
-                                    <div class="stat-input">
-                                        <label for="views">Views</label>
-                                        <input type="text" id="views" placeholder="12k">
-                                    </div>
-                                    <div class="stat-input">
-                                        <label for="likes">Likes</label>
-                                        <input type="text" id="likes" placeholder="1.4M">
-                                    </div>
-                                    <div class="stat-input">
-                                        <label for="reposts">Reposts</label>
-                                        <input type="text" id="reposts" placeholder="500">
-                                    </div>
-                                    <div class="stat-input">
-                                        <label for="replies">Replies</label>
-                                        <input type="text" id="replies" placeholder="8">
-                                    </div>
-                                    <div class="stat-input">
-                                        <label for="engagements">Engagements</label>
-                                        <input type="text" id="engagements" placeholder="0">
-                                    </div>
-                                    <div class="stat-input">
-                                        <label for="bookmarks">Bookmarks</label>
-                                        <input type="text" id="bookmarks" placeholder="0">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Media Attachments</label>
-                                <div class="upload-area" id="mediaUploadArea" tabindex="0">
-                                    <div class="upload-area-text">Drag & drop images/videos, click to select, or paste (Ctrl/Cmd+V)</div>
-                                    <div class="upload-area-hint">Supports: Images (PNG, JPEG, WEBP, GIF) and Videos (MP4, WEBM, MOV)</div>
-                                </div>
-                                <input 
-                                    type="file" 
-                                    id="mediaFile" 
-                                    accept="image/*,video/*" 
-                                    multiple
-                                >
-                                <div class="media-preview-grid" id="mediaPreview"></div>
-                                <div class="form-group" style="margin-top: 12px;">
-                                    <label for="mediaUrl">Or enter media URL manually</label>
-                                    <input 
-                                        type="url" 
-                                        id="mediaUrl" 
-                                        placeholder="https://pbs.twimg.com/media/..."
-                                    >
-                                </div>
-                            </div>
-                            
-                            <button type="submit" class="btn btn-primary btn-block">Publish Post</button>
-                        </form>
-                        <div id="result" class="result"></div>
-                    </div>
-                </div>
-                
-                <!-- Section D: Remove Posts -->
-                <div class="section" style="margin-top: 24px; border-color: var(--error);">
-                    <div class="section-header">
-                        <div>
-                            <div class="section-title" style="color: var(--error);">🗑️ Remove Posts</div>
-                            <div class="section-subtitle">Delete posts from the website</div>
-                        </div>
-                    </div>
-                    <div class="section-content">
-                        <div class="form-group">
-                            <label for="deletePostId">Post ID to Delete</label>
-                            <div style="display: flex; gap: 8px;">
-                                <input 
-                                    type="text" 
-                                    id="deletePostId" 
-                                    placeholder="Enter post ID (e.g., 2000243348691640646)"
-                                    style="flex: 1;"
-                                >
-                                <button class="btn btn-secondary" onclick="searchPost(event)" style="white-space: nowrap;">Search</button>
-                            </div>
-                        </div>
-                        
-                        <div id="postSearchResult" style="margin-top: 16px; display: none;">
-                            <div class="form-group" style="background: var(--bg-tertiary); padding: 16px; border-radius: 8px; border: 1px solid var(--border-color);">
-                                <div style="margin-bottom: 12px;">
-                                    <strong>Post Found:</strong>
-                                    <div id="foundPostInfo" style="margin-top: 8px; color: var(--text-secondary); font-size: 14px;"></div>
-                                </div>
-                                <button class="btn" id="deletePostBtn" onclick="deletePost(event)" style="background: var(--error); color: white; width: 100%;">
-                                    🗑️ Delete This Post
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div id="deleteResult" class="result" style="margin-top: 16px;"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Section C: Live Preview -->
-            <div class="preview-pane">
-                <div class="section-header">
-                    <div class="section-title">Preview</div>
-                </div>
-                <div id="previewContent">
-                    <div class="empty-state">Start editing to see preview</div>
-                </div>
             </div>
         </div>
     </div>
@@ -701,15 +1325,302 @@
             mediaUrls: []
         };
         
-        // Initialize
-        document.getElementById('postDate').value = postState.postDate;
+        let allPosts = [];
+        let filteredPosts = [];
+        let currentFilter = 'all';
+        let selectedPostId = null;
         
-        // Section collapse toggle
-        function toggleSection(sectionId) {
-            const content = document.getElementById(sectionId);
-            const toggle = document.getElementById(sectionId + 'Toggle');
-            content.classList.toggle('collapsed');
-            toggle.textContent = content.classList.contains('collapsed') ? 'Expand' : 'Collapse';
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('postDate').value = postState.postDate;
+            loadPosts();
+            setupEventListeners();
+        });
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Search input
+            const searchInput = document.getElementById('postSearch');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    filterPostsBySearch(e.target.value);
+                });
+            }
+            
+            // Form inputs for live preview
+            const formInputs = ['postId', 'headline', 'postLink', 'postDate', 'views', 'likes', 'reposts', 'replies', 'engagements', 'bookmarks'];
+            formInputs.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.addEventListener('input', updatePreview);
+                }
+            });
+        }
+        
+        // Tab switching
+        function switchEditorTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.editor-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            const tabContent = document.getElementById(`tab-${tabName}`);
+            const tabBtn = document.querySelector(`[data-tab="${tabName}"]`);
+            if (tabContent) tabContent.classList.add('active');
+            if (tabBtn) tabBtn.classList.add('active');
+            
+            // Update preview if switching to preview tab
+            if (tabName === 'preview') {
+                updatePreview();
+            }
+        }
+        
+        // Load posts list
+        async function loadPosts() {
+            const postsList = document.getElementById('postsList');
+            if (!postsList) return;
+            
+            postsList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏳</div><p>Loading posts...</p></div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/.netlify/functions/posts-read?limit=500`);
+                if (response.ok) {
+                    const posts = await response.json();
+                    allPosts = Array.isArray(posts) ? posts : [];
+                    filteredPosts = [...allPosts];
+                    renderPostsList();
+                } else {
+                    postsList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><p>Failed to load posts</p></div>';
+                }
+            } catch (error) {
+                console.error('Error loading posts:', error);
+                postsList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><p>Error loading posts</p></div>';
+            }
+        }
+        
+        // Render posts list
+        function renderPostsList() {
+            const postsList = document.getElementById('postsList');
+            if (!postsList) return;
+            
+            if (filteredPosts.length === 0) {
+                postsList.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No posts found</p></div>';
+                return;
+            }
+            
+            postsList.innerHTML = filteredPosts.map(post => {
+                const postId = post.id || post.postId || 'Unknown';
+                const story = post.story || post.text || post.title || 'No content';
+                const date = post.datePosted ? new Date(post.datePosted).toLocaleDateString() : 'Unknown date';
+                const views = post.views || post.Impressions || '0';
+                const likes = post.likes || post.Likes || '0';
+                const isSelected = selectedPostId === postId;
+                
+                // Escape HTML to prevent XSS attacks
+                const escapeHtml = (str) => {
+                    if (!str) return '';
+                    return String(str)
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#x27;')
+                        .replace(/\//g, '&#x2F;');
+                };
+                
+                const escapedPostId = escapeHtml(postId);
+                const escapedStory = escapeHtml(story);
+                
+                return `
+                    <div class="post-card ${isSelected ? 'selected' : ''}" onclick="selectPost('${escapedPostId.replace(/'/g, "\\'")}')">
+                        <div class="post-card-header">
+                            <div class="post-card-id">ID: ${escapedPostId}</div>
+                            <div class="post-card-date">${date}</div>
+                        </div>
+                        <div class="post-card-text">${escapedStory.substring(0, 150)}${story.length > 150 ? '...' : ''}</div>
+                        <div class="post-card-meta">
+                            <span>👁️ ${views}</span>
+                            <span>❤️ ${likes}</span>
+                        </div>
+                        <div class="post-card-actions">
+                            <button class="post-card-action" onclick="event.stopPropagation(); editPost('${escapedPostId.replace(/'/g, "\\'")}')">✏️ Edit</button>
+                            <button class="post-card-action delete" onclick="event.stopPropagation(); confirmDeletePost('${escapedPostId.replace(/'/g, "\\'")}')">🗑️ Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // Select post
+        function selectPost(postId) {
+            selectedPostId = postId;
+            const post = allPosts.find(p => (p.id || p.postId) === postId);
+            if (post) {
+                loadPostIntoEditor(post);
+                switchEditorTab('create');
+                document.getElementById('editorPanel').style.display = 'block';
+                document.getElementById('emptyEditorState').style.display = 'none';
+            }
+            renderPostsList();
+        }
+        
+        // Load post into editor
+        function loadPostIntoEditor(post) {
+            document.getElementById('postId').value = post.id || post.postId || '';
+            document.getElementById('headline').value = post.story || post.text || post.title || '';
+            document.getElementById('postLink').value = post.link || post.url || '';
+            if (post.datePosted) {
+                const date = new Date(post.datePosted);
+                document.getElementById('postDate').value = date.toISOString().slice(0, 16);
+            }
+            document.getElementById('views').value = post.views || post.Impressions || '';
+            document.getElementById('likes').value = post.likes || post.Likes || '';
+            document.getElementById('reposts').value = post.reposts || post.Reposts || '';
+            document.getElementById('replies').value = post.replies || post.Replies || '';
+            document.getElementById('engagements').value = post.engagements || post.Engagements || '';
+            document.getElementById('bookmarks').value = post.bookmarks || post.Bookmarks || '';
+        }
+        
+        // Edit post
+        function editPost(postId) {
+            selectPost(postId);
+        }
+        
+        // Create new post
+        function createNewPost() {
+            selectedPostId = null;
+            document.getElementById('postForm').reset();
+            document.getElementById('postDate').value = new Date().toISOString().slice(0, 16);
+            document.getElementById('mediaPreview').innerHTML = '';
+            document.getElementById('editorPanel').style.display = 'block';
+            document.getElementById('emptyEditorState').style.display = 'none';
+            switchEditorTab('create');
+            renderPostsList();
+        }
+        
+        // Filter posts
+        function filterPosts(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.classList.toggle('active', chip.dataset.filter === filter);
+            });
+            
+            switch(filter) {
+                case 'recent':
+                    filteredPosts = [...allPosts].sort((a, b) => {
+                        const dateA = new Date(a.datePosted || 0);
+                        const dateB = new Date(b.datePosted || 0);
+                        return dateB - dateA;
+                    });
+                    break;
+                case 'popular':
+                    filteredPosts = [...allPosts].sort((a, b) => {
+                        const viewsA = parseInt(a.views || a.Impressions || 0);
+                        const viewsB = parseInt(b.views || b.Impressions || 0);
+                        return viewsB - viewsA;
+                    });
+                    break;
+                default:
+                    filteredPosts = [...allPosts];
+            }
+            
+            renderPostsList();
+        }
+        
+        // Filter posts by search
+        function filterPostsBySearch(query) {
+            if (!query.trim()) {
+                filterPosts(currentFilter);
+                return;
+            }
+            
+            const lowerQuery = query.toLowerCase();
+            filteredPosts = allPosts.filter(post => {
+                const id = String(post.id || post.postId || '');
+                const story = String(post.story || post.text || post.title || '');
+                const link = String(post.link || post.url || '');
+                return id.includes(lowerQuery) || 
+                       story.toLowerCase().includes(lowerQuery) || 
+                       link.toLowerCase().includes(lowerQuery);
+            });
+            
+            renderPostsList();
+        }
+        
+        // Update preview
+        function updatePreview() {
+            const previewContent = document.getElementById('previewContent');
+            if (!previewContent) return;
+            
+            const headline = document.getElementById('headline').value || 'No headline';
+            const views = document.getElementById('views').value || '0';
+            const likes = document.getElementById('likes').value || '0';
+            const reposts = document.getElementById('reposts').value || '0';
+            const replies = document.getElementById('replies').value || '0';
+            
+            previewContent.innerHTML = `
+                <div class="preview-post">
+                    <div class="preview-post-header">
+                        <div class="preview-post-avatar"></div>
+                        <div class="preview-post-info">
+                            <div class="preview-post-name">Noteworthy News</div>
+                            <div class="preview-post-handle">@newsnoteworthy</div>
+                        </div>
+                    </div>
+                    <div class="preview-post-text">${headline}</div>
+                    <div class="preview-post-stats">
+                        <div class="preview-post-stat">👁️ ${views}</div>
+                        <div class="preview-post-stat">❤️ ${likes}</div>
+                        <div class="preview-post-stat">🔄 ${reposts}</div>
+                        <div class="preview-post-stat">💬 ${replies}</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Confirm delete post
+        function confirmDeletePost(postId) {
+            if (confirm(`Are you sure you want to delete post ${postId}? This action cannot be undone.`)) {
+                deletePostById(postId);
+            }
+        }
+        
+        // Delete post by ID
+        async function deletePostById(postId) {
+            try {
+                const response = await fetch(`${API_BASE}/.netlify/functions/remove-post?postId=${encodeURIComponent(postId)}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showStatusMessage(`✅ Post ${postId} deleted successfully`, 'success');
+                    loadPosts();
+                    if (selectedPostId === postId) {
+                        createNewPost();
+                    }
+                } else {
+                    showStatusMessage(`❌ Failed to delete post ${postId}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting post:', error);
+                showStatusMessage(`❌ Error deleting post: ${error.message}`, 'error');
+            }
+        }
+        
+        // Show status message
+        function showStatusMessage(message, type = 'info') {
+            const statusMsg = document.getElementById('statusMessage');
+            if (statusMsg) {
+                statusMsg.textContent = message;
+                statusMsg.className = `status-message ${type} show`;
+                setTimeout(() => {
+                    statusMsg.classList.remove('show');
+                }, 5000);
+            }
         }
         
         // Show result message

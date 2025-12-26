@@ -178,13 +178,13 @@ async function processImagesForEmail(htmlContent, baseUrl = 'https://noteworthyn
     
     // Skip if we've already processed this URL (avoid duplicate attachments)
     if (processedUrls.has(originalSrc)) {
-      // Just replace the URL with the existing CID
+      // Just replace the URL with the existing CID (use full CID to match attachment)
       const existingCid = imageMap.get(originalSrc);
       if (existingCid) {
-        const cidIdentifier = existingCid.split('@')[0];
         const escapedSrc = originalSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const imgSrcRegex = new RegExp(`(<img[^>]+src=["'])${escapedSrc}(["'][^>]*>)`, 'gi');
-        htmlContent = htmlContent.replace(imgSrcRegex, `$1cid:${cidIdentifier}$2`);
+        htmlContent = htmlContent.replace(imgSrcRegex, `$1cid:${existingCid}$2`);
+        console.log(`[processImagesForEmail] Reusing existing CID for duplicate image: ${existingCid}`);
       }
       continue;
     }
@@ -277,11 +277,12 @@ async function processImagesForEmail(htmlContent, baseUrl = 'https://noteworthyn
       const fullCid = `${cidIdentifier}@noteworthynews.co`;
       
       // Create attachment with CID for inline embedding
-      // Resend API format: content_id (snake_case) and content should be base64 string
+      // Resend API format: content_id should be just the identifier (without @domain)
+      // The HTML uses cid:fullCid, but the attachment's content_id is just the identifier
       attachments.push({
         filename: filename,
         content: imageBuffer.toString('base64'), // Resend expects base64 string, not Buffer
-        content_id: cidIdentifier, // Resend uses snake_case: content_id
+        content_id: cidIdentifier, // Resend expects just the identifier, not full CID
         content_type: contentType, // Also use snake_case for consistency
       });
       
@@ -293,11 +294,32 @@ async function processImagesForEmail(htmlContent, baseUrl = 'https://noteworthyn
       
       // Replace src in HTML with CID reference (email standard format)
       // Use global replace to handle all instances of this image URL
-      const escapedSrc = originalSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const imgSrcRegex = new RegExp(`(<img[^>]+src=["'])${escapedSrc}(["'][^>]*>)`, 'gi');
-      htmlContent = htmlContent.replace(imgSrcRegex, `$1cid:${cidIdentifier}$2`);
+      // For data URLs, we need to be more careful with escaping since they're very long
+      let escapedSrc;
+      if (originalSrc.startsWith('data:')) {
+        // For data URLs, escape special regex characters but preserve the full string
+        escapedSrc = originalSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      } else {
+        escapedSrc = originalSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      }
       
-      console.log(`[processImagesForEmail] Replaced image ${i + 1} with CID: ${cidIdentifier}`);
+      const imgSrcRegex = new RegExp(`(<img[^>]+src=["'])${escapedSrc}(["'][^>]*>)`, 'gi');
+      // CRITICAL FIX: Email clients match cid:identifier in HTML to attachment's content_id
+      // Since content_id is set to cidIdentifier (without @domain), HTML must use the same format
+      // Use cidIdentifier (not fullCid) to match the attachment's content_id
+      const replacement = `$1cid:${cidIdentifier}$2`;
+      const beforeReplace = htmlContent;
+      htmlContent = htmlContent.replace(imgSrcRegex, replacement);
+      
+      // Verify replacement worked
+      if (htmlContent === beforeReplace) {
+        console.warn(`[processImagesForEmail] ⚠️ Failed to replace image ${i + 1} in HTML. Original src: ${originalSrc.substring(0, 100)}...`);
+        // Try a more aggressive replacement - use cidIdentifier to match content_id
+        const fallbackRegex = new RegExp(`src=["']${escapedSrc}["']`, 'gi');
+        htmlContent = htmlContent.replace(fallbackRegex, `src="cid:${cidIdentifier}"`);
+      }
+      
+      console.log(`[processImagesForEmail] ✅ Replaced image ${i + 1} with CID: ${cidIdentifier} (${imageBuffer.length} bytes, ${contentType})`);
     } catch (error) {
       console.error(`[processImagesForEmail] Error processing image ${i + 1}:`, error.message);
       // Continue with other images even if one fails
@@ -644,14 +666,23 @@ exports.handler = async (event, context) => {
           const emailUsername = email.split('@')[0];
           
           // Replace date placeholder and other template variables
-          const dateStr = new Date().toLocaleDateString('en-US', { 
+          // Use US Eastern timezone to ensure correct date (not UTC/server timezone)
+          // This prevents the date from being a day ahead when server is in UTC
+          const now = new Date();
+          const dateStr = now.toLocaleDateString('en-US', { 
             weekday: 'long', 
             year: 'numeric', 
             month: 'long', 
-            day: 'numeric' 
+            day: 'numeric',
+            timeZone: 'America/New_York' // Use Eastern timezone to get correct date
           });
-          const monthStr = new Date().toLocaleDateString('en-US', { month: 'long' });
-          const yearStr = new Date().getFullYear().toString();
+          const monthStr = now.toLocaleDateString('en-US', { 
+            month: 'long',
+            timeZone: 'America/New_York'
+          });
+          // Get year in Eastern timezone
+          const easternNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+          const yearStr = easternNow.getFullYear().toString();
           
           // For sendToEmails, use full name in greeting
           personalizedHtml = personalizedHtml

@@ -101,9 +101,9 @@ function extractUSGSImages(eventDetail) {
     for (const product of productList) {
       if (images.length >= 2) break;
       
-      if (product.contents && typeof product.contents === 'object') {
-        for (const [key, content] of Object.entries(product.contents)) {
-          if (content.url && /\.(png|jpg|jpeg|gif)$/i.test(key)) {
+    if (product.contents && typeof product.contents === 'object') {
+      for (const [key, content] of Object.entries(product.contents)) {
+        if (content.url && /\.(png|jpg|jpeg|gif)$/i.test(key)) {
               // Skip if we already have an image from this product type (unless we only have 1 image)
             if (images.length === 0 || !usedProductTypes.has(productType)) {
               // Extract base filename (remove common variants like _geo, _geo_, etc.)
@@ -126,11 +126,11 @@ function extractUSGSImages(eventDetail) {
               });
               
               if (!isSimilar && !usedFilenames.has(baseFilename) && !images.find(img => img.url === content.url)) {
-                images.push({
-                  url: content.url,
+            images.push({
+              url: content.url,
                   type: productType,
-                  filename: key,
-                });
+              filename: key,
+            });
                 usedProductTypes.add(productType);
                 usedFilenames.add(baseFilename);
                 break; // Move to next product type
@@ -311,10 +311,17 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
       } catch {
         errorData = { error: errorText };
       }
-      logger.warn('Image generation failed', null, { 
+      // CRITICAL: Log full error details to diagnose image generation failures
+      logger.error('❌ Image generation failed - HTTP error', null, { 
         status: imageResponse.status, 
         statusText: imageResponse.statusText,
-        error: errorData.error || errorText
+        error: errorData.error || errorText,
+        errorData: errorData,
+        magnitude,
+        location,
+        eventId,
+        hasUsgsImages: usgsImages && usgsImages.length > 0,
+        usgsImageCount: usgsImages ? usgsImages.length : 0
       });
       return null;
     }
@@ -323,9 +330,16 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
     logger.info('Branded image generated', { url: imageData.url });
     return imageData.url;
   } catch (error) {
-    logger.warn('Image generation error', error, { 
+    // CRITICAL: Log full error details to diagnose image generation failures
+    logger.error('❌ Image generation error - exception thrown', error, { 
       message: error?.message,
-      stack: error?.stack 
+      stack: error?.stack,
+      name: error?.name,
+      magnitude,
+      location,
+      eventId,
+      hasUsgsImages: usgsImages && usgsImages.length > 0,
+      usgsImageCount: usgsImages ? usgsImages.length : 0
     });
     return null;
   }
@@ -505,9 +519,8 @@ async function storeEvent(event, logger) {
  * Process a single earthquake feature
  * @param {Object} feature - USGS GeoJSON feature
  * @param {Object} logger - Logger instance
- * @param {boolean} forceEmail - If true, send email even if alert_sent is true (for most recent earthquake)
  */
-async function processEarthquake(feature, logger, forceEmail = false) {
+async function processEarthquake(feature, logger) {
   const props = feature.properties;
   const eventId = feature.id;
   
@@ -580,7 +593,15 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   }
   
   // Generate branded image (will use template's baked-in images if usgsImages is empty)
+  // CRITICAL: Generate image BEFORE storing event so we can include it in the event object
   const imageUrl = await generateBrandedImage(magnitude, locationDisplay, usgsImages, eventId, logger);
+  
+  // Log image generation result
+  if (imageUrl) {
+    logger.info('✅ Branded image generated successfully', { imageUrl, eventId, magnitude, location: locationDisplay });
+  } else {
+    logger.warn('⚠️ Branded image generation failed or returned null', { eventId, magnitude, location: locationDisplay });
+  }
   
   // Build event object
   const coordinates = feature.geometry?.coordinates;
@@ -609,18 +630,24 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       magnitude: magnitude, // Store magnitude in assets for easy access
       event_id: eventId, // Store event_id in assets for email alerts
     },
-    image_url: imageUrl,
+    image_url: imageUrl, // CRITICAL: Store image URL in event so it's available after storeEvent
     alert_sent: false,
     alert_sent_at: null,
     raw: feature,
   };
   
-  // Store event
+  // Store event (this will preserve image_url if it exists)
   const { isNew, event: storedEvent } = await storeEvent(event, logger);
   
+  // CRITICAL: Ensure storedEvent has the image_url (it should from storeEvent, but double-check)
+  if (imageUrl && !storedEvent.image_url) {
+    logger.warn('⚠️ Image URL not in storedEvent - updating', { canonical_id: canonicalId, imageUrl });
+    storedEvent.image_url = imageUrl;
+  }
+  
   // Create website post for earthquakes with images
-  // Always create/update post if we have an image (for most recent earthquake or new earthquakes)
-  if (imageUrl || isNew || forceEmail) {
+  // Always create/update post if we have an image or if it's a new earthquake
+  if (imageUrl || isNew) {
     try {
       const postResult = await createPostFromEvent(storedEvent, 'Earthquake', 'USGS');
       if (postResult.exists) {
@@ -637,34 +664,77 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     }
   }
   
-  // Send email alert for ALL earthquakes (user requested)
+  // Send email alert for ALL NEW earthquakes (user requested)
   // Removed magnitude >= 7.0 check - now sends for all
-  // If forceEmail is true (most recent earthquake), send even if alert_sent is true
-  if (!storedEvent.alert_sent || isNew || forceEmail) {
-    // If forcing email, temporarily reset alert_sent so sendEmailAlert will process it
-    const originalAlertSent = storedEvent.alert_sent;
-    if (forceEmail && storedEvent.alert_sent) {
-      storedEvent.alert_sent = false;
-      logger.info('Forcing email for most recent earthquake', { canonical_id: canonicalId });
+  // CRITICAL FIX: Only send emails for NEW earthquakes to prevent duplicates
+  // Use storedEvent.image_url (from DB) as fallback, but prefer local imageUrl (just generated)
+  const emailImageUrl = imageUrl || storedEvent.image_url;
+  
+  if (isNew && !storedEvent.alert_sent) {
+    // CRITICAL: Ensure imageUrl is passed - log if missing
+    if (!emailImageUrl) {
+      logger.warn('⚠️ No image URL available for email - email will be sent without image', { 
+        canonical_id: canonicalId, 
+        eventId,
+        magnitude,
+        location: locationDisplay,
+        has_local_image: !!imageUrl,
+        has_stored_image: !!storedEvent.image_url
+      });
     }
     
-    const alertSent = await sendEmailAlert(storedEvent, imageUrl, logger);
+    // CRITICAL: Mark as sent BEFORE calling sendEmailAlert to prevent race conditions
+    // This ensures that even if multiple processes run simultaneously, only one will send
+    const markSentResult = await supabase
+      .from('verified_events')
+      .update({
+        alert_sent: true,
+        alert_sent_at: new Date().toISOString(),
+      })
+      .eq('canonical_id', canonicalId)
+      .eq('alert_sent', false); // Only update if still false (atomic check-and-set)
+    
+    // If update affected 0 rows, another process already marked it as sent
+    if (markSentResult.data === null || (markSentResult.data && markSentResult.data.length === 0)) {
+      // Check if it was actually updated or if it was already sent
+      const { data: checkData } = await supabase
+        .from('verified_events')
+        .select('alert_sent')
+        .eq('canonical_id', canonicalId)
+        .single();
+      
+      if (checkData && checkData.alert_sent) {
+        logger.info('Skipping email - another process already sent it', { canonical_id: canonicalId });
+        return { isNew, event: storedEvent };
+      }
+    }
+    
+    const alertSent = await sendEmailAlert(storedEvent, emailImageUrl, logger);
     if (alertSent) {
-      // Update alert_sent status
+      storedEvent.alert_sent = true;
+      storedEvent.alert_sent_at = new Date().toISOString();
+      logger.info('✅ Email alert sent for new earthquake', { 
+        canonical_id: canonicalId, 
+        magnitude, 
+        location: locationDisplay,
+        has_image: !!emailImageUrl 
+      });
+    } else {
+      // If email failed, reset alert_sent so we can retry
       await supabase
         .from('verified_events')
         .update({
-          alert_sent: true,
-          alert_sent_at: new Date().toISOString(),
+          alert_sent: false,
+          alert_sent_at: null,
         })
         .eq('canonical_id', canonicalId);
-      
-      storedEvent.alert_sent = true;
-      storedEvent.alert_sent_at = new Date().toISOString();
-    } else if (forceEmail && originalAlertSent) {
-      // Restore original status if email failed
-      storedEvent.alert_sent = originalAlertSent;
+      logger.warn('❌ Failed to send email alert - will retry on next run', { canonical_id: canonicalId, has_image: !!emailImageUrl });
     }
+  } else if (!isNew && storedEvent.alert_sent) {
+    logger.debug('Skipping email - already sent for this earthquake', { canonical_id: canonicalId });
+  } else if (!isNew && !storedEvent.alert_sent) {
+    // This shouldn't happen, but log it for debugging
+    logger.warn('Existing earthquake without alert_sent flag - skipping email to prevent duplicates', { canonical_id: canonicalId });
   }
   
   return { isNew, event: storedEvent };
@@ -697,13 +767,13 @@ async function run(logger) {
     let countErrors = 0;
     
     // Process each earthquake
-    // Always send email for the first (most recent) earthquake, even if alert_sent is true
+    // CRITICAL FIX: Removed forceEmail logic to prevent duplicate emails
+    // Only send emails for NEW earthquakes (isNew), not for existing ones
     for (let i = 0; i < feedData.features.length; i++) {
       const feature = feedData.features[i];
-      const isMostRecent = i === 0; // First earthquake is most recent
       
       try {
-        const result = await processEarthquake(feature, logger, isMostRecent);
+        const result = await processEarthquake(feature, logger);
         if (result) {
           if (result.isNew) {
             countNew++;

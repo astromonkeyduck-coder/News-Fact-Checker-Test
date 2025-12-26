@@ -778,17 +778,32 @@ function renderPosts(posts, container, originalContent = null) {
         // Render images
         if (images.length > 0) {
           if (images.length === 1) {
+            // Escape image URL to prevent XSS
+            const escapeHtml = (str) => {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#x27;')
+                    .replace(/\//g, '&#x2F;');
+            };
+            const escapedImageUrl = escapeHtml(images[0]);
+            // Use textContent instead of innerHTML to prevent XSS
             mediaHtml += `<div class="post-image-single" style="border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.2);">
-              <img src="${images[0]}" alt="Post image" loading="lazy" style="width: 100%; height: auto; display: block; max-height: 600px; object-fit: cover;" 
-                   onerror="console.error('[PostFeed] Image failed:', this.src); this.style.display='none';" 
-                   onload="console.log('[PostFeed] Image loaded:', this.src);" />
+              <img src="${escapedImageUrl}" alt="Post image" loading="lazy" style="width: 100%; height: auto; display: block; max-height: 600px; object-fit: cover;" 
+                   onerror="console.error('[PostFeed] Image failed to load:', this.src); const parent = this.parentElement; const errorDiv = document.createElement('div'); errorDiv.style.cssText = 'padding: 2rem; text-align: center; color: rgba(255,255,255,0.5);'; errorDiv.textContent = 'Image failed to load'; parent.textContent = ''; parent.appendChild(errorDiv);" 
+                   onload="console.log('[PostFeed] ✅ Image loaded successfully:', this.src);" />
             </div>`;
           } else {
             const gridCols = Math.min(images.length, 3);
             mediaHtml += `<div class="post-image-grid" style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); gap: 0.5rem; border-radius: 12px; overflow: hidden;">
               ${images.slice(0, 4).map(img => `
                 <div style="aspect-ratio: 1; overflow: hidden; background: rgba(0,0,0,0.2);">
-                  <img src="${img}" alt="Post image" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none';" />
+                  <img src="${img}" alt="Post image" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" 
+                       onerror="console.error('[PostFeed] Grid image failed:', this.src); this.style.display='none';" 
+                       onload="console.log('[PostFeed] ✅ Grid image loaded:', this.src);" />
                 </div>
               `).join('')}
             </div>`;

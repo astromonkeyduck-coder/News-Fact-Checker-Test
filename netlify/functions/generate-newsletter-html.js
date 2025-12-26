@@ -509,12 +509,15 @@ Reference the house style template structure and fill in the content section wit
     let finalContent = htmlContent.trim();
     
     // Always use current date - replace any date patterns or placeholders
+    // Use US Eastern timezone to ensure correct date (not UTC/server timezone)
+    // This prevents the date from being a day ahead when server is in UTC
     const now = new Date();
     const currentDate = now.toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
       month: 'long', 
-      day: 'numeric' 
+      day: 'numeric',
+      timeZone: 'America/New_York' // Use Eastern timezone to get correct date
     });
     
     // Replace date placeholder if it exists
@@ -536,7 +539,9 @@ Reference the house style template structure and fill in the content section wit
     // - "Nov 26, 2025" (abbreviated month)
     // - "10/24/2023" (numeric)
     // - Any year that's not the current year
-    const currentYear = now.getFullYear().toString();
+    // Get current year in Eastern timezone
+    const easternNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const currentYear = easternNow.getFullYear().toString();
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     const monthAbbr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];

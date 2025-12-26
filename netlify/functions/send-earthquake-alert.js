@@ -32,22 +32,31 @@ async function downloadImageForEmail(imageUrl) {
     // If it's a relative URL, make it absolute
     let fullUrl = imageUrl;
     if (imageUrl.startsWith('/')) {
-      const baseUrl = process.env.URL || 'https://noteworthynews.co';
+      const baseUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || 'https://noteworthynews.co';
       fullUrl = `${baseUrl}${imageUrl}`;
     }
     
+    console.log('[send-earthquake-alert] Downloading image from URL', { original: imageUrl, fullUrl });
+    
     const response = await fetch(fullUrl);
     if (!response.ok) {
-      throw new Error(`Failed to download image: ${response.status}`);
+      throw new Error(`Failed to download image: ${response.status} ${response.statusText}`);
     }
     
     const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    console.log('[send-earthquake-alert] ✅ Image downloaded successfully', { 
+      size: buffer.length, 
+      contentType: response.headers.get('content-type') 
+    });
+    
     return {
-      buffer: Buffer.from(arrayBuffer),
+      buffer: buffer,
       contentType: response.headers.get('content-type') || 'image/png',
     };
   } catch (error) {
-    console.error('[send-earthquake-alert] Error downloading image:', error);
+    console.error('[send-earthquake-alert] ❌ Error downloading image:', error.message, { imageUrl });
     return null;
   }
 }
@@ -174,6 +183,7 @@ exports.handler = async (event, context) => {
     // Download and attach image if available
     let imageAttachment = null;
     if (imageUrl) {
+      console.log('[send-earthquake-alert] Attempting to download image for attachment', { imageUrl });
       const imageData = await downloadImageForEmail(imageUrl);
       if (imageData) {
         imageAttachment = {
@@ -181,8 +191,16 @@ exports.handler = async (event, context) => {
           content: imageData.buffer.toString('base64'),
           content_type: imageData.contentType,
         };
-        console.log('[send-earthquake-alert] Image prepared for email attachment');
+        console.log('[send-earthquake-alert] ✅ Image prepared for email attachment', { 
+          filename: imageAttachment.filename,
+          size: imageData.buffer.length,
+          contentType: imageData.contentType
+        });
+      } else {
+        console.warn('[send-earthquake-alert] ⚠️ Failed to download image - email will be sent without image', { imageUrl });
       }
+    } else {
+      console.warn('[send-earthquake-alert] ⚠️ No imageUrl provided - email will be sent without image');
     }
     
     // Send email to all notification emails

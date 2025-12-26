@@ -116,10 +116,50 @@ async function runEngine(engineName) {
 
 /**
  * Main handler
+ * CRITICAL: Add lock mechanism to prevent concurrent runs
  */
 exports.handler = async (event, context) => {
   const dryRun = isDryRun();
-  console.log(`[ingest-all] Starting ingestion run (DRY_RUN=${dryRun})`);
+  const runId = crypto.randomUUID();
+  console.log(`[ingest-all] Starting ingestion run (DRY_RUN=${dryRun}, runId=${runId})`);
+  
+  // CRITICAL: Check if another run is already in progress
+  // This prevents multiple concurrent runs from processing the same events
+  try {
+    const { data: activeRuns } = await supabase
+      .from('engine_runs')
+      .select('id, engine, started_at')
+      .is('finished_at', null) // Only active runs
+      .gte('started_at', new Date(Date.now() - 10 * 60 * 1000).toISOString()) // Last 10 minutes
+      .order('started_at', { ascending: false })
+      .limit(5);
+    
+    if (activeRuns && activeRuns.length > 0) {
+      const recentRun = activeRuns[0];
+      const runAge = Date.now() - new Date(recentRun.started_at).getTime();
+      // If there's a run that started less than 2 minutes ago, skip this run to prevent duplicates
+      if (runAge < 2 * 60 * 1000) {
+        console.log(`[ingest-all] ⚠️ Another run is in progress (started ${Math.round(runAge / 1000)}s ago) - skipping to prevent duplicates`, {
+          activeRunId: recentRun.id,
+          activeRunEngine: recentRun.engine,
+          currentRunId: runId
+        });
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            skipped: true,
+            reason: 'Another run in progress',
+            activeRunId: recentRun.id,
+            runId: runId
+          }),
+        };
+      }
+    }
+  } catch (lockError) {
+    // If lock check fails, log but continue (don't block ingestion)
+    console.warn('[ingest-all] ⚠️ Could not check for concurrent runs:', lockError.message);
+  }
   
   const engines = ['usgs', 'nws', 'faa', 'uscg', 'volcano', 'embassy'];
   const results = {
@@ -176,7 +216,8 @@ exports.handler = async (event, context) => {
   }
   
   results.finished_at = new Date().toISOString();
-  console.log(`[ingest-all] Completed: ${results.summary.successful} successful, ${results.summary.failed} failed`);
+  results.runId = runId;
+  console.log(`[ingest-all] Completed: ${results.summary.successful} successful, ${results.summary.failed} failed (runId=${runId})`);
   
   return {
     statusCode: 200,

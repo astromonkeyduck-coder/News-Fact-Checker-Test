@@ -33,8 +33,11 @@ const leaderboardLoggerInstance = (function() {
         log: (...args) => console.log('[Leaderboard]', ...args)
     };
 })();
-// Alias for convenience (but use leaderboardLoggerInstance internally to avoid conflicts)
-const logger = leaderboardLoggerInstance;
+
+// Create logger alias - use var to allow redeclaration if script loads multiple times
+// This prevents "Identifier 'logger' has already been declared" errors when script loads twice
+// Prefer window.logger (from module imports) if available, otherwise use our instance
+var logger = (typeof window !== 'undefined' && window.logger) || leaderboardLoggerInstance;
 
 class Leaderboard {
     constructor(gameType = 'fact-checker') {

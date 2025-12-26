@@ -155,6 +155,29 @@ async function fetchTravelAdvisories(logger) {
               countryCode: countryCode,
             };
             
+            // CRITICAL FILTER: Skip routine updates/reissues that are NOT breaking news
+            const upperSummary = (advisory.summary || '').toUpperCase();
+            const upperDescription = (content || '').toUpperCase();
+            const isRoutineUpdate = 
+              upperSummary.includes('NO CHANGE TO THE ADVISORY LEVEL') ||
+              upperSummary.includes('REISSUED') ||
+              upperSummary.includes('MINOR EDIT') ||
+              upperSummary.includes('PERIODIC REVIEW') ||
+              upperSummary.includes('OBSOLETE') ||
+              upperDescription.includes('NO CHANGE TO THE ADVISORY LEVEL') ||
+              upperDescription.includes('REISSUED AFTER PERIODIC REVIEW') ||
+              upperDescription.includes('MINOR EDITS') ||
+              (upperSummary.includes('REISSUED') && !upperSummary.includes('LEVEL'));
+            
+            if (isRoutineUpdate) {
+              logger.debug('Skipping routine travel advisory update', { 
+                country, 
+                level,
+                reason: 'routine update/reissue with no level change'
+              });
+              continue; // Skip this advisory - not breaking news
+            }
+            
             advisories.push(advisory);
           } else {
             // For other feeds (security, regional, press), look for travel/security-related content
@@ -200,15 +223,16 @@ async function fetchTravelAdvisories(logger) {
                 }
               }
               
-              // Only process notable alerts (Level 3+ or security alerts)
-              if (level >= 3 || feedConfig.type === 'security') {
+              // STRICT: Only process Level 4 (Do Not Travel) - skip Level 3 and security alerts
+              // Level 3 is too common and includes routine advisories
+              if (level >= 4) {
                 const advisory = {
                   id: item.guid || item.link || `embassy-${Date.now()}-${Math.random()}`,
                   country: country,
                   region: country,
-                  level: level >= 3 ? level : 3, // Security alerts default to Level 3
-                  advisoryLevel: level >= 3 ? level : 3,
-                  levelText: getAdvisoryLevelText(level >= 3 ? level : 3),
+                  level: level, // Only Level 4 reaches here
+                  advisoryLevel: level,
+                  levelText: getAdvisoryLevelText(level),
                   summary: content.substring(0, 500).replace(/<[^>]*>/g, ''),
                   description: content,
                   published: pubDate,
@@ -263,13 +287,41 @@ async function processTravelAdvisory(advisory, logger) {
   const summary = advisory.summary || advisory.description || '';
   const published = advisory.published || advisory.issued || new Date().toISOString();
   
-  // Only process notable advisories (Level 3: Reconsider Travel, Level 4: Do Not Travel)
-  if (level < 3) {
-    return null; // Skip Level 1 and 2 (normal/increased caution)
+  // CRITICAL FILTER: Skip routine updates/reissues that are NOT breaking news
+  const upperSummary = (summary || '').toUpperCase();
+  const upperDescription = (advisory.description || '').toUpperCase();
+  const isRoutineUpdate = 
+    upperSummary.includes('NO CHANGE TO THE ADVISORY LEVEL') ||
+    upperSummary.includes('REISSUED') ||
+    upperSummary.includes('MINOR EDIT') ||
+    upperSummary.includes('PERIODIC REVIEW') ||
+    upperSummary.includes('OBSOLETE') ||
+    upperDescription.includes('NO CHANGE TO THE ADVISORY LEVEL') ||
+    upperDescription.includes('REISSUED AFTER PERIODIC REVIEW') ||
+    upperDescription.includes('MINOR EDITS') ||
+    (upperSummary.includes('REISSUED') && !upperSummary.includes('LEVEL'));
+  
+  if (isRoutineUpdate) {
+    logger.debug('Skipping routine travel advisory update', { 
+      level, 
+      country,
+      reason: 'routine update/reissue with no level change'
+    });
+    return null; // Skip - not breaking news
   }
   
-  // Map advisory level to severity (3 = severity 4, 4 = severity 5)
-  const normalizedSeverity = level === 4 ? 5 : 4;
+  // CRITICAL FILTER: Only process EXTREMELY SEVERE advisories
+  // User requirement: Only truly newsworthy travel advisories, not routine/obvious ones
+  
+  // STRICT: Only Level 4 (Do Not Travel) - skip Level 3 (Reconsider Travel)
+  // Level 3 is too common and includes routine advisories
+  if (level < 4) {
+    logger.debug('Skipping travel advisory - below Level 4', { level, country });
+    return null; // Skip Level 1, 2, and 3 (normal/increased caution/reconsider)
+  }
+  
+  // Map advisory level to severity (Level 4 = severity 5)
+  const normalizedSeverity = 5; // Only Level 4 reaches here
   const locationDisplay = cleanLocation(country);
   const canonicalId = buildCanonicalId('embassy', advisoryId);
   
@@ -299,6 +351,27 @@ async function processTravelAdvisory(advisory, logger) {
     raw: advisory,
   };
   
+  // Check for existing event to detect level changes
+  // Use maybeSingle() instead of single() to avoid throwing on "no rows found"
+  // This properly handles new advisories and doesn't mask database errors
+  const { data: existingEvent, error: queryError } = await supabase
+    .from('verified_events')
+    .select('severity, alert_sent')
+    .eq('canonical_id', canonicalId)
+    .maybeSingle();
+  
+  // Log query errors (but don't fail - might be a new advisory)
+  if (queryError && queryError.code !== 'PGRST116') {
+    logger.warn('Error querying existing event', queryError, { canonicalId });
+  }
+  
+  // Determine previous level from existing event
+  // Severity mapping: Level 3 = severity 4, Level 4 = severity 5
+  let previousLevel = null;
+  if (existingEvent && existingEvent.severity) {
+    previousLevel = existingEvent.severity === 5 ? 4 : (existingEvent.severity === 4 ? 3 : null);
+  }
+  
   const { isNew, event: storedEvent } = await storeEvent(event, logger);
   
   // Create website post
@@ -311,21 +384,98 @@ async function processTravelAdvisory(advisory, logger) {
     }
   }
   
-  // Send email alert for all notable travel advisories (Level 3+)
-  if (normalizedSeverity >= 4 && (!storedEvent.alert_sent || isNew)) {
+  // CRITICAL EMAIL FILTER: Only send emails when level CHANGES
+  // User requirement: Only alert when level changes from 3→4 or 4→3
+  // Skip if country stays at same level (even if it's Level 4)
+  const levelChanged = previousLevel !== null && previousLevel !== level;
+  const isSignificantChange = levelChanged && (
+    (previousLevel === 3 && level === 4) || // Upgraded to Do Not Travel
+    (previousLevel === 4 && level === 3) || // Downgraded from Do Not Travel
+    (previousLevel === 2 && level === 4) ||  // Jumped from Level 2 to 4
+    (previousLevel === 1 && level === 4)    // Jumped from Level 1 to 4
+  );
+  
+  // CRITICAL: Only send email if:
+  // 1. Level changed significantly (3→4, 4→3, 2→4, 1→4) - this is the PRIMARY condition
+  // 2. OR it's a brand new Level 4 advisory (no previous level) - only for truly new advisories
+  // 3. NEVER send if level didn't change (even if it's Level 4 and isNew)
+  // 4. NEVER send if already sent
+  // CRITICAL FIX: If previousLevel === level, NEVER send email (even if isNew)
+  const shouldSendEmail = (
+    !storedEvent.alert_sent && // Must not have sent already
+    (
+      isSignificantChange || // Level changed significantly (PRIMARY condition)
+      (isNew && level === 4 && previousLevel === null) // OR brand new Level 4 (no previous record)
+    ) &&
+    !(previousLevel !== null && previousLevel === level) // NEVER send if level stayed the same
+  );
+  
+  if (shouldSendEmail) {
+    logger.info('Sending travel advisory email - level changed or new Level 4', {
+      country,
+      previousLevel,
+      currentLevel: level,
+      isNew,
+      levelChanged,
+      isSignificantChange
+    });
+    
+    // CRITICAL: Mark as sent BEFORE calling sendEventAlert to prevent race conditions
+    const markSentResult = await supabase
+      .from('verified_events')
+      .update({
+        alert_sent: true,
+        alert_sent_at: new Date().toISOString(),
+      })
+      .eq('canonical_id', canonicalId)
+      .eq('alert_sent', false); // Only update if still false (atomic check-and-set)
+    
+    // If update affected 0 rows, another process already marked it as sent
+    if (markSentResult.data === null || (markSentResult.data && markSentResult.data.length === 0)) {
+      const { data: checkData } = await supabase
+        .from('verified_events')
+        .select('alert_sent')
+        .eq('canonical_id', canonicalId)
+        .single();
+      
+      if (checkData && checkData.alert_sent) {
+        logger.info('Skipping email - another process already sent it', { canonical_id: canonicalId });
+        return { isNew, event: storedEvent };
+      }
+    }
+    
     const alertSent = await sendEventAlert(storedEvent, 'Travel Advisory', 'State Department', null);
     if (alertSent) {
+      storedEvent.alert_sent = true;
+      storedEvent.alert_sent_at = new Date().toISOString();
+    } else {
+      // If email failed, reset alert_sent so we can retry
       await supabase
         .from('verified_events')
         .update({
-          alert_sent: true,
-          alert_sent_at: new Date().toISOString(),
+          alert_sent: false,
+          alert_sent_at: null,
         })
         .eq('canonical_id', canonicalId);
-      
-      storedEvent.alert_sent = true;
-      storedEvent.alert_sent_at = new Date().toISOString();
+      logger.warn('Failed to send email - will retry on next run', { canonical_id: canonicalId });
     }
+  } else {
+    const reason = !isNew ? 'not a new event' :
+                   storedEvent.alert_sent ? 'already sent' :
+                   !isSignificantChange && previousLevel !== null ? 'no level change' :
+                   level !== 4 || previousLevel !== null ? 'not a new Level 4' :
+                   'unknown';
+    logger.debug('Skipping travel advisory email', { 
+      country,
+      previousLevel,
+      currentLevel: level,
+      normalizedSeverity, 
+      isNew, 
+      levelChanged,
+      isSignificantChange,
+      alert_sent: storedEvent.alert_sent,
+      reason
+    });
   }
   
   return { isNew, event: storedEvent };
