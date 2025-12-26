@@ -8,7 +8,7 @@ const supabase = require('../lib/supabaseClient');
 const { buildCanonicalId, buildCanonicalIdFromHash } = require('../lib/dedupe');
 const { normalizeWeatherSeverity, cleanLocation } = require('../lib/normalize');
 const { createPostFromEvent } = require('../lib/createPost');
-const { sendEventAlert } = require('../lib/sendAlert');
+// const { sendEventAlert } = require('../lib/sendAlert'); // Disabled - no weather alert emails
 
 // NWS Alert Feed URLs (CAP format - GeoJSON)
 const NWS_ALERT_FEEDS = {
@@ -176,25 +176,24 @@ async function processAlert(feature, logger) {
     }
   }
   
-  // Send email alert only for HIGH-SEVERITY weather events (severity >= 4)
-  // Only send for SEVERE and EXTREME weather (Tornado, Hurricane, Flash Flood, etc.)
-  // MODERATE alerts (severity 3) will create posts but NOT send emails
-  if (normalizedSeverity >= 4 && (!storedEvent.alert_sent || isNew)) {
-    const alertSent = await sendEventAlert(storedEvent, 'Weather Alert', 'NWS', null);
-    if (alertSent) {
-      // Update alert_sent status
-      await supabase
-        .from('verified_events')
-        .update({
-          alert_sent: true,
-          alert_sent_at: new Date().toISOString(),
-        })
-        .eq('canonical_id', canonicalId);
-      
-      storedEvent.alert_sent = true;
-      storedEvent.alert_sent_at = new Date().toISOString();
-    }
-  }
+  // WEATHER ALERT EMAILS DISABLED - User requested no weather alert emails
+  // Posts will still be created, but no emails will be sent
+  // if (normalizedSeverity >= 4 && (!storedEvent.alert_sent || isNew)) {
+  //   const alertSent = await sendEventAlert(storedEvent, 'Weather Alert', 'NWS', null);
+  //   if (alertSent) {
+  //     // Update alert_sent status
+  //     await supabase
+  //       .from('verified_events')
+  //       .update({
+  //         alert_sent: true,
+  //         alert_sent_at: new Date().toISOString(),
+  //       })
+  //       .eq('canonical_id', canonicalId);
+  //     
+  //     storedEvent.alert_sent = true;
+  //     storedEvent.alert_sent_at = new Date().toISOString();
+  //   }
+  // }
   
   return { isNew, event: storedEvent };
 }

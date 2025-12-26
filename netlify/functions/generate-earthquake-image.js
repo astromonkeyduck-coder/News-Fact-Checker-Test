@@ -11,6 +11,7 @@ const sharp = require('sharp');
 const { getStore } = require("@netlify/blobs");
 const fs = require('fs');
 const path = require('path');
+const { resvg } = require('@resvg/resvg-js');
 
 // Load embedded fonts (base64)
 let FONT_DATA = null;
@@ -427,9 +428,39 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
   // Create SVG overlay with embedded fonts
   const svgString = createDynamicTextSVG(magnitudeText, location, outputWidth, outputHeight, scaleFactor);
   
-  // STEP 6: Render SVG using Sharp (librsvg supports @font-face with data URIs)
-  // The SVG already has @font-face declarations with embedded base64 fonts
-  const textOverlayBuffer = Buffer.from(svgString);
+  // STEP 6: Render SVG using resvg (supports embedded fonts better than librsvg)
+  // resvg properly handles @font-face with data URIs and embedded base64 fonts
+  let textOverlayBuffer;
+  try {
+    // resvg options - fonts are embedded in SVG via @font-face, so we just need to render
+    const svgOptions = {
+      font: {
+        loadSystemFonts: false, // Don't load system fonts, rely on embedded @font-face
+      },
+      fitTo: {
+        mode: 'width',
+        value: outputWidth,
+      },
+    };
+    
+    // If we have font buffers, register them with resvg (resvg can use buffers)
+    if (FONT_BUFFERS.regular && FONT_BUFFERS.bold) {
+      // resvg accepts font data as buffers - register them
+      svgOptions.font.fontFiles = [
+        { data: FONT_BUFFERS.regular, index: 0 },
+        { data: FONT_BUFFERS.bold, index: 0 },
+      ];
+    }
+    
+    const resvgInstance = resvg(svgString, svgOptions);
+    textOverlayBuffer = resvgInstance.asPng();
+    console.log('[generate-earthquake-image] ✅ SVG rendered with resvg (embedded fonts)');
+  } catch (resvgError) {
+    console.error('[generate-earthquake-image] ⚠️ resvg rendering failed, falling back to Sharp:', resvgError.message);
+    console.error('[generate-earthquake-image] ⚠️ resvg error details:', resvgError);
+    // Fallback to Sharp (may show boxes if fonts don't load)
+    textOverlayBuffer = Buffer.from(svgString);
+  }
   
   console.log(`[generate-earthquake-image] ✅ SVG text overlay created: ${outputWidth}x${outputHeight}`);
   console.log(`[generate-earthquake-image] Template dimensions: ${actualWidth}x${actualHeight}, output: ${outputWidth}x${outputHeight}`);
