@@ -66,7 +66,10 @@ async function generateCommitHistory() {
 }
 
 if (require.main === module) {
-  generateCommitHistory();
+  generateCommitHistory().catch(error => {
+    console.error('❌ Fatal error:', error);
+    process.exit(1);
+  });
 }
 
 module.exports = { generateCommitHistory };
