@@ -9,6 +9,7 @@ import { initFeeds } from './initFeeds.js';
 import { initGames } from './initGames.js';
 import { initSpotlight } from './initSpotlight.js';
 import { initAccordions, autoSetupAccordions } from './accordion.js';
+import { initDeveloperLogs } from '../../components/developer-logs.js';
 import { logger } from '../../utils/logger.js';
 
 /**
@@ -45,6 +46,12 @@ export function initHomepage() {
     trackModuleInit('accordions');
     initAccordions();
     autoSetupAccordions();
+    
+    trackModuleInit('developer-logs');
+    const logsContainer = document.getElementById('developer-logs-section');
+    if (logsContainer) {
+      initDeveloperLogs(logsContainer);
+    }
     
     logger.debug('All homepage modules initialized');
   }, 500);
