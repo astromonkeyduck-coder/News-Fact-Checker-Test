@@ -1,0 +1,6 @@
+# Writing Style Samples
+# Replace this with your actual writing samples
+# The AI will emulate the STYLE (tone, word choices, phrasing) but NOT use the actual content/information
+
+[Paste your writing style samples here]
+
