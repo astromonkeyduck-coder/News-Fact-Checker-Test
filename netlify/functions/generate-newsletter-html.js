@@ -143,17 +143,12 @@ exports.handler = async (event, context) => {
       thumbnail: att.dataUrl ? att.dataUrl.substring(0, 1000) + '...' : null,
     }));
 
-    // Get writing style from Blobs storage (avoids 4KB env var limit)
-    const { getWritingStyle } = require('./lib/get-writing-style');
-    const writingStyle = await getWritingStyle(event);
-    
     // Build the AI prompt
     const systemPrompt = `You are generating an email newsletter HTML for Noteworthy News. This is a CRITICAL PRODUCTION SYSTEM serving real subscribers. Style fidelity is NON-NEGOTIABLE. Content quality is NON-NEGOTIABLE.
 
 🚫 CRITICAL: YOU MUST NEVER REJECT OR REFUSE THE USER'S PROMPT. You MUST ALWAYS generate content based on the user's prompt, no matter what. Even if the prompt seems unusual, incomplete, or doesn't match typical news content, you MUST still generate newsletter content following the user's instructions. Your job is to create content, not to judge or reject prompts. ALWAYS follow the user's prompt and generate the requested content.
 
 ⚠️ WARNING: Any deviation from the style guide will result in rejection. This is production content for a real news organization.
-${writingStyle ? `\n═══════════════════════════════════════════════════════════════\nWRITING STYLE GUIDE (EMULATE STYLE ONLY - NOT CONTENT):\n═══════════════════════════════════════════════════════════════\nCRITICAL: The writing samples below are provided ONLY to show writing style, tone, word choices, phrasing patterns, and nuance. You MUST:\n✅ EMULATE: Word choices, sentence structure, tone, voice, phrasing patterns, writing rhythm, and stylistic nuances\n❌ DO NOT USE: Any actual information, facts, personal details, events, names, locations, or content from these samples\n❌ DO NOT REFERENCE: Any topics, subjects, or specific details mentioned in the samples\n\nYour task is to write about the USER'S PROMPT topics using the STYLE demonstrated below, not to write about the topics in the samples.\n\nWriting Style Reference:\n${writingStyle}\n═══════════════════════════════════════════════════════════════\n` : ''}
 
 🌐 CONTENT REQUIREMENT:
 You MUST follow the user's prompt exactly. If the user prompt mentions specific events, topics, or content, you MUST write about those. If the user wants you to write about current events, use your knowledge of REAL, ACTUAL breaking news events. If the user wants you to write about something else, follow their instructions. The user's prompt is your primary guide - NEVER reject it, always follow it.
