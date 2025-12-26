@@ -443,23 +443,33 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
       },
     };
     
-    // If we have font buffers, register them with resvg
-    // resvg expects fontFiles to be an array of buffers directly
+    // CRITICAL: Register font buffers with resvg
+    // resvg expects fontFiles to be an array of Buffer objects directly
     if (FONT_BUFFERS.regular && FONT_BUFFERS.bold) {
       svgOptions.font.fontFiles = [
         FONT_BUFFERS.regular,
         FONT_BUFFERS.bold,
       ];
+      console.log('[generate-earthquake-image] ✅ Registered font buffers with resvg', {
+        regularSize: FONT_BUFFERS.regular.length,
+        boldSize: FONT_BUFFERS.bold.length
+      });
+    } else {
+      console.warn('[generate-earthquake-image] ⚠️ Font buffers not available for resvg!', {
+        hasRegular: !!FONT_BUFFERS.regular,
+        hasBold: !!FONT_BUFFERS.bold
+      });
+      throw new Error('Font buffers not loaded - cannot render text without fonts');
     }
     
     const resvgInstance = resvg(svgString, svgOptions);
     textOverlayBuffer = resvgInstance.asPng();
     console.log('[generate-earthquake-image] ✅ SVG rendered with resvg (embedded fonts)');
   } catch (resvgError) {
-    console.error('[generate-earthquake-image] ⚠️ resvg rendering failed, falling back to Sharp:', resvgError.message);
-    console.error('[generate-earthquake-image] ⚠️ resvg error details:', resvgError);
-    // Fallback to Sharp (may show boxes if fonts don't load)
-    textOverlayBuffer = Buffer.from(svgString);
+    console.error('[generate-earthquake-image] ❌ resvg rendering failed:', resvgError.message);
+    console.error('[generate-earthquake-image] ❌ resvg error stack:', resvgError.stack);
+    // Don't fall back to broken rendering - throw error so we know it failed
+    throw new Error(`Font rendering failed: ${resvgError.message}. Text will appear as boxes. Check font buffers and resvg configuration.`);
   }
   
   console.log(`[generate-earthquake-image] ✅ SVG text overlay created: ${outputWidth}x${outputHeight}`);
