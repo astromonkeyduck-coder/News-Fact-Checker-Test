@@ -1,5 +1,20 @@
 # Deployment Fixes for Build Errors
 
+## ⚠️ CRITICAL: REQUIRED ACTION BEFORE DEPLOYMENT
+
+**YOU MUST REMOVE `WRITTING_STYLE` FROM NETLIFY ENVIRONMENT VARIABLES**
+
+Even though the code now uses Blobs storage, if `WRITTING_STYLE` is still set as an environment variable in Netlify, it will be passed to ALL functions and cause the 4KB limit error.
+
+### Steps to Fix:
+
+1. **Go to Netlify Dashboard → Your Site → Site Settings → Environment Variables**
+2. **Find and DELETE the `WRITTING_STYLE` variable**
+3. **Run the migration script** (see below) to move the data to Blobs
+4. **Redeploy**
+
+---
+
 ## Issues Fixed
 
 ### 1. Environment Variables Exceed 4KB Limit
@@ -14,14 +29,21 @@
 - Updated `netlify/functions/noteworthy-chat.js` - Now uses Blobs instead of env var
 - Created `netlify/functions/migrate-writing-style.js` - Migration script to move existing data
 
-**Migration Steps:**
-1. Run the migration script to move your writing style to Blobs:
+**REQUIRED Migration Steps:**
+1. **FIRST: Remove `WRITTING_STYLE` from Netlify Dashboard environment variables** (this is CRITICAL - deployment will fail if you skip this)
+2. **THEN: Run the migration script** to move your writing style to Blobs:
    ```bash
-   NETLIFY_SITE_ID=your-site-id NETLIFY_BLOB_READ_WRITE_TOKEN=your-token node netlify/functions/migrate-writing-style.js
+   # Get these from Netlify Dashboard → Site Settings → Environment Variables
+   NETLIFY_SITE_ID=your-site-id NETLIFY_BLOB_READ_WRITE_TOKEN=your-token WRITTING_STYLE="your-writing-style-content" node netlify/functions/migrate-writing-style.js
    ```
-2. After migration, you can optionally remove `WRITTING_STYLE` from environment variables (or keep it as a fallback for local dev)
+   Or if you have a `.env` file with these values:
+   ```bash
+   node netlify/functions/migrate-writing-style.js
+   ```
+3. **Verify migration worked** - Check that the script reports success
+4. **Redeploy** - The deployment should now succeed
 
-**Note:** The helper function falls back to the environment variable if Blobs is unavailable, so existing setups will continue to work.
+**Note:** The helper function falls back to the environment variable if Blobs is unavailable, but for deployment to work, the env var MUST be removed from Netlify's settings (you can keep it in local `.env` for development).
 
 ### 2. .node File Bundling Error
 
