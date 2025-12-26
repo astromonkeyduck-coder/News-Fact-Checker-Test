@@ -47,6 +47,15 @@
   included_files = ["netlify/functions/**/*.ts", "src/**/*.ts", "netlify/functions/**/*.png", "netlify/functions/fonts-base64.js"]
   # Also include JavaScript functions
   directory = "netlify/functions"
+  
+  # Configure generate-earthquake-image to exclude native .node modules from bundling
+  # These native modules are loaded at runtime and should not be bundled
+  [functions."generate-earthquake-image"]
+    external = ["@resvg/resvg-js", "@resvg/resvg-js-linux-x64-musl", "@resvg/resvg-js-linux-x64-gnu", "@resvg/resvg-js-darwin-x64", "@resvg/resvg-js-win32-x64"]
+  
+  # Also configure test-generate if it exists
+  [functions."test-generate"]
+    external = ["@resvg/resvg-js", "@resvg/resvg-js-linux-x64-musl", "@resvg/resvg-js-linux-x64-gnu", "@resvg/resvg-js-darwin-x64", "@resvg/resvg-js-win32-x64"]
 
 # Scheduled function: ingest-all
 # Runs every 5 minutes to ingest events from all enabled engines

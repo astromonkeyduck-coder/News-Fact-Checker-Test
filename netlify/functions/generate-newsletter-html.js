@@ -143,8 +143,9 @@ exports.handler = async (event, context) => {
       thumbnail: att.dataUrl ? att.dataUrl.substring(0, 1000) + '...' : null,
     }));
 
-    // Get writing style from environment variable
-    const writingStyle = process.env.WRITTING_STYLE || '';
+    // Get writing style from Blobs storage (avoids 4KB env var limit)
+    const { getWritingStyle } = require('./lib/get-writing-style');
+    const writingStyle = await getWritingStyle(event);
     
     // Build the AI prompt
     const systemPrompt = `You are generating an email newsletter HTML for Noteworthy News. This is a CRITICAL PRODUCTION SYSTEM serving real subscribers. Style fidelity is NON-NEGOTIABLE. Content quality is NON-NEGOTIABLE.
