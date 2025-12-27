@@ -140,3 +140,4 @@ Expected response:
    - Netlify Dashboard → Functions → `ingest-live-events`
    - Should show "Scheduled" status
 
+
