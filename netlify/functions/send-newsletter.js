@@ -235,24 +235,24 @@ async function processImagesForEmail(htmlContent, baseUrl = 'https://noteworthyn
           
           // Fetch the image
           try {
-            const imageResponse = await fetch(fullImageUrl);
-            if (imageResponse.ok) {
-              const arrayBuffer = await imageResponse.arrayBuffer();
-              imageBuffer = Buffer.from(arrayBuffer);
-              contentType = imageResponse.headers.get('content-type') || 'image/png';
-              
-              // Determine filename from key
-              const keyParts = imageKey.split('.');
-              if (keyParts.length > 1) {
+          const imageResponse = await fetch(fullImageUrl);
+          if (imageResponse.ok) {
+            const arrayBuffer = await imageResponse.arrayBuffer();
+            imageBuffer = Buffer.from(arrayBuffer);
+            contentType = imageResponse.headers.get('content-type') || 'image/png';
+            
+            // Determine filename from key
+            const keyParts = imageKey.split('.');
+            if (keyParts.length > 1) {
                 const ext = keyParts[keyParts.length - 1].toLowerCase();
                 filename = `image-${i + 1}.${ext}`;
-              }
+            }
               console.log(`[processImagesForEmail] Successfully fetched image: ${filename} (${imageBuffer.length} bytes, ${contentType})`);
-            } else {
+          } else {
               const errorText = await imageResponse.text().catch(() => '');
               console.warn(`[processImagesForEmail] Failed to fetch image from ${fullImageUrl}: ${imageResponse.status} ${imageResponse.statusText}`, errorText.substring(0, 200));
-              continue;
-            }
+            continue;
+          }
           } catch (fetchError) {
             console.error(`[processImagesForEmail] Error fetching image from ${fullImageUrl}:`, fetchError.message);
             continue;

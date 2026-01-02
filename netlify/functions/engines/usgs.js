@@ -314,7 +314,9 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
       logger.warn('Image generation failed', null, { 
         status: imageResponse.status, 
         statusText: imageResponse.statusText,
-        error: errorData.error || errorText
+        error: errorData.error || errorText,
+        errorDetails: errorData.details || errorData.name || null,
+        fullError: errorText.substring(0, 500) // First 500 chars of error
       });
       return null;
     }

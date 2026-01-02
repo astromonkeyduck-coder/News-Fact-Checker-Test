@@ -11,7 +11,7 @@ const sharp = require('sharp');
 const { getStore } = require("@netlify/blobs");
 const fs = require('fs');
 const path = require('path');
-const { resvg } = require('@resvg/resvg-js');
+const resvg = require('@resvg/resvg-js');
 
 // Load embedded fonts (base64)
 let FONT_DATA = null;
@@ -432,10 +432,11 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
   // resvg properly handles @font-face with data URIs and embedded base64 fonts
   let textOverlayBuffer;
   try {
-    // resvg options - fonts are embedded in SVG via @font-face, so we just need to render
+    // resvg options - fonts are embedded in SVG via @font-face, but we also register font buffers
     const svgOptions = {
       font: {
         loadSystemFonts: false, // Don't load system fonts, rely on embedded @font-face
+        fontFiles: [], // Will be populated below
       },
       fitTo: {
         mode: 'width',
@@ -462,8 +463,10 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
       throw new Error('Font buffers not loaded - cannot render text without fonts');
     }
     
-    const resvgInstance = resvg(svgString, svgOptions);
-    textOverlayBuffer = resvgInstance.asPng();
+    // Use resvg.Resvg constructor to render SVG to PNG
+    const resvgInstance = new resvg.Resvg(svgString, svgOptions);
+    const pngData = resvgInstance.render();
+    textOverlayBuffer = pngData.asPng();
     console.log('[generate-earthquake-image] ✅ SVG rendered with resvg (embedded fonts)');
   } catch (resvgError) {
     console.error('[generate-earthquake-image] ❌ resvg rendering failed:', resvgError.message);
@@ -674,13 +677,33 @@ exports.handler = async (event, context) => {
     };
     
   } catch (error) {
-    console.error('[generate-earthquake-image] Error:', error);
+    console.error('[generate-earthquake-image] ❌ ERROR:', error);
+    console.error('[generate-earthquake-image] ❌ Error name:', error?.name);
+    console.error('[generate-earthquake-image] ❌ Error message:', error?.message);
+    console.error('[generate-earthquake-image] ❌ Error stack:', error?.stack);
+    
+    // Provide detailed error information
+    const errorDetails = {
+      error: error?.message || "Internal server error",
+      name: error?.name || "Error",
+      type: error?.constructor?.name || "Unknown",
+    };
+    
+    // Add specific error context
+    if (error?.message?.includes('Template not found')) {
+      errorDetails.details = 'Template file (2ndUSGSTemp.png) could not be loaded';
+    } else if (error?.message?.includes('Font')) {
+      errorDetails.details = 'Font loading or validation failed';
+    } else if (error?.message?.includes('resvg')) {
+      errorDetails.details = 'SVG rendering failed (resvg error)';
+    } else if (error?.message?.includes('Sharp')) {
+      errorDetails.details = 'Image processing failed (Sharp error)';
+    }
+    
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({
-        error: error?.message || "Internal server error",
-      }),
+      body: JSON.stringify(errorDetails),
     };
   }
 };

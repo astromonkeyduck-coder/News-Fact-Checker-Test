@@ -171,18 +171,43 @@ exports.handler = async (event, context) => {
       `,
     };
     
-    // Download and attach image if available
+    // Download and attach image if available (as inline CID attachment)
     let imageAttachment = null;
+    let htmlWithImage = baseEmailContent.html;
+    
     if (imageUrl) {
+      console.log(`[send-earthquake-alert] 📸 Downloading image from: ${imageUrl}`);
       const imageData = await downloadImageForEmail(imageUrl);
       if (imageData) {
+        // Create CID (Content-ID) for inline image embedding
+        const cidIdentifier = `earthquake-image-${earthquake.event_id || Date.now()}`;
+        
         imageAttachment = {
           filename: `earthquake-m${earthquake.magnitude.toFixed(1)}-${earthquake.event_id}.png`,
           content: imageData.buffer.toString('base64'),
           content_type: imageData.contentType,
+          content_id: cidIdentifier, // Resend uses snake_case: content_id for inline images
         };
-        console.log('[send-earthquake-alert] Image prepared for email attachment');
+        
+        // Add <img> tag in HTML that references the CID
+        const imageHtml = `
+          <div style="margin: 20px 0; text-align: center;">
+            <img src="cid:${cidIdentifier}" alt="Earthquake visualization" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+          </div>
+        `;
+        
+        // Insert image before the "View on USGS website" link
+        htmlWithImage = baseEmailContent.html.replace(
+          '<p style="font-size: 12px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">',
+          imageHtml + '<p style="font-size: 12px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">'
+        );
+        
+        console.log(`[send-earthquake-alert] ✅ Image prepared for inline email embedding (CID: ${cidIdentifier}, size: ${Math.round(imageData.buffer.length / 1024)}KB)`);
+      } else {
+        console.warn('[send-earthquake-alert] ⚠️ Failed to download image, email will be sent without image');
       }
+    } else {
+      console.log('[send-earthquake-alert] ℹ️ No imageUrl provided, email will be sent without image');
     }
     
     // Send email to all notification emails
@@ -190,11 +215,13 @@ exports.handler = async (event, context) => {
       notificationEmails.map(async (email) => {
         const emailContent = {
           ...baseEmailContent,
+          html: htmlWithImage, // Use HTML with embedded image
           to: email,
         };
         
         if (imageAttachment) {
           emailContent.attachments = [imageAttachment];
+          console.log(`[send-earthquake-alert] 📎 Adding image attachment to email for ${email}`);
         }
         
         return await resend.emails.send(emailContent);
@@ -216,7 +243,8 @@ exports.handler = async (event, context) => {
     
     const result = successful[0].value;
     
-    console.log(`[send-earthquake-alert] Alert sent successfully for M${earthquake.magnitude} earthquake to ${successful.length} recipient(s)`);
+    const hasImage = imageAttachment !== null;
+    console.log(`[send-earthquake-alert] ✅ Alert sent successfully for M${earthquake.magnitude} earthquake to ${successful.length} recipient(s)${hasImage ? ' with image' : ' (no image)'}`);
     
     return {
       statusCode: 200,
@@ -228,6 +256,7 @@ exports.handler = async (event, context) => {
         recipients: notificationEmails,
         successful: successful.length,
         failed: failed.length,
+        hasImage: hasImage,
       }),
     };
     

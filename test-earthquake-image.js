@@ -13,30 +13,33 @@ async function testImageGeneration() {
   console.log('🧪 Testing earthquake image generation...\n');
   
   // Test cases with different magnitudes and locations
+  // NOTE: USGS image URLs are examples - in production, these come from the USGS API
   const testCases = [
     {
       magnitude: 7.5,
       location: 'SOUTHERN CALIFORNIA',
       eventId: 'test-001',
-      usgsImages: [],
+      usgsImages: [], // No USGS images - template only
     },
     {
       magnitude: 6.2,
       location: 'TAIWAN',
       eventId: 'test-002',
-      usgsImages: [],
+      usgsImages: [], // No USGS images - template only
     },
     {
-      magnitude: 8.1,
-      location: 'NORTHERN CHILE',
-      eventId: 'test-003',
-      usgsImages: [],
-    },
-    {
-      magnitude: 5.8,
-      location: 'VERY LONG LOCATION NAME THAT NEEDS TO FIT',
-      eventId: 'test-004',
-      usgsImages: [],
+      magnitude: 4.5,
+      location: 'MEXICO',
+      eventId: 'test-with-usgs',
+      usgsImages: [
+        // Example USGS image URLs (these would come from USGS API in production)
+        // Using placeholder URLs - replace with actual USGS image URLs to test
+        // {
+        //   url: 'https://earthquake.usgs.gov/earthquakes/eventpage/us7000rm3u/executive',
+        //   type: 'shakemap',
+        //   filename: 'shakemap.png'
+        // }
+      ],
     },
   ];
   
