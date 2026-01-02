@@ -138,14 +138,22 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const { name = '', email = '', tip = '', isAnonymous = false } = bodyData;
+    const { 
+      name = '', 
+      email = '', 
+      tip = '', 
+      isAnonymous = false,
+      category = '',
+      priority = 'normal',
+      fileCount = 0
+    } = bodyData;
 
     // Validate required fields
-    if (!tip || tip.trim().length < 10) {
+    if (!tip || tip.trim().length < 50) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Tip content is required and must be at least 10 characters long' }),
+        body: JSON.stringify({ error: 'Tip content is required and must be at least 50 characters long' }),
       };
     }
 
@@ -165,6 +173,32 @@ exports.handler = async (event, context) => {
     const tipName = isAnonymous ? 'Anonymous' : (name || 'Not provided');
     const tipEmail = isAnonymous ? 'Anonymous submission' : (email || 'Not provided');
     const anonymityStatus = isAnonymous ? 'Yes - Anonymous' : 'No - Contact info provided';
+    
+    // Format category and priority for display
+    const categoryLabels = {
+      'breaking': 'Breaking News',
+      'investigation': 'Investigation',
+      'corruption': 'Corruption',
+      'public-safety': 'Public Safety',
+      'politics': 'Politics',
+      'business': 'Business',
+      'technology': 'Technology',
+      'environment': 'Environment',
+      'health': 'Health',
+      'education': 'Education',
+      'other': 'Other',
+      '': 'Not specified'
+    };
+    
+    const priorityLabels = {
+      'normal': 'Normal',
+      'high': 'High',
+      'urgent': 'Urgent'
+    };
+    
+    const categoryDisplay = categoryLabels[category] || category || 'Not specified';
+    const priorityDisplay = priorityLabels[priority] || priority || 'Normal';
+    const priorityEmoji = priority === 'urgent' ? '🔴' : priority === 'high' ? '🟡' : '🟢';
     
     // vNext: Sanitize tip content - strip HTML tags and escape
     const sanitizeText = (text) => {
@@ -195,7 +229,7 @@ exports.handler = async (event, context) => {
     console.log('Notification email details:', {
       from: fromEmail,
       to: notificationTo,
-      subject: `💡 New Tip Submission${isAnonymous ? ' (Anonymous)' : ''}`,
+      subject: `${priorityEmoji} New Tip Submission${isAnonymous ? ' (Anonymous)' : ''}${category ? ` - ${categoryDisplay}` : ''}`,
       tipLength: tip.length
     });
     
@@ -204,7 +238,7 @@ exports.handler = async (event, context) => {
       notificationResult = await resend.emails.send({
         from: fromEmail,
         to: notificationTo,
-        subject: `💡 New Tip Submission${isAnonymous ? ' (Anonymous)' : ''}`,
+        subject: `${priorityEmoji} New Tip Submission${isAnonymous ? ' (Anonymous)' : ''}${category ? ` - ${categoryDisplay}` : ''}`,
         clickTracking: false,
       html: `<!DOCTYPE html>
 <html>
@@ -251,12 +285,14 @@ exports.handler = async (event, context) => {
   </table>
 </body>
 </html>`,
-      text: `New Tip Submission${isAnonymous ? ' (Anonymous)' : ''}
+        text: `New Tip Submission${isAnonymous ? ' (Anonymous)' : ''}
 
 Name: ${tipName}
 Email: ${tipEmail}
 Anonymous: ${anonymityStatus}
-Submitted: ${new Date().toLocaleString()}
+Category: ${categoryDisplay}
+Priority: ${priorityDisplay}
+${fileCount > 0 ? `Attachments: ${fileCount} file(s)\n` : ''}Submitted: ${new Date().toLocaleString()}
 
 Tip Content:
 ${tip}
@@ -434,6 +470,9 @@ The Noteworthy News Team`,
         email: tipEmail,
         userEmail: email && email.includes('@') ? email.toLowerCase().trim() : null, // Also pass as userEmail for lookup
         tip: tip,
+        category: category,
+        priority: priority,
+        fileCount: fileCount,
         isAnonymous: isAnonymous,
         tipLength: tip.length,
         notificationSent: notificationSent,
@@ -483,7 +522,7 @@ The Noteworthy News Team`,
           resend.emails.send({
             from: fromEmail,
             to: email,
-            subject: `💡 New Tip Submission${isAnonymous ? ' (Anonymous)' : ''}`,
+            subject: `${priorityEmoji} New Tip Submission${isAnonymous ? ' (Anonymous)' : ''}${category ? ` - ${categoryDisplay}` : ''}`,
             html: `<!DOCTYPE html>
 <html>
 <head>
@@ -497,7 +536,7 @@ The Noteworthy News Team`,
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
           <tr>
             <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(46, 204, 113, 0.1) 100%); border-radius: 10px 10px 0 0;">
-              <h2 style="color: #4a90e2; margin: 0; font-size: 24px; font-weight: bold;">💡 New Tip Submission${isAnonymous ? '<br><span style="font-size: 16px; color: #666;">(Anonymous)</span>' : ''}</h2>
+              <h2 style="color: #4a90e2; margin: 0; font-size: 24px; font-weight: bold;">${priorityEmoji} New Tip Submission${isAnonymous ? '<br><span style="font-size: 16px; color: #666;">(Anonymous)</span>' : ''}</h2>
             </td>
           </tr>
           <tr>
@@ -508,6 +547,9 @@ The Noteworthy News Team`,
                     <p style="color: #333333; font-size: 16px; margin: 10px 0; line-height: 1.6;"><strong style="color: #4a90e2;">👤 Name:</strong><br><span style="color: #666666;">${safeName || tipName}</span></p>
                     <p style="color: #333333; font-size: 16px; margin: 10px 0; line-height: 1.6;"><strong style="color: #4a90e2;">📧 Email:</strong><br><span style="color: #666666;">${safeEmail || tipEmail}</span></p>
                     <p style="color: #333333; font-size: 16px; margin: 10px 0; line-height: 1.6;"><strong style="color: #4a90e2;">🔒 Anonymous:</strong><br><span style="color: #666666;">${anonymityStatus}</span></p>
+                    <p style="color: #333333; font-size: 16px; margin: 10px 0; line-height: 1.6;"><strong style="color: #4a90e2;">📂 Category:</strong><br><span style="color: #666666;">${categoryDisplay}</span></p>
+                    <p style="color: #333333; font-size: 16px; margin: 10px 0; line-height: 1.6;"><strong style="color: #4a90e2;">${priorityEmoji} Priority:</strong><br><span style="color: #666666;">${priorityDisplay}</span></p>
+                    ${fileCount > 0 ? `<p style="color: #333333; font-size: 16px; margin: 10px 0; line-height: 1.6;"><strong style="color: #4a90e2;">📎 Attachments:</strong><br><span style="color: #666666;">${fileCount} file(s) attached</span></p>` : ''}
                     <p style="color: #333333; font-size: 16px; margin: 10px 0; line-height: 1.6;"><strong style="color: #4a90e2;">📅 Submitted:</strong><br><span style="color: #666666;">${new Date().toLocaleString()}</span></p>
                   </td>
                 </tr>
@@ -534,7 +576,9 @@ The Noteworthy News Team`,
 Name: ${tipName}
 Email: ${tipEmail}
 Anonymous: ${anonymityStatus}
-Submitted: ${new Date().toLocaleString()}
+Category: ${categoryDisplay}
+Priority: ${priorityDisplay}
+${fileCount > 0 ? `Attachments: ${fileCount} file(s)\n` : ''}Submitted: ${new Date().toLocaleString()}
 
 Tip Content:
 ${tip}

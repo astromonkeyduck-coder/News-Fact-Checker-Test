@@ -8,7 +8,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="app-version" content="December 25, 2025">
+    <meta name="app-version" content="January 2, 2026">
     <title>Noteworthy News - Fact-Checked Journalism & Media Literacy Games | Trusted News Source</title>
     
     <!-- vNext: Mobile Responsiveness Fixes -->
@@ -3940,6 +3940,356 @@
             border: 2px solid #E74C3C;
             color: #E74C3C;
             display: block;
+        }
+        
+        /* Enhanced Tip Form Styles */
+        .tip-draft-indicator {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(74, 158, 255, 0.15);
+            border: 1px solid rgba(74, 158, 255, 0.3);
+            border-radius: 6px;
+            color: #5BB5FF;
+            font-size: 0.875rem;
+            margin-bottom: 15px;
+            animation: slideInDown 0.3s ease;
+        }
+        
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .tip-form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .tip-form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .tip-form-group-half {
+            margin-bottom: 0;
+        }
+        
+        .tip-select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid rgba(74, 158, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234A9EFF' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 40px;
+        }
+        
+        .tip-select:focus {
+            outline: none;
+            border-color: #4A9EFF;
+            background-color: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+        }
+        
+        .tip-select option {
+            background: #1a1a3a;
+            color: white;
+        }
+        
+        .tip-char-counter {
+            float: right;
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .tip-char-counter.warning {
+            color: #ffa500;
+        }
+        
+        .tip-char-counter.error {
+            color: #E74C3C;
+        }
+        
+        .tip-textarea-hint {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            margin-top: 8px;
+            padding: 10px;
+            background: rgba(74, 158, 255, 0.1);
+            border-left: 3px solid #4A9EFF;
+            border-radius: 4px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+        
+        .tip-textarea-hint svg {
+            flex-shrink: 0;
+            margin-top: 2px;
+            color: #4A9EFF;
+        }
+        
+        .tip-field-error {
+            display: block;
+            margin-top: 6px;
+            color: #E74C3C;
+            font-size: 0.85rem;
+            animation: shake 0.3s ease;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .tip-form-group input.error,
+        .tip-form-group textarea.error,
+        .tip-form-group select.error {
+            border-color: #E74C3C;
+            background: rgba(231, 76, 60, 0.1);
+        }
+        
+        .tip-form-group input.valid,
+        .tip-form-group textarea.valid {
+            border-color: #2ecc71;
+        }
+        
+        .tip-attachment-hint {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 4px;
+        }
+        
+        .tip-file-upload-area {
+            border: 2px dashed rgba(74, 158, 255, 0.4);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        .tip-file-upload-area:hover {
+            border-color: #4A9EFF;
+            background: rgba(74, 158, 255, 0.1);
+        }
+        
+        .tip-file-upload-area.dragover {
+            border-color: #5BB5FF;
+            background: rgba(91, 181, 255, 0.2);
+            transform: scale(1.02);
+        }
+        
+        .tip-file-upload-content {
+            pointer-events: none;
+        }
+        
+        .tip-file-upload-text {
+            color: #4A9EFF;
+            font-weight: 600;
+            margin: 8px 0 4px;
+            font-size: 0.95rem;
+        }
+        
+        .tip-file-upload-subtext {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+        }
+        
+        .tip-file-list {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .tip-file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(74, 158, 255, 0.3);
+            border-radius: 6px;
+            color: white;
+        }
+        
+        .tip-file-item-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .tip-file-item-icon {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            color: #4A9EFF;
+        }
+        
+        .tip-file-item-name {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 0.9rem;
+        }
+        
+        .tip-file-item-size {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+        
+        .tip-file-item-remove {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.5);
+            color: #E74C3C;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        
+        .tip-file-item-remove:hover {
+            background: rgba(231, 76, 60, 0.3);
+            transform: scale(1.1);
+        }
+        
+        .tip-form-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        
+        .tip-clear-button {
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .tip-clear-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .tip-submit-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex: 1;
+        }
+        
+        .tip-submit-text {
+            display: inline-block;
+        }
+        
+        .tip-submit-loader {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tip-spinner {
+            width: 18px;
+            height: 18px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .tip-anonymous-group label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        
+        .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(74, 158, 255, 0.5);
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.3);
+            position: relative;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        
+        .tip-anonymous-group input[type="checkbox"]:checked + label .checkbox-custom {
+            background: #4A9EFF;
+            border-color: #4A9EFF;
+        }
+        
+        .tip-anonymous-group input[type="checkbox"]:checked + label .checkbox-custom::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .tip-anonymous-group input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        /* Success Animation */
+        .tip-modal-content.success-animation {
+            animation: successPulse 0.6s ease;
+        }
+        
+        @keyframes successPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
         }
         
         /* Mobile adjustments for tip modal */
@@ -13525,7 +13875,7 @@
             </div>
             
             <div class="header-right">
-                <div class="last-update" title="Scheduled Maintenance: January 1, 2026">Scheduled Maintenance: January 1, 2026</div>
+                <div class="last-update" title="Scheduled Maintenance: January 9, 2026">Scheduled Maintenance: January 9, 2026</div>
                 <button class="auth-btn signin-btn" id="signinBtn" aria-label="Sign In">Sign In</button>
                 <button class="auth-btn signup-btn" id="signupBtn" aria-label="Sign Up">Sign Up</button>
                 <button class="music-control-btn" id="musicControlBtn" aria-label="Toggle Background Music" title="Toggle Background Music">
@@ -13572,30 +13922,119 @@
             </div>
             <div class="tip-modal-body">
                 <div class="tip-message" id="tipMessage"></div>
+                <div class="tip-draft-indicator" id="tipDraftIndicator" style="display: none;">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; margin-right: 0.5rem;">
+                        <path d="M5 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-7-3.5L5 21V5z" stroke="currentColor" stroke-width="2" fill="none"/>
+                    </svg>
+                    <span>Draft saved automatically</span>
+                </div>
                 <form id="tipForm">
                     <div class="tip-anonymous-group">
                         <input type="checkbox" id="tipAnonymous" name="anonymous">
-                        <label for="tipAnonymous">Submit anonymously (your name and email will not be shared)</label>
+                        <label for="tipAnonymous">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label">Submit anonymously (your name and email will not be shared)</span>
+                        </label>
                     </div>
                     
-                    <div class="tip-form-group" id="tipNameGroup">
-                        <label for="tipName">Your Name</label>
-                        <input type="text" id="tipName" name="name" placeholder="Enter your name">
+                    <div class="tip-form-row">
+                        <div class="tip-form-group" id="tipNameGroup">
+                            <label for="tipName">Your Name</label>
+                            <input type="text" id="tipName" name="name" placeholder="Enter your name" autocomplete="name">
+                            <span class="tip-field-error" id="tipNameError"></span>
+                        </div>
+                        
+                        <div class="tip-form-group" id="tipEmailGroup">
+                            <label for="tipEmail">Your Email</label>
+                            <input type="email" id="tipEmail" name="email" placeholder="Enter your email" autocomplete="email">
+                            <span class="tip-field-error" id="tipEmailError"></span>
+                        </div>
                     </div>
                     
-                    <div class="tip-form-group" id="tipEmailGroup">
-                        <label for="tipEmail">Your Email</label>
-                        <input type="email" id="tipEmail" name="email" placeholder="Enter your email">
+                    <div class="tip-form-row">
+                        <div class="tip-form-group tip-form-group-half">
+                            <label for="tipCategory">Category</label>
+                            <select id="tipCategory" name="category" class="tip-select">
+                                <option value="">Select a category (optional)</option>
+                                <option value="breaking">Breaking News</option>
+                                <option value="investigation">Investigation</option>
+                                <option value="corruption">Corruption</option>
+                                <option value="public-safety">Public Safety</option>
+                                <option value="politics">Politics</option>
+                                <option value="business">Business</option>
+                                <option value="technology">Technology</option>
+                                <option value="environment">Environment</option>
+                                <option value="health">Health</option>
+                                <option value="education">Education</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="tip-form-group tip-form-group-half">
+                            <label for="tipPriority">Priority Level</label>
+                            <select id="tipPriority" name="priority" class="tip-select">
+                                <option value="normal">Normal</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
                     </div>
                     
                     <div class="tip-form-group">
-                        <label for="tipContent">Tip Content *</label>
-                        <textarea id="tipContent" name="tip" placeholder="Please provide as much detail as possible about your tip. This helps our team investigate effectively." required></textarea>
+                        <label for="tipContent">
+                            Tip Content *
+                            <span class="tip-char-counter" id="tipCharCounter">0 / 5000</span>
+                        </label>
+                        <textarea id="tipContent" name="tip" placeholder="Please provide as much detail as possible about your tip. Include who, what, when, where, and why. This helps our team investigate effectively." required rows="8" maxlength="5000"></textarea>
+                        <div class="tip-textarea-hint">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; margin-right: 0.25rem;">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/>
+                            </svg>
+                            <span>Minimum 50 characters required. More details help us verify and act on your tip faster.</span>
+                        </div>
+                        <span class="tip-field-error" id="tipContentError"></span>
                     </div>
                     
-                    <button type="submit" class="tip-submit-button" id="tipSubmitButton">
-                        Submit Tip
-                    </button>
+                    <div class="tip-form-group">
+                        <label for="tipAttachments">
+                            Attachments (Optional)
+                            <span class="tip-attachment-hint">Images, documents, or screenshots (max 10MB total)</span>
+                        </label>
+                        <div class="tip-file-upload-area" id="tipFileUploadArea">
+                            <input type="file" id="tipAttachments" name="attachments" multiple accept="image/*,.pdf,.doc,.docx,.txt" style="display: none;">
+                            <div class="tip-file-upload-content">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 2.5em; height: 2.5em; margin-bottom: 0.5rem; opacity: 0.6;">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <p class="tip-file-upload-text">Click to upload or drag and drop</p>
+                                <p class="tip-file-upload-subtext">Images, PDFs, or documents</p>
+                            </div>
+                        </div>
+                        <div class="tip-file-list" id="tipFileList"></div>
+                        <span class="tip-field-error" id="tipFileError"></span>
+                    </div>
+                    
+                    <div class="tip-form-actions">
+                        <button type="button" class="tip-clear-button" id="tipClearButton" style="display: none;">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; margin-right: 0.5rem;">
+                                <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z" stroke="currentColor" stroke-width="2" fill="none"/>
+                            </svg>
+                            Clear Form
+                        </button>
+                        <button type="submit" class="tip-submit-button" id="tipSubmitButton">
+                            <span class="tip-submit-text">Submit Tip</span>
+                            <span class="tip-submit-loader" style="display: none;">
+                                <svg class="tip-spinner" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="32" stroke-dashoffset="32">
+                                        <animate attributeName="stroke-dasharray" dur="2s" values="0 32;16 16;0 32;0 32" repeatCount="indefinite"/>
+                                        <animate attributeName="stroke-dashoffset" dur="2s" values="0;-16;-32;-32" repeatCount="indefinite"/>
+                                    </circle>
+                                </svg>
+                                Submitting...
+                            </span>
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -15117,7 +15556,7 @@
             }
         }
         
-        // Initialize Tip Submission Feature
+        // Initialize Tip Submission Feature - Enhanced Version
         function initTipSubmission() {
             const tipModal = document.getElementById('tipModal');
             const tipSubmitBtn = document.getElementById('tipSubmitBtn');
@@ -15129,14 +15568,253 @@
             const tipEmailGroup = document.getElementById('tipEmailGroup');
             const tipMessage = document.getElementById('tipMessage');
             const tipSubmitButton = document.getElementById('tipSubmitButton');
+            const tipContent = document.getElementById('tipContent');
+            const tipCharCounter = document.getElementById('tipCharCounter');
+            const tipAttachments = document.getElementById('tipAttachments');
+            const tipFileUploadArea = document.getElementById('tipFileUploadArea');
+            const tipFileList = document.getElementById('tipFileList');
+            const tipDraftIndicator = document.getElementById('tipDraftIndicator');
+            const tipClearButton = document.getElementById('tipClearButton');
+            
+            // State management
+            let selectedFiles = [];
+            let draftSaveTimeout = null;
+            const DRAFT_STORAGE_KEY = 'tip_form_draft';
+            const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+            const MAX_TOTAL_SIZE = 10 * 1024 * 1024; // 10MB total
+            
+            // Load draft from localStorage
+            function loadDraft() {
+                try {
+                    const draft = localStorage.getItem(DRAFT_STORAGE_KEY);
+                    if (draft) {
+                        const data = JSON.parse(draft);
+                        if (data.name) document.getElementById('tipName').value = data.name;
+                        if (data.email) document.getElementById('tipEmail').value = data.email;
+                        if (data.tip) document.getElementById('tipContent').value = data.tip;
+                        if (data.category) document.getElementById('tipCategory').value = data.category;
+                        if (data.priority) document.getElementById('tipPriority').value = data.priority;
+                        if (data.isAnonymous !== undefined) tipAnonymous.checked = data.isAnonymous;
+                        
+                        // Update character counter
+                        updateCharCounter();
+                        
+                        // Show draft indicator
+                        if (tipDraftIndicator) {
+                            tipDraftIndicator.style.display = 'flex';
+                            setTimeout(() => {
+                                if (tipDraftIndicator) tipDraftIndicator.style.display = 'none';
+                            }, 3000);
+                        }
+                        
+                        // Show clear button if form has content
+                        if (tipClearButton && (data.tip || data.name || data.email)) {
+                            tipClearButton.style.display = 'flex';
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to load draft:', e);
+                }
+            }
+            
+            // Save draft to localStorage
+            function saveDraft() {
+                if (draftSaveTimeout) clearTimeout(draftSaveTimeout);
+                
+                draftSaveTimeout = setTimeout(() => {
+                    try {
+                        const draft = {
+                            name: document.getElementById('tipName').value.trim(),
+                            email: document.getElementById('tipEmail').value.trim(),
+                            tip: document.getElementById('tipContent').value.trim(),
+                            category: document.getElementById('tipCategory').value,
+                            priority: document.getElementById('tipPriority').value,
+                            isAnonymous: tipAnonymous.checked,
+                            timestamp: Date.now()
+                        };
+                        
+                        // Only save if there's meaningful content
+                        if (draft.tip.length > 0 || draft.name.length > 0 || draft.email.length > 0) {
+                            localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+                            
+                            // Show draft indicator briefly
+                            if (tipDraftIndicator) {
+                                tipDraftIndicator.style.display = 'flex';
+                                setTimeout(() => {
+                                    if (tipDraftIndicator) tipDraftIndicator.style.display = 'none';
+                                }, 2000);
+                            }
+                            
+                            // Show clear button
+                            if (tipClearButton) tipClearButton.style.display = 'flex';
+                        } else {
+                            localStorage.removeItem(DRAFT_STORAGE_KEY);
+                            if (tipClearButton) tipClearButton.style.display = 'none';
+                        }
+                    } catch (e) {
+                        console.error('Failed to save draft:', e);
+                    }
+                }, 1000); // Debounce: save 1 second after last change
+            }
+            
+            // Clear draft
+            function clearDraft() {
+                localStorage.removeItem(DRAFT_STORAGE_KEY);
+                if (tipClearButton) tipClearButton.style.display = 'none';
+            }
+            
+            // Update character counter
+            function updateCharCounter() {
+                if (!tipCharCounter || !tipContent) return;
+                
+                const length = tipContent.value.length;
+                const maxLength = parseInt(tipContent.getAttribute('maxlength')) || 5000;
+                tipCharCounter.textContent = `${length} / ${maxLength}`;
+                
+                // Update styling based on length
+                tipCharCounter.classList.remove('warning', 'error');
+                if (length < 50) {
+                    tipCharCounter.classList.add('error');
+                } else if (length > maxLength * 0.9) {
+                    tipCharCounter.classList.add('warning');
+                }
+            }
+            
+            // Validate field
+            function validateField(fieldId, validator) {
+                const field = document.getElementById(fieldId);
+                const errorEl = document.getElementById(fieldId + 'Error');
+                
+                if (!field) return true;
+                
+                const value = field.value.trim();
+                const isValid = validator(value);
+                
+                if (isValid) {
+                    field.classList.remove('error');
+                    field.classList.add('valid');
+                    if (errorEl) errorEl.textContent = '';
+                } else {
+                    field.classList.remove('valid');
+                    field.classList.add('error');
+                }
+                
+                return isValid;
+            }
+            
+            // Validate email
+            function validateEmail(email) {
+                if (!email) return true; // Email is optional unless not anonymous
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            }
+            
+            // Validate name
+            function validateName(name) {
+                if (!name) return true; // Name is optional unless not anonymous
+                return name.length >= 2;
+            }
+            
+            // Validate tip content
+            function validateTipContent(tip) {
+                return tip.length >= 50;
+            }
+            
+            // Format file size
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+            }
+            
+            // Handle file selection
+            function handleFileSelect(files) {
+                Array.from(files).forEach(file => {
+                    // Validate file size
+                    if (file.size > MAX_FILE_SIZE) {
+                        showError('tipFileError', `File "${file.name}" is too large. Maximum size is ${formatFileSize(MAX_FILE_SIZE)}.`);
+                        return;
+                    }
+                    
+                    // Check total size
+                    const currentTotal = selectedFiles.reduce((sum, f) => sum + f.size, 0);
+                    if (currentTotal + file.size > MAX_TOTAL_SIZE) {
+                        showError('tipFileError', `Total file size exceeds ${formatFileSize(MAX_TOTAL_SIZE)}.`);
+                        return;
+                    }
+                    
+                    // Check if file already exists
+                    if (selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                        return; // Skip duplicates
+                    }
+                    
+                    selectedFiles.push(file);
+                    renderFileList();
+                });
+            }
+            
+            // Render file list
+            function renderFileList() {
+                if (!tipFileList) return;
+                
+                tipFileList.innerHTML = '';
+                
+                selectedFiles.forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'tip-file-item';
+                    
+                    const fileIcon = document.createElement('div');
+                    fileIcon.className = 'tip-file-item-icon';
+                    fileIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="2" fill="none"/></svg>';
+                    
+                    const fileInfo = document.createElement('div');
+                    fileInfo.className = 'tip-file-item-info';
+                    
+                    const fileName = document.createElement('div');
+                    fileName.className = 'tip-file-item-name';
+                    fileName.textContent = file.name;
+                    
+                    const fileSize = document.createElement('div');
+                    fileSize.className = 'tip-file-item-size';
+                    fileSize.textContent = formatFileSize(file.size);
+                    
+                    fileInfo.appendChild(fileIcon);
+                    fileInfo.appendChild(fileName);
+                    fileInfo.appendChild(fileSize);
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'tip-file-item-remove';
+                    removeBtn.textContent = 'Remove';
+                    removeBtn.type = 'button';
+                    removeBtn.onclick = () => {
+                        selectedFiles.splice(index, 1);
+                        renderFileList();
+                    };
+                    
+                    fileItem.appendChild(fileInfo);
+                    fileItem.appendChild(removeBtn);
+                    tipFileList.appendChild(fileItem);
+                });
+            }
+            
+            // Show error
+            function showError(fieldId, message) {
+                const errorEl = document.getElementById(fieldId);
+                if (errorEl) {
+                    errorEl.textContent = message;
+                    setTimeout(() => {
+                        if (errorEl) errorEl.textContent = '';
+                    }, 5000);
+                }
+            }
             
             // Open modal
             function openTipModal() {
                 tipModal.classList.add('active');
                 document.body.style.overflow = 'hidden';
-                
-                // Authentication removed - forms work without sign-in
-                // Users can fill forms manually
+                loadDraft();
             }
             
             // Close modal
@@ -15149,22 +15827,105 @@
                 tipAnonymous.checked = false;
                 tipNameGroup.classList.remove('hidden');
                 tipEmailGroup.classList.remove('hidden');
+                selectedFiles = [];
+                renderFileList();
+                clearDraft();
+                updateCharCounter();
+                
+                // Clear all error states
+                document.querySelectorAll('.tip-form-group input, .tip-form-group textarea, .tip-form-group select').forEach(el => {
+                    el.classList.remove('error', 'valid');
+                });
+                document.querySelectorAll('.tip-field-error').forEach(el => {
+                    el.textContent = '';
+                });
             }
             
             // Handle anonymous checkbox
-            tipAnonymous.addEventListener('change', function() {
-                if (this.checked) {
-                    tipNameGroup.classList.add('hidden');
-                    tipEmailGroup.classList.add('hidden');
-                    document.getElementById('tipName').value = '';
-                    document.getElementById('tipEmail').value = '';
-                } else {
-                    tipNameGroup.classList.remove('hidden');
-                    tipEmailGroup.classList.remove('hidden');
-                }
-            });
+            if (tipAnonymous) {
+                tipAnonymous.addEventListener('change', function() {
+                    if (this.checked) {
+                        tipNameGroup.classList.add('hidden');
+                        tipEmailGroup.classList.add('hidden');
+                        document.getElementById('tipName').value = '';
+                        document.getElementById('tipEmail').value = '';
+                    } else {
+                        tipNameGroup.classList.remove('hidden');
+                        tipEmailGroup.classList.remove('hidden');
+                    }
+                    saveDraft();
+                });
+            }
             
-            // Toggle modal handlers (open if closed, close if open)
+            // Character counter
+            if (tipContent) {
+                tipContent.addEventListener('input', function() {
+                    updateCharCounter();
+                    saveDraft();
+                    validateField('tipContent', validateTipContent);
+                });
+            }
+            
+            // Real-time validation
+            const tipName = document.getElementById('tipName');
+            const tipEmail = document.getElementById('tipEmail');
+            
+            if (tipName) {
+                tipName.addEventListener('blur', () => {
+                    validateField('tipName', validateName);
+                    saveDraft();
+                });
+                tipName.addEventListener('input', saveDraft);
+            }
+            
+            if (tipEmail) {
+                tipEmail.addEventListener('blur', () => {
+                    validateField('tipEmail', validateEmail);
+                    saveDraft();
+                });
+                tipEmail.addEventListener('input', saveDraft);
+            }
+            
+            // File upload handling
+            if (tipFileUploadArea && tipAttachments) {
+                tipFileUploadArea.addEventListener('click', () => tipAttachments.click());
+                
+                tipFileUploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    tipFileUploadArea.classList.add('dragover');
+                });
+                
+                tipFileUploadArea.addEventListener('dragleave', () => {
+                    tipFileUploadArea.classList.remove('dragover');
+                });
+                
+                tipFileUploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    tipFileUploadArea.classList.remove('dragover');
+                    handleFileSelect(e.dataTransfer.files);
+                });
+                
+                tipAttachments.addEventListener('change', (e) => {
+                    handleFileSelect(e.target.files);
+                    e.target.value = ''; // Reset input
+                });
+            }
+            
+            // Clear button
+            if (tipClearButton) {
+                tipClearButton.addEventListener('click', () => {
+                    if (confirm('Are you sure you want to clear the form? This will delete your draft.')) {
+                        tipForm.reset();
+                        selectedFiles = [];
+                        renderFileList();
+                        clearDraft();
+                        updateCharCounter();
+                        tipClearButton.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Toggle modal handlers
             if (tipSubmitBtn) {
                 tipSubmitBtn.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -15184,7 +15945,6 @@
                     } else {
                         openTipModal();
                     }
-                    // Close mobile menu if open
                     const mobileNav = document.getElementById('mobileNav');
                     if (mobileNav) {
                         mobileNav.classList.remove('active');
@@ -15197,14 +15957,12 @@
                 tipModalClose.addEventListener('click', closeTipModal);
             }
             
-            // Close modal on background click
             tipModal.addEventListener('click', function(e) {
                 if (e.target === tipModal) {
                     closeTipModal();
                 }
             });
             
-            // Close modal on ESC key
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape' && tipModal.classList.contains('active')) {
                     closeTipModal();
@@ -15218,36 +15976,71 @@
                 const name = document.getElementById('tipName').value.trim();
                 const email = document.getElementById('tipEmail').value.trim();
                 const tip = document.getElementById('tipContent').value.trim();
+                const category = document.getElementById('tipCategory').value;
+                const priority = document.getElementById('tipPriority').value;
                 const isAnonymous = tipAnonymous.checked;
                 
-                // Validate tip content
-                if (tip.length < 10) {
+                // Validate all fields
+                let isValid = true;
+                
+                if (!isAnonymous) {
+                    if (!validateField('tipName', validateName)) {
+                        showError('tipNameError', 'Please enter a valid name (at least 2 characters).');
+                        isValid = false;
+                    }
+                    if (!validateField('tipEmail', validateEmail)) {
+                        showError('tipEmailError', 'Please enter a valid email address.');
+                        isValid = false;
+                    }
+                }
+                
+                if (!validateField('tipContent', validateTipContent)) {
+                    showError('tipContentError', 'Tip content must be at least 50 characters long.');
+                    isValid = false;
+                }
+                
+                if (!isValid) {
                     tipMessage.className = 'tip-message error';
-                    tipMessage.textContent = 'Tip content must be at least 10 characters long.';
+                    tipMessage.textContent = 'Please fix the errors above before submitting.';
                     return;
                 }
                 
-                // Check if running from file:// protocol (not supported)
+                // Check if running from file:// protocol
                 if (window.location.protocol === 'file:') {
                     tipMessage.className = 'tip-message error';
                     tipMessage.textContent = 'Tip submission requires a web server. Please run "netlify dev" or deploy to Netlify to test this feature.';
                     return;
                 }
                 
-                // Disable submit button
+                // Disable submit button and show loading state
                 tipSubmitButton.disabled = true;
-                tipSubmitButton.textContent = 'Submitting...';
+                const submitText = tipSubmitButton.querySelector('.tip-submit-text');
+                const submitLoader = tipSubmitButton.querySelector('.tip-submit-loader');
+                if (submitText) submitText.style.display = 'none';
+                if (submitLoader) submitLoader.style.display = 'flex';
                 
                 // Hide previous messages
                 tipMessage.className = 'tip-message';
                 tipMessage.textContent = '';
                 
                 try {
-                    // vNext: Use environment-aware endpoint (no localhost in production)
                     const endpoint = '/.netlify/functions/submit-tip';
                     
-                    console.log('Submitting tip to:', endpoint);
+                    // Prepare form data
+                    const formData = new FormData();
+                    formData.append('name', name);
+                    formData.append('email', email);
+                    formData.append('tip', tip);
+                    formData.append('category', category);
+                    formData.append('priority', priority);
+                    formData.append('isAnonymous', isAnonymous);
                     
+                    // Append files
+                    selectedFiles.forEach((file, index) => {
+                        formData.append(`attachment_${index}`, file);
+                    });
+                    
+                    // For now, send as JSON (files will be handled in future update)
                     const response = await fetch(endpoint, {
                         method: 'POST',
                         headers: {
@@ -15257,11 +16050,13 @@
                             name,
                             email,
                             tip,
-                            isAnonymous
+                            category,
+                            priority,
+                            isAnonymous,
+                            fileCount: selectedFiles.length
                         }),
                     });
                     
-                    // Check if response is ok before parsing
                     let data;
                     try {
                         const text = await response.text();
@@ -15276,10 +16071,25 @@
                     if (response.ok && data.success) {
                         tipMessage.className = 'tip-message success';
                         tipMessage.textContent = data.message || 'Tip submitted successfully! Thank you for your contribution.';
+                        
+                        // Clear form and draft
                         tipForm.reset();
+                        selectedFiles = [];
+                        renderFileList();
+                        clearDraft();
+                        updateCharCounter();
                         tipAnonymous.checked = false;
                         tipNameGroup.classList.remove('hidden');
                         tipEmailGroup.classList.remove('hidden');
+                        
+                        // Success animation
+                        const modalContent = tipModal.querySelector('.tip-modal-content');
+                        if (modalContent) {
+                            modalContent.classList.add('success-animation');
+                            setTimeout(() => {
+                                modalContent.classList.remove('success-animation');
+                            }, 600);
+                        }
                         
                         // Auto-close modal after 3 seconds
                         setTimeout(() => {
@@ -15295,7 +16105,6 @@
                     console.error('Tip submission error:', error);
                     tipMessage.className = 'tip-message error';
                     
-                    // Provide more specific error messages
                     if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
                         tipMessage.textContent = 'Unable to connect to server. Please check your internet connection and ensure you\'re running "netlify dev" if testing locally.';
                     } else if (error.message) {
@@ -15305,7 +16114,8 @@
                     }
                 } finally {
                     tipSubmitButton.disabled = false;
-                    tipSubmitButton.textContent = 'Submit Tip';
+                    if (submitText) submitText.style.display = 'inline-block';
+                    if (submitLoader) submitLoader.style.display = 'none';
                 }
             });
         }
@@ -17155,7 +17965,7 @@
                 <div style="text-align: center; margin: 15px 0; padding: 15px; background: rgba(0, 0, 0, 0.02); border: 2px solid #1a1a1a; border-radius: 0;">
                     <p style="font-size: 0.7rem; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: #555;">Estimated Time Until Service Restoration</p>
                     <div id="countdown" style="font-size: 2rem; font-weight: bold; font-family: 'Courier New', monospace; color: #1a1a1a; letter-spacing: 5px; margin: 10px 0;">00:00:00</div>
-                    <p style="font-size: 0.8rem; margin-top: 6px; color: #555;">January 1, 2026</p>
+                    <p style="font-size: 0.8rem; margin-top: 6px; color: #555;">January 9, 2026</p>
                     <p style="font-size: 0.75rem; margin-top: 8px; color: #666; font-style: italic;">We apologize for the extension of the maintenance period.</p>
                 </div>
                 
@@ -18572,7 +19382,7 @@
                 const estNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (estOffset * 60000));
                 
                 // Calculate target date: one week from last git push (December 23, 2025) at 7:45 PM EST
-                const lastPushDate = new Date('2025-12-25T19:45:00-05:00'); // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST
+                const lastPushDate = new Date('2026-01-02T19:45:00-05:00'); // January 2, 2026 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST
                 const oneWeekInMs = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
                 const target = new Date(lastPushDate.getTime() + oneWeekInMs); // December 30, 2025 7:45 PM EST
                 

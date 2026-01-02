@@ -469,40 +469,93 @@ Reference the house style template structure and fill in the content section wit
 
     // Replace image placeholders with actual image URLs
     // Prefer uploaded URL (imageUrl) over dataUrl for better performance
-    attachments.forEach(att => {
+    // Convert relative URLs to absolute URLs for email clients
+    const baseUrl = process.env.URL || 'https://noteworthynews.co';
+    
+    console.log(`[Generate Newsletter] 📸 Processing ${attachments.length} image attachment(s)`);
+    
+    let imagesInserted = 0;
+    attachments.forEach((att, idx) => {
+      console.log(`[Generate Newsletter] 📸 Processing image ${idx + 1}/${attachments.length}:`, {
+        title: att.title,
+        hasImageUrl: !!att.imageUrl,
+        hasDataUrl: !!att.dataUrl,
+        imageUrl: att.imageUrl ? att.imageUrl.substring(0, 100) + '...' : null,
+        dataUrlLength: att.dataUrl ? att.dataUrl.length : 0,
+      });
+      
       if (!att.title) {
-        console.warn('[Generate Newsletter] Skipping attachment with missing title:', att);
+        console.warn('[Generate Newsletter] ⚠️ Skipping attachment with missing title:', att);
         return;
       }
       
       // Use uploaded URL if available, otherwise fall back to dataUrl
-      const imageSrc = att.imageUrl || att.dataUrl;
+      let imageSrc = att.imageUrl || att.dataUrl;
       if (!imageSrc) {
-        console.warn('[Generate Newsletter] Skipping attachment with no image URL or dataUrl:', att);
+        console.warn('[Generate Newsletter] ⚠️ Skipping attachment with no image URL or dataUrl:', att);
         return;
       }
+      
+      const originalSrc = imageSrc;
+      
+      // Convert relative URLs to absolute URLs for email clients
+      // Email clients need absolute URLs to fetch images
+      if (imageSrc.startsWith('/')) {
+        // Relative URL - make it absolute
+        imageSrc = `${baseUrl}${imageSrc}`;
+        console.log(`[Generate Newsletter] 🔄 Converted relative URL to absolute: ${originalSrc.substring(0, 50)}... → ${imageSrc.substring(0, 50)}...`);
+      } else if (imageSrc.startsWith('./') || !imageSrc.startsWith('http')) {
+        // Relative path or missing protocol - make it absolute
+        imageSrc = `${baseUrl}/${imageSrc.replace(/^\.\//, '')}`;
+        console.log(`[Generate Newsletter] 🔄 Converted relative path to absolute: ${originalSrc.substring(0, 50)}... → ${imageSrc.substring(0, 50)}...`);
+      }
+      
+      // Note: Data URLs (data:image/...) are often blocked by email clients
+      // The processImagesForEmail function in send-newsletter.js will handle converting
+      // these to CID attachments, but we prefer uploaded URLs when available
       
       const imageToken = `[[Image: ${att.title}]]`;
       const safeTitle = (att.title || '').replace(/"/g, '&quot;');
       const imageTag = `<img src="${imageSrc}" alt="${safeTitle}" style="${STYLE_GUIDE.imageStyle};margin:${STYLE_GUIDE.imageMargin}" />`;
       
+      // Check if token exists in HTML before replacing
+      const tokenExists = htmlContent.includes(imageToken);
+      if (!tokenExists) {
+        console.warn(`[Generate Newsletter] ⚠️ Image token "${imageToken}" not found in HTML content`);
+      }
+      
       // Replace token format [[Image: Title]]
+      const beforeReplace = htmlContent;
       htmlContent = htmlContent.replace(new RegExp(imageToken.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), imageTag);
+      const replaced = beforeReplace !== htmlContent;
+      
+      if (replaced) {
+        imagesInserted++;
+        console.log(`[Generate Newsletter] ✅ Inserted image "${att.title}" into HTML (src: ${imageSrc.substring(0, 80)}...)`);
+      } else {
+        console.warn(`[Generate Newsletter] ⚠️ Failed to replace image token "${imageToken}" in HTML`);
+      }
       
       // Also replace any placeholder URLs the AI might have generated (fallback)
       const titleSlug = att.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const placeholderPattern = new RegExp(`https://noteworthynews\\.co/placeholder-${titleSlug}\\.jpg`, 'gi');
       if (placeholderPattern.test(htmlContent)) {
         htmlContent = htmlContent.replace(placeholderPattern, imageSrc);
-        console.log('[Generate Newsletter] Replaced placeholder URL with image URL for:', att.title);
+        console.log(`[Generate Newsletter] 🔄 Replaced placeholder URL with image URL for: ${att.title}`);
       }
       
       if (att.imageUrl) {
-        console.log('[Generate Newsletter] Using uploaded image URL for:', att.title, att.imageUrl);
+        console.log(`[Generate Newsletter] ✅ Using uploaded image URL for "${att.title}": ${imageSrc.substring(0, 100)}...`);
       } else {
-        console.log('[Generate Newsletter] Using dataUrl (legacy) for:', att.title);
+        console.log(`[Generate Newsletter] 📋 Using dataUrl for "${att.title}" (will be converted to CID attachment in send-newsletter)`);
       }
     });
+    
+    console.log(`[Generate Newsletter] 📸 Image processing complete: ${imagesInserted}/${attachments.length} images inserted into HTML`);
+    
+    // Count total img tags in final HTML
+    const imgTagCount = (htmlContent.match(/<img[^>]+>/gi) || []).length;
+    console.log(`[Generate Newsletter] 📊 Total <img> tags in generated HTML: ${imgTagCount}`);
 
     // Insert generated content into house template
     // The AI generates content that includes date and greeting - we trust it to do so correctly

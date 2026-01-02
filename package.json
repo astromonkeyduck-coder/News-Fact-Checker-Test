@@ -18,7 +18,8 @@
     "audit:game": "node scripts/security-audit-game.js",
     "add:game": "node scripts/safe-add-game.js",
     "test:earthquake": "node test-earthquake-visual.js",
-    "test:earthquake-full": "node test-full-earthquake-pipeline.js"
+    "test:earthquake-full": "node test-full-earthquake-pipeline.js",
+    "test:earthquake-last": "node test-last-earthquake.js"
   },
   "dependencies": {
     "@auth0/auth0-spa-js": "^2.8.0",

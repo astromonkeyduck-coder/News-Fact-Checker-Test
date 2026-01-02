@@ -87,6 +87,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip Netlify Functions entirely - they're serverless and shouldn't be cached
+  if (url.pathname.startsWith('/.netlify/functions/')) {
+    // Let the request pass through to the network without service worker interception
+    return;
+  }
+
   // Skip cross-origin requests (unless you want to cache them)
   if (url.origin !== location.origin) {
     // Cache external resources like fonts, images
@@ -169,44 +175,55 @@ self.addEventListener('fetch', (event) => {
 
   // Strategy: Network First, then Cache
   // Good for: API calls, dynamic content
+  // Note: Netlify Functions are already skipped above
   if (
-    url.pathname.startsWith('/.netlify/functions/') ||
     url.pathname.startsWith('/api/') ||
-    url.pathname.includes('posts-read') ||
-    url.pathname.includes('noteworthy-chat')
+    url.pathname.includes('posts-read')
   ) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Cache successful responses
-          if (response && response.status === 200 && isCacheableUrl(request.url)) {
+          // Only cache successful responses (200 OK) and ensure it's a valid Response
+          if (response && response.status === 200 && response instanceof Response && isCacheableUrl(request.url)) {
+            // Clone the response before caching
             const responseToCache = response.clone();
             caches.open(CACHE_NAME)
               .then((cache) => {
                 cache.put(request, responseToCache);
               })
               .catch((error) => {
-                // Silently fail if caching fails (e.g., chrome-extension URLs)
+                // Silently fail if caching fails
                 console.warn('[Service Worker] Failed to cache:', request.url, error);
               });
           }
+          // Always return the response, even if it's an error
+          // Ensure we return a valid Response object
+          if (!(response instanceof Response)) {
+            // If somehow we got a non-Response, create one
+            return new Response(JSON.stringify({ error: 'Invalid response format' }), {
+              status: 500,
+              statusText: 'Internal Server Error',
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
           return response;
         })
-        .catch(() => {
+        .catch((error) => {
           // Network failed, try cache
           return caches.match(request)
             .then((cachedResponse) => {
               if (cachedResponse) {
                 return cachedResponse;
               }
-              // Return offline page if available
-              return caches.match('/offline.html')
-                .then((offlinePage) => {
-                  return offlinePage || new Response('Offline', {
-                    status: 503,
-                    statusText: 'Service Unavailable'
-                  });
-                });
+              // Return a proper error response if network fails and no cache
+              return new Response(JSON.stringify({ 
+                error: 'Network request failed',
+                offline: true 
+              }), {
+                status: 503,
+                statusText: 'Service Unavailable',
+                headers: { 'Content-Type': 'application/json' }
+              });
             });
         })
     );
@@ -217,6 +234,15 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(request)
       .then((response) => {
+        // Ensure we have a valid Response object
+        if (!(response instanceof Response)) {
+          return new Response(JSON.stringify({ error: 'Invalid response format' }), {
+            status: 500,
+            statusText: 'Internal Server Error',
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        
         if (response && response.status === 200 && isCacheableUrl(request.url)) {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME)
@@ -230,8 +256,23 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       })
-      .catch(() => {
-        return caches.match(request);
+      .catch((error) => {
+        // Return cached response if available, otherwise return error response
+        return caches.match(request)
+          .then((cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            // Return a proper error response
+            return new Response(JSON.stringify({ 
+              error: 'Network request failed',
+              offline: true 
+            }), {
+              status: 503,
+              statusText: 'Service Unavailable',
+              headers: { 'Content-Type': 'application/json' }
+            });
+          });
       })
   );
 });

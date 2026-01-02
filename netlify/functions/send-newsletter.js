@@ -165,6 +165,12 @@ async function processImagesForEmail(htmlContent, baseUrl = 'https://noteworthyn
   const matches = [...htmlContent.matchAll(imgRegex)];
   
   console.log(`[processImagesForEmail] Found ${matches.length} images in HTML`);
+  if (matches.length > 0) {
+    matches.forEach((match, idx) => {
+      const src = match[1];
+      console.log(`[processImagesForEmail] Image ${idx + 1}: ${src.substring(0, 100)}${src.length > 100 ? '...' : ''}`);
+    });
+  }
   
   for (let i = 0; i < matches.length; i++) {
     const match = matches[i];
@@ -212,52 +218,47 @@ async function processImagesForEmail(htmlContent, baseUrl = 'https://noteworthyn
           console.log(`[processImagesForEmail] Processing data URL image: ${filename}`);
         }
       }
-      // Handle get-uploaded-image URLs
+      // Handle get-uploaded-image URLs (both absolute and relative)
       else if (originalSrc.includes('get-uploaded-image')) {
-        // Extract key from URL
-        const keyMatch = originalSrc.match(/[?&]key=([^&]+)/);
+        // Extract key from URL - handle both ?key= and &key= patterns
+        const keyMatch = originalSrc.match(/[?&]key=([^&"']+)/);
         if (keyMatch) {
           const imageKey = decodeURIComponent(keyMatch[1]);
           // Construct full URL if relative
-          const fullImageUrl = originalSrc.startsWith('http') 
-            ? originalSrc 
-            : `${baseUrl}${originalSrc.startsWith('/') ? '' : '/'}${originalSrc}`;
+          let fullImageUrl = originalSrc;
+          if (!originalSrc.startsWith('http')) {
+            // Relative URL - make it absolute
+            fullImageUrl = `${baseUrl}${originalSrc.startsWith('/') ? '' : '/'}${originalSrc}`;
+          }
           
-          console.log(`[processImagesForEmail] Fetching uploaded image: ${imageKey}`);
+          console.log(`[processImagesForEmail] Fetching uploaded image: ${imageKey} from ${fullImageUrl}`);
           
           // Fetch the image
-          const imageResponse = await fetch(fullImageUrl);
-          if (imageResponse.ok) {
-            const arrayBuffer = await imageResponse.arrayBuffer();
-            imageBuffer = Buffer.from(arrayBuffer);
-            contentType = imageResponse.headers.get('content-type') || 'image/png';
-            
-            // Determine filename from key
-            const keyParts = imageKey.split('.');
-            if (keyParts.length > 1) {
-              filename = `image-${i + 1}.${keyParts[keyParts.length - 1]}`;
+          try {
+            const imageResponse = await fetch(fullImageUrl);
+            if (imageResponse.ok) {
+              const arrayBuffer = await imageResponse.arrayBuffer();
+              imageBuffer = Buffer.from(arrayBuffer);
+              contentType = imageResponse.headers.get('content-type') || 'image/png';
+              
+              // Determine filename from key
+              const keyParts = imageKey.split('.');
+              if (keyParts.length > 1) {
+                const ext = keyParts[keyParts.length - 1].toLowerCase();
+                filename = `image-${i + 1}.${ext}`;
+              }
+              console.log(`[processImagesForEmail] Successfully fetched image: ${filename} (${imageBuffer.length} bytes, ${contentType})`);
+            } else {
+              const errorText = await imageResponse.text().catch(() => '');
+              console.warn(`[processImagesForEmail] Failed to fetch image from ${fullImageUrl}: ${imageResponse.status} ${imageResponse.statusText}`, errorText.substring(0, 200));
+              continue;
             }
-            console.log(`[processImagesForEmail] Successfully fetched image: ${filename} (${imageBuffer.length} bytes)`);
-          } else {
-            console.warn(`[processImagesForEmail] Failed to fetch image from ${fullImageUrl}: ${imageResponse.status}`);
+          } catch (fetchError) {
+            console.error(`[processImagesForEmail] Error fetching image from ${fullImageUrl}:`, fetchError.message);
             continue;
           }
-        }
-      }
-      // Handle relative URLs that might be uploaded images
-      else if (originalSrc.startsWith('/.netlify/functions/get-uploaded-image')) {
-        const fullImageUrl = `${baseUrl}${originalSrc}`;
-        console.log(`[processImagesForEmail] Fetching relative image URL: ${fullImageUrl}`);
-        
-        const imageResponse = await fetch(fullImageUrl);
-        if (imageResponse.ok) {
-          const arrayBuffer = await imageResponse.arrayBuffer();
-          imageBuffer = Buffer.from(arrayBuffer);
-          contentType = imageResponse.headers.get('content-type') || 'image/png';
-          filename = `image-${i + 1}.png`;
-          console.log(`[processImagesForEmail] Successfully fetched relative image: ${filename} (${imageBuffer.length} bytes)`);
         } else {
-          console.warn(`[processImagesForEmail] Failed to fetch relative image: ${imageResponse.status}`);
+          console.warn(`[processImagesForEmail] get-uploaded-image URL found but no key parameter: ${originalSrc.substring(0, 100)}`);
           continue;
         }
       }
@@ -304,7 +305,21 @@ async function processImagesForEmail(htmlContent, baseUrl = 'https://noteworthyn
     }
   }
   
-  console.log(`[processImagesForEmail] Processed ${attachments.length} images as CID attachments`);
+  console.log(`[processImagesForEmail] ✅ Processing complete: ${attachments.length} images processed as CID attachments`);
+  
+  if (matches.length > 0 && attachments.length === 0) {
+    console.warn(`[processImagesForEmail] ⚠️ WARNING: Found ${matches.length} images but processed 0 attachments. Images may not appear in emails.`);
+    console.warn(`[processImagesForEmail] ⚠️ This usually means images use URLs that couldn't be fetched or processed.`);
+  } else if (matches.length > attachments.length) {
+    console.warn(`[processImagesForEmail] ⚠️ WARNING: Found ${matches.length} images but only processed ${attachments.length} attachments.`);
+    console.warn(`[processImagesForEmail] ⚠️ Some images may not appear in emails.`);
+  } else if (attachments.length > 0) {
+    console.log(`[processImagesForEmail] ✅ Successfully processed ${attachments.length} image(s) for email embedding`);
+    attachments.forEach((att, idx) => {
+      console.log(`[processImagesForEmail]   ${idx + 1}. ${att.filename} (${att.content_type}, CID: ${att.content_id}, size: ${Math.round(att.content.length / 1024)}KB)`);
+    });
+  }
+  
   return { html: htmlContent, attachments };
 }
 
@@ -1034,7 +1049,22 @@ exports.handler = async (event, context) => {
             
             // Process images and embed as CID attachments
             const siteUrl = process.env.URL || 'https://noteworthynews.co';
+            
+            // Log HTML size and image count before processing
+            const imgTagsBefore = (html.match(/<img[^>]+>/gi) || []).length;
+            console.log(`  [${batchNumber}-${index + 1}] 📧 Processing email HTML (${Math.round(html.length / 1024)}KB, ${imgTagsBefore} <img> tags found)`);
+            
             const { html: htmlWithCid, attachments: imageAttachments } = await processImagesForEmail(html, siteUrl);
+            
+            // Log results
+            const imgTagsAfter = (htmlWithCid.match(/<img[^>]+>/gi) || []).length;
+            const cidTags = (htmlWithCid.match(/cid:/gi) || []).length;
+            console.log(`  [${batchNumber}-${index + 1}] 📧 Image processing results:`, {
+              imgTagsBefore,
+              imgTagsAfter,
+              cidReferences: cidTags,
+              attachmentsCreated: imageAttachments?.length || 0,
+            });
             
             const emailPayload = {
               from: fromEmail,
@@ -1050,10 +1080,20 @@ exports.handler = async (event, context) => {
             // Add image attachments if any
             if (imageAttachments && imageAttachments.length > 0) {
               emailPayload.attachments = imageAttachments;
+              console.log(`  [${batchNumber}-${index + 1}] 📎 Added ${imageAttachments.length} image attachment(s) to email payload:`, 
+                imageAttachments.map(att => ({
+                  filename: att.filename,
+                  contentType: att.content_type,
+                  contentId: att.content_id,
+                  contentSize: att.content ? Math.round(att.content.length / 1024) + 'KB' : 'unknown',
+                }))
+              );
               if (attempt === 1 && index === 0) {
                 // Only log once per batch to avoid spam
                 console.log(`  📎 Batch ${batchNumber}: Added ${imageAttachments.length} image attachment(s) to emails`);
               }
+            } else {
+              console.warn(`  [${batchNumber}-${index + 1}] ⚠️ No image attachments created despite ${imgTagsBefore} <img> tags in HTML`);
             }
             
           const result = await resend.emails.send(emailPayload);
