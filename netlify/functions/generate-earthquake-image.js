@@ -8,19 +8,10 @@
  */
 
 const sharp = require('sharp');
+const { getStore } = require("@netlify/blobs");
 const fs = require('fs');
 const path = require('path');
 const resvg = require('@resvg/resvg-js');
-
-// Use dynamic import for @netlify/blobs to avoid ES module issues with zisi bundler
-let getStore;
-async function loadBlobs() {
-  if (!getStore) {
-    const blobs = await import("@netlify/blobs");
-    getStore = blobs.getStore;
-  }
-  return getStore;
-}
 
 // Load embedded fonts (base64)
 let FONT_DATA = null;
@@ -596,13 +587,10 @@ exports.storeImage = storeImage;
  * Store generated image and return URL
  */
 async function storeImage(imageBuffer, eventId) {
-  // Load @netlify/blobs dynamically to avoid ES module issues with zisi bundler
-  const getStoreFn = await loadBlobs();
-  
   const siteID = process.env.NETLIFY_SITE_ID;
   const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
   
-  const store = getStoreFn({
+  const store = getStore({
     name: "post-media",
     siteID: siteID,
     token: token,

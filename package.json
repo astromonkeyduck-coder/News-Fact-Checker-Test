@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@auth0/auth0-spa-js": "^2.8.0",
-    "@netlify/blobs": "^10.3.1",
+    "@netlify/blobs": "9.1.6",
     "@netlify/functions": "^2.6.0",
     "@resvg/resvg-js": "^2.6.2",
     "@supabase/supabase-js": "^2.39.0",
