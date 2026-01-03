@@ -8,7 +8,6 @@
  */
 
 const sharp = require('sharp');
-const { getStore } = require("@netlify/blobs");
 const fs = require('fs');
 const path = require('path');
 const resvg = require('@resvg/resvg-js');
@@ -587,14 +586,22 @@ exports.storeImage = storeImage;
  * Store generated image and return URL
  */
 async function storeImage(imageBuffer, eventId) {
+  // Require @netlify/blobs inside function to avoid bundling issues with zisi
+  const { getStore } = require("@netlify/blobs");
+  
   const siteID = process.env.NETLIFY_SITE_ID;
   const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
   
-  const store = getStore({
-    name: "post-media",
-    siteID: siteID,
-    token: token,
-  });
+  let store;
+  if (siteID && token) {
+    store = getStore({
+      name: "post-media",
+      siteID: siteID,
+      token: token,
+    });
+  } else {
+    store = getStore({ name: "post-media" });
+  }
   
   const imageKey = `earthquake-${eventId}-${Date.now()}.png`;
   
