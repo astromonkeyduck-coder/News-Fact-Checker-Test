@@ -57,10 +57,15 @@
 [functions."test-generate"]
   node_bundler = "zisi"  # Use zip-it-and-ship-it which handles native modules
 
-# Scheduled function: ingest-all
-# Runs every 5 minutes to ingest events from all enabled engines
+# ingest-all and retry-usgs-images import engines/usgs which imports generate-earthquake-image
+# So they also need zisi bundler to handle native modules
 [functions."ingest-all"]
-  schedule = "*/5 * * * *"
+  node_bundler = "zisi"  # Use zip-it-and-ship-it which handles native modules
+  schedule = "*/5 * * * *"  # Runs every 5 minutes to ingest events from all enabled engines
+
+[functions."retry-usgs-images"]
+  node_bundler = "zisi"  # Use zip-it-and-ship-it which handles native modules
+  schedule = "* * * * *"  # Runs every minute to retry USGS images for high-magnitude earthquakes
 
 [dev]
   # Load .env file for local development
