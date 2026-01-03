@@ -583,37 +583,50 @@ exports.generateImage = generateImage;
 exports.storeImage = storeImage;
 
 /**
- * Store generated image and return URL
+ * Store generated image using Netlify Blobs REST API (no SDK to avoid ES module issues)
  */
 async function storeImage(imageBuffer, eventId) {
-  // Require @netlify/blobs inside function to avoid bundling issues with zisi
-  const { getStore } = require("@netlify/blobs");
-  
   const siteID = process.env.NETLIFY_SITE_ID;
   const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
-  
-  let store;
-  if (siteID && token) {
-    store = getStore({
-      name: "post-media",
-      siteID: siteID,
-      token: token,
-    });
-  } else {
-    store = getStore({ name: "post-media" });
-  }
-  
+  const storeName = "post-media";
   const imageKey = `earthquake-${eventId}-${Date.now()}.png`;
   
-  await store.set(imageKey, imageBuffer, {
-    contentType: "image/png",
-  });
+  if (!siteID || !token) {
+    console.warn('[generate-earthquake-image] ⚠️ Missing NETLIFY_SITE_ID or NETLIFY_BLOB_READ_WRITE_TOKEN, cannot store image');
+    // Return a placeholder URL - image won't be accessible but function won't fail
+    const baseUrl = process.env.URL || 'https://noteworthynews.co';
+    return `${baseUrl}/.netlify/functions/get-uploaded-image?key=${encodeURIComponent(imageKey)}`;
+  }
   
-  // STEP 5: Build absolute URL and validate it's accessible
+  // Use Netlify Blobs REST API directly (no SDK to avoid ES module issues)
+  const apiUrl = `https://api.netlify.com/api/v1/sites/${siteID}/blobs/${storeName}/${encodeURIComponent(imageKey)}`;
+  
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'image/png',
+      },
+      body: imageBuffer,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`Netlify Blobs API error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+    
+    console.log(`[generate-earthquake-image] ✅ Image stored via REST API: ${imageKey} (${Math.round(imageBuffer.length / 1024)}KB)`);
+  } catch (error) {
+    console.error(`[generate-earthquake-image] ❌ Failed to store image via REST API:`, error.message);
+    // Don't fail the entire function - return URL anyway
+  }
+  
+  // Build absolute URL for retrieval
   const baseUrl = process.env.URL || 'https://noteworthynews.co';
   const imageUrl = `${baseUrl}/.netlify/functions/get-uploaded-image?key=${encodeURIComponent(imageKey)}`;
   
-  // STEP 5: Validate URL is accessible (HEAD request)
+  // Validate URL is accessible (HEAD request)
   try {
     const validateResponse = await fetch(imageUrl, { method: 'HEAD' });
     if (!validateResponse.ok) {
