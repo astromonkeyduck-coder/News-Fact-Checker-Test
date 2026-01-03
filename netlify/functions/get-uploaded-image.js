@@ -125,9 +125,7 @@ exports.handler = async (event, context) => {
     // Retrieve image from Blobs (already fetched above via REST API)
     try {
       if (!imageData) {
-      
-      if (!imageData) {
-        console.warn('[get-uploaded-image] Image not found', { imageKey, foundStore });
+        console.warn('[get-uploaded-image] Image not found in any store', { imageKey });
         return {
           statusCode: 404,
           headers: { ...headers, "Content-Type": "application/json" },
@@ -153,17 +151,8 @@ exports.handler = async (event, context) => {
         contentType = "video/quicktime";
       }
 
-      // Convert ArrayBuffer to Buffer for response
-      // Handle both ArrayBuffer and Buffer types
-      let imageBuffer;
-      if (imageData instanceof ArrayBuffer) {
-        imageBuffer = Buffer.from(imageData);
-      } else if (Buffer.isBuffer(imageData)) {
-        imageBuffer = imageData;
-      } else {
-        // Try to convert whatever we got
-        imageBuffer = Buffer.from(imageData);
-      }
+      // Convert ArrayBuffer to Buffer for response (REST API returns ArrayBuffer)
+      const imageBuffer = Buffer.from(imageData);
 
       // Check buffer size to prevent timeout (Netlify has 10s timeout for free tier, 26s for pro)
       // Base64 encoding increases size by ~33%, so we check the raw buffer size
