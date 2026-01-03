@@ -11,6 +11,17 @@ const supabase = require('./lib/supabaseClient');
 const { createLogger } = require('./lib/logger');
 const crypto = require('crypto');
 
+// Explicitly require all engines so zisi bundler can find them
+// This helps zisi understand the dependencies at build time
+const engines = {
+  usgs: require('./engines/usgs'),
+  nws: require('./engines/nws'),
+  faa: require('./engines/faa'),
+  uscg: require('./engines/uscg'),
+  volcano: require('./engines/volcano'),
+  embassy: require('./engines/embassy'),
+};
+
 /**
  * Check if an engine is enabled
  */
@@ -53,10 +64,14 @@ async function runEngine(engineName) {
   try {
     logger.info('Starting engine run');
     
-    // Dynamically require the engine module
+    // Get engine module from pre-loaded engines object
+    // This works better with zisi bundler than dynamic requires
     let engineModule;
     try {
-      engineModule = require(`./engines/${engineName}.js`);
+      engineModule = engines[engineName];
+      if (!engineModule) {
+        throw new Error(`Engine ${engineName} not found in engines object`);
+      }
     } catch (requireError) {
       logger.error('Engine module not found', requireError);
       await supabase
