@@ -579,8 +579,9 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
   return composite;
 }
 
-// Export for direct testing
+// Export for direct function calls (from other Netlify functions)
 exports.generateImage = generateImage;
+exports.storeImage = storeImage;
 
 /**
  * Store generated image and return URL

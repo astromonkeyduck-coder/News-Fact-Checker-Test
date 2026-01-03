@@ -282,7 +282,7 @@ function extractUSGSImages(eventDetail) {
 /**
  * Generate branded image for earthquake
  */
-async function generateBrandedImage(magnitude, location, usgsImages, eventId, logger) {
+async function generateBrandedImage(magnitude, location, usgsImages, eventId, logger, coordinates = null) {
   const dryRun = isDryRun();
   
   if (dryRun) {
@@ -291,43 +291,146 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
   }
   
   try {
-    const baseUrl = process.env.URL || 'https://noteworthynews.co';
-    const imageResponse = await fetch(`${baseUrl}/.netlify/functions/generate-earthquake-image`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        magnitude,
-        location,
-        usgsImages,
-        eventId,
-      }),
-    });
+    // Try direct function call first (faster, more reliable, no HTTP overhead)
+    let imageUrl = null;
     
-    if (!imageResponse.ok) {
-      const errorText = await imageResponse.text().catch(() => 'Unknown error');
-      let errorData;
-      try {
-        errorData = JSON.parse(errorText);
-      } catch {
-        errorData = { error: errorText };
+    try {
+      // Direct import and call (works within same Netlify deployment)
+      const generateImageModule = require('../generate-earthquake-image');
+      const { generateImage, storeImage } = generateImageModule;
+      
+      if (generateImage && storeImage) {
+        logger.info('Using direct function call for image generation', { 
+          magnitude,
+          location: location.substring(0, 50),
+          eventId,
+          hasUsgsImages: usgsImages?.length > 0,
+          hasCoordinates: !!coordinates,
+        });
+        
+        // Note: generateImage no longer accepts coordinates parameter (user removed fallback images)
+        const imageBuffer = await generateImage(magnitude, location, usgsImages || [], eventId);
+        imageUrl = await storeImage(imageBuffer, eventId);
+        logger.info('Branded image generated via direct call', { url: imageUrl });
+        return imageUrl;
+      } else {
+        logger.info('Direct function call not available (missing exports), using HTTP', { 
+          hasGenerateImage: !!generateImage,
+          hasStoreImage: !!storeImage,
+          magnitude,
+          eventId,
+        });
       }
-      logger.warn('Image generation failed', null, { 
-        status: imageResponse.status, 
-        statusText: imageResponse.statusText,
-        error: errorData.error || errorText,
-        errorDetails: errorData.details || errorData.name || null,
-        fullError: errorText.substring(0, 500) // First 500 chars of error
+    } catch (directCallError) {
+      // If direct call fails, fall back to HTTP with detailed error logging
+      logger.warn('Direct function call failed, falling back to HTTP', { 
+        error: directCallError?.message,
+        errorName: directCallError?.name,
+        errorStack: directCallError?.stack?.substring(0, 500),
+        magnitude,
+        eventId,
       });
-      return null;
+      console.error('[USGS Engine] Direct function call error:', directCallError);
     }
     
-    const imageData = await imageResponse.json();
-    logger.info('Branded image generated', { url: imageData.url });
-    return imageData.url;
+    // Fallback to HTTP call
+    let baseUrl = process.env.URL || 'https://noteworthynews.co';
+    const functionUrl = `${baseUrl}/.netlify/functions/generate-earthquake-image`;
+    
+    logger.info('Calling image generation function via HTTP', { 
+      url: functionUrl,
+      magnitude,
+      location: location.substring(0, 50),
+      eventId,
+      hasUsgsImages: usgsImages?.length > 0,
+      hasCoordinates: !!coordinates,
+    });
+    
+    // Add timeout to prevent hanging (30 seconds)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    
+    try {
+      const imageResponse = await fetch(functionUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          magnitude,
+          location,
+          usgsImages,
+          eventId,
+          // Note: coordinates removed - user removed fallback image generation
+        }),
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+    
+      if (!imageResponse.ok) {
+        const errorText = await imageResponse.text().catch(() => 'Unknown error');
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
+        
+        // Enhanced error logging with full details
+        const errorDetails = {
+          status: imageResponse.status, 
+          statusText: imageResponse.statusText,
+          error: errorData.error || errorText,
+          errorDetails: errorData.details || errorData.name || errorData.message || null,
+          fullError: errorText.substring(0, 1000), // First 1000 chars of error
+          url: functionUrl,
+          requestBody: {
+            magnitude,
+            location: location.substring(0, 50),
+            eventId,
+            hasUsgsImages: usgsImages?.length > 0,
+            usgsImageCount: usgsImages?.length || 0,
+            hasCoordinates: !!coordinates,
+          }
+        };
+        
+        // Log error with full details - use both logger and console for visibility
+        logger.error('Image generation failed', null, errorDetails);
+        console.error('[USGS Engine] ❌ Image generation failed:');
+        console.error(JSON.stringify(errorDetails, null, 2));
+        console.error('[USGS Engine] Full error response (first 2000 chars):', errorText.substring(0, 2000));
+        return null;
+      }
+      
+      const imageData = await imageResponse.json();
+      logger.info('Branded image generated', { url: imageData.url });
+      return imageData.url;
+      
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      if (fetchError.name === 'AbortError') {
+        logger.error('Image generation timed out after 30 seconds', null, {
+          url: functionUrl,
+          magnitude,
+          eventId,
+        });
+      } else {
+        logger.error('Image generation fetch error', fetchError, {
+          url: functionUrl,
+          magnitude,
+          eventId,
+          errorMessage: fetchError?.message,
+          errorName: fetchError?.name,
+        });
+      }
+      return null;
+    }
   } catch (error) {
-    logger.warn('Image generation error', error, { 
+    logger.error('Image generation error', error, { 
       message: error?.message,
-      stack: error?.stack 
+      stack: error?.stack,
+      magnitude,
+      eventId,
     });
     return null;
   }
@@ -574,6 +677,10 @@ async function processEarthquake(feature, logger, forceEmail = false) {
         hasDetailUrl: !!detailUrl,
         hasEventDetail: !!eventDetail 
       });
+      
+      // For magnitude 6.0+, mark for continuous retry until USGS images are found
+      // We'll set a flag that will be stored with the event, then the retry function will pick it up
+      // This flag will be added to the event.assets object below
     } else {
       logger.info('USGS images extracted', { count: usgsImages.length, eventId });
     }
@@ -582,10 +689,11 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   }
   
   // Generate branded image (will use template's baked-in images if usgsImages is empty)
-  const imageUrl = await generateBrandedImage(magnitude, locationDisplay, usgsImages, eventId, logger);
+  // Pass coordinates for instant fallback images when USGS images aren't available yet
+  const coordinates = feature.geometry?.coordinates;
+  const imageUrl = await generateBrandedImage(magnitude, locationDisplay, usgsImages, eventId, logger, coordinates);
   
   // Build event object
-  const coordinates = feature.geometry?.coordinates;
   const event = {
     canonical_id: canonicalId,
     engine: 'usgs',
@@ -610,6 +718,13 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       usgs_images: usgsImages,
       magnitude: magnitude, // Store magnitude in assets for easy access
       event_id: eventId, // Store event_id in assets for email alerts
+      // For magnitude 6.0+, mark for continuous retry if no USGS images found
+      ...(magnitude >= 6.0 && usgsImages.length === 0 && detailUrl ? {
+        usgs_retry_pending: true,
+        usgs_retry_started_at: new Date().toISOString(),
+        usgs_retry_count: 0,
+        usgs_detail_url: detailUrl,
+      } : {}),
     },
     image_url: imageUrl,
     alert_sent: false,
@@ -746,4 +861,6 @@ async function run(logger) {
 
 module.exports = {
   run,
+  fetchEventDetail,
+  extractUSGSImages,
 };

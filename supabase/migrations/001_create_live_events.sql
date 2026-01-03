@@ -48,3 +48,6 @@ COMMENT ON TABLE live_events IS 'Stores fresh news/events from authoritative sou
 COMMENT ON COLUMN live_events.canonical_id IS 'Unique identifier: hash of source_name + source_url or source_name + event_id';
 COMMENT ON COLUMN live_events.reliability IS 'Source reliability: official, major_media, or unknown';
 
+
+
+
