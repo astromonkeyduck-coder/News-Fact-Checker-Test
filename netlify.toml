@@ -53,6 +53,7 @@
 # Use zisi (zip-it-and-ship-it) bundler which properly handles native .node modules
 [functions."generate-earthquake-image"]
   node_bundler = "zisi"  # Use zip-it-and-ship-it which handles native modules
+  included_files = ["netlify/functions/**/*.png", "netlify/functions/fonts-base64.js"]
 
 [functions."test-generate"]
   node_bundler = "zisi"  # Use zip-it-and-ship-it which handles native modules
@@ -61,10 +62,12 @@
 # So they also need zisi bundler to handle native modules
 [functions."ingest-all"]
   node_bundler = "zisi"  # Use zip-it-and-ship-it which handles native modules
+  included_files = ["netlify/functions/engines/**", "netlify/functions/lib/**", "netlify/functions/**/*.png", "netlify/functions/fonts-base64.js"]
   schedule = "*/5 * * * *"  # Runs every 5 minutes to ingest events from all enabled engines
 
 [functions."retry-usgs-images"]
   node_bundler = "zisi"  # Use zip-it-and-ship-it which handles native modules
+  included_files = ["netlify/functions/engines/**", "netlify/functions/lib/**", "netlify/functions/**/*.png", "netlify/functions/fonts-base64.js"]
   schedule = "* * * * *"  # Runs every minute to retry USGS images for high-magnitude earthquakes
 
 [dev]
