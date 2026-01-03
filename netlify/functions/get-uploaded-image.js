@@ -2,9 +2,9 @@
  * Retrieve and serve uploaded images and videos stored in Netlify Blobs
  * GET /.netlify/functions/get-uploaded-image?key=upload-1234567890-abc123.png
  * Supports both "post-media" and "uploaded-images" stores
+ * Uses Netlify Blobs REST API directly (no SDK to avoid ES module issues)
  */
 
-const { getStore } = require("@netlify/blobs");
 const sharp = require('sharp');
 
 exports.handler = async (event, context) => {
@@ -68,93 +68,63 @@ exports.handler = async (event, context) => {
     
     // Try multiple stores: post-media (new), newsletter-images, uploaded-images (legacy)
     const storeNames = ["post-media", "newsletter-images", "uploaded-images"];
-    let store = null;
+    let imageData = null;
     let foundStore = null;
     
-    // Try to find the media in any of the stores
+    // Try to find the media in any of the stores using REST API
     // Note: siteID and token are guaranteed to exist after early validation above
-    for (const name of storeNames) {
+    for (const storeName of storeNames) {
       try {
-        const testStore = getStore({
-          name: name,
-          siteID: siteID,
-          token: token,
+        const apiUrl = `https://api.netlify.com/api/v1/sites/${siteID}/blobs/${storeName}/${encodeURIComponent(imageKey)}`;
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
         });
         
-        // Try to get the item to see if it exists in this store
-        try {
-          const testData = await testStore.get(imageKey, { type: "arrayBuffer" });
-          if (testData) {
-            store = testStore;
-            foundStore = name;
+        if (response.ok) {
+          const arrayBuffer = await response.arrayBuffer();
+          if (arrayBuffer && arrayBuffer.byteLength > 0) {
+            imageData = arrayBuffer;
+            foundStore = storeName;
             break;
           }
-        } catch (getErr) {
-          // Item doesn't exist in this store, try next
-          continue;
+        } else if (response.status !== 404) {
+          // Log non-404 errors but continue trying other stores
+          console.warn(`[get-uploaded-image] Error fetching from ${storeName}:`, response.status, response.statusText);
         }
-      } catch (storeErr) {
-        // Store creation failed, try next
+      } catch (fetchErr) {
+        // Network error, try next store
+        console.warn(`[get-uploaded-image] Network error fetching from ${storeName}:`, fetchErr.message);
         continue;
-      }
-    }
-    
-    // If not found in any store, use the first one as default (will return 404 later)
-    // Note: siteID and token are guaranteed to exist after early validation above
-    if (!store) {
-      try {
-        store = getStore({
-          name: storeNames[0],
-          siteID: siteID,
-          token: token,
-        });
-      } catch (storeErr) {
-        console.error('[get-uploaded-image] Failed to create store:', storeErr);
-        return {
-          statusCode: 500,
-          headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            error: "Storage configuration error",
-            message: storeErr.message 
-          }),
-        };
       }
     }
 
     // Check if requesting metadata
     if (imageKey.startsWith('metadata-')) {
-      try {
-        const metadata = await store.get(imageKey, { type: "json" });
-        
-        if (!metadata) {
+      if (imageData) {
+        try {
+          const metadata = JSON.parse(Buffer.from(imageData).toString('utf-8'));
           return {
-            statusCode: 404,
+            statusCode: 200,
             headers: { ...headers, "Content-Type": "application/json" },
-            body: JSON.stringify({ error: "Metadata not found" }),
+            body: JSON.stringify(metadata),
           };
+        } catch (parseErr) {
+          console.error('[get-uploaded-image] Error parsing metadata:', parseErr);
         }
-
-        return {
-          statusCode: 200,
-          headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify(metadata),
-        };
-      } catch (err) {
-        console.error('[get-uploaded-image] Error retrieving metadata:', err);
-        return {
-          statusCode: 500,
-          headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            error: "Failed to retrieve metadata",
-            message: err.message 
-          }),
-        };
       }
+      return {
+        statusCode: 404,
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ error: "Metadata not found" }),
+      };
     }
 
-    // Retrieve image from Blobs
+    // Retrieve image from Blobs (already fetched above via REST API)
     try {
-      const imageData = await store.get(imageKey, { type: "arrayBuffer" });
+      if (!imageData) {
       
       if (!imageData) {
         console.warn('[get-uploaded-image] Image not found', { imageKey, foundStore });
