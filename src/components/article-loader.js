@@ -280,6 +280,536 @@
     }
 
     /**
+     * Generate earthquake-specific enhancements (location details, nearby places, assessments, etc.)
+     */
+    async function generateEarthquakeEnhancements(post, magnitude) {
+        const lat = post.lat;
+        const lon = post.lon;
+        const locationDisplay = post.location_display || post.location || 'Unknown Location';
+        const magnitudeFormatted = magnitude ? magnitude.toFixed(1) : 'N/A';
+        const depth = post.assets?.depth || post.depth;
+        const depthFormatted = depth ? `${depth.toFixed(1)} km` : null;
+        
+        // Extract assessment data
+        const impactAssessment = post.assets?.impact_assessment || null;
+        const tsunamiAssessment = post.assets?.tsunami_assessment || null;
+        const aftershockForecast = post.assets?.aftershock_forecast || null;
+        const anomalyDetection = post.assets?.anomaly_detection || null;
+        
+        let html = '';
+        
+        // Add interactive map container
+        html += `
+            <div class="earthquake-map-container" style="margin: 2rem 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+                <div id="earthquake-interactive-map" style="width: 100%; height: 500px; background: #f0f0f0;"></div>
+            </div>
+        `;
+        
+        // Add location details section
+        html += `
+            <div class="earthquake-details-section" style="margin: 2rem 0; padding: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #fff;">📍 Location Details</h2>
+                <div class="earthquake-details-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div class="detail-card" style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">Magnitude</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #fff;">M${magnitudeFormatted}</div>
+                    </div>
+                    ${depthFormatted ? `
+                    <div class="detail-card" style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">Depth</div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #fff;">${depthFormatted}</div>
+                    </div>
+                    ` : ''}
+                    <div class="detail-card" style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">Coordinates</div>
+                        <div style="font-size: 0.875rem; font-weight: 600; color: #fff; font-family: 'Courier New', monospace;">${Math.abs(lat).toFixed(4)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? 'E' : 'W'}</div>
+                    </div>
+                    <div class="detail-card" style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">Location</div>
+                        <div style="font-size: 0.875rem; font-weight: 600; color: #fff;">${escapeHtml(locationDisplay)}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add impact assessment section
+        if (impactAssessment) {
+            const severityColor = impactAssessment.severity === 'CRITICAL' ? '#d32f2f' : 
+                                 impactAssessment.severity === 'HIGH' ? '#f57c00' : 
+                                 impactAssessment.severity === 'MODERATE' ? '#fbc02d' : '#388e3c';
+            html += `
+                <div class="impact-assessment-section" style="margin: 2rem 0; padding: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 12px; border-left: 4px solid ${severityColor};">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff;">📊 Impact Assessment</h2>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">Risk Score</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: ${severityColor};">${impactAssessment.riskScore}/100</div>
+                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.25rem;">${impactAssessment.severity}</div>
+                        </div>
+                        ${impactAssessment.affectedPopulation ? `
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">Affected Population</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #fff;">${(impactAssessment.affectedPopulation / 1000).toFixed(1)}K</div>
+                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.25rem;">people</div>
+                        </div>
+                        ` : ''}
+                        ${impactAssessment.criticalInfrastructure ? `
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">Critical Infrastructure</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; color: #fff;">
+                                ${impactAssessment.criticalInfrastructure.hospitals} hospitals, 
+                                ${impactAssessment.criticalInfrastructure.airports} airports
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Add tsunami risk section
+        if (tsunamiAssessment && tsunamiAssessment.riskLevel !== 'LOW') {
+            const riskColor = tsunamiAssessment.riskLevel === 'HIGH' ? '#d32f2f' : '#f57c00';
+            html += `
+                <div class="tsunami-risk-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(255,152,0,0.1) 0%, rgba(255,152,0,0.05) 100%); border-radius: 12px; border-left: 4px solid ${riskColor};">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff;">🌊 Tsunami Risk Assessment</h2>
+                    <div style="font-size: 1.125rem; font-weight: 600; color: ${riskColor}; margin-bottom: 0.5rem;">
+                        ${tsunamiAssessment.riskLevel} RISK
+                    </div>
+                    <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); line-height: 1.6;">
+                        ${tsunamiAssessment.assessment || 'Monitor official tsunami warnings.'}
+                    </div>
+                    ${tsunamiAssessment.travelTime ? `
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8);">
+                            Estimated travel time to coast: <strong>${tsunamiAssessment.travelTime.hours}h ${tsunamiAssessment.travelTime.minutes}m</strong>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
+        // Add aftershock forecast section
+        if (aftershockForecast && aftershockForecast.probability24h >= 40) {
+            html += `
+                <div class="aftershock-forecast-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(156,39,176,0.1) 0%, rgba(156,39,176,0.05) 100%); border-radius: 12px; border-left: 4px solid #9c27b0;">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff;">📊 Aftershock Forecast</h2>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">24 Hour Probability</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #9c27b0;">${aftershockForecast.probability24h}%</div>
+                        </div>
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">Expected Largest</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #9c27b0;">M${aftershockForecast.expectedLargestAftershock.toFixed(1)}</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); line-height: 1.6;">
+                        ${aftershockForecast.forecast || ''}
+                    </div>
+                    ${aftershockForecast.recommendation ? `
+                    <div style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                        <div style="font-size: 0.875rem; color: rgba(255,255,255,0.9);">
+                            💡 <strong>Recommendation:</strong> ${aftershockForecast.recommendation}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
+        // Add anomaly detection section
+        if (anomalyDetection && anomalyDetection.anomalyLevel !== 'NORMAL') {
+            const anomalyColor = anomalyDetection.anomalyLevel === 'HIGH' ? '#d32f2f' : 
+                                anomalyDetection.anomalyLevel === 'MEDIUM' ? '#f57c00' : '#fbc02d';
+            html += `
+                <div class="anomaly-detection-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(211,47,47,0.1) 0%, rgba(211,47,47,0.05) 100%); border-radius: 12px; border-left: 4px solid ${anomalyColor};">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff;">⚠️ Anomaly Detection</h2>
+                    <div style="font-size: 1.125rem; font-weight: 600; color: ${anomalyColor}; margin-bottom: 0.5rem;">
+                        ${anomalyDetection.anomalyLevel} ANOMALY LEVEL
+                    </div>
+                    <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); line-height: 1.6; margin-bottom: 1rem;">
+                        ${anomalyDetection.summary || 'Unusual earthquake patterns detected.'}
+                    </div>
+                    ${anomalyDetection.anomalies && anomalyDetection.anomalies.length > 0 ? `
+                    <div style="margin-top: 1rem;">
+                        ${anomalyDetection.anomalies.map(anomaly => `
+                            <div style="padding: 0.75rem; margin-bottom: 0.5rem; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 3px solid ${anomalyColor};">
+                                <div style="font-size: 0.75rem; font-weight: 600; color: ${anomalyColor}; text-transform: uppercase; margin-bottom: 0.25rem;">${anomaly.type}</div>
+                                <div style="font-size: 0.875rem; color: rgba(255,255,255,0.9);">${escapeHtml(anomaly.description)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
+        // Add 3D visualization container
+        html += `
+            <div class="earthquake-3d-container" style="margin: 2rem 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.15); background: rgba(0,0,0,0.3);">
+                <div style="padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h3 style="margin: 0; color: #fff; font-size: 1.125rem; font-weight: 600;">🌐 3D Earthquake Visualization</h3>
+                </div>
+                <div id="earthquake-3d-viewer" style="width: 100%; height: 500px; background: #1a1a1a;"></div>
+            </div>
+        `;
+        
+        // Add loading placeholders for nearby locations (will be populated by JavaScript)
+        html += `
+            <div id="earthquake-nearby-locations" style="margin: 2rem 0;">
+                <div style="text-align: center; padding: 2rem; color: rgba(255,255,255,0.6);">
+                    <div class="skeleton" style="height: 200px; border-radius: 12px;"></div>
+                </div>
+            </div>
+        `;
+        
+        return html;
+    }
+    
+    /**
+     * Initialize 3D visualization using Three.js
+     */
+    function initialize3DVisualization(lat, lon, magnitude, depth, locationDisplay) {
+        // Load Three.js if not already loaded
+        if (!window.THREE) {
+            const threeJS = document.createElement('script');
+            threeJS.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+            threeJS.onload = () => {
+                create3DScene(lat, lon, magnitude, depth, locationDisplay);
+            };
+            document.head.appendChild(threeJS);
+        } else {
+            create3DScene(lat, lon, magnitude, depth, locationDisplay);
+        }
+        
+        function create3DScene(lat, lon, magnitude, depth, locationDisplay) {
+            const container = document.getElementById('earthquake-3d-viewer');
+            if (!container || !window.THREE) return;
+            
+            // Scene setup
+            const scene = new window.THREE.Scene();
+            scene.background = new window.THREE.Color(0x1a1a1a);
+            
+            const camera = new window.THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new window.THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+            
+            // Add lights
+            const ambientLight = new window.THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+            const directionalLight = new window.THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 5);
+            scene.add(directionalLight);
+            
+            // Create Earth sphere
+            const earthGeometry = new window.THREE.SphereGeometry(5, 32, 32);
+            const earthMaterial = new window.THREE.MeshPhongMaterial({ 
+                color: 0x2233ff,
+                emissive: 0x112244,
+                shininess: 100
+            });
+            const earth = new window.THREE.Mesh(earthGeometry, earthMaterial);
+            scene.add(earth);
+            
+            // Calculate position on sphere (convert lat/lon to 3D coordinates)
+            const phi = (90 - lat) * (Math.PI / 180);
+            const theta = (lon + 180) * (Math.PI / 180);
+            const radius = 5.2;
+            const x = -radius * Math.sin(phi) * Math.cos(theta);
+            const y = radius * Math.cos(phi);
+            const z = radius * Math.sin(phi) * Math.sin(theta);
+            
+            // Create epicenter marker (pulsing sphere)
+            const epicenterGeometry = new window.THREE.SphereGeometry(0.3, 16, 16);
+            const epicenterMaterial = new window.THREE.MeshPhongMaterial({ 
+                color: 0xff0000,
+                emissive: 0xff4444,
+                transparent: true,
+                opacity: 0.9
+            });
+            const epicenter = new window.THREE.Mesh(epicenterGeometry, epicenterMaterial);
+            epicenter.position.set(x, y, z);
+            scene.add(epicenter);
+            
+            // Create depth indicator (line from surface to depth)
+            if (depth) {
+                const depthRatio = Math.min(depth / 100, 0.5); // Max 50% of radius
+                const depthPoint = new window.THREE.Vector3(
+                    x * (1 - depthRatio),
+                    y * (1 - depthRatio),
+                    z * (1 - depthRatio)
+                );
+                const depthGeometry = new window.THREE.BufferGeometry().setFromPoints([
+                    new window.THREE.Vector3(x, y, z),
+                    depthPoint
+                ]);
+                const depthMaterial = new window.THREE.LineBasicMaterial({ color: 0xff6666, linewidth: 2 });
+                const depthLine = new window.THREE.Line(depthGeometry, depthMaterial);
+                scene.add(depthLine);
+            }
+            
+            // Create shake intensity ring
+            const ringGeometry = new window.THREE.RingGeometry(0.4, 0.6, 32);
+            const ringMaterial = new window.THREE.MeshBasicMaterial({ 
+                color: 0xff0000,
+                side: window.THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.6
+            });
+            const ring = new window.THREE.Mesh(ringGeometry, ringMaterial);
+            ring.position.set(x, y, z);
+            ring.lookAt(0, 0, 0); // Face outward from Earth
+            scene.add(ring);
+            
+            // Position camera
+            camera.position.set(15, 10, 15);
+            camera.lookAt(x, y, z);
+            
+            // Animation loop
+            let pulseScale = 1.0;
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                // Rotate Earth slowly
+                earth.rotation.y += 0.002;
+                
+                // Pulse epicenter
+                pulseScale += 0.02;
+                if (pulseScale > 1.3) pulseScale = 1.0;
+                epicenter.scale.set(pulseScale, pulseScale, pulseScale);
+                epicenterMaterial.opacity = 0.5 + (pulseScale - 1.0) * 0.5;
+                
+                renderer.render(scene, camera);
+            }
+            animate();
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+    }
+    
+    /**
+     * Initialize interactive earthquake map using Leaflet
+     */
+    function initializeEarthquakeMap(lat, lon, magnitude, locationDisplay) {
+        // Load Leaflet CSS and JS if not already loaded
+        if (!document.querySelector('link[href*="leaflet"]')) {
+            const leafletCSS = document.createElement('link');
+            leafletCSS.rel = 'stylesheet';
+            leafletCSS.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+            leafletCSS.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+            leafletCSS.crossOrigin = '';
+            document.head.appendChild(leafletCSS);
+        }
+        
+        // Load Leaflet JS
+        if (!window.L) {
+            const leafletJS = document.createElement('script');
+            leafletJS.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+            leafletJS.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+            leafletJS.crossOrigin = '';
+            leafletJS.onload = () => {
+                createMap(lat, lon, magnitude, locationDisplay);
+            };
+            document.head.appendChild(leafletJS);
+        } else {
+            createMap(lat, lon, magnitude, locationDisplay);
+        }
+        
+        function createMap(lat, lon, magnitude, locationDisplay) {
+            const mapContainer = document.getElementById('earthquake-interactive-map');
+            if (!mapContainer) return;
+            
+            // Create map centered on earthquake location
+            const map = window.L.map('earthquake-interactive-map').setView([lat, lon], 10);
+            
+            // Add OpenStreetMap tiles
+            window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }).addTo(map);
+            
+            // Calculate radius based on magnitude (rough estimate of felt area)
+            const radiusKm = magnitude * 10; // km
+            const radiusMeters = radiusKm * 1000;
+            
+            // Add circle showing approximate felt area
+            const feltArea = window.L.circle([lat, lon], {
+                radius: radiusMeters,
+                fillColor: '#ff6b6b',
+                fillOpacity: 0.2,
+                color: '#ff6b6b',
+                weight: 2,
+                dashArray: '5, 5'
+            }).addTo(map);
+            
+            // Add epicenter marker with custom icon
+            const epicenterIcon = window.L.divIcon({
+                className: 'earthquake-epicenter-marker',
+                html: `<div style="background: #ff6b6b; width: 24px; height: 24px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 3px rgba(255,107,107,0.5); animation: pulse 2s infinite;"></div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+            
+            const epicenterMarker = window.L.marker([lat, lon], { icon: epicenterIcon }).addTo(map);
+            
+            // Add popup with earthquake info
+            epicenterMarker.bindPopup(`
+                <div style="text-align: center; padding: 0.5rem;">
+                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1.25rem; font-weight: 700;">M${magnitude.toFixed(1)} Earthquake</h3>
+                    <p style="margin: 0; color: #666;">${escapeHtml(locationDisplay)}</p>
+                    <p style="margin: 0.5rem 0 0 0; font-size: 0.875rem; color: #999;">Epicenter</p>
+                </div>
+            `).openPopup();
+            
+            // Add CSS for pulse animation
+            if (!document.querySelector('#earthquake-map-styles')) {
+                const style = document.createElement('style');
+                style.id = 'earthquake-map-styles';
+                style.textContent = `
+                    @keyframes pulse {
+                        0% { box-shadow: 0 0 0 0 rgba(255,107,107,0.7); }
+                        70% { box-shadow: 0 0 0 10px rgba(255,107,107,0); }
+                        100% { box-shadow: 0 0 0 0 rgba(255,107,107,0); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // Fetch and add nearby locations as markers
+            fetchNearbyLocationsForMap(lat, lon, map);
+        }
+    }
+    
+    /**
+     * Fetch nearby locations and add them to the map
+     */
+    async function fetchNearbyLocationsForMap(lat, lon, map) {
+        try {
+            // Fetch nearby locations from a backend function or directly from Overpass API
+            const response = await fetch(`/.netlify/functions/get-nearby-locations?lat=${lat}&lon=${lon}&radius=50`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                addNearbyLocationsToMap(data, map);
+                updateNearbyLocationsUI(data);
+            } else {
+                // Fallback: try direct Overpass API call (may be rate-limited)
+                console.warn('[ArticleLoader] Nearby locations function not available, skipping');
+            }
+        } catch (error) {
+            console.warn('[ArticleLoader] Error fetching nearby locations:', error);
+        }
+    }
+    
+    /**
+     * Add nearby location markers to the map
+     */
+    function addNearbyLocationsToMap(locations, map) {
+        if (!window.L || !locations || !Array.isArray(locations)) return;
+        
+        locations.forEach(loc => {
+            if (!loc.lat || !loc.lon) return;
+            
+            const icon = window.L.divIcon({
+                className: 'nearby-location-marker',
+                html: `<div style="background: #4A90E2; width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+            
+            window.L.marker([loc.lat, loc.lon], { icon })
+                .bindPopup(`<strong>${escapeHtml(loc.name)}</strong><br>${loc.distance} km away`)
+                .addTo(map);
+        });
+    }
+    
+    /**
+     * Update the nearby locations UI section
+     */
+    function updateNearbyLocationsUI(data) {
+        const container = document.getElementById('earthquake-nearby-locations');
+        if (!container || !data) return;
+        
+        const { locations = [], education = [], venues = [] } = data;
+        
+        let html = '';
+        
+        if (locations.length > 0 || education.length > 0 || venues.length > 0) {
+            html += '<h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #fff;">🏙️ Nearby Important Locations</h2>';
+            
+            if (locations.length > 0) {
+                html += `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: rgba(255,255,255,0.9);">Cities & Landmarks</h3>
+                        <div style="display: grid; gap: 0.75rem;">
+                            ${locations.slice(0, 6).map(loc => `
+                                <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <div style="font-weight: 600; color: #fff; margin-bottom: 0.25rem;">${escapeHtml(loc.name)}</div>
+                                        <div style="font-size: 0.875rem; color: rgba(255,255,255,0.6); text-transform: capitalize;">${escapeHtml(loc.type)}</div>
+                                    </div>
+                                    <div style="font-weight: 600; color: #4A90E2;">${loc.distance} km</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (education.length > 0) {
+                html += `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: rgba(255,255,255,0.9);">🎓 Educational Institutions</h3>
+                        <div style="display: grid; gap: 0.75rem;">
+                            ${education.map(edu => `
+                                <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <div style="font-weight: 600; color: #fff; margin-bottom: 0.25rem;">${escapeHtml(edu.name)}</div>
+                                        <div style="font-size: 0.875rem; color: rgba(255,255,255,0.6); text-transform: capitalize;">${escapeHtml(edu.type === 'university' ? 'University' : edu.type === 'college' ? 'College' : 'School')}</div>
+                                    </div>
+                                    <div style="font-weight: 600; color: #1976d2;">${edu.distance} km</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (venues.length > 0) {
+                html += `
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: rgba(255,255,255,0.9);">🎭 Event Venues & Entertainment</h3>
+                        <div style="display: grid; gap: 0.75rem;">
+                            ${venues.slice(0, 6).map(venue => `
+                                <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <div style="font-weight: 600; color: #fff; margin-bottom: 0.25rem;">${escapeHtml(venue.name)}</div>
+                                        <div style="font-size: 0.875rem; color: rgba(255,255,255,0.6); text-transform: capitalize;">${escapeHtml(venue.type.replace(/_/g, ' '))}</div>
+                                    </div>
+                                    <div style="font-weight: 600; color: #f57c00;">${venue.distance} km</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 0.875rem; color: rgba(255,255,255,0.7); font-style: italic;">
+                            💡 These venues may host concerts, festivals, sports events, or other gatherings. Check local event listings for scheduled activities.
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        container.innerHTML = html || '<div style="text-align: center; padding: 2rem; color: rgba(255,255,255,0.6);">No nearby locations found.</div>';
+    }
+    
+    /**
      * Load article data and populate the page
      */
     async function loadArticle() {
@@ -540,7 +1070,27 @@
             // Add post text - preserve line breaks as paragraphs
             bodyHTML += formatPostText(story);
             
+            // Check if this is an earthquake post and add enhanced content
+            const isEarthquake = post.event_type === 'earthquake' || post.category === 'Earthquake' || post.category === 'EARTHQUAKE';
+            const hasCoordinates = post.lat && post.lon;
+            const magnitude = post.assets?.magnitude || post.magnitude;
+            
+            if (isEarthquake && hasCoordinates) {
+                // Add earthquake-specific enhancements
+                bodyHTML += await generateEarthquakeEnhancements(post, magnitude);
+            }
+            
             bodyElement.innerHTML = bodyHTML;
+            
+            // Initialize earthquake map and 3D visualization if it exists (after DOM update)
+            if (isEarthquake && hasCoordinates) {
+                // Use setTimeout to ensure DOM is fully updated
+                setTimeout(() => {
+                    initializeEarthquakeMap(post.lat, post.lon, magnitude, post.location_display || post.location);
+                    const depth = post.assets?.depth || post.depth;
+                    initialize3DVisualization(post.lat, post.lon, magnitude, depth, post.location_display || post.location);
+                }, 100);
+            }
             
             // Initialize comments
             const commentsContainer = document.getElementById('article-comments');

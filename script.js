@@ -9750,9 +9750,12 @@ function initNewsletterSubscription() {
         try {
             // Prevent multiple simultaneous generations
             if (isGenerating) {
-                console.log('Already generating, please wait...');
+                console.log('[Spotlight] Already generating, please wait...');
                 return;
             }
+            
+            // Set generating flag immediately to prevent duplicate calls
+            isGenerating = true;
             
             // If not forcing new, try to restore from saved data
             if (!forceNew && !isRestoring) {
@@ -9771,6 +9774,7 @@ function initNewsletterSubscription() {
                     if (restored) {
                         console.log('✅ Restored spotlight from saved data with all images - skipping API calls');
                         isRestoring = false;
+                        isGenerating = false; // Reset flag before early return
                         updateButtonStates(); // Update button states after restore
                         return; // Exit early - don't generate new content
                     } else {
@@ -9819,12 +9823,13 @@ function initNewsletterSubscription() {
                     retryBtn.style.display = 'none';
                 }
                 
+                isGenerating = false; // Reset flag before early return
                 updateButtonStates();
                 return;
             }
             
-            // Set generating flag
-            isGenerating = true;
+            // Note: isGenerating is already set to true at line 9758
+            // No need to set it again here (redundant but harmless)
             updateButtonStates();
             
             // Show loading state
@@ -10106,7 +10111,10 @@ function initNewsletterSubscription() {
                 console.log('Using existing AI response, skipping text generation');
                 textResponse = Promise.resolve(aiResponse.innerHTML);
             } else {
-                // Show loading state
+                // Show loading state - hide aiThinking to avoid duplicate loading messages
+                if (aiThinking) {
+                    aiThinking.style.display = 'none';
+                }
                 if (aiResponse) {
                     aiResponse.innerHTML = '<p style="color: rgba(255, 255, 255, 0.7);">🤖 Generating comprehensive spotlight for ' + currentCountry.name + '...</p>';
                 }
@@ -10199,12 +10207,17 @@ Write in a sophisticated, analytical style. Be comprehensive (600-800 words), nu
                         console.error('[Spotlight] Error fetching AI text content:', error);
                     }
                     aiThinking.style.display = 'none';
+                    // Only show error in aiResponse, not in spotlightError (to avoid duplicate messages)
                     if (aiResponse) {
                         if (isRateLimit) {
                             aiResponse.innerHTML = '<p style="color: rgba(255, 200, 100, 0.9);">⚠️ Rate limit reached. Please try again in a moment.</p>';
                         } else {
                             aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Unable to generate spotlight content. Please try again later.</p>';
                         }
+                    }
+                    // Hide spotlightError to avoid duplicate error messages
+                    if (spotlightError) {
+                        spotlightError.style.display = 'none';
                     }
                     return ''; // Return empty string so Promise.allSettled doesn't fail
                 });
@@ -10213,11 +10226,8 @@ Write in a sophisticated, analytical style. Be comprehensive (600-800 words), nu
             // Reset success flag at start of generation
             spotlightGenerationSuccessful = false;
             
-            // Clear generating flag immediately after starting text generation
-            // This prevents blocking the UI while still allowing the promises to complete
-            // The flag was set to prevent duplicate clicks, but we clear it here so UI stays responsive
-            // Note: We still prevent duplicate clicks via the early return check at function start
-            isGenerating = false;
+            // Keep isGenerating = true to prevent duplicate calls
+            // Only clear it when generation completes or fails
             updateButtonStates();
             
             // FIRST: Generate text content and wait for it to succeed before generating images
@@ -10234,12 +10244,9 @@ Write in a sophisticated, analytical style. Be comprehensive (600-800 words), nu
                     isGenerating = false;
                     updateButtonStates();
                     
+                    // Error already shown in aiResponse, don't show duplicate in spotlightError
                     if (spotlightError) {
-                        spotlightError.style.display = 'block';
-                        const errorMsg = spotlightError.querySelector('p');
-                        if (errorMsg) {
-                            errorMsg.textContent = '⚠️ Unable to generate spotlight content. Please try again.';
-                        }
+                        spotlightError.style.display = 'none';
                     }
                     return; // Exit early - don't generate images
                 }
@@ -10299,15 +10306,16 @@ Write in a sophisticated, analytical style. Be comprehensive (600-800 words), nu
                 isGenerating = false;
                 updateButtonStates();
                 
+                // Error already shown in aiResponse, don't show duplicate in spotlightError
                 if (spotlightError) {
-                    spotlightError.style.display = 'block';
-                    const errorMsg = spotlightError.querySelector('p');
-                    if (errorMsg) {
-                        errorMsg.textContent = '⚠️ Unable to generate spotlight content. Please try again.';
-                    }
+                    spotlightError.style.display = 'none';
                 }
                 return; // Exit early - don't save or play music
             }
+            
+            // Generation succeeded - clear flag and play music
+            isGenerating = false;
+            updateButtonStates();
             
             // Generation succeeded - now play music and save data
             // If spotlight is visible, switch to new country's music
@@ -10365,12 +10373,13 @@ Write in a sophisticated, analytical style. Be comprehensive (600-800 words), nu
                 isGenerating = false;
                 updateButtonStates();
                 
+                // Show error in aiResponse if not already shown
+                if (aiResponse && (!aiResponse.innerHTML || !aiResponse.innerHTML.includes('⚠️'))) {
+                    aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Error generating spotlight content. Please try again.</p>';
+                }
+                // Hide spotlightError to avoid duplicate messages
                 if (spotlightError) {
-                    spotlightError.style.display = 'block';
-                    const errorMsg = spotlightError.querySelector('p');
-                    if (errorMsg) {
-                        errorMsg.textContent = '⚠️ Error generating spotlight content. Please try again.';
-                    }
+                    spotlightError.style.display = 'none';
                 }
             });
             
@@ -10385,12 +10394,9 @@ Write in a sophisticated, analytical style. Be comprehensive (600-800 words), nu
             if (aiResponse) {
                 aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Unable to load all content. Some images may be missing.</p>';
             }
+            // Hide spotlightError to avoid duplicate messages
             if (spotlightError) {
-                spotlightError.style.display = 'block';
-                const errorMsg = spotlightError.querySelector('p');
-                if (errorMsg) {
-                    errorMsg.textContent = '⚠️ Error generating spotlight content. Please try again.';
-                }
+                spotlightError.style.display = 'none';
             }
             // Clear generating flag on error
             isGenerating = false;

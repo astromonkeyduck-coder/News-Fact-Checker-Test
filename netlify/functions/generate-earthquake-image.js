@@ -296,8 +296,9 @@ async function prepareUSGSImage(imageBuffer, targetWidth, targetHeight) {
 
 /**
  * Generate branded earthquake image
+ * @param {string} templateType - 'standard' (4K), 'square' (1080x1080), 'wide' (1920x1080)
  */
-async function generateImage(magnitude, location, usgsImages, eventId) {
+async function generateImage(magnitude, location, usgsImages, eventId, templateType = 'standard') {
   // Load template
   const possiblePaths = [
     path.join(__dirname, '2ndUSGSTemp.png'),
@@ -372,18 +373,27 @@ async function generateImage(magnitude, location, usgsImages, eventId) {
     console.warn(`[generate-earthquake-image] Template dimensions (${actualWidth}x${actualHeight}) don't match expected (${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT})`);
   }
   
-  // Calculate scale factor for 4K output
+  // Calculate dimensions based on template type
   let outputWidth, outputHeight, scaleFactor;
   
-  if (ENABLE_4K) {
-    const widthScale = OUTPUT_4K_WIDTH / actualWidth;
-    const heightScale = OUTPUT_4K_HEIGHT / actualHeight;
+  // Template type dimensions
+  const TEMPLATE_DIMENSIONS = {
+    standard: { width: OUTPUT_4K_WIDTH, height: OUTPUT_4K_HEIGHT }, // 4K (3840x2160)
+    square: { width: 1080, height: 1080 }, // Instagram square
+    wide: { width: 1920, height: 1080 }, // Twitter/Facebook wide
+  };
+  
+  const targetDimensions = TEMPLATE_DIMENSIONS[templateType] || TEMPLATE_DIMENSIONS.standard;
+  
+  if (ENABLE_4K || templateType !== 'standard') {
+    const widthScale = targetDimensions.width / actualWidth;
+    const heightScale = targetDimensions.height / actualHeight;
     scaleFactor = Math.min(widthScale, heightScale);
     
     outputWidth = Math.round(actualWidth * scaleFactor);
     outputHeight = Math.round(actualHeight * scaleFactor);
     
-    console.log(`[generate-earthquake-image] Scaling to 4K: ${actualWidth}x${actualHeight} -> ${outputWidth}x${outputHeight} (scale: ${scaleFactor.toFixed(3)})`);
+    console.log(`[generate-earthquake-image] Scaling to ${templateType}: ${actualWidth}x${actualHeight} -> ${outputWidth}x${outputHeight} (scale: ${scaleFactor.toFixed(3)})`);
   } else {
     outputWidth = actualWidth;
     outputHeight = actualHeight;
@@ -585,11 +595,11 @@ exports.storeImage = storeImage;
 /**
  * Store generated image using Netlify Blobs SDK (v8.2.0 is CommonJS compatible)
  */
-async function storeImage(imageBuffer, eventId) {
+async function storeImage(imageBuffer, eventId, templateType = 'standard') {
   const siteID = process.env.NETLIFY_SITE_ID;
   const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
   const storeName = "post-media";
-  const imageKey = `earthquake-${eventId}-${Date.now()}.png`;
+  const imageKey = `earthquake-${eventId}-${templateType}-${Date.now()}.png`;
   
   if (!siteID || !token) {
     console.warn('[generate-earthquake-image] ⚠️ Missing NETLIFY_SITE_ID or NETLIFY_BLOB_READ_WRITE_TOKEN, cannot store image');
@@ -720,11 +730,10 @@ exports.handler = async (event, context) => {
     
     console.log(`[generate-earthquake-image] Generating image for M${magnitude} near ${location}`);
     
-    // Generate image
-    const imageBuffer = await generateImage(magnitude, location, usgsImages || [], eventId);
-    
-    // Store image
-    const imageUrl = await storeImage(imageBuffer, eventId);
+    // Generate single standard image (multi-template can be enabled later if needed)
+    // For now, keep it simple and backward compatible
+    const imageBuffer = await generateImage(magnitude, location, usgsImages || [], eventId, 'standard');
+    const imageUrl = await storeImage(imageBuffer, eventId, 'standard');
     
     return {
       statusCode: 200,

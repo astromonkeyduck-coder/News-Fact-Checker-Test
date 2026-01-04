@@ -9,6 +9,10 @@ const supabase = require('../lib/supabaseClient');
 const { buildCanonicalId } = require('../lib/dedupe');
 const { normalizeEarthquakeSeverity, cleanLocation } = require('../lib/normalize');
 const { createPostFromEvent } = require('../lib/createPost');
+const { assessEarthquakeImpact } = require('../lib/impactAssessment');
+const { assessTsunamiRisk } = require('../lib/tsunamiAssessment');
+const { predictAftershocks } = require('../lib/aftershockModeling');
+const { detectAnomalies } = require('../lib/anomalyDetection');
 
 // USGS GeoJSON feed URLs
 const USGS_FEEDS = {
@@ -64,17 +68,16 @@ async function fetchEventDetail(detailUrl, logger) {
 }
 
 /**
- * Extract two DISTINCT USGS images from event detail
- * Ensures images are from different product types when possible
+ * Extract USGS images from event detail
+ * IMPROVED: More comprehensive search, less restrictive matching
  * Priority order (for immediate availability):
- * 1. Immediate products (DYFI, basic maps) - available within 0-3 minutes
- * 2. Shakemap products - available within 5-10 minutes (best quality)
- * 3. Other products - fallback
+ * 1. Shakemap products - best quality maps (available within 5-10 minutes)
+ * 2. Immediate products (DYFI, origin, location) - available within 0-3 minutes
+ * 3. All other products - comprehensive fallback
  */
 function extractUSGSImages(eventDetail) {
   const images = [];
-  const usedProductTypes = new Set(); // Track which product types we've used
-  const usedFilenames = new Set(); // Track filenames to avoid duplicates
+  const usedUrls = new Set(); // Track URLs to avoid exact duplicates
   
   if (!eventDetail || !eventDetail.properties || !eventDetail.properties.products) {
     return images;
@@ -82,194 +85,103 @@ function extractUSGSImages(eventDetail) {
   
   const products = eventDetail.properties.products;
   
-  // Priority 1: Immediate products (DYFI, basic maps) - available within 0-3 minutes
-  const immediateProductTypes = ['dyfi', 'origin', 'location', 'moment-tensor'];
+  // Helper function to check if a key looks like an image
+  const isImageKey = (key) => {
+    const lowerKey = key.toLowerCase();
+    return /\.(png|jpg|jpeg|gif|webp)$/i.test(key) || 
+           lowerKey.includes('image') || 
+           lowerKey.includes('map') || 
+           lowerKey.includes('plot') ||
+           lowerKey.includes('shakemap') ||
+           lowerKey.includes('intensity') ||
+           lowerKey.includes('contour');
+  };
   
-  // Priority 2: Shakemap products - available within 5-10 minutes (best quality)
-  const shakemapProducts = products.shakemap || [];
-  
-  // Priority 3: All other products (fallback)
-  const otherProductTypes = Object.keys(products)
-    .filter(key => !immediateProductTypes.includes(key) && key !== 'shakemap');
-  
-  // Strategy: Try to get one image from each product type to ensure they're different
-  // First pass: Get one image from each immediate product type
-  for (const productType of immediateProductTypes) {
-    if (images.length >= 2) break;
+  // Helper function to extract images from a product
+  const extractFromProduct = (product, productType) => {
+    if (!product || !product.contents) return;
     
+    for (const [key, content] of Object.entries(product.contents)) {
+      if (!content || !content.url) continue;
+      
+      // Check if this looks like an image
+      if (isImageKey(key)) {
+        const url = content.url;
+        
+        // Skip if we already have this exact URL
+        if (usedUrls.has(url)) continue;
+        
+        // Skip if URL doesn't look like an image
+        if (!/\.(png|jpg|jpeg|gif|webp)/i.test(url)) continue;
+        
+                images.push({
+          url: url,
+                  type: productType,
+                  filename: key,
+                });
+        usedUrls.add(url);
+        
+        // Stop after finding 2 images
+        if (images.length >= 2) return true;
+      }
+    }
+    return false;
+  };
+  
+  // Priority order: Shakemap first (best quality), then immediate products, then everything else
+  // Strategy: Search ALL products comprehensively, just avoid exact duplicate URLs
+  
+  // Priority 1: Shakemap products (best quality maps)
+  const shakemapProducts = products.shakemap || [];
+    for (const product of shakemapProducts) {
+    if (extractFromProduct(product, 'shakemap')) break;
+  }
+  
+  // Priority 2: Immediate products (available quickly)
+  const immediateProductTypes = ['dyfi', 'origin', 'location', 'moment-tensor', 'focal-mechanism'];
+  for (const productType of immediateProductTypes) {
+              if (images.length >= 2) break;
     const productList = products[productType] || [];
     for (const product of productList) {
-      if (images.length >= 2) break;
-      
-      if (product.contents && typeof product.contents === 'object') {
-        for (const [key, content] of Object.entries(product.contents)) {
-          if (content.url && /\.(png|jpg|jpeg|gif)$/i.test(key)) {
-              // Skip if we already have an image from this product type (unless we only have 1 image)
-            if (images.length === 0 || !usedProductTypes.has(productType)) {
-              // Extract base filename (remove common variants like _geo, _geo_, etc.)
-              let baseFilename = key
-                .replace(/_geo\.(jpg|png|jpeg|gif)$/i, '.$1')
-                .replace(/_geo_/gi, '_')
-                .replace(/_(geo|map|plot|image)\./gi, '.')
-                .toLowerCase();
-              
-              // Also check if any existing image has a similar base name
-              const isSimilar = images.some(img => {
-                const existingBase = img.filename
-                  .replace(/_geo\.(jpg|png|jpeg|gif)$/i, '.$1')
-                  .replace(/_geo_/gi, '_')
-                  .replace(/_(geo|map|plot|image)\./gi, '.')
-                  .toLowerCase();
-                return existingBase === baseFilename || 
-                       (baseFilename.includes(existingBase.split('_')[0]) && 
-                        existingBase.includes(baseFilename.split('_')[0]));
-              });
-              
-              if (!isSimilar && !usedFilenames.has(baseFilename) && !images.find(img => img.url === content.url)) {
-                images.push({
-                  url: content.url,
-                  type: productType,
-                  filename: key,
-                });
-                usedProductTypes.add(productType);
-                usedFilenames.add(baseFilename);
-                break; // Move to next product type
-              }
-            }
-          }
-        }
-      }
+      if (extractFromProduct(product, productType)) break;
     }
   }
   
-  // Second pass: If we only have 1 image, try to get a shakemap (different type)
+  // Priority 3: All other products (comprehensive search)
   if (images.length < 2) {
-    for (const product of shakemapProducts) {
+    const allProductTypes = Object.keys(products);
+    for (const productType of allProductTypes) {
       if (images.length >= 2) break;
-      
-      if (product.contents && typeof product.contents === 'object') {
-        for (const [key, content] of Object.entries(product.contents)) {
-          if (content.url && /\.(png|jpg|jpeg|gif)$/i.test(key)) {
-            let baseFilename = key
-              .replace(/_geo\.(jpg|png|jpeg|gif)$/i, '.$1')
-              .replace(/_geo_/gi, '_')
-              .replace(/_(geo|map|plot|image)\./gi, '.')
-              .toLowerCase();
-            
-            const isSimilar = images.some(img => {
-              const existingBase = img.filename
-                .replace(/_geo\.(jpg|png|jpeg|gif)$/i, '.$1')
-                .replace(/_geo_/gi, '_')
-                .replace(/_(geo|map|plot|image)\./gi, '.')
-                .toLowerCase();
-              return existingBase === baseFilename || 
-                     (baseFilename.includes(existingBase.split('_')[0]) && 
-                      existingBase.includes(baseFilename.split('_')[0]));
-            });
-            
-            if (!isSimilar && !usedFilenames.has(baseFilename) && !images.find(img => img.url === content.url)) {
-              images.push({
-                url: content.url,
-                type: 'shakemap',
-                filename: key,
-              });
-              usedProductTypes.add('shakemap');
-              usedFilenames.add(baseFilename);
-              if (images.length >= 2) break;
-            }
-          }
-        }
-      }
-    }
-  }
-  
-  // Third pass: If we still don't have 2, look in other products (ensuring different types)
-  if (images.length < 2) {
-    for (const productType of otherProductTypes) {
-      if (images.length >= 2) break;
-      
-      // Skip if we already have an image from this product type
-      if (usedProductTypes.has(productType)) continue;
+      // Skip if we already checked this type
+      if (immediateProductTypes.includes(productType) || productType === 'shakemap') continue;
       
       const productList = products[productType] || [];
       for (const product of productList) {
-        if (images.length >= 2) break;
-        
-        if (product.contents && typeof product.contents === 'object') {
-          for (const [key, content] of Object.entries(product.contents)) {
-            if (content.url && /\.(png|jpg|jpeg|gif)$/i.test(key)) {
-              let baseFilename = key
-                .replace(/_geo\.(jpg|png|jpeg|gif)$/i, '.$1')
-                .replace(/_geo_/gi, '_')
-                .replace(/_(geo|map|plot|image)\./gi, '.')
-                .toLowerCase();
-              
-              const isSimilar = images.some(img => {
-                const existingBase = img.filename
-                  .replace(/_geo\.(jpg|png|jpeg|gif)$/i, '.$1')
-                  .replace(/_geo_/gi, '_')
-                  .replace(/_(geo|map|plot|image)\./gi, '.')
-                  .toLowerCase();
-                return existingBase === baseFilename || 
-                       (baseFilename.includes(existingBase.split('_')[0]) && 
-                        existingBase.includes(baseFilename.split('_')[0]));
-              });
-              
-              if (!isSimilar && !usedFilenames.has(baseFilename) && !images.find(img => img.url === content.url)) {
-                images.push({
-                  url: content.url,
-                  type: productType,
-                  filename: key,
-                });
-                usedProductTypes.add(productType);
-                usedFilenames.add(baseFilename);
-                break;
-              }
-            }
-          }
-        }
+        if (extractFromProduct(product, productType)) break;
       }
     }
   }
   
-  // Final fallback: If we still only have 1 image, get a second one even if from same type
-  // (but still avoid duplicate filenames)
-  if (images.length === 1) {
-    for (const productType of immediateProductTypes) {
+  // Final pass: If we still need more images, search everything again (less restrictive)
+  if (images.length < 2) {
+    for (const productType of Object.keys(products)) {
+      if (images.length >= 2) break;
       const productList = products[productType] || [];
       for (const product of productList) {
-        if (images.length >= 2) break;
+        if (!product || !product.contents) continue;
         
-        if (product.contents && typeof product.contents === 'object') {
           for (const [key, content] of Object.entries(product.contents)) {
-            if (content.url && /\.(png|jpg|jpeg|gif)$/i.test(key)) {
-              let baseFilename = key
-                .replace(/_geo\.(jpg|png|jpeg|gif)$/i, '.$1')
-                .replace(/_geo_/gi, '_')
-                .replace(/_(geo|map|plot|image)\./gi, '.')
-                .toLowerCase();
-              
-              const isSimilar = images.some(img => {
-                const existingBase = img.filename
-                  .replace(/_geo\.(jpg|png|jpeg|gif)$/i, '.$1')
-                  .replace(/_geo_/gi, '_')
-                  .replace(/_(geo|map|plot|image)\./gi, '.')
-                  .toLowerCase();
-                return existingBase === baseFilename || 
-                       (baseFilename.includes(existingBase.split('_')[0]) && 
-                        existingBase.includes(baseFilename.split('_')[0]));
-              });
-              
-              if (!isSimilar && !usedFilenames.has(baseFilename) && !images.find(img => img.url === content.url)) {
+          if (images.length >= 2) break;
+          if (!content || !content.url) continue;
+          
+          // Very permissive: any image-like URL
+          if (/\.(png|jpg|jpeg|gif|webp)/i.test(content.url) && !usedUrls.has(content.url)) {
                 images.push({
                   url: content.url,
                   type: productType,
                   filename: key,
                 });
-                usedFilenames.add(baseFilename);
-                break;
-              }
-            }
+            usedUrls.add(content.url);
           }
         }
       }
@@ -352,33 +264,33 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
     
     try {
       const imageResponse = await fetch(functionUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          magnitude,
-          location,
-          usgsImages,
-          eventId,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        magnitude,
+        location,
+        usgsImages,
+        eventId,
           // Note: coordinates removed - user removed fallback image generation
-        }),
+      }),
         signal: controller.signal,
-      });
+    });
       
       clearTimeout(timeoutId);
     
-      if (!imageResponse.ok) {
-        const errorText = await imageResponse.text().catch(() => 'Unknown error');
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { error: errorText };
-        }
+    if (!imageResponse.ok) {
+      const errorText = await imageResponse.text().catch(() => 'Unknown error');
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { error: errorText };
+      }
         
         // Enhanced error logging with full details
         const errorDetails = {
-          status: imageResponse.status, 
-          statusText: imageResponse.statusText,
+        status: imageResponse.status, 
+        statusText: imageResponse.statusText,
           error: errorData.error || errorText,
           errorDetails: errorData.details || errorData.name || errorData.message || null,
           fullError: errorText.substring(0, 1000), // First 1000 chars of error
@@ -398,12 +310,12 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
         console.error('[USGS Engine] ❌ Image generation failed:');
         console.error(JSON.stringify(errorDetails, null, 2));
         console.error('[USGS Engine] Full error response (first 2000 chars):', errorText.substring(0, 2000));
-        return null;
-      }
-      
-      const imageData = await imageResponse.json();
-      logger.info('Branded image generated', { url: imageData.url });
-      return imageData.url;
+      return null;
+    }
+    
+    const imageData = await imageResponse.json();
+    logger.info('Branded image generated', { url: imageData.url });
+    return imageData.url;
       
     } catch (fetchError) {
       clearTimeout(timeoutId);
@@ -656,32 +568,49 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     }
     
     // If no images found, retry multiple times with increasing delays
-    // USGS images can take 5-10 minutes to appear after earthquake
-    // For smaller earthquakes, we'll mark them for retry too (not just 6.0+)
+    // USGS images can take 5-15 minutes to appear after earthquake, especially for smaller ones
     if (usgsImages.length === 0 && eventDetail) {
-      const maxRetries = 3;
-      const retryDelays = [5000, 10000, 15000]; // 5s, 10s, 15s (longer waits)
+      const maxRetries = 5; // Increased from 3 to 5
+      const retryDelays = [10000, 20000, 30000, 45000, 60000]; // 10s, 20s, 30s, 45s, 60s (longer waits)
       
       for (let retry = 0; retry < maxRetries && usgsImages.length === 0; retry++) {
-        logger.info(`No USGS images found, retry ${retry + 1}/${maxRetries} after ${retryDelays[retry]}ms...`, { eventId });
+        logger.info(`No USGS images found, retry ${retry + 1}/${maxRetries} after ${retryDelays[retry]/1000}s...`, { eventId });
         await new Promise(resolve => setTimeout(resolve, retryDelays[retry]));
+        
+        // Try fetching again
         eventDetail = await fetchEventDetail(detailUrl, logger);
         if (eventDetail) {
           usgsImages = extractUSGSImages(eventDetail);
           if (usgsImages.length > 0) {
             logger.info(`✅ USGS images found on retry ${retry + 1}`, { count: usgsImages.length, eventId });
             break;
+          } else {
+            // Log what products are available for debugging
+            const availableProducts = eventDetail?.properties?.products ? Object.keys(eventDetail.properties.products) : [];
+            logger.debug(`Retry ${retry + 1}: Still no images, available products: ${availableProducts.join(', ')}`, { eventId });
           }
         }
       }
     }
     
-    // Log final image count
+    // Log final image count with detailed diagnostics
     if (usgsImages.length === 0) {
+      // Log what products are available for debugging
+      const availableProducts = eventDetail?.properties?.products ? Object.keys(eventDetail.properties.products) : [];
+      const productCounts = {};
+      if (eventDetail?.properties?.products) {
+        for (const [key, productList] of Object.entries(eventDetail.properties.products)) {
+          productCounts[key] = Array.isArray(productList) ? productList.length : 0;
+        }
+      }
+      
       logger.warn('⚠️ No USGS images available for earthquake - image will be generated without USGS maps', { 
         eventId, 
         hasDetailUrl: !!detailUrl,
-        hasEventDetail: !!eventDetail 
+        hasEventDetail: !!eventDetail,
+        availableProducts: availableProducts,
+        productCounts: productCounts,
+        detailUrl: detailUrl
       });
       
       // For magnitude 6.0+, mark for continuous retry until USGS images are found
@@ -719,7 +648,7 @@ async function processEarthquake(feature, logger, forceEmail = false) {
                                    (existingUsgsImages.length === 0 && usgsImages.length > 0);
     
     if (shouldGenerateNewImage) {
-      // Generate branded image (will use template's baked-in images if usgsImages is empty)
+  // Generate branded image (will use template's baked-in images if usgsImages is empty)
       imageUrl = await generateBrandedImage(magnitude, locationDisplay, usgsImages, eventId, logger, coordinates);
       logger.info('Image generation completed', { magnitude, hasImage: !!imageUrl, eventId, reason: !existingEvent ? 'new_earthquake' : !existingEvent.image_url ? 'no_existing_image' : 'usgs_images_now_available' });
     } else {
@@ -729,6 +658,86 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     }
   } else {
     logger.info(`Skipping image generation - magnitude below ${IMAGE_GENERATION_THRESHOLD} threshold`, { magnitude, eventId });
+  }
+  
+  // Perform impact assessment, tsunami risk assessment, aftershock prediction, and anomaly detection
+  let impactAssessment = null;
+  let tsunamiAssessment = null;
+  let aftershockForecast = null;
+  let anomalyDetection = null;
+  const depth = feature.geometry?.coordinates?.[2] || null;
+  
+  // Calculate aftershock forecast (doesn't require coordinates)
+  try {
+    const timeSinceMainShock = (Date.now() - time) / (1000 * 60 * 60); // hours
+    aftershockForecast = predictAftershocks(magnitude, timeSinceMainShock);
+    logger.info('Aftershock forecast generated', { 
+      eventId, 
+      probability24h: aftershockForecast.probability24h,
+      expectedLargest: aftershockForecast.expectedLargestAftershock 
+    });
+  } catch (aftershockError) {
+    logger.warn('Failed to generate aftershock forecast', aftershockError, { eventId });
+  }
+  
+  if (coordinates && coordinates[1] && coordinates[0]) {
+    try {
+      logger.info('Assessing earthquake impact, tsunami risk, and anomalies', { eventId, magnitude, depth, lat: coordinates[1], lon: coordinates[0] });
+      
+      // Run assessments in parallel
+      const [impact, tsunami, anomalies] = await Promise.allSettled([
+        assessEarthquakeImpact(magnitude, depth, coordinates[1], coordinates[0]),
+        assessTsunamiRisk(magnitude, depth, coordinates[1], coordinates[0]),
+        detectAnomalies(magnitude, depth, coordinates[1], coordinates[0], time),
+      ]);
+      
+      if (impact.status === 'fulfilled') {
+        impactAssessment = impact.value;
+        logger.info('Impact assessment completed', { 
+          eventId, 
+          riskScore: impactAssessment?.riskScore,
+          severity: impactAssessment?.severity,
+          affectedPopulation: impactAssessment?.affectedPopulation 
+        });
+      }
+      
+      if (tsunami.status === 'fulfilled') {
+        tsunamiAssessment = tsunami.value;
+        if (tsunamiAssessment?.riskLevel === 'HIGH') {
+          logger.warn('⚠️ HIGH TSUNAMI RISK DETECTED', { 
+            eventId, 
+            riskLevel: tsunamiAssessment.riskLevel,
+            riskScore: tsunamiAssessment.riskScore 
+          });
+        } else {
+          logger.info('Tsunami risk assessment completed', { 
+            eventId, 
+            riskLevel: tsunamiAssessment?.riskLevel 
+          });
+        }
+      }
+      
+      if (anomalies.status === 'fulfilled') {
+        anomalyDetection = anomalies.value;
+        if (anomalyDetection?.anomalyLevel === 'HIGH') {
+          logger.warn('⚠️ HIGH ANOMALY LEVEL DETECTED', { 
+            eventId, 
+            anomalyLevel: anomalyDetection.anomalyLevel,
+            anomalyScore: anomalyDetection.anomalyScore,
+            anomalies: anomalyDetection.anomalies.map(a => a.type).join(', ')
+          });
+        } else if (anomalyDetection?.anomalies?.length > 0) {
+          logger.info('Anomaly detection completed', { 
+            eventId, 
+            anomalyLevel: anomalyDetection.anomalyLevel,
+            anomalyCount: anomalyDetection.anomalies.length
+          });
+        }
+      }
+    } catch (assessmentError) {
+      logger.warn('Failed to assess earthquake', assessmentError, { eventId });
+      // Continue without assessments
+    }
   }
   
   // Build event object
@@ -756,6 +765,22 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       usgs_images: usgsImages,
       magnitude: magnitude, // Store magnitude in assets for easy access
       event_id: eventId, // Store event_id in assets for email alerts
+      // Impact assessment data
+      ...(impactAssessment ? {
+        impact_assessment: impactAssessment,
+      } : {}),
+      // Tsunami risk assessment
+      ...(tsunamiAssessment ? {
+        tsunami_assessment: tsunamiAssessment,
+      } : {}),
+      // Aftershock forecast
+      ...(aftershockForecast ? {
+        aftershock_forecast: aftershockForecast,
+      } : {}),
+      // Anomaly detection
+      ...(anomalyDetection ? {
+        anomaly_detection: anomalyDetection,
+      } : {}),
       // For magnitude 6.0+, mark for continuous retry if no USGS images found
       // This allows the retry-usgs-images function to check every minute until images appear
       ...(magnitude >= 6.0 && usgsImages.length === 0 && detailUrl ? {

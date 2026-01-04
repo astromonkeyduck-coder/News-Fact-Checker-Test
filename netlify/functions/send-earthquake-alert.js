@@ -25,6 +25,337 @@ function formatTime(timestamp) {
 }
 
 /**
+ * Generate static map image URL
+ * Uses OpenStreetMap StaticMap service (free, no API key needed)
+ * Falls back to alternative services if needed
+ */
+function generateMapImageUrl(lat, lon, zoom = 10, width = 600, height = 400) {
+  if (!lat || !lon) return null;
+  
+  // Primary: Use OpenStreetMap StaticMap service
+  // Format: https://staticmap.openstreetmap.de/staticmap.php?center=LAT,LON&zoom=ZOOM&size=WxH&markers=LAT,LON,red-pushpin
+  try {
+    const baseUrl = 'https://staticmap.openstreetmap.de/staticmap.php';
+    const params = new URLSearchParams({
+      center: `${lat},${lon}`,
+      zoom: zoom.toString(),
+      size: `${width}x${height}`,
+      markers: `${lat},${lon},red-pushpin`,
+    });
+    
+    return `${baseUrl}?${params.toString()}`;
+  } catch (error) {
+    console.warn('[send-earthquake-alert] ⚠️ Error generating map URL:', error.message);
+    // Fallback: Use a simpler URL format
+    return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=${zoom}&size=${width}x${height}&markers=${lat},${lon},red-pushpin`;
+  }
+}
+
+/**
+ * Fetch location details using reverse geocoding
+ * Uses OpenStreetMap Nominatim API (free, no API key needed)
+ */
+async function fetchLocationDetails(lat, lon) {
+  if (!lat || !lon) return null;
+  
+  try {
+    // Use OpenStreetMap Nominatim for reverse geocoding
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'NoteworthyNews/1.0 (contact@noteworthynews.co)',
+      },
+    });
+    
+    if (!response.ok) {
+      console.warn(`[send-earthquake-alert] ⚠️ Reverse geocoding failed: ${response.status}`);
+      return null;
+    }
+    
+    const data = await response.json();
+    return {
+      displayName: data.display_name || null,
+      address: data.address || {},
+      country: data.address?.country || null,
+      state: data.address?.state || data.address?.region || null,
+      city: data.address?.city || data.address?.town || data.address?.village || null,
+      county: data.address?.county || null,
+      postcode: data.address?.postcode || null,
+    };
+  } catch (error) {
+    console.warn(`[send-earthquake-alert] ⚠️ Error fetching location details:`, error.message);
+    return null;
+  }
+}
+
+/**
+ * Estimate population within radius (rough approximation)
+ * Uses a simple formula based on distance from major cities
+ * This is a placeholder - real population data would require a proper API
+ */
+function estimateAffectedPopulation(magnitude, depth) {
+  // Rough estimation based on magnitude and depth
+  // This is a simplified model - real data would come from population APIs
+  const baseRadius = magnitude * 10; // km radius
+  const depthFactor = depth ? Math.max(1, depth / 10) : 1;
+  const effectiveRadius = baseRadius / depthFactor;
+  
+  // Very rough population estimate (this is placeholder logic)
+  // Real implementation would use population density data
+  const estimatedAffected = Math.round(effectiveRadius * effectiveRadius * 50); // Very rough estimate
+  
+  if (estimatedAffected < 1000) {
+    return `${estimatedAffected.toLocaleString()} people`;
+  } else if (estimatedAffected < 1000000) {
+    return `${(estimatedAffected / 1000).toFixed(1)}K people`;
+  } else {
+    return `${(estimatedAffected / 1000000).toFixed(2)}M people`;
+  }
+}
+
+/**
+ * Get earthquake impact level description
+ */
+function getImpactDescription(magnitude, depth) {
+  if (magnitude >= 7.0) {
+    return 'Major earthquake - Significant damage possible';
+  } else if (magnitude >= 6.0) {
+    return 'Strong earthquake - Moderate damage possible';
+  } else if (magnitude >= 5.0) {
+    return 'Moderate earthquake - Light damage possible';
+  } else if (magnitude >= 4.0) {
+    return 'Light earthquake - Generally felt, minor damage possible';
+  } else {
+    return 'Minor earthquake - Generally felt, no damage expected';
+  }
+}
+
+/**
+ * Calculate distance between two coordinates (Haversine formula)
+ * Returns distance in kilometers
+ */
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+/**
+ * Find nearby important locations (cities, landmarks, etc.)
+ * Uses OpenStreetMap Overpass API to find nearby places
+ */
+async function findNearbyLocations(lat, lon, radiusKm = 50) {
+  if (!lat || !lon) return [];
+  
+  try {
+    // Use Overpass API to find nearby cities, towns, and important places
+    const overpassQuery = `
+      [out:json][timeout:25];
+      (
+        node["place"~"^(city|town|village|hamlet)$"](around:${radiusKm * 1000},${lat},${lon});
+        node["amenity"~"^(university|college|school)$"](around:${radiusKm * 1000},${lat},${lon});
+        node["tourism"~"^(attraction|museum|theme_park|zoo)$"](around:${radiusKm * 1000},${lat},${lon});
+        node["leisure"~"^(stadium|park|amusement_arcade)$"](around:${radiusKm * 1000},${lat},${lon});
+        way["place"~"^(city|town|village|hamlet)$"](around:${radiusKm * 1000},${lat},${lon});
+        way["amenity"~"^(university|college|school)$"](around:${radiusKm * 1000},${lat},${lon});
+      );
+      out center;
+    `;
+    
+    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'NoteworthyNews/1.0 (contact@noteworthynews.co)',
+      },
+    });
+    
+    if (!response.ok) {
+      console.warn(`[send-earthquake-alert] ⚠️ Overpass API failed: ${response.status}`);
+      return [];
+    }
+    
+    const data = await response.json();
+    const locations = [];
+    
+    for (const element of data.elements || []) {
+      const elementLat = element.lat || (element.center && element.center.lat);
+      const elementLon = element.lon || (element.center && element.center.lon);
+      
+      if (!elementLat || !elementLon) continue;
+      
+      const distance = calculateDistance(lat, lon, elementLat, elementLon);
+      const tags = element.tags || {};
+      
+      let name = tags.name || tags['name:en'] || 'Unknown';
+      let type = tags.place || tags.amenity || tags.tourism || tags.leisure || 'location';
+      let category = 'location';
+      
+      // Categorize the location
+      if (tags.place) {
+        category = 'city';
+        type = tags.place;
+      } else if (tags.amenity === 'university' || tags.amenity === 'college') {
+        category = 'education';
+        type = tags.amenity;
+      } else if (tags.amenity === 'school') {
+        category = 'education';
+        type = 'school';
+      } else if (tags.tourism) {
+        category = 'attraction';
+        type = tags.tourism;
+      } else if (tags.leisure) {
+        category = 'venue';
+        type = tags.leisure;
+      }
+      
+      locations.push({
+        name,
+        type,
+        category,
+        distance: Math.round(distance * 10) / 10, // Round to 1 decimal
+        lat: elementLat,
+        lon: elementLon,
+      });
+    }
+    
+    // Sort by distance and return top 10
+    return locations
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 10);
+      
+  } catch (error) {
+    console.warn(`[send-earthquake-alert] ⚠️ Error finding nearby locations:`, error.message);
+    return [];
+  }
+}
+
+/**
+ * Find nearby educational institutions
+ */
+async function findNearbyEducation(lat, lon, radiusKm = 50) {
+  if (!lat || !lon) return [];
+  
+  try {
+    const overpassQuery = `
+      [out:json][timeout:25];
+      (
+        node["amenity"~"^(university|college|school)$"](around:${radiusKm * 1000},${lat},${lon});
+        way["amenity"~"^(university|college|school)$"](around:${radiusKm * 1000},${lat},${lon});
+      );
+      out center;
+    `;
+    
+    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'NoteworthyNews/1.0 (contact@noteworthynews.co)',
+      },
+    });
+    
+    if (!response.ok) return [];
+    
+    const data = await response.json();
+    const institutions = [];
+    
+    for (const element of data.elements || []) {
+      const elementLat = element.lat || (element.center && element.center.lat);
+      const elementLon = element.lon || (element.center && element.center.lon);
+      
+      if (!elementLat || !elementLon) continue;
+      
+      const distance = calculateDistance(lat, lon, elementLat, elementLon);
+      const tags = element.tags || {};
+      const name = tags.name || tags['name:en'] || 'Unknown';
+      const type = tags.amenity || 'school';
+      
+      institutions.push({
+        name,
+        type,
+        distance: Math.round(distance * 10) / 10,
+        lat: elementLat,
+        lon: elementLon,
+      });
+    }
+    
+    return institutions
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 5);
+      
+  } catch (error) {
+    console.warn(`[send-earthquake-alert] ⚠️ Error finding nearby education:`, error.message);
+    return [];
+  }
+}
+
+/**
+ * Find nearby event venues and entertainment locations
+ * These could potentially host events
+ */
+async function findNearbyVenues(lat, lon, radiusKm = 50) {
+  if (!lat || !lon) return [];
+  
+  try {
+    const overpassQuery = `
+      [out:json][timeout:25];
+      (
+        node["amenity"~"^(theatre|cinema|nightclub|bar|restaurant|community_centre)$"](around:${radiusKm * 1000},${lat},${lon});
+        node["leisure"~"^(stadium|sports_centre|amusement_arcade)$"](around:${radiusKm * 1000},${lat},${lon});
+        node["tourism"~"^(attraction|museum|theme_park|zoo)$"](around:${radiusKm * 1000},${lat},${lon});
+        way["amenity"~"^(theatre|cinema|nightclub|bar|restaurant|community_centre)$"](around:${radiusKm * 1000},${lat},${lon});
+        way["leisure"~"^(stadium|sports_centre|amusement_arcade)$"](around:${radiusKm * 1000},${lat},${lon});
+      );
+      out center;
+    `;
+    
+    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'NoteworthyNews/1.0 (contact@noteworthynews.co)',
+      },
+    });
+    
+    if (!response.ok) return [];
+    
+    const data = await response.json();
+    const venues = [];
+    
+    for (const element of data.elements || []) {
+      const elementLat = element.lat || (element.center && element.center.lat);
+      const elementLon = element.lon || (element.center && element.center.lon);
+      
+      if (!elementLat || !elementLon) continue;
+      
+      const distance = calculateDistance(lat, lon, elementLat, elementLon);
+      const tags = element.tags || {};
+      const name = tags.name || tags['name:en'] || 'Unknown';
+      const type = tags.amenity || tags.leisure || tags.tourism || 'venue';
+      
+      venues.push({
+        name,
+        type,
+        distance: Math.round(distance * 10) / 10,
+        lat: elementLat,
+        lon: elementLon,
+      });
+    }
+    
+    return venues
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 8);
+      
+  } catch (error) {
+    console.warn(`[send-earthquake-alert] ⚠️ Error finding nearby venues:`, error.message);
+    return [];
+  }
+}
+
+/**
  * Download image for email attachment
  * Handles both direct binary responses and JSON responses with redirect URLs (from get-uploaded-image)
  */
@@ -256,12 +587,81 @@ exports.handler = async (event, context) => {
     const eventTime = formatTime(earthquake.time_ms || earthquake.time);
     
     // Build subject (works for all magnitudes)
-    const magnitude = earthquake.magnitude.toFixed(1);
-    const severity = magnitude >= 7.0 ? "Strong" : magnitude >= 5.0 ? "Moderate" : "Earthquake";
-    const subject = `BREAKING: ${severity} Earthquake Near ${earthquake.location_display} (M${magnitude})`;
+    const magnitude = parseFloat(earthquake.magnitude.toFixed(1));
+    const magnitudeFormatted = magnitude.toFixed(1);
+    const severity = magnitude >= 7.0 ? "Major" : magnitude >= 6.0 ? "Strong" : magnitude >= 5.0 ? "Moderate" : magnitude >= 4.0 ? "Light" : "Minor";
+    const severityColor = magnitude >= 7.0 ? "#d32f2f" : magnitude >= 6.0 ? "#f57c00" : magnitude >= 5.0 ? "#fbc02d" : magnitude >= 4.0 ? "#388e3c" : "#1976d2";
+    const severityBg = magnitude >= 7.0 ? "#ffebee" : magnitude >= 6.0 ? "#fff3e0" : magnitude >= 5.0 ? "#fffde7" : magnitude >= 4.0 ? "#e8f5e9" : "#e3f2fd";
+    const subject = `🚨 BREAKING: ${severity} Earthquake (M${magnitudeFormatted}) Near ${earthquake.location_display}`;
     
     // Build message (common-person wording, no jargon)
-    const message = `BREAKING: A magnitude ${magnitude} earthquake was detected by the U.S. Geological Survey near ${earthquake.location_display} at ${eventTime}.\n\nSee attached image.`;
+    const message = `BREAKING: A magnitude ${magnitudeFormatted} earthquake was detected by the U.S. Geological Survey near ${earthquake.location_display} at ${eventTime}.\n\nSee attached image for detailed visualization.`;
+    
+    // Format coordinates if available
+    const coordinates = earthquake.lon && earthquake.lat 
+      ? `${Math.abs(earthquake.lat).toFixed(4)}°${earthquake.lat >= 0 ? 'N' : 'S'}, ${Math.abs(earthquake.lon).toFixed(4)}°${earthquake.lon >= 0 ? 'E' : 'W'}`
+      : null;
+    
+    // Format depth if available
+    const depth = earthquake.depth ? `${earthquake.depth.toFixed(1)} km` : null;
+    const depthValue = earthquake.depth || null;
+    
+    // Fetch location details and generate map
+    let locationDetails = null;
+    let mapImageUrl = null;
+    let nearbyLocations = [];
+    let nearbyEducation = [];
+    let nearbyVenues = [];
+    
+    if (earthquake.lat && earthquake.lon) {
+      try {
+        console.log('[send-earthquake-alert] 📍 Fetching location details...');
+        locationDetails = await fetchLocationDetails(earthquake.lat, earthquake.lon);
+        mapImageUrl = generateMapImageUrl(earthquake.lat, earthquake.lon, 10, 600, 400);
+        console.log('[send-earthquake-alert] ✅ Location details fetched', {
+          hasDetails: !!locationDetails,
+          hasMap: !!mapImageUrl,
+          country: locationDetails?.country,
+          state: locationDetails?.state,
+        });
+        
+        // Fetch nearby important locations in parallel
+        console.log('[send-earthquake-alert] 🔍 Finding nearby locations...');
+        const [locations, education, venues] = await Promise.allSettled([
+          findNearbyLocations(earthquake.lat, earthquake.lon, 50),
+          findNearbyEducation(earthquake.lat, earthquake.lon, 50),
+          findNearbyVenues(earthquake.lat, earthquake.lon, 50),
+        ]);
+        
+        nearbyLocations = locations.status === 'fulfilled' ? locations.value : [];
+        nearbyEducation = education.status === 'fulfilled' ? education.value : [];
+        nearbyVenues = venues.status === 'fulfilled' ? venues.value : [];
+        
+        console.log('[send-earthquake-alert] ✅ Nearby locations found', {
+          locations: nearbyLocations.length,
+          education: nearbyEducation.length,
+          venues: nearbyVenues.length,
+        });
+      } catch (error) {
+        console.warn('[send-earthquake-alert] ⚠️ Failed to fetch location details:', error.message);
+        // Continue without location details - map will still be generated
+        mapImageUrl = generateMapImageUrl(earthquake.lat, earthquake.lon, 10, 600, 400);
+      }
+    }
+    
+    // Extract assessment data from earthquake assets
+    const impactAssessment = earthquake.assets?.impact_assessment || null;
+    const tsunamiAssessment = earthquake.assets?.tsunami_assessment || null;
+    const aftershockForecast = earthquake.assets?.aftershock_forecast || null;
+    const anomalyDetection = earthquake.assets?.anomaly_detection || null;
+    
+    // Calculate impact information (fallback if no assessment)
+    const impactDescription = impactAssessment?.severity 
+      ? `${impactAssessment.severity} RISK - ${getImpactDescription(magnitude, depthValue)}`
+      : getImpactDescription(magnitude, depthValue);
+    const estimatedAffected = impactAssessment?.affectedPopulation 
+      ? `${(impactAssessment.affectedPopulation / 1000).toFixed(1)}K people`
+      : (depthValue ? estimateAffectedPopulation(magnitude, depthValue) : null);
     
     // Build email content (same for all recipients)
     const baseEmailContent = {
@@ -269,18 +669,497 @@ exports.handler = async (event, context) => {
       subject: subject,
       text: message,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #d32f2f; margin-bottom: 20px;">BREAKING: Earthquake Detected</h2>
-          <p style="font-size: 16px; line-height: 1.6; color: #333;">
-            A magnitude <strong>${earthquake.magnitude.toFixed(1)}</strong> earthquake was detected by the U.S. Geological Survey near <strong>${earthquake.location_display}</strong> at ${eventTime}.
-          </p>
-          <p style="font-size: 14px; color: #666; margin-top: 20px;">
-            See attached image for details.
-          </p>
-          <p style="font-size: 12px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
-            <a href="${earthquake.usgs_event_url}" style="color: #4a90e2;">View on USGS website</a>
-          </p>
-        </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Earthquake Alert</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5; padding: 20px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden;">
+          
+          <!-- Header with gradient -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 40px; text-align: center;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td align="center">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                      NOTEWORTHY NEWS
+                    </h1>
+                    <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.9); font-size: 12px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase;">
+                      Breaking Alert
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Breaking Badge -->
+          <tr>
+            <td style="padding: 20px 40px 0 40px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td>
+                    <div style="display: inline-block; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); color: #ffffff; padding: 8px 16px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; box-shadow: 0 2px 8px rgba(255,107,107,0.3);">
+                      🚨 BREAKING NEWS
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 30px 40px;">
+              
+              <!-- Magnitude Card -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: linear-gradient(135deg, ${severityBg} 0%, ${severityBg}dd 100%); border-left: 4px solid ${severityColor}; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
+                <tr>
+                  <td style="padding: 25px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <tr>
+                        <td width="60%" style="vertical-align: middle;">
+                          <div style="font-size: 14px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+                            Magnitude
+                          </div>
+                          <div style="font-size: 48px; font-weight: 800; color: ${severityColor}; line-height: 1; margin-bottom: 4px;">
+                            M${magnitudeFormatted}
+                          </div>
+                          <div style="font-size: 13px; font-weight: 600; color: ${severityColor}; text-transform: uppercase; letter-spacing: 0.5px;">
+                            ${severity} Earthquake
+                          </div>
+                        </td>
+                        <td width="40%" align="right" style="vertical-align: middle;">
+                          <div style="display: inline-block; background: ${severityColor}; color: #ffffff; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; box-shadow: 0 4px 16px ${severityColor}40;">
+                            ${magnitudeFormatted}
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Location & Details -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+                <tr>
+                  <td>
+                    <div style="font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 15px; line-height: 1.3;">
+                      📍 ${earthquake.location_display}
+                    </div>
+                    <div style="font-size: 15px; color: #666; line-height: 1.6; margin-bottom: 20px;">
+                      A magnitude <strong style="color: ${severityColor};">${magnitudeFormatted}</strong> earthquake was detected by the <strong>U.S. Geological Survey</strong> near <strong>${earthquake.location_display}</strong>.
+                    </div>
+                    ${locationDetails ? `
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 3px solid ${severityColor};">
+                      <div style="font-size: 12px; font-weight: 600; color: #868e96; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
+                        📋 Location Details
+                      </div>
+                      <div style="font-size: 14px; color: #212529; line-height: 1.8;">
+                        ${locationDetails.city ? `<strong>City:</strong> ${locationDetails.city}<br>` : ''}
+                        ${locationDetails.county ? `<strong>County:</strong> ${locationDetails.county}<br>` : ''}
+                        ${locationDetails.state ? `<strong>State/Region:</strong> ${locationDetails.state}<br>` : ''}
+                        ${locationDetails.country ? `<strong>Country:</strong> ${locationDetails.country}<br>` : ''}
+                        ${locationDetails.postcode ? `<strong>Postal Code:</strong> ${locationDetails.postcode}` : ''}
+                      </div>
+                    </div>
+                    ` : ''}
+                    ${impactDescription ? `
+                    <div style="background: linear-gradient(135deg, ${severityBg} 0%, ${severityBg}dd 100%); border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 3px solid ${severityColor};">
+                      <div style="font-size: 12px; font-weight: 600; color: ${severityColor}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+                        ⚠️ Impact Assessment
+                      </div>
+                      <div style="font-size: 14px; color: #212529; line-height: 1.6; font-weight: 500;">
+                        ${impactDescription}
+                      </div>
+                      ${estimatedAffected ? `
+                      <div style="font-size: 13px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1);">
+                        Estimated affected area: <strong>${estimatedAffected}</strong>
+                      </div>
+                      ` : ''}
+                    </div>
+                    ` : ''}
+                    ${tsunamiAssessment && tsunamiAssessment.riskLevel !== 'LOW' ? `
+                    <div style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 3px solid #f57c00;">
+                      <div style="font-size: 12px; font-weight: 600; color: #e65100; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+                        🌊 ${tsunamiAssessment.riskLevel === 'HIGH' ? '⚠️ HIGH' : 'MEDIUM'} TSUNAMI RISK
+                      </div>
+                      <div style="font-size: 14px; color: #212529; line-height: 1.6; font-weight: 500;">
+                        ${tsunamiAssessment.assessment || 'Tsunami risk detected. Monitor official tsunami warnings.'}
+                      </div>
+                      ${tsunamiAssessment.travelTime ? `
+                      <div style="font-size: 13px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1);">
+                        Estimated travel time to coast: <strong>${tsunamiAssessment.travelTime.hours}h ${tsunamiAssessment.travelTime.minutes}m</strong>
+                      </div>
+                      ` : ''}
+                    </div>
+                    ` : ''}
+                    ${aftershockForecast && aftershockForecast.probability24h >= 50 ? `
+                    <div style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 3px solid #9c27b0;">
+                      <div style="font-size: 12px; font-weight: 600; color: #7b1fa2; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+                        📊 Aftershock Forecast
+                      </div>
+                      <div style="font-size: 14px; color: #212529; line-height: 1.6; font-weight: 500;">
+                        ${aftershockForecast.probability24h}% chance of significant aftershocks (M≥${aftershockForecast.expectedLargestAftershock.toFixed(1)}) within 24 hours.
+                      </div>
+                      <div style="font-size: 13px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1);">
+                        Expected largest aftershock: <strong>M${aftershockForecast.expectedLargestAftershock.toFixed(1)}</strong><br>
+                        ${aftershockForecast.recommendation || ''}
+                      </div>
+                    </div>
+                    ` : ''}
+                    ${anomalyDetection && anomalyDetection.anomalyLevel !== 'NORMAL' ? `
+                    <div style="background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 3px solid #d32f2f;">
+                      <div style="font-size: 12px; font-weight: 600; color: #c62828; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+                        ⚠️ ${anomalyDetection.anomalyLevel} ANOMALY DETECTED
+                      </div>
+                      <div style="font-size: 14px; color: #212529; line-height: 1.6; font-weight: 500;">
+                        ${anomalyDetection.summary}
+                      </div>
+                      ${anomalyDetection.anomalies && anomalyDetection.anomalies.length > 0 ? `
+                      <div style="font-size: 13px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1);">
+                        ${anomalyDetection.anomalies.map(a => `• ${a.description}`).join('<br>')}
+                      </div>
+                      ` : ''}
+                    </div>
+                    ` : ''}
+                    ${impactAssessment && impactAssessment.riskScore ? `
+                    <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 3px solid #388e3c;">
+                      <div style="font-size: 12px; font-weight: 600; color: #2e7d32; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+                        📊 Risk Assessment
+                      </div>
+                      <div style="font-size: 14px; color: #212529; line-height: 1.6;">
+                        <strong>Risk Score:</strong> ${impactAssessment.riskScore}/100 (${impactAssessment.severity})<br>
+                        ${impactAssessment.affectedPopulation ? `<strong>Affected Population:</strong> ${(impactAssessment.affectedPopulation / 1000).toFixed(1)}K people<br>` : ''}
+                        ${impactAssessment.criticalInfrastructure ? `
+                        <strong>Critical Infrastructure:</strong> ${impactAssessment.criticalInfrastructure.hospitals} hospitals, ${impactAssessment.criticalInfrastructure.airports} airports, ${impactAssessment.criticalInfrastructure.powerPlants} power plants
+                        ` : ''}
+                      </div>
+                    </div>
+                    ` : ''}
+                  </td>
+                </tr>
+              </table>
+              
+              ${mapImageUrl ? `
+              <!-- Static Map -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+                <tr>
+                  <td>
+                    <div style="background: #ffffff; border-radius: 12px; padding: 0; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); border: 1px solid #e9ecef;">
+                      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 12px 20px;">
+                        <div style="font-size: 13px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">
+                          🗺️ Location Map
+                        </div>
+                      </div>
+                      <img src="${mapImageUrl}" alt="Map showing earthquake location at ${earthquake.location_display}" style="display: block; width: 100%; max-width: 100%; height: auto;" />
+                      <div style="padding: 12px 20px; background: #f8f9fa; border-top: 1px solid #e9ecef;">
+                        <div style="font-size: 11px; color: #868e96; text-align: center;">
+                          Map data © <a href="https://www.openstreetmap.org/" style="color: #667eea; text-decoration: none;">OpenStreetMap</a> contributors
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
+              
+              ${locationDetails ? `
+              <!-- Area Facts -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+                <tr>
+                  <td>
+                    <div style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-radius: 12px; padding: 20px; border: 1px solid #e9ecef; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                      <div style="font-size: 14px; font-weight: 700; color: #1a1a1a; margin-bottom: 15px; display: flex; align-items: center;">
+                        <span style="font-size: 20px; margin-right: 8px;">📊</span>
+                        Area Information
+                      </div>
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        <tr>
+                          ${locationDetails.country ? `
+                          <td style="padding: 8px 0; border-bottom: 1px solid #e9ecef;">
+                            <div style="font-size: 12px; color: #868e96; margin-bottom: 4px;">Country</div>
+                            <div style="font-size: 14px; font-weight: 600; color: #212529;">${locationDetails.country}</div>
+                          </td>
+                          ` : ''}
+                          ${locationDetails.state ? `
+                          <td style="padding: 8px 0; border-bottom: 1px solid #e9ecef;">
+                            <div style="font-size: 12px; color: #868e96; margin-bottom: 4px;">State/Region</div>
+                            <div style="font-size: 14px; font-weight: 600; color: #212529;">${locationDetails.state}</div>
+                          </td>
+                          ` : ''}
+                        </tr>
+                        ${locationDetails.city || locationDetails.county ? `
+                        <tr>
+                          ${locationDetails.city ? `
+                          <td style="padding: 8px 0; border-bottom: 1px solid #e9ecef;">
+                            <div style="font-size: 12px; color: #868e96; margin-bottom: 4px;">City/Town</div>
+                            <div style="font-size: 14px; font-weight: 600; color: #212529;">${locationDetails.city}</div>
+                          </td>
+                          ` : ''}
+                          ${locationDetails.county ? `
+                          <td style="padding: 8px 0; border-bottom: 1px solid #e9ecef;">
+                            <div style="font-size: 12px; color: #868e96; margin-bottom: 4px;">County</div>
+                            <div style="font-size: 14px; font-weight: 600; color: #212529;">${locationDetails.county}</div>
+                          </td>
+                          ` : ''}
+                        </tr>
+                        ` : ''}
+                        ${earthquake.lat && earthquake.lon ? `
+                        <tr>
+                          <td colspan="2" style="padding: 8px 0;">
+                            <div style="font-size: 12px; color: #868e96; margin-bottom: 4px;">Distance from Epicenter</div>
+                            <div style="font-size: 14px; font-weight: 600; color: #212529;">
+                              ${locationDetails.city ? `Nearest city: ${locationDetails.city}` : 'Rural/Remote area'}
+                            </div>
+                          </td>
+                        </tr>
+                        ` : ''}
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
+              
+              ${nearbyLocations.length > 0 ? `
+              <!-- Nearby Important Locations -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+                <tr>
+                  <td>
+                    <div style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); border-radius: 12px; padding: 20px; border: 1px solid #e9ecef; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                      <div style="font-size: 14px; font-weight: 700; color: #1a1a1a; margin-bottom: 15px; display: flex; align-items: center;">
+                        <span style="font-size: 20px; margin-right: 8px;">🏙️</span>
+                        Nearby Important Locations
+                      </div>
+                      <div style="font-size: 13px; color: #666; margin-bottom: 15px;">
+                        Cities, towns, and landmarks within 50km of the epicenter:
+                      </div>
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        ${nearbyLocations.slice(0, 6).map(loc => `
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #e9ecef;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                              <div>
+                                <div style="font-size: 14px; font-weight: 600; color: #212529; margin-bottom: 4px;">
+                                  ${loc.name}
+                                </div>
+                                <div style="font-size: 12px; color: #868e96; text-transform: capitalize;">
+                                  ${loc.type}
+                                </div>
+                              </div>
+                              <div style="font-size: 13px; font-weight: 600; color: ${severityColor};">
+                                ${loc.distance} km
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                        `).join('')}
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
+              
+              ${nearbyEducation.length > 0 ? `
+              <!-- Nearby Educational Institutions -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+                <tr>
+                  <td>
+                    <div style="background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%); border-radius: 12px; padding: 20px; border: 1px solid #e9ecef; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                      <div style="font-size: 14px; font-weight: 700; color: #1a1a1a; margin-bottom: 15px; display: flex; align-items: center;">
+                        <span style="font-size: 20px; margin-right: 8px;">🎓</span>
+                        Nearby Educational Institutions
+                      </div>
+                      <div style="font-size: 13px; color: #666; margin-bottom: 15px;">
+                        Colleges, universities, and schools in the area:
+                      </div>
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        ${nearbyEducation.map(edu => `
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #e9ecef;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                              <div>
+                                <div style="font-size: 14px; font-weight: 600; color: #212529; margin-bottom: 4px;">
+                                  ${edu.name}
+                                </div>
+                                <div style="font-size: 12px; color: #868e96; text-transform: capitalize;">
+                                  ${edu.type === 'university' ? 'University' : edu.type === 'college' ? 'College' : 'School'}
+                                </div>
+                              </div>
+                              <div style="font-size: 13px; font-weight: 600; color: #1976d2;">
+                                ${edu.distance} km
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                        `).join('')}
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
+              
+              ${nearbyVenues.length > 0 ? `
+              <!-- Nearby Event Venues -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+                <tr>
+                  <td>
+                    <div style="background: linear-gradient(135deg, #fff3e0 0%, #ffffff 100%); border-radius: 12px; padding: 20px; border: 1px solid #e9ecef; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                      <div style="font-size: 14px; font-weight: 700; color: #1a1a1a; margin-bottom: 15px; display: flex; align-items: center;">
+                        <span style="font-size: 20px; margin-right: 8px;">🎭</span>
+                        Nearby Event Venues & Entertainment
+                      </div>
+                      <div style="font-size: 13px; color: #666; margin-bottom: 15px;">
+                        Theaters, stadiums, and venues that may host events:
+                      </div>
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                        ${nearbyVenues.slice(0, 6).map(venue => `
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #e9ecef;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                              <div>
+                                <div style="font-size: 14px; font-weight: 600; color: #212529; margin-bottom: 4px;">
+                                  ${venue.name}
+                                </div>
+                                <div style="font-size: 12px; color: #868e96; text-transform: capitalize;">
+                                  ${venue.type.replace(/_/g, ' ')}
+                                </div>
+                              </div>
+                              <div style="font-size: 13px; font-weight: 600; color: #f57c00;">
+                                ${venue.distance} km
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                        `).join('')}
+                      </table>
+                      <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e9ecef;">
+                        <div style="font-size: 12px; color: #868e96; font-style: italic;">
+                          💡 Note: These venues may host concerts, festivals, sports events, or other gatherings. Check local event listings for scheduled activities.
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
+              
+              <!-- Details Grid -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+                <tr>
+                  <td width="50%" style="padding-right: 10px; vertical-align: top;">
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; border: 1px solid #e9ecef;">
+                      <div style="font-size: 11px; font-weight: 600; color: #868e96; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                        ⏰ Event Time
+                      </div>
+                      <div style="font-size: 14px; font-weight: 600; color: #212529;">
+                        ${eventTime}
+                      </div>
+                    </div>
+                  </td>
+                  ${coordinates ? `
+                  <td width="50%" style="padding-left: 10px; vertical-align: top;">
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; border: 1px solid #e9ecef;">
+                      <div style="font-size: 11px; font-weight: 600; color: #868e96; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                        📐 Coordinates
+                      </div>
+                      <div style="font-size: 14px; font-weight: 600; color: #212529; font-family: 'Courier New', monospace;">
+                        ${coordinates}
+                      </div>
+                    </div>
+                  </td>
+                  ` : depth ? `
+                  <td width="50%" style="padding-left: 10px; vertical-align: top;">
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; border: 1px solid #e9ecef;">
+                      <div style="font-size: 11px; font-weight: 600; color: #868e96; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                        ⬇️ Depth
+                      </div>
+                      <div style="font-size: 14px; font-weight: 600; color: #212529;">
+                        ${depth}
+                      </div>
+                    </div>
+                  </td>
+                  ` : '<td width="50%"></td>'}
+                </tr>
+                ${depth && coordinates ? `
+                <tr>
+                  <td colspan="2" style="padding-top: 10px;">
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; border: 1px solid #e9ecef;">
+                      <div style="font-size: 11px; font-weight: 600; color: #868e96; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+                        ⬇️ Depth
+                      </div>
+                      <div style="font-size: 14px; font-weight: 600; color: #212529;">
+                        ${depth}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                ` : ''}
+              </table>
+              
+              <!-- Image Placeholder (will be replaced with actual image) -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+                <tr>
+                  <td>
+                    <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; padding: 20px; text-align: center; border: 2px dashed #dee2e6;">
+                      <div style="font-size: 14px; color: #868e96; font-weight: 500;">
+                        📸 Detailed visualization below
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- USGS Link -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td align="center" style="padding: 20px 0; border-top: 1px solid #e9ecef;">
+                    <a href="${earthquake.usgs_event_url || 'https://earthquake.usgs.gov'}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(102,126,234,0.3); transition: all 0.3s ease;">
+                      View on USGS Website →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background: #f8f9fa; padding: 25px 40px; text-align: center; border-top: 1px solid #e9ecef;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td>
+                    <p style="margin: 0; font-size: 12px; color: #868e96; line-height: 1.6;">
+                      <strong style="color: #495057;">Noteworthy News</strong><br>
+                      Real-time breaking news alerts<br>
+                      <a href="https://noteworthynews.co" style="color: #667eea; text-decoration: none;">noteworthynews.co</a>
+                    </p>
+                    <p style="margin: 15px 0 0 0; font-size: 11px; color: #adb5bd;">
+                      Data provided by the U.S. Geological Survey
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
       `,
     };
     
@@ -387,25 +1266,34 @@ exports.handler = async (event, context) => {
             
             // Add <img> tag in HTML that references the CID
             // MUST match the content_id exactly (without cid: prefix)
-            // Use a simpler, more reliable approach - insert directly after the "See attached" paragraph
-            const imageHtml = `<div style="margin: 20px 0; text-align: center;"><img src="cid:${cidIdentifier}" alt="Earthquake visualization" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" /></div>`;
+            // Replace the placeholder div with the actual image
+            const imageHtml = `
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+                <tr>
+                  <td>
+                    <div style="background: #ffffff; border-radius: 12px; padding: 0; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); border: 1px solid #e9ecef;">
+                      <img src="cid:${cidIdentifier}" alt="Earthquake Visualization - Magnitude ${magnitudeFormatted} near ${earthquake.location_display}" style="display: block; width: 100%; max-width: 100%; height: auto; border-radius: 12px;" />
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            `;
             
             console.log(`[send-earthquake-alert] 🔗 CID reference: cid:${cidIdentifier}`);
             console.log(`[send-earthquake-alert] 🔗 Image HTML: ${imageHtml.substring(0, 100)}...`);
             
-            // Insert image after "See attached image for details" paragraph
-            // Use a more reliable replacement that finds the paragraph and inserts after it
-            const seeAttachedRegex = /(<p style="font-size: 14px; color: #666; margin-top: 20px;">\s*See attached image for details\.\s*<\/p>)/i;
-            if (seeAttachedRegex.test(baseEmailContent.html)) {
+            // Replace the placeholder div with the actual image
+            const placeholderRegex = /<div style="background: linear-gradient\(135deg, #f8f9fa 0%, #e9ecef 100%\); border-radius: 12px; padding: 20px; text-align: center; border: 2px dashed #dee2e6;">[\s\S]*?<\/div>/;
+            if (placeholderRegex.test(baseEmailContent.html)) {
               htmlWithImage = baseEmailContent.html.replace(
-                seeAttachedRegex,
-                `$1${imageHtml}`
+                placeholderRegex,
+                imageHtml.trim()
               );
             } else {
-              // Fallback: insert before the USGS link paragraph
+              // Fallback: insert before the USGS link section
               htmlWithImage = baseEmailContent.html.replace(
-                /(<p style="font-size: 12px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">)/,
-                `${imageHtml}$1`
+                /(<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">\s*<tr>\s*<td align="center" style="padding: 20px 0; border-top: 1px solid #e9ecef;">)/,
+                `${imageHtml.trim()}$1`
               );
             }
             
@@ -438,21 +1326,29 @@ exports.handler = async (event, context) => {
     if (imageAttachment && !htmlWithImage.includes(`cid:${imageAttachment.content_id}`)) {
       console.warn(`[send-earthquake-alert] ⚠️ CID not found in HTML, forcing insertion`);
       const imageHtml = `
-        <div style="margin: 20px 0; text-align: center;">
-          <img src="cid:${imageAttachment.content_id}" alt="Earthquake visualization" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
-        </div>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+                <tr>
+                  <td>
+                    <div style="background: #ffffff; border-radius: 12px; padding: 0; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); border: 1px solid #e9ecef;">
+                      <img src="cid:${imageAttachment.content_id}" alt="Earthquake Visualization - Magnitude ${magnitudeFormatted} near ${earthquake.location_display}" style="display: block; width: 100%; max-width: 100%; height: auto; border-radius: 12px;" />
+                    </div>
+                  </td>
+                </tr>
+              </table>
       `;
-      // Insert before the USGS link
+      // Insert before the USGS link section
       htmlWithImage = htmlWithImage.replace(
-        /(<p style="font-size: 12px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">)/,
-        `${imageHtml}$1`
+        /(<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">\s*<tr>\s*<td align="center" style="padding: 20px 0; border-top: 1px solid #e9ecef;">)/,
+        `${imageHtml.trim()}$1`
       );
       console.log(`[send-earthquake-alert] ✅ Image HTML force-inserted`);
     } else if (!imageAttachment) {
       // Remove CID references from HTML if we don't have an attachment
       // This prevents broken image icons
       htmlWithImage = htmlWithImage.replace(/<img[^>]+src=["']cid:[^"']+["'][^>]*>/gi, '');
-      console.log(`[send-earthquake-alert] ⚠️ Removed image tag from HTML - no attachment available`);
+      // Also remove the placeholder if no image
+      htmlWithImage = htmlWithImage.replace(/<div style="background: linear-gradient\(135deg, #f8f9fa 0%, #e9ecef 100%\); border-radius: 12px; padding: 20px; text-align: center; border: 2px dashed #dee2e6;">[\s\S]*?<\/div>/gi, '');
+      console.log(`[send-earthquake-alert] ⚠️ Removed image tag and placeholder from HTML - no attachment available`);
     }
     
     // Send email to all notification emails

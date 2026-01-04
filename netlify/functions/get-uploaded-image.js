@@ -74,35 +74,64 @@ exports.handler = async (event, context) => {
     console.log(`[get-uploaded-image] Looking for image: ${imageKey}`);
     console.log(`[get-uploaded-image] Site ID: ${siteID ? siteID.substring(0, 8) + '...' : 'MISSING'}, Token: ${token ? 'PRESENT' : 'MISSING'}`);
     
+    // Generate key variants for backward compatibility
+    // New format: earthquake-{eventId}-{templateType}-{timestamp}.png
+    // Old format: earthquake-{eventId}-{timestamp}.png
+    const keyVariants = [imageKey];
+    
+    const hasTemplateType = imageKey.includes('-standard-') || imageKey.includes('-square-') || imageKey.includes('-wide-');
+    
+    if (hasTemplateType) {
+      // Key has template type (new format) - also try old format
+      const oldFormat = imageKey.replace(/-standard-|-square-|-wide-/, '-');
+      keyVariants.push(oldFormat);
+      console.log(`[get-uploaded-image] Will also try old format: ${oldFormat}`);
+    } else {
+      // Key doesn't have template type - try adding -standard- (new format)
+      // Pattern: earthquake-{eventId}-{timestamp}.png
+      // Extract eventId (everything before last -{digits}.png) and timestamp
+      const match = imageKey.match(/^earthquake-(.+)-(\d+)\.png$/);
+      if (match) {
+        const eventId = match[1];
+        const timestamp = match[2];
+        // Only add new format if eventId doesn't already contain a template type keyword
+        // (to avoid double-adding)
+        if (!eventId.includes('standard') && !eventId.includes('square') && !eventId.includes('wide')) {
+          keyVariants.push(`earthquake-${eventId}-standard-${timestamp}.png`);
+          console.log(`[get-uploaded-image] Will also try new format: earthquake-${eventId}-standard-${timestamp}.png`);
+        }
+      }
+    }
+    
     // Try to find the media in any of the stores using REST API
     // Note: siteID and token are guaranteed to exist after early validation above
-    for (const storeName of storeNames) {
-      try {
-        const encodedKey = encodeURIComponent(imageKey);
-        const apiUrl = `https://api.netlify.com/api/v1/sites/${siteID}/blobs/${storeName}/${encodedKey}`;
-        console.log(`[get-uploaded-image] Trying store: ${storeName}`);
-        console.log(`[get-uploaded-image] Original key: ${imageKey}`);
-        console.log(`[get-uploaded-image] Encoded key: ${encodedKey}`);
-        console.log(`[get-uploaded-image] Full API URL: ${apiUrl}`);
+    outerLoop: for (const storeName of storeNames) {
+      for (const keyVariant of keyVariants) {
+        try {
+          const encodedKey = encodeURIComponent(keyVariant);
+          const apiUrl = `https://api.netlify.com/api/v1/sites/${siteID}/blobs/${storeName}/${encodedKey}`;
+          console.log(`[get-uploaded-image] Trying store: ${storeName}, key: ${keyVariant}`);
+          console.log(`[get-uploaded-image] Encoded key: ${encodedKey}`);
+          console.log(`[get-uploaded-image] Full API URL: ${apiUrl}`);
         
-        const response = await fetch(apiUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        
-        console.log(`[get-uploaded-image] Response from ${storeName}: ${response.status} ${response.statusText}`);
-        const contentType = response.headers.get('content-type') || '';
-        console.log(`[get-uploaded-image] Content-Type: ${contentType}`);
-        
-        // Log response body for non-200 responses to debug
-        if (!response.ok) {
-          const errorText = await response.text().catch(() => '');
-          console.log(`[get-uploaded-image] Error response body: ${errorText.substring(0, 500)}`);
-        }
-        
-        if (response.ok) {
+          const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+          
+          console.log(`[get-uploaded-image] Response from ${storeName}: ${response.status} ${response.statusText}`);
+          const contentType = response.headers.get('content-type') || '';
+          console.log(`[get-uploaded-image] Content-Type: ${contentType}`);
+          
+          // Log response body for non-200 responses to debug
+          if (!response.ok) {
+            const errorText = await response.text().catch(() => '');
+            console.log(`[get-uploaded-image] Error response body: ${errorText.substring(0, 500)}`);
+          }
+          
+          if (response.ok) {
           // Check if response is JSON (Netlify Blobs might return JSON with a URL)
           if (contentType.includes('application/json')) {
             const jsonData = await response.json().catch(() => null);
@@ -122,7 +151,7 @@ exports.handler = async (event, context) => {
                       imageData = arrayBuffer;
                       foundStore = storeName;
                       console.log(`[get-uploaded-image] ✅ Found image via redirect URL: ${Math.round(arrayBuffer.byteLength / 1024)}KB (${isPNG ? 'PNG' : 'JPEG'})`);
-                      break;
+                      break outerLoop; // Break out of both loops
                     } else {
                       console.warn(`[get-uploaded-image] ⚠️ Redirect URL did not return valid image (magic bytes: ${Array.from(firstBytes).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ')})`);
                     }
@@ -164,7 +193,7 @@ exports.handler = async (event, context) => {
                             imageData = imageArrayBuffer;
                             foundStore = storeName;
                             console.log(`[get-uploaded-image] ✅ Found image via JSON URL: ${Math.round(imageArrayBuffer.byteLength / 1024)}KB (${isPNG ? 'PNG' : 'JPEG'})`);
-                            break;
+                            break outerLoop; // Break out of both loops
                           } else {
                             console.warn(`[get-uploaded-image] ⚠️ Redirect URL did not return valid image (magic bytes: ${Array.from(firstBytes).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ')})`);
                           }
@@ -184,23 +213,24 @@ exports.handler = async (event, context) => {
                 imageData = arrayBuffer;
                 foundStore = storeName;
                 console.log(`[get-uploaded-image] ✅ Found image in ${storeName}: ${Math.round(arrayBuffer.byteLength / 1024)}KB`);
-                break;
+                break outerLoop; // Break out of both loops
               }
             } else {
               console.warn(`[get-uploaded-image] ⚠️ Empty response from ${storeName}`);
             }
           }
-        } else if (response.status === 404) {
-          console.log(`[get-uploaded-image] Image not found in ${storeName} (404)`);
-        } else {
-          // Log non-404 errors but continue trying other stores
-          const errorText = await response.text().catch(() => '');
-          console.warn(`[get-uploaded-image] Error fetching from ${storeName}:`, response.status, response.statusText, errorText.substring(0, 200));
+          } else if (response.status === 404) {
+            console.log(`[get-uploaded-image] Image not found in ${storeName} with key ${keyVariant} (404)`);
+            // Continue to next key variant
+          } else {
+            // Log non-404 errors but continue trying other key variants
+            const errorText = await response.text().catch(() => '');
+            console.warn(`[get-uploaded-image] Error fetching from ${storeName} with key ${keyVariant}:`, response.status, response.statusText, errorText.substring(0, 200));
+          }
+        } catch (fetchErr) {
+          // Network error, try next key variant
+          console.warn(`[get-uploaded-image] Network error fetching from ${storeName} with key ${keyVariant}:`, fetchErr.message);
         }
-      } catch (fetchErr) {
-        // Network error, try next store
-        console.warn(`[get-uploaded-image] Network error fetching from ${storeName}:`, fetchErr.message);
-        continue;
       }
     }
 
