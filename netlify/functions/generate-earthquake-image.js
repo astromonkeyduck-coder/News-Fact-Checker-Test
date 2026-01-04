@@ -458,7 +458,7 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     // CRITICAL: Use 'original' mode to preserve exact SVG dimensions, don't scale
     const svgOptions = {
       font: {
-        loadSystemFonts: false, // Don't load system fonts, rely on embedded @font-face
+        loadSystemFonts: true, // Enable system fonts as fallback (resvg may need this)
         fontFiles: [], // Will be populated below
       },
       // CRITICAL: Use 'original' to preserve exact SVG dimensions (outputWidth x outputHeight)
@@ -477,20 +477,35 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
       ];
       console.log('[generate-earthquake-image] ✅ Registered font buffers with resvg', {
         regularSize: FONT_BUFFERS.regular.length,
-        boldSize: FONT_BUFFERS.bold.length
+        boldSize: FONT_BUFFERS.bold.length,
+        loadSystemFonts: true,
+        defaultFontFamily: 'Roboto'
       });
     } else {
       console.warn('[generate-earthquake-image] ⚠️ Font buffers not available for resvg!', {
         hasRegular: !!FONT_BUFFERS.regular,
         hasBold: !!FONT_BUFFERS.bold
       });
-      throw new Error('Font buffers not loaded - cannot render text without fonts');
+      // Don't throw - let resvg try with system fonts
+      console.warn('[generate-earthquake-image] ⚠️ Will attempt rendering with system fonts only');
     }
     
     // Use resvg.Resvg constructor to render SVG to PNG
+    console.log('[generate-earthquake-image] 🎨 Rendering SVG with resvg...', {
+      svgLength: svgString.length,
+      fontFilesCount: svgOptions.font.fontFiles.length,
+      loadSystemFonts: svgOptions.font.loadSystemFonts,
+      fontFamilyInSVG: svgString.includes('font-family: \'Roboto\'') || svgString.includes('font-family:"Roboto"')
+    });
+    
     const resvgInstance = new resvg.Resvg(svgString, svgOptions);
     const pngData = resvgInstance.render();
     textOverlayBuffer = pngData.asPng();
+    
+    console.log('[generate-earthquake-image] 🎨 resvg render complete', {
+      bufferSize: textOverlayBuffer.length,
+      isBuffer: Buffer.isBuffer(textOverlayBuffer)
+    });
     
     // CRITICAL: Verify text overlay buffer is valid
     if (!textOverlayBuffer || textOverlayBuffer.length === 0) {
