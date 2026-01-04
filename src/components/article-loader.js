@@ -511,16 +511,28 @@
             // Render primary image ONCE if it exists
             if (primary) {
                 const absoluteImageUrl = ensureAbsoluteImageUrl(primary);
+                // Add error handling for get-uploaded-image URLs that might 404
+                const isUploadedImage = absoluteImageUrl.includes('get-uploaded-image');
+                const errorHandler = isUploadedImage 
+                    ? `this.onerror=null; this.style.display='none'; const parent=this.parentElement; if(parent && !parent.querySelector('.image-error')) { parent.innerHTML='<p class=\\'image-error\\' style=\\'color: rgba(255,255,255,0.5); padding: 1rem; text-align: center; font-size: 0.875rem;\\'>Image unavailable</p>'; }`
+                    : `this.style.display='none'; this.parentElement.innerHTML='<p style=\\'color: rgba(255,255,255,0.6); padding: 2rem; text-align: center;\\'>Image could not be loaded</p>';`;
+                
                 bodyHTML += `<div class="article-media">
-                    <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)}" loading="lazy" onerror="this.style.display='none'; this.parentElement.innerHTML='<p style=\\'color: rgba(255,255,255,0.6); padding: 2rem; text-align: center;\\'>Image could not be loaded</p>';">
+                    <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)}" loading="lazy" onerror="${errorHandler}">
                 </div>`;
             }
             
             // Render secondary images ONLY if they exist and are different from primary
             if (secondary.length > 0) {
                 secondary.forEach((imgUrl, idx) => {
+                    const absoluteImageUrl = ensureAbsoluteImageUrl(imgUrl);
+                    const isUploadedImage = absoluteImageUrl.includes('get-uploaded-image');
+                    const errorHandler = isUploadedImage
+                        ? `this.onerror=null; this.style.display='none';`
+                        : `this.style.display='none';`;
+                    
                     bodyHTML += `<div class="article-media" style="margin-top: 1.5rem;">
-                        <img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(title)} - Image ${idx + 2}" loading="lazy" onerror="this.style.display='none';">
+                        <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)} - Image ${idx + 2}" loading="lazy" onerror="${errorHandler}">
                     </div>`;
                 });
             }

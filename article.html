@@ -1249,6 +1249,59 @@
     <script src="/src/components/cookie-banner.js"></script>
     <!-- NewsCard Component -->
     <script src="/src/components/news-card.js"></script>
+    
+    <!-- Auth0 SDK - Must load before auth0.js -->
+    <script>
+        // Load Auth0 credentials from environment variables
+        // For local dev with 'npx netlify dev', this fetches from Netlify function
+        // For production, credentials are injected at build time
+        (async function() {
+            // Check if credentials are already set (injected at build time)
+            if (window.AUTH0_DOMAIN && window.AUTH0_CLIENT_ID) {
+                console.log('[Auth0] Credentials already loaded from build injection');
+                return;
+            }
+            
+            // Try to fetch from Netlify function (works with 'npx netlify dev')
+            try {
+                const response = await fetch('/.netlify/functions/get-auth0-config');
+                if (response.ok) {
+                    const config = await response.json();
+                    window.AUTH0_DOMAIN = config.domain;
+                    window.AUTH0_CLIENT_ID = config.clientId;
+                    console.log('[Auth0] Credentials loaded from environment variables');
+                } else {
+                    console.warn('[Auth0] Could not load credentials from function. Make sure you\'re running "npx netlify dev" or set credentials manually.');
+                }
+            } catch (error) {
+                console.warn('[Auth0] Could not fetch credentials:', error.message);
+                console.warn('[Auth0] For local dev, either:');
+                console.warn('[Auth0] 1. Run "npx netlify dev" (recommended)');
+                console.warn('[Auth0] 2. Or uncomment and set credentials in this script block');
+            }
+        })();
+    </script>
+    <script src="https://cdn.auth0.com/js/auth0-spa-js/2.4/auth0-spa-js.production.js" async></script>
+    <script>
+        // Verify SDK loaded and provide fallback
+        window.addEventListener('load', function() {
+            if (typeof createAuth0Client === 'undefined') {
+                console.warn('[Auth0] SDK failed to load from primary CDN. Trying fallback...');
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/@auth0/auth0-spa-js@2.4/dist/auth0-spa-js.production.js';
+                script.onload = function() {
+                    console.log('[Auth0] SDK loaded from fallback CDN');
+                };
+                script.onerror = function() {
+                    console.error('[Auth0] Failed to load SDK from both CDNs. Comments may not work.');
+                };
+                document.head.appendChild(script);
+            } else {
+                console.log('[Auth0] SDK loaded successfully from primary CDN');
+            }
+        });
+    </script>
+    
     <!-- Auth0 for comments -->
     <script src="/src/auth/auth0.js"></script>
     <!-- Comments System -->

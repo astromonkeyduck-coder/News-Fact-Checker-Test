@@ -623,9 +623,10 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   
   const magnitude = props.mag || 0;
   
-  // Filter out earthquakes below magnitude 2.5
-  if (magnitude < 2.5) {
-    logger.debug('Skipping earthquake below magnitude 2.5', { magnitude, eventId });
+  // Lower threshold for testing - process earthquakes >= 1.0
+  // Images will only be generated if magnitude >= 2.5 (see below)
+  if (magnitude < 1.0) {
+    logger.debug('Skipping earthquake below magnitude 1.0', { magnitude, eventId });
     return null;
   }
   
@@ -688,10 +689,18 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     logger.warn('⚠️ No detail URL available for earthquake - cannot fetch USGS images', { eventId });
   }
   
-  // Generate branded image (will use template's baked-in images if usgsImages is empty)
-  // Pass coordinates for instant fallback images when USGS images aren't available yet
+  // Generate branded image ONLY if magnitude meets requirements (>= 2.5)
+  // Lower magnitude earthquakes are processed but won't get images
+  let imageUrl = null;
   const coordinates = feature.geometry?.coordinates;
-  const imageUrl = await generateBrandedImage(magnitude, locationDisplay, usgsImages, eventId, logger, coordinates);
+  
+  if (magnitude >= 2.5) {
+    // Generate branded image (will use template's baked-in images if usgsImages is empty)
+    imageUrl = await generateBrandedImage(magnitude, locationDisplay, usgsImages, eventId, logger, coordinates);
+    logger.info('Image generation completed', { magnitude, hasImage: !!imageUrl, eventId });
+  } else {
+    logger.info('Skipping image generation - magnitude below 2.5 threshold', { magnitude, eventId });
+  }
   
   // Build event object
   const event = {
