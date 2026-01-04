@@ -235,7 +235,7 @@ exports.handler = async (event, context) => {
     if (imageUrl) {
       console.log(`[send-earthquake-alert] 📸 Starting image download from: ${imageUrl}`);
       try {
-        const imageData = await downloadImageForEmail(imageUrl);
+      const imageData = await downloadImageForEmail(imageUrl);
         console.log(`[send-earthquake-alert] 📸 Image download completed:`, {
           hasImageData: !!imageData,
           hasBuffer: !!(imageData && imageData.buffer),
@@ -312,7 +312,7 @@ exports.handler = async (event, context) => {
           console.log(`[send-earthquake-alert] 📎 Creating attachment with CID: ${cidIdentifier}`);
           console.log(`[send-earthquake-alert] 📎 Base64 length: ${base64Content.length}, Buffer length: ${imageData.buffer.length}`);
           
-          imageAttachment = {
+        imageAttachment = {
             filename: `earthquake-m${earthquake.magnitude.toFixed(1)}-${earthquake.event_id || 'unknown'}.png`,
             content: base64Content, // Already base64 string
             content_type: imageData.contentType || 'image/png',
@@ -388,6 +388,11 @@ exports.handler = async (event, context) => {
         `${imageHtml}$1`
       );
       console.log(`[send-earthquake-alert] ✅ Image HTML force-inserted`);
+    } else if (!imageAttachment) {
+      // Remove CID references from HTML if we don't have an attachment
+      // This prevents broken image icons
+      htmlWithImage = htmlWithImage.replace(/<img[^>]+src=["']cid:[^"']+["'][^>]*>/gi, '');
+      console.log(`[send-earthquake-alert] ⚠️ Removed image tag from HTML - no attachment available`);
     }
     
     // Send email to all notification emails
@@ -400,26 +405,37 @@ exports.handler = async (event, context) => {
         };
         
         if (imageAttachment) {
-          emailContent.attachments = [imageAttachment];
-          console.log(`[send-earthquake-alert] 📎 Adding image attachment to email for ${email}`);
-          console.log(`[send-earthquake-alert] 📎 Attachment details:`, {
-            filename: imageAttachment.filename,
-            content_id: imageAttachment.content_id,
-            content_type: imageAttachment.content_type,
-            content_length: imageAttachment.content.length,
-            content_preview: imageAttachment.content.substring(0, 50) + '...',
-            has_cid_in_html: htmlWithImage.includes(`cid:${imageAttachment.content_id}`),
-            cid_in_html_count: (htmlWithImage.match(new RegExp(`cid:${imageAttachment.content_id}`, 'g')) || []).length
-          });
-          
-          // Verify the CID format
-          if (!htmlWithImage.includes(`cid:${imageAttachment.content_id}`)) {
-            console.error(`[send-earthquake-alert] ❌ CRITICAL: CID "${imageAttachment.content_id}" still not found in HTML after force-insert!`);
+          // Validate attachment before adding
+          if (!imageAttachment.content || imageAttachment.content.length === 0) {
+            console.error(`[send-earthquake-alert] ❌ Attachment has no content! Skipping attachment for ${email}`);
+            imageAttachment = null;
+          } else if (!imageAttachment.content_id) {
+            console.error(`[send-earthquake-alert] ❌ Attachment has no content_id! Skipping attachment for ${email}`);
+            imageAttachment = null;
           } else {
-            console.log(`[send-earthquake-alert] ✅ CID verified in HTML`);
+          emailContent.attachments = [imageAttachment];
+            console.log(`[send-earthquake-alert] 📎 Adding image attachment to email for ${email}`);
+            console.log(`[send-earthquake-alert] 📎 Attachment details:`, {
+              filename: imageAttachment.filename,
+              content_id: imageAttachment.content_id,
+              content_type: imageAttachment.content_type,
+              content_length: imageAttachment.content.length,
+              content_preview: imageAttachment.content.substring(0, 50) + '...',
+              has_cid_in_html: htmlWithImage.includes(`cid:${imageAttachment.content_id}`),
+              cid_in_html_count: (htmlWithImage.match(new RegExp(`cid:${imageAttachment.content_id}`, 'g')) || []).length
+            });
+            
+            // Verify the CID format
+            if (!htmlWithImage.includes(`cid:${imageAttachment.content_id}`)) {
+              console.error(`[send-earthquake-alert] ❌ CRITICAL: CID "${imageAttachment.content_id}" still not found in HTML after force-insert!`);
+            } else {
+              console.log(`[send-earthquake-alert] ✅ CID verified in HTML`);
+            }
           }
-        } else {
-          console.log(`[send-earthquake-alert] ⚠️ No image attachment for ${email} - imageAttachment is null`);
+        }
+        
+        if (!imageAttachment) {
+          console.log(`[send-earthquake-alert] ⚠️ No image attachment for ${email} - imageAttachment is null or invalid`);
         }
         
         const result = await resend.emails.send(emailContent);
