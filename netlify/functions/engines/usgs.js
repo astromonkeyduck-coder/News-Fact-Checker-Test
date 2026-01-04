@@ -689,17 +689,20 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     logger.warn('⚠️ No detail URL available for earthquake - cannot fetch USGS images', { eventId });
   }
   
-  // Generate branded image ONLY if magnitude meets requirements (>= 2.5)
+  // Generate branded image ONLY if magnitude meets requirements (>= 2.0 for testing, normally 2.5)
   // Lower magnitude earthquakes are processed but won't get images
   let imageUrl = null;
   const coordinates = feature.geometry?.coordinates;
   
-  if (magnitude >= 2.5) {
+  // Lower threshold to 2.0 for testing - change back to 2.5 later
+  const IMAGE_GENERATION_THRESHOLD = 2.0;
+  
+  if (magnitude >= IMAGE_GENERATION_THRESHOLD) {
     // Generate branded image (will use template's baked-in images if usgsImages is empty)
     imageUrl = await generateBrandedImage(magnitude, locationDisplay, usgsImages, eventId, logger, coordinates);
     logger.info('Image generation completed', { magnitude, hasImage: !!imageUrl, eventId });
   } else {
-    logger.info('Skipping image generation - magnitude below 2.5 threshold', { magnitude, eventId });
+    logger.info(`Skipping image generation - magnitude below ${IMAGE_GENERATION_THRESHOLD} threshold`, { magnitude, eventId });
   }
   
   // Build event object
@@ -785,11 +788,26 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   });
   
   if (shouldSendEmail) {
-    // If forcing email, temporarily reset alert_sent so sendEmailAlert will process it
+    // Only force email if it's new OR there's a new image
+    // Don't force duplicate emails just because it's the most recent
+    const shouldForceEmail = forceEmail && (isNew || hasNewImage);
     const originalAlertSent = storedEvent.alert_sent;
-    if (forceEmail && storedEvent.alert_sent) {
+    
+    if (shouldForceEmail && storedEvent.alert_sent) {
       storedEvent.alert_sent = false;
-      logger.info('Forcing email for most recent earthquake', { canonical_id: canonicalId });
+      logger.info('Forcing email for most recent earthquake', { 
+        canonical_id: canonicalId,
+        reason: isNew ? 'new_earthquake' : 'new_image'
+      });
+    } else if (forceEmail && storedEvent.alert_sent && !isNew && !hasNewImage) {
+      // Don't send duplicate email if already sent and no new image
+      logger.info('Skipping duplicate email - already sent and no new image', { 
+        canonical_id: canonicalId,
+        forceEmail,
+        isNew,
+        hasNewImage
+      });
+      return { isNew, event: storedEvent };
     }
     
     const alertSent = await sendEmailAlert(storedEvent, imageUrl, logger);

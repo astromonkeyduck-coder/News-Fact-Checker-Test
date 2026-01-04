@@ -33,8 +33,9 @@ const leaderboardLoggerInstance = (function() {
         log: (...args) => console.log('[Leaderboard]', ...args)
     };
 })();
-// Alias for convenience (but use leaderboardLoggerInstance internally to avoid conflicts)
-const logger = leaderboardLoggerInstance;
+// Use leaderboardLoggerInstance directly to avoid conflicts with other logger declarations
+// Use var instead of const to allow redeclaration if file is loaded multiple times
+var logger = leaderboardLoggerInstance;
 
 class Leaderboard {
     constructor(gameType = 'fact-checker') {
