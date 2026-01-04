@@ -26,6 +26,7 @@ function formatTime(timestamp) {
 
 /**
  * Download image for email attachment
+ * Handles both direct binary responses and JSON responses with redirect URLs (from get-uploaded-image)
  */
 async function downloadImageForEmail(imageUrl) {
   try {
@@ -48,14 +49,59 @@ async function downloadImageForEmail(imageUrl) {
     const contentType = response.headers.get('content-type') || 'image/png';
     console.log(`[send-earthquake-alert] 📥 Image response: ${response.status}, Content-Type: ${contentType}`);
     
-    // CRITICAL: get-uploaded-image returns base64 with isBase64Encoded: true
-    // Netlify automatically decodes it, so we get binary data
-    // But we need to handle it as binary, not text
-    const arrayBuffer = await response.arrayBuffer();
+    // Check if response is JSON (from get-uploaded-image when Blobs API returns JSON)
+    let arrayBuffer = await response.arrayBuffer();
     
     if (!arrayBuffer || arrayBuffer.byteLength === 0) {
       console.error('[send-earthquake-alert] ❌ Image arrayBuffer is empty!');
       return null;
+    }
+    
+    // Check if response is JSON (starts with '{')
+    const firstBytes = new Uint8Array(arrayBuffer.slice(0, 10));
+    const isJSON = contentType.includes('application/json') || firstBytes[0] === 0x7b; // '{' character
+    
+    if (isJSON) {
+      console.log(`[send-earthquake-alert] 📥 Response is JSON, attempting to extract redirect URL`);
+      try {
+        const text = new TextDecoder().decode(arrayBuffer);
+        const jsonData = JSON.parse(text);
+        
+        if (jsonData.url) {
+          console.log(`[send-earthquake-alert] 📥 Following redirect URL from JSON: ${jsonData.url}`);
+          // Fetch the actual image from the redirect URL
+          const imageResponse = await fetch(jsonData.url);
+          
+          if (!imageResponse.ok) {
+            console.error(`[send-earthquake-alert] ❌ Redirect URL fetch failed: ${imageResponse.status} ${imageResponse.statusText}`);
+            throw new Error(`Failed to fetch image from redirect URL: ${imageResponse.status}`);
+          }
+          
+          arrayBuffer = await imageResponse.arrayBuffer();
+          if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+            console.error('[send-earthquake-alert] ❌ Redirect URL returned empty response!');
+            return null;
+          }
+          
+          // Verify it's actually an image (not more JSON)
+          const imageFirstBytes = new Uint8Array(arrayBuffer.slice(0, 4));
+          const isPNG = imageFirstBytes[0] === 0x89 && imageFirstBytes[1] === 0x50 && imageFirstBytes[2] === 0x4E && imageFirstBytes[3] === 0x47;
+          const isJPEG = imageFirstBytes[0] === 0xFF && imageFirstBytes[1] === 0xD8;
+          
+          if (!isPNG && !isJPEG) {
+            console.error(`[send-earthquake-alert] ❌ Redirect URL did not return valid image (magic bytes: ${Array.from(imageFirstBytes).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ')})`);
+            return null;
+          }
+          
+          console.log(`[send-earthquake-alert] ✅ Successfully fetched image from redirect URL: ${Math.round(arrayBuffer.byteLength / 1024)}KB (${isPNG ? 'PNG' : 'JPEG'})`);
+        } else {
+          console.error(`[send-earthquake-alert] ❌ JSON response but no URL field:`, JSON.stringify(jsonData).substring(0, 200));
+          return null;
+        }
+      } catch (jsonError) {
+        console.error(`[send-earthquake-alert] ❌ Failed to parse JSON response:`, jsonError.message);
+        return null;
+      }
     }
     
     const buffer = Buffer.from(arrayBuffer);
@@ -69,7 +115,6 @@ async function downloadImageForEmail(imageUrl) {
     }
     
     // Validate it's actually a valid image by checking magic bytes
-    // But be more lenient - if it's close, still accept it
     const magicBytes = buffer.slice(0, 8);
     const isPNG = magicBytes[0] === 0x89 && magicBytes[1] === 0x50 && magicBytes[2] === 0x4E && magicBytes[3] === 0x47;
     const isJPEG = magicBytes[0] === 0xFF && magicBytes[1] === 0xD8;
@@ -91,7 +136,7 @@ async function downloadImageForEmail(imageUrl) {
       contentType: contentType,
     };
   } catch (error) {
-    console.error('[send-earthquake-alert] ❌ Error downloading image:', error.message);
+    console.error('[send-earthquake-alert] ❌ Error downloading image:', error.message, error.stack);
     return null;
   }
 }
@@ -246,7 +291,7 @@ exports.handler = async (event, context) => {
     if (imageUrl) {
       console.log(`[send-earthquake-alert] 📸 Starting image download from: ${imageUrl}`);
       try {
-        const imageData = await downloadImageForEmail(imageUrl);
+      const imageData = await downloadImageForEmail(imageUrl);
         console.log(`[send-earthquake-alert] 📸 Image download completed:`, {
           hasImageData: !!imageData,
           hasBuffer: !!(imageData && imageData.buffer),
@@ -323,7 +368,7 @@ exports.handler = async (event, context) => {
             console.log(`[send-earthquake-alert] 📎 Creating attachment with CID: ${cidIdentifier}`);
             console.log(`[send-earthquake-alert] 📎 Base64 length: ${base64Content.length}, Buffer length: ${imageData.buffer.length}`);
             
-            imageAttachment = {
+        imageAttachment = {
               filename: `earthquake-m${earthquake.magnitude.toFixed(1)}-${earthquake.event_id || 'unknown'}.png`,
               content: base64Content, // Already base64 string
               content_type: imageData.contentType || 'image/png',

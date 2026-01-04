@@ -78,8 +78,12 @@ exports.handler = async (event, context) => {
     // Note: siteID and token are guaranteed to exist after early validation above
     for (const storeName of storeNames) {
       try {
-        const apiUrl = `https://api.netlify.com/api/v1/sites/${siteID}/blobs/${storeName}/${encodeURIComponent(imageKey)}`;
-        console.log(`[get-uploaded-image] Trying store: ${storeName}, URL: ${apiUrl.substring(0, 100)}...`);
+        const encodedKey = encodeURIComponent(imageKey);
+        const apiUrl = `https://api.netlify.com/api/v1/sites/${siteID}/blobs/${storeName}/${encodedKey}`;
+        console.log(`[get-uploaded-image] Trying store: ${storeName}`);
+        console.log(`[get-uploaded-image] Original key: ${imageKey}`);
+        console.log(`[get-uploaded-image] Encoded key: ${encodedKey}`);
+        console.log(`[get-uploaded-image] Full API URL: ${apiUrl}`);
         
         const response = await fetch(apiUrl, {
           method: 'GET',
@@ -91,6 +95,12 @@ exports.handler = async (event, context) => {
         console.log(`[get-uploaded-image] Response from ${storeName}: ${response.status} ${response.statusText}`);
         const contentType = response.headers.get('content-type') || '';
         console.log(`[get-uploaded-image] Content-Type: ${contentType}`);
+        
+        // Log response body for non-200 responses to debug
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => '');
+          console.log(`[get-uploaded-image] Error response body: ${errorText.substring(0, 500)}`);
+        }
         
         if (response.ok) {
           // Check if response is JSON (Netlify Blobs might return JSON with a URL)
