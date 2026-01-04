@@ -535,10 +535,10 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
  */
 async function storeEvent(event, logger) {
   try {
-    // Check if event already exists
+    // Check if event already exists - need image_url to detect new images
     const { data: existing, error: checkError } = await supabase
       .from('verified_events')
-      .select('id, alert_sent, alert_sent_at')
+      .select('id, alert_sent, alert_sent_at, image_url')
       .eq('canonical_id', event.canonical_id)
       .single();
     
@@ -547,6 +547,9 @@ async function storeEvent(event, logger) {
     }
     
     if (existing) {
+      // Check if image is new BEFORE updating
+      const hasNewImage = event.image_url && event.image_url !== existing.image_url;
+      
       // Update existing event
       const updateData = {
         title: event.title,
@@ -585,7 +588,8 @@ async function storeEvent(event, logger) {
       }
       
       // Merge all fields: existing (from DB) + updateData + original event fields (for completeness)
-      return { isNew: false, event: { ...event, ...existing, ...updateData } };
+      // Include hasNewImage flag for use in email logic
+      return { isNew: false, hasNewImage, event: { ...event, ...existing, ...updateData } };
     } else {
       // Insert new event
       const { data: inserted, error: insertError } = await supabase
@@ -748,7 +752,7 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   };
   
   // Store event
-  const { isNew, event: storedEvent } = await storeEvent(event, logger);
+  const { isNew, hasNewImage: imageWasNew, event: storedEvent } = await storeEvent(event, logger);
   
   // Create website post for earthquakes with images
   // Always create/update post if we have an image (for most recent earthquake or new earthquakes)
@@ -773,7 +777,8 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   // Removed magnitude >= 7.0 check - now sends for all
   // Send if: it's new, OR alert hasn't been sent yet, OR it's the most recent earthquake (forceEmail)
   // OR if we just generated a new image (imageUrl exists and is different from stored)
-  const hasNewImage = imageUrl && imageUrl !== storedEvent.image_url;
+  // Use the hasNewImage flag from storeEvent which compares BEFORE updating
+  const hasNewImage = imageWasNew || (imageUrl && !storedEvent.image_url);
   const shouldSendEmail = isNew || !storedEvent.alert_sent || forceEmail || hasNewImage;
   
   logger.info('Checking email alert conditions', {

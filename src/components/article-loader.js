@@ -518,7 +518,7 @@
                     : `this.style.display='none'; this.parentElement.innerHTML='<p style=\\'color: rgba(255,255,255,0.6); padding: 2rem; text-align: center;\\'>Image could not be loaded</p>';`;
                 
                 bodyHTML += `<div class="article-media">
-                    <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)}" loading="lazy" onerror="${errorHandler}">
+                    <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)}" loading="lazy" onerror="this.onerror=null; this.style.display='none'; const p=this.parentElement; if(p && !p.querySelector('.image-error')) { p.innerHTML='<p class=\\'image-error\\' style=\\'color: rgba(255,255,255,0.4); padding: 0.5rem; text-align: center; font-size: 0.8125rem; margin: 0;\\'>Image unavailable</p>'; }">
                 </div>`;
             }
             

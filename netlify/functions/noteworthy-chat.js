@@ -298,6 +298,28 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // Check if this is a spotlight request (declare early to avoid initialization errors)
+    // Spotlight requests include:
+    // 1. Text requests: "tell me about [country]" with "culture" and "fun facts"
+    // 2. Image requests: "generate an image of the flag of [country]" or "culture of [country]"
+    const lowerMessage = message ? message.toLowerCase() : '';
+    const isSpotlightRequest = message && (
+      // Text request pattern - check for the specific spotlight prompt format
+      // Match both old format ("tell me about") and new format ("breaking news expert", "provide a spotlight")
+      ((lowerMessage.includes('tell me about') && 
+       (lowerMessage.includes('culture') || lowerMessage.includes('fun facts') || lowerMessage.includes('breaking news'))) ||
+       (lowerMessage.includes('breaking news expert') && (lowerMessage.includes('provide a spotlight') || lowerMessage.includes('spotlight on'))) ||
+       (lowerMessage.includes('you are a breaking news expert') && lowerMessage.includes('spotlight')) ||
+       (lowerMessage.includes('provide a spotlight on') && lowerMessage.includes('focusing on'))) ||
+      // Image request patterns for spotlight
+      (lowerMessage.includes('generate an image') && (
+        lowerMessage.includes('flag of') ||
+        (lowerMessage.includes('culture of') && (lowerMessage.includes('traditional') || lowerMessage.includes('customs'))) ||
+        (lowerMessage.includes('cultural aspects') && (lowerMessage.includes('festivals') || lowerMessage.includes('food') || lowerMessage.includes('art'))) ||
+        (lowerMessage.includes('showing the culture') && lowerMessage.includes('traditional'))
+      ))
+    );
+
     // Convert unsupported file formats to supported formats
     // OpenAI GPT-4 Vision only supports: PNG, JPEG, WEBP, and non-animated GIF
     const SUPPORTED_IMAGE_FORMATS = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
@@ -481,28 +503,6 @@ exports.handler = async (event, context) => {
     
     // Don't log API key, even partially (security best practice)
     console.log("API key configured");
-
-    // Check if this is a spotlight request (should not send emails and should NOT use web search)
-    // Spotlight requests include:
-    // 1. Text requests: "tell me about [country]" with "culture" and "fun facts"
-    // 2. Image requests: "generate an image of the flag of [country]" or "culture of [country]"
-    const lowerMessage = message ? message.toLowerCase() : '';
-    const isSpotlightRequest = message && (
-      // Text request pattern - check for the specific spotlight prompt format
-      // Match both old format ("tell me about") and new format ("breaking news expert", "provide a spotlight")
-      ((lowerMessage.includes('tell me about') && 
-       (lowerMessage.includes('culture') || lowerMessage.includes('fun facts') || lowerMessage.includes('breaking news'))) ||
-       (lowerMessage.includes('breaking news expert') && (lowerMessage.includes('provide a spotlight') || lowerMessage.includes('spotlight on'))) ||
-       (lowerMessage.includes('you are a breaking news expert') && lowerMessage.includes('spotlight')) ||
-       (lowerMessage.includes('provide a spotlight on') && lowerMessage.includes('focusing on'))) ||
-      // Image request patterns for spotlight
-      (lowerMessage.includes('generate an image') && (
-        lowerMessage.includes('flag of') ||
-        (lowerMessage.includes('culture of') && (lowerMessage.includes('traditional') || lowerMessage.includes('customs'))) ||
-        (lowerMessage.includes('cultural aspects') && (lowerMessage.includes('festivals') || lowerMessage.includes('food') || lowerMessage.includes('art'))) ||
-        (lowerMessage.includes('showing the culture') && lowerMessage.includes('traditional'))
-      ))
-    );
 
     // Auto-detect if message is requesting image generation
     function isImageRequest(msg) {

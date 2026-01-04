@@ -134,7 +134,7 @@
             pointer-events: none;
         }
         
-        /* Very subtle accent lines - max 2-3 faint strokes */
+        /* REMOVED: Excessive horizontal lines - replaced with single subtle radial glow */
         .article-page::after {
             content: '';
             position: fixed;
@@ -142,14 +142,10 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: 
-                linear-gradient(to bottom, transparent 0%, transparent 30%, rgba(74, 144, 226, 0.06) 30%, rgba(74, 144, 226, 0.06) 30.1%, transparent 30.1%),
-                linear-gradient(to bottom, transparent 0%, transparent 60%, rgba(74, 144, 226, 0.04) 60%, rgba(74, 144, 226, 0.04) 60.1%, transparent 60.1%);
-            background-size: 100% 100%;
-            filter: blur(1px);
+            background: radial-gradient(circle at 50% 50%, rgba(74, 144, 226, 0.02) 0%, transparent 60%);
             z-index: 0;
             pointer-events: none;
-            opacity: 0.5;
+            opacity: 1;
         }
         
         /* Subtle Starfield Background - reduced opacity */
@@ -180,21 +176,22 @@
         
         /* Main Container - Centered with proper max-width and spacing */
         .article-container {
-            max-width: 1280px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 80px 16px 64px;
+            padding: 40px 16px 64px;
             display: grid;
             grid-template-columns: minmax(0, 1fr) 360px;
             gap: 40px;
             position: relative;
             z-index: 1;
+            box-sizing: border-box;
         }
         
         @media (min-width: 640px) {
             .article-container {
                 padding-left: 24px;
                 padding-right: 24px;
-                padding-top: 88px;
+                padding-top: 48px;
             }
         }
         
@@ -202,7 +199,7 @@
             .article-container {
                 padding-left: 32px;
                 padding-right: 32px;
-                padding-top: 96px;
+                padding-top: 56px;
                 gap: 40px;
             }
         }
@@ -274,6 +271,7 @@
             margin-bottom: 32px;
             position: relative;
             overflow: hidden;
+            box-sizing: border-box;
         }
         
         .article-header-panel::before {
@@ -302,7 +300,7 @@
         .article-header h1 {
             font-size: 3rem;
             font-weight: 900;
-            margin: 0;
+            margin: 0 0 24px 0;
             line-height: 1.2;
             letter-spacing: -0.02em;
             background: linear-gradient(135deg, #ffffff 0%, #4A90E2 100%);
@@ -310,6 +308,13 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             flex: 1;
+        }
+        
+        @media (max-width: 640px) {
+            .article-header h1 {
+                font-size: 1.875rem;
+                margin-bottom: 20px;
+            }
         }
         
         /* Alert pill and time container */
@@ -350,8 +355,9 @@
             flex-wrap: wrap;
             align-items: center;
             gap: 24px;
-            margin-top: 24px;
+            margin-top: 0;
             margin-bottom: 0;
+            padding-top: 24px;
             padding-bottom: 20px;
             border-bottom: 1px solid rgba(74, 144, 226, 0.15);
             font-size: 0.9rem;
@@ -384,6 +390,7 @@
             gap: 6px;
             padding: 10px 16px;
             height: 40px;
+            min-height: 40px;
             background: rgba(74, 144, 226, 0.08);
             border: 1px solid rgba(74, 144, 226, 0.25);
             border-radius: 10px;
@@ -394,6 +401,7 @@
             transition: all 0.2s ease;
             cursor: pointer;
             white-space: nowrap;
+            box-sizing: border-box;
         }
         
         .utility-btn:hover,
@@ -546,6 +554,7 @@
             display: flex;
             flex-direction: column;
             gap: 24px;
+            box-sizing: border-box;
         }
         
         .sidebar-card {
@@ -553,18 +562,15 @@
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-radius: 20px;
-            padding: 24px;
+            padding: 28px;
             border: 1px solid rgba(74, 144, 226, 0.2);
             box-shadow: 
                 0 8px 32px rgba(0, 0, 0, 0.2),
                 inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            box-sizing: border-box;
         }
         
         @media (min-width: 1024px) {
-            .sidebar-card {
-                padding: 28px;
-            }
-            
             .sidebar-card.sticky {
                 position: sticky;
                 top: 96px;
@@ -585,7 +591,7 @@
         .news-card {
             display: block;
             padding: 16px;
-            margin-bottom: 0;
+            margin-bottom: 12px;
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(74, 144, 226, 0.12);
             border-radius: 12px;
@@ -594,10 +600,11 @@
             transition: all 0.2s ease;
             position: relative;
             overflow: hidden;
+            box-sizing: border-box;
         }
         
-        .news-card:not(:last-child) {
-            margin-bottom: 12px;
+        .news-card:last-child {
+            margin-bottom: 0;
         }
         
         .news-card::before {
@@ -662,7 +669,7 @@
         /* Comments Section - Proper separation from article body */
         .comments-section {
             margin-top: 64px;
-            padding-top: 32px;
+            padding-top: 40px;
             border-top: 1px solid rgba(74, 144, 226, 0.15);
         }
         
@@ -963,10 +970,12 @@
         }
         
         /* Prevent horizontal overflow - Critical */
-        html, body {
+        html.article-page-active,
+        html.article-page-active body,
+        body.article-page {
             overflow-x: hidden !important;
-            max-width: 100vw;
-            width: 100%;
+            max-width: 100vw !important;
+            width: 100% !important;
         }
         
         .article-container,
@@ -981,13 +990,16 @@
         }
         
         /* Ensure all content is within viewport */
-        * {
+        .article-container * {
             max-width: 100%;
         }
         
-        img, video, iframe {
+        .article-media img,
+        .article-media video,
+        .article-media iframe {
             max-width: 100%;
             height: auto;
+            display: block;
         }
         
         /* Ensure header doesn't overlap with scrollbar */
@@ -1063,6 +1075,11 @@
             </nav>
         </div>
     </header>
+    
+    <!-- DEBUG: ARTICLE PAGE - VERIFY THIS APPEARS -->
+    <div style="position: fixed; top: 80px; left: 0; right: 0; background: #ff0000; color: white; padding: 20px; text-align: center; z-index: 9999; font-size: 24px; font-weight: bold;">
+        🔴 DEBUG: ARTICLE PAGE - IF YOU SEE THIS, WE'RE EDITING THE RIGHT FILE 🔴
+    </div>
     
     <!-- Main Article Content -->
     <main class="article-container">
