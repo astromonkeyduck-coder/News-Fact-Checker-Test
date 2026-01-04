@@ -357,7 +357,6 @@ exports.handler = async (event, context) => {
           console.log(`[send-earthquake-alert] ✅ Image prepared for inline email embedding`);
           console.log(`[send-earthquake-alert] 📎 CID: content_id="${cidIdentifier}", HTML uses "cid:${cidIdentifier}"`);
           console.log(`[send-earthquake-alert] 📎 Attachment: filename="${imageAttachment.filename}", size=${Math.round(imageData.buffer.length / 1024)}KB, type=${imageAttachment.content_type}, base64_length=${imageAttachment.content.length}`);
-        }
         } else {
           console.warn('[send-earthquake-alert] ⚠️ Image data is invalid, email will be sent without image');
           if (imageData === null) {
