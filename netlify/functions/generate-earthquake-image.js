@@ -601,15 +601,22 @@ async function storeImage(imageBuffer, eventId) {
   // Use Netlify Blobs REST API directly (no SDK to avoid ES module issues)
   const apiUrl = `https://api.netlify.com/api/v1/sites/${siteID}/blobs/${storeName}/${encodeURIComponent(imageKey)}`;
   
-  // Ensure imageBuffer is a proper Buffer
+  // Ensure imageBuffer is a proper Buffer, then convert to ArrayBuffer for fetch
   let bufferToSend = imageBuffer;
   if (!Buffer.isBuffer(imageBuffer)) {
     console.warn(`[generate-earthquake-image] ⚠️ Image buffer is not a Buffer, converting...`);
     bufferToSend = Buffer.from(imageBuffer);
   }
   
+  // Convert Buffer to ArrayBuffer for fetch (Blobs API may require this format)
+  const arrayBuffer = bufferToSend.buffer.slice(
+    bufferToSend.byteOffset,
+    bufferToSend.byteOffset + bufferToSend.byteLength
+  );
+  
   console.log(`[generate-earthquake-image] 📤 Storing image: ${imageKey} (${Math.round(bufferToSend.length / 1024)}KB) to ${storeName}`);
   console.log(`[generate-earthquake-image] 📤 API URL: ${apiUrl.substring(0, 100)}...`);
+  console.log(`[generate-earthquake-image] 📤 Buffer size: ${bufferToSend.length} bytes, ArrayBuffer size: ${arrayBuffer.byteLength} bytes`);
   
   try {
     const response = await fetch(apiUrl, {
@@ -618,7 +625,7 @@ async function storeImage(imageBuffer, eventId) {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'image/png',
       },
-      body: bufferToSend,
+      body: arrayBuffer,
     });
     
     const responseText = await response.text().catch(() => '');
@@ -632,8 +639,29 @@ async function storeImage(imageBuffer, eventId) {
     console.log(`[generate-earthquake-image] ✅ Response status: ${response.status}, Response: ${responseText.substring(0, 200)}`);
     console.log(`[generate-earthquake-image] ✅ Store URL: https://api.netlify.com/api/v1/sites/${siteID}/blobs/${storeName}/${encodeURIComponent(imageKey)}`);
     
-    // Small delay to allow Blobs API to propagate (if needed)
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Verify the image was actually stored by trying to retrieve it immediately
+    // This helps catch cases where PUT succeeds but image isn't actually stored
+    try {
+      const verifyUrl = `https://api.netlify.com/api/v1/sites/${siteID}/blobs/${storeName}/${encodeURIComponent(imageKey)}`;
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second for propagation
+      
+      const verifyResponse = await fetch(verifyUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (verifyResponse.ok) {
+        console.log(`[generate-earthquake-image] ✅ Image verified in store: ${imageKey}`);
+      } else {
+        const verifyErrorText = await verifyResponse.text().catch(() => '');
+        console.warn(`[generate-earthquake-image] ⚠️ Image storage verification failed: ${verifyResponse.status} ${verifyResponse.statusText}`, verifyErrorText.substring(0, 200));
+        console.warn(`[generate-earthquake-image] ⚠️ Image may not be accessible immediately, but URL will be returned anyway`);
+      }
+    } catch (verifyError) {
+      console.warn(`[generate-earthquake-image] ⚠️ Could not verify image storage:`, verifyError.message);
+    }
     
   } catch (error) {
     console.error(`[generate-earthquake-image] ❌ Failed to store image via REST API:`, error.message);
