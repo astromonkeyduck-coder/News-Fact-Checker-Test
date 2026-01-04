@@ -437,6 +437,19 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
   // Create SVG overlay with embedded fonts
   const svgString = createDynamicTextSVG(magnitudeText, location, outputWidth, outputHeight, scaleFactor);
   
+  // CRITICAL: Log SVG content to verify text is included
+  console.log(`[generate-earthquake-image] 📝 SVG Text Overlay Content:`, {
+    magnitudeText: magnitudeText,
+    locationText: location.toUpperCase(),
+    svgLength: svgString.length,
+    containsMagnitude: svgString.includes(magnitudeText),
+    containsHeadline: svgString.includes(HEADLINE_TEXT),
+    containsLocation: svgString.includes(location.toUpperCase()),
+    containsFontFace: svgString.includes('@font-face'),
+    containsRoboto: svgString.includes('Roboto'),
+    svgPreview: svgString.substring(0, 500) + '...'
+  });
+  
   // STEP 6: Render SVG using resvg (supports embedded fonts better than librsvg)
   // resvg properly handles @font-face with data URIs and embedded base64 fonts
   let textOverlayBuffer;
@@ -476,7 +489,28 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     const resvgInstance = new resvg.Resvg(svgString, svgOptions);
     const pngData = resvgInstance.render();
     textOverlayBuffer = pngData.asPng();
-    console.log('[generate-earthquake-image] ✅ SVG rendered with resvg (embedded fonts)');
+    
+    // CRITICAL: Verify text overlay buffer is valid
+    if (!textOverlayBuffer || textOverlayBuffer.length === 0) {
+      throw new Error('Text overlay buffer is empty after resvg rendering!');
+    }
+    
+    // Verify it's a valid PNG
+    const textMagicBytes = textOverlayBuffer.slice(0, 4);
+    const isTextPNG = textMagicBytes[0] === 0x89 && textMagicBytes[1] === 0x50 && textMagicBytes[2] === 0x4E && textMagicBytes[3] === 0x47;
+    
+    if (!isTextPNG) {
+      console.error(`[generate-earthquake-image] ❌ Text overlay is not a valid PNG! Magic bytes:`, 
+        Array.from(textMagicBytes).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
+      throw new Error('Text overlay rendering failed - output is not a valid PNG');
+    }
+    
+    console.log('[generate-earthquake-image] ✅ SVG rendered with resvg (embedded fonts)', {
+      textOverlaySize: `${Math.round(textOverlayBuffer.length / 1024)}KB`,
+      isValidPNG: isTextPNG,
+      dimensions: `${outputWidth}x${outputHeight}`,
+      containsText: true
+    });
   } catch (resvgError) {
     console.error('[generate-earthquake-image] ❌ resvg rendering failed:', resvgError.message);
     console.error('[generate-earthquake-image] ❌ resvg error stack:', resvgError.stack);
@@ -550,6 +584,20 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     console.log(`[generate-earthquake-image] ✅ Successfully added ${successfullyAddedImages} USGS image(s) to final image`);
   }
   
+  // CRITICAL: Log what will be in the final composite
+  console.log(`[generate-earthquake-image] 📊 COMPOSITE LAYERS:`, {
+    totalLayers: compositeInputs.length,
+    hasTextOverlay: true, // Always first layer
+    hasUSGSImages: successfullyAddedImages > 0,
+    usgsImageCount: successfullyAddedImages,
+    templateDimensions: `${actualWidth}x${actualHeight}`,
+    outputDimensions: `${outputWidth}x${outputHeight}`,
+    scaleFactor: scaleFactor.toFixed(3),
+    magnitudeText: magnitudeText,
+    locationText: location.toUpperCase(),
+    textOverlaySize: `${Math.round(textOverlayBuffer.length / 1024)}KB`
+  });
+  
   // Scale template to match output dimensions if 4K is enabled
   let compositePipeline = template;
   
@@ -559,14 +607,17 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
         kernel: 'lanczos3',
         withoutEnlargement: false,
       });
+    console.log(`[generate-earthquake-image] 📐 Template scaled to ${outputWidth}x${outputHeight} for 4K output`);
   }
   
   // Composite all layers
+  console.log(`[generate-earthquake-image] 🎨 Compositing ${compositeInputs.length} layer(s) onto template...`);
   compositePipeline = compositePipeline.composite(compositeInputs, {
     blend: 'over',
   });
   
   // Apply sharpening and output
+  console.log(`[generate-earthquake-image] 🔨 Applying sharpening and generating final PNG...`);
   const composite = await compositePipeline
     .sharpen({
       sigma: 0.5,
@@ -581,8 +632,34 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     })
     .toBuffer();
   
+  // CRITICAL: Verify the composite buffer is valid
+  if (!composite || composite.length === 0) {
+    throw new Error('Composite buffer is empty! Image generation failed.');
+  }
+  
+  // Verify it's a valid PNG by checking magic bytes
+  const magicBytes = composite.slice(0, 8);
+  const isPNG = magicBytes[0] === 0x89 && magicBytes[1] === 0x50 && magicBytes[2] === 0x4E && magicBytes[3] === 0x47;
+  
+  if (!isPNG) {
+    console.error(`[generate-earthquake-image] ❌ CRITICAL: Generated buffer is not a valid PNG! Magic bytes:`, 
+      Array.from(magicBytes.slice(0, 4)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
+    throw new Error('Generated image is not a valid PNG file');
+  }
+  
   // Log final info
-  console.log(`[generate-earthquake-image] ✅ Image generated: ${outputWidth}x${outputHeight}, template: ${actualWidth}x${actualHeight}, scale: ${scaleFactor.toFixed(3)}`);
+  console.log(`[generate-earthquake-image] ✅ IMAGE GENERATION COMPLETE:`, {
+    dimensions: `${outputWidth}x${outputHeight}`,
+    templateSize: `${actualWidth}x${actualHeight}`,
+    scaleFactor: scaleFactor.toFixed(3),
+    fileSize: `${Math.round(composite.length / 1024)}KB`,
+    isValidPNG: isPNG,
+    containsText: true,
+    containsUSGSImages: successfullyAddedImages > 0,
+    magnitude: magnitudeText,
+    location: location.toUpperCase(),
+    totalCompositeLayers: compositeInputs.length
+  });
   console.log(`[generate-earthquake-image] Font loaded: ${!!FONT_DATA.regular && !!FONT_DATA.bold}`);
   
   return composite;

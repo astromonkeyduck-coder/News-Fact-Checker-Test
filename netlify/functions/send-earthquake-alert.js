@@ -635,6 +635,8 @@ exports.handler = async (event, context) => {
       hasEarthquake: !!earthquake,
       hasImageUrl: !!imageUrl,
       imageUrl: imageUrl?.substring(0, 100),
+      imageUrlLength: imageUrl?.length || 0,
+      imageUrlIsEmpty: !imageUrl || imageUrl.trim() === '',
       eventId: earthquake?.event_id,
       magnitude: earthquake?.magnitude,
       location_display: earthquake?.location_display,
@@ -645,6 +647,16 @@ exports.handler = async (event, context) => {
       assetKeys: earthquake?.assets ? Object.keys(earthquake.assets) : [],
       fullImageUrl: imageUrl // Log full URL for debugging
     });
+    
+    // CRITICAL: Log if imageUrl is missing or invalid
+    if (!imageUrl || imageUrl.trim() === '') {
+      console.error('[send-earthquake-alert] ❌ CRITICAL: imageUrl is missing or empty!', {
+        imageUrl,
+        imageUrlType: typeof imageUrl,
+        bodyKeys: Object.keys(body),
+        hasImageUrlInBody: 'imageUrl' in body
+      });
+    }
     
     if (!earthquake || !earthquake.magnitude || !earthquake.location_display) {
       console.error('[send-earthquake-alert] ❌ Missing required earthquake data', {
@@ -730,49 +742,54 @@ exports.handler = async (event, context) => {
       }
     }
     
-    // Extract assessment data from earthquake assets
-    const impactAssessment = earthquake.assets?.impact_assessment || null;
-    const tsunamiAssessment = earthquake.assets?.tsunami_assessment || null;
-    const aftershockForecast = earthquake.assets?.aftershock_forecast || null;
-    const anomalyDetection = earthquake.assets?.anomaly_detection || null;
+    // CONTENT REDUCER: Extract only the essential facts for email (3-5 max)
+    // All other data (assessments, nearby locations, etc.) goes to the website
+    const keyFacts = [];
     
-    // Calculate impact information (fallback if no assessment)
-    const impactDescription = impactAssessment?.severity 
-      ? `${impactAssessment.severity} RISK - ${getImpactDescription(magnitude, depthValue)}`
-      : getImpactDescription(magnitude, depthValue);
-    const estimatedAffected = impactAssessment?.affectedPopulation 
-      ? `${(impactAssessment.affectedPopulation / 1000).toFixed(1)}K people`
-      : (depthValue ? estimateAffectedPopulation(magnitude, depthValue) : null);
+    // Always include magnitude
+    keyFacts.push({ label: 'Magnitude', value: `${magnitudeFormatted}` });
+    
+    // Include depth if available
+    if (depthValue) {
+      keyFacts.push({ label: 'Depth', value: depth });
+    }
+    
+    // Include region/state if available (prefer state over full location)
+    const region = locationDetails?.state || locationDetails?.county || locationDetails?.country || null;
+    if (region) {
+      keyFacts.push({ label: 'Region', value: region });
+    }
+    
+    // Include coordinates if available (optional, only if we have space)
+    if (coordinates && keyFacts.length < 4) {
+      keyFacts.push({ label: 'Coordinates', value: coordinates });
+    }
+    
+    // Always include source
+    keyFacts.push({ label: 'Source', value: 'USGS' });
+    
+    // Cap at 5 facts max
+    const finalFacts = keyFacts.slice(0, 5);
+    
+    // Generate short summary (1-2 sentences max)
+    const summary = `A preliminary magnitude ${magnitudeFormatted} earthquake was recorded ${region ? `near ${region}` : 'in the region'}, according to the U.S. Geological Survey.${magnitude >= 5.0 ? ' No damage reports have been indicated at this time.' : ''}`;
+    
+    // Determine alert type for header pill
+    const alertType = magnitude >= 7.0 ? 'BREAKING' : magnitude >= 5.0 ? 'ALERT' : 'WATCH';
     
     // Validate and ensure all template variables are defined
     const safeMagnitudeFormatted = magnitudeFormatted || 'N/A';
     const safeSeverity = severity || 'Unknown';
-    const safeSeverityColor = severityColor || '#1976d2';
     const safeLocationDisplay = earthquake.location_display || 'Unknown Location';
-    const safeImpactDescription = impactDescription || 'Impact assessment unavailable.';
-    const safeEstimatedAffected = estimatedAffected || null;
     const safeCoordinates = coordinates || null;
     const safeDepth = depth || null;
     
-    // Log all template variables before generating HTML
-    console.log('[send-earthquake-alert] 📝 Template variables:', {
-      magnitudeFormatted: safeMagnitudeFormatted,
-      severity: safeSeverity,
-      severityColor: safeSeverityColor,
-      location_display: safeLocationDisplay,
-      hasLocationDetails: !!locationDetails,
-      hasMapImageUrl: !!mapImageUrl,
-      hasImpactAssessment: !!impactAssessment,
-      hasTsunamiAssessment: !!tsunamiAssessment,
-      hasAftershockForecast: !!aftershockForecast,
-      hasAnomalyDetection: !!anomalyDetection,
-      hasNearbyLocations: nearbyLocations.length > 0,
-      hasNearbyEducation: nearbyEducation.length > 0,
-      hasNearbyVenues: nearbyVenues.length > 0,
-      coordinates: safeCoordinates,
-      depth: safeDepth,
-      impactDescription: safeImpactDescription,
-      estimatedAffected: safeEstimatedAffected,
+    // Log content reducer output
+    console.log('[send-earthquake-alert] 📝 Content reducer output:', {
+      keyFactsCount: finalFacts.length,
+      facts: finalFacts.map(f => `${f.label}: ${f.value}`),
+      summaryLength: summary.length,
+      alertType
     });
     
     // Build email content (same for all recipients)
@@ -787,30 +804,55 @@ exports.handler = async (event, context) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Earthquake Alert</title>
+  <style>
+    @media only screen and (max-width: 480px) {
+      .facts-table td {
+        display: block !important;
+        width: 100% !important;
+        padding: 8px 0 !important;
+      }
+      .button-table {
+        width: 100% !important;
+      }
+      .button-table td {
+        display: block !important;
+        width: 100% !important;
+      }
+      .button-table a {
+        display: block !important;
+        width: 100% !important;
+        text-align: center !important;
+      }
+    }
+  </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0a0e1a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0a0e1a; padding: 20px 0;">
+<body style="margin: 0; padding: 0; background-color: #F3F6FB; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #F3F6FB; padding: 20px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #1a1f2e; border: 1px solid #2d3748; border-radius: 0; box-shadow: 0 8px 32px rgba(0,0,0,0.4); overflow: hidden;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border: 1px solid #E6EAF2; border-radius: 16px; overflow: hidden;">
           
-          <!-- Header with dark gradient -->
+          <!-- Header Bar -->
           <tr>
-            <td style="background: linear-gradient(135deg, #0a1929 0%, #1a2332 50%, #0f1419 100%); padding: 35px 40px; border-bottom: 3px solid #4A9EFF;">
+            <td style="padding: 24px 24px 16px 24px; border-bottom: 1px solid #E6EAF2;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td>
-                    <h1 style="margin: 0; color: #4A9EFF; font-size: 32px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 20px rgba(74,158,255,0.5);">
-                      NOTEWORTHY
-                    </h1>
-                    <p style="margin: 4px 0 0 0; color: #ffffff; font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; opacity: 0.8;">
-                      NEWS
-                    </p>
+                  <td style="vertical-align: middle;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="vertical-align: middle; padding-right: 12px;">
+                          <img src="https://noteworthynews.co/IMG_5992.PNG" alt="Noteworthy News" width="28" height="28" style="display: block; width: 28px; height: 28px;" />
+                        </td>
+                        <td style="vertical-align: middle;">
+                          <span style="font-size: 16px; font-weight: 700; color: #111827;">Noteworthy News</span>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
-                  <td align="right">
-                    <div style="display: inline-block; background: #ff4757; color: #ffffff; padding: 10px 20px; border-radius: 0; font-size: 10px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; border: 2px solid #ff6b7a; box-shadow: 0 0 15px rgba(255,71,87,0.4);">
-                      BREAKING
-                    </div>
+                  <td align="right" style="vertical-align: middle;">
+                    <span style="display: inline-block; background-color: ${alertType === 'BREAKING' ? '#DC2626' : alertType === 'ALERT' ? '#2563EB' : '#6B7280'}; color: #ffffff; padding: 6px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                      ${alertType}
+                    </span>
                   </td>
                 </tr>
               </table>
@@ -819,418 +861,100 @@ exports.handler = async (event, context) => {
           
           <!-- Main Content -->
           <tr>
-            <td style="padding: 0; background-color: #1a1f2e;">
+            <td style="padding: 0; background-color: #ffffff;">
               
-              <!-- Magnitude Card - Bold Dark Design -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%); border-left: 5px solid ${safeSeverityColor}; margin-bottom: 0; border-top: 1px solid #2d3748; border-bottom: 1px solid #2d3748;">
-                <tr>
-                  <td style="padding: 35px 40px;">
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                      <tr>
-                        <td width="65%" style="vertical-align: middle;">
-                          <div style="font-size: 11px; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
-                            Magnitude
-                          </div>
-                          <div style="font-size: 72px; font-weight: 900; color: ${safeSeverityColor}; line-height: 1; margin-bottom: 8px; text-shadow: 0 0 30px ${safeSeverityColor}40; letter-spacing: -2px;">
-                            M${safeMagnitudeFormatted}
-                          </div>
-                          <div style="font-size: 14px; font-weight: 700; color: #ffffff; text-transform: uppercase; letter-spacing: 1.5px; background: ${safeSeverityColor}; padding: 6px 12px; display: inline-block; border: 1px solid ${safeSeverityColor};">
-                            ${safeSeverity}
-                          </div>
-                        </td>
-                        <td width="35%" align="right" style="vertical-align: middle;">
-                          <div style="display: inline-block; background: linear-gradient(135deg, ${safeSeverityColor} 0%, ${safeSeverityColor}dd 100%); color: #ffffff; width: 100px; height: 100px; border-radius: 0; display: flex; align-items: center; justify-content: center; font-size: 42px; font-weight: 900; border: 3px solid ${safeSeverityColor}; box-shadow: 0 0 25px ${safeSeverityColor}60, inset 0 0 20px rgba(0,0,0,0.3);">
-                            ${safeMagnitudeFormatted}
-                          </div>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-              
-              <!-- Location & Details -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0; background-color: #1a1f2e;">
-                <tr>
-                  <td style="padding: 35px 40px;">
-                    <div style="font-size: 24px; font-weight: 800; color: #ffffff; margin-bottom: 12px; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #2d3748; padding-bottom: 15px;">
-                      ${safeLocationDisplay}
-                    </div>
-                    <div style="font-size: 15px; color: #a0aec0; line-height: 1.7; margin-bottom: 25px; font-weight: 400;">
-                      A magnitude <strong style="color: ${safeSeverityColor}; font-weight: 700;">${safeMagnitudeFormatted}</strong> earthquake was detected by the <strong style="color: #ffffff;">U.S. Geological Survey</strong> near <strong style="color: #4A9EFF;">${safeLocationDisplay}</strong>.
-                    </div>
-                    ${locationDetails ? `
-                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 20px; margin-bottom: 20px; border-left: 4px solid #4A9EFF;">
-                      <div style="font-size: 11px; font-weight: 700; color: #4A9EFF; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
-                        Location Details
-                      </div>
-                      <div style="font-size: 14px; color: #e2e8f0; line-height: 2; font-weight: 500;">
-                        ${locationDetails.city ? `<span style="color: #6c757d; font-weight: 600;">CITY:</span> <span style="color: #ffffff;">${locationDetails.city}</span><br>` : ''}
-                        ${locationDetails.county ? `<span style="color: #6c757d; font-weight: 600;">COUNTY:</span> <span style="color: #ffffff;">${locationDetails.county}</span><br>` : ''}
-                        ${locationDetails.state ? `<span style="color: #6c757d; font-weight: 600;">STATE:</span> <span style="color: #ffffff;">${locationDetails.state}</span><br>` : ''}
-                        ${locationDetails.country ? `<span style="color: #6c757d; font-weight: 600;">COUNTRY:</span> <span style="color: #ffffff;">${locationDetails.country}</span><br>` : ''}
-                        ${locationDetails.postcode ? `<span style="color: #6c757d; font-weight: 600;">POSTAL:</span> <span style="color: #ffffff;">${locationDetails.postcode}</span>` : ''}
-                      </div>
-                    </div>
-                    ` : ''}
-                    ${safeImpactDescription ? `
-                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 20px; margin-bottom: 20px; border-left: 4px solid ${safeSeverityColor};">
-                      <div style="font-size: 11px; font-weight: 700; color: ${safeSeverityColor}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
-                        Impact Assessment
-                      </div>
-                      <div style="font-size: 15px; color: #e2e8f0; line-height: 1.7; font-weight: 500;">
-                        ${safeImpactDescription}
-                      </div>
-                      ${safeEstimatedAffected ? `
-                      <div style="font-size: 13px; color: #6c757d; margin-top: 12px; padding-top: 12px; border-top: 1px solid #2d3748; font-weight: 600;">
-                        <span style="color: #4A9EFF;">AFFECTED AREA:</span> <span style="color: #ffffff;">${safeEstimatedAffected}</span>
-                      </div>
-                      ` : ''}
-                    </div>
-                    ` : ''}
-                    ${tsunamiAssessment && tsunamiAssessment.riskLevel !== 'LOW' ? `
-                    <div style="background: linear-gradient(135deg, #1a0f0a 0%, #2d1a0f 100%); border: 1px solid #ff6b35; padding: 20px; margin-bottom: 20px; border-left: 4px solid #ff6b35;">
-                      <div style="font-size: 11px; font-weight: 700; color: #ff6b35; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
-                        ${tsunamiAssessment.riskLevel === 'HIGH' ? 'HIGH' : 'MEDIUM'} TSUNAMI RISK
-                      </div>
-                      <div style="font-size: 15px; color: #ffffff; line-height: 1.7; font-weight: 500;">
-                        ${tsunamiAssessment.assessment || 'Tsunami risk detected. Monitor official tsunami warnings.'}
-                      </div>
-                      ${tsunamiAssessment.travelTime ? `
-                      <div style="font-size: 13px; color: #ff6b35; margin-top: 12px; padding-top: 12px; border-top: 1px solid #2d3748; font-weight: 700;">
-                        <span style="color: #ff6b35;">TRAVEL TIME:</span> <span style="color: #ffffff;">${tsunamiAssessment.travelTime.hours}h ${tsunamiAssessment.travelTime.minutes}m</span>
-                      </div>
-                      ` : ''}
-                    </div>
-                    ` : ''}
-                    ${aftershockForecast && aftershockForecast.probability24h >= 50 ? `
-                    <div style="background: #0f1419; border: 1px solid #6c5ce7; padding: 20px; margin-bottom: 20px; border-left: 4px solid #6c5ce7;">
-                      <div style="font-size: 11px; font-weight: 700; color: #6c5ce7; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
-                        Aftershock Forecast
-                      </div>
-                      <div style="font-size: 15px; color: #e2e8f0; line-height: 1.7; font-weight: 500; margin-bottom: 12px;">
-                        <span style="color: #6c5ce7; font-weight: 700; font-size: 18px;">${aftershockForecast.probability24h}%</span> chance of significant aftershocks (M≥${aftershockForecast.expectedLargestAftershock.toFixed(1)}) within 24 hours.
-                      </div>
-                      <div style="font-size: 13px; color: #6c757d; margin-top: 12px; padding-top: 12px; border-top: 1px solid #2d3748; font-weight: 600;">
-                        <span style="color: #6c5ce7;">EXPECTED LARGEST:</span> <span style="color: #ffffff; font-weight: 700;">M${aftershockForecast.expectedLargestAftershock.toFixed(1)}</span><br>
-                        <span style="color: #a0aec0; margin-top: 8px; display: block;">${aftershockForecast.recommendation || ''}</span>
-                      </div>
-                    </div>
-                    ` : ''}
-                    ${anomalyDetection && anomalyDetection.anomalyLevel !== 'NORMAL' ? `
-                    <div style="background: linear-gradient(135deg, #1a0a0a 0%, #2d1414 100%); border: 1px solid #ff4757; padding: 20px; margin-bottom: 20px; border-left: 4px solid #ff4757;">
-                      <div style="font-size: 11px; font-weight: 700; color: #ff4757; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
-                        ${anomalyDetection.anomalyLevel} ANOMALY DETECTED
-                      </div>
-                      <div style="font-size: 15px; color: #ffffff; line-height: 1.7; font-weight: 500;">
-                        ${anomalyDetection.summary}
-                      </div>
-                      ${anomalyDetection.anomalies && anomalyDetection.anomalies.length > 0 ? `
-                      <div style="font-size: 13px; color: #ff6b7a; margin-top: 12px; padding-top: 12px; border-top: 1px solid #2d3748; font-weight: 600; line-height: 1.8;">
-                        ${anomalyDetection.anomalies.map(a => `<div style="margin-bottom: 6px;">▸ ${a.description}</div>`).join('')}
-                      </div>
-                      ` : ''}
-                    </div>
-                    ` : ''}
-                    ${impactAssessment && impactAssessment.riskScore ? `
-                    <div style="background: #0f1419; border: 1px solid #4A9EFF; padding: 20px; margin-bottom: 20px; border-left: 4px solid #4A9EFF;">
-                      <div style="font-size: 11px; font-weight: 700; color: #4A9EFF; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
-                        Risk Assessment
-                      </div>
-                      <div style="font-size: 14px; color: #e2e8f0; line-height: 2; font-weight: 500;">
-                        <div style="margin-bottom: 8px;"><span style="color: #6c757d; font-weight: 700;">RISK SCORE:</span> <span style="color: #4A9EFF; font-weight: 700; font-size: 18px;">${impactAssessment.riskScore}/100</span> <span style="color: #ffffff;">(${impactAssessment.severity})</span></div>
-                        ${impactAssessment.affectedPopulation ? `<div style="margin-bottom: 8px;"><span style="color: #6c757d; font-weight: 700;">AFFECTED:</span> <span style="color: #ffffff;">${(impactAssessment.affectedPopulation / 1000).toFixed(1)}K people</span></div>` : ''}
-                        ${impactAssessment.criticalInfrastructure ? `
-                        <div><span style="color: #6c757d; font-weight: 700;">INFRASTRUCTURE:</span> <span style="color: #ffffff;">${impactAssessment.criticalInfrastructure.hospitals} hospitals, ${impactAssessment.criticalInfrastructure.airports} airports, ${impactAssessment.criticalInfrastructure.powerPlants} power plants</span></div>
-                        ` : ''}
-                      </div>
-                    </div>
-                    ` : ''}
-                  </td>
-                </tr>
-              </table>
-              
-              ${mapImageUrl ? `
-              <!-- Static Map -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
-                <tr>
-                  <td style="padding: 0 40px 30px 40px;">
-                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 0; overflow: hidden; border-top: 3px solid #4A9EFF;">
-                      <div style="background: linear-gradient(135deg, #0a1929 0%, #1a2332 100%); padding: 15px 20px; border-bottom: 2px solid #4A9EFF;">
-                        <div style="font-size: 11px; font-weight: 700; color: #4A9EFF; text-transform: uppercase; letter-spacing: 2px;">
-                          Location Map
-                        </div>
-                      </div>
-                      <img src="${mapImageUrl}" alt="Map showing earthquake location at ${safeLocationDisplay}" style="display: block; width: 100%; max-width: 100%; height: auto; filter: brightness(0.9) contrast(1.1);" />
-                      <div style="padding: 12px 20px; background: #0f1419; border-top: 1px solid #2d3748;">
-                        <div style="font-size: 10px; color: #6c757d; text-align: center; font-weight: 600;">
-                          Map data © <a href="https://www.openstreetmap.org/" style="color: #4A9EFF; text-decoration: none;">OpenStreetMap</a> contributors
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              </table>
-              ` : ''}
-              
-              ${locationDetails ? `
-              <!-- Area Facts -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
-                <tr>
-                  <td style="padding: 0 40px 30px 40px;">
-                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 20px; border-left: 4px solid #4A9EFF;">
-                      <div style="font-size: 11px; font-weight: 700; color: #4A9EFF; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px;">
-                        Area Information
-                      </div>
-                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                        <tr>
-                          ${locationDetails.country ? `
-                          <td style="padding: 10px 0; border-bottom: 1px solid #2d3748;">
-                            <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px; font-weight: 700; text-transform: uppercase;">Country</div>
-                            <div style="font-size: 15px; font-weight: 700; color: #ffffff;">${locationDetails.country}</div>
-                          </td>
-                          ` : ''}
-                          ${locationDetails.state ? `
-                          <td style="padding: 10px 0; border-bottom: 1px solid #2d3748;">
-                            <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px; font-weight: 700; text-transform: uppercase;">State/Region</div>
-                            <div style="font-size: 15px; font-weight: 700; color: #ffffff;">${locationDetails.state}</div>
-                          </td>
-                          ` : ''}
-                        </tr>
-                        ${locationDetails.city || locationDetails.county ? `
-                        <tr>
-                          ${locationDetails.city ? `
-                          <td style="padding: 10px 0; border-bottom: 1px solid #2d3748;">
-                            <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px; font-weight: 700; text-transform: uppercase;">City/Town</div>
-                            <div style="font-size: 15px; font-weight: 700; color: #ffffff;">${locationDetails.city}</div>
-                          </td>
-                          ` : ''}
-                          ${locationDetails.county ? `
-                          <td style="padding: 10px 0; border-bottom: 1px solid #2d3748;">
-                            <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px; font-weight: 700; text-transform: uppercase;">County</div>
-                            <div style="font-size: 15px; font-weight: 700; color: #ffffff;">${locationDetails.county}</div>
-                          </td>
-                          ` : ''}
-                        </tr>
-                        ` : ''}
-                        ${earthquake.lat && earthquake.lon ? `
-                        <tr>
-                          <td colspan="2" style="padding: 10px 0;">
-                            <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px; font-weight: 700; text-transform: uppercase;">Distance from Epicenter</div>
-                            <div style="font-size: 15px; font-weight: 700; color: #4A9EFF;">
-                              ${locationDetails.city ? `Nearest city: ${locationDetails.city}` : 'Rural/Remote area'}
-                            </div>
-                          </td>
-                        </tr>
-                        ` : ''}
-                      </table>
-                    </div>
-                  </td>
-                </tr>
-              </table>
-              ` : ''}
-              
-              ${nearbyLocations.length > 0 ? `
-              <!-- Nearby Important Locations -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
-                <tr>
-                  <td style="padding: 0 40px 30px 40px;">
-                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 20px; border-left: 4px solid #6c5ce7;">
-                      <div style="font-size: 11px; font-weight: 700; color: #6c5ce7; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
-                        Nearby Important Locations
-                      </div>
-                      <div style="font-size: 13px; color: #a0aec0; margin-bottom: 15px; font-weight: 500;">
-                        Cities, towns, and landmarks within 50km of the epicenter:
-                      </div>
-                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                        ${nearbyLocations.slice(0, 6).map(loc => `
-                        <tr>
-                          <td style="padding: 12px 0; border-bottom: 1px solid #2d3748;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                              <div>
-                                <div style="font-size: 15px; font-weight: 700; color: #ffffff; margin-bottom: 4px;">
-                                  ${loc.name}
-                                </div>
-                                <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">
-                                  ${loc.type}
-                                </div>
-                              </div>
-                              <div style="font-size: 14px; font-weight: 800; color: ${safeSeverityColor};">
-                                ${loc.distance} km
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                        `).join('')}
-                      </table>
-                    </div>
-                  </td>
-                </tr>
-              </table>
-              ` : ''}
-              
-              ${nearbyEducation.length > 0 ? `
-              <!-- Nearby Educational Institutions -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
-                <tr>
-                  <td style="padding: 0 40px 30px 40px;">
-                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 20px; border-left: 4px solid #4A9EFF;">
-                      <div style="font-size: 11px; font-weight: 700; color: #4A9EFF; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
-                        Nearby Educational Institutions
-                      </div>
-                      <div style="font-size: 13px; color: #a0aec0; margin-bottom: 15px; font-weight: 500;">
-                        Colleges, universities, and schools in the area:
-                      </div>
-                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                        ${nearbyEducation.map(edu => `
-                        <tr>
-                          <td style="padding: 12px 0; border-bottom: 1px solid #2d3748;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                              <div>
-                                <div style="font-size: 15px; font-weight: 700; color: #ffffff; margin-bottom: 4px;">
-                                  ${edu.name}
-                                </div>
-                                <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">
-                                  ${edu.type === 'university' ? 'University' : edu.type === 'college' ? 'College' : 'School'}
-                                </div>
-                              </div>
-                              <div style="font-size: 14px; font-weight: 800; color: #4A9EFF;">
-                                ${edu.distance} km
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                        `).join('')}
-                      </table>
-                    </div>
-                  </td>
-                </tr>
-              </table>
-              ` : ''}
-              
-              ${nearbyVenues.length > 0 ? `
-              <!-- Nearby Event Venues -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
-                <tr>
-                  <td style="padding: 0 40px 30px 40px;">
-                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 20px; border-left: 4px solid #ff6b35;">
-                      <div style="font-size: 11px; font-weight: 700; color: #ff6b35; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
-                        Nearby Event Venues & Entertainment
-                      </div>
-                      <div style="font-size: 13px; color: #a0aec0; margin-bottom: 15px; font-weight: 500;">
-                        Theaters, stadiums, and venues that may host events:
-                      </div>
-                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                        ${nearbyVenues.slice(0, 6).map(venue => `
-                        <tr>
-                          <td style="padding: 12px 0; border-bottom: 1px solid #2d3748;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                              <div>
-                                <div style="font-size: 15px; font-weight: 700; color: #ffffff; margin-bottom: 4px;">
-                                  ${venue.name}
-                                </div>
-                                <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">
-                                  ${venue.type.replace(/_/g, ' ')}
-                                </div>
-                              </div>
-                              <div style="font-size: 14px; font-weight: 800; color: #ff6b35;">
-                                ${venue.distance} km
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                        `).join('')}
-                      </table>
-                      <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #2d3748;">
-                        <div style="font-size: 12px; color: #6c757d; font-weight: 500; line-height: 1.6;">
-                          Note: These venues may host concerts, festivals, sports events, or other gatherings. Check local event listings for scheduled activities.
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              </table>
-              ` : ''}
-              
-              <!-- Details Grid -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
-                <tr>
-                  <td style="padding: 0 40px 30px 40px;">
-                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                      <tr>
-                        <td width="50%" style="padding-right: 10px; vertical-align: top;">
-                          <div style="background: #0f1419; border: 1px solid #2d3748; padding: 18px; border-left: 3px solid #4A9EFF;">
-                            <div style="font-size: 10px; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">
-                              Event Time
-                            </div>
-                            <div style="font-size: 15px; font-weight: 700; color: #ffffff;">
-                              ${eventTime}
-                            </div>
-                          </div>
-                        </td>
-                        ${coordinates ? `
-                        <td width="50%" style="padding-left: 10px; vertical-align: top;">
-                          <div style="background: #0f1419; border: 1px solid #2d3748; padding: 18px; border-left: 3px solid #6c5ce7;">
-                            <div style="font-size: 10px; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">
-                              Coordinates
-                            </div>
-                            <div style="font-size: 14px; font-weight: 700; color: #4A9EFF; font-family: 'Courier New', monospace; letter-spacing: 0.5px;">
-                              ${coordinates}
-                            </div>
-                          </div>
-                        </td>
-                        ` : depth ? `
-                        <td width="50%" style="padding-left: 10px; vertical-align: top;">
-                          <div style="background: #0f1419; border: 1px solid #2d3748; padding: 18px; border-left: 3px solid #ff6b35;">
-                            <div style="font-size: 10px; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">
-                              Depth
-                            </div>
-                            <div style="font-size: 15px; font-weight: 700; color: #ffffff;">
-                              ${depth}
-                            </div>
-                          </div>
-                        </td>
-                        ` : '<td width="50%"></td>'}
-                      </tr>
-                      ${depth && coordinates ? `
-                      <tr>
-                        <td colspan="2" style="padding-top: 10px;">
-                          <div style="background: #0f1419; border: 1px solid #2d3748; padding: 18px; border-left: 3px solid #ff6b35;">
-                            <div style="font-size: 10px; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">
-                              Depth
-                            </div>
-                            <div style="font-size: 15px; font-weight: 700; color: #ffffff;">
-                              ${depth}
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                      ` : ''}
-                    </table>
-                  </td>
-                </tr>
-              </table>
-              
-              <!-- Image Placeholder (will be replaced with actual image) -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
-                <tr>
-                  <td style="padding: 0 40px 30px 40px;">
-                    <div style="background: #0f1419; border: 2px solid #2d3748; padding: 30px; text-align: center; border-left: 4px solid #4A9EFF;">
-                      <div style="font-size: 13px; color: #6c757d; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
-                        Detailed Visualization Below
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-              </table>
-              
-              <!-- USGS Link -->
+              <!-- Headline Block -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td align="center" style="padding: 30px 40px; border-top: 2px solid #2d3748; background: #0f1419;">
-                    <a href="${earthquake.usgs_event_url || 'https://earthquake.usgs.gov'}" style="display: inline-block; background: linear-gradient(135deg, #4A9EFF 0%, #5BB5FF 100%); color: #ffffff; text-decoration: none; padding: 16px 36px; border-radius: 0; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; border: 2px solid #4A9EFF; box-shadow: 0 0 25px rgba(74,158,255,0.4);">
-                      View on USGS Website →
-                    </a>
+                  <td style="padding: 32px 24px 24px 24px;">
+                    <h1 style="margin: 0 0 8px 0; font-size: 32px; font-weight: 800; color: #111827; line-height: 1.2;">
+                      M${safeMagnitudeFormatted} Earthquake
+                    </h1>
+                    <p style="margin: 0 0 12px 0; font-size: 18px; font-weight: 500; color: #374151; line-height: 1.4;">
+                      Near ${region || safeLocationDisplay}
+                    </p>
+                    <p style="margin: 0 0 16px 0; font-size: 14px; color: #6B7280; line-height: 1.5;">
+                      ${eventTime}
+                    </p>
+                    ${safeSeverity !== 'Unknown' ? `
+                    <span style="display: inline-block; background-color: #F3F4F6; color: #374151; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                      ${safeSeverity}
+                    </span>
+                    ` : ''}
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Key Facts (3-5 max) -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="padding: 0 24px 24px 24px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" class="facts-table" style="border-collapse: collapse;">
+                      ${finalFacts.map((fact, index) => `
+                      <tr>
+                        <td class="facts-table" style="padding: ${index === 0 ? '0' : '12px'} 0 ${index === finalFacts.length - 1 ? '0' : '12px'} 0; border-bottom: ${index === finalFacts.length - 1 ? 'none' : '1px solid #E6EAF2'};">
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                            <tr>
+                              <td class="facts-table" style="width: 40%; padding-right: 16px; vertical-align: top;">
+                                <span style="font-size: 13px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px;">
+                                  ${fact.label}
+                                </span>
+                              </td>
+                              <td class="facts-table" style="vertical-align: top;">
+                                <span style="font-size: 15px; font-weight: 600; color: #111827;">
+                                  ${fact.value}
+                                </span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      `).join('')}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Short Summary (1-2 sentences) -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="padding: 0 24px 32px 24px;">
+                    <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #374151;">
+                      ${summary}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- CTA Section (Primary Action) -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="padding: 0 24px 32px 24px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" class="button-table">
+                      <tr>
+                        <td align="center" style="padding: 0;">
+                          <!-- Primary Button: Open on Noteworthy News -->
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto; width: 100%; max-width: 300px;">
+                            <tr>
+                              <td align="center" style="background-color: #2563EB; border-radius: 6px;">
+                                <a href="https://noteworthynews.co/article.html?id=${encodeURIComponent(`post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}`)}" style="display: inline-block; padding: 14px 28px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none; line-height: 1.5;">
+                                  Open on Noteworthy News
+                                </a>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      ${earthquake.usgs_event_url ? `
+                      <tr>
+                        <td align="center" style="padding-top: 16px;">
+                          <a href="${earthquake.usgs_event_url}" style="font-size: 14px; color: #2563EB; text-decoration: none; font-weight: 500;">
+                            View on USGS
+                          </a>
+                        </td>
+                      </tr>
+                      ` : ''}
+                    </table>
                   </td>
                 </tr>
               </table>
@@ -1240,17 +964,18 @@ exports.handler = async (event, context) => {
           
           <!-- Footer -->
           <tr>
-            <td style="background: linear-gradient(135deg, #0a0e1a 0%, #0f1419 100%); padding: 30px 40px; text-align: center; border-top: 3px solid #4A9EFF;">
+            <td style="padding: 24px; border-top: 1px solid #E6EAF2; background-color: #ffffff;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td>
-                    <p style="margin: 0; font-size: 13px; color: #ffffff; line-height: 1.8; font-weight: 700;">
-                      <span style="color: #4A9EFF; font-size: 16px; letter-spacing: 2px;">NOTEWORTHY NEWS</span><br>
-                      <span style="color: #a0aec0; font-size: 11px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase;">Real-time breaking news alerts</span><br>
-                      <a href="https://noteworthynews.co" style="color: #4A9EFF; text-decoration: none; font-weight: 700; font-size: 12px; letter-spacing: 1px;">noteworthynews.co</a>
+                  <td align="center" style="padding: 0;">
+                    <p style="margin: 0 0 12px 0; font-size: 13px; color: #6B7280; line-height: 1.6;">
+                      You're receiving this because you subscribed to Noteworthy News alerts.
                     </p>
-                    <p style="margin: 20px 0 0 0; font-size: 10px; color: #6c757d; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
-                      Data provided by the U.S. Geological Survey
+                    <p style="margin: 0 0 12px 0; font-size: 13px; color: #6B7280; line-height: 1.6;">
+                      <a href="{{{UNSUBSCRIBE_URL}}}" style="color: #2563EB; text-decoration: none; font-weight: 500;">Manage preferences</a> · <a href="{{{UNSUBSCRIBE_URL}}}" style="color: #2563EB; text-decoration: none; font-weight: 500;">Unsubscribe</a>
+                    </p>
+                    <p style="margin: 0; font-size: 12px; color: #9CA3AF; line-height: 1.5;">
+                      Data source: USGS
                     </p>
                   </td>
                 </tr>
@@ -1374,15 +1099,12 @@ exports.handler = async (event, context) => {
             });
             
             // Add <img> tag in HTML that references the CID
-            // MUST match the content_id exactly (without cid: prefix)
-            // Replace the placeholder div with the actual image
+            // Insert between summary and CTA section (optional image, clean styling)
             const imageHtml = `
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td style="padding: 0 40px 30px 40px;">
-                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 0; overflow: hidden; border-top: 3px solid ${safeSeverityColor};">
-                      <img src="cid:${cidIdentifier}" alt="Earthquake Visualization - Magnitude ${safeMagnitudeFormatted} near ${safeLocationDisplay}" style="display: block; width: 100%; max-width: 100%; height: auto; filter: brightness(0.95) contrast(1.05);" />
-                    </div>
+                  <td style="padding: 0 24px 32px 24px;">
+                    <img src="cid:${cidIdentifier}" alt="Earthquake Visualization - Magnitude ${safeMagnitudeFormatted} near ${safeLocationDisplay}" style="display: block; width: 100%; max-width: 100%; height: auto; border-radius: 8px;" />
                   </td>
                 </tr>
               </table>
@@ -1391,20 +1113,11 @@ exports.handler = async (event, context) => {
             console.log(`[send-earthquake-alert] 🔗 CID reference: cid:${cidIdentifier}`);
             console.log(`[send-earthquake-alert] 🔗 Image HTML: ${imageHtml.substring(0, 100)}...`);
             
-            // Replace the placeholder div with the actual image
-            const placeholderRegex = /<div style="background: #0f1419; border: 2px solid #2d3748; padding: 30px; text-align: center; border-left: 4px solid #4A9EFF;">[\s\S]*?<\/div>/;
-            if (placeholderRegex.test(baseEmailContent.html)) {
-              htmlWithImage = baseEmailContent.html.replace(
-                placeholderRegex,
-                imageHtml.trim()
-              );
-            } else {
-              // Fallback: insert before the USGS link section
-              htmlWithImage = baseEmailContent.html.replace(
-                /(<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">\s*<tr>\s*<td align="center" style="padding: 30px 40px; border-top: 2px solid #2d3748; background: #0f1419;">)/,
-                `${imageHtml.trim()}$1`
-              );
-            }
+            // Insert image between summary and CTA section
+            htmlWithImage = baseEmailContent.html.replace(
+              /(<!-- CTA Section \(Primary Action\) -->)/,
+              `${imageHtml.trim()}$1`
+            );
             
             console.log(`[send-earthquake-alert] ✅ Image HTML inserted into email`);
             console.log(`[send-earthquake-alert] 📝 HTML contains CID reference: ${htmlWithImage.includes(`cid:${cidIdentifier}`)}`);
@@ -1435,19 +1148,17 @@ exports.handler = async (event, context) => {
     if (imageAttachment && !htmlWithImage.includes(`cid:${imageAttachment.content_id}`)) {
       console.warn(`[send-earthquake-alert] ⚠️ CID not found in HTML, forcing insertion`);
       const imageHtml = `
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td style="padding: 0 40px 30px 40px;">
-                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 0; overflow: hidden; border-top: 3px solid ${safeSeverityColor};">
-                      <img src="cid:${imageAttachment.content_id}" alt="Earthquake Visualization - Magnitude ${safeMagnitudeFormatted} near ${safeLocationDisplay}" style="display: block; width: 100%; max-width: 100%; height: auto; filter: brightness(0.95) contrast(1.05);" />
-                    </div>
+                  <td style="padding: 0 24px 32px 24px;">
+                    <img src="cid:${imageAttachment.content_id}" alt="Earthquake Visualization - Magnitude ${safeMagnitudeFormatted} near ${safeLocationDisplay}" style="display: block; width: 100%; max-width: 100%; height: auto; border-radius: 8px;" />
                   </td>
                 </tr>
               </table>
       `;
-      // Insert before the USGS link section
+      // Insert between summary and CTA section
       htmlWithImage = htmlWithImage.replace(
-        /(<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">\s*<tr>\s*<td align="center" style="padding: 30px 40px; border-top: 2px solid #2d3748; background: #0f1419;">)/,
+        /(<!-- CTA Section \(Primary Action\) -->)/,
         `${imageHtml.trim()}$1`
       );
       console.log(`[send-earthquake-alert] ✅ Image HTML force-inserted`);
@@ -1455,9 +1166,7 @@ exports.handler = async (event, context) => {
       // Remove CID references from HTML if we don't have an attachment
       // This prevents broken image icons
       htmlWithImage = htmlWithImage.replace(/<img[^>]+src=["']cid:[^"']+["'][^>]*>/gi, '');
-      // Also remove the placeholder if no image
-      htmlWithImage = htmlWithImage.replace(/<div style="background: linear-gradient\(135deg, #f8f9fa 0%, #e9ecef 100%\); border-radius: 12px; padding: 20px; text-align: center; border: 2px dashed #dee2e6;">[\s\S]*?<\/div>/gi, '');
-      console.log(`[send-earthquake-alert] ⚠️ Removed image tag and placeholder from HTML - no attachment available`);
+      console.log(`[send-earthquake-alert] ⚠️ Removed image tag from HTML - no attachment available`);
     }
     
     // Send email to all notification emails

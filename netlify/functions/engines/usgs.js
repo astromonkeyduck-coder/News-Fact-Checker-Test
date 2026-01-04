@@ -221,9 +221,21 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
         });
         
         // Note: generateImage no longer accepts coordinates parameter (user removed fallback images)
-        const imageBuffer = await generateImage(magnitude, location, usgsImages || [], eventId);
-        imageUrl = await storeImage(imageBuffer, eventId);
-        logger.info('Branded image generated via direct call', { url: imageUrl });
+        const imageBuffer = await generateImage(magnitude, location, usgsImages || [], eventId, 'standard');
+        imageUrl = await storeImage(imageBuffer, eventId, 'standard');
+        logger.info('Branded image generated via direct call', { 
+          url: imageUrl,
+          eventId,
+          imageBufferSize: imageBuffer?.length || 0,
+          hasImageUrl: !!imageUrl
+        });
+        
+        // CRITICAL: Verify imageUrl is valid before returning
+        if (!imageUrl || imageUrl.trim() === '') {
+          logger.error('Image generation returned empty/null URL!', null, { eventId, magnitude });
+          return null;
+        }
+        
         return imageUrl;
       } else {
         logger.info('Direct function call not available (missing exports), using HTTP', { 
@@ -718,13 +730,53 @@ async function processEarthquake(feature, logger, forceEmail = false) {
                                    (existingUsgsImages.length === 0 && usgsImages.length > 0);
     
     if (shouldGenerateNewImage) {
-  // Generate branded image (will use template's baked-in images if usgsImages is empty)
+      // Generate branded image (will use template's baked-in images if usgsImages is empty)
+      logger.info('🚀 Starting image generation', { 
+        magnitude, 
+        eventId, 
+        location: locationDisplay.substring(0, 50),
+        hasUsgsImages: usgsImages?.length > 0,
+        usgsImageCount: usgsImages?.length || 0,
+        reason: !existingEvent ? 'new_earthquake' : !existingEvent.image_url ? 'no_existing_image' : 'usgs_images_now_available'
+      });
+      
       imageUrl = await generateBrandedImage(magnitude, locationDisplay, usgsImages, eventId, logger, coordinates);
-      logger.info('Image generation completed', { magnitude, hasImage: !!imageUrl, eventId, reason: !existingEvent ? 'new_earthquake' : !existingEvent.image_url ? 'no_existing_image' : 'usgs_images_now_available' });
+      
+      // CRITICAL: Verify imageUrl was actually generated
+      if (!imageUrl || imageUrl.trim() === '') {
+        logger.error('❌ Image generation returned empty/null URL!', null, { 
+          eventId, 
+          magnitude,
+          imageUrl,
+          imageUrlType: typeof imageUrl,
+          reason: 'generateBrandedImage returned invalid URL'
+        });
+        imageUrl = null; // Explicitly set to null if invalid
+      } else {
+        logger.info('✅ Image generation successful', { 
+          eventId,
+          magnitude,
+          imageUrl: imageUrl.substring(0, 100),
+          imageUrlLength: imageUrl.length,
+          reason: !existingEvent ? 'new_earthquake' : !existingEvent.image_url ? 'no_existing_image' : 'usgs_images_now_available'
+        });
+      }
     } else {
       // Reuse existing image
       imageUrl = existingEvent.image_url;
-      logger.info('Reusing existing image', { magnitude, eventId, imageUrl: imageUrl?.substring(0, 100) });
+      logger.info('Reusing existing image', { 
+        magnitude, 
+        eventId, 
+        imageUrl: imageUrl?.substring(0, 100),
+        hasImageUrl: !!imageUrl,
+        imageUrlLength: imageUrl?.length || 0
+      });
+      
+      // Validate existing image URL
+      if (!imageUrl || imageUrl.trim() === '') {
+        logger.warn('⚠️ Existing image URL is empty/null, will send email without image', { eventId });
+        imageUrl = null;
+      }
     }
   } else {
     logger.info(`Skipping image generation - magnitude below ${IMAGE_GENERATION_THRESHOLD} threshold`, { magnitude, eventId });
@@ -984,6 +1036,23 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       hasEventId: !!enrichedEvent.event_id,
       eventId: enrichedEvent.event_id
     });
+    
+    // CRITICAL: Log imageUrl status before sending email
+    logger.info('📧 About to send email alert', {
+      canonical_id: canonicalId,
+      hasImageUrl: !!imageUrl,
+      imageUrl: imageUrl?.substring(0, 100) || 'null',
+      imageUrlLength: imageUrl?.length || 0,
+      imageUrlIsEmpty: !imageUrl || imageUrl.trim() === '',
+      magnitude: enrichedEvent.magnitude,
+      eventId: enrichedEvent.event_id
+    });
+    
+    // If imageUrl is invalid, explicitly set to null
+    if (imageUrl && imageUrl.trim() === '') {
+      logger.warn('⚠️ imageUrl is empty string, setting to null', { eventId: enrichedEvent.event_id });
+      imageUrl = null;
+    }
     
     const alertSent = await sendEmailAlert(enrichedEvent, imageUrl, logger);
     if (alertSent) {
