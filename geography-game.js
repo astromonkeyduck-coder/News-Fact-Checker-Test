@@ -81,6 +81,7 @@ class GeographyGame {
         this.panY = 0;
         // Will be calculated when SVG loads to ensure horizontal scrolling is possible
         this.isPanning = false;
+        this.hasInitiallyCentered = false; // Track if we've done initial centering
         this.wasDragging = false; // Track if we just finished dragging (to prevent click after drag)
         this.startX = 0;
         this.startY = 0;
@@ -1173,9 +1174,14 @@ class GeographyGame {
                 // Center the SVG initially if it hasn't been manually panned yet
                 // Check if this is the first time we're positioning the map
                 const hasBeenPanned = Math.abs(this.panX) > 1 || Math.abs(this.panY) > 1;
-                const isInitialLoad = !hasBeenPanned && (this.zoomLevel === this.minZoomLevel || this.zoomLevel === 1 || Math.abs(this.zoomLevel - 1) < 0.1);
+                const isInitialLoad = !this.hasInitiallyCentered && !hasBeenPanned && 
+                                     (this.zoomLevel === this.minZoomLevel || this.zoomLevel === 1 || Math.abs(this.zoomLevel - 1) < 0.1);
                 
-                if (isInitialLoad) {
+                // Also check if dimensions were just recalculated (indicates fresh load)
+                const dimensionsJustCalculated = this.svgNaturalWidth > 0 && this.svgNaturalHeight > 0 && 
+                                                 containerWidth > 0 && containerHeight > 0;
+                
+                if (isInitialLoad || (dimensionsJustCalculated && !this.hasInitiallyCentered && !hasBeenPanned)) {
                     // Note: panY controls horizontal (X) movement, panX controls vertical (Y) movement (due to swap in transform)
                     // With transformOrigin 'top left', we need to calculate the offset to center the map
                     
@@ -1201,6 +1207,8 @@ class GeographyGame {
                         this.panX = (containerHeight - scaledHeight) / 2;
                     }
                     
+                    this.hasInitiallyCentered = true; // Mark that we've done initial centering
+                    
                     console.log('Initial map position set (centered):', {
                         panY: this.panY,
                         panX: this.panX,
@@ -1209,7 +1217,9 @@ class GeographyGame {
                         containerWidth,
                         containerHeight,
                         zoomLevel: this.zoomLevel,
-                        isCentered: true
+                        isCentered: true,
+                        hasBeenPanned,
+                        dimensionsJustCalculated
                     });
                 }
                 
@@ -3357,9 +3367,9 @@ class GeographyGame {
     updateStats() {
         this.scoreEl.textContent = this.score;
         
-        // Update combo display
+        // Update combo display - only show for combos of 3+
         if (this.comboEl && this.comboStat) {
-            if (this.combo > 0) {
+            if (this.combo >= 3) {
                 this.comboEl.textContent = `${this.combo}x`;
                 this.comboStat.style.display = 'flex';
             } else {
@@ -4166,7 +4176,7 @@ class GeographyGame {
     }
     
     showComboNotification(combo, bonus) {
-        if (combo < 3) return; // Only show for combos of 3+
+        if (combo < 5) return; // Only show for combos of 5+ (less frequent)
         
         const notification = document.createElement('div');
         notification.className = 'combo-notification';
@@ -4183,7 +4193,7 @@ class GeographyGame {
         setTimeout(() => {
             notification.classList.remove('show');
             setTimeout(() => notification.remove(), 300);
-        }, 2000);
+        }, 1500); // Shorter duration - 1.5s instead of 2s
     }
     
     // Helper function to get country flag emoji from ISO code
@@ -5682,25 +5692,44 @@ function loadSVGMap() {
                     // Reset pan to allow auto-centering
                     window.geoGame.panX = 0;
                     window.geoGame.panY = 0;
+                    // Reset zoom to default
+                    window.geoGame.zoomLevel = 1;
+                    // Reset centering flag so it centers again
+                    window.geoGame.hasInitiallyCentered = false;
                     // Re-setup drag handlers after SVG loads
                     if (window.geoGame.setupDragHandlers) {
                         window.geoGame.setupDragHandlers();
                     }
                     // Force update to recalculate constraints and center
-                    // Use multiple timeouts to ensure container dimensions are ready
-                    setTimeout(() => {
-                        if (window.geoGame && window.geoGame.updateTransform) {
-                            window.geoGame.updateTransform();
-                        }
-                    }, 100);
-                    setTimeout(() => {
-                        if (window.geoGame && window.geoGame.updateTransform) {
-                            // Force recenter by resetting pan values
-                            window.geoGame.panX = 0;
-                            window.geoGame.panY = 0;
-                            window.geoGame.updateTransform();
-                        }
-                    }, 300);
+                    // Use requestAnimationFrame and multiple delays to ensure container dimensions are ready
+                    requestAnimationFrame(() => {
+                        setTimeout(() => {
+                            if (window.geoGame && window.geoGame.updateTransform) {
+                                // Force recalculation of dimensions
+                                window.geoGame.svgNaturalWidth = 0;
+                                window.geoGame.svgNaturalHeight = 0;
+                                window.geoGame.updateTransform();
+                            }
+                        }, 50);
+                        setTimeout(() => {
+                            if (window.geoGame && window.geoGame.updateTransform) {
+                                // Force recenter by resetting pan values and recalculating
+                                window.geoGame.panX = 0;
+                                window.geoGame.panY = 0;
+                                window.geoGame.svgNaturalWidth = 0;
+                                window.geoGame.svgNaturalHeight = 0;
+                                window.geoGame.updateTransform();
+                            }
+                        }, 200);
+                        setTimeout(() => {
+                            if (window.geoGame && window.geoGame.updateTransform) {
+                                // Final centering pass to ensure it's properly centered
+                                window.geoGame.panX = 0;
+                                window.geoGame.panY = 0;
+                                window.geoGame.updateTransform();
+                            }
+                        }, 500);
+                    });
                 }
                 
                 // IMPORTANT: Set up click handlers on the newly loaded SVG
