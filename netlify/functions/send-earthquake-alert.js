@@ -48,15 +48,23 @@ async function downloadImageForEmail(imageUrl) {
     const contentType = response.headers.get('content-type') || 'image/png';
     console.log(`[send-earthquake-alert] 📥 Image response: ${response.status}, Content-Type: ${contentType}`);
     
-    // Get the response as arrayBuffer (binary data)
+    // CRITICAL: get-uploaded-image returns base64 with isBase64Encoded: true
+    // Netlify automatically decodes it, so we get binary data
+    // But we need to handle it as binary, not text
     const arrayBuffer = await response.arrayBuffer();
+    
+    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+      console.error('[send-earthquake-alert] ❌ Image arrayBuffer is empty!');
+      return null;
+    }
+    
     const buffer = Buffer.from(arrayBuffer);
     
     console.log(`[send-earthquake-alert] ✅ Image downloaded: ${Math.round(buffer.length / 1024)}KB, type: ${contentType}`);
     console.log(`[send-earthquake-alert] 📊 Buffer details: length=${buffer.length}, first 8 bytes:`, Array.from(buffer.slice(0, 8)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
     
     if (buffer.length === 0) {
-      console.error('[send-earthquake-alert] ❌ Image buffer is empty!');
+      console.error('[send-earthquake-alert] ❌ Image buffer is empty after conversion!');
       return null;
     }
     
@@ -263,13 +271,19 @@ exports.handler = async (event, context) => {
         // Convert buffer to base64 - ensure it's a proper Buffer first
         let base64Content;
         try {
+          // imageData.buffer should already be a Buffer from downloadImageForEmail
           if (Buffer.isBuffer(imageData.buffer)) {
             base64Content = imageData.buffer.toString('base64');
+            console.log(`[send-earthquake-alert] ✅ Converted Buffer to base64: ${Math.round(base64Content.length / 1024)}KB`);
           } else if (imageData.buffer instanceof ArrayBuffer) {
-            base64Content = Buffer.from(imageData.buffer).toString('base64');
+            const tempBuffer = Buffer.from(imageData.buffer);
+            base64Content = tempBuffer.toString('base64');
+            console.log(`[send-earthquake-alert] ✅ Converted ArrayBuffer to base64: ${Math.round(base64Content.length / 1024)}KB`);
           } else {
             // Try to convert whatever it is to a Buffer
-            base64Content = Buffer.from(imageData.buffer).toString('base64');
+            const tempBuffer = Buffer.from(imageData.buffer);
+            base64Content = tempBuffer.toString('base64');
+            console.log(`[send-earthquake-alert] ⚠️ Converted unknown type to base64: ${Math.round(base64Content.length / 1024)}KB`);
           }
           
           // Validate base64 encoding - try to decode it back to verify it's valid
