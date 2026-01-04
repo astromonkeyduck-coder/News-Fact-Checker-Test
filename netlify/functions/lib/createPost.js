@@ -208,6 +208,9 @@ async function createPostFromEvent(event, category, source) {
     primary_image_url: imageUrl, // THE single source of truth for primary image
     image: imageUrl, // Legacy compatibility (card deck reads this)
     image_url: imageUrl, // Legacy compatibility
+    // Video URL for social media Player Cards (if available)
+    video_url: event.video_url || null,
+    video: event.video_url || null, // Legacy compatibility
     // SECONDARY IMAGES (never includes primary)
     images: secondaryImages, // Secondary images only (excludes primary, deduplicated)
     secondary_images: secondaryImages, // Also store as secondary_images for compatibility

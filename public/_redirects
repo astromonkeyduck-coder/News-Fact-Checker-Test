@@ -1,0 +1,9 @@
+# Redirect Facebook and other social media crawlers to pre-rendered article preview
+# This prevents 502 errors when crawlers try to fetch article pages
+# The article-preview function will detect the user-agent and serve pre-rendered HTML
+
+# Note: Netlify redirects don't support user-agent matching directly
+# So we'll handle user-agent detection in the article-preview function itself
+# Regular users accessing /article.html will get the normal page
+# Crawlers will be detected by the function and served pre-rendered content
+

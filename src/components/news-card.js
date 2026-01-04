@@ -70,7 +70,8 @@
         const {
             showThumbnail = false,
             maxTitleLength = 80,
-            className = ''
+            className = '',
+            enhanced = false
         } = options;
 
         const postId = getPostId(post);
@@ -80,7 +81,8 @@
             : title;
         const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
         const relativeTime = formatRelativeTime(datePosted);
-        const image = post.image || post.images?.[0] || null;
+        const image = post.primary_image_url || post.image_url || post.image || post.images?.[0] || null;
+        const category = post.category || 'Breaking News';
         const articleUrl = `/article.html?id=${encodeURIComponent(postId)}`;
 
         let cardHTML = `<a href="${articleUrl}" class="news-card ${className}" aria-label="Read article: ${escapeHtml(shortTitle)}">`;
@@ -89,12 +91,28 @@
             cardHTML += `<img src="${escapeHtml(image)}" alt="${escapeHtml(shortTitle)}" class="news-card-thumbnail" loading="lazy">`;
         }
         
-        cardHTML += `
-            <h3 class="news-card-title">${escapeHtml(shortTitle)}</h3>
-            <div class="news-card-meta">
-                <span>${escapeHtml(relativeTime)}</span>
-            </div>
-        </a>`;
+        if (enhanced) {
+            // Enhanced card with content wrapper
+            cardHTML += `
+                <div class="news-card-content">
+                    <h3 class="news-card-title">${escapeHtml(shortTitle)}</h3>
+                    <div class="news-card-meta">
+                        <span class="news-card-category">${escapeHtml(category)}</span>
+                        <span>${escapeHtml(relativeTime)}</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Standard card
+            cardHTML += `
+                <h3 class="news-card-title">${escapeHtml(shortTitle)}</h3>
+                <div class="news-card-meta">
+                    <span>${escapeHtml(relativeTime)}</span>
+                </div>
+            `;
+        }
+        
+        cardHTML += `</a>`;
 
         return cardHTML;
     }

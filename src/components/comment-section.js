@@ -87,16 +87,26 @@ class CommentSection {
     }
   }
   
-  async addComment(text) {
+  async addComment(text, authorName = null) {
     if (!text || text.trim().length < 3) {
       alert('Comment must be at least 3 characters');
       return;
     }
     
-    // Allow anonymous comments - use user info if available, otherwise use anonymous
-    const author = this.user ? (this.user.name || this.user.nickname || this.user.email?.split('@')[0] || 'Anonymous') : 'Anonymous';
-    const authorEmail = this.user ? (this.user.email || '') : '';
-    const authorId = this.user ? (this.user.sub || '') : 'anonymous';
+    // Determine author info
+    let author, authorEmail, authorId;
+    
+    if (this.user) {
+      // Logged in user - use their account info (no anonymous option)
+      author = this.user.name || this.user.nickname || this.user.email?.split('@')[0] || 'User';
+      authorEmail = this.user.email || '';
+      authorId = this.user.sub || this.user.email || '';
+    } else {
+      // Anonymous user - use provided name or default to "Anonymous"
+      author = (authorName && authorName.trim()) ? authorName.trim() : 'Anonymous';
+      authorEmail = '';
+      authorId = 'anonymous';
+    }
     
     try {
       // Determine API endpoint (handle localhost vs production)
@@ -222,6 +232,28 @@ class CommentSection {
       this.submitComment(form);
     };
     
+    // Add name field for anonymous users (not shown if logged in)
+    if (!isAuthenticated) {
+      const nameWrapper = document.createElement('div');
+      nameWrapper.className = 'comment-name-wrapper';
+      
+      const nameLabel = document.createElement('label');
+      nameLabel.className = 'comment-name-label';
+      nameLabel.textContent = 'Name (optional)';
+      nameLabel.setAttribute('for', `comment-name-${this.articleId}`);
+      nameWrapper.appendChild(nameLabel);
+      
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.id = `comment-name-${this.articleId}`;
+      nameInput.className = 'comment-name-input';
+      nameInput.placeholder = 'Your name or leave blank for anonymous';
+      nameInput.maxLength = 30;
+      nameWrapper.appendChild(nameInput);
+      
+      form.appendChild(nameWrapper);
+    }
+    
     const textarea = document.createElement('textarea');
     textarea.className = 'comment-input';
     textarea.placeholder = 'Share your thoughts...';
@@ -311,8 +343,13 @@ class CommentSection {
     const textarea = form.querySelector('.comment-input');
     const text = textarea.value.trim();
     if (text) {
-      this.addComment(text);
+      // Get author name if anonymous user
+      const nameInput = form.querySelector('.comment-name-input');
+      const authorName = nameInput ? nameInput.value.trim() : null;
+      
+      this.addComment(text, authorName);
       textarea.value = '';
+      if (nameInput) nameInput.value = '';
     }
   }
   

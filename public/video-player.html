@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earthquake Video - Noteworthy News</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .video-container {
+            position: relative;
+            max-width: 100%;
+            max-height: 100vh;
+        }
+        
+        .video-container img,
+        .video-container video {
+            max-width: 100%;
+            max-height: 100vh;
+            display: block;
+        }
+        
+        .loading {
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="video-container" id="video-container">
+        <div class="loading">Loading video...</div>
+    </div>
+    
+    <script>
+        // Get video URL from query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const videoUrl = urlParams.get('url');
+        
+        if (videoUrl) {
+            const container = document.getElementById('video-container');
+            container.innerHTML = '';
+            
+            // Check if it's a GIF or MP4
+            if (videoUrl.includes('.gif') || videoUrl.includes('get-uploaded-image')) {
+                // For GIF, use img tag (browsers will auto-animate)
+                const img = document.createElement('img');
+                img.src = videoUrl;
+                img.alt = 'Earthquake animation';
+                img.style.width = '100%';
+                img.style.height = 'auto';
+                container.appendChild(img);
+            } else {
+                // For MP4, use video tag
+                const video = document.createElement('video');
+                video.src = videoUrl;
+                video.autoplay = true;
+                video.loop = true;
+                video.controls = true;
+                video.style.width = '100%';
+                video.style.height = 'auto';
+                container.appendChild(video);
+            }
+        } else {
+            document.getElementById('video-container').innerHTML = '<div class="loading">No video URL provided</div>';
+        }
+    </script>
+</body>
+</html>
+

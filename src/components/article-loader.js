@@ -155,7 +155,14 @@
         const title = escapeHtml(post.title || post.story || post.text || 'Breaking News Story');
         const story = post.story || post.text || post.title || '';
         const description = truncateDescription(story);
-        const image = ensureAbsoluteImageUrl(post.image || post.images?.[0] || null);
+        // Prioritize primary_image_url (generated earthquake images) over other image fields
+        const image = ensureAbsoluteImageUrl(
+            post.primary_image_url || 
+            post.image_url || 
+            post.image || 
+            post.images?.[0] || 
+            null
+        );
         const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
         const url = `${SITE_URL}/article.html?id=${encodeURIComponent(postId)}`;
 
@@ -183,12 +190,28 @@
         getOrCreateMeta('article:published_time').setAttribute('content', datePosted);
         getOrCreateMeta('article:author').setAttribute('content', 'Noteworthy News');
 
-        // Twitter Card
+        // Check if video is available for Player Card
+        const videoUrl = post.video_url || post.video || null;
+        const hasVideo = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('.mp4') || videoUrl.includes('video'));
+        
+        if (hasVideo) {
+            // Use Player Card for videos
+            const playerUrl = `${SITE_URL}/video-player.html?url=${encodeURIComponent(ensureAbsoluteImageUrl(videoUrl))}`;
+            
+            getOrCreateMeta('twitter:card', 'name').setAttribute('content', 'player');
+            getOrCreateMeta('twitter:player', 'name').setAttribute('content', playerUrl);
+            getOrCreateMeta('twitter:player:width', 'name').setAttribute('content', '1280');
+            getOrCreateMeta('twitter:player:height', 'name').setAttribute('content', '720');
+            getOrCreateMeta('twitter:image', 'name').setAttribute('content', image); // Fallback image
+        } else {
+            // Use summary_large_image for images
+            getOrCreateMeta('twitter:card', 'name').setAttribute('content', 'summary_large_image');
+            getOrCreateMeta('twitter:image', 'name').setAttribute('content', image);
+        }
+        
         getOrCreateMeta('twitter:url', 'name').setAttribute('content', url);
         getOrCreateMeta('twitter:title', 'name').setAttribute('content', title);
         getOrCreateMeta('twitter:description', 'name').setAttribute('content', description);
-        getOrCreateMeta('twitter:image', 'name').setAttribute('content', image);
-        getOrCreateMeta('twitter:card', 'name').setAttribute('content', 'summary_large_image');
         getOrCreateMeta('twitter:site', 'name').setAttribute('content', '@NoteworthyNews');
         getOrCreateMeta('twitter:creator', 'name').setAttribute('content', '@NoteworthyNews');
     }
@@ -362,54 +385,113 @@
             </div>
         `;
         
-        // Add impact assessment section
+        // Add comprehensive tier breakdown section
+        const tierBreakdown = impactAssessment ? {
+            tier1: impactAssessment.riskScore >= 80 ? 'CRITICAL' : impactAssessment.riskScore >= 60 ? 'HIGH' : impactAssessment.riskScore >= 40 ? 'MODERATE' : 'LOW',
+            tier2: impactAssessment.affectedPopulation > 1000000 ? 'CRITICAL' : impactAssessment.affectedPopulation > 100000 ? 'HIGH' : impactAssessment.affectedPopulation > 10000 ? 'MODERATE' : 'LOW',
+            tier3: impactAssessment.populationDensity > 1000 ? 'HIGH' : impactAssessment.populationDensity > 100 ? 'MODERATE' : 'LOW',
+        } : null;
+        
+        // Add impact assessment section (always show if available)
         if (impactAssessment) {
             const severityColor = impactAssessment.severity === 'CRITICAL' ? '#d32f2f' : 
                                  impactAssessment.severity === 'HIGH' ? '#f57c00' : 
                                  impactAssessment.severity === 'MODERATE' ? '#fbc02d' : '#388e3c';
             html += `
-                <div class="impact-assessment-section" style="margin: 2rem 0; padding: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 12px; border-left: 4px solid ${severityColor};">
+                <div class="impact-assessment-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%); border-radius: 12px; border-left: 4px solid ${severityColor}; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
                     <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
                         <span style="display: inline-flex; align-items: center; color: ${severityColor};">${getIconSVG('chart', 24, severityColor)}</span>
-                        Impact Assessment
+                        AI Impact Assessment
                     </h2>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">Risk Score</div>
-                            <div style="font-size: 2rem; font-weight: 700; color: ${severityColor};">${impactAssessment.riskScore}/100</div>
-                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.25rem;">${impactAssessment.severity}</div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Risk Score</div>
+                            <div style="font-size: 2.5rem; font-weight: 700; color: ${severityColor}; line-height: 1;">${impactAssessment.riskScore || 0}/100</div>
+                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem; font-weight: 600;">${impactAssessment.severity || 'UNKNOWN'}</div>
                         </div>
                         ${impactAssessment.affectedPopulation ? `
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">Affected Population</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: #fff;">${(impactAssessment.affectedPopulation / 1000).toFixed(1)}K</div>
-                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.25rem;">people</div>
-                        </div>
-                        ` : ''}
-                        ${impactAssessment.criticalInfrastructure ? `
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">Critical Infrastructure</div>
-                            <div style="font-size: 1rem; font-weight: 600; color: #fff; line-height: 1.6;">
-                                ${impactAssessment.criticalInfrastructure.hospitals || 0} hospitals<br>
-                                ${impactAssessment.criticalInfrastructure.schools || 0} schools<br>
-                                ${impactAssessment.criticalInfrastructure.airports || 0} airports<br>
-                                ${impactAssessment.criticalInfrastructure.powerPlants || 0} power plants
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Affected Population</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: #fff; line-height: 1;">
+                                ${impactAssessment.affectedPopulation >= 1000000 ? (impactAssessment.affectedPopulation / 1000000).toFixed(2) + 'M' : 
+                                  impactAssessment.affectedPopulation >= 1000 ? (impactAssessment.affectedPopulation / 1000).toFixed(1) + 'K' : 
+                                  impactAssessment.affectedPopulation.toLocaleString()}
                             </div>
-                        </div>
-                        ` : ''}
-                        ${impactAssessment.affectedRadius ? `
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">Affected Radius</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: #fff;">${impactAssessment.affectedRadius.toFixed(1)} km</div>
+                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;">people potentially affected</div>
                         </div>
                         ` : ''}
                         ${impactAssessment.populationDensity ? `
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">Population Density</div>
-                            <div style="font-size: 1.25rem; font-weight: 700; color: #fff;">${impactAssessment.populationDensity.toFixed(0)}/km²</div>
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Population Density</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: #4A90E2; line-height: 1;">${impactAssessment.populationDensity.toFixed(0)}</div>
+                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;">people per km²</div>
+                        </div>
+                        ` : ''}
+                        ${impactAssessment.affectedRadius ? `
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Affected Radius</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: #fff; line-height: 1;">${impactAssessment.affectedRadius.toFixed(1)}</div>
+                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;">kilometers</div>
                         </div>
                         ` : ''}
                     </div>
+                    
+                    ${impactAssessment.nearbyCities && impactAssessment.nearbyCities.length > 0 ? `
+                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: rgba(255,255,255,0.9); display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="display: inline-flex; align-items: center; color: #4A90E2;">${getIconSVG('location', 20, '#4A90E2')}</span>
+                            Nearby Cities & Population
+                        </h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem;">
+                            ${impactAssessment.nearbyCities.slice(0, 8).map(city => `
+                                <div style="padding: 0.875rem; background: rgba(255,255,255,0.05); border-radius: 8px; border-left: 3px solid #4A90E2;">
+                                    <div style="font-weight: 600; color: #fff; margin-bottom: 0.25rem; font-size: 0.9375rem;">${escapeHtml(city.name || 'Unknown')}</div>
+                                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">
+                                        ${city.population ? city.population.toLocaleString() + ' people' : 'Population data unavailable'}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    ${impactAssessment.criticalInfrastructure ? `
+                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: rgba(255,255,255,0.9); display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="display: inline-flex; align-items: center; color: #f57c00;">${getIconSVG('building', 20, '#f57c00')}</span>
+                            Critical Infrastructure at Risk
+                        </h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                            <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
+                                <div style="font-size: 2rem; font-weight: 700; color: #e74c3c; margin-bottom: 0.25rem;">${impactAssessment.criticalInfrastructure.hospitals || 0}</div>
+                                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.5px;">Hospitals</div>
+                            </div>
+                            <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
+                                <div style="font-size: 2rem; font-weight: 700; color: #3498db; margin-bottom: 0.25rem;">${impactAssessment.criticalInfrastructure.schools || 0}</div>
+                                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.5px;">Schools</div>
+                            </div>
+                            <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
+                                <div style="font-size: 2rem; font-weight: 700; color: #9b59b6; margin-bottom: 0.25rem;">${impactAssessment.criticalInfrastructure.airports || 0}</div>
+                                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.5px;">Airports</div>
+                            </div>
+                            <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
+                                <div style="font-size: 2rem; font-weight: 700; color: #f39c12; margin-bottom: 0.25rem;">${impactAssessment.criticalInfrastructure.powerPlants || 0}</div>
+                                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.5px;">Power Plants</div>
+                            </div>
+                            ${impactAssessment.criticalInfrastructure.dams ? `
+                            <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
+                                <div style="font-size: 2rem; font-weight: 700; color: #1abc9c; margin-bottom: 0.25rem;">${impactAssessment.criticalInfrastructure.dams || 0}</div>
+                                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.5px;">Dams</div>
+                            </div>
+                            ` : ''}
+                        </div>
+                        ${impactAssessment.criticalInfrastructure.details && (impactAssessment.criticalInfrastructure.details.hospitals?.length > 0 || impactAssessment.criticalInfrastructure.details.schools?.length > 0) ? `
+                        <div style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px; font-size: 0.875rem; color: rgba(255,255,255,0.7);">
+                            <strong style="color: rgba(255,255,255,0.9);">Note:</strong> Infrastructure data is based on OpenStreetMap and may not be complete. Always follow official emergency guidance.
+                        </div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
                 </div>
             `;
         }
@@ -440,33 +522,54 @@
             `;
         }
         
-        // Add aftershock forecast section
-        if (aftershockForecast && aftershockForecast.probability24h >= 40) {
+        // Add aftershock forecast section (always show if available)
+        if (aftershockForecast) {
+            const probabilityColor = aftershockForecast.probability24h >= 70 ? '#d32f2f' : 
+                                   aftershockForecast.probability24h >= 40 ? '#f57c00' : 
+                                   aftershockForecast.probability24h >= 20 ? '#fbc02d' : '#388e3c';
             html += `
-                <div class="aftershock-forecast-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(156,39,176,0.1) 0%, rgba(156,39,176,0.05) 100%); border-radius: 12px; border-left: 4px solid #9c27b0;">
+                <div class="aftershock-forecast-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(156,39,176,0.15) 0%, rgba(156,39,176,0.05) 100%); border-radius: 12px; border-left: 4px solid #9c27b0; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
                     <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
                         <span style="display: inline-flex; align-items: center; color: #9c27b0;">${getIconSVG('chart', 24, '#9c27b0')}</span>
-                        Aftershock Forecast
+                        AI Aftershock Forecast
                     </h2>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">24 Hour Probability</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: #9c27b0;">${aftershockForecast.probability24h}%</div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">24 Hour Probability</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: ${probabilityColor}; line-height: 1;">${aftershockForecast.probability24h || 0}%</div>
+                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;">chance of aftershocks</div>
                         </div>
-                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">Expected Largest</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: #9c27b0;">M${aftershockForecast.expectedLargestAftershock.toFixed(1)}</div>
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Expected Largest</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: #9c27b0; line-height: 1;">M${(aftershockForecast.expectedLargestAftershock || 0).toFixed(1)}</div>
+                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;">magnitude estimate</div>
                         </div>
+                        ${aftershockForecast.probability48h !== undefined ? `
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">48 Hour Probability</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: #9c27b0; line-height: 1;">${aftershockForecast.probability48h}%</div>
+                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;">chance of aftershocks</div>
+                        </div>
+                        ` : ''}
+                        ${aftershockForecast.probability7d !== undefined ? `
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">7 Day Probability</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: #9c27b0; line-height: 1;">${aftershockForecast.probability7d}%</div>
+                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem;">chance of aftershocks</div>
+                        </div>
+                        ` : ''}
                     </div>
-                    <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); line-height: 1.6;">
-                        ${aftershockForecast.forecast || ''}
+                    ${aftershockForecast.forecast ? `
+                    <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 1rem; font-size: 0.875rem; color: rgba(255,255,255,0.9); line-height: 1.6;">
+                        ${aftershockForecast.forecast}
                     </div>
+                    ` : ''}
                     ${aftershockForecast.recommendation ? `
-                    <div style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
-                        <div style="font-size: 0.875rem; color: rgba(255,255,255,0.9);">
+                    <div style="padding: 1rem; background: rgba(156,39,176,0.2); border-radius: 8px; border-left: 3px solid #9c27b0;">
+                        <div style="font-size: 0.875rem; color: rgba(255,255,255,0.95);">
                             <span style="display: inline-flex; align-items: center; gap: 0.5rem; vertical-align: middle;">
-                                <span style="display: inline-flex; align-items: center; color: #9c27b0;">${getIconSVG('lightbulb', 16, '#9c27b0')}</span>
-                                <strong>Recommendation:</strong> ${aftershockForecast.recommendation}
+                                <span style="display: inline-flex; align-items: center; color: #9c27b0;">${getIconSVG('lightbulb', 18, '#9c27b0')}</span>
+                                <strong style="color: #fff;">AI Recommendation:</strong> ${aftershockForecast.recommendation}
                             </span>
                         </div>
                     </div>
@@ -501,6 +604,41 @@
                         `).join('')}
                     </div>
                     ` : ''}
+                </div>
+            `;
+        }
+        
+        // Add comprehensive Tier Breakdown section (if we have impact assessment)
+        if (impactAssessment && tierBreakdown) {
+            html += `
+                <div class="tier-breakdown-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(33,150,243,0.15) 0%, rgba(33,150,243,0.05) 100%); border-radius: 12px; border-left: 4px solid #2196f3; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="display: inline-flex; align-items: center; color: #2196f3;">${getIconSVG('chart', 24, '#2196f3')}</span>
+                        Risk Tier Breakdown
+                    </h2>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Overall Risk</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: ${impactAssessment.severity === 'CRITICAL' ? '#d32f2f' : impactAssessment.severity === 'HIGH' ? '#f57c00' : impactAssessment.severity === 'MODERATE' ? '#fbc02d' : '#388e3c'};">
+                                ${impactAssessment.severity || 'UNKNOWN'}
+                            </div>
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 0.5rem;">Based on multiple factors</div>
+                        </div>
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Population Risk</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: ${tierBreakdown.tier2 === 'CRITICAL' ? '#d32f2f' : tierBreakdown.tier2 === 'HIGH' ? '#f57c00' : tierBreakdown.tier2 === 'MODERATE' ? '#fbc02d' : '#388e3c'};">
+                                ${tierBreakdown.tier2}
+                            </div>
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 0.5rem;">${impactAssessment.affectedPopulation ? (impactAssessment.affectedPopulation >= 1000000 ? (impactAssessment.affectedPopulation / 1000000).toFixed(2) + 'M' : (impactAssessment.affectedPopulation / 1000).toFixed(1) + 'K') : 'N/A'} people</div>
+                        </div>
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Density Risk</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: ${tierBreakdown.tier3 === 'HIGH' ? '#f57c00' : tierBreakdown.tier3 === 'MODERATE' ? '#fbc02d' : '#388e3c'};">
+                                ${tierBreakdown.tier3}
+                            </div>
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 0.5rem;">${impactAssessment.populationDensity ? impactAssessment.populationDensity.toFixed(0) + '/km²' : 'N/A'}</div>
+                        </div>
+                    </div>
                 </div>
             `;
         }
@@ -1142,9 +1280,13 @@
             const story = post.story || post.text || post.title || '';
             const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
             
-            // Get image - handle both single image and images array
+            // Get image - prioritize primary_image_url (generated earthquake images)
             // Also handle newsletter images stored as get-uploaded-image URLs
-            let image = post.image || post.images?.[0] || null;
+            let image = post.primary_image_url || 
+                       post.image_url || 
+                       post.image || 
+                       post.images?.[0] || 
+                       null;
             
             // If image is a get-uploaded-image URL, ensure it's absolute
             if (image && image.includes('get-uploaded-image')) {
@@ -1156,8 +1298,21 @@
             
             const category = post.category || 'Breaking News';
             
-            // Update SEO meta tags
+            // Update SEO meta tags (prioritizes primary_image_url for generated earthquake images)
             updatePostMetaTags(post, articleId);
+            
+            // Log image selection for debugging social media previews
+            const selectedImage = post.primary_image_url || post.image_url || post.image || post.images?.[0] || null;
+            if (selectedImage) {
+                console.log('[ArticleLoader] Image selected for social preview:', {
+                    source: post.primary_image_url ? 'primary_image_url' : 
+                            post.image_url ? 'image_url' : 
+                            post.image ? 'image' : 'images[0]',
+                    url: selectedImage.substring(0, 100),
+                    isGenerated: selectedImage.includes('get-uploaded-image') && selectedImage.includes('earthquake'),
+                    eventId: post.eventId || post.event_id || 'N/A'
+                });
+            }
             
             // Update structured data
             const structuredDataEl = document.getElementById('article-structured-data');
@@ -1538,23 +1693,118 @@
     }
 
     /**
-     * Load more coverage section
+     * Load more coverage section - Show diverse, recent articles
      */
     function loadMoreCoverage(allPosts, currentId) {
-        const more = allPosts
-            .filter(p => {
-                const id = p.id || '';
-                return id !== currentId && id !== `post-${currentId}` && (p.story || p.text || p.title);
-            })
-            .sort((a, b) => {
-                const dateA = new Date(a.datePosted || a.createdAt || a.created_at || 0).getTime();
-                const dateB = new Date(b.datePosted || b.createdAt || b.created_at || 0).getTime();
-                return dateB - dateA;
-            })
-            .slice(0, 6);
+        // Get articles excluding current
+        const available = allPosts.filter(p => {
+            const id = p.id || '';
+            return id !== currentId && id !== `post-${currentId}` && (p.story || p.text || p.title);
+        });
         
+        if (available.length === 0) {
+            const grid = document.getElementById('more-coverage-grid');
+            if (grid) {
+                grid.innerHTML = '<p style="color: #666; text-align: center; padding: 40px;">No additional articles available.</p>';
+            }
+            return;
+        }
+        
+        // Sort by date (newest first)
+        const sorted = available.sort((a, b) => {
+            const dateA = new Date(a.datePosted || a.createdAt || a.created_at || 0).getTime();
+            const dateB = new Date(b.datePosted || b.createdAt || b.created_at || 0).getTime();
+            return dateB - dateA;
+        });
+        
+        // Select diverse articles: mix of recent and varied categories
+        const recent = sorted.slice(0, 12); // Get more recent articles
+        const more = recent.slice(0, 6); // Take top 6
+        
+        // Render with enhanced styling
         if (window.NewsCard && window.NewsCard.render) {
-            window.NewsCard.render(more, '#more-coverage-grid', { showThumbnail: true, maxTitleLength: 60 });
+            window.NewsCard.render(more, '#more-coverage-grid', { 
+                showThumbnail: true, 
+                maxTitleLength: 80,
+                enhanced: true // Flag for enhanced styling
+            });
+        } else {
+            // Fallback rendering
+            const grid = document.getElementById('more-coverage-grid');
+            if (grid) {
+                grid.innerHTML = more.map(post => {
+                    const postId = post.id || `post-${Date.now()}`;
+                    const title = post.title || post.story || post.text || 'Untitled';
+                    const shortTitle = title.length > 80 ? title.substring(0, 77) + '...' : title;
+                    const image = post.primary_image_url || post.image_url || post.image || post.images?.[0] || '';
+                    const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
+                    const relativeTime = formatRelativeTime(datePosted);
+                    const category = post.category || 'Breaking News';
+                    const articleUrl = `/article.html?id=${encodeURIComponent(postId)}`;
+                    
+                    // Escape all user-generated content to prevent XSS
+                    const escapedTitle = escapeHtml(shortTitle);
+                    const escapedCategory = escapeHtml(category);
+                    // For image URLs, validate and sanitize to prevent XSS while preserving valid URLs
+                    // Only allow http://, https://, or relative paths starting with /
+                    let safeImageUrl = '';
+                    if (image) {
+                        const trimmedImage = image.trim();
+                        // Check if it's a valid URL format (http/https or relative path)
+                        if (trimmedImage.startsWith('http://') || 
+                            trimmedImage.startsWith('https://') || 
+                            trimmedImage.startsWith('/') ||
+                            trimmedImage.startsWith('./') ||
+                            trimmedImage.startsWith('../')) {
+                            // Escape only characters that could break out of the src attribute
+                            // Preserve & in URLs (it's valid), but escape quotes and angle brackets
+                            safeImageUrl = trimmedImage
+                                .replace(/"/g, '&quot;')  // Escape double quotes (we use double quotes in attribute)
+                                .replace(/'/g, '&#x27;')  // Escape single quotes
+                                .replace(/</g, '&lt;')    // Escape < to prevent script injection
+                                .replace(/>/g, '&gt;');   // Escape > to prevent script injection
+                        } else {
+                            // Invalid URL format - don't use it (prevents javascript: and data: URLs)
+                            safeImageUrl = '';
+                        }
+                    }
+                    
+                    return `
+                        <a href="${articleUrl}" class="news-card">
+                            ${image && safeImageUrl ? `<img src="${safeImageUrl}" alt="${escapedTitle}" class="news-card-thumbnail" loading="lazy">` : ''}
+                            <div class="news-card-content">
+                                <h3 class="news-card-title">${escapedTitle}</h3>
+                                <div class="news-card-meta">
+                                    <span class="news-card-category">${escapedCategory}</span>
+                                    <span>${relativeTime}</span>
+                                </div>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
+            }
+        }
+    }
+    
+    /**
+     * Format relative time helper
+     */
+    function formatRelativeTime(dateString) {
+        try {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 7) return `${diffDays}d ago`;
+            return date.toLocaleDateString();
+        } catch {
+            return dateString || 'Recently';
         }
     }
 

@@ -28,7 +28,12 @@ function validateUserName(text) {
     "cock", "pussy", "cum", "jizz", "orgasm", "masturbat", "ejaculat",
     "scam", "spam", "hack", "virus", "malware", "phishing", "fraud",
     "admin", "moderator", "owner", "founder", "official", "noteworthy",
-    "breakingnews", "breaking", "news", "noteworthynews"
+    "breakingnews", "breaking", "news", "noteworthynews",
+    // Additional slurs and offensive terms
+    "tranny", "shemale", "dyke", "lesbo", "queer", "homo", "fudgepacker",
+    "coon", "spook", "wetback", "beaner", "gyp", "jap", "chink", "gook",
+    "towelhead", "sandnigger", "raghead", "paki", "zipperhead", "slant",
+    "mongoloid", "spaz", "cripple", "gimp", "midget", "retard"
   ];
 
   // Check for inappropriate words

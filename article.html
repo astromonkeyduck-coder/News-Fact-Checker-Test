@@ -48,6 +48,32 @@
     <!-- Fonts - Professional News Typography -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Georgia:wght@400;700&family=Charter:wght@400;700&display=swap" rel="stylesheet">
     
+    <!-- Pre-render meta tags for crawlers (prevents 502 errors) -->
+    <script>
+        // Immediately set meta tags from URL params to help crawlers
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const articleId = urlParams.get('id');
+            if (articleId) {
+                // Update canonical URL immediately
+                const canonical = document.getElementById('article-canonical');
+                if (canonical) {
+                    canonical.href = `https://noteworthynews.co/article.html?id=${encodeURIComponent(articleId)}`;
+                }
+                // Update OG URL immediately
+                const ogUrl = document.getElementById('og-url');
+                if (ogUrl) {
+                    ogUrl.content = `https://noteworthynews.co/article.html?id=${encodeURIComponent(articleId)}`;
+                }
+                // Update Twitter URL immediately
+                const twitterUrl = document.getElementById('twitter-url');
+                if (twitterUrl) {
+                    twitterUrl.content = `https://noteworthynews.co/article.html?id=${encodeURIComponent(articleId)}`;
+                }
+            }
+        })();
+    </script>
+    
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
     
@@ -104,7 +130,20 @@
             color: #1a1a1a;
             position: relative;
             overflow-x: hidden !important;
+            overflow-y: auto !important; /* Single scrollbar on body */
             font-family: 'Georgia', 'Charter', 'Times New Roman', serif;
+        }
+        
+        /* Ensure html doesn't create its own scrollbar */
+        html.article-page-active {
+            overflow-y: auto;
+            height: 100%;
+        }
+        
+        html.article-page-active body {
+            overflow-y: auto;
+            height: auto;
+            min-height: 100vh;
         }
         
         /* Remove ALL background effects - clean professional look */
@@ -251,9 +290,9 @@
         }
         
         @media (max-width: 768px) {
-            .article-header h1 {
+        .article-header h1 {
                 font-size: 1.875rem;
-                line-height: 1.2;
+            line-height: 1.2;
             }
         }
         
@@ -420,8 +459,8 @@
         }
         
         @media (max-width: 640px) {
-            .article-body {
-                font-size: 1rem;
+        .article-body {
+            font-size: 1rem;
                 line-height: 1.65;
             }
         }
@@ -519,6 +558,7 @@
             flex-direction: column;
             gap: 32px;
             box-sizing: border-box;
+            align-items: stretch;
         }
         
         .sidebar-card {
@@ -530,33 +570,51 @@
             border: none;
             box-shadow: none;
             box-sizing: border-box;
+            margin-bottom: 0;
+            position: relative;
         }
         
         @media (min-width: 1024px) {
             .sidebar-card.sticky {
                 position: sticky;
                 top: 100px;
-                align-self: start;
+                align-self: flex-start;
+                width: 100%;
+                margin-bottom: 32px;
+            }
+            
+            /* Ensure proper spacing between sticky cards - gap handles this */
+            .sidebar-card.sticky:last-child {
+                margin-bottom: 0;
             }
         }
         
+        /* Ensure sidebar content doesn't overlap */
+        .sidebar-card > div,
+        .sidebar-card > section {
+            position: relative;
+            z-index: 0;
+        }
+        
         .sidebar-card h2 {
-            font-size: 1rem;
+            font-size: 0.875rem;
             font-weight: 700;
             margin: 0 0 16px 0;
+            padding: 0 0 8px 0;
             color: #1a1a1a;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #1a1a1a;
+            border-bottom: 1px solid #e5e5e5;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            position: relative;
+            z-index: 1;
         }
         
         /* News Card Component - Improved spacing and hover */
         .news-card {
             display: block;
             padding: 0;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             background: transparent;
             border: none;
             border-bottom: 1px solid #e5e5e5;
@@ -567,13 +625,20 @@
             position: relative;
             overflow: visible;
             box-sizing: border-box;
-            padding-bottom: 20px;
+            padding-bottom: 16px;
         }
         
         .news-card:last-child {
             margin-bottom: 0;
             border-bottom: none;
             padding-bottom: 0;
+        }
+        
+        /* Ensure sidebar cards have proper spacing and don't overlap */
+        #latest-articles,
+        #related-articles {
+            position: relative;
+            z-index: 0;
         }
         
         .news-card:hover {
@@ -645,6 +710,37 @@
         /* Comment form styles */
         .comment-form {
             margin-bottom: 30px;
+        }
+        
+        .comment-name-wrapper {
+            margin-bottom: 12px;
+        }
+        
+        .comment-name-label {
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 6px;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .comment-name-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: #ffffff;
+            border: 1px solid #d5d5d5;
+            border-radius: 0;
+            color: #1a1a1a;
+            font-size: 0.875rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s ease;
+        }
+        
+        .comment-name-input:focus {
+            outline: 2px solid #1a1a1a;
+            outline-offset: 2px;
+            border-color: #1a1a1a;
         }
         
         .comment-input {
@@ -788,21 +884,110 @@
             border-top: 1px solid #e5e5e5;
         }
         
+        .more-coverage-header {
+            margin-bottom: 32px;
+        }
+        
         .more-coverage h2 {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
             font-weight: 700;
             color: #1a1a1a;
-            margin: 0 0 24px 0;
+            margin: 0 0 8px 0;
             font-family: 'Inter', sans-serif;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 0.875rem;
+            letter-spacing: -0.01em;
+        }
+        
+        .more-coverage-subtitle {
+            font-size: 0.9375rem;
+            color: #666;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
         }
         
         .more-coverage-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 32px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        
+        @media (max-width: 768px) {
+            .more-coverage-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+        
+        /* Enhanced News Card for More Coverage */
+        .more-coverage .news-card {
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            border: 1px solid #e5e5e5;
+            border-radius: 0;
+            overflow: hidden;
+            text-decoration: none;
+            color: #1a1a1a;
+            transition: all 0.2s ease;
+            height: 100%;
+        }
+        
+        .more-coverage .news-card:hover {
+            border-color: #1a1a1a;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .more-coverage .news-card-thumbnail {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: #f5f5f5;
+            display: block;
+        }
+        
+        .more-coverage .news-card-content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        
+        .more-coverage .news-card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            line-height: 1.4;
+            margin: 0 0 12px 0;
+            color: #1a1a1a;
+            font-family: 'Inter', sans-serif;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .more-coverage .news-card:hover .news-card-title {
+            color: #4A90E2;
+        }
+        
+        .more-coverage .news-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.8125rem;
+            color: #666;
+            font-family: 'Inter', sans-serif;
+            margin-top: auto;
+        }
+        
+        .more-coverage .news-card-category {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #f5f5f5;
+            border-radius: 2px;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #666;
         }
         
         /* Loading Skeleton */
@@ -887,6 +1072,19 @@
                 justify-content: space-between;
                 margin-top: 12px;
             }
+            
+            /* Tablet: Advanced Features Responsive Styles */
+            .impact-assessment-section > div[style*="grid-template-columns: repeat(auto-fit, minmax(250px"],
+            .tier-breakdown-section > div[style*="grid-template-columns: repeat(auto-fit, minmax(200px"],
+            .aftershock-forecast-section > div[style*="grid-template-columns: repeat(auto-fit, minmax(200px"] {
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+            }
+            
+            .earthquake-map-container > div,
+            #earthquake-interactive-map,
+            #earthquake-3d-viewer {
+                height: 400px !important;
+            }
         }
         
         @media (max-width: 640px) {
@@ -900,6 +1098,122 @@
             
             .article-body-panel {
                 padding: 0;
+            }
+            
+            /* Mobile: Advanced Features Responsive Styles */
+            .impact-assessment-section,
+            .tier-breakdown-section,
+            .aftershock-forecast-section,
+            .tsunami-risk-section,
+            .anomaly-detection-section,
+            .economic-impact-section,
+            .historical-context-section {
+                margin: 1.5rem 0 !important;
+                padding: 1rem !important;
+                border-radius: 8px !important;
+            }
+            
+            .impact-assessment-section h2,
+            .tier-breakdown-section h2,
+            .aftershock-forecast-section h2,
+            .tsunami-risk-section h2,
+            .anomaly-detection-section h2,
+            .economic-impact-section h2,
+            .historical-context-section h2 {
+                font-size: 1.25rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+            
+            /* Mobile: Grid layouts become single column */
+            .impact-assessment-section > div[style*="grid-template-columns"],
+            .tier-breakdown-section > div[style*="grid-template-columns"],
+            .aftershock-forecast-section > div[style*="grid-template-columns"],
+            .economic-impact-section > div[style*="grid-template-columns"] {
+                grid-template-columns: 1fr !important;
+                gap: 0.75rem !important;
+            }
+            
+            /* Mobile: Nearby cities grid */
+            .impact-assessment-section div[style*="grid-template-columns: repeat(auto-fill"] {
+                grid-template-columns: 1fr !important;
+            }
+            
+            /* Mobile: Infrastructure grid */
+            .impact-assessment-section div[style*="grid-template-columns: repeat(auto-fit"] {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 0.5rem !important;
+            }
+            
+            /* Mobile: Smaller font sizes for stats */
+            .impact-assessment-section div[style*="font-size: 2.5rem"],
+            .impact-assessment-section div[style*="font-size: 2rem"] {
+                font-size: 1.75rem !important;
+            }
+            
+            /* Mobile: Maps and 3D visualizations */
+            .earthquake-map-container,
+            .earthquake-3d-container {
+                margin: 1.5rem 0 !important;
+                border-radius: 8px !important;
+            }
+            
+            .earthquake-map-container > div,
+            #earthquake-interactive-map,
+            #earthquake-3d-viewer {
+                height: 300px !important;
+            }
+            
+            /* Mobile: Location details grid */
+            .earthquake-details-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 0.75rem !important;
+            }
+            
+            /* Mobile: Header logo */
+            .main-header img[alt*="Noteworthy News Logo"] {
+                height: 24px !important;
+                max-width: 100px !important;
+            }
+            
+            /* Mobile: Header layout */
+            .main-header > div {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            
+            .main-header nav {
+                width: 100%;
+                justify-content: space-between;
+                margin-top: 8px;
+            }
+            
+            .main-header a[href="index.html"] {
+                font-size: 0.8125rem;
+            }
+            
+            /* Mobile: Newsletter button in sidebar */
+            .utility-btn[href*="newsletter"] {
+                width: 100% !important;
+                padding: 12px 20px !important;
+                font-size: 0.875rem !important;
+            }
+            
+            /* Mobile: Article controls */
+            .article-controls {
+                gap: 2px !important;
+            }
+            
+            .control-btn {
+                width: 28px !important;
+                height: 28px !important;
+                font-size: 0.75rem !important;
+            }
+            
+            /* Mobile: Share menu positioning */
+            .share-menu {
+                max-width: calc(100vw - 32px) !important;
+                left: 16px !important;
+                right: 16px !important;
             }
             
             .article-header h1 {
@@ -960,6 +1274,16 @@
             max-width: 100%;
             box-sizing: border-box;
             overflow-x: hidden;
+            overflow-y: visible; /* No nested scrollbars */
+        }
+        
+        /* Ensure sidebar doesn't create its own scrollbar */
+        .article-sidebar {
+            overflow-y: visible !important;
+        }
+        
+        .sidebar-card {
+            overflow-y: visible !important;
         }
         
         /* Ensure all content is within viewport */
@@ -1080,11 +1404,9 @@
             font-size: 1.5rem;
         }
         
-        /* Share Menu */
+        /* Share Menu - Fixed position to stay visible */
         .share-menu {
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
+            position: fixed;
             background: #ffffff;
             backdrop-filter: none;
             border: 1px solid #d5d5d5;
@@ -1093,7 +1415,8 @@
             min-width: 180px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             display: none;
-            z-index: 1000;
+            z-index: 10001;
+            /* Position will be set dynamically via JavaScript */
         }
         
         .share-menu[aria-hidden="false"] {
@@ -1324,7 +1647,7 @@
     <header class="main-header" style="position: fixed; top: 0; left: 0; right: 0; background: #ffffff; backdrop-filter: none; border-bottom: 1px solid #e5e5e5; z-index: 1000; padding: 12px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
         <div style="max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
             <a href="index.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
-                <img src="IMG_5794.PNG" alt="Noteworthy News Logo" style="height: 28px; width: 28px; max-width: 28px; max-height: 28px; display: block;">
+                <img src="nw-logo.GIF" alt="Noteworthy News Logo" style="height: 28px; width: auto; max-width: 120px; display: block;">
                 <span style="font-weight: 700; color: #1a1a1a; margin-left: 5px; font-family: 'Inter', sans-serif; font-size: 1.125rem;">Noteworthy News</span>
             </a>
             <nav style="display: flex; align-items: center; gap: 12px;">
@@ -1467,7 +1790,7 @@
                 <p style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 15px;">
                     Get breaking news and fact-checks delivered to your inbox.
                 </p>
-                <a href="index.html#newsletter-section" class="utility-btn" style="justify-content: center; background: linear-gradient(135deg, rgba(74, 144, 226, 0.9) 0%, rgba(46, 204, 113, 0.9) 100%); border: none;">
+                <a href="index.html#newsletter-section" class="utility-btn" style="justify-content: center; background: #1a1a1a; border: none; color: #ffffff; font-weight: 600; letter-spacing: 0.3px;">
                     Subscribe to Newsletter
                 </a>
             </section>
@@ -1475,11 +1798,14 @@
         
         <!-- More Coverage Section -->
         <section class="more-coverage">
+            <div class="more-coverage-header">
             <h2>More from Noteworthy News</h2>
+                <p class="more-coverage-subtitle">Explore our latest fact-checked stories and breaking news coverage</p>
+            </div>
             <div class="more-coverage-grid" id="more-coverage-grid">
-                <div class="skeleton" style="height: 200px;"></div>
-                <div class="skeleton" style="height: 200px;"></div>
-                <div class="skeleton" style="height: 200px;"></div>
+                <div class="skeleton" style="height: 350px;"></div>
+                <div class="skeleton" style="height: 350px;"></div>
+                <div class="skeleton" style="height: 350px;"></div>
             </div>
         </section>
     </main>
@@ -1623,6 +1949,40 @@
             shareBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const isOpen = shareMenu.getAttribute('aria-hidden') === 'false';
+                
+                if (!isOpen) {
+                    // Position menu near the button
+                    const btnRect = shareBtn.getBoundingClientRect();
+                    const menuHeight = 250; // Approximate menu height
+                    const menuWidth = 200; // Approximate menu width
+                    const viewportHeight = window.innerHeight;
+                    const viewportWidth = window.innerWidth;
+                    
+                    // Calculate position
+                    let top = btnRect.bottom + 8;
+                    let right = viewportWidth - btnRect.right;
+                    
+                    // If menu would go below viewport, show it above the button
+                    if (top + menuHeight > viewportHeight) {
+                        top = btnRect.top - menuHeight - 8;
+                    }
+                    
+                    // If menu would go off right edge, align to left
+                    if (right + menuWidth > viewportWidth) {
+                        right = viewportWidth - btnRect.left - menuWidth;
+                    }
+                    
+                    // Ensure menu stays within viewport
+                    top = Math.max(8, Math.min(top, viewportHeight - menuHeight - 8));
+                    right = Math.max(8, Math.min(right, viewportWidth - menuWidth - 8));
+                    
+                    shareMenu.style.top = `${top}px`;
+                    shareMenu.style.right = `${right}px`;
+                    
+                    // Scroll button into view if needed
+                    shareBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+                
                 shareMenu.setAttribute('aria-hidden', isOpen ? 'true' : 'false');
                 shareBtn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
             });

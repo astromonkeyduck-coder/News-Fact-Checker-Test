@@ -1364,6 +1364,40 @@ async function processEarthquake(feature, logger, forceEmail = false) {
           imageUrlLength: imageUrl.length,
           reason: !existingEvent ? 'new_earthquake' : !existingEvent.image_url ? 'no_existing_image' : 'usgs_images_now_available'
         });
+        
+        // Generate video with visual effects for social media (only for significant earthquakes)
+        if (magnitude >= 4.0) {
+          try {
+            logger.info('🎬 Starting video generation for social media preview', { eventId, magnitude });
+            const baseUrl = process.env.URL || 'https://noteworthynews.co';
+            const videoResponse = await fetch(`${baseUrl}/.netlify/functions/generate-earthquake-video`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                magnitude,
+                location: locationDisplay,
+                eventId,
+                lat,
+                lon,
+                usgsImages: usgsImages || []
+              }),
+            });
+            
+            if (videoResponse.ok) {
+              const videoData = await videoResponse.json();
+              if (videoData.url) {
+                logger.info('✅ Video generation successful', { eventId, videoUrl: videoData.url });
+                // Store video URL in event (will be added to post)
+                event.video_url = videoData.url;
+              }
+            } else {
+              logger.warn('⚠️ Video generation failed (non-critical)', { eventId, status: videoResponse.status });
+            }
+          } catch (videoError) {
+            logger.warn('⚠️ Video generation error (non-critical)', videoError, { eventId });
+            // Don't fail the entire process if video generation fails
+          }
+        }
       }
     } else {
       // Reuse existing image

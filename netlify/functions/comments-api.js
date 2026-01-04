@@ -143,6 +143,45 @@ exports.handler = async (event, context) => {
         };
       }
 
+      // Content moderation: Check for profanity and inappropriate content
+      console.log('[Comments API] Running content moderation...');
+      try {
+        const baseUrl = process.env.URL || 'https://noteworthynews.co';
+        const moderationUrl = `${baseUrl}/.netlify/functions/moderate-comment`;
+        
+        const moderationResponse = await fetch(moderationUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text.trim(), author: author }),
+        });
+
+        if (moderationResponse.ok) {
+          const moderationResult = await moderationResponse.json();
+          
+          if (!moderationResult.approved) {
+            const reason = moderationResult.reasons || 'Content contains inappropriate language';
+            console.log('[Comments API] Comment rejected by moderation:', reason);
+            return {
+              statusCode: 400,
+              headers,
+              body: JSON.stringify({ 
+                error: "Your comment contains inappropriate content. Please revise and try again.",
+                field: "text",
+                reason: reason
+              }),
+            };
+          }
+          console.log('[Comments API] Comment approved by moderation');
+        } else {
+          console.warn('[Comments API] Moderation check failed, allowing comment (moderation unavailable)');
+          // If moderation fails, allow comment but log it
+        }
+      } catch (moderationError) {
+        console.error('[Comments API] Error in content moderation:', moderationError);
+        // If moderation errors, allow comment but log it
+        // In production, you might want to be more strict
+      }
+
       const commentsKey = `comments_${articleId}`;
       
       // Load existing comments

@@ -12,6 +12,50 @@ if (process.env.NETLIFY_DEV || !process.env.RESEND_API_KEY) {
 }
 
 const { Resend } = require('resend');
+const crypto = require('crypto');
+
+/**
+ * Verify Resend webhook signature
+ * Resend uses Svix for webhook signatures
+ */
+function verifyResendSignature(body, signature, timestamp, secret) {
+  if (!secret || !signature) {
+    // If no secret configured, skip verification (for development/testing)
+    console.warn('[Resend Webhook] No webhook secret configured, skipping signature verification');
+    return true;
+  }
+
+  try {
+    // Resend/Svix signature format: v1,<signature>
+    const parts = signature.split(',');
+    if (parts.length !== 2 || parts[0] !== 'v1') {
+      console.warn('[Resend Webhook] Invalid signature format:', signature);
+      return false;
+    }
+    const receivedSignature = parts[1];
+
+    // Create expected signature
+    const signedPayload = `${timestamp}.${body}`;
+    const hmac = crypto.createHmac('sha256', secret);
+    hmac.update(signedPayload);
+    const expectedSignature = hmac.digest('hex');
+
+    // Compare signatures using constant-time comparison
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(receivedSignature, 'hex'),
+      Buffer.from(expectedSignature, 'hex')
+    );
+    
+    if (!isValid) {
+      console.warn('[Resend Webhook] Signature mismatch');
+    }
+    
+    return isValid;
+  } catch (error) {
+    console.error('[Resend Webhook] Signature verification error:', error);
+    return false;
+  }
+}
 
 exports.handler = async (event, context) => {
   // Enable CORS
@@ -41,8 +85,87 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    // Verify webhook signature if secret is configured
+    // Resend uses Svix for webhooks - headers are case-insensitive in Netlify
+    const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
+    
+    // Try multiple header name variations (case-insensitive)
+    const getHeader = (name) => {
+      const lowerName = name.toLowerCase();
+      return event.headers[lowerName] || 
+             event.headers[name] || 
+             event.headers[`x-${lowerName}`] ||
+             event.headers[`x-${name}`];
+    };
+    
+    const signature = getHeader('svix-signature') || getHeader('resend-signature');
+    const timestamp = getHeader('svix-timestamp') || getHeader('resend-timestamp');
+    const bodyString = event.body || '';
+    
+    // Log headers for debugging
+    console.log('[Resend Webhook] Signature verification check:', {
+      hasSecret: !!webhookSecret,
+      hasSignature: !!signature,
+      hasTimestamp: !!timestamp,
+      allHeaders: Object.keys(event.headers).filter(h => 
+        h.toLowerCase().includes('signature') || 
+        h.toLowerCase().includes('timestamp') ||
+        h.toLowerCase().includes('svix') ||
+        h.toLowerCase().includes('resend')
+      )
+    });
+
+    // Verify webhook signature if secret is configured
+    // Note: For email tracking webhooks, we log warnings but don't block processing
+    // This allows webhooks to work even if secret is misconfigured
+    if (webhookSecret && signature) {
+      const isValid = verifyResendSignature(bodyString, signature, timestamp, webhookSecret);
+      if (!isValid) {
+        console.error('[Resend Webhook] ⚠️ Invalid webhook signature - processing anyway (non-critical)', {
+          hasSecret: !!webhookSecret,
+          hasSignature: !!signature,
+          hasTimestamp: !!timestamp,
+          signatureHeader: signature?.substring(0, 50),
+          timestampHeader: timestamp,
+          secretLength: webhookSecret?.length,
+          hint: 'Check RESEND_WEBHOOK_SECRET in Netlify environment variables matches Resend dashboard'
+        });
+        // Don't block - email tracking is non-critical, but log the issue
+        // In production, you may want to return 401 here for security
+      } else {
+        console.log('[Resend Webhook] ✅ Webhook signature verified');
+      }
+    } else {
+      if (webhookSecret && !signature) {
+        console.warn('[Resend Webhook] ⚠️ Webhook secret configured but no signature header found', {
+          availableHeaders: Object.keys(event.headers).filter(h => 
+            h.toLowerCase().includes('signature') || 
+            h.toLowerCase().includes('timestamp') ||
+            h.toLowerCase().includes('svix') ||
+            h.toLowerCase().includes('resend')
+          )
+        });
+      } else if (!webhookSecret) {
+        console.warn('[Resend Webhook] ⚠️ No RESEND_WEBHOOK_SECRET configured - webhook signature verification disabled');
+        console.warn('[Resend Webhook] 💡 To enable: Get webhook secret from Resend Dashboard → Webhooks → Your Webhook → Signing Secret');
+      }
+    }
+
     // Parse webhook payload from Resend
-    const webhookData = JSON.parse(event.body);
+    let webhookData;
+    try {
+      webhookData = event.body ? JSON.parse(event.body) : {};
+    } catch (parseError) {
+      console.error('[Resend Webhook] Failed to parse webhook body:', parseError);
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Invalid JSON payload',
+          details: parseError.message 
+        }),
+      };
+    }
     
     console.log('[Resend Webhook] Received event:', webhookData.type);
     

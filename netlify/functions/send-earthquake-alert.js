@@ -1038,6 +1038,32 @@ exports.handler = async (event, context) => {
                         </td>
                       </tr>
                       ` : ''}
+                      <tr>
+                        <td align="center" style="padding-top: 20px;">
+                          <p style="margin: 0 0 12px 0; font-size: 13px; color: #6B7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Share on Social Media
+                          </p>
+                          <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
+                            <tr>
+                              <td style="padding: 0 6px;">
+                                <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(`BREAKING: M${safeMagnitudeFormatted} Earthquake Near ${safeLocationDisplay}`)}&url=${encodeURIComponent(`https://noteworthynews.co/article.html?id=post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}`)}" style="display: inline-block; padding: 8px 16px; font-size: 13px; font-weight: 600; color: #ffffff; background-color: #1DA1F2; text-decoration: none; border-radius: 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                                  𝕏 Share
+                                </a>
+                              </td>
+                              <td style="padding: 0 6px;">
+                                <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`https://noteworthynews.co/article.html?id=post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}`)}" style="display: inline-block; padding: 8px 16px; font-size: 13px; font-weight: 600; color: #ffffff; background-color: #1877F2; text-decoration: none; border-radius: 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                                  📘 Share
+                                </a>
+                              </td>
+                              <td style="padding: 0 6px;">
+                                <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://noteworthynews.co/article.html?id=post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}`)}" style="display: inline-block; padding: 8px 16px; font-size: 13px; font-weight: 600; color: #ffffff; background-color: #0A66C2; text-decoration: none; border-radius: 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                                  💼 Share
+                                </a>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
                     </table>
                   </td>
                 </tr>

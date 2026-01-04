@@ -56,11 +56,13 @@ const LOCATION_OFFSET = 75;
 const SAFE_LEFT = ANCHOR_X + ALIGN_SHIFT_X;
 const SAFE_RIGHT_RATIO = 0.58;
 
-// Headline
-const HEADLINE_TEXT = "EARTHQUAKE NEAR";
+// Headline - Updated format: "BREAKING: M___ Earthquake Near ___."
+const BREAKING_TEXT = "BREAKING:";
+const EARTHQUAKE_NEAR_TEXT = "Earthquake Near";
 const HEADLINE_FONT_SIZE_BASE = 65;
 const MAGNITUDE_FONT_SIZE_RATIO = 0.95;
 const MAGNITUDE_GAP = 18;
+const TEXT_GAP = 12; // Gap between text segments
 const HEADLINE_COLOR = '#FFFFFF';
 const MAGNITUDE_COLOR = '#FF0000';
 
@@ -94,9 +96,13 @@ function estimateTextWidth(text, fontSize) {
  * Create SVG overlay with embedded fonts
  */
 function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templateHeight, scaleFactor = 1.0) {
+  // Format: "BREAKING: M#.# Earthquake Near [Location]."
+  const escapedBreaking = escapeSVGText(BREAKING_TEXT);
   const escapedMag = escapeSVGText(magnitudeText);
-  const escapedHeadline = escapeSVGText(HEADLINE_TEXT);
-  const escapedLocation = escapeSVGText(locationText.toUpperCase());
+  const escapedEarthquakeNear = escapeSVGText(EARTHQUAKE_NEAR_TEXT);
+  // Location with proper capitalization and period
+  const locationFormatted = locationText.charAt(0).toUpperCase() + locationText.slice(1).toLowerCase() + '.';
+  const escapedLocation = escapeSVGText(locationFormatted);
   
   // Scale all constants
   const scaledAnchorX = Math.round(ANCHOR_X * scaleFactor);
@@ -106,6 +112,7 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
   const scaledSafeLeft = Math.round(SAFE_LEFT * scaleFactor);
   const scaledSafeLeftMargin = Math.round(SAFE_LEFT_MARGIN * scaleFactor);
   const scaledMagnitudeGap = Math.round(MAGNITUDE_GAP * scaleFactor);
+  const scaledTextGap = Math.round(TEXT_GAP * scaleFactor);
   
   // Calculate safe text area
   const safeRight = Math.floor(templateWidth * SAFE_RIGHT_RATIO);
@@ -124,45 +131,49 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
   let headlineFontSize = Math.round(HEADLINE_FONT_SIZE_BASE * scaleFactor);
   let magnitudeFontSize = Math.round(headlineFontSize * MAGNITUDE_FONT_SIZE_RATIO);
   
-  // Measure total headline width
+  // Measure text widths for new format: "BREAKING: M#.# Earthquake Near [Location]."
+  let breakingWidth = estimateTextWidth(BREAKING_TEXT, headlineFontSize);
   let magWidth = estimateTextWidth(magnitudeText, magnitudeFontSize);
-  let headlineWidth = estimateTextWidth(HEADLINE_TEXT, headlineFontSize);
-  let totalHeadlineWidth = magWidth + scaledMagnitudeGap + headlineWidth;
+  let earthquakeNearWidth = estimateTextWidth(EARTHQUAKE_NEAR_TEXT, headlineFontSize);
+  let locationFontSize = Math.round(LOCATION_FONT_SIZE_EXACT * scaleFactor);
+  const locationFontSizeMin = Math.round(LOCATION_FONT_SIZE_MIN * scaleFactor);
+  let locationWidth = estimateTextWidth(locationFormatted, locationFontSize);
   
-  // Auto-reduce headline font size if needed
-  if (totalHeadlineWidth > maxTextWidth) {
-    const fitScaleFactor = maxTextWidth / totalHeadlineWidth;
+  // Calculate total width for first line: "BREAKING: M#.# Earthquake Near"
+  let firstLineWidth = breakingWidth + scaledTextGap + magWidth + scaledTextGap + earthquakeNearWidth;
+  
+  // Calculate total width for second line: "[Location]."
+  let secondLineWidth = locationWidth;
+  
+  // Auto-reduce font sizes if needed
+  const maxLineWidth = Math.max(firstLineWidth, secondLineWidth);
+  if (maxLineWidth > maxTextWidth) {
+    const fitScaleFactor = maxTextWidth / maxLineWidth;
     const minHeadlineSize = Math.round(50 * scaleFactor);
     headlineFontSize = Math.max(minHeadlineSize, Math.round(headlineFontSize * fitScaleFactor * 0.98));
     magnitudeFontSize = Math.round(headlineFontSize * MAGNITUDE_FONT_SIZE_RATIO);
+    locationFontSize = Math.max(locationFontSizeMin, Math.round(locationFontSize * fitScaleFactor));
     
+    // Recalculate widths with new sizes
+    breakingWidth = estimateTextWidth(BREAKING_TEXT, headlineFontSize);
     magWidth = estimateTextWidth(magnitudeText, magnitudeFontSize);
-    headlineWidth = estimateTextWidth(HEADLINE_TEXT, headlineFontSize);
-    totalHeadlineWidth = magWidth + scaledMagnitudeGap + headlineWidth;
+    earthquakeNearWidth = estimateTextWidth(EARTHQUAKE_NEAR_TEXT, headlineFontSize);
+    locationWidth = estimateTextWidth(locationFormatted, locationFontSize);
+    firstLineWidth = breakingWidth + scaledTextGap + magWidth + scaledTextGap + earthquakeNearWidth;
+    secondLineWidth = locationWidth;
     
-    console.log(`[generate-earthquake-image] Headline auto-sized to ${headlineFontSize}px`);
+    console.log(`[generate-earthquake-image] Text auto-sized: headline=${headlineFontSize}px, location=${locationFontSize}px`);
   }
   
-  // Position for headline line
-  const magX = alignedX;
-  const headlineX = alignedX + magWidth + scaledMagnitudeGap;
-  const headlineY = scaledHeadlineBaselineY;
+  // Position for first line: "BREAKING: M#.# Earthquake Near"
+  const breakingX = alignedX;
+  const magX = alignedX + breakingWidth + scaledTextGap;
+  const earthquakeNearX = alignedX + breakingWidth + scaledTextGap + magWidth + scaledTextGap;
+  const firstLineY = scaledHeadlineBaselineY;
   
-  // Position for location
+  // Position for second line: "[Location]."
   const locationX = alignedX;
   const locationY = scaledHeadlineBaselineY + scaledLocationOffset;
-  
-  // Location font size
-  let locationFontSize = Math.round(LOCATION_FONT_SIZE_EXACT * scaleFactor);
-  const locationFontSizeMin = Math.round(LOCATION_FONT_SIZE_MIN * scaleFactor);
-  const estimatedLocationWidth = estimateTextWidth(locationText, locationFontSize);
-  
-  // Scale down location if needed
-  if (estimatedLocationWidth > maxTextWidth) {
-    const fitScaleFactor = maxTextWidth / estimatedLocationWidth;
-    locationFontSize = Math.max(locationFontSizeMin, Math.round(locationFontSize * fitScaleFactor));
-    console.log(`[generate-earthquake-image] Location scaled down to ${locationFontSize}px`);
-  }
   
   // Use Roboto if fonts are loaded, otherwise fallback
   // Build @font-face declarations with base64 embedded fonts
@@ -189,10 +200,23 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
           }
         </style>
       </defs>
+      <!-- BREAKING: (white, bold) -->
+      <text 
+        x="${breakingX}" 
+        y="${firstLineY}" 
+        font-family="${fontFamily}" 
+        font-size="${headlineFontSize}" 
+        font-weight="bold"
+        fill="${HEADLINE_COLOR}"
+        text-rendering="optimizeLegibility"
+        shape-rendering="geometricPrecision">
+        ${escapedBreaking}
+      </text>
+      
       <!-- Magnitude: M#.# (red, bold) -->
       <text 
         x="${magX}" 
-        y="${headlineY}" 
+        y="${firstLineY}" 
         font-family="${fontFamily}" 
         font-size="${magnitudeFontSize}" 
         font-weight="bold"
@@ -202,20 +226,20 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
         ${escapedMag}
       </text>
       
-      <!-- Headline: EARTHQUAKE NEAR (white, bold) -->
+      <!-- Earthquake Near (white, bold) -->
       <text 
-        x="${headlineX}" 
-        y="${headlineY}" 
+        x="${earthquakeNearX}" 
+        y="${firstLineY}" 
         font-family="${fontFamily}" 
         font-size="${headlineFontSize}" 
         font-weight="bold"
         fill="${HEADLINE_COLOR}"
         text-rendering="optimizeLegibility"
         shape-rendering="geometricPrecision">
-        ${escapedHeadline}
+        ${escapedEarthquakeNear}
       </text>
       
-      <!-- Location: e.g. PAPUA NEW GUINEA (red, bold) -->
+      <!-- Location: e.g. California. (red, bold) -->
       <text 
         x="${locationX}" 
         y="${locationY}" 
@@ -227,6 +251,83 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
         shape-rendering="geometricPrecision">
         ${escapedLocation}
       </text>
+    </svg>
+  `;
+}
+
+/**
+ * Create visual effects SVG (particles, glows, shake effects)
+ * Makes images more engaging for social media
+ */
+function createVisualEffectsSVG(width, height, magnitude, scaleFactor = 1.0) {
+  const particleCount = Math.min(30, Math.floor(magnitude * 3)); // More particles for larger quakes
+  const glowIntensity = Math.min(0.4, magnitude / 20); // Stronger glow for larger quakes
+  const shakeAmount = Math.min(15, magnitude * 2); // Shake effect based on magnitude
+  
+  // Create particles
+  let particles = '';
+  for (let i = 0; i < particleCount; i++) {
+    const x = Math.random() * width;
+    const y = Math.random() * height;
+    const size = (Math.random() * 3 + 1) * scaleFactor;
+    const opacity = Math.random() * 0.6 + 0.2;
+    const hue = Math.random() * 60 + 0; // Red-orange range
+    particles += `
+      <circle cx="${x}" cy="${y}" r="${size}" fill="rgba(255, ${100 + Math.random() * 50}, 0, ${opacity})">
+        <animate attributeName="r" values="${size};${size * 1.5};${size}" dur="${2 + Math.random() * 2}s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="${opacity};${opacity * 0.3};${opacity}" dur="${2 + Math.random() * 2}s" repeatCount="indefinite"/>
+      </circle>
+    `;
+  }
+  
+  // Create epicenter glow (pulsating)
+  const centerX = width * 0.5;
+  const centerY = height * 0.6; // Slightly below center
+  const baseRadius = 100 * scaleFactor;
+  
+  // Create shake effect (subtle displacement)
+  const shakeOffsetX = (Math.random() - 0.5) * shakeAmount;
+  const shakeOffsetY = (Math.random() - 0.5) * shakeAmount;
+  
+  return `
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Radial gradient for epicenter glow -->
+        <radialGradient id="epicenterGlow" cx="50%" cy="50%">
+          <stop offset="0%" stop-color="rgba(255, 50, 50, ${glowIntensity})" stop-opacity="1"/>
+          <stop offset="50%" stop-color="rgba(255, 100, 0, ${glowIntensity * 0.5})" stop-opacity="0.8"/>
+          <stop offset="100%" stop-color="rgba(255, 150, 0, 0)" stop-opacity="0"/>
+        </radialGradient>
+        
+        <!-- Glow filter for text -->
+        <filter id="textGlow">
+          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      
+      <!-- Epicenter pulsating glow -->
+      <circle cx="${centerX + shakeOffsetX}" cy="${centerY + shakeOffsetY}" r="${baseRadius}" fill="url(#epicenterGlow)" opacity="0.7">
+        <animate attributeName="r" values="${baseRadius};${baseRadius * 1.3};${baseRadius}" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.7;0.9;0.7" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      
+      <!-- Secondary glow ring -->
+      <circle cx="${centerX + shakeOffsetX}" cy="${centerY + shakeOffsetY}" r="${baseRadius * 1.5}" fill="none" stroke="rgba(255, 100, 0, 0.3)" stroke-width="${2 * scaleFactor}">
+        <animate attributeName="r" values="${baseRadius * 1.5};${baseRadius * 2};${baseRadius * 1.5}" dur="3s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.3;0.6;0.3" dur="3s" repeatCount="indefinite"/>
+      </circle>
+      
+      <!-- Particle effects -->
+      ${particles}
+      
+      <!-- Subtle shake effect on text area (top of image) -->
+      <g transform="translate(${shakeOffsetX * 0.3}, ${shakeOffsetY * 0.3})" opacity="0.1">
+        <rect x="${width * 0.1}" y="${height * 0.1}" width="${width * 0.8}" height="${height * 0.3}" fill="rgba(255, 255, 255, 0.1)"/>
+      </g>
     </svg>
   `;
 }
@@ -582,7 +683,8 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     locationText: location.toUpperCase(),
     svgLength: svgString.length,
     containsMagnitude: svgString.includes(magnitudeText),
-    containsHeadline: svgString.includes(HEADLINE_TEXT),
+    containsBreaking: svgString.includes(BREAKING_TEXT),
+    containsEarthquakeNear: svgString.includes(EARTHQUAKE_NEAR_TEXT),
     containsLocation: svgString.includes(location.toUpperCase()),
     containsFontFace: svgString.includes('@font-face'),
     containsRoboto: svgString.includes('Roboto'),
@@ -788,7 +890,7 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
   console.log(`[generate-earthquake-image] ✅ SVG text overlay created: ${outputWidth}x${outputHeight}`);
   console.log(`[generate-earthquake-image] Template dimensions: ${actualWidth}x${actualHeight}, output: ${outputWidth}x${outputHeight}`);
   console.log(`[generate-earthquake-image] Font family: ${fontFamily}, fontLoaded: ${fontLoaded}`);
-  console.log(`[generate-earthquake-image] Text content: "${magnitudeText} EARTHQUAKE NEAR ${location}"`);
+  console.log(`[generate-earthquake-image] Text content: "${BREAKING_TEXT} ${magnitudeText} ${EARTHQUAKE_NEAR_TEXT} ${locationFormatted}"`);
   
   // Prepare composite inputs
   // CRITICAL: Explicitly position text overlay at (0,0) to ensure it covers the entire template
@@ -1100,6 +1202,24 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
   });
   
   compositePipeline = compositePipeline.composite(compositeInputs, {
+    blend: 'over',
+  });
+  
+  // Add visual effects layer for engagement (particles, glows, shake effects)
+  console.log(`[generate-earthquake-image] ✨ Adding visual effects...`);
+  const effectsSVG = createVisualEffectsSVG(outputWidth, outputHeight, magnitude, scaleFactor);
+  const effectsBuffer = await sharp(Buffer.from(effectsSVG))
+    .resize(outputWidth, outputHeight)
+    .png()
+    .toBuffer();
+  
+  // Composite effects on top
+  compositePipeline = compositePipeline.composite([{
+    input: effectsBuffer,
+    blend: 'screen', // Screen blend for glow effects
+    left: 0,
+    top: 0
+  }], {
     blend: 'over',
   });
   

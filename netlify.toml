@@ -40,6 +40,11 @@
   status = 200
   force = false
 
+# Route Facebook/Twitter crawlers to pre-rendered article preview
+# This prevents 502 errors when crawlers try to fetch article pages
+# Note: User-agent matching in redirects may require Edge Functions
+# For now, article-preview.js checks user-agent internally
+
 [functions]
   # Use esbuild to automatically compile TypeScript functions
   node_bundler = "esbuild"

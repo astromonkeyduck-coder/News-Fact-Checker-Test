@@ -8148,18 +8148,44 @@
         }
         .newsletter-btn {
             padding: 18px 36px;
-            background: linear-gradient(135deg, #4A9EFF, #5BB5FF);
+            background: #1a1a1a;
             border: none;
-            border-radius: 14px;
+            border-radius: 4px;
             color: white;
-            font-weight: 700;
-            font-size: 1.1rem;
+            font-weight: 600;
+            font-size: 1rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             white-space: nowrap;
-            box-shadow: 0 8px 20px rgba(74, 158, 255, 0.4);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             position: relative;
             overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            letter-spacing: 0.3px;
+        }
+        
+        @media (max-width: 768px) {
+            .newsletter-btn {
+                padding: 14px 24px;
+                font-size: 0.9375rem;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .newsletter-btn {
+                padding: 12px 20px;
+                font-size: 0.875rem;
+                width: 100%;
+            }
+            
+            .newsletter-signup {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .newsletter-input {
+                width: 100%;
+            }
         }
         .newsletter-btn::before {
             content: '';
@@ -8168,19 +8194,20 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
             transition: left 0.5s;
         }
         .newsletter-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 30px rgba(74, 158, 255, 0.5);
-            background: linear-gradient(135deg, #5BA0F2, #3EDC81);
+            background: #000000;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            transform: translateY(-1px);
         }
         .newsletter-btn:hover::before {
             left: 100%;
         }
         .newsletter-btn:active {
-            transform: translateY(-1px);
+            transform: translateY(0);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
         /* Interactive Fact-Checker Section */
         .fact-checker-section {
@@ -19382,7 +19409,7 @@
                 const estNow = new Date(now.getTime() + (now.getTimezoneOffset() * 60000) + (estOffset * 60000));
                 
                 // Calculate target date: one week from last git push (December 23, 2025) at 7:45 PM EST
-                const lastPushDate = new Date('2026-01-04T19:45:00-05:00'); // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST
+                const lastPushDate = new Date('2026-01-04T19:45:00-05:00'); // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 4, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 3, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // January 2, 2026 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 25, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 24, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST // December 23, 2025 7:45 PM EST
                 const oneWeekInMs = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
                 const target = new Date(lastPushDate.getTime() + oneWeekInMs); // December 30, 2025 7:45 PM EST
                 
