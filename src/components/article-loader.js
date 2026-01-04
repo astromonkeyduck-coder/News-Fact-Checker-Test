@@ -423,6 +423,31 @@
             if (timestampElement) timestampElement.textContent = formatRelativeTime(datePosted);
             if (categoryChip) categoryChip.textContent = category.toUpperCase();
             
+            // Update header alert pill and timestamp
+            const alertPill = document.getElementById('alert-pill');
+            const headerTimestamp = document.getElementById('article-timestamp-header');
+            const relativeTime = formatRelativeTime(datePosted);
+            
+            // Show alert pill for breaking/urgent categories
+            const alertCategories = ['BREAKING NEWS', 'VOLCANO ALERT', 'EARTHQUAKE', 'BREAKING', 'ALERT'];
+            const shouldShowAlert = alertCategories.some(alertCat => 
+                category.toUpperCase().includes(alertCat) || category.toUpperCase() === alertCat
+            );
+            
+            if (alertPill) {
+                if (shouldShowAlert) {
+                    alertPill.textContent = category.toUpperCase();
+                    alertPill.style.display = 'inline-flex';
+                } else {
+                    alertPill.style.display = 'none';
+                }
+            }
+            
+            if (headerTimestamp) {
+                headerTimestamp.textContent = relativeTime;
+                headerTimestamp.style.display = 'inline-block';
+            }
+            
             // Update share buttons
             const shareUrl = `${SITE_URL}/article.html?id=${encodeURIComponent(articleId)}`;
             const shareTitle = encodeURIComponent(title);
