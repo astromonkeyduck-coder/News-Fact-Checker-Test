@@ -455,14 +455,16 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
   let textOverlayBuffer;
   try {
     // resvg options - fonts are embedded in SVG via @font-face, but we also register font buffers
+    // CRITICAL: Use 'original' mode to preserve exact SVG dimensions, don't scale
     const svgOptions = {
       font: {
         loadSystemFonts: false, // Don't load system fonts, rely on embedded @font-face
         fontFiles: [], // Will be populated below
       },
+      // CRITICAL: Use 'original' to preserve exact SVG dimensions (outputWidth x outputHeight)
+      // This ensures text positions match exactly
       fitTo: {
-        mode: 'width',
-        value: outputWidth,
+        mode: 'original', // Preserve exact SVG dimensions
       },
     };
     
@@ -505,12 +507,53 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
       throw new Error('Text overlay rendering failed - output is not a valid PNG');
     }
     
-    console.log('[generate-earthquake-image] ✅ SVG rendered with resvg (embedded fonts)', {
-      textOverlaySize: `${Math.round(textOverlayBuffer.length / 1024)}KB`,
-      isValidPNG: isTextPNG,
-      dimensions: `${outputWidth}x${outputHeight}`,
-      containsText: true
-    });
+    // CRITICAL: Verify text overlay has actual content (not just transparent pixels)
+    // Load the PNG and check if it has non-transparent pixels
+    let textOverlayHasContent = false;
+    let actualTextDimensions = { width: 0, height: 0 };
+    try {
+      const textOverlayImage = sharp(textOverlayBuffer);
+      const textMetadata = await textOverlayImage.metadata();
+      actualTextDimensions = { width: textMetadata.width, height: textMetadata.height };
+      
+      // Check if there are any non-transparent pixels by sampling a few areas
+      // If the image has alpha channel, check if any pixels have alpha > 0
+      const stats = await textOverlayImage.stats();
+      if (stats.channels && stats.channels.length >= 4) {
+        // Has alpha channel - check if alpha channel has any non-zero values
+        const alphaChannel = stats.channels[3]; // Alpha is usually channel 3 (RGBA) or 4 (CMYKA)
+        textOverlayHasContent = alphaChannel && (alphaChannel.min < 255 || alphaChannel.max > 0);
+      } else {
+        // No alpha channel - check if any RGB channel has non-zero values
+        textOverlayHasContent = stats.channels && stats.channels.some(ch => ch.min < 255 || ch.max > 0);
+      }
+      
+      console.log('[generate-earthquake-image] ✅ SVG rendered with resvg (embedded fonts)', {
+        textOverlaySize: `${Math.round(textOverlayBuffer.length / 1024)}KB`,
+        isValidPNG: isTextPNG,
+        dimensions: `${textMetadata.width}x${textMetadata.height}`,
+        expectedDimensions: `${outputWidth}x${outputHeight}`,
+        hasContent: textOverlayHasContent,
+        channels: stats.channels?.length || 0,
+        containsText: true
+      });
+      
+      if (textMetadata.width !== outputWidth || textMetadata.height !== outputHeight) {
+        console.error(`[generate-earthquake-image] ❌ CRITICAL: Text overlay dimensions mismatch! Expected ${outputWidth}x${outputHeight}, got ${textMetadata.width}x${textMetadata.height}`);
+        throw new Error(`Text overlay dimensions mismatch: expected ${outputWidth}x${outputHeight}, got ${textMetadata.width}x${textMetadata.height}`);
+      }
+      
+      if (!textOverlayHasContent) {
+        console.error(`[generate-earthquake-image] ❌ CRITICAL: Text overlay appears to be empty/transparent! No visible content detected.`);
+        throw new Error('Text overlay is empty - no visible text rendered. Check font loading and SVG content.');
+      }
+    } catch (statsError) {
+      console.warn(`[generate-earthquake-image] ⚠️ Could not analyze text overlay stats:`, statsError.message);
+      // If stats check fails, still try to use it but log a warning
+      if (statsError.message.includes('dimensions mismatch') || statsError.message.includes('empty')) {
+        throw statsError; // Re-throw critical errors
+      }
+    }
   } catch (resvgError) {
     console.error('[generate-earthquake-image] ❌ resvg rendering failed:', resvgError.message);
     console.error('[generate-earthquake-image] ❌ resvg error stack:', resvgError.stack);
@@ -524,8 +567,14 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
   console.log(`[generate-earthquake-image] Text content: "${magnitudeText} EARTHQUAKE NEAR ${location}"`);
   
   // Prepare composite inputs
+  // CRITICAL: Explicitly position text overlay at (0,0) to ensure it covers the entire template
   const compositeInputs = [
-    { input: textOverlayBuffer, blend: 'over' },
+    { 
+      input: textOverlayBuffer, 
+      blend: 'over',
+      left: 0,
+      top: 0
+    },
   ];
   
   // Add USGS images if provided
@@ -601,6 +650,16 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
   // Scale template to match output dimensions if 4K is enabled
   let compositePipeline = template;
   
+  // CRITICAL: Verify template dimensions before scaling
+  const templateMetadata = await template.metadata();
+  console.log(`[generate-earthquake-image] 📐 Template metadata:`, {
+    width: templateMetadata.width,
+    height: templateMetadata.height,
+    format: templateMetadata.format,
+    hasAlpha: templateMetadata.hasAlpha,
+    expectedDimensions: `${actualWidth}x${actualHeight}`
+  });
+  
   if (ENABLE_4K && scaleFactor > 1.0) {
     compositePipeline = template
       .resize(outputWidth, outputHeight, {
@@ -608,6 +667,20 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
         withoutEnlargement: false,
       });
     console.log(`[generate-earthquake-image] 📐 Template scaled to ${outputWidth}x${outputHeight} for 4K output`);
+    
+    // Verify scaled template dimensions
+    const scaledMetadata = await compositePipeline.metadata();
+    console.log(`[generate-earthquake-image] 📐 Scaled template metadata:`, {
+      width: scaledMetadata.width,
+      height: scaledMetadata.height,
+      format: scaledMetadata.format,
+      expectedDimensions: `${outputWidth}x${outputHeight}`
+    });
+    
+    if (scaledMetadata.width !== outputWidth || scaledMetadata.height !== outputHeight) {
+      console.error(`[generate-earthquake-image] ❌ CRITICAL: Template scaling failed! Expected ${outputWidth}x${outputHeight}, got ${scaledMetadata.width}x${scaledMetadata.height}`);
+      throw new Error(`Template scaling failed: expected ${outputWidth}x${outputHeight}, got ${scaledMetadata.width}x${scaledMetadata.height}`);
+    }
   }
   
   // Composite all layers
