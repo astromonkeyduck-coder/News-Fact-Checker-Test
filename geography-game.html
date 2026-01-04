@@ -845,7 +845,9 @@
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
+            overflow-x: hidden;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            box-sizing: border-box;
         }
         
         .leaderboard-header {
@@ -884,6 +886,8 @@
         
         .leaderboard-list {
             padding: 20px 30px;
+            overflow-x: hidden;
+            box-sizing: border-box;
         }
         
         .leaderboard-item {
@@ -896,6 +900,9 @@
             border: 1px solid rgba(74, 144, 226, 0.2);
             border-radius: 8px;
             transition: all 0.3s ease;
+            min-width: 0;
+            overflow: hidden;
+            box-sizing: border-box;
         }
         
         .leaderboard-item:hover {
@@ -917,6 +924,8 @@
         
         .leaderboard-user {
             flex: 1;
+            min-width: 0;
+            overflow: hidden;
         }
         
         .leaderboard-name {
@@ -924,6 +933,9 @@
             font-weight: 600;
             color: white;
             margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .perfect-game-badge {
@@ -938,6 +950,9 @@
         .leaderboard-meta {
             font-size: 0.85rem;
             color: rgba(255, 255, 255, 0.6);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .leaderboard-score {
@@ -1660,9 +1675,10 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+            align-items: flex-start;
             min-width: 250px;
             max-width: 350px;
-            overflow: hidden;
+            overflow: visible;
         }
         
         /* Fun Fact Section */
@@ -1708,8 +1724,9 @@
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
             display: inline-block;
             width: fit-content;
-            max-width: 100%;
+            max-width: calc(100% - 48px);
             box-sizing: border-box;
+            white-space: normal;
         }
         
         /* Source Section */
@@ -2724,7 +2741,9 @@
         .inline-leaderboard-list {
             max-height: 400px;
             overflow-y: auto;
+            overflow-x: hidden;
             padding-right: 8px;
+            box-sizing: border-box;
         }
         
         .inline-leaderboard-item {
@@ -2740,6 +2759,9 @@
             opacity: 0;
             transform: translateX(-20px);
             animation: slideInFromLeft 0.4s ease-out forwards;
+            min-width: 0;
+            overflow: hidden;
+            box-sizing: border-box;
         }
         
         .inline-leaderboard-item:nth-child(1) { animation-delay: 0.1s; }
@@ -2821,6 +2843,8 @@
         
         .inline-leaderboard-user {
             flex: 1;
+            min-width: 0;
+            overflow: hidden;
         }
         
         .inline-leaderboard-name {
@@ -2828,11 +2852,17 @@
             font-weight: 600;
             color: white;
             margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .inline-leaderboard-meta {
             font-size: 0.8rem;
             color: rgba(255, 255, 255, 0.6);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .inline-leaderboard-score {

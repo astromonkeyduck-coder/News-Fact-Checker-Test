@@ -163,7 +163,20 @@ exports.handler = async (event, context) => {
     const body = JSON.parse(event.body || "{}");
     const { earthquake, imageUrl } = body;
     
+    console.log('[send-earthquake-alert] 📧 Function called', {
+      hasEarthquake: !!earthquake,
+      hasImageUrl: !!imageUrl,
+      imageUrl: imageUrl?.substring(0, 100),
+      eventId: earthquake?.event_id,
+      magnitude: earthquake?.magnitude
+    });
+    
     if (!earthquake || !earthquake.magnitude || !earthquake.location_display) {
+      console.error('[send-earthquake-alert] ❌ Missing required earthquake data', {
+        hasEarthquake: !!earthquake,
+        hasMagnitude: !!earthquake?.magnitude,
+        hasLocation: !!earthquake?.location_display
+      });
       return {
         statusCode: 400,
         headers,
@@ -212,16 +225,17 @@ exports.handler = async (event, context) => {
     let htmlWithImage = baseEmailContent.html;
     
     if (imageUrl) {
-      console.log(`[send-earthquake-alert] 📸 Downloading image from: ${imageUrl}`);
-      const imageData = await downloadImageForEmail(imageUrl);
-      console.log(`[send-earthquake-alert] 📸 Image download result:`, {
-        hasImageData: !!imageData,
-        hasBuffer: !!(imageData && imageData.buffer),
-        bufferLength: imageData?.buffer?.length || 0,
-        contentType: imageData?.contentType
-      });
-      
-      if (imageData && imageData.buffer) {
+      console.log(`[send-earthquake-alert] 📸 Starting image download from: ${imageUrl}`);
+      try {
+        const imageData = await downloadImageForEmail(imageUrl);
+        console.log(`[send-earthquake-alert] 📸 Image download completed:`, {
+          hasImageData: !!imageData,
+          hasBuffer: !!(imageData && imageData.buffer),
+          bufferLength: imageData?.buffer?.length || 0,
+          contentType: imageData?.contentType
+        });
+        
+        if (imageData && imageData.buffer) {
         // Validate buffer
         if (!Buffer.isBuffer(imageData.buffer)) {
           console.error('[send-earthquake-alert] ❌ Image buffer is not a Buffer object!', typeof imageData.buffer);
@@ -330,13 +344,17 @@ exports.handler = async (event, context) => {
           console.log(`[send-earthquake-alert] 📎 CID: content_id="${cidIdentifier}", HTML uses "cid:${cidIdentifier}"`);
           console.log(`[send-earthquake-alert] 📎 Attachment: filename="${imageAttachment.filename}", size=${Math.round(imageData.buffer.length / 1024)}KB, type=${imageAttachment.content_type}, base64_length=${imageAttachment.content.length}`);
         }
-      } else {
-        console.warn('[send-earthquake-alert] ⚠️ Failed to download image or image data is invalid, email will be sent without image');
-        if (imageData === null) {
-          console.warn('[send-earthquake-alert] ⚠️ downloadImageForEmail returned null');
-        } else if (!imageData.buffer) {
-          console.warn('[send-earthquake-alert] ⚠️ Image data missing buffer property');
+        } else {
+          console.warn('[send-earthquake-alert] ⚠️ Image data is invalid, email will be sent without image');
+          if (imageData === null) {
+            console.warn('[send-earthquake-alert] ⚠️ downloadImageForEmail returned null');
+          } else if (!imageData.buffer) {
+            console.warn('[send-earthquake-alert] ⚠️ Image data missing buffer property');
+          }
         }
+      } catch (imageError) {
+        console.error('[send-earthquake-alert] ❌ Error processing image:', imageError.message, imageError.stack);
+        // Continue without image
       }
     } else {
       console.log('[send-earthquake-alert] ℹ️ No imageUrl provided, email will be sent without image');

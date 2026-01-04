@@ -1295,9 +1295,19 @@ class GeographyGame {
         
         // Request fullscreen
         this.requestFullscreen().then(() => {
+            console.log('Fullscreen entered successfully');
             // Wait a moment for fullscreen to activate, then hide loading and start game
             setTimeout(() => {
                 this.hideLoadingScreen();
+                // Re-center map after fullscreen (dimensions may have changed)
+                if (this.updateTransform) {
+                    this.hasInitiallyCentered = false;
+                    this.svgNaturalWidth = 0;
+                    this.svgNaturalHeight = 0;
+                    setTimeout(() => {
+                        this.updateTransform();
+                    }, 100);
+                }
                 this.actuallyStartGame();
             }, 1500); // 1.5 second delay for loading screen
         }).catch((error) => {
@@ -5702,33 +5712,23 @@ function loadSVGMap() {
                     }
                     // Force update to recalculate constraints and center
                     // Use requestAnimationFrame and multiple delays to ensure container dimensions are ready
+                    const centerMap = () => {
+                        if (window.geoGame && window.geoGame.updateTransform) {
+                            // Force recalculation of dimensions
+                            window.geoGame.svgNaturalWidth = 0;
+                            window.geoGame.svgNaturalHeight = 0;
+                            window.geoGame.panX = 0;
+                            window.geoGame.panY = 0;
+                            window.geoGame.hasInitiallyCentered = false;
+                            window.geoGame.updateTransform();
+                        }
+                    };
+                    
                     requestAnimationFrame(() => {
-                        setTimeout(() => {
-                            if (window.geoGame && window.geoGame.updateTransform) {
-                                // Force recalculation of dimensions
-                                window.geoGame.svgNaturalWidth = 0;
-                                window.geoGame.svgNaturalHeight = 0;
-                                window.geoGame.updateTransform();
-                            }
-                        }, 50);
-                        setTimeout(() => {
-                            if (window.geoGame && window.geoGame.updateTransform) {
-                                // Force recenter by resetting pan values and recalculating
-                                window.geoGame.panX = 0;
-                                window.geoGame.panY = 0;
-                                window.geoGame.svgNaturalWidth = 0;
-                                window.geoGame.svgNaturalHeight = 0;
-                                window.geoGame.updateTransform();
-                            }
-                        }, 200);
-                        setTimeout(() => {
-                            if (window.geoGame && window.geoGame.updateTransform) {
-                                // Final centering pass to ensure it's properly centered
-                                window.geoGame.panX = 0;
-                                window.geoGame.panY = 0;
-                                window.geoGame.updateTransform();
-                            }
-                        }, 500);
+                        setTimeout(centerMap, 50);
+                        setTimeout(centerMap, 200);
+                        setTimeout(centerMap, 500);
+                        setTimeout(centerMap, 1000); // Extra pass after fullscreen settles
                     });
                 }
                 
