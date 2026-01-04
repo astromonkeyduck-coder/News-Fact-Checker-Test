@@ -74,6 +74,8 @@ async function fetchEventDetail(detailUrl, logger) {
  * 1. Shakemap products - best quality maps (available within 5-10 minutes)
  * 2. Immediate products (DYFI, origin, location) - available within 0-3 minutes
  * 3. All other products - comprehensive fallback
+ * 
+ * NEW: Also constructs shakemap image URLs from product IDs
  */
 function extractUSGSImages(eventDetail) {
   const images = [];
@@ -94,38 +96,99 @@ function extractUSGSImages(eventDetail) {
            lowerKey.includes('plot') ||
            lowerKey.includes('shakemap') ||
            lowerKey.includes('intensity') ||
-           lowerKey.includes('contour');
+           lowerKey.includes('contour') ||
+           lowerKey.includes('pga') ||
+           lowerKey.includes('pgv') ||
+           lowerKey.includes('mmi') ||
+           lowerKey.includes('focal') ||
+           lowerKey.includes('mechanism') ||
+           lowerKey.includes('beachball') ||
+           lowerKey.includes('beach-ball');
+  };
+  
+  // Helper function to construct shakemap image URLs
+  // USGS shakemap products often have images at predictable URLs
+  const constructShakemapImageUrls = (product) => {
+    const constructedUrls = [];
+    if (!product || !product.id || !product.updateTime) return constructedUrls;
+    
+    // Extract event ID from product ID (format: us7000xxxxx)
+    const eventIdMatch = product.id.match(/^(us|ak|ci|nc|nn|pr|tx)\d+/);
+    if (!eventIdMatch) return constructedUrls;
+    
+    const eventId = eventIdMatch[0];
+    const timestamp = product.updateTime;
+    
+    // Common shakemap image types
+    const imageTypes = [
+      'intensity.jpg',
+      'pga.jpg',
+      'pgv.jpg',
+      'mmi.jpg',
+      'intensity.png',
+      'pga.png',
+      'pgv.png',
+      'mmi.png'
+    ];
+    
+    // Try to construct URLs for common shakemap image paths
+    const baseUrl = `https://earthquake.usgs.gov/realtime/product/shakemap/${eventId}/us/${timestamp}/download/`;
+    
+    for (const imageType of imageTypes) {
+      const url = baseUrl + imageType;
+      if (!usedUrls.has(url)) {
+        constructedUrls.push({
+          url: url,
+          type: 'shakemap-constructed',
+          filename: imageType,
+          constructed: true
+        });
+      }
+    }
+    
+    return constructedUrls;
   };
   
   // Helper function to extract images from a product
   const extractFromProduct = (product, productType) => {
-    if (!product || !product.contents) return;
+    if (!product || !product.contents) return false;
+    
+    let foundAny = false;
     
     for (const [key, content] of Object.entries(product.contents)) {
       if (!content || !content.url) continue;
       
-      // Check if this looks like an image
-      if (isImageKey(key)) {
+      // Check if this looks like an image (more permissive)
+      if (isImageKey(key) || isImageKey(content.url)) {
         const url = content.url;
         
         // Skip if we already have this exact URL
         if (usedUrls.has(url)) continue;
         
-        // Skip if URL doesn't look like an image
-        if (!/\.(png|jpg|jpeg|gif|webp)/i.test(url)) continue;
+        // Check if URL looks like an image (more permissive - check for image-like paths)
+        const isImageUrl = /\.(png|jpg|jpeg|gif|webp)/i.test(url) ||
+                          /\/download\//i.test(url) ||
+                          /\/image/i.test(url) ||
+                          /\/map/i.test(url) ||
+                          /\/plot/i.test(url) ||
+                          /shakemap/i.test(url);
         
-                images.push({
-          url: url,
-                  type: productType,
-                  filename: key,
-                });
-        usedUrls.add(url);
-        
-        // Stop after finding 2 images
-        if (images.length >= 2) return true;
+        if (isImageUrl) {
+          images.push({
+            url: url,
+            type: productType,
+            filename: key,
+          });
+          usedUrls.add(url);
+          foundAny = true;
+          
+          // Stop after finding 2 images
+          if (images.length >= 2) return true;
+        }
       }
     }
-    return false;
+    
+    return foundAny;
   };
   
   // Priority order: Shakemap first (best quality), then immediate products, then everything else
@@ -133,8 +196,22 @@ function extractUSGSImages(eventDetail) {
   
   // Priority 1: Shakemap products (best quality maps)
   const shakemapProducts = products.shakemap || [];
-    for (const product of shakemapProducts) {
-    if (extractFromProduct(product, 'shakemap')) break;
+  for (const product of shakemapProducts) {
+    // First, try extracting from product contents
+    if (extractFromProduct(product, 'shakemap')) {
+      if (images.length >= 2) break;
+    }
+    
+    // If we still need images, try constructing URLs from product ID
+    if (images.length < 2) {
+      const constructedUrls = constructShakemapImageUrls(product);
+      for (const constructedImage of constructedUrls) {
+        if (images.length >= 2) break;
+        images.push(constructedImage);
+        usedUrls.add(constructedImage.url);
+      }
+      if (images.length >= 2) break;
+    }
   }
   
   // Priority 2: Immediate products (available quickly)
@@ -186,6 +263,24 @@ function extractUSGSImages(eventDetail) {
         }
       }
     }
+  }
+  
+  // Log what we found for debugging
+  if (images.length > 0) {
+    console.log(`[extractUSGSImages] ✅ Found ${images.length} USGS image(s):`, 
+      images.map(img => ({ type: img.type, filename: img.filename || 'unknown', url: img.url.substring(0, 100) + '...' }))
+    );
+  } else {
+    // Log available products for debugging
+    const availableProducts = Object.keys(products);
+    const productCounts = {};
+    for (const [key, productList] of Object.entries(products)) {
+      productCounts[key] = Array.isArray(productList) ? productList.length : 0;
+    }
+    console.log(`[extractUSGSImages] ⚠️ No images found. Available products:`, {
+      productTypes: availableProducts,
+      productCounts: productCounts
+    });
   }
   
   return images.slice(0, 2); // Return max 2 images
