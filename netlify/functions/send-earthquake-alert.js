@@ -290,11 +290,24 @@ exports.handler = async (event, context) => {
             </div>
           `;
           
-          // Insert image before the "View on USGS website" link
-          htmlWithImage = baseEmailContent.html.replace(
-            '<p style="font-size: 12px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">',
-            imageHtml + '<p style="font-size: 12px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">'
-          );
+          // Insert image after "See attached image for details" paragraph
+          // Use a more reliable replacement that finds the paragraph and inserts after it
+          const seeAttachedRegex = /(<p style="font-size: 14px; color: #666; margin-top: 20px;">\s*See attached image for details\.\s*<\/p>)/i;
+          if (seeAttachedRegex.test(baseEmailContent.html)) {
+            htmlWithImage = baseEmailContent.html.replace(
+              seeAttachedRegex,
+              `$1${imageHtml}`
+            );
+          } else {
+            // Fallback: insert before the USGS link paragraph
+            htmlWithImage = baseEmailContent.html.replace(
+              /(<p style="font-size: 12px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">)/,
+              `${imageHtml}$1`
+            );
+          }
+          
+          console.log(`[send-earthquake-alert] ✅ Image HTML inserted into email`);
+          console.log(`[send-earthquake-alert] 📝 HTML contains CID reference: ${htmlWithImage.includes(`cid:${cidIdentifier}`)}`);
           
           console.log(`[send-earthquake-alert] ✅ Image prepared for inline email embedding`);
           console.log(`[send-earthquake-alert] 📎 CID: content_id="${cidIdentifier}", HTML uses "cid:${cidIdentifier}"`);
@@ -324,15 +337,23 @@ exports.handler = async (event, context) => {
         if (imageAttachment) {
           emailContent.attachments = [imageAttachment];
           console.log(`[send-earthquake-alert] 📎 Adding image attachment to email for ${email}`);
-          console.log(`[send-earthquake-alert] 📎 Attachment:`, JSON.stringify({
+          console.log(`[send-earthquake-alert] 📎 Attachment details:`, {
             filename: imageAttachment.filename,
             content_id: imageAttachment.content_id,
             content_type: imageAttachment.content_type,
             content_length: imageAttachment.content.length,
-            has_cid_in_html: htmlWithImage.includes(`cid:${imageAttachment.content_id}`)
-          }));
+            content_preview: imageAttachment.content.substring(0, 50) + '...',
+            has_cid_in_html: htmlWithImage.includes(`cid:${imageAttachment.content_id}`),
+            cid_in_html_count: (htmlWithImage.match(new RegExp(`cid:${imageAttachment.content_id}`, 'g')) || []).length
+          });
+          
+          // Verify the CID format
+          if (!htmlWithImage.includes(`cid:${imageAttachment.content_id}`)) {
+            console.error(`[send-earthquake-alert] ❌ CRITICAL: CID "${imageAttachment.content_id}" not found in HTML!`);
+            console.error(`[send-earthquake-alert] ❌ HTML snippet:`, htmlWithImage.substring(htmlWithImage.indexOf('See attached'), htmlWithImage.indexOf('View on USGS') + 50));
+          }
         } else {
-          console.log(`[send-earthquake-alert] ⚠️ No image attachment for ${email}`);
+          console.log(`[send-earthquake-alert] ⚠️ No image attachment for ${email} - imageAttachment is null`);
         }
         
         const result = await resend.emails.send(emailContent);
