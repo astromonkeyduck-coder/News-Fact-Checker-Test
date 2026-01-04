@@ -325,6 +325,22 @@ exports.handler = async (event, context) => {
       console.log('[send-earthquake-alert] ℹ️ No imageUrl provided, email will be sent without image');
     }
     
+    // Final safety check: if we have an attachment but no CID in HTML, add it
+    if (imageAttachment && !htmlWithImage.includes(`cid:${imageAttachment.content_id}`)) {
+      console.warn(`[send-earthquake-alert] ⚠️ CID not found in HTML, forcing insertion`);
+      const imageHtml = `
+        <div style="margin: 20px 0; text-align: center;">
+          <img src="cid:${imageAttachment.content_id}" alt="Earthquake visualization" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+        </div>
+      `;
+      // Insert before the USGS link
+      htmlWithImage = htmlWithImage.replace(
+        /(<p style="font-size: 12px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">)/,
+        `${imageHtml}$1`
+      );
+      console.log(`[send-earthquake-alert] ✅ Image HTML force-inserted`);
+    }
+    
     // Send email to all notification emails
     const emailResults = await Promise.allSettled(
       notificationEmails.map(async (email) => {
@@ -349,8 +365,9 @@ exports.handler = async (event, context) => {
           
           // Verify the CID format
           if (!htmlWithImage.includes(`cid:${imageAttachment.content_id}`)) {
-            console.error(`[send-earthquake-alert] ❌ CRITICAL: CID "${imageAttachment.content_id}" not found in HTML!`);
-            console.error(`[send-earthquake-alert] ❌ HTML snippet:`, htmlWithImage.substring(htmlWithImage.indexOf('See attached'), htmlWithImage.indexOf('View on USGS') + 50));
+            console.error(`[send-earthquake-alert] ❌ CRITICAL: CID "${imageAttachment.content_id}" still not found in HTML after force-insert!`);
+          } else {
+            console.log(`[send-earthquake-alert] ✅ CID verified in HTML`);
           }
         } else {
           console.log(`[send-earthquake-alert] ⚠️ No image attachment for ${email} - imageAttachment is null`);
