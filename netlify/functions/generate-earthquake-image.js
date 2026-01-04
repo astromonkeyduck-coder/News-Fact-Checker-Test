@@ -710,6 +710,22 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     throw new Error('Composite buffer is empty! Image generation failed.');
   }
   
+  // CRITICAL: Verify final composite dimensions
+  const finalImage = sharp(composite);
+  const finalMetadata = await finalImage.metadata();
+  console.log(`[generate-earthquake-image] 📐 Final composite metadata:`, {
+    width: finalMetadata.width,
+    height: finalMetadata.height,
+    format: finalMetadata.format,
+    size: `${Math.round(composite.length / 1024)}KB`,
+    expectedDimensions: `${outputWidth}x${outputHeight}`
+  });
+  
+  if (finalMetadata.width !== outputWidth || finalMetadata.height !== outputHeight) {
+    console.error(`[generate-earthquake-image] ❌ CRITICAL: Final composite dimensions mismatch! Expected ${outputWidth}x${outputHeight}, got ${finalMetadata.width}x${finalMetadata.height}`);
+    throw new Error(`Final composite dimensions mismatch: expected ${outputWidth}x${outputHeight}, got ${finalMetadata.width}x${finalMetadata.height}`);
+  }
+  
   // Verify it's a valid PNG by checking magic bytes
   const magicBytes = composite.slice(0, 8);
   const isPNG = magicBytes[0] === 0x89 && magicBytes[1] === 0x50 && magicBytes[2] === 0x4E && magicBytes[3] === 0x47;
