@@ -569,12 +569,33 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     
     // If no images found, retry multiple times with increasing delays
     // USGS images can take 5-15 minutes to appear after earthquake, especially for smaller ones
+    // For smaller earthquakes (< 5.0), use shorter retries to avoid timeout
+    // For larger earthquakes (>= 5.0), use longer retries as images are more likely
     if (usgsImages.length === 0 && eventDetail) {
-      const maxRetries = 5; // Increased from 3 to 5
-      const retryDelays = [10000, 20000, 30000, 45000, 60000]; // 10s, 20s, 30s, 45s, 60s (longer waits)
+      const isLargeEarthquake = magnitude >= 5.0;
+      const maxRetries = isLargeEarthquake ? 3 : 2; // Fewer retries for small earthquakes
+      const retryDelays = isLargeEarthquake 
+        ? [5000, 10000, 15000]  // 5s, 10s, 15s for large earthquakes (total: 30s)
+        : [3000, 5000];          // 3s, 5s for small earthquakes (total: 8s)
+      
+      // Calculate total retry time to ensure we don't timeout
+      const totalRetryTime = retryDelays.reduce((sum, delay) => sum + delay, 0);
+      const maxFunctionTime = 55000; // Leave 5s buffer before 60s timeout
+      
+      if (totalRetryTime > maxFunctionTime) {
+        logger.warn('Retry delays too long, reducing to prevent timeout', { 
+          eventId, 
+          magnitude, 
+          totalRetryTime,
+          maxFunctionTime 
+        });
+        // Use shorter delays if calculated time is too long
+        const adjustedDelays = isLargeEarthquake ? [5000, 10000] : [3000, 5000];
+        retryDelays.splice(0, retryDelays.length, ...adjustedDelays);
+      }
       
       for (let retry = 0; retry < maxRetries && usgsImages.length === 0; retry++) {
-        logger.info(`No USGS images found, retry ${retry + 1}/${maxRetries} after ${retryDelays[retry]/1000}s...`, { eventId });
+        logger.info(`No USGS images found, retry ${retry + 1}/${maxRetries} after ${retryDelays[retry]/1000}s...`, { eventId, magnitude });
         await new Promise(resolve => setTimeout(resolve, retryDelays[retry]));
         
         // Try fetching again

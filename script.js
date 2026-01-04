@@ -9889,10 +9889,24 @@ function initNewsletterSubscription() {
             // If forceNew is true, always regenerate
             const hasExistingAIResponse = !forceNew && aiResponse && aiResponse.innerHTML && aiResponse.innerHTML.trim() !== '';
             if (!hasExistingAIResponse) {
+                // Show aiThinking with updated text (no emoji) - use the animated dots loading indicator
+                if (aiThinking) {
                 aiThinking.style.display = 'block';
+                    // Update the text to match the loading message (without emoji)
+                    const thinkingText = aiThinking.querySelector('p');
+                    if (thinkingText && currentCountry) {
+                        thinkingText.textContent = `Generating comprehensive spotlight for ${currentCountry.name}...`;
+                    }
+                }
+                // Clear aiResponse - we'll use aiThinking for loading state
+                if (aiResponse) {
                 aiResponse.innerHTML = '';
+                }
             } else {
+                // Hide aiThinking if we already have content
+                if (aiThinking) {
                 aiThinking.style.display = 'none';
+                }
             }
             
             // Check which images are missing and need to be generated
@@ -10111,12 +10125,10 @@ function initNewsletterSubscription() {
                 console.log('Using existing AI response, skipping text generation');
                 textResponse = Promise.resolve(aiResponse.innerHTML);
             } else {
-                // Show loading state - hide aiThinking to avoid duplicate loading messages
-                if (aiThinking) {
-                    aiThinking.style.display = 'none';
-                }
+                // Show loading state using aiThinking (already shown above with updated text)
+                // Keep aiThinking visible, don't set anything in aiResponse
                 if (aiResponse) {
-                    aiResponse.innerHTML = '<p style="color: rgba(255, 255, 255, 0.7);">🤖 Generating comprehensive spotlight for ' + currentCountry.name + '...</p>';
+                    aiResponse.innerHTML = '';
                 }
                 
                 // Comprehensive prompt focusing on culture, geopolitics, and profound insights
@@ -10161,66 +10173,66 @@ Write in a sophisticated, analytical style. Be comprehensive (600-800 words), nu
                 
                 // Call the AI directly
                 textResponse = fetch('/.netlify/functions/noteworthy-chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        message: textPrompt,
-                        chatHistory: []
-                    })
-                }).then(async response => {
-                    if (!response.ok) {
-                        // Try to get error details from response body
-                        let errorMessage = `API error: ${response.status}`;
-                        try {
-                            const errorText = await response.text();
-                            if (errorText) {
-                                try {
-                                    const errorData = JSON.parse(errorText);
-                                    errorMessage = errorData.error || errorData.message || errorMessage;
-                                    console.error('[Spotlight] API error details:', errorData);
-                                } catch (e) {
-                                    // If not JSON, use the text as error message
-                                    errorMessage = errorText.substring(0, 200);
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: textPrompt,
+                            chatHistory: []
+                        })
+                    }).then(async response => {
+                        if (!response.ok) {
+                            // Try to get error details from response body
+                            let errorMessage = `API error: ${response.status}`;
+                            try {
+                                const errorText = await response.text();
+                                if (errorText) {
+                                    try {
+                                        const errorData = JSON.parse(errorText);
+                                        errorMessage = errorData.error || errorData.message || errorMessage;
+                                        console.error('[Spotlight] API error details:', errorData);
+                                    } catch (e) {
+                                        // If not JSON, use the text as error message
+                                        errorMessage = errorText.substring(0, 200);
+                                    }
                                 }
+                            } catch (e) {
+                                // If we can't read the response, just use status code
                             }
-                        } catch (e) {
-                            // If we can't read the response, just use status code
+                            throw new Error(errorMessage);
                         }
-                        throw new Error(errorMessage);
-                    }
-                    return response.json();
-                }).then(data => {
-                    if (data.reply) {
-                        aiThinking.style.display = 'none';
-                        const formattedResponse = formatAIResponse(data.reply);
-                        aiResponse.innerHTML = formattedResponse;
-                        return formattedResponse;
-                    } else {
-                        throw new Error('No reply from AI');
-                    }
-                }).catch(async error => {
-                    // Suppress 429 (rate limit) errors - expected behavior
-                    const isRateLimit = error.message?.includes('429') || error.message?.includes('rate limit');
-                    if (!isRateLimit) {
-                        console.error('[Spotlight] Error fetching AI text content:', error);
-                    }
-                    aiThinking.style.display = 'none';
-                    // Only show error in aiResponse, not in spotlightError (to avoid duplicate messages)
-                    if (aiResponse) {
-                        if (isRateLimit) {
-                            aiResponse.innerHTML = '<p style="color: rgba(255, 200, 100, 0.9);">⚠️ Rate limit reached. Please try again in a moment.</p>';
+                        return response.json();
+                    }).then(data => {
+                        if (data.reply) {
+                            aiThinking.style.display = 'none';
+                            const formattedResponse = formatAIResponse(data.reply);
+                            aiResponse.innerHTML = formattedResponse;
+                            return formattedResponse;
                         } else {
-                            aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Unable to generate spotlight content. Please try again later.</p>';
+                            throw new Error('No reply from AI');
                         }
-                    }
+                    }).catch(async error => {
+                        // Suppress 429 (rate limit) errors - expected behavior
+                        const isRateLimit = error.message?.includes('429') || error.message?.includes('rate limit');
+                        if (!isRateLimit) {
+                            console.error('[Spotlight] Error fetching AI text content:', error);
+                        }
+                        aiThinking.style.display = 'none';
+                    // Only show error in aiResponse, not in spotlightError (to avoid duplicate messages)
+                        if (aiResponse) {
+                            if (isRateLimit) {
+                                aiResponse.innerHTML = '<p style="color: rgba(255, 200, 100, 0.9);">⚠️ Rate limit reached. Please try again in a moment.</p>';
+                            } else {
+                            aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Unable to generate spotlight content. Please try again later.</p>';
+                            }
+                        }
                     // Hide spotlightError to avoid duplicate error messages
                     if (spotlightError) {
                         spotlightError.style.display = 'none';
-                    }
-                    return ''; // Return empty string so Promise.allSettled doesn't fail
-                });
+                        }
+                        return ''; // Return empty string so Promise.allSettled doesn't fail
+                    });
             }
             
             // Reset success flag at start of generation

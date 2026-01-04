@@ -55,6 +55,10 @@
   node_bundler = "zisi"  # Use zip-it-and-ship-it which handles native modules
   included_files = ["netlify/functions/**/*.png", "netlify/functions/fonts-base64.js"]
 
+[functions."generate-earthquake-animation"]
+  node_bundler = "zisi"  # Use zip-it-and-ship-it which handles native modules (uses generate-earthquake-image)
+  included_files = ["netlify/functions/**/*.png", "netlify/functions/fonts-base64.js"]
+
 [functions."test-generate"]
   node_bundler = "zisi"  # Use zip-it-and-ship-it which handles native modules
 
