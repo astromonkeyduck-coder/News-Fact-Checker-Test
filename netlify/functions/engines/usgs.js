@@ -837,15 +837,39 @@ async function run(logger) {
     for (let i = 0; i < feedData.features.length; i++) {
       const feature = feedData.features[i];
       const isMostRecent = i === 0; // First earthquake is most recent
+      const magnitude = feature.properties?.mag || 0;
       
       try {
+        // Log before processing to see what we're working with
+        logger.debug('Processing earthquake', { 
+          eventId: feature.id, 
+          magnitude, 
+          isMostRecent,
+          hasTitle: !!feature.properties?.title 
+        });
+        
         const result = await processEarthquake(feature, logger, isMostRecent);
         if (result) {
           if (result.isNew) {
             countNew++;
+            logger.info('New earthquake processed', { 
+              canonical_id: result.event.canonical_id,
+              magnitude,
+              eventId: feature.id 
+            });
           } else {
             countUpdated++;
+            logger.debug('Earthquake updated', { 
+              canonical_id: result.event.canonical_id,
+              magnitude,
+              eventId: feature.id 
+            });
           }
+        } else {
+          logger.debug('Earthquake not processed (filtered or skipped)', { 
+            eventId: feature.id,
+            magnitude 
+          });
         }
       } catch (error) {
         logger.error('Error processing earthquake', error, { eventId: feature.id });

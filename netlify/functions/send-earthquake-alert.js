@@ -36,18 +36,34 @@ async function downloadImageForEmail(imageUrl) {
       fullUrl = `${baseUrl}${imageUrl}`;
     }
     
+    console.log(`[send-earthquake-alert] 📥 Fetching image from: ${fullUrl}`);
     const response = await fetch(fullUrl);
+    
     if (!response.ok) {
-      throw new Error(`Failed to download image: ${response.status}`);
+      const errorText = await response.text().catch(() => '');
+      console.error(`[send-earthquake-alert] ❌ Image download failed: ${response.status} ${response.statusText}`, errorText.substring(0, 200));
+      throw new Error(`Failed to download image: ${response.status} ${response.statusText}`);
     }
     
+    const contentType = response.headers.get('content-type') || 'image/png';
+    console.log(`[send-earthquake-alert] 📥 Image response: ${response.status}, Content-Type: ${contentType}`);
+    
     const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    console.log(`[send-earthquake-alert] ✅ Image downloaded: ${Math.round(buffer.length / 1024)}KB, type: ${contentType}`);
+    
+    if (buffer.length === 0) {
+      console.error('[send-earthquake-alert] ❌ Image buffer is empty!');
+      return null;
+    }
+    
     return {
-      buffer: Buffer.from(arrayBuffer),
-      contentType: response.headers.get('content-type') || 'image/png',
+      buffer: buffer,
+      contentType: contentType,
     };
   } catch (error) {
-    console.error('[send-earthquake-alert] Error downloading image:', error);
+    console.error('[send-earthquake-alert] ❌ Error downloading image:', error.message);
     return null;
   }
 }
@@ -178,33 +194,97 @@ exports.handler = async (event, context) => {
     if (imageUrl) {
       console.log(`[send-earthquake-alert] 📸 Downloading image from: ${imageUrl}`);
       const imageData = await downloadImageForEmail(imageUrl);
-      if (imageData) {
-        // Create CID (Content-ID) for inline image embedding
-        const cidIdentifier = `earthquake-image-${earthquake.event_id || Date.now()}`;
+      if (imageData && imageData.buffer) {
+        // Validate buffer
+        if (!Buffer.isBuffer(imageData.buffer)) {
+          console.error('[send-earthquake-alert] ❌ Image buffer is not a Buffer object!', typeof imageData.buffer);
+          imageData.buffer = Buffer.from(imageData.buffer);
+        }
         
-        imageAttachment = {
-          filename: `earthquake-m${earthquake.magnitude.toFixed(1)}-${earthquake.event_id}.png`,
-          content: imageData.buffer.toString('base64'),
-          content_type: imageData.contentType,
-          content_id: cidIdentifier, // Resend uses snake_case: content_id for inline images
-        };
+        if (imageData.buffer.length === 0) {
+          console.error('[send-earthquake-alert] ❌ Image buffer is empty!');
+        } else {
+          console.log(`[send-earthquake-alert] ✅ Image downloaded successfully (${Math.round(imageData.buffer.length / 1024)}KB, ${imageData.contentType})`);
+          
+          // Validate it's actually a valid image by checking magic bytes
+          const magicBytes = imageData.buffer.slice(0, 4);
+          const isPNG = magicBytes[0] === 0x89 && magicBytes[1] === 0x50 && magicBytes[2] === 0x4E && magicBytes[3] === 0x47;
+          const isJPEG = magicBytes[0] === 0xFF && magicBytes[1] === 0xD8;
+          
+          if (!isPNG && !isJPEG) {
+            console.warn('[send-earthquake-alert] ⚠️ Image magic bytes don\'t match PNG or JPEG - may be corrupted');
+            console.warn('[send-earthquake-alert] ⚠️ Magic bytes:', Array.from(magicBytes).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
+          } else {
+            console.log(`[send-earthquake-alert] ✅ Image format validated: ${isPNG ? 'PNG' : 'JPEG'}`);
+          }
+        }
         
-        // Add <img> tag in HTML that references the CID
-        const imageHtml = `
-          <div style="margin: 20px 0; text-align: center;">
-            <img src="cid:${cidIdentifier}" alt="Earthquake visualization" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
-          </div>
-        `;
+        // Convert buffer to base64 - ensure it's a proper Buffer first
+        let base64Content;
+        if (Buffer.isBuffer(imageData.buffer)) {
+          base64Content = imageData.buffer.toString('base64');
+        } else if (imageData.buffer instanceof ArrayBuffer) {
+          base64Content = Buffer.from(imageData.buffer).toString('base64');
+        } else {
+          // Try to convert whatever it is to a Buffer
+          base64Content = Buffer.from(imageData.buffer).toString('base64');
+        }
         
-        // Insert image before the "View on USGS website" link
-        htmlWithImage = baseEmailContent.html.replace(
-          '<p style="font-size: 12px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">',
-          imageHtml + '<p style="font-size: 12px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">'
-        );
+        // Validate base64 encoding - try to decode it back to verify it's valid
+        try {
+          const testDecode = Buffer.from(base64Content, 'base64');
+          if (testDecode.length !== imageData.buffer.length) {
+            console.error(`[send-earthquake-alert] ❌ Base64 validation failed: decoded length (${testDecode.length}) doesn't match original (${imageData.buffer.length})`);
+          } else {
+            console.log(`[send-earthquake-alert] ✅ Base64 validated: ${Math.round(base64Content.length / 1024)}KB, decodes to ${Math.round(testDecode.length / 1024)}KB`);
+          }
+        } catch (base64Error) {
+          console.error('[send-earthquake-alert] ❌ Base64 encoding is invalid!', base64Error.message);
+        }
         
-        console.log(`[send-earthquake-alert] ✅ Image prepared for inline email embedding (CID: ${cidIdentifier}, size: ${Math.round(imageData.buffer.length / 1024)}KB)`);
+        // Only create attachment if base64 is valid
+        if (!base64Content || base64Content.length === 0) {
+          console.error('[send-earthquake-alert] ❌ Base64 encoding failed - content is empty! Skipping image attachment.');
+          imageAttachment = null; // Don't attach corrupted image
+        } else {
+          // Create CID (Content-ID) for inline image embedding
+          // IMPORTANT: CID in content_id must match what's used in HTML cid: reference
+          const cidIdentifier = `earthquake-image-${earthquake.event_id || Date.now()}`;
+          
+          imageAttachment = {
+            filename: `earthquake-m${earthquake.magnitude.toFixed(1)}-${earthquake.event_id || 'unknown'}.png`,
+            content: base64Content,
+            content_type: imageData.contentType || 'image/png',
+            // Use same identifier - Resend will handle the Content-ID header format
+            // HTML will reference it as cid:identifier
+            content_id: cidIdentifier,
+          };
+          
+          // Add <img> tag in HTML that references the CID
+          // MUST match the content_id exactly (without cid: prefix)
+          const imageHtml = `
+            <div style="margin: 20px 0; text-align: center;">
+              <img src="cid:${cidIdentifier}" alt="Earthquake visualization" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+            </div>
+          `;
+          
+          // Insert image before the "View on USGS website" link
+          htmlWithImage = baseEmailContent.html.replace(
+            '<p style="font-size: 12px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">',
+            imageHtml + '<p style="font-size: 12px; color: #999; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">'
+          );
+          
+          console.log(`[send-earthquake-alert] ✅ Image prepared for inline email embedding`);
+          console.log(`[send-earthquake-alert] 📎 CID: content_id="${cidIdentifier}", HTML uses "cid:${cidIdentifier}"`);
+          console.log(`[send-earthquake-alert] 📎 Attachment: filename="${imageAttachment.filename}", size=${Math.round(imageData.buffer.length / 1024)}KB, type=${imageAttachment.content_type}, base64_length=${imageAttachment.content.length}`);
+        }
       } else {
-        console.warn('[send-earthquake-alert] ⚠️ Failed to download image, email will be sent without image');
+        console.warn('[send-earthquake-alert] ⚠️ Failed to download image or image data is invalid, email will be sent without image');
+        if (imageData === null) {
+          console.warn('[send-earthquake-alert] ⚠️ downloadImageForEmail returned null');
+        } else if (!imageData.buffer) {
+          console.warn('[send-earthquake-alert] ⚠️ Image data missing buffer property');
+        }
       }
     } else {
       console.log('[send-earthquake-alert] ℹ️ No imageUrl provided, email will be sent without image');
@@ -222,9 +302,20 @@ exports.handler = async (event, context) => {
         if (imageAttachment) {
           emailContent.attachments = [imageAttachment];
           console.log(`[send-earthquake-alert] 📎 Adding image attachment to email for ${email}`);
+          console.log(`[send-earthquake-alert] 📎 Attachment:`, JSON.stringify({
+            filename: imageAttachment.filename,
+            content_id: imageAttachment.content_id,
+            content_type: imageAttachment.content_type,
+            content_length: imageAttachment.content.length,
+            has_cid_in_html: htmlWithImage.includes(`cid:${imageAttachment.content_id}`)
+          }));
+        } else {
+          console.log(`[send-earthquake-alert] ⚠️ No image attachment for ${email}`);
         }
         
-        return await resend.emails.send(emailContent);
+        const result = await resend.emails.send(emailContent);
+        console.log(`[send-earthquake-alert] 📧 Email sent to ${email}:`, result.data?.id || 'unknown');
+        return result;
       })
     );
     

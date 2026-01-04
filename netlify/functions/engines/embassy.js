@@ -16,25 +16,25 @@ const Parser = require('rss-parser');
 const STATE_DEPT_TRAVEL_FEED = 'https://travel.state.gov/_res/rss/TAsTWs.xml';
 
 // All State Department RSS feeds - each contains different types of alerts
+// NOTE: Most State Department feeds are malformed XML and don't work
+// Only the primary travel advisory feed is reliable
 const STATE_DEPT_FEEDS = [
-  // Primary travel advisories feed
+  // Primary travel advisories feed (WORKS - 211 items)
   { url: 'https://travel.state.gov/_res/rss/TAsTWs.xml', type: 'travel_advisory' },
   
-  // Security and diplomatic feeds
-  { url: 'https://www.state.gov/rss-feed/diplomatic-security/feed/', type: 'security' },
-  
-  // Regional feeds (may contain travel warnings and security alerts)
-  { url: 'https://www.state.gov/rss-feed/africa/feed/', type: 'regional' },
-  { url: 'https://www.state.gov/rss-feed/east-asia-and-the-pacific/feed/', type: 'regional' },
-  { url: 'https://www.state.gov/rss-feed/europe-and-eurasia/feed/', type: 'regional' },
-  { url: 'https://www.state.gov/rss-feed/near-east/feed/', type: 'regional' },
-  { url: 'https://www.state.gov/rss-feed/south-and-central-asia/feed/', type: 'regional' },
-  { url: 'https://www.state.gov/rss-feed/western-hemisphere/feed/', type: 'regional' },
-  
-  // Press and announcement feeds (may contain travel warnings)
-  { url: 'https://www.state.gov/rss-feed/press-releases/feed/', type: 'press' },
-  { url: 'https://www.state.gov/rss-feed/department-press-briefings/feed/', type: 'press' },
-  { url: 'https://www.state.gov/rss-feed/collected-department-releases/feed/', type: 'press' },
+  // DISABLED: These feeds are malformed XML and cause parsing errors
+  // They return "Unexpected close tag" or "Feed not recognized as RSS 1 or 2"
+  // If State Department fixes them, we can re-enable:
+  // { url: 'https://www.state.gov/rss-feed/diplomatic-security/feed/', type: 'security' },
+  // { url: 'https://www.state.gov/rss-feed/africa/feed/', type: 'regional' },
+  // { url: 'https://www.state.gov/rss-feed/east-asia-and-the-pacific/feed/', type: 'regional' },
+  // { url: 'https://www.state.gov/rss-feed/europe-and-eurasia/feed/', type: 'regional' },
+  // { url: 'https://www.state.gov/rss-feed/near-east/feed/', type: 'regional' },
+  // { url: 'https://www.state.gov/rss-feed/south-and-central-asia/feed/', type: 'regional' },
+  // { url: 'https://www.state.gov/rss-feed/western-hemisphere/feed/', type: 'regional' },
+  // { url: 'https://www.state.gov/rss-feed/press-releases/feed/', type: 'press' },
+  // { url: 'https://www.state.gov/rss-feed/department-press-briefings/feed/', type: 'press' },
+  // { url: 'https://www.state.gov/rss-feed/collected-department-releases/feed/', type: 'press' },
 ];
 
 const parser = new Parser({
