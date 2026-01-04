@@ -760,15 +760,22 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   // Send email alert for ALL earthquakes (user requested)
   // Removed magnitude >= 7.0 check - now sends for all
   // Send if: it's new, OR alert hasn't been sent yet, OR it's the most recent earthquake (forceEmail)
+  // OR if we just generated a new image (imageUrl exists and is different from stored)
+  const hasNewImage = imageUrl && imageUrl !== storedEvent.image_url;
+  const shouldSendEmail = isNew || !storedEvent.alert_sent || forceEmail || hasNewImage;
+  
   logger.info('Checking email alert conditions', {
     canonical_id: canonicalId,
     alert_sent: storedEvent.alert_sent,
     isNew,
     forceEmail,
-    will_send: isNew || !storedEvent.alert_sent || forceEmail
+    hasNewImage,
+    hasImageUrl: !!imageUrl,
+    storedImageUrl: storedEvent.image_url,
+    will_send: shouldSendEmail
   });
   
-  if (isNew || !storedEvent.alert_sent || forceEmail) {
+  if (shouldSendEmail) {
     // If forcing email, temporarily reset alert_sent so sendEmailAlert will process it
     const originalAlertSent = storedEvent.alert_sent;
     if (forceEmail && storedEvent.alert_sent) {
@@ -794,12 +801,24 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       storedEvent.alert_sent = originalAlertSent;
     }
   } else {
+    let reason = 'unknown';
+    if (storedEvent.alert_sent && !hasNewImage) {
+      reason = 'already_sent';
+    } else if (!isNew && !hasNewImage) {
+      reason = 'not_new';
+    } else if (!forceEmail && !hasNewImage) {
+      reason = 'not_forced';
+    }
+    
     logger.info('Email alert skipped', {
       canonical_id: canonicalId,
-      reason: storedEvent.alert_sent ? 'already_sent' : (isNew ? 'not_new' : 'not_forced'),
+      reason,
       alert_sent: storedEvent.alert_sent,
       isNew,
-      forceEmail
+      forceEmail,
+      hasNewImage,
+      hasImageUrl: !!imageUrl,
+      storedImageUrl: storedEvent.image_url
     });
   }
   
@@ -841,10 +860,12 @@ async function run(logger) {
       
       try {
         // Log before processing to see what we're working with
-        logger.debug('Processing earthquake', { 
+        logger.info('Processing earthquake', { 
           eventId: feature.id, 
           magnitude, 
           isMostRecent,
+          index: i,
+          total: feedData.features.length,
           hasTitle: !!feature.properties?.title 
         });
         

@@ -152,7 +152,7 @@ exports.handler = async (event, context) => {
       }
 
       // Convert ArrayBuffer to Buffer for response (REST API returns ArrayBuffer)
-      const imageBuffer = Buffer.from(imageData);
+      let imageBuffer = Buffer.from(imageData);
 
       // Check buffer size to prevent timeout (Netlify has 10s timeout for free tier, 26s for pro)
       // Base64 encoding increases size by ~33%, so we check the raw buffer size
