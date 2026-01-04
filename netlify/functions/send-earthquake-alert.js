@@ -68,13 +68,16 @@ async function downloadImageForEmail(imageUrl) {
     
     if (!isPNG && !isJPEG) {
       // Log warning but don't reject - might be valid but with different encoding
+      // Some images might have different headers or be encoded differently
       console.warn('[send-earthquake-alert] ⚠️ Magic bytes don\'t match PNG/JPEG, but proceeding anyway');
       console.warn('[send-earthquake-alert] ⚠️ Magic bytes:', Array.from(magicBytes).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
-      // Don't return null - try to use it anyway, the email service might handle it
+      console.warn('[send-earthquake-alert] ⚠️ Will attempt to attach anyway - email service may handle it');
     } else {
       console.log(`[send-earthquake-alert] ✅ Image format validated: ${isPNG ? 'PNG' : 'JPEG'}`);
     }
     
+    // Always return the buffer - let the email service handle validation
+    // Even if magic bytes don't match, the image might still be valid
     return {
       buffer: buffer,
       contentType: contentType,
@@ -229,7 +232,7 @@ exports.handler = async (event, context) => {
           const isJPEG = magicBytes[0] === 0xFF && magicBytes[1] === 0xD8;
           
           if (!isPNG && !isJPEG) {
-            console.warn('[send-earthquake-alert] ⚠️ Image magic bytes don\'t match PNG or JPEG - may be corrupted');
+            console.warn('[send-earthquake-alert] ⚠️ Image magic bytes don\'t match PNG or JPEG - may be corrupted, but will try anyway');
             console.warn('[send-earthquake-alert] ⚠️ Magic bytes:', Array.from(magicBytes).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
           } else {
             console.log(`[send-earthquake-alert] ✅ Image format validated: ${isPNG ? 'PNG' : 'JPEG'}`);
@@ -238,32 +241,34 @@ exports.handler = async (event, context) => {
         
         // Convert buffer to base64 - ensure it's a proper Buffer first
         let base64Content;
-        if (Buffer.isBuffer(imageData.buffer)) {
-          base64Content = imageData.buffer.toString('base64');
-        } else if (imageData.buffer instanceof ArrayBuffer) {
-          base64Content = Buffer.from(imageData.buffer).toString('base64');
-        } else {
-          // Try to convert whatever it is to a Buffer
-          base64Content = Buffer.from(imageData.buffer).toString('base64');
-        }
-        
-        // Validate base64 encoding - try to decode it back to verify it's valid
         try {
-          const testDecode = Buffer.from(base64Content, 'base64');
-          if (testDecode.length !== imageData.buffer.length) {
-            console.error(`[send-earthquake-alert] ❌ Base64 validation failed: decoded length (${testDecode.length}) doesn't match original (${imageData.buffer.length})`);
+          if (Buffer.isBuffer(imageData.buffer)) {
+            base64Content = imageData.buffer.toString('base64');
+          } else if (imageData.buffer instanceof ArrayBuffer) {
+            base64Content = Buffer.from(imageData.buffer).toString('base64');
           } else {
-            console.log(`[send-earthquake-alert] ✅ Base64 validated: ${Math.round(base64Content.length / 1024)}KB, decodes to ${Math.round(testDecode.length / 1024)}KB`);
+            // Try to convert whatever it is to a Buffer
+            base64Content = Buffer.from(imageData.buffer).toString('base64');
           }
-        } catch (base64Error) {
-          console.error('[send-earthquake-alert] ❌ Base64 encoding is invalid!', base64Error.message);
+          
+          // Validate base64 encoding - try to decode it back to verify it's valid
+          try {
+            const testDecode = Buffer.from(base64Content, 'base64');
+            if (testDecode.length !== imageData.buffer.length) {
+              console.warn(`[send-earthquake-alert] ⚠️ Base64 validation warning: decoded length (${testDecode.length}) doesn't match original (${imageData.buffer.length}), but will proceed`);
+            } else {
+              console.log(`[send-earthquake-alert] ✅ Base64 validated: ${Math.round(base64Content.length / 1024)}KB, decodes to ${Math.round(testDecode.length / 1024)}KB`);
+            }
+          } catch (base64Error) {
+            console.warn('[send-earthquake-alert] ⚠️ Base64 validation error, but will proceed:', base64Error.message);
+          }
+        } catch (encodeError) {
+          console.error('[send-earthquake-alert] ❌ Failed to encode image to base64:', encodeError.message);
+          imageAttachment = null;
         }
         
-        // Only create attachment if base64 is valid
-        if (!base64Content || base64Content.length === 0) {
-          console.error('[send-earthquake-alert] ❌ Base64 encoding failed - content is empty! Skipping image attachment.');
-          imageAttachment = null; // Don't attach corrupted image
-        } else {
+        // Create attachment if we have valid base64 content
+        if (base64Content && base64Content.length > 0) {
           // Create CID (Content-ID) for inline image embedding
           // IMPORTANT: CID in content_id must match what's used in HTML cid: reference
           const cidIdentifier = `earthquake-image-${earthquake.event_id || Date.now()}`;
