@@ -887,10 +887,13 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     throw new Error(`Font rendering failed: ${resvgError.message}. Text will appear as boxes. Check font buffers and resvg configuration.`);
   }
   
+  // Format location for logging (same format as in createDynamicTextSVG)
+  const locationFormattedForLog = location ? (location.charAt(0).toUpperCase() + location.slice(1).toLowerCase() + '.') : 'Unknown Location.';
+  
   console.log(`[generate-earthquake-image] ✅ SVG text overlay created: ${outputWidth}x${outputHeight}`);
   console.log(`[generate-earthquake-image] Template dimensions: ${actualWidth}x${actualHeight}, output: ${outputWidth}x${outputHeight}`);
   console.log(`[generate-earthquake-image] Font family: ${fontFamily}, fontLoaded: ${fontLoaded}`);
-  console.log(`[generate-earthquake-image] Text content: "${BREAKING_TEXT} ${magnitudeText} ${EARTHQUAKE_NEAR_TEXT} ${locationFormatted}"`);
+  console.log(`[generate-earthquake-image] Text content: "${BREAKING_TEXT} ${magnitudeText} ${EARTHQUAKE_NEAR_TEXT} ${locationFormattedForLog}"`);
   
   // Prepare composite inputs
   // CRITICAL: Explicitly position text overlay at (0,0) to ensure it covers the entire template

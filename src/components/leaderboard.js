@@ -45,19 +45,23 @@ if (typeof window !== 'undefined') {
 
 // Reference logger from window to avoid const redeclaration errors
 // Check if this file has already been loaded to prevent redeclaration
-if (typeof window !== 'undefined') {
-    if (!window.__leaderboardFileLoaded__) {
-        // First load - mark as loaded and create logger reference
-        window.__leaderboardFileLoaded__ = true;
-        window.__leaderboardLogger__ = window.leaderboardLogger || leaderboardLoggerInstance;
+// Use a function to get logger instead of declaring a variable to avoid redeclaration errors
+function getLeaderboardLogger() {
+    if (typeof window !== 'undefined') {
+        if (!window.__leaderboardFileLoaded__) {
+            // First load - mark as loaded and create logger reference
+            window.__leaderboardFileLoaded__ = true;
+            window.__leaderboardLogger__ = window.leaderboardLogger || leaderboardLoggerInstance;
+        }
+        // Always use window reference to avoid redeclaration errors
+        return window.__leaderboardLogger__ || window.leaderboardLogger || leaderboardLoggerInstance;
+    } else {
+        // No window object (Node.js environment) - use instance directly
+        return leaderboardLoggerInstance;
     }
-    // Always use window reference to avoid redeclaration errors
-    // Use var to allow redeclaration if file loads multiple times
-    var logger = window.__leaderboardLogger__ || window.leaderboardLogger || leaderboardLoggerInstance;
-} else {
-    // No window object (Node.js environment) - use instance directly
-    var logger = leaderboardLoggerInstance;
 }
+// Use a function call to get logger instead of a variable declaration to avoid redeclaration errors
+// Access logger via getLeaderboardLogger() function throughout this file
 
 // Prevent redeclaration - only define class if not already defined
 // Fix: Check window exists first, then check flag (prevents short-circuit in Node.js)
@@ -122,10 +126,10 @@ if (typeof window !== 'undefined' && !window.__LeaderboardClassDefined__) {
             } else {
                 // Container doesn't exist yet, will be created on render
                 // We'll initialize after render is called
-                logger.debug('[Leaderboard] Container not found yet, will initialize after render');
+                getLeaderboardLogger().debug('[Leaderboard] Container not found yet, will initialize after render');
             }
         } catch (error) {
-            logger.debug('Real-time updates not available:', error.message);
+            getLeaderboardLogger().debug('Real-time updates not available:', error.message);
             this.enableRealtime = false;
         }
     }
@@ -151,11 +155,11 @@ if (typeof window !== 'undefined' && !window.__LeaderboardClassDefined__) {
         // Throttle rapid requests to prevent triggering bot protection
         const now = Date.now();
         if (this.isLoading) {
-            logger.debug('[Leaderboard] Load already in progress, skipping');
+            getLeaderboardLogger().debug('[Leaderboard] Load already in progress, skipping');
             return;
         }
         if (now - this.lastLoadTime < this.loadThrottleMs) {
-            logger.debug('[Leaderboard] Request throttled, too soon since last load');
+            getLeaderboardLogger().debug('[Leaderboard] Request throttled, too soon since last load');
             return;
         }
         
@@ -163,18 +167,18 @@ if (typeof window !== 'undefined' && !window.__LeaderboardClassDefined__) {
         this.lastLoadTime = now;
         
         try {
-            logger.debug(`[Leaderboard] Loading scores for ${this.gameType}, limit: ${limit}`);
+            getLeaderboardLogger().debug(`[Leaderboard] Loading scores for ${this.gameType}, limit: ${limit}`);
             const response = await fetch(`/.netlify/functions/leaderboard?gameType=${this.gameType}&limit=${limit}`);
             
             if (!response.ok) {
                 const errorText = await response.text();
-                logger.error(`[Leaderboard] Failed to load scores: ${response.status} ${response.statusText}`, errorText);
+                getLeaderboardLogger().error(`[Leaderboard] Failed to load scores: ${response.status} ${response.statusText}`, errorText);
                 this.scores = [];
                 return;
             }
             
                 const data = await response.json();
-            logger.debug(`[Leaderboard] Loaded ${data.scores?.length || 0} scores`, data);
+            getLeaderboardLogger().debug(`[Leaderboard] Loaded ${data.scores?.length || 0} scores`, data);
                 this.scores = data.scores || [];
                 
                 // Update real-time component if available
@@ -182,7 +186,7 @@ if (typeof window !== 'undefined' && !window.__LeaderboardClassDefined__) {
                     this.realtimeComponent.updateLeaderboard(this.scores);
                 }
         } catch (error) {
-            logger.error('Failed to load scores:', error);
+            getLeaderboardLogger().error('Failed to load scores:', error);
             this.scores = [];
         } finally {
             this.isLoading = false;
@@ -191,7 +195,7 @@ if (typeof window !== 'undefined' && !window.__LeaderboardClassDefined__) {
 
     async submitScore(scoreData) {
         try {
-            logger.debug('[Leaderboard] Submitting score:', scoreData);
+            getLeaderboardLogger().debug('[Leaderboard] Submitting score:', scoreData);
             const response = await fetch('/.netlify/functions/leaderboard', {
                 method: 'POST',
                 headers: {
@@ -205,12 +209,12 @@ if (typeof window !== 'undefined' && !window.__LeaderboardClassDefined__) {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                logger.error(`[Leaderboard] Failed to submit score: ${response.status} ${response.statusText}`, errorText);
+                getLeaderboardLogger().error(`[Leaderboard] Failed to submit score: ${response.status} ${response.statusText}`, errorText);
                 return false;
             }
 
             const result = await response.json();
-            logger.debug('[Leaderboard] Score submitted successfully:', result);
+            getLeaderboardLogger().debug('[Leaderboard] Score submitted successfully:', result);
                 await this.loadScores();
                 this.render();
                 
@@ -221,7 +225,7 @@ if (typeof window !== 'undefined' && !window.__LeaderboardClassDefined__) {
                 
                 return true;
         } catch (error) {
-            logger.error('Failed to submit score:', error);
+            getLeaderboardLogger().error('Failed to submit score:', error);
             return false;
         }
     }
@@ -357,13 +361,13 @@ if (typeof window !== 'undefined' && !window.__LeaderboardClassDefined__) {
         // Ensure container exists - if not, render it first
         let container = document.getElementById('leaderboard-container');
         if (!container) {
-            logger.debug('[Leaderboard] Container not found, rendering first...');
+            getLeaderboardLogger().debug('[Leaderboard] Container not found, rendering first...');
             this.render();
             container = document.getElementById('leaderboard-container');
         }
         
         if (container) {
-            logger.debug('[Leaderboard] Showing leaderboard, scores:', this.scores.length);
+            getLeaderboardLogger().debug('[Leaderboard] Showing leaderboard, scores:', this.scores.length);
             container.style.display = 'flex';
             container.style.visibility = 'visible';
             container.style.opacity = '1';
@@ -374,11 +378,11 @@ if (typeof window !== 'undefined' && !window.__LeaderboardClassDefined__) {
                 modal.style.display = 'block';
                 modal.style.visibility = 'visible';
             } else {
-                logger.warn('[Leaderboard] Modal not found, re-rendering...');
+                getLeaderboardLogger().warn('[Leaderboard] Modal not found, re-rendering...');
                 this.render();
             }
         } else {
-            logger.error('[Leaderboard] Container still not found after render!');
+            getLeaderboardLogger().error('[Leaderboard] Container still not found after render!');
         }
     }
 

@@ -177,9 +177,18 @@
         getOrCreateMeta('description', 'name').setAttribute('content', description);
         getOrCreateLink('canonical').setAttribute('href', url);
 
+        // For earthquakes, format title as "BREAKING: M___ Earthquake Near ___."
+        const isEarthquake = post.category === 'Earthquake' || post.event_type === 'earthquake' || post.source === 'USGS';
+        let formattedTitle = title;
+        if (isEarthquake && post.magnitude && (post.location_display || post.location)) {
+            const magnitudeFormatted = typeof post.magnitude === 'number' ? post.magnitude.toFixed(1) : post.magnitude;
+            const location = post.location_display || post.location;
+            formattedTitle = `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}.`;
+        }
+
         // Open Graph
         getOrCreateMeta('og:url').setAttribute('content', url);
-        getOrCreateMeta('og:title').setAttribute('content', title);
+        getOrCreateMeta('og:title').setAttribute('content', formattedTitle);
         getOrCreateMeta('og:description').setAttribute('content', description);
         getOrCreateMeta('og:image').setAttribute('content', image);
         getOrCreateMeta('og:image:width').setAttribute('content', '1200');
@@ -192,12 +201,21 @@
 
         // Check if video is available for Player Card
         const videoUrl = post.video_url || post.video || null;
-        const hasVideo = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('.mp4') || videoUrl.includes('video'));
+        const hasVideo = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('.mp4') || videoUrl.includes('video') || videoUrl.includes('get-uploaded-image'));
         
         if (hasVideo) {
             // Use Player Card for videos
             const playerUrl = `${SITE_URL}/video-player.html?url=${encodeURIComponent(ensureAbsoluteImageUrl(videoUrl))}`;
             
+            // Open Graph Video
+            getOrCreateMeta('og:video').setAttribute('content', playerUrl);
+            getOrCreateMeta('og:video:url').setAttribute('content', playerUrl);
+            getOrCreateMeta('og:video:secure_url').setAttribute('content', playerUrl);
+            getOrCreateMeta('og:video:type').setAttribute('content', 'text/html');
+            getOrCreateMeta('og:video:width').setAttribute('content', '1280');
+            getOrCreateMeta('og:video:height').setAttribute('content', '720');
+            
+            // Twitter Player Card
             getOrCreateMeta('twitter:card', 'name').setAttribute('content', 'player');
             getOrCreateMeta('twitter:player', 'name').setAttribute('content', playerUrl);
             getOrCreateMeta('twitter:player:width', 'name').setAttribute('content', '1280');
@@ -210,7 +228,7 @@
         }
         
         getOrCreateMeta('twitter:url', 'name').setAttribute('content', url);
-        getOrCreateMeta('twitter:title', 'name').setAttribute('content', title);
+        getOrCreateMeta('twitter:title', 'name').setAttribute('content', formattedTitle);
         getOrCreateMeta('twitter:description', 'name').setAttribute('content', description);
         getOrCreateMeta('twitter:site', 'name').setAttribute('content', '@NoteworthyNews');
         getOrCreateMeta('twitter:creator', 'name').setAttribute('content', '@NoteworthyNews');
@@ -1509,7 +1527,7 @@
             bodyHTML += formatPostText(story);
             
             // Check if this is an earthquake post and add enhanced content
-            const isEarthquake = post.event_type === 'earthquake' || post.category === 'Earthquake' || post.category === 'EARTHQUAKE';
+            const isEarthquake = post.event_type === 'earthquake' || post.category === 'Earthquake' || post.category === 'EARTHQUAKE' || post.source === 'USGS';
             const hasCoordinates = post.lat && post.lon;
             const magnitude = post.assets?.magnitude || post.magnitude;
             
@@ -1530,17 +1548,31 @@
             
             if (isEarthquake && hasCoordinates) {
                 // Add earthquake-specific enhancements
-                console.log('[ArticleLoader] Adding earthquake enhancements...');
-                bodyHTML += await generateEarthquakeEnhancements(post, magnitude);
+                console.log('[ArticleLoader] Adding earthquake enhancements...', {
+                    isEarthquake,
+                    hasCoordinates,
+                    magnitude,
+                    lat: post.lat,
+                    lon: post.lon,
+                    source: post.source,
+                    category: post.category
+                });
+                const enhancementsHTML = await generateEarthquakeEnhancements(post, magnitude);
+                bodyHTML += enhancementsHTML;
+                console.log('[ArticleLoader] Enhancements HTML length:', enhancementsHTML.length);
             } else {
                 console.warn('[ArticleLoader] Skipping earthquake enhancements:', {
                     isEarthquake,
                     hasCoordinates,
+                    source: post.source,
+                    category: post.category,
+                    event_type: post.event_type,
                     reason: !isEarthquake ? 'not an earthquake' : 'missing coordinates'
                 });
             }
             
             bodyElement.innerHTML = bodyHTML;
+            console.log('[ArticleLoader] Article body updated, total length:', bodyHTML.length);
             
             // Render article tags if they exist
             const tagsContainer = document.getElementById('article-tags');
@@ -1618,11 +1650,34 @@
                         }
                         // Only initialize if not already initialized
                         if (!window.commentSections[articleId]) {
-                            window.commentSections[articleId] = new window.CommentSection(articleId);
+                            try {
+                                window.commentSections[articleId] = new window.CommentSection(articleId);
+                                console.log('[ArticleLoader] Comment section initialized for', articleId);
+                            } catch (error) {
+                                console.error('[ArticleLoader] Failed to initialize comment section:', error);
+                            }
+                        } else {
+                            // Re-render if already initialized
+                            try {
+                                window.commentSections[articleId].render();
+                            } catch (error) {
+                                console.error('[ArticleLoader] Failed to render comment section:', error);
+                            }
                         }
                     } else {
-                        // Wait for CommentSection to load
-                        setTimeout(initComments, 200);
+                        // Wait for CommentSection to load (try up to 5 seconds)
+                        let attempts = 0;
+                        const maxAttempts = 25; // 25 * 200ms = 5 seconds
+                        const checkInterval = setInterval(() => {
+                            attempts++;
+                            if (window.CommentSection) {
+                                clearInterval(checkInterval);
+                                initComments();
+                            } else if (attempts >= maxAttempts) {
+                                clearInterval(checkInterval);
+                                console.error('[ArticleLoader] CommentSection failed to load after 5 seconds');
+                            }
+                        }, 200);
                     }
                 };
                 

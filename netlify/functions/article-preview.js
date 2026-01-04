@@ -101,6 +101,23 @@ exports.handler = async (event) => {
     // Ensure image URL is absolute
     let imageUrl = image.startsWith('http') ? image : `https://noteworthynews.co${image.startsWith('/') ? image : '/' + image}`;
     
+    // Check for video URL for Player Cards
+    const videoUrl = post.video_url || post.video || null;
+    const hasVideo = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('.mp4') || videoUrl.includes('video') || videoUrl.includes('get-uploaded-image'));
+    let playerUrl = null;
+    if (hasVideo) {
+      const absoluteVideoUrl = videoUrl.startsWith('http') ? videoUrl : `https://noteworthynews.co${videoUrl.startsWith('/') ? videoUrl : '/' + videoUrl}`;
+      playerUrl = `https://noteworthynews.co/video-player.html?url=${encodeURIComponent(absoluteVideoUrl)}`;
+    }
+    
+    // For earthquakes, format title as "BREAKING: M___ Earthquake Near ___."
+    let formattedTitle = title;
+    const isEarthquake = post.category === 'Earthquake' || post.event_type === 'earthquake' || post.source === 'USGS';
+    if (isEarthquake && post.magnitude && post.location_display) {
+      const magnitudeFormatted = typeof post.magnitude === 'number' ? post.magnitude.toFixed(1) : post.magnitude;
+      formattedTitle = `BREAKING: M${magnitudeFormatted} Earthquake Near ${post.location_display}.`;
+    }
+    
     // Log image selection for debugging social media previews
     console.log('[article-preview] Image selected for social preview:', {
       articleId,
@@ -110,7 +127,10 @@ exports.handler = async (event) => {
               post.images?.[0] ? 'images[0]' : 'default',
       url: imageUrl.substring(0, 100),
       isGenerated: imageUrl.includes('get-uploaded-image') && imageUrl.includes('earthquake'),
-      hasPrimary: !!post.primary_image_url
+      hasPrimary: !!post.primary_image_url,
+      hasVideo: !!hasVideo,
+      videoUrl: videoUrl ? videoUrl.substring(0, 100) : null,
+      formattedTitle
     });
 
     // Generate HTML with pre-rendered meta tags
@@ -125,7 +145,7 @@ exports.handler = async (event) => {
     <!-- Open Graph -->
     <meta property="og:type" content="article">
     <meta property="og:url" content="${escapeHtml(url)}">
-    <meta property="og:title" content="${escapeHtml(title)}">
+    <meta property="og:title" content="${escapeHtml(formattedTitle)}">
     <meta property="og:description" content="${escapeHtml(description)}">
     <meta property="og:image" content="${escapeHtml(imageUrl)}">
     <meta property="og:image:width" content="1200">
@@ -134,13 +154,30 @@ exports.handler = async (event) => {
     <meta property="og:locale" content="en_US">
     <meta property="article:published_time" content="${datePosted}">
     <meta property="article:author" content="Noteworthy News">
+    ${hasVideo && playerUrl ? `
+    <!-- Open Graph Video (for Player Cards) -->
+    <meta property="og:video" content="${escapeHtml(playerUrl)}">
+    <meta property="og:video:url" content="${escapeHtml(playerUrl)}">
+    <meta property="og:video:secure_url" content="${escapeHtml(playerUrl)}">
+    <meta property="og:video:type" content="text/html">
+    <meta property="og:video:width" content="1280">
+    <meta property="og:video:height" content="720">
+    ` : ''}
     
     <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="${escapeHtml(url)}">
-    <meta name="twitter:title" content="${escapeHtml(title)}">
-    <meta name="twitter:description" content="${escapeHtml(description)}">
+    ${hasVideo && playerUrl ? `
+    <meta name="twitter:card" content="player">
+    <meta name="twitter:player" content="${escapeHtml(playerUrl)}">
+    <meta name="twitter:player:width" content="1280">
+    <meta name="twitter:player:height" content="720">
     <meta name="twitter:image" content="${escapeHtml(imageUrl)}">
+    ` : `
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="${escapeHtml(imageUrl)}">
+    `}
+    <meta name="twitter:url" content="${escapeHtml(url)}">
+    <meta name="twitter:title" content="${escapeHtml(formattedTitle)}">
+    <meta name="twitter:description" content="${escapeHtml(description)}">
     <meta name="twitter:site" content="@NoteworthyNews">
     <meta name="twitter:creator" content="@NoteworthyNews">
     

@@ -787,7 +787,7 @@ export class NoteworthyChat extends HTMLElement {
           display: flex;
           flex-direction: column;
           overflow: hidden;
-          animation: tutorialSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+          animation: tutorialSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), tutorialGlow 3s ease-in-out infinite;
           transform-origin: top right;
         }
         
@@ -800,6 +800,26 @@ export class NoteworthyChat extends HTMLElement {
             transform: translateX(0) scale(1); 
             opacity: 1; 
           }
+        }
+        
+        @keyframes tutorialGlow {
+          0%, 100% {
+            box-shadow: 
+              0 20px 60px rgba(0,0,0,.25),
+              0 0 0 1px rgba(255,255,255,.8) inset,
+              0 8px 32px rgba(1,31,91,.15);
+          }
+          50% {
+            box-shadow: 
+              0 20px 60px rgba(0,0,0,.25),
+              0 0 0 1px rgba(255,255,255,.8) inset,
+              0 8px 32px rgba(1,31,91,.15),
+              0 0 40px rgba(212,160,23,.2);
+          }
+        }
+        
+        .tutorial-modal {
+          animation: tutorialSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), tutorialGlow 3s ease-in-out infinite;
         }
         
         .tutorial-header {
@@ -890,21 +910,29 @@ export class NoteworthyChat extends HTMLElement {
           padding: 20px;
         }
         
+        .tutorial-content {
+          scrollbar-width: thin;
+          scrollbar-color: #D4A017 rgba(1,31,91,.08);
+        }
+        
         .tutorial-content::-webkit-scrollbar {
-          width: 6px;
+          width: 8px;
         }
         
         .tutorial-content::-webkit-scrollbar-track {
-          background: transparent;
+          background: rgba(1,31,91,.08);
+          border-radius: 4px;
         }
         
         .tutorial-content::-webkit-scrollbar-thumb {
-          background: rgba(0,0,0,.12);
-          border-radius: 3px;
+          background: linear-gradient(135deg, #D4A017 0%, #F4C430 100%);
+          border-radius: 4px;
+          box-shadow: 0 0 8px rgba(212,160,23,.3);
         }
         
         .tutorial-content::-webkit-scrollbar-thumb:hover {
-          background: rgba(0,0,0,.2);
+          background: linear-gradient(135deg, #F4C430 0%, #D4A017 100%);
+          box-shadow: 0 0 12px rgba(212,160,23,.5);
         }
         
         .tutorial-intro {
@@ -913,6 +941,18 @@ export class NoteworthyChat extends HTMLElement {
           background: linear-gradient(135deg, rgba(212,160,23,.06) 0%, rgba(74,144,226,.06) 100%);
           border-radius: 12px;
           border-left: 3px solid #D4A017;
+          animation: tutorialIntroFadeIn 0.5s ease forwards;
+        }
+        
+        @keyframes tutorialIntroFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         
         .tutorial-intro p {
@@ -934,6 +974,14 @@ export class NoteworthyChat extends HTMLElement {
           background: rgba(1,31,91,.04);
           border-radius: 10px;
           border: 1px solid rgba(1,31,91,.08);
+          transition: all 0.3s ease;
+        }
+        
+        .tutorial-spec:hover {
+          transform: translateY(-2px);
+          background: rgba(1,31,91,.08);
+          border-color: rgba(212,160,23,.3);
+          box-shadow: 0 4px 12px rgba(212,160,23,.15);
         }
         
         .tutorial-spec-label {
@@ -964,19 +1012,68 @@ export class NoteworthyChat extends HTMLElement {
           background: rgba(255,255,255,.6);
           border-radius: 12px;
           border: 1px solid rgba(1,31,91,.08);
-          transition: all 0.2s ease;
+          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
           cursor: pointer;
+          position: relative;
+          overflow: hidden;
+          opacity: 0;
+          animation: tutorialStepFadeIn 0.5s ease forwards;
+        }
+        
+        .tutorial-step:nth-child(1) { animation-delay: 0.1s; }
+        .tutorial-step:nth-child(2) { animation-delay: 0.2s; }
+        .tutorial-step:nth-child(3) { animation-delay: 0.3s; }
+        .tutorial-step:nth-child(4) { animation-delay: 0.4s; }
+        .tutorial-step:nth-child(5) { animation-delay: 0.5s; }
+        
+        @keyframes tutorialStepFadeIn {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        .tutorial-step::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(212,160,23,.1), transparent);
+          transition: left 0.5s ease;
+        }
+        
+        .tutorial-step:hover::before {
+          left: 100%;
         }
         
         .tutorial-step:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(0,0,0,.08);
-          border-color: rgba(212,160,23,.25);
+          transform: translateY(-2px) scale(1.01);
+          box-shadow: 0 8px 24px rgba(212,160,23,.2), 0 0 0 1px rgba(212,160,23,.2);
+          border-color: rgba(212,160,23,.4);
         }
         
         .tutorial-step.expanded {
           background: rgba(255,255,255,.9);
-          border-color: rgba(212,160,23,.3);
+          border-color: rgba(212,160,23,.4);
+          box-shadow: 0 4px 16px rgba(212,160,23,.15);
+          animation: tutorialStepExpand 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        @keyframes tutorialStepExpand {
+          from {
+            transform: scale(0.98);
+            opacity: 0.8;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
         }
         
         .tutorial-step-header {
@@ -997,6 +1094,25 @@ export class NoteworthyChat extends HTMLElement {
           font-size: 16px;
           flex-shrink: 0;
           box-shadow: 0 2px 8px rgba(212,160,23,.25);
+          animation: tutorialIconPulse 2s ease-in-out infinite;
+          transition: all 0.3s ease;
+        }
+        
+        @keyframes tutorialIconPulse {
+          0%, 100% { 
+            transform: scale(1);
+            box-shadow: 0 2px 8px rgba(212,160,23,.25);
+          }
+          50% { 
+            transform: scale(1.05);
+            box-shadow: 0 4px 16px rgba(212,160,23,.4);
+          }
+        }
+        
+        .tutorial-step:hover .tutorial-icon {
+          animation: none;
+          transform: scale(1.1);
+          box-shadow: 0 4px 20px rgba(212,160,23,.5);
         }
         
         .tutorial-step h3 {
@@ -1029,11 +1145,25 @@ export class NoteworthyChat extends HTMLElement {
         .tutorial-step-content {
           max-height: 0;
           overflow: hidden;
-          transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: max-height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+          opacity: 0;
         }
         
         .tutorial-step.expanded .tutorial-step-content {
           max-height: 500px;
+          opacity: 1;
+          animation: tutorialContentFadeIn 0.4s ease forwards;
+        }
+        
+        @keyframes tutorialContentFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         
         .tutorial-step p {
@@ -1149,17 +1279,37 @@ export class NoteworthyChat extends HTMLElement {
           font-weight: 700;
           font-size: 13px;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
           box-shadow: 0 2px 8px rgba(212,160,23,.25);
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .tutorial-btn-primary::before {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 0;
+          height: 0;
+          border-radius: 50%;
+          background: rgba(255,255,255,.3);
+          transform: translate(-50%, -50%);
+          transition: width 0.6s, height 0.6s;
+        }
+        
+        .tutorial-btn-primary:hover::before {
+          width: 300px;
+          height: 300px;
         }
         
         .tutorial-btn-primary:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(212,160,23,.35);
+          transform: translateY(-2px) scale(1.05);
+          box-shadow: 0 6px 20px rgba(212,160,23,.4), 0 0 0 4px rgba(212,160,23,.1);
         }
         
         .tutorial-btn-primary:active {
-          transform: translateY(0);
+          transform: translateY(0) scale(1.02);
         }
         
         @media (max-width: 768px) {

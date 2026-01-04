@@ -420,8 +420,38 @@ function renderEnhancedPostCard(post) {
     let mediaHtml = '';
     // Collect all images: primary first, then secondary
     // Check canonical primary_image_url, then legacy image/image_url, then images array
-    const primaryImage = post.primary_image_url || post.image_url || post.image || null;
+    // Also check assets.usgs_images for earthquake posts
+    let primaryImage = post.primary_image_url || post.image_url || post.image || null;
+    
+    // Fallback: Check assets.usgs_images for earthquake posts if no primary image
+    if (!primaryImage && (post.category === 'Earthquake' || post.source === 'USGS')) {
+      const usgsImages = post.assets?.usgs_images || [];
+      if (usgsImages.length > 0) {
+        // Use first USGS image as fallback
+        const firstUsgsImage = typeof usgsImages[0] === 'string' ? usgsImages[0] : (usgsImages[0]?.url || null);
+        if (firstUsgsImage) {
+          primaryImage = firstUsgsImage;
+          console.log('[PostFeedEnhanced] Using USGS image as fallback:', firstUsgsImage);
+        }
+      }
+    }
+    
     const secondaryImages = post.images || post.secondary_images || [];
+    
+    // DEBUG: Log image fields for troubleshooting
+    if (!primaryImage && (post.category === 'Earthquake' || post.source === 'USGS')) {
+      console.warn('[PostFeedEnhanced] Earthquake post missing image:', {
+        id: post.id,
+        primary_image_url: post.primary_image_url,
+        image_url: post.image_url,
+        image: post.image,
+        images: post.images,
+        assets_usgs_images: post.assets?.usgs_images,
+        category: post.category,
+        source: post.source
+      });
+    }
+    
     // Combine primary + secondary, filtering out duplicates
     const allImages = [];
     if (primaryImage) {
@@ -442,17 +472,25 @@ function renderEnhancedPostCard(post) {
       // Render images
       if (images.length > 0) {
         if (images.length === 1) {
+          // Escape image URL for HTML attribute
+          const imageUrl = String(images[0]).replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
           mediaHtml += `<div class="post-image-single" style="border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.2);">
-            <img src="${images[0]}" alt="Post image" loading="lazy" style="width: 100%; height: auto; display: block; max-height: 600px; object-fit: cover;" onerror="this.style.display='none';" />
+            <img src="${imageUrl}" alt="Post image" loading="lazy" style="width: 100%; height: auto; display: block; max-height: 600px; object-fit: cover;" 
+                 onerror="console.error('[PostFeedEnhanced] Image failed to load:', this.src); this.style.display='none';" 
+                 onload="console.log('[PostFeedEnhanced] Image loaded successfully:', this.src);" />
           </div>`;
         } else {
           const gridCols = Math.min(images.length, 3);
           mediaHtml += `<div class="post-image-grid" style="display: grid; grid-template-columns: repeat(${gridCols}, 1fr); gap: 0.5rem; border-radius: 12px; overflow: hidden;">
-            ${images.slice(0, 4).map(img => `
+            ${images.slice(0, 4).map(img => {
+              // Escape image URL for HTML attribute (same as single image)
+              const imageUrl = String(img).replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+              return `
               <div style="aspect-ratio: 1; overflow: hidden; background: rgba(0,0,0,0.2);">
-                <img src="${img}" alt="Post image" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none';" />
+                <img src="${imageUrl}" alt="Post image" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none';" />
           </div>
-            `).join('')}
+            `;
+            }).join('')}
           </div>`;
         }
       }

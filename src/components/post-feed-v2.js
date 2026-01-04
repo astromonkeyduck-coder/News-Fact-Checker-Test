@@ -607,7 +607,35 @@ function mapRawPostToPost(raw) {
   const media = [];
   // CRITICAL: Prioritize primary_image_url (generated earthquake images) for social media previews
   // Check primary_image_url first, then fall back to other image fields
-  const primaryImage = raw.primary_image_url || raw.image_url || raw.image;
+  // Also check assets.usgs_images for earthquake posts
+  let primaryImage = raw.primary_image_url || raw.image_url || raw.image || null;
+  
+  // Fallback: Check assets.usgs_images for earthquake posts if no primary image
+  if (!primaryImage && (raw.category === 'Earthquake' || raw.source === 'USGS')) {
+    const usgsImages = raw.assets?.usgs_images || [];
+    if (usgsImages.length > 0) {
+      // Use first USGS image as fallback
+      const firstUsgsImage = typeof usgsImages[0] === 'string' ? usgsImages[0] : (usgsImages[0]?.url || null);
+      if (firstUsgsImage) {
+        primaryImage = firstUsgsImage;
+        console.log('[PostFeedV2] Using USGS image as fallback:', firstUsgsImage);
+      }
+    }
+  }
+  
+  // DEBUG: Log image fields for troubleshooting
+  if (!primaryImage && (raw.category === 'Earthquake' || raw.source === 'USGS')) {
+    console.warn('[PostFeedV2] Earthquake post missing image:', {
+      id: raw.id,
+      primary_image_url: raw.primary_image_url,
+      image_url: raw.image_url,
+      image: raw.image,
+      images: raw.images,
+      assets_usgs_images: raw.assets?.usgs_images,
+      category: raw.category,
+      source: raw.source
+    });
+  }
   
   if (primaryImage) {
     media.push({ type: 'image', url: primaryImage });
@@ -1224,11 +1252,12 @@ function renderMedia(media) {
           "
         >
           <img 
-            src="${item.url}" 
+            src="${item.url.replace(/"/g, '&quot;').replace(/'/g, '&#x27;')}" 
             alt="Post media"
             loading="lazy"
             style="width: 100%; height: auto; display: block; object-fit: cover;"
-            onerror="this.style.display='none';"
+            onerror="console.error('[PostFeedV2] Image failed to load:', this.src); this.style.display='none';"
+            onload="console.log('[PostFeedV2] Image loaded successfully:', this.src);"
           />
         </div>
       `;

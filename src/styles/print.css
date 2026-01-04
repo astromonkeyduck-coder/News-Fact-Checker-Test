@@ -37,28 +37,45 @@
     size: A4;
   }
 
-  /* Hide all scrollbars in print */
-  * {
+  /* Hide ALL scrollbars in print - comprehensive approach */
+  *,
+  *::before,
+  *::after {
     overflow: visible !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
+    scrollbar-gutter: stable !important;
   }
 
-  *::-webkit-scrollbar {
+  *::-webkit-scrollbar,
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-thumb {
     display: none !important;
     width: 0 !important;
     height: 0 !important;
+    background: transparent !important;
   }
 
   html {
     overflow: visible !important;
     height: auto !important;
     max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  html::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
   }
 
   /* Body and container */
   body,
-  .article-page {
+  body.article-page,
+  html.article-page-active {
     background: white !important;
     color: black !important;
     font-size: 12pt;
@@ -68,6 +85,41 @@
     overflow: visible !important;
     height: auto !important;
     max-height: none !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  body::-webkit-scrollbar,
+  body.article-page::-webkit-scrollbar,
+  html.article-page-active::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  .article-container,
+  .article-main,
+  .article-sidebar,
+  .article-header-panel,
+  .article-body-panel,
+  .article-body,
+  .article-content {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  .article-container::-webkit-scrollbar,
+  .article-main::-webkit-scrollbar,
+  .article-sidebar::-webkit-scrollbar,
+  .article-header-panel::-webkit-scrollbar,
+  .article-body-panel::-webkit-scrollbar,
+  .article-body::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
   }
 
   .article-container {
@@ -76,8 +128,6 @@
     margin: 0 !important;
     display: block !important;
     grid-template-columns: 1fr !important;
-    overflow: visible !important;
-    height: auto !important;
   }
 
   .article-main {
@@ -86,8 +136,6 @@
     padding: 0 !important;
     box-shadow: none !important;
     backdrop-filter: none !important;
-    overflow: visible !important;
-    height: auto !important;
   }
 
   /* Typography */

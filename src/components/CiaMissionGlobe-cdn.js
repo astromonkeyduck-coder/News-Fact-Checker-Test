@@ -49,6 +49,11 @@ class CiaMissionGlobe {
     this.breakingOnly = false;
     this.countryData = new Map(); // Map of country -> { count, posts, coordinates }
     this.activeCountry = null; // Currently selected country
+    this.controlsSetup = false; // Flag to prevent duplicate control setup
+    this.breakingToggleHandler = null; // Store handler reference for cleanup
+    this.panelCloseHandler = null; // Store panel close handler reference
+    this.panelOverlayHandler = null; // Store panel overlay handler reference
+    this.controlsClickHandler = null; // Store controls container click handler
     
     this.loadLocationCache();
     
@@ -1736,22 +1741,36 @@ class CiaMissionGlobe {
 
   // Setup control bar interactions
   setupControls() {
+    // Prevent duplicate setup
+    if (this.controlsSetup) {
+      console.log('[Globe] Controls already setup, skipping');
+      return;
+    }
+    
     // Wait for DOM to be ready
     const setupControlsDelayed = () => {
-      // Time range buttons
-      const timeButtons = document.querySelectorAll('.globe-time-btn');
-      if (timeButtons.length === 0) {
-        console.warn('[Globe] Time buttons not found, retrying...');
+      const controlsContainer = document.getElementById('globe-controls');
+      if (!controlsContainer) {
+        console.warn('[Globe] Controls container not found, retrying...');
         setTimeout(setupControlsDelayed, 100);
         return;
       }
+
+      // Use event delegation on the controls container for better reliability
+      // Remove existing listener if any
+      if (this.controlsClickHandler) {
+        controlsContainer.removeEventListener('click', this.controlsClickHandler);
+      }
       
-      timeButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
+      // Time range buttons and category chips
+      this.controlsClickHandler = (e) => {
+        const timeBtn = e.target.closest('.globe-time-btn');
+        if (timeBtn) {
           e.preventDefault();
           e.stopPropagation();
           
-          const timeRange = btn.dataset.time || '24h';
+          const timeRange = timeBtn.dataset.time || '24h';
+          const timeButtons = document.querySelectorAll('.globe-time-btn');
           
           // Update all buttons
           timeButtons.forEach(b => {
@@ -1762,10 +1781,10 @@ class CiaMissionGlobe {
           });
           
           // Activate clicked button
-          btn.classList.add('active');
-          btn.style.background = 'rgba(74, 158, 255, 0.2)';
-          btn.style.borderColor = 'rgba(74, 158, 255, 0.4)';
-          btn.style.color = '#fff';
+          timeBtn.classList.add('active');
+          timeBtn.style.background = 'rgba(74, 158, 255, 0.2)';
+          timeBtn.style.borderColor = 'rgba(74, 158, 255, 0.4)';
+          timeBtn.style.color = '#fff';
           
           this.timeRange = timeRange;
           console.log('[Globe] Time range changed to:', this.timeRange);
@@ -1775,23 +1794,17 @@ class CiaMissionGlobe {
           } else {
             this.applyFilters();
           }
-        }, { once: false });
-      });
+          return;
+        }
 
-      // Category chips
-      const categoryChips = document.querySelectorAll('.globe-category-chip');
-      if (categoryChips.length === 0) {
-        console.warn('[Globe] Category chips not found, retrying...');
-        setTimeout(setupControlsDelayed, 100);
-        return;
-      }
-      
-      categoryChips.forEach(chip => {
-        chip.addEventListener('click', (e) => {
+        // Category chips
+        const categoryChip = e.target.closest('.globe-category-chip');
+        if (categoryChip) {
           e.preventDefault();
           e.stopPropagation();
           
-          const category = chip.dataset.category || 'all';
+          const category = categoryChip.dataset.category || 'all';
+          const categoryChips = document.querySelectorAll('.globe-category-chip');
           
           // Update all chips
           categoryChips.forEach(c => {
@@ -1802,10 +1815,10 @@ class CiaMissionGlobe {
           });
           
           // Activate clicked chip
-          chip.classList.add('active');
-          chip.style.background = 'rgba(74, 158, 255, 0.2)';
-          chip.style.borderColor = 'rgba(74, 158, 255, 0.4)';
-          chip.style.color = '#fff';
+          categoryChip.classList.add('active');
+          categoryChip.style.background = 'rgba(74, 158, 255, 0.2)';
+          categoryChip.style.borderColor = 'rgba(74, 158, 255, 0.4)';
+          categoryChip.style.color = '#fff';
           
           this.selectedCategory = category;
           console.log('[Globe] Category changed to:', this.selectedCategory);
@@ -1815,13 +1828,18 @@ class CiaMissionGlobe {
           } else {
             this.applyFilters();
           }
-        }, { once: false });
-      });
+          return;
+        }
+      };
+      
+      controlsContainer.addEventListener('click', this.controlsClickHandler);
 
       // Breaking only toggle
       const breakingToggle = document.getElementById('globe-breaking-only');
       if (breakingToggle) {
-        breakingToggle.addEventListener('change', (e) => {
+        // Remove existing listener if any
+        breakingToggle.removeEventListener('change', this.breakingToggleHandler);
+        this.breakingToggleHandler = (e) => {
           this.breakingOnly = e.target.checked;
           console.log('[Globe] Breaking only:', this.breakingOnly);
           // Load posts if needed, then apply filters
@@ -1830,7 +1848,8 @@ class CiaMissionGlobe {
           } else {
             this.applyFilters();
           }
-        });
+        };
+        breakingToggle.addEventListener('change', this.breakingToggleHandler);
       } else {
         console.warn('[Globe] Breaking toggle not found');
       }
@@ -1839,12 +1858,21 @@ class CiaMissionGlobe {
       const panelClose = document.getElementById('globe-panel-close');
       const panelOverlay = document.getElementById('globe-panel-overlay');
       if (panelClose) {
-        panelClose.addEventListener('click', () => this.closeCountryPanel());
+        if (this.panelCloseHandler) {
+          panelClose.removeEventListener('click', this.panelCloseHandler);
+        }
+        this.panelCloseHandler = () => this.closeCountryPanel();
+        panelClose.addEventListener('click', this.panelCloseHandler);
       }
       if (panelOverlay) {
-        panelOverlay.addEventListener('click', () => this.closeCountryPanel());
+        if (this.panelOverlayHandler) {
+          panelOverlay.removeEventListener('click', this.panelOverlayHandler);
+        }
+        this.panelOverlayHandler = () => this.closeCountryPanel();
+        panelOverlay.addEventListener('click', this.panelOverlayHandler);
       }
       
+      this.controlsSetup = true;
       console.log('[Globe] Controls setup complete');
     };
     

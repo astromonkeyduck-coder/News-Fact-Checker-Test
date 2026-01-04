@@ -130,18 +130,18 @@
             color: #1a1a1a;
             position: relative;
             overflow-x: hidden !important;
-            overflow-y: auto !important; /* Single scrollbar on body */
+            overflow-y: hidden !important; /* html handles scrolling - prevent duplicate scrollbar */
             font-family: 'Georgia', 'Charter', 'Times New Roman', serif;
         }
         
-        /* Ensure html doesn't create its own scrollbar */
+        /* Ensure html handles scrolling, body does not */
         html.article-page-active {
-            overflow-y: auto;
+            overflow-y: auto !important;
             height: 100%;
         }
         
         html.article-page-active body {
-            overflow-y: auto;
+            overflow-y: hidden !important; /* html handles scrolling - prevent duplicate scrollbar */
             height: auto;
             min-height: 100vh;
         }
@@ -937,6 +937,7 @@
             /* Ensure thumbnails maintain aspect ratio on mobile */
             .more-coverage .news-card-thumbnail-wrapper {
                 aspect-ratio: 16 / 9;
+                max-height: 120px; /* Smaller on mobile */
             }
         }
         
@@ -964,6 +965,7 @@
             position: relative;
             width: 100%;
             aspect-ratio: 16 / 9;
+            max-height: 150px; /* Limit thumbnail height */
             overflow: hidden;
             background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
             display: flex;
@@ -1528,6 +1530,17 @@
             font-size: 1.2rem;
         }
         
+        .share-option .share-icon {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+            display: block;
+        }
+        
+        .share-option img.share-icon {
+            flex-shrink: 0;
+        }
+        
         /* Image Lightbox */
         .lightbox {
             display: none;
@@ -1650,31 +1663,57 @@
         
         /* Print Styles */
         @media print {
-            /* Hide scrollbars and prevent overflow in print */
-            * {
+            /* Hide ALL scrollbars in print - comprehensive approach */
+            *,
+            *::before,
+            *::after {
                 overflow: visible !important;
                 scrollbar-width: none !important;
                 -ms-overflow-style: none !important;
+                scrollbar-gutter: stable !important;
             }
             
-            *::-webkit-scrollbar {
+            *::-webkit-scrollbar,
+            *::-webkit-scrollbar-track,
+            *::-webkit-scrollbar-thumb {
                 display: none !important;
                 width: 0 !important;
                 height: 0 !important;
+                background: transparent !important;
             }
             
-            html,
-            body {
+            html {
                 overflow: visible !important;
                 height: auto !important;
                 max-height: none !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                scrollbar-width: none !important;
+                -ms-overflow-style: none !important;
             }
             
+            html::-webkit-scrollbar {
+                display: none !important;
+                width: 0 !important;
+                height: 0 !important;
+            }
+            
+            body,
             body.article-page {
                 overflow: visible !important;
                 height: auto !important;
+                max-height: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                scrollbar-width: none !important;
+                -ms-overflow-style: none !important;
+            }
+            
+            body::-webkit-scrollbar,
+            body.article-page::-webkit-scrollbar {
+                display: none !important;
+                width: 0 !important;
+                height: 0 !important;
             }
             
             .main-header,
@@ -1690,18 +1729,43 @@
                 display: none !important;
             }
             
+            .article-container,
+            .article-main,
+            .article-sidebar,
+            .article-header-panel,
+            .article-body-panel,
+            .article-body,
+            .article-content,
+            .article-content > * {
+                overflow: visible !important;
+                height: auto !important;
+                max-height: none !important;
+                scrollbar-width: none !important;
+                -ms-overflow-style: none !important;
+            }
+            
+            .article-container::-webkit-scrollbar,
+            .article-main::-webkit-scrollbar,
+            .article-sidebar::-webkit-scrollbar,
+            .article-header-panel::-webkit-scrollbar,
+            .article-body-panel::-webkit-scrollbar,
+            .article-body::-webkit-scrollbar {
+                display: none !important;
+                width: 0 !important;
+                height: 0 !important;
+            }
+            
             .article-container {
                 max-width: 100% !important;
                 padding: 0 !important;
                 margin: 0 !important;
                 grid-template-columns: 1fr !important;
-                overflow: visible !important;
-                height: auto !important;
             }
             
             .article-main {
-                overflow: visible !important;
-                height: auto !important;
+                background: white !important;
+                border: none !important;
+                box-shadow: none !important;
             }
             
             .article-header-panel,
@@ -1711,7 +1775,6 @@
                 border: none !important;
                 box-shadow: none !important;
                 padding: 20px !important;
-                overflow: visible !important;
             }
             
             .article-header h1 {
@@ -1722,7 +1785,6 @@
             
             .article-body {
                 color: black !important;
-                overflow: visible !important;
             }
             
             .article-body p,
@@ -1839,19 +1901,18 @@
                                 <span>X (Twitter)</span>
                             </a>
                             <a href="#" class="share-option" id="share-facebook" target="_blank" rel="noopener" role="menuitem">
-                                <span>📘</span>
+                                <img src="facebook-logo-facebook-icon-transparent-free-png.webp" alt="Facebook" class="share-icon">
                                 <span>Facebook</span>
                             </a>
                             <a href="#" class="share-option" id="share-linkedin" target="_blank" rel="noopener" role="menuitem">
-                                <span>💼</span>
+                                <img src="linkedin-logo-linkedin-icon-transparent-free-png.webp" alt="LinkedIn" class="share-icon">
                                 <span>LinkedIn</span>
                             </a>
                             <a href="#" class="share-option" id="share-email" role="menuitem">
-                                <span>✉️</span>
                                 <span>Email</span>
                             </a>
                             <a href="#" class="share-option" id="share-reddit" target="_blank" rel="noopener" role="menuitem">
-                                <span>🔴</span>
+                                <img src="reddit-logo-reddit-icon-transparent-free-png.webp" alt="Reddit" class="share-icon">
                                 <span>Reddit</span>
                             </a>
                         </div>
@@ -2096,17 +2157,21 @@
                         top = btnRect.top - menuHeight - 8;
                     }
                     
-                    // If menu would go off right edge, align to left
-                    if (left + menuWidth > viewportWidth - 10) {
-                        left = viewportWidth - menuWidth - 10;
+                    // If menu would go off right edge, align to right edge of button instead
+                    if (left + menuWidth > viewportWidth - 20) {
+                        left = btnRect.right - menuWidth;
+                        // If that still goes off the left edge, position from right with margin
+                        if (left < 20) {
+                            left = viewportWidth - menuWidth - 20;
+                        }
                     }
                     
-                    // If menu would go off left edge, align to right
-                    if (left < 10) {
-                        left = 10;
+                    // If menu would go off left edge, add margin from left
+                    if (left < 20) {
+                        left = 20;
                     }
                     
-                    // Ensure menu stays within viewport
+                    // Ensure menu stays within viewport with margins
                     top = Math.max(10, Math.min(top, viewportHeight - menuHeight - 10));
                     
                     shareMenu.style.top = `${top}px`;
@@ -2131,8 +2196,14 @@
                 shareBtn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
             });
             
-            // Close menu when clicking outside
+            // Close menu when clicking outside (but allow share links to work)
             document.addEventListener('click', (e) => {
+                // Don't close if clicking on a share link
+                if (e.target.closest('.share-option')) {
+                    // Allow the link to navigate normally
+                    return;
+                }
+                
                 if (!shareMenu.contains(e.target) && e.target !== shareBtn) {
                     shareMenu.style.opacity = '0';
                     setTimeout(() => {
@@ -2147,12 +2218,15 @@
         // Function to update share links (called by article-loader.js)
         window.updateShareMenu = function(articleTitle, articleUrl, isEarthquake = false, magnitude = null, location = null) {
             const shareMenu = document.getElementById('share-menu');
-            if (!shareMenu) return;
+            if (!shareMenu) {
+                console.warn('[Share Menu] Share menu element not found');
+                return;
+            }
             
             // For earthquakes, use the proper format: "BREAKING: M___ Earthquake Near ___."
             let shareText = articleTitle;
             if (isEarthquake && magnitude && location) {
-                const magnitudeFormatted = magnitude.toFixed(1);
+                const magnitudeFormatted = typeof magnitude === 'number' ? magnitude.toFixed(1) : magnitude;
                 shareText = `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}.`;
             }
             
@@ -2165,12 +2239,30 @@
                 reddit: `https://reddit.com/submit?url=${encodeURIComponent(articleUrl)}&title=${encodeURIComponent(shareText)}`
             };
             
+            // Update each share link
             Object.keys(shareLinks).forEach(platform => {
                 const link = document.getElementById(`share-${platform}`);
                 if (link) {
                     link.href = shareLinks[platform];
+                    // Ensure link is clickable and opens in new tab (except email)
+                    if (platform !== 'email') {
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                    }
+                    // Remove any click handlers that might prevent navigation
+                    link.onclick = null;
+                    // Ensure clicks on share links work properly
+                    link.addEventListener('click', (e) => {
+                        // Allow the link to navigate normally
+                        e.stopPropagation(); // Prevent closing menu immediately
+                        // The browser will handle navigation via href
+                    }, { once: false });
+                } else {
+                    console.warn(`[Share Menu] Link not found for platform: ${platform}`);
                 }
             });
+            
+            console.log('[Share Menu] Share links updated', { shareText, articleUrl, shareLinks });
         };
         
         // Text Size Controls
@@ -2248,7 +2340,37 @@
         }
         
         // Initialize all features
+        // Initialize share menu links with fallback URLs on page load
+        function initializeShareLinks() {
+            const articleId = new URLSearchParams(window.location.search).get('id');
+            if (articleId) {
+                const articleUrl = `${window.location.origin}${window.location.pathname}?id=${encodeURIComponent(articleId)}`;
+                const shareText = document.title || 'Check out this article from Noteworthy News';
+                
+                // Set default share links immediately
+                const shareLinks = {
+                    twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(articleUrl)}`,
+                    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`,
+                    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(articleUrl)}`,
+                    email: `mailto:?subject=${encodeURIComponent(shareText)}&body=${encodeURIComponent(`${shareText}\n\n${articleUrl}`)}`,
+                    reddit: `https://reddit.com/submit?url=${encodeURIComponent(articleUrl)}&title=${encodeURIComponent(shareText)}`
+                };
+                
+                Object.keys(shareLinks).forEach(platform => {
+                    const link = document.getElementById(`share-${platform}`);
+                    if (link && (link.href === '#' || link.href.endsWith('#'))) {
+                        link.href = shareLinks[platform];
+                        if (platform !== 'email') {
+                            link.target = '_blank';
+                            link.rel = 'noopener noreferrer';
+                        }
+                    }
+                });
+            }
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
+            initializeShareLinks();
             // Reading progress
             window.addEventListener('scroll', updateReadingProgress);
             window.addEventListener('resize', updateReadingProgress);

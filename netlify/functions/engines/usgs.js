@@ -1510,7 +1510,7 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     title: `M${magnitude.toFixed(1)} Earthquake Near ${locationDisplay}`,
     summary: `A magnitude ${magnitude.toFixed(1)} earthquake was detected by the U.S. Geological Survey near ${locationDisplay}.`,
     location_display: locationDisplay,
-    location_english_name: locationEnglishName || null, // English translation for non-English locations
+    // Note: location_english_name is stored in assets, not as a separate column (column doesn't exist in schema)
     country_code: null, // Can be enhanced with geocoding
     lat: coordinates ? coordinates[1] : null,
     lon: coordinates ? coordinates[0] : null,

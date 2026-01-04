@@ -425,6 +425,9 @@ class CommentSection {
   }
 }
 
+// Expose CommentSection globally
+window.CommentSection = CommentSection;
+
 // Initialize comment sections for articles
 window.commentSections = {};
 

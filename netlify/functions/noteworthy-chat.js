@@ -1226,6 +1226,9 @@ RESPONSE STYLE:
     let usage = null;
     let searchInProgress = false;
     let searchQuery = '';
+    // Track email confirmation data for response (declared at function scope to avoid undefined errors)
+    let emailConfirmationData = null;
+    
     try {
       let data = await r.json();
       usage = data.usage || null;
@@ -1235,9 +1238,6 @@ RESPONSE STYLE:
       let message = choice?.message;
       let maxToolIterations = 3; // Prevent infinite loops
       let toolIteration = 0;
-      
-      // Track email confirmation data for response (declared outside loop for scope)
-      let emailConfirmationData = null;
       
       while (message && message.tool_calls && message.tool_calls.length > 0 && toolIteration < maxToolIterations) {
         toolIteration++;
