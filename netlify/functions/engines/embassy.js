@@ -66,9 +66,32 @@ async function fetchTravelAdvisories(logger) {
     for (const feedConfig of STATE_DEPT_FEEDS) {
       try {
         logger.info('Fetching from feed', { url: feedConfig.url, type: feedConfig.type });
-        const feed = await parser.parseURL(feedConfig.url);
+        
+        // Add timeout and better error handling for malformed RSS feeds
+        const feed = await Promise.race([
+          parser.parseURL(feedConfig.url),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Feed fetch timeout')), 10000)
+          )
+        ]).catch(error => {
+          // Handle RSS parsing errors gracefully
+          if (error.message.includes('Unexpected close tag') || 
+              error.message.includes('Feed not recognized') ||
+              error.message.includes('timeout')) {
+            logger.warn('Failed to parse feed (malformed XML or invalid RSS)', { 
+              url: feedConfig.url, 
+              error: error.message.substring(0, 100) 
+            });
+            return null;
+          }
+          throw error;
+        });
         
         if (!feed || !feed.items || feed.items.length === 0) {
+          if (feed === null) {
+            // Already logged above, just continue
+            continue;
+          }
           logger.warn('No items found in feed', { url: feedConfig.url });
           continue;
         }

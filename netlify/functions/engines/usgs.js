@@ -652,9 +652,10 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     
     // If no images found, retry multiple times with increasing delays
     // USGS images can take 5-10 minutes to appear after earthquake
+    // For smaller earthquakes, we'll mark them for retry too (not just 6.0+)
     if (usgsImages.length === 0 && eventDetail) {
       const maxRetries = 3;
-      const retryDelays = [3000, 5000, 7000]; // 3s, 5s, 7s
+      const retryDelays = [5000, 10000, 15000]; // 5s, 10s, 15s (longer waits)
       
       for (let retry = 0; retry < maxRetries && usgsImages.length === 0; retry++) {
         logger.info(`No USGS images found, retry ${retry + 1}/${maxRetries} after ${retryDelays[retry]}ms...`, { eventId });
@@ -679,8 +680,7 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       });
       
       // For magnitude 6.0+, mark for continuous retry until USGS images are found
-      // We'll set a flag that will be stored with the event, then the retry function will pick it up
-      // This flag will be added to the event.assets object below
+      // The retry function will check every minute and update the image when USGS images appear
     } else {
       logger.info('USGS images extracted', { count: usgsImages.length, eventId });
     }
@@ -719,12 +719,15 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       magnitude: magnitude, // Store magnitude in assets for easy access
       event_id: eventId, // Store event_id in assets for email alerts
       // For magnitude 6.0+, mark for continuous retry if no USGS images found
+      // This allows the retry-usgs-images function to check every minute until images appear
       ...(magnitude >= 6.0 && usgsImages.length === 0 && detailUrl ? {
         usgs_retry_pending: true,
         usgs_retry_started_at: new Date().toISOString(),
         usgs_retry_count: 0,
         usgs_detail_url: detailUrl,
       } : {}),
+      // Store detail URL for all earthquakes so we can retry later if needed
+      ...(detailUrl ? { usgs_detail_url: detailUrl } : {}),
     },
     image_url: imageUrl,
     alert_sent: false,
@@ -756,8 +759,16 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   
   // Send email alert for ALL earthquakes (user requested)
   // Removed magnitude >= 7.0 check - now sends for all
-  // If forceEmail is true (most recent earthquake), send even if alert_sent is true
-  if (!storedEvent.alert_sent || isNew || forceEmail) {
+  // Send if: it's new, OR alert hasn't been sent yet, OR it's the most recent earthquake (forceEmail)
+  logger.info('Checking email alert conditions', {
+    canonical_id: canonicalId,
+    alert_sent: storedEvent.alert_sent,
+    isNew,
+    forceEmail,
+    will_send: isNew || !storedEvent.alert_sent || forceEmail
+  });
+  
+  if (isNew || !storedEvent.alert_sent || forceEmail) {
     // If forcing email, temporarily reset alert_sent so sendEmailAlert will process it
     const originalAlertSent = storedEvent.alert_sent;
     if (forceEmail && storedEvent.alert_sent) {
@@ -782,6 +793,14 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       // Restore original status if email failed
       storedEvent.alert_sent = originalAlertSent;
     }
+  } else {
+    logger.info('Email alert skipped', {
+      canonical_id: canonicalId,
+      reason: storedEvent.alert_sent ? 'already_sent' : (isNew ? 'not_new' : 'not_forced'),
+      alert_sent: storedEvent.alert_sent,
+      isNew,
+      forceEmail
+    });
   }
   
   return { isNew, event: storedEvent };
