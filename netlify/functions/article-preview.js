@@ -87,12 +87,31 @@ exports.handler = async (event) => {
     const title = post.title || post.story || post.text || 'Breaking News Story';
     const story = post.story || post.text || post.title || '';
     const description = story.length > 200 ? story.substring(0, 200) + '...' : story;
-    const image = post.primary_image_url || post.image_url || post.image || post.images?.[0] || 'https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg';
+    
+    // CRITICAL: Prioritize primary_image_url (generated earthquake images) for social media previews
+    // This ensures the generated branded earthquake images appear in social media cards
+    const image = post.primary_image_url || 
+                 post.image_url || 
+                 post.image || 
+                 post.images?.[0] || 
+                 'https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg';
     const url = `https://noteworthynews.co/article.html?id=${encodeURIComponent(articleId)}`;
     const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
     
     // Ensure image URL is absolute
-    const imageUrl = image.startsWith('http') ? image : `https://noteworthynews.co${image.startsWith('/') ? image : '/' + image}`;
+    let imageUrl = image.startsWith('http') ? image : `https://noteworthynews.co${image.startsWith('/') ? image : '/' + image}`;
+    
+    // Log image selection for debugging social media previews
+    console.log('[article-preview] Image selected for social preview:', {
+      articleId,
+      source: post.primary_image_url ? 'primary_image_url' : 
+              post.image_url ? 'image_url' : 
+              post.image ? 'image' : 
+              post.images?.[0] ? 'images[0]' : 'default',
+      url: imageUrl.substring(0, 100),
+      isGenerated: imageUrl.includes('get-uploaded-image') && imageUrl.includes('earthquake'),
+      hasPrimary: !!post.primary_image_url
+    });
 
     // Generate HTML with pre-rendered meta tags
     const html = `<!DOCTYPE html>

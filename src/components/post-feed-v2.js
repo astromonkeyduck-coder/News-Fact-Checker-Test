@@ -605,12 +605,16 @@ function mapRawPostToPost(raw) {
   const createdAt = raw.datePosted || raw.createdAt || raw.created_at || new Date().toISOString();
 
   const media = [];
-  if (raw.images && raw.images.length > 0) {
+  // CRITICAL: Prioritize primary_image_url (generated earthquake images) for social media previews
+  // Check primary_image_url first, then fall back to other image fields
+  const primaryImage = raw.primary_image_url || raw.image_url || raw.image;
+  
+  if (primaryImage) {
+    media.push({ type: 'image', url: primaryImage });
+  } else if (raw.images && raw.images.length > 0) {
     raw.images.forEach(url => {
       if (url) media.push({ type: 'image', url });
     });
-  } else if (raw.image) {
-    media.push({ type: 'image', url: raw.image });
   }
   if (raw.videos && raw.videos.length > 0) {
     raw.videos.forEach(url => {

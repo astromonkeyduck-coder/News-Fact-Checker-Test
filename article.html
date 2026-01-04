@@ -556,7 +556,7 @@
         .article-sidebar {
             display: flex;
             flex-direction: column;
-            gap: 32px;
+            gap: 40px; /* Increased from 32px to prevent overlap */
             box-sizing: border-box;
             align-items: stretch;
         }
@@ -580,10 +580,14 @@
                 top: 100px;
                 align-self: flex-start;
                 width: 100%;
-                margin-bottom: 32px;
+                margin-bottom: 40px; /* Increased from 32px to prevent overlap */
             }
             
-            /* Ensure proper spacing between sticky cards - gap handles this */
+            /* Ensure proper spacing between sticky cards */
+            .sidebar-card.sticky:not(:last-child) {
+                margin-bottom: 40px; /* Explicit spacing for all but last */
+            }
+            
             .sidebar-card.sticky:last-child {
                 margin-bottom: 0;
             }
@@ -639,6 +643,20 @@
         #related-articles {
             position: relative;
             z-index: 0;
+            margin-bottom: 0; /* Reset any inherited margins */
+        }
+        
+        /* Add extra spacing after content in each card to prevent overlap */
+        .sidebar-card.sticky #latest-articles,
+        .sidebar-card.sticky #related-articles {
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+        
+        /* Ensure h2 headers don't cause overlap */
+        .sidebar-card.sticky h2 {
+            margin-top: 0;
+            margin-bottom: 16px;
         }
         
         .news-card:hover {
@@ -915,6 +933,11 @@
                 grid-template-columns: 1fr;
                 gap: 20px;
             }
+            
+            /* Ensure thumbnails maintain aspect ratio on mobile */
+            .more-coverage .news-card-thumbnail-wrapper {
+                aspect-ratio: 16 / 9;
+            }
         }
         
         /* Enhanced News Card for More Coverage */
@@ -936,12 +959,67 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         
+        /* Thumbnail wrapper with fixed 16:9 aspect ratio - prevents layout shift */
+        .more-coverage .news-card-thumbnail-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
         .more-coverage .news-card-thumbnail {
             width: 100%;
-            height: 200px;
+            height: 100%;
             object-fit: cover;
-            background: #f5f5f5;
+            object-position: 50% 15%; /* Bias upward to show header text (ALASKA, CALIFORNIA) */
             display: block;
+            transition: transform 0.3s ease;
+        }
+        
+        /* Smart positioning for earthquake graphics - detect by URL pattern */
+        .more-coverage .news-card-thumbnail[data-variant="earthquake"],
+        .more-coverage .news-card-thumbnail[data-variant="shareGraphic"] {
+            object-position: 50% 15%; /* Show top header text */
+        }
+        
+        /* Standard photos use center crop */
+        .more-coverage .news-card-thumbnail[data-variant="photo"] {
+            object-position: 50% 50%;
+        }
+        
+        .more-coverage .news-card:hover .news-card-thumbnail {
+            transform: scale(1.05);
+        }
+        
+        /* Placeholder for missing/broken images */
+        .more-coverage .news-card-thumbnail-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #4A90E2 0%, #2ECC71 100%);
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .more-coverage .news-card-thumbnail-placeholder-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+        
+        .more-coverage .news-card-thumbnail-placeholder-text {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
         }
         
         .more-coverage .news-card-content {
@@ -959,7 +1037,7 @@
             color: #1a1a1a;
             font-family: 'Inter', sans-serif;
             display: -webkit-box;
-            -webkit-line-clamp: 3;
+            -webkit-line-clamp: 2; /* Changed from 3 to 2 for consistency */
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
@@ -1420,7 +1498,12 @@
         }
         
         .share-menu[aria-hidden="false"] {
-            display: block;
+            display: block !important;
+            opacity: 1 !important;
+        }
+        
+        .share-menu[aria-hidden="true"] {
+            display: none !important;
         }
         
         .share-option {
@@ -1567,6 +1650,33 @@
         
         /* Print Styles */
         @media print {
+            /* Hide scrollbars and prevent overflow in print */
+            * {
+                overflow: visible !important;
+                scrollbar-width: none !important;
+                -ms-overflow-style: none !important;
+            }
+            
+            *::-webkit-scrollbar {
+                display: none !important;
+                width: 0 !important;
+                height: 0 !important;
+            }
+            
+            html,
+            body {
+                overflow: visible !important;
+                height: auto !important;
+                max-height: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            body.article-page {
+                overflow: visible !important;
+                height: auto !important;
+            }
+            
             .main-header,
             .article-sidebar,
             .article-header-utility,
@@ -1575,14 +1685,23 @@
             .comments-section,
             .more-coverage,
             .lightbox,
-            .share-menu {
+            .share-menu,
+            .starfield {
                 display: none !important;
             }
             
             .article-container {
-                max-width: 100%;
-                padding: 0;
-                grid-template-columns: 1fr;
+                max-width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                grid-template-columns: 1fr !important;
+                overflow: visible !important;
+                height: auto !important;
+            }
+            
+            .article-main {
+                overflow: visible !important;
+                height: auto !important;
             }
             
             .article-header-panel,
@@ -1592,6 +1711,7 @@
                 border: none !important;
                 box-shadow: none !important;
                 padding: 20px !important;
+                overflow: visible !important;
             }
             
             .article-header h1 {
@@ -1602,6 +1722,7 @@
             
             .article-body {
                 color: black !important;
+                overflow: visible !important;
             }
             
             .article-body p,
@@ -1647,7 +1768,7 @@
     <header class="main-header" style="position: fixed; top: 0; left: 0; right: 0; background: #ffffff; backdrop-filter: none; border-bottom: 1px solid #e5e5e5; z-index: 1000; padding: 12px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
         <div style="max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
             <a href="index.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
-                <img src="nw-logo.GIF" alt="Noteworthy News Logo" style="height: 28px; width: auto; max-width: 120px; display: block;">
+                <img src="IMG_5992.PNG" alt="Noteworthy News Logo" style="height: 28px; width: auto; max-width: 120px; display: block;">
                 <span style="font-weight: 700; color: #1a1a1a; margin-left: 5px; font-family: 'Inter', sans-serif; font-size: 1.125rem;">Noteworthy News</span>
             </a>
             <nav style="display: flex; align-items: center; gap: 12px;">
@@ -1813,6 +1934,11 @@
     <!-- Professional Footer -->
     <footer style="background: #ffffff; padding: 40px 20px; margin-top: 80px; border-top: 1px solid #e5e5e5;">
         <div style="max-width: 1400px; margin: 0 auto; text-align: center; color: #666;">
+            <div style="margin-bottom: 20px;">
+                <a href="index.html" style="display: inline-block; text-decoration: none;">
+                    <img src="nw-logo.GIF" alt="Noteworthy News Logo" style="height: 40px; width: auto; max-width: 150px; display: block; margin: 0 auto;">
+                </a>
+            </div>
             <p style="font-family: 'Inter', sans-serif; font-size: 0.875rem; margin: 0 0 16px 0;">&copy; 2025 Noteworthy News. All rights reserved.</p>
             <nav style="margin-top: 20px; display: flex; justify-content: center; flex-wrap: wrap; gap: 16px;">
                 <a href="privacy.html" style="color: #1a1a1a; text-decoration: none; font-family: 'Inter', sans-serif; font-size: 0.875rem;">Privacy Policy</a>
@@ -1937,12 +2063,10 @@
             });
         }
         
-        // Share Menu
+        // Share Menu - Will be updated by article-loader.js when article loads
         function initShareMenu() {
             const shareBtn = document.getElementById('share-menu-btn');
             const shareMenu = document.getElementById('share-menu');
-            const articleTitle = document.getElementById('article-heading')?.textContent || document.title;
-            const articleUrl = window.location.href;
             
             if (!shareBtn || !shareMenu) return;
             
@@ -1951,36 +2075,56 @@
                 const isOpen = shareMenu.getAttribute('aria-hidden') === 'false';
                 
                 if (!isOpen) {
+                    // Make menu visible first to calculate dimensions
+                    shareMenu.style.display = 'block';
+                    shareMenu.style.opacity = '0';
+                    
                     // Position menu near the button
                     const btnRect = shareBtn.getBoundingClientRect();
-                    const menuHeight = 250; // Approximate menu height
-                    const menuWidth = 200; // Approximate menu width
+                    const menuRect = shareMenu.getBoundingClientRect();
+                    const menuHeight = menuRect.height || 250;
+                    const menuWidth = menuRect.width || 200;
                     const viewportHeight = window.innerHeight;
                     const viewportWidth = window.innerWidth;
                     
                     // Calculate position
                     let top = btnRect.bottom + 8;
-                    let right = viewportWidth - btnRect.right;
+                    let left = btnRect.left;
                     
                     // If menu would go below viewport, show it above the button
-                    if (top + menuHeight > viewportHeight) {
+                    if (top + menuHeight > viewportHeight - 10) {
                         top = btnRect.top - menuHeight - 8;
                     }
                     
                     // If menu would go off right edge, align to left
-                    if (right + menuWidth > viewportWidth) {
-                        right = viewportWidth - btnRect.left - menuWidth;
+                    if (left + menuWidth > viewportWidth - 10) {
+                        left = viewportWidth - menuWidth - 10;
+                    }
+                    
+                    // If menu would go off left edge, align to right
+                    if (left < 10) {
+                        left = 10;
                     }
                     
                     // Ensure menu stays within viewport
-                    top = Math.max(8, Math.min(top, viewportHeight - menuHeight - 8));
-                    right = Math.max(8, Math.min(right, viewportWidth - menuWidth - 8));
+                    top = Math.max(10, Math.min(top, viewportHeight - menuHeight - 10));
                     
                     shareMenu.style.top = `${top}px`;
-                    shareMenu.style.right = `${right}px`;
+                    shareMenu.style.left = `${left}px`;
+                    shareMenu.style.right = 'auto';
+                    
+                    // Fade in
+                    setTimeout(() => {
+                        shareMenu.style.opacity = '1';
+                    }, 10);
                     
                     // Scroll button into view if needed
                     shareBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    shareMenu.style.opacity = '0';
+                    setTimeout(() => {
+                        shareMenu.style.display = 'none';
+                    }, 200);
                 }
                 
                 shareMenu.setAttribute('aria-hidden', isOpen ? 'true' : 'false');
@@ -1990,18 +2134,35 @@
             // Close menu when clicking outside
             document.addEventListener('click', (e) => {
                 if (!shareMenu.contains(e.target) && e.target !== shareBtn) {
+                    shareMenu.style.opacity = '0';
+                    setTimeout(() => {
+                        shareMenu.style.display = 'none';
+                    }, 200);
                     shareMenu.setAttribute('aria-hidden', 'true');
                     shareBtn.setAttribute('aria-expanded', 'false');
                 }
             });
+        }
+        
+        // Function to update share links (called by article-loader.js)
+        window.updateShareMenu = function(articleTitle, articleUrl, isEarthquake = false, magnitude = null, location = null) {
+            const shareMenu = document.getElementById('share-menu');
+            if (!shareMenu) return;
             
-            // Setup share links
+            // For earthquakes, use the proper format: "BREAKING: M___ Earthquake Near ___."
+            let shareText = articleTitle;
+            if (isEarthquake && magnitude && location) {
+                const magnitudeFormatted = magnitude.toFixed(1);
+                shareText = `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}.`;
+            }
+            
+            // Setup share links with proper text
             const shareLinks = {
-                twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(articleTitle)}&url=${encodeURIComponent(articleUrl)}`,
+                twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(articleUrl)}`,
                 facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`,
                 linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(articleUrl)}`,
-                email: `mailto:?subject=${encodeURIComponent(articleTitle)}&body=${encodeURIComponent(articleUrl)}`,
-                reddit: `https://reddit.com/submit?url=${encodeURIComponent(articleUrl)}&title=${encodeURIComponent(articleTitle)}`
+                email: `mailto:?subject=${encodeURIComponent(shareText)}&body=${encodeURIComponent(`${shareText}\n\n${articleUrl}`)}`,
+                reddit: `https://reddit.com/submit?url=${encodeURIComponent(articleUrl)}&title=${encodeURIComponent(shareText)}`
             };
             
             Object.keys(shareLinks).forEach(platform => {
@@ -2010,7 +2171,7 @@
                     link.href = shareLinks[platform];
                 }
             });
-        }
+        };
         
         // Text Size Controls
         function initTextSizeControls() {

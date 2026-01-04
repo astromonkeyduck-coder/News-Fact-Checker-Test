@@ -87,8 +87,36 @@
 
         let cardHTML = `<a href="${articleUrl}" class="news-card ${className}" aria-label="Read article: ${escapeHtml(shortTitle)}">`;
         
-        if (showThumbnail && image) {
-            cardHTML += `<img src="${escapeHtml(image)}" alt="${escapeHtml(shortTitle)}" class="news-card-thumbnail" loading="lazy">`;
+        if (showThumbnail) {
+            // Detect image variant for smart cropping
+            const imageUrl = image || '';
+            const isEarthquakeGraphic = imageUrl.includes('earthquake-') || 
+                                       imageUrl.includes('standard') || 
+                                       post.category === 'Earthquake' ||
+                                       post.source === 'USGS';
+            const variant = isEarthquakeGraphic ? 'earthquake' : 'photo';
+            
+            cardHTML += `<div class="news-card-thumbnail-wrapper">`;
+            
+            if (image) {
+                cardHTML += `<img 
+                    src="${escapeHtml(image)}" 
+                    alt="${escapeHtml(shortTitle)}" 
+                    class="news-card-thumbnail" 
+                    data-variant="${variant}"
+                    loading="lazy"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                >`;
+            }
+            
+            // Placeholder for missing/broken images
+            const placeholderStyle = image ? 'display: none;' : '';
+            cardHTML += `<div class="news-card-thumbnail-placeholder" style="${placeholderStyle}">
+                <div class="news-card-thumbnail-placeholder-icon">📰</div>
+                <div class="news-card-thumbnail-placeholder-text">${escapeHtml(category)}</div>
+            </div>`;
+            
+            cardHTML += `</div>`;
         }
         
         if (enhanced) {

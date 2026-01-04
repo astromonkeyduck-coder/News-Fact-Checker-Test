@@ -1377,14 +1377,30 @@
                 headerTimestamp.style.display = 'inline-block';
             }
             
-            // Update share buttons
+            // Update share buttons with proper earthquake format
             const shareUrl = `${SITE_URL}/article.html?id=${encodeURIComponent(articleId)}`;
-            const shareTitle = encodeURIComponent(title);
-            const shareText = encodeURIComponent(truncateDescription(story));
             
+            // Check if this is an earthquake post
+            const isEarthquake = post.category === 'Earthquake' || post.event_type === 'earthquake' || post.source === 'USGS';
+            const magnitude = post.magnitude || post.assets?.magnitude || null;
+            const location = post.location_display || post.location || null;
+            
+            // For earthquakes, use the proper format: "BREAKING: M___ Earthquake Near ___."
+            let shareText = title;
+            if (isEarthquake && magnitude && location) {
+                const magnitudeFormatted = typeof magnitude === 'number' ? magnitude.toFixed(1) : magnitude;
+                shareText = `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}.`;
+            }
+            
+            // Update share menu via global function
+            if (typeof window.updateShareMenu === 'function') {
+                window.updateShareMenu(shareText, shareUrl, isEarthquake, magnitude, location);
+            }
+            
+            // Also update individual share buttons if they exist (legacy support)
             const twitterBtn = document.getElementById('share-twitter-btn');
             if (twitterBtn) {
-                twitterBtn.href = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${shareTitle}`;
+                twitterBtn.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
             }
             
             // Update article body - PRESERVE EXACT POST TEXT
@@ -1769,9 +1785,32 @@
                         }
                     }
                     
+                    // Detect image variant for smart cropping
+                    const isEarthquakeGraphic = safeImageUrl && (
+                        safeImageUrl.includes('earthquake-') || 
+                        safeImageUrl.includes('standard') || 
+                        category === 'Earthquake'
+                    );
+                    const variant = isEarthquakeGraphic ? 'earthquake' : 'photo';
+                    
                     return `
                         <a href="${articleUrl}" class="news-card">
-                            ${image && safeImageUrl ? `<img src="${safeImageUrl}" alt="${escapedTitle}" class="news-card-thumbnail" loading="lazy">` : ''}
+                            <div class="news-card-thumbnail-wrapper">
+                                ${image && safeImageUrl ? `
+                                    <img 
+                                        src="${safeImageUrl}" 
+                                        alt="${escapedTitle}" 
+                                        class="news-card-thumbnail" 
+                                        data-variant="${variant}"
+                                        loading="lazy"
+                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                    >
+                                ` : ''}
+                                <div class="news-card-thumbnail-placeholder" style="${image && safeImageUrl ? 'display: none;' : ''}">
+                                    <div class="news-card-thumbnail-placeholder-icon">📰</div>
+                                    <div class="news-card-thumbnail-placeholder-text">${escapedCategory}</div>
+                                </div>
+                            </div>
                             <div class="news-card-content">
                                 <h3 class="news-card-title">${escapedTitle}</h3>
                                 <div class="news-card-meta">
