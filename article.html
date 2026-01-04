@@ -2223,11 +2223,137 @@
                 return;
             }
             
-            // For earthquakes, use the proper format: "BREAKING: M___ Earthquake Near ___."
+            // Helper function to get earthquake hashtags
+            function getEarthquakeHashtags(location) {
+                if (!location) return '#terremoto #地震';
+                
+                const locationLower = location.toLowerCase();
+                
+                // Language mapping based on location
+                const languageMap = {
+                    // Spanish-speaking countries/regions
+                    'mexico': { tag: '#terremoto', lang: 'Spanish' },
+                    'méxico': { tag: '#terremoto', lang: 'Spanish' },
+                    'spain': { tag: '#terremoto', lang: 'Spanish' },
+                    'españa': { tag: '#terremoto', lang: 'Spanish' },
+                    'chile': { tag: '#terremoto', lang: 'Spanish' },
+                    'peru': { tag: '#terremoto', lang: 'Spanish' },
+                    'perú': { tag: '#terremoto', lang: 'Spanish' },
+                    'colombia': { tag: '#terremoto', lang: 'Spanish' },
+                    'argentina': { tag: '#terremoto', lang: 'Spanish' },
+                    'ecuador': { tag: '#terremoto', lang: 'Spanish' },
+                    'guatemala': { tag: '#terremoto', lang: 'Spanish' },
+                    'honduras': { tag: '#terremoto', lang: 'Spanish' },
+                    'nicaragua': { tag: '#terremoto', lang: 'Spanish' },
+                    'el salvador': { tag: '#terremoto', lang: 'Spanish' },
+                    'costa rica': { tag: '#terremoto', lang: 'Spanish' },
+                    'panama': { tag: '#terremoto', lang: 'Spanish' },
+                    'panamá': { tag: '#terremoto', lang: 'Spanish' },
+                    'venezuela': { tag: '#terremoto', lang: 'Spanish' },
+                    'bolivia': { tag: '#terremoto', lang: 'Spanish' },
+                    'paraguay': { tag: '#terremoto', lang: 'Spanish' },
+                    'uruguay': { tag: '#terremoto', lang: 'Spanish' },
+                    'dominican republic': { tag: '#terremoto', lang: 'Spanish' },
+                    'puerto rico': { tag: '#terremoto', lang: 'Spanish' },
+                    'california': { tag: '#terremoto', lang: 'Spanish' },
+                    
+                    // Japanese regions
+                    'japan': { tag: '#地震', lang: 'Japanese' },
+                    'tokyo': { tag: '#地震', lang: 'Japanese' },
+                    'osaka': { tag: '#地震', lang: 'Japanese' },
+                    'kyoto': { tag: '#地震', lang: 'Japanese' },
+                    'hokkaido': { tag: '#地震', lang: 'Japanese' },
+                    'okinawa': { tag: '#地震', lang: 'Japanese' },
+                    
+                    // Chinese-speaking regions
+                    'china': { tag: '#地震', lang: 'Chinese' },
+                    'taiwan': { tag: '#地震', lang: 'Chinese' },
+                    'hong kong': { tag: '#地震', lang: 'Chinese' },
+                    'beijing': { tag: '#地震', lang: 'Chinese' },
+                    'shanghai': { tag: '#地震', lang: 'Chinese' },
+                    
+                    // French-speaking regions
+                    'france': { tag: '#séisme', lang: 'French' },
+                    'haiti': { tag: '#séisme', lang: 'French' },
+                    'quebec': { tag: '#séisme', lang: 'French' },
+                    
+                    // Portuguese-speaking regions
+                    'brazil': { tag: '#terremoto', lang: 'Portuguese' },
+                    'brasil': { tag: '#terremoto', lang: 'Portuguese' },
+                    'portugal': { tag: '#terremoto', lang: 'Portuguese' },
+                    
+                    // Italian
+                    'italy': { tag: '#terremoto', lang: 'Italian' },
+                    'italia': { tag: '#terremoto', lang: 'Italian' },
+                    
+                    // Turkish
+                    'turkey': { tag: '#deprem', lang: 'Turkish' },
+                    'türkiye': { tag: '#deprem', lang: 'Turkish' },
+                    
+                    // Greek
+                    'greece': { tag: '#σεισμός', lang: 'Greek' },
+                    
+                    // Indonesian
+                    'indonesia': { tag: '#gempa', lang: 'Indonesian' },
+                    'jakarta': { tag: '#gempa', lang: 'Indonesian' },
+                    
+                    // Filipino
+                    'philippines': { tag: '#lindol', lang: 'Filipino' },
+                    'manila': { tag: '#lindol', lang: 'Filipino' },
+                    
+                    // Arabic
+                    'saudi arabia': { tag: '#زلزال', lang: 'Arabic' },
+                    'uae': { tag: '#زلزال', lang: 'Arabic' },
+                    'egypt': { tag: '#زلزال', lang: 'Arabic' },
+                    
+                    // Russian
+                    'russia': { tag: '#землетрясение', lang: 'Russian' },
+                    'moscow': { tag: '#землетрясение', lang: 'Russian' },
+                    
+                    // Korean
+                    'south korea': { tag: '#지진', lang: 'Korean' },
+                    'korea': { tag: '#지진', lang: 'Korean' },
+                    'seoul': { tag: '#지진', lang: 'Korean' },
+                    
+                    // Hindi/Urdu
+                    'india': { tag: '#भूकंप', lang: 'Hindi' },
+                    'pakistan': { tag: '#زلزلہ', lang: 'Urdu' },
+                    
+                    // Vietnamese
+                    'vietnam': { tag: '#độngđất', lang: 'Vietnamese' },
+                    
+                    // Thai
+                    'thailand': { tag: '#แผ่นดินไหว', lang: 'Thai' },
+                    'bangkok': { tag: '#แผ่นดินไหว', lang: 'Thai' }
+                };
+                
+                // Find matching language
+                let relevantTag = null;
+                for (const [key, value] of Object.entries(languageMap)) {
+                    if (locationLower.includes(key)) {
+                        relevantTag = value.tag;
+                        break;
+                    }
+                }
+                
+                // Default: Spanish, Japanese, and English
+                const hashtags = ['#terremoto', '#地震'];
+                if (relevantTag && !hashtags.includes(relevantTag)) {
+                    hashtags.push(relevantTag);
+                } else if (!relevantTag) {
+                    // Default to English if no match
+                    hashtags.push('#earthquake');
+                }
+                
+                return hashtags.join(' ');
+            }
+            
+            // For earthquakes, use the proper format: "BREAKING: M___ Earthquake Near ___. #hashtags"
             let shareText = articleTitle;
             if (isEarthquake && magnitude && location) {
                 const magnitudeFormatted = typeof magnitude === 'number' ? magnitude.toFixed(1) : magnitude;
-                shareText = `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}.`;
+                const hashtags = getEarthquakeHashtags(location);
+                shareText = `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}. ${hashtags}`;
             }
             
             // Setup share links with proper text
@@ -2341,13 +2467,16 @@
         
         // Initialize all features
         // Initialize share menu links with fallback URLs on page load
+        // NOTE: This is just a fallback - the actual share text will be updated by article-loader.js
+        // when the article loads. This prevents "Loading article..." from appearing.
         function initializeShareLinks() {
             const articleId = new URLSearchParams(window.location.search).get('id');
             if (articleId) {
                 const articleUrl = `${window.location.origin}${window.location.pathname}?id=${encodeURIComponent(articleId)}`;
-                const shareText = document.title || 'Check out this article from Noteworthy News';
+                // Use a generic but descriptive fallback - article-loader.js will update this
+                const shareText = 'Breaking News from Noteworthy News';
                 
-                // Set default share links immediately
+                // Set default share links immediately (will be updated when article loads)
                 const shareLinks = {
                     twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(articleUrl)}`,
                     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`,
@@ -2358,11 +2487,14 @@
                 
                 Object.keys(shareLinks).forEach(platform => {
                     const link = document.getElementById(`share-${platform}`);
-                    if (link && (link.href === '#' || link.href.endsWith('#'))) {
-                        link.href = shareLinks[platform];
-                        if (platform !== 'email') {
-                            link.target = '_blank';
-                            link.rel = 'noopener noreferrer';
+                    if (link) {
+                        // Only set if not already set (to avoid overwriting updates from article-loader)
+                        if (link.href === '#' || link.href.endsWith('#')) {
+                            link.href = shareLinks[platform];
+                            if (platform !== 'email') {
+                                link.target = '_blank';
+                                link.rel = 'noopener noreferrer';
+                            }
                         }
                     }
                 });

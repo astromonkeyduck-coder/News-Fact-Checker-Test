@@ -8,6 +8,84 @@
 const { Resend } = require('resend');
 
 /**
+ * Get earthquake hashtags in Spanish, Japanese, and location-relevant language
+ */
+function getEarthquakeHashtags(location) {
+  if (!location) return '#terremoto #地震';
+  
+  const locationLower = location.toLowerCase();
+  
+  // Language mapping based on location
+  const languageMap = {
+    // Spanish-speaking countries/regions
+    'mexico': '#terremoto', 'méxico': '#terremoto', 'spain': '#terremoto', 'españa': '#terremoto',
+    'chile': '#terremoto', 'peru': '#terremoto', 'perú': '#terremoto', 'colombia': '#terremoto',
+    'argentina': '#terremoto', 'ecuador': '#terremoto', 'guatemala': '#terremoto', 'honduras': '#terremoto',
+    'nicaragua': '#terremoto', 'el salvador': '#terremoto', 'costa rica': '#terremoto', 'panama': '#terremoto',
+    'panamá': '#terremoto', 'venezuela': '#terremoto', 'bolivia': '#terremoto', 'paraguay': '#terremoto',
+    'uruguay': '#terremoto', 'dominican republic': '#terremoto', 'puerto rico': '#terremoto', 'california': '#terremoto',
+    // Japanese regions
+    'japan': '#地震', 'tokyo': '#地震', 'osaka': '#地震', 'kyoto': '#地震', 'hokkaido': '#地震', 'okinawa': '#地震',
+    // Chinese-speaking regions
+    'china': '#地震', 'taiwan': '#地震', 'hong kong': '#地震', 'beijing': '#地震', 'shanghai': '#地震',
+    // French-speaking regions
+    'france': '#séisme', 'haiti': '#séisme', 'quebec': '#séisme',
+    // Portuguese-speaking regions
+    'brazil': '#terremoto', 'brasil': '#terremoto', 'portugal': '#terremoto',
+    // Italian
+    'italy': '#terremoto', 'italia': '#terremoto',
+    // Turkish
+    'turkey': '#deprem', 'türkiye': '#deprem',
+    // Greek
+    'greece': '#σεισμός',
+    // Indonesian
+    'indonesia': '#gempa', 'jakarta': '#gempa',
+    // Filipino
+    'philippines': '#lindol', 'manila': '#lindol',
+    // Arabic
+    'saudi arabia': '#زلزال', 'uae': '#زلزال', 'egypt': '#زلزال',
+    // Russian
+    'russia': '#землетрясение', 'moscow': '#землетрясение',
+    // Korean
+    'south korea': '#지진', 'korea': '#지진', 'seoul': '#지진',
+    // Hindi/Urdu
+    'india': '#भूकंप', 'pakistan': '#زلزلہ',
+    // Vietnamese
+    'vietnam': '#độngđất',
+    // Thai
+    'thailand': '#แผ่นดินไหว', 'bangkok': '#แผ่นดินไหว'
+  };
+  
+  // Find matching language
+  let relevantTag = null;
+  for (const [key, tag] of Object.entries(languageMap)) {
+    if (locationLower.includes(key)) {
+      relevantTag = tag;
+      break;
+    }
+  }
+  
+  // Default: Spanish, Japanese, and English
+  const hashtags = ['#terremoto', '#地震'];
+  if (relevantTag && !hashtags.includes(relevantTag)) {
+    hashtags.push(relevantTag);
+  } else if (!relevantTag) {
+    hashtags.push('#earthquake');
+  }
+  
+  return hashtags.join(' ');
+}
+
+/**
+ * Get share text with hashtags for earthquakes
+ */
+function getShareTextWithHashtags(magnitude, location) {
+  const magnitudeFormatted = typeof magnitude === 'number' ? magnitude.toFixed(1) : magnitude;
+  const hashtags = getEarthquakeHashtags(location);
+  return `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}. ${hashtags}`;
+}
+
+/**
  * Format time for human-readable display
  */
 function formatTime(timestamp) {
@@ -1046,7 +1124,7 @@ exports.handler = async (event, context) => {
                           <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
                             <tr>
                               <td style="padding: 0 6px;">
-                                <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(`BREAKING: M${safeMagnitudeFormatted} Earthquake Near ${safeLocationDisplay}`)}&url=${encodeURIComponent(`https://noteworthynews.co/article.html?id=post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}`)}" style="display: inline-block; padding: 8px 16px; font-size: 13px; font-weight: 600; color: #ffffff; background-color: #1DA1F2; text-decoration: none; border-radius: 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                                <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(getShareTextWithHashtags(safeMagnitudeFormatted, safeLocationDisplay))}&url=${encodeURIComponent(`https://noteworthynews.co/article.html?id=post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}`)}" style="display: inline-block; padding: 8px 16px; font-size: 13px; font-weight: 600; color: #ffffff; background-color: #1DA1F2; text-decoration: none; border-radius: 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
                                   𝕏 Share
                                 </a>
                               </td>

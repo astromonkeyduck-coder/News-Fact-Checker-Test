@@ -39,12 +39,12 @@ async function generateVideoFrames(magnitude, location, usgsImages, eventId, coo
       .png()
       .toBuffer();
     
-    // Composite animated effects on base image
+    // Composite animated effects on base image (4K filter, flash, roundabout)
     const frame = await baseImage
       .clone()
       .composite([{
         input: effectsBuffer,
-        blend: 'screen', // Screen blend for glow effects
+        blend: 'overlay', // Overlay blend for 4K enhancement effect
         left: 0,
         top: 0
       }])
@@ -62,58 +62,76 @@ async function generateVideoFrames(magnitude, location, usgsImages, eventId, coo
 }
 
 /**
- * Create animated effects SVG that changes over time
+ * Create animated effects SVG with 4K filter, flash, and roundabout animation
+ * These effects are ONLY for video/GIF previews for social media
  */
 function createAnimatedEffectsSVG(width, height, magnitude, time, progress) {
-  const particleCount = Math.min(40, Math.floor(magnitude * 4));
-  const glowIntensity = 0.3 + (Math.sin(time) + 1) * 0.2; // Pulsating glow
-  const shakeAmount = Math.min(10, magnitude * 1.5) * Math.sin(time * 2); // Oscillating shake
   const centerX = width * 0.5;
   const centerY = height * 0.6;
-  const baseRadius = 120;
-  const currentRadius = baseRadius + Math.sin(time * 2) * 30; // Pulsating radius
-  
-  // Create animated particles
-  let particles = '';
-  for (let i = 0; i < particleCount; i++) {
-    const angle = (i / particleCount) * Math.PI * 2 + time;
-    const distance = 50 + Math.sin(time * 2 + i) * 30;
-    const x = centerX + Math.cos(angle) * distance + (Math.random() - 0.5) * shakeAmount;
-    const y = centerY + Math.sin(angle) * distance + (Math.random() - 0.5) * shakeAmount;
-    const size = (Math.random() * 4 + 1);
-    const opacity = 0.3 + Math.sin(time + i) * 0.3;
-    const hue = Math.sin(time + i) * 30 + 0; // Animated color
-    particles += `
-      <circle cx="${x}" cy="${y}" r="${size}" fill="rgba(255, ${100 + hue}, 0, ${opacity})">
-        <animate attributeName="opacity" values="${opacity};${opacity * 0.3};${opacity}" dur="1.5s" repeatCount="indefinite"/>
-      </circle>
-    `;
-  }
+  const roundaboutRadius = 40; // Small roundabout animation
+  const flashIntensity = Math.min(0.3, magnitude / 25) * (0.5 + Math.sin(time) * 0.5); // Pulsating flash
+  const orbitingDotRadius = 8;
+  const orbitAngle = time * 0.5; // Slower orbit
+  const orbitingDotX = centerX + Math.cos(orbitAngle) * roundaboutRadius;
+  const orbitingDotY = centerY + Math.sin(orbitAngle) * roundaboutRadius;
   
   return `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <radialGradient id="epicenterGlow${Math.floor(time)}" cx="50%" cy="50%">
-          <stop offset="0%" stop-color="rgba(255, 50, 50, ${glowIntensity})" stop-opacity="1"/>
-          <stop offset="50%" stop-color="rgba(255, 100, 0, ${glowIntensity * 0.6})" stop-opacity="0.8"/>
-          <stop offset="100%" stop-color="rgba(255, 150, 0, 0)" stop-opacity="0"/>
+        <!-- 4K Enhancement Filter - Sharpening and contrast boost -->
+        <filter id="4kEnhance${Math.floor(time)}" x="0%" y="0%" width="100%" height="100%">
+          <feConvolveMatrix order="3" kernelMatrix="0 -1 0 -1 5 -1 0 -1 0" preserveAlpha="true"/>
+          <feColorMatrix type="saturate" values="1.1"/>
+          <feComponentTransfer>
+            <feFuncR type="gamma" amplitude="1" exponent="0.95"/>
+            <feFuncG type="gamma" amplitude="1" exponent="0.95"/>
+            <feFuncB type="gamma" amplitude="1" exponent="0.95"/>
+          </feComponentTransfer>
+        </filter>
+        
+        <!-- Flash effect gradient -->
+        <radialGradient id="flashGradient${Math.floor(time)}" cx="50%" cy="50%">
+          <stop offset="0%" stop-color="rgba(255, 255, 255, ${flashIntensity})" stop-opacity="1"/>
+          <stop offset="30%" stop-color="rgba(255, 255, 255, ${flashIntensity * 0.5})" stop-opacity="0.8"/>
+          <stop offset="100%" stop-color="rgba(255, 255, 255, 0)" stop-opacity="0"/>
         </radialGradient>
+        
+        <!-- Roundabout animation gradient -->
+        <linearGradient id="roundaboutGradient${Math.floor(time)}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="rgba(74, 158, 255, 0.4)"/>
+          <stop offset="50%" stop-color="rgba(74, 158, 255, 0.2)"/>
+          <stop offset="100%" stop-color="rgba(74, 158, 255, 0)"/>
+        </linearGradient>
       </defs>
       
-      <!-- Pulsating epicenter glow -->
-      <circle cx="${centerX}" cy="${centerY}" r="${currentRadius}" fill="url(#epicenterGlow${Math.floor(time)})" opacity="0.8"/>
+      <!-- 4K Enhancement overlay (subtle sharpening effect) -->
+      <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(255, 255, 255, 0.02)" filter="url(#4kEnhance${Math.floor(time)})" opacity="0.3"/>
       
-      <!-- Expanding ring waves -->
-      <circle cx="${centerX}" cy="${centerY}" r="${baseRadius * 1.5 + progress * 100}" fill="none" stroke="rgba(255, 100, 0, ${0.4 - progress * 0.3})" stroke-width="3">
-        <animate attributeName="r" values="${baseRadius * 1.5};${baseRadius * 2.5};${baseRadius * 1.5}" dur="2s" repeatCount="indefinite"/>
+      <!-- Flash effect (pulsating white flash) -->
+      <circle cx="${centerX}" cy="${centerY}" r="${Math.min(width, height) * (0.25 + Math.sin(time) * 0.1)}" fill="url(#flashGradient${Math.floor(time)})" opacity="${0.2 + Math.sin(time) * 0.2}">
+        <animate attributeName="opacity" values="${0.2 + Math.sin(time) * 0.2};${0.4 + Math.sin(time) * 0.2};${0.2 + Math.sin(time) * 0.2}" dur="3s" repeatCount="indefinite"/>
+        <animate attributeName="r" values="${Math.min(width, height) * 0.25};${Math.min(width, height) * 0.35};${Math.min(width, height) * 0.25}" dur="3s" repeatCount="indefinite"/>
       </circle>
       
-      <!-- Particle effects -->
-      ${particles}
-      
-      <!-- Text area subtle shake -->
-      <g transform="translate(${Math.sin(time * 3) * shakeAmount * 0.2}, ${Math.cos(time * 3) * shakeAmount * 0.2})" opacity="0.15">
-        <rect x="${width * 0.1}" y="${height * 0.1}" width="${width * 0.8}" height="${height * 0.3}" fill="rgba(255, 255, 255, 0.1)"/>
+      <!-- Small roundabout animation (rotating circle) -->
+      <g transform="translate(${centerX}, ${centerY})">
+        <circle cx="0" cy="0" r="${roundaboutRadius}" fill="none" stroke="url(#roundaboutGradient${Math.floor(time)})" stroke-width="2" opacity="0.6">
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            values="0;360"
+            dur="8s"
+            repeatCount="indefinite"/>
+        </circle>
+        <!-- Small dot that orbits -->
+        <circle cx="${roundaboutRadius}" cy="0" r="${orbitingDotRadius}" fill="rgba(74, 158, 255, 0.8)">
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            values="0;360"
+            dur="8s"
+            repeatCount="indefinite"/>
+        </circle>
       </g>
     </svg>
   `;

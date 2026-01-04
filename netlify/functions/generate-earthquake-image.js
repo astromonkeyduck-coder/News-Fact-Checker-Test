@@ -256,77 +256,72 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
 }
 
 /**
- * Create visual effects SVG (particles, glows, shake effects)
- * Makes images more engaging for social media
+ * Create visual effects SVG (4K filter, flash effect, roundabout animation)
+ * Makes images more engaging for social media with professional effects
  */
 function createVisualEffectsSVG(width, height, magnitude, scaleFactor = 1.0) {
-  const particleCount = Math.min(30, Math.floor(magnitude * 3)); // More particles for larger quakes
-  const glowIntensity = Math.min(0.4, magnitude / 20); // Stronger glow for larger quakes
-  const shakeAmount = Math.min(15, magnitude * 2); // Shake effect based on magnitude
-  
-  // Create particles
-  let particles = '';
-  for (let i = 0; i < particleCount; i++) {
-    const x = Math.random() * width;
-    const y = Math.random() * height;
-    const size = (Math.random() * 3 + 1) * scaleFactor;
-    const opacity = Math.random() * 0.6 + 0.2;
-    const hue = Math.random() * 60 + 0; // Red-orange range
-    particles += `
-      <circle cx="${x}" cy="${y}" r="${size}" fill="rgba(255, ${100 + Math.random() * 50}, 0, ${opacity})">
-        <animate attributeName="r" values="${size};${size * 1.5};${size}" dur="${2 + Math.random() * 2}s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" values="${opacity};${opacity * 0.3};${opacity}" dur="${2 + Math.random() * 2}s" repeatCount="indefinite"/>
-      </circle>
-    `;
-  }
-  
-  // Create epicenter glow (pulsating)
   const centerX = width * 0.5;
   const centerY = height * 0.6; // Slightly below center
-  const baseRadius = 100 * scaleFactor;
-  
-  // Create shake effect (subtle displacement)
-  const shakeOffsetX = (Math.random() - 0.5) * shakeAmount;
-  const shakeOffsetY = (Math.random() - 0.5) * shakeAmount;
+  const roundaboutRadius = 40 * scaleFactor; // Small roundabout animation
+  const flashIntensity = Math.min(0.3, magnitude / 25); // Flash intensity based on magnitude
   
   return `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <!-- Radial gradient for epicenter glow -->
-        <radialGradient id="epicenterGlow" cx="50%" cy="50%">
-          <stop offset="0%" stop-color="rgba(255, 50, 50, ${glowIntensity})" stop-opacity="1"/>
-          <stop offset="50%" stop-color="rgba(255, 100, 0, ${glowIntensity * 0.5})" stop-opacity="0.8"/>
-          <stop offset="100%" stop-color="rgba(255, 150, 0, 0)" stop-opacity="0"/>
+        <!-- 4K Enhancement Filter - Sharpening and contrast boost -->
+        <filter id="4kEnhance" x="0%" y="0%" width="100%" height="100%">
+          <feConvolveMatrix order="3" kernelMatrix="0 -1 0 -1 5 -1 0 -1 0" preserveAlpha="true"/>
+          <feColorMatrix type="saturate" values="1.1"/>
+          <feComponentTransfer>
+            <feFuncR type="gamma" amplitude="1" exponent="0.95"/>
+            <feFuncG type="gamma" amplitude="1" exponent="0.95"/>
+            <feFuncB type="gamma" amplitude="1" exponent="0.95"/>
+          </feComponentTransfer>
+        </filter>
+        
+        <!-- Flash effect gradient -->
+        <radialGradient id="flashGradient" cx="50%" cy="50%">
+          <stop offset="0%" stop-color="rgba(255, 255, 255, ${flashIntensity})" stop-opacity="1"/>
+          <stop offset="30%" stop-color="rgba(255, 255, 255, ${flashIntensity * 0.5})" stop-opacity="0.8"/>
+          <stop offset="100%" stop-color="rgba(255, 255, 255, 0)" stop-opacity="0"/>
         </radialGradient>
         
-        <!-- Glow filter for text -->
-        <filter id="textGlow">
-          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-          <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
+        <!-- Roundabout animation gradient -->
+        <linearGradient id="roundaboutGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="rgba(74, 158, 255, 0.4)"/>
+          <stop offset="50%" stop-color="rgba(74, 158, 255, 0.2)"/>
+          <stop offset="100%" stop-color="rgba(74, 158, 255, 0)"/>
+        </linearGradient>
       </defs>
       
-      <!-- Epicenter pulsating glow -->
-      <circle cx="${centerX + shakeOffsetX}" cy="${centerY + shakeOffsetY}" r="${baseRadius}" fill="url(#epicenterGlow)" opacity="0.7">
-        <animate attributeName="r" values="${baseRadius};${baseRadius * 1.3};${baseRadius}" dur="2s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" values="0.7;0.9;0.7" dur="2s" repeatCount="indefinite"/>
+      <!-- 4K Enhancement overlay (subtle sharpening effect) -->
+      <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(255, 255, 255, 0.02)" filter="url(#4kEnhance)" opacity="0.3"/>
+      
+      <!-- Flash effect (subtle white flash that pulses) -->
+      <circle cx="${centerX}" cy="${centerY}" r="${Math.min(width, height) * 0.3}" fill="url(#flashGradient)" opacity="0.4">
+        <animate attributeName="opacity" values="0.2;0.4;0.2" dur="3s" repeatCount="indefinite"/>
+        <animate attributeName="r" values="${Math.min(width, height) * 0.25};${Math.min(width, height) * 0.35};${Math.min(width, height) * 0.25}" dur="3s" repeatCount="indefinite"/>
       </circle>
       
-      <!-- Secondary glow ring -->
-      <circle cx="${centerX + shakeOffsetX}" cy="${centerY + shakeOffsetY}" r="${baseRadius * 1.5}" fill="none" stroke="rgba(255, 100, 0, 0.3)" stroke-width="${2 * scaleFactor}">
-        <animate attributeName="r" values="${baseRadius * 1.5};${baseRadius * 2};${baseRadius * 1.5}" dur="3s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" values="0.3;0.6;0.3" dur="3s" repeatCount="indefinite"/>
-      </circle>
-      
-      <!-- Particle effects -->
-      ${particles}
-      
-      <!-- Subtle shake effect on text area (top of image) -->
-      <g transform="translate(${shakeOffsetX * 0.3}, ${shakeOffsetY * 0.3})" opacity="0.1">
-        <rect x="${width * 0.1}" y="${height * 0.1}" width="${width * 0.8}" height="${height * 0.3}" fill="rgba(255, 255, 255, 0.1)"/>
+      <!-- Small roundabout animation (rotating circle) -->
+      <g transform="translate(${centerX}, ${centerY})">
+        <circle cx="0" cy="0" r="${roundaboutRadius}" fill="none" stroke="url(#roundaboutGradient)" stroke-width="${2 * scaleFactor}" opacity="0.6">
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            values="0;360"
+            dur="8s"
+            repeatCount="indefinite"/>
+        </circle>
+        <!-- Small dot that orbits -->
+        <circle cx="${roundaboutRadius}" cy="0" r="${4 * scaleFactor}" fill="rgba(74, 158, 255, 0.8)">
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            values="0;360"
+            dur="8s"
+            repeatCount="indefinite"/>
+        </circle>
       </g>
     </svg>
   `;
@@ -1208,23 +1203,9 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     blend: 'over',
   });
   
-  // Add visual effects layer for engagement (particles, glows, shake effects)
-  console.log(`[generate-earthquake-image] ✨ Adding visual effects...`);
-  const effectsSVG = createVisualEffectsSVG(outputWidth, outputHeight, magnitude, scaleFactor);
-  const effectsBuffer = await sharp(Buffer.from(effectsSVG))
-    .resize(outputWidth, outputHeight)
-    .png()
-    .toBuffer();
-  
-  // Composite effects on top
-  compositePipeline = compositePipeline.composite([{
-    input: effectsBuffer,
-    blend: 'screen', // Screen blend for glow effects
-    left: 0,
-    top: 0
-  }], {
-    blend: 'over',
-  });
+  // NOTE: Visual effects (4K filter, flash, roundabout) are ONLY applied to video/GIF previews
+  // Static images should remain clean and professional without animated effects
+  // Effects are handled in generate-earthquake-video.js for social media previews
   
   // Apply sharpening and output
   console.log(`[generate-earthquake-image] 🔨 Applying sharpening and generating final PNG...`);

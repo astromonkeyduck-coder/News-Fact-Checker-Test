@@ -20,9 +20,14 @@ exports.handler = async (event) => {
   
   // Only serve pre-rendered content for crawlers
   // Regular users should access article.html directly
+  // IMPORTANT: This function should ONLY be called for crawlers via redirect rules
+  // If a regular user somehow reaches this function, redirect them to the actual article page
   if (!isCrawler) {
     // Redirect regular users to the actual article page
     const articleId = event.queryStringParameters?.id;
+    
+    // Always redirect non-crawlers to article.html if they have an article ID
+    // This handles both direct access and any accidental routing to this function
     if (articleId) {
       return {
         statusCode: 302,
@@ -32,6 +37,8 @@ exports.handler = async (event) => {
         body: ''
       };
     }
+    
+    // If no article ID, return 404
     return {
       statusCode: 404,
       headers: { 'Content-Type': 'text/plain' },
@@ -63,7 +70,7 @@ exports.handler = async (event) => {
       };
     }
 
-    // Get post from blob storage
+    // Get post from blob storage with timeout protection
     const store = getStore({
       name: 'x-posts',
       siteID: siteID,
@@ -71,7 +78,48 @@ exports.handler = async (event) => {
     });
 
     const postKey = articleId.startsWith('post-') ? articleId : `post-${articleId}`;
-    const postData = await store.get(postKey, { type: 'text' });
+    
+    // Add timeout protection for blob storage calls
+    let postData;
+    try {
+      const blobPromise = store.get(postKey, { type: 'text' });
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Blob storage timeout')), 10000) // 10 second timeout
+      );
+      postData = await Promise.race([blobPromise, timeoutPromise]);
+    } catch (blobError) {
+      console.error('[article-preview] Blob storage error:', blobError.message);
+      // Return a basic HTML page with meta tags even if blob fetch fails
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
+        },
+        body: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breaking News | Noteworthy News</title>
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://noteworthynews.co/article.html?id=${escapeHtml(articleId)}">
+    <meta property="og:title" content="Breaking News | Noteworthy News">
+    <meta property="og:description" content="Stay informed with the latest breaking news from Noteworthy News.">
+    <meta property="og:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Breaking News | Noteworthy News">
+    <meta name="twitter:description" content="Stay informed with the latest breaking news from Noteworthy News.">
+    <meta name="twitter:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg">
+    <meta http-equiv="refresh" content="0;url=https://noteworthynews.co/article.html?id=${escapeHtml(articleId)}">
+    <script>window.location.href = 'https://noteworthynews.co/article.html?id=${escapeHtml(articleId)}';</script>
+</head>
+<body>
+    <p>Redirecting to <a href="https://noteworthynews.co/article.html?id=${escapeHtml(articleId)}">article</a>...</p>
+</body>
+</html>`
+      };
+    }
     
     if (!postData) {
       return {
@@ -81,7 +129,43 @@ exports.handler = async (event) => {
       };
     }
 
-    const post = JSON.parse(postData);
+    // Parse JSON with error handling
+    let post;
+    try {
+      post = JSON.parse(postData);
+    } catch (parseError) {
+      console.error('[article-preview] JSON parse error:', parseError.message);
+      // Return fallback HTML if JSON is invalid
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'public, max-age=300',
+        },
+        body: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breaking News | Noteworthy News</title>
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://noteworthynews.co/article.html?id=${escapeHtml(articleId)}">
+    <meta property="og:title" content="Breaking News | Noteworthy News">
+    <meta property="og:description" content="Stay informed with the latest breaking news from Noteworthy News.">
+    <meta property="og:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Breaking News | Noteworthy News">
+    <meta name="twitter:description" content="Stay informed with the latest breaking news from Noteworthy News.">
+    <meta name="twitter:image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg">
+    <meta http-equiv="refresh" content="0;url=https://noteworthynews.co/article.html?id=${escapeHtml(articleId)}">
+    <script>window.location.href = 'https://noteworthynews.co/article.html?id=${escapeHtml(articleId)}';</script>
+</head>
+<body>
+    <p>Redirecting to <a href="https://noteworthynews.co/article.html?id=${escapeHtml(articleId)}">article</a>...</p>
+</body>
+</html>`
+      };
+    }
     
     // Extract post metadata
     const title = post.title || post.story || post.text || 'Breaking News Story';

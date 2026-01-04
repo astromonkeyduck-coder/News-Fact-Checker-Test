@@ -43,6 +43,133 @@
     }
 
     /**
+     * Get earthquake hashtags in Spanish, Japanese, and location-relevant language
+     */
+    function getEarthquakeHashtags(location) {
+        if (!location) return '#terremoto #地震';
+        
+        const locationLower = location.toLowerCase();
+        
+        // Language mapping based on location
+        const languageMap = {
+            // Spanish-speaking countries/regions
+            'mexico': { tag: '#terremoto', lang: 'Spanish' },
+            'méxico': { tag: '#terremoto', lang: 'Spanish' },
+            'spain': { tag: '#terremoto', lang: 'Spanish' },
+            'españa': { tag: '#terremoto', lang: 'Spanish' },
+            'chile': { tag: '#terremoto', lang: 'Spanish' },
+            'peru': { tag: '#terremoto', lang: 'Spanish' },
+            'perú': { tag: '#terremoto', lang: 'Spanish' },
+            'colombia': { tag: '#terremoto', lang: 'Spanish' },
+            'argentina': { tag: '#terremoto', lang: 'Spanish' },
+            'ecuador': { tag: '#terremoto', lang: 'Spanish' },
+            'guatemala': { tag: '#terremoto', lang: 'Spanish' },
+            'honduras': { tag: '#terremoto', lang: 'Spanish' },
+            'nicaragua': { tag: '#terremoto', lang: 'Spanish' },
+            'el salvador': { tag: '#terremoto', lang: 'Spanish' },
+            'costa rica': { tag: '#terremoto', lang: 'Spanish' },
+            'panama': { tag: '#terremoto', lang: 'Spanish' },
+            'panamá': { tag: '#terremoto', lang: 'Spanish' },
+            'venezuela': { tag: '#terremoto', lang: 'Spanish' },
+            'bolivia': { tag: '#terremoto', lang: 'Spanish' },
+            'paraguay': { tag: '#terremoto', lang: 'Spanish' },
+            'uruguay': { tag: '#terremoto', lang: 'Spanish' },
+            'dominican republic': { tag: '#terremoto', lang: 'Spanish' },
+            'puerto rico': { tag: '#terremoto', lang: 'Spanish' },
+            'california': { tag: '#terremoto', lang: 'Spanish' }, // High Spanish-speaking population
+            
+            // Japanese regions
+            'japan': { tag: '#地震', lang: 'Japanese' },
+            'tokyo': { tag: '#地震', lang: 'Japanese' },
+            'osaka': { tag: '#地震', lang: 'Japanese' },
+            'kyoto': { tag: '#地震', lang: 'Japanese' },
+            'hokkaido': { tag: '#地震', lang: 'Japanese' },
+            'okinawa': { tag: '#地震', lang: 'Japanese' },
+            
+            // Chinese-speaking regions
+            'china': { tag: '#地震', lang: 'Chinese' },
+            'taiwan': { tag: '#地震', lang: 'Chinese' },
+            'hong kong': { tag: '#地震', lang: 'Chinese' },
+            'beijing': { tag: '#地震', lang: 'Chinese' },
+            'shanghai': { tag: '#地震', lang: 'Chinese' },
+            
+            // French-speaking regions
+            'france': { tag: '#séisme', lang: 'French' },
+            'haiti': { tag: '#séisme', lang: 'French' },
+            'quebec': { tag: '#séisme', lang: 'French' },
+            
+            // Portuguese-speaking regions
+            'brazil': { tag: '#terremoto', lang: 'Portuguese' },
+            'brasil': { tag: '#terremoto', lang: 'Portuguese' },
+            'portugal': { tag: '#terremoto', lang: 'Portuguese' },
+            
+            // Italian
+            'italy': { tag: '#terremoto', lang: 'Italian' },
+            'italia': { tag: '#terremoto', lang: 'Italian' },
+            
+            // Turkish
+            'turkey': { tag: '#deprem', lang: 'Turkish' },
+            'türkiye': { tag: '#deprem', lang: 'Turkish' },
+            
+            // Greek
+            'greece': { tag: '#σεισμός', lang: 'Greek' },
+            
+            // Indonesian
+            'indonesia': { tag: '#gempa', lang: 'Indonesian' },
+            'jakarta': { tag: '#gempa', lang: 'Indonesian' },
+            
+            // Filipino
+            'philippines': { tag: '#lindol', lang: 'Filipino' },
+            'manila': { tag: '#lindol', lang: 'Filipino' },
+            
+            // Arabic
+            'saudi arabia': { tag: '#زلزال', lang: 'Arabic' },
+            'uae': { tag: '#زلزال', lang: 'Arabic' },
+            'egypt': { tag: '#زلزال', lang: 'Arabic' },
+            
+            // Russian
+            'russia': { tag: '#землетрясение', lang: 'Russian' },
+            'moscow': { tag: '#землетрясение', lang: 'Russian' },
+            
+            // Korean
+            'south korea': { tag: '#지진', lang: 'Korean' },
+            'korea': { tag: '#지진', lang: 'Korean' },
+            'seoul': { tag: '#지진', lang: 'Korean' },
+            
+            // Hindi/Urdu
+            'india': { tag: '#भूकंप', lang: 'Hindi' },
+            'pakistan': { tag: '#زلزلہ', lang: 'Urdu' },
+            
+            // Vietnamese
+            'vietnam': { tag: '#độngđất', lang: 'Vietnamese' },
+            
+            // Thai
+            'thailand': { tag: '#แผ่นดินไหว', lang: 'Thai' },
+            'bangkok': { tag: '#แผ่นดินไหว', lang: 'Thai' }
+        };
+        
+        // Find matching language
+        let relevantTag = null;
+        for (const [key, value] of Object.entries(languageMap)) {
+            if (locationLower.includes(key)) {
+                relevantTag = value.tag;
+                break;
+            }
+        }
+        
+        // Default: Spanish, Japanese, and English
+        const hashtags = ['#terremoto', '#地震'];
+        if (relevantTag && !hashtags.includes(relevantTag)) {
+            hashtags.push(relevantTag);
+        } else if (!relevantTag) {
+            // Default to English if no match
+            hashtags.push('#earthquake');
+        }
+        
+        return hashtags.join(' ');
+    }
+
+    /**
      * Format relative time
      */
     function formatRelativeTime(dateString) {
@@ -1213,8 +1340,11 @@
      * Load article data and populate the page
      */
     async function loadArticle() {
+        console.log('[ArticleLoader] loadArticle() called');
         const urlParams = new URLSearchParams(window.location.search);
         const articleId = urlParams.get('id');
+        
+        console.log('[ArticleLoader] Article ID from URL:', articleId);
         
         const headingElement = document.getElementById('article-heading');
         const bodyElement = document.getElementById('article-body');
@@ -1222,17 +1352,22 @@
         const categoryChip = document.getElementById('category-chip');
         
         if (!headingElement || !bodyElement) {
-            console.error('[ArticleLoader] Required elements not found');
+            console.error('[ArticleLoader] Required elements not found', { 
+                headingElement: !!headingElement, 
+                bodyElement: !!bodyElement 
+            });
             return;
         }
         
         if (!articleId) {
+            console.warn('[ArticleLoader] No article ID provided');
             headingElement.textContent = 'Article Not Found';
             bodyElement.innerHTML = '<p>No article ID provided. Please select an article from the <a href="/index.html" style="color: #4A90E2;">homepage</a>.</p>';
             return;
         }
 
         // Show loading state
+        console.log('[ArticleLoader] Showing loading state');
         bodyElement.innerHTML = '<div class="skeleton" style="height: 400px; margin-bottom: 20px;"></div><div class="skeleton" style="height: 200px;"></div>';
 
         try {
@@ -1291,10 +1426,19 @@
                 return;
             }
             
-            console.log('[ArticleLoader] Found post:', { id: post.id, postId: post.postId, title: (post.title || post.story || post.text || '').substring(0, 50) });
+            console.log('[ArticleLoader] Found post:', { 
+                id: post.id, 
+                postId: post.postId, 
+                title: (post.title || post.story || post.text || '').substring(0, 50),
+                hasImage: !!(post.primary_image_url || post.image_url || post.image),
+                hasStory: !!(post.story || post.text),
+                category: post.category,
+                source: post.source
+            });
 
             // Extract post data
             const title = post.title || post.story || post.text || 'Breaking News Story';
+            console.log('[ArticleLoader] Extracted title:', title.substring(0, 100));
             const story = post.story || post.text || post.title || '';
             const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
             
@@ -1403,16 +1547,20 @@
             const magnitude = post.magnitude || post.assets?.magnitude || null;
             const location = post.location_display || post.location || null;
             
-            // For earthquakes, use the proper format: "BREAKING: M___ Earthquake Near ___."
+            // For earthquakes, use the proper format: "BREAKING: M___ Earthquake Near ___. #hashtags"
             let shareText = title;
             if (isEarthquake && magnitude && location) {
                 const magnitudeFormatted = typeof magnitude === 'number' ? magnitude.toFixed(1) : magnitude;
-                shareText = `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}.`;
+                const hashtags = getEarthquakeHashtags(location);
+                shareText = `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}. ${hashtags}`;
             }
             
             // Update share menu via global function
             if (typeof window.updateShareMenu === 'function') {
+                console.log('[ArticleLoader] Updating share menu', { shareText, shareUrl, isEarthquake, magnitude, location });
                 window.updateShareMenu(shareText, shareUrl, isEarthquake, magnitude, location);
+            } else {
+                console.warn('[ArticleLoader] window.updateShareMenu function not found - share menu may not update correctly');
             }
             
             // Also update individual share buttons if they exist (legacy support)

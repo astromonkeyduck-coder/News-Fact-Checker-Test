@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earthquake Video Preview Test - Noteworthy News</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 2rem;
+        }
+        
+        .controls {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .control-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        label {
+            font-size: 0.875rem;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+        
+        input, select {
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 1rem;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4A9EFF;
+            box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2);
+        }
+        
+        button {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #4A9EFF, #5BB5FF);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(74, 158, 255, 0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .preview-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .preview-title {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+        
+        .preview-area {
+            position: relative;
+            width: 100%;
+            max-width: 1280px;
+            margin: 0 auto;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 16 / 9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .preview-area canvas {
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+        }
+        
+        .loading {
+            color: #94a3b8;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .info-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        margin-top: 1rem;
+        }
+        
+        .info-panel h3 {
+            font-size: 1.125rem;
+            margin-bottom: 0.75rem;
+            color: #4A9EFF;
+        }
+        
+        .info-panel ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .info-panel li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .info-panel li:last-child {
+            border-bottom: none;
+        }
+        
+        .effect-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: rgba(74, 158, 255, 0.2);
+            border-radius: 4px;
+            font-size: 0.875rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 Earthquake Video Preview Test</h1>
+        <p class="subtitle">Preview the visual effects before converting to MP4 with audio</p>
+        
+        <div class="controls">
+            <div class="control-group">
+                <div class="control-item">
+                    <label for="magnitude">Magnitude</label>
+                    <input type="number" id="magnitude" value="5.5" min="0.5" max="9.0" step="0.1">
+                </div>
+                <div class="control-item">
+                    <label for="location">Location</label>
+                    <input type="text" id="location" value="California">
+                </div>
+                <div class="control-item">
+                    <label for="fps">FPS (Frames Per Second)</label>
+                    <select id="fps">
+                        <option value="15">15 FPS (Smooth)</option>
+                        <option value="24">24 FPS (Cinematic)</option>
+                        <option value="30">30 FPS (Very Smooth)</option>
+                    </select>
+                </div>
+                <div class="control-item">
+                    <label for="duration">Duration (seconds)</label>
+                    <select id="duration">
+                        <option value="2">2 seconds</option>
+                        <option value="3" selected>3 seconds</option>
+                        <option value="4">4 seconds</option>
+                        <option value="5">5 seconds</option>
+                    </select>
+                </div>
+            </div>
+            <button id="generateBtn" onclick="generatePreview()">🎬 Generate Preview</button>
+        </div>
+        
+        <div class="preview-container">
+            <h2 class="preview-title">Live Preview</h2>
+            <div class="preview-area" id="previewArea">
+                <div class="loading">Click "Generate Preview" to see the animation</div>
+            </div>
+            
+            <div class="info-panel">
+                <h3>✨ Visual Effects Included:</h3>
+                <ul>
+                    <li><span class="effect-badge">Pulsating Epicenter Glow</span> - Red-orange radial gradient that pulses in size and intensity</li>
+                    <li><span class="effect-badge">Expanding Ring Waves</span> - Concentric circles expanding outward like seismic waves</li>
+                    <li><span class="effect-badge">Animated Particles</span> - 30-40 particles orbiting the epicenter with pulsing effects</li>
+                    <li><span class="effect-badge">Text Shake</span> - Subtle shake effect on the "BREAKING" text area</li>
+                    <li><span class="effect-badge">Dynamic Colors</span> - Particles shift hue and glow intensity pulses</li>
+                    <li><span class="effect-badge">Magnitude Scaling</span> - Effects intensify based on earthquake magnitude</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let animationFrame = null;
+        let isAnimating = false;
+        
+        async function generatePreview() {
+            const magnitude = parseFloat(document.getElementById('magnitude').value);
+            const location = document.getElementById('location').value;
+            const fps = parseInt(document.getElementById('fps').value);
+            const duration = parseInt(document.getElementById('duration').value);
+            const frameCount = fps * duration;
+            
+            const btn = document.getElementById('generateBtn');
+            const previewArea = document.getElementById('previewArea');
+            
+            btn.disabled = true;
+            btn.textContent = '🎬 Generating...';
+            previewArea.innerHTML = '<div class="loading">Generating preview animation...</div>';
+            
+            try {
+                // Create canvas for animation
+                const canvas = document.createElement('canvas');
+                canvas.width = 1280;
+                canvas.height = 720;
+                const ctx = canvas.getContext('2d');
+                
+                // Load base image (we'll create a simple background)
+                const baseImage = await createBaseImage(canvas.width, canvas.height, magnitude, location);
+                const img = new Image();
+                img.src = baseImage;
+                
+                await new Promise((resolve) => {
+                    img.onload = resolve;
+                });
+                
+                // Clear preview area
+                previewArea.innerHTML = '';
+                previewArea.appendChild(canvas);
+                
+                // Start animation
+                let currentFrame = 0;
+                isAnimating = true;
+                
+                function animate() {
+                    if (!isAnimating) return;
+                    
+                    const progress = (currentFrame % frameCount) / frameCount;
+                    const time = progress * Math.PI * 2;
+                    
+                    // Draw base image
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Draw animated effects
+                    drawAnimatedEffects(ctx, canvas.width, canvas.height, magnitude, time, progress);
+                    
+                    currentFrame++;
+                    animationFrame = requestAnimationFrame(animate);
+                }
+                
+                animate();
+                
+                btn.disabled = false;
+                btn.textContent = '🎬 Generate Preview';
+                
+            } catch (error) {
+                console.error('Error generating preview:', error);
+                previewArea.innerHTML = `<div class="loading" style="color: #ef4444;">Error: ${error.message}</div>`;
+                btn.disabled = false;
+                btn.textContent = '🎬 Generate Preview';
+            }
+        }
+        
+        function createBaseImage(width, height, magnitude, location) {
+            // Create a simple base image with text
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            
+            // Dark background
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Add gradient overlay
+            const gradient = ctx.createLinearGradient(0, 0, width, height);
+            gradient.addColorStop(0, 'rgba(20, 20, 40, 0.8)');
+            gradient.addColorStop(1, 'rgba(40, 20, 20, 0.8)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+            
+            // Draw text
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 80px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('BREAKING:', width * 0.1, height * 0.25);
+            
+            ctx.fillStyle = '#ff0000';
+            ctx.font = 'bold 80px Arial';
+            ctx.fillText(`M${magnitude.toFixed(1)}`, width * 0.1 + ctx.measureText('BREAKING: ').width, height * 0.25);
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 80px Arial';
+            ctx.fillText('Earthquake Near', width * 0.1, height * 0.35);
+            
+            ctx.fillStyle = '#ff0000';
+            ctx.font = 'bold 60px Arial';
+            ctx.fillText(location + '.', width * 0.1, height * 0.45);
+            
+            return canvas.toDataURL();
+        }
+        
+        function drawAnimatedEffects(ctx, width, height, magnitude, time, progress) {
+            const particleCount = Math.min(40, Math.floor(magnitude * 4));
+            const glowIntensity = 0.3 + (Math.sin(time) + 1) * 0.2;
+            const centerX = width * 0.5;
+            const centerY = height * 0.6;
+            const baseRadius = 120;
+            const currentRadius = baseRadius + Math.sin(time * 2) * 30;
+            
+            // Epicenter glow
+            const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, currentRadius);
+            gradient.addColorStop(0, `rgba(255, 50, 50, ${glowIntensity})`);
+            gradient.addColorStop(0.5, `rgba(255, 100, 0, ${glowIntensity * 0.6})`);
+            gradient.addColorStop(1, 'rgba(255, 150, 0, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, currentRadius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Expanding ring waves
+            const ringRadius = baseRadius * 1.5 + progress * 200;
+            const ringOpacity = 0.4 - progress * 0.3;
+            ctx.strokeStyle = `rgba(255, 100, 0, ${ringOpacity})`;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Second ring
+            const ringRadius2 = baseRadius * 1.2 + (progress * 0.5) * 200;
+            const ringOpacity2 = 0.3 - (progress * 0.5) * 0.2;
+            ctx.strokeStyle = `rgba(255, 150, 0, ${ringOpacity2})`;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, ringRadius2, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Animated particles
+            for (let i = 0; i < particleCount; i++) {
+                const angle = (i / particleCount) * Math.PI * 2 + time;
+                const distance = 50 + Math.sin(time * 2 + i) * 30;
+                const x = centerX + Math.cos(angle) * distance;
+                const y = centerY + Math.sin(angle) * distance;
+                const size = Math.random() * 4 + 1;
+                const opacity = 0.3 + Math.sin(time + i) * 0.3;
+                const hue = Math.sin(time + i) * 30;
+                
+                ctx.fillStyle = `rgba(255, ${100 + hue}, 0, ${opacity})`;
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Text shake effect (subtle)
+            const shakeAmount = Math.min(10, magnitude * 1.5);
+            const shakeX = Math.sin(time * 3) * shakeAmount * 0.2;
+            const shakeY = Math.cos(time * 3) * shakeAmount * 0.2;
+            
+            // Draw subtle shake overlay on text area
+            ctx.fillStyle = `rgba(255, 255, 255, 0.05)`;
+            ctx.fillRect(
+                width * 0.1 + shakeX,
+                height * 0.1 + shakeY,
+                width * 0.8,
+                height * 0.3
+            );
+        }
+        
+        // Stop animation when page unloads
+        window.addEventListener('beforeunload', () => {
+            isAnimating = false;
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+        });
+    </script>
+</body>
+</html>
+
