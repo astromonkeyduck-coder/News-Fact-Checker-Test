@@ -522,10 +522,32 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
       if (stats.channels && stats.channels.length >= 4) {
         // Has alpha channel - check if alpha channel has any non-zero values
         const alphaChannel = stats.channels[3]; // Alpha is usually channel 3 (RGBA) or 4 (CMYKA)
-        textOverlayHasContent = alphaChannel && (alphaChannel.min < 255 || alphaChannel.max > 0);
+        // CRITICAL: Check if alpha channel has any pixels with alpha > 0 (non-transparent)
+        // Also check RGB channels to ensure there's actual color content
+        const hasAlpha = alphaChannel && (alphaChannel.min < 255 || alphaChannel.max > 0);
+        const hasColor = stats.channels.slice(0, 3).some(ch => ch.max > 0); // Check R, G, B channels
+        textOverlayHasContent = hasAlpha && hasColor;
+        
+        // Log detailed stats for debugging
+        console.log('[generate-earthquake-image] 📊 Text overlay pixel analysis:', {
+          hasAlphaChannel: !!alphaChannel,
+          alphaMin: alphaChannel?.min,
+          alphaMax: alphaChannel?.max,
+          redMax: stats.channels[0]?.max || 0,
+          greenMax: stats.channels[1]?.max || 0,
+          blueMax: stats.channels[2]?.max || 0,
+          hasAlpha: hasAlpha,
+          hasColor: hasColor,
+          textOverlayHasContent: textOverlayHasContent
+        });
       } else {
         // No alpha channel - check if any RGB channel has non-zero values
         textOverlayHasContent = stats.channels && stats.channels.some(ch => ch.min < 255 || ch.max > 0);
+        console.log('[generate-earthquake-image] 📊 Text overlay pixel analysis (no alpha):', {
+          channelCount: stats.channels?.length || 0,
+          channelMaxes: stats.channels?.map(ch => ch.max) || [],
+          textOverlayHasContent: textOverlayHasContent
+        });
       }
       
       console.log('[generate-earthquake-image] ✅ SVG rendered with resvg (embedded fonts)', {
@@ -687,9 +709,9 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     })
     .png({ 
       quality: 100,
-      compressionLevel: 9,
+      compressionLevel: 6, // Reduced from 9 to prevent timeouts (6 is still high quality)
       palette: false,
-      effort: 10
+      effort: 4 // Reduced from 10 to prevent timeouts (4 is balanced)
     })
     .toBuffer();
   
@@ -724,6 +746,45 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     throw new Error('Generated image is not a valid PNG file');
   }
   
+  // CRITICAL: Verify the composite actually contains visible text by checking pixel stats
+  // Sample a region where text should be (top-left area where magnitude/headline are)
+  let compositeHasText = false;
+  try {
+    const compositeStats = await finalImage.stats();
+    // Check if the composite has pixels that differ from a solid color (indicating text)
+    // Text areas should have varying pixel values
+    if (compositeStats.channels && compositeStats.channels.length >= 3) {
+      const redChannel = compositeStats.channels[0];
+      const greenChannel = compositeStats.channels[1];
+      const blueChannel = compositeStats.channels[2];
+      
+      // If channels have variance (stddev > 0), it means there's variation (likely text)
+      // Also check if max values are high enough to indicate visible content
+      const hasVariance = (redChannel.stddev > 0 || greenChannel.stddev > 0 || blueChannel.stddev > 0);
+      const hasHighValues = (redChannel.max > 50 || greenChannel.max > 50 || blueChannel.max > 50);
+      compositeHasText = hasVariance && hasHighValues;
+      
+      console.log(`[generate-earthquake-image] 📊 Final composite pixel analysis:`, {
+        hasVariance: hasVariance,
+        hasHighValues: hasHighValues,
+        redStddev: redChannel.stddev?.toFixed(2),
+        greenStddev: greenChannel.stddev?.toFixed(2),
+        blueStddev: blueChannel.stddev?.toFixed(2),
+        redMax: redChannel.max,
+        greenMax: greenChannel.max,
+        blueMax: blueChannel.max,
+        compositeHasText: compositeHasText
+      });
+      
+      if (!compositeHasText && compositeInputs.length > 0) {
+        console.error(`[generate-earthquake-image] ❌ CRITICAL: Final composite appears to have no visible text! Composite may be identical to template.`);
+        console.error(`[generate-earthquake-image] ❌ This suggests the text overlay was not properly composited.`);
+      }
+    }
+  } catch (statsError) {
+    console.warn(`[generate-earthquake-image] ⚠️ Could not analyze final composite stats:`, statsError.message);
+  }
+  
   // Log final info
   console.log(`[generate-earthquake-image] ✅ IMAGE GENERATION COMPLETE:`, {
     dimensions: `${outputWidth}x${outputHeight}`,
@@ -731,7 +792,7 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     scaleFactor: scaleFactor.toFixed(3),
     fileSize: `${Math.round(composite.length / 1024)}KB`,
     isValidPNG: isPNG,
-    containsText: true,
+    containsText: compositeHasText || compositeInputs.length > 0, // Use actual check if available
     containsUSGSImages: successfullyAddedImages > 0,
     magnitude: magnitudeText,
     location: location.toUpperCase(),
