@@ -219,10 +219,16 @@ async function createPostFromEvent(event, category, source) {
     category: category,
     source: source,
     location: event.location_display,
+    location_display: event.location_display, // Also store as location_display for earthquake enhancements
     eventId: event.canonical_id,
     severity: event.severity,
     event_type: event.event_type,
-    // Store assets for reference (but don't use for rendering)
+    // Store coordinates for earthquake enhancements (required for map/3D visualization)
+    lat: event.lat || null,
+    lon: event.lon || null,
+    // Store magnitude at top level for easy access
+    magnitude: event.assets?.magnitude || event.magnitude || null,
+    // Store assets for reference (includes all Tier features: impact_assessment, tsunami_assessment, etc.)
     assets: event.assets || {},
   };
   

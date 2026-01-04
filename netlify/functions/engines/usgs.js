@@ -398,18 +398,41 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
       has_image: !!imageUrl
     });
     
-    const alertResponse = await fetch(functionUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        earthquake: {
+    // Extract depth from event
+    const depth = earthquake.depth || earthquake.assets?.depth || earthquake.raw?.geometry?.coordinates?.[2] || null;
+    
+    // Build complete earthquake object with all data needed for email template
+    const earthquakeData = {
           event_id: earthquake.assets?.event_id || earthquake.raw?.id || earthquake.canonical_id?.split(':')[1] || 'unknown',
           magnitude: magnitude, // Use extracted magnitude
           location_display: earthquake.location_display,
           time: earthquake.published_at,
           time_ms: new Date(earthquake.published_at).getTime(),
           usgs_event_url: earthquake.source_url,
-        },
+      // Add coordinates for map generation
+      lat: earthquake.lat || null,
+      lon: earthquake.lon || null,
+      // Add depth for display
+      depth: depth,
+      // Add assets for all Tier features (impact assessment, tsunami risk, etc.)
+      assets: earthquake.assets || {},
+    };
+    
+    logger.info('Sending email alert with full earthquake data', { 
+      magnitude,
+      location: earthquake.location_display,
+      hasLat: !!earthquakeData.lat,
+      hasLon: !!earthquakeData.lon,
+      hasDepth: !!earthquakeData.depth,
+      hasAssets: !!earthquakeData.assets && Object.keys(earthquakeData.assets).length > 0,
+      assetKeys: earthquakeData.assets ? Object.keys(earthquakeData.assets) : [],
+    });
+    
+    const alertResponse = await fetch(functionUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        earthquake: earthquakeData,
         imageUrl,
       }),
     });
@@ -785,6 +808,7 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     assets: {
       usgs_images: usgsImages,
       magnitude: magnitude, // Store magnitude in assets for easy access
+      depth: depth, // Store depth in assets for 3D visualization
       event_id: eventId, // Store event_id in assets for email alerts
       // Impact assessment data
       ...(impactAssessment ? {

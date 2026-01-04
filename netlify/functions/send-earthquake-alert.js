@@ -637,6 +637,12 @@ exports.handler = async (event, context) => {
       imageUrl: imageUrl?.substring(0, 100),
       eventId: earthquake?.event_id,
       magnitude: earthquake?.magnitude,
+      location_display: earthquake?.location_display,
+      hasLat: !!earthquake?.lat,
+      hasLon: !!earthquake?.lon,
+      hasDepth: !!earthquake?.depth,
+      hasAssets: !!earthquake?.assets,
+      assetKeys: earthquake?.assets ? Object.keys(earthquake.assets) : [],
       fullImageUrl: imageUrl // Log full URL for debugging
     });
     
@@ -661,15 +667,16 @@ exports.handler = async (event, context) => {
     const eventTime = formatTime(earthquake.time_ms || earthquake.time);
     
     // Build subject (works for all magnitudes)
-    const magnitude = parseFloat(earthquake.magnitude.toFixed(1));
+    const magnitude = parseFloat(earthquake.magnitude?.toFixed(1) || '0.0');
     const magnitudeFormatted = magnitude.toFixed(1);
     const severity = magnitude >= 7.0 ? "Major" : magnitude >= 6.0 ? "Strong" : magnitude >= 5.0 ? "Moderate" : magnitude >= 4.0 ? "Light" : "Minor";
     const severityColor = magnitude >= 7.0 ? "#d32f2f" : magnitude >= 6.0 ? "#f57c00" : magnitude >= 5.0 ? "#fbc02d" : magnitude >= 4.0 ? "#388e3c" : "#1976d2";
     const severityBg = magnitude >= 7.0 ? "#ffebee" : magnitude >= 6.0 ? "#fff3e0" : magnitude >= 5.0 ? "#fffde7" : magnitude >= 4.0 ? "#e8f5e9" : "#e3f2fd";
-    const subject = `🚨 BREAKING: ${severity} Earthquake (M${magnitudeFormatted}) Near ${earthquake.location_display}`;
+    const locationDisplay = earthquake.location_display || 'Unknown Location';
+    const subject = `🚨 BREAKING: ${severity} Earthquake (M${magnitudeFormatted}) Near ${locationDisplay}`;
     
     // Build message (common-person wording, no jargon)
-    const message = `BREAKING: A magnitude ${magnitudeFormatted} earthquake was detected by the U.S. Geological Survey near ${earthquake.location_display} at ${eventTime}.\n\nSee attached image for detailed visualization.`;
+    const message = `BREAKING: A magnitude ${magnitudeFormatted} earthquake was detected by the U.S. Geological Survey near ${locationDisplay} at ${eventTime}.\n\nSee attached image for detailed visualization.`;
     
     // Format coordinates if available
     const coordinates = earthquake.lon && earthquake.lat 
@@ -737,6 +744,37 @@ exports.handler = async (event, context) => {
       ? `${(impactAssessment.affectedPopulation / 1000).toFixed(1)}K people`
       : (depthValue ? estimateAffectedPopulation(magnitude, depthValue) : null);
     
+    // Validate and ensure all template variables are defined
+    const safeMagnitudeFormatted = magnitudeFormatted || 'N/A';
+    const safeSeverity = severity || 'Unknown';
+    const safeSeverityColor = severityColor || '#1976d2';
+    const safeLocationDisplay = earthquake.location_display || 'Unknown Location';
+    const safeImpactDescription = impactDescription || 'Impact assessment unavailable.';
+    const safeEstimatedAffected = estimatedAffected || null;
+    const safeCoordinates = coordinates || null;
+    const safeDepth = depth || null;
+    
+    // Log all template variables before generating HTML
+    console.log('[send-earthquake-alert] 📝 Template variables:', {
+      magnitudeFormatted: safeMagnitudeFormatted,
+      severity: safeSeverity,
+      severityColor: safeSeverityColor,
+      location_display: safeLocationDisplay,
+      hasLocationDetails: !!locationDetails,
+      hasMapImageUrl: !!mapImageUrl,
+      hasImpactAssessment: !!impactAssessment,
+      hasTsunamiAssessment: !!tsunamiAssessment,
+      hasAftershockForecast: !!aftershockForecast,
+      hasAnomalyDetection: !!anomalyDetection,
+      hasNearbyLocations: nearbyLocations.length > 0,
+      hasNearbyEducation: nearbyEducation.length > 0,
+      hasNearbyVenues: nearbyVenues.length > 0,
+      coordinates: safeCoordinates,
+      depth: safeDepth,
+      impactDescription: safeImpactDescription,
+      estimatedAffected: safeEstimatedAffected,
+    });
+    
     // Build email content (same for all recipients)
     const baseEmailContent = {
       from: process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>',
@@ -784,7 +822,7 @@ exports.handler = async (event, context) => {
             <td style="padding: 0; background-color: #1a1f2e;">
               
               <!-- Magnitude Card - Bold Dark Design -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%); border-left: 5px solid ${severityColor}; margin-bottom: 0; border-top: 1px solid #2d3748; border-bottom: 1px solid #2d3748;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%); border-left: 5px solid ${safeSeverityColor}; margin-bottom: 0; border-top: 1px solid #2d3748; border-bottom: 1px solid #2d3748;">
                 <tr>
                   <td style="padding: 35px 40px;">
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
@@ -793,16 +831,16 @@ exports.handler = async (event, context) => {
                           <div style="font-size: 11px; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
                             Magnitude
                           </div>
-                          <div style="font-size: 72px; font-weight: 900; color: ${severityColor}; line-height: 1; margin-bottom: 8px; text-shadow: 0 0 30px ${severityColor}40; letter-spacing: -2px;">
-                            M${magnitudeFormatted}
+                          <div style="font-size: 72px; font-weight: 900; color: ${safeSeverityColor}; line-height: 1; margin-bottom: 8px; text-shadow: 0 0 30px ${safeSeverityColor}40; letter-spacing: -2px;">
+                            M${safeMagnitudeFormatted}
                           </div>
-                          <div style="font-size: 14px; font-weight: 700; color: #ffffff; text-transform: uppercase; letter-spacing: 1.5px; background: ${severityColor}; padding: 6px 12px; display: inline-block; border: 1px solid ${severityColor};">
-                            ${severity}
+                          <div style="font-size: 14px; font-weight: 700; color: #ffffff; text-transform: uppercase; letter-spacing: 1.5px; background: ${safeSeverityColor}; padding: 6px 12px; display: inline-block; border: 1px solid ${safeSeverityColor};">
+                            ${safeSeverity}
                           </div>
                         </td>
                         <td width="35%" align="right" style="vertical-align: middle;">
-                          <div style="display: inline-block; background: linear-gradient(135deg, ${severityColor} 0%, ${severityColor}dd 100%); color: #ffffff; width: 100px; height: 100px; border-radius: 0; display: flex; align-items: center; justify-content: center; font-size: 42px; font-weight: 900; border: 3px solid ${severityColor}; box-shadow: 0 0 25px ${severityColor}60, inset 0 0 20px rgba(0,0,0,0.3);">
-                            ${magnitudeFormatted}
+                          <div style="display: inline-block; background: linear-gradient(135deg, ${safeSeverityColor} 0%, ${safeSeverityColor}dd 100%); color: #ffffff; width: 100px; height: 100px; border-radius: 0; display: flex; align-items: center; justify-content: center; font-size: 42px; font-weight: 900; border: 3px solid ${safeSeverityColor}; box-shadow: 0 0 25px ${safeSeverityColor}60, inset 0 0 20px rgba(0,0,0,0.3);">
+                            ${safeMagnitudeFormatted}
                           </div>
                         </td>
                       </tr>
@@ -816,10 +854,10 @@ exports.handler = async (event, context) => {
                 <tr>
                   <td style="padding: 35px 40px;">
                     <div style="font-size: 24px; font-weight: 800; color: #ffffff; margin-bottom: 12px; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #2d3748; padding-bottom: 15px;">
-                      ${earthquake.location_display}
+                      ${safeLocationDisplay}
                     </div>
                     <div style="font-size: 15px; color: #a0aec0; line-height: 1.7; margin-bottom: 25px; font-weight: 400;">
-                      A magnitude <strong style="color: ${severityColor}; font-weight: 700;">${magnitudeFormatted}</strong> earthquake was detected by the <strong style="color: #ffffff;">U.S. Geological Survey</strong> near <strong style="color: #4A9EFF;">${earthquake.location_display}</strong>.
+                      A magnitude <strong style="color: ${safeSeverityColor}; font-weight: 700;">${safeMagnitudeFormatted}</strong> earthquake was detected by the <strong style="color: #ffffff;">U.S. Geological Survey</strong> near <strong style="color: #4A9EFF;">${safeLocationDisplay}</strong>.
                     </div>
                     ${locationDetails ? `
                     <div style="background: #0f1419; border: 1px solid #2d3748; padding: 20px; margin-bottom: 20px; border-left: 4px solid #4A9EFF;">
@@ -835,17 +873,17 @@ exports.handler = async (event, context) => {
                       </div>
                     </div>
                     ` : ''}
-                    ${impactDescription ? `
-                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 20px; margin-bottom: 20px; border-left: 4px solid ${severityColor};">
-                      <div style="font-size: 11px; font-weight: 700; color: ${severityColor}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
+                    ${safeImpactDescription ? `
+                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 20px; margin-bottom: 20px; border-left: 4px solid ${safeSeverityColor};">
+                      <div style="font-size: 11px; font-weight: 700; color: ${safeSeverityColor}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
                         Impact Assessment
                       </div>
                       <div style="font-size: 15px; color: #e2e8f0; line-height: 1.7; font-weight: 500;">
-                        ${impactDescription}
+                        ${safeImpactDescription}
                       </div>
-                      ${estimatedAffected ? `
+                      ${safeEstimatedAffected ? `
                       <div style="font-size: 13px; color: #6c757d; margin-top: 12px; padding-top: 12px; border-top: 1px solid #2d3748; font-weight: 600;">
-                        <span style="color: #4A9EFF;">AFFECTED AREA:</span> <span style="color: #ffffff;">${estimatedAffected}</span>
+                        <span style="color: #4A9EFF;">AFFECTED AREA:</span> <span style="color: #ffffff;">${safeEstimatedAffected}</span>
                       </div>
                       ` : ''}
                     </div>
@@ -923,7 +961,7 @@ exports.handler = async (event, context) => {
                           Location Map
                         </div>
                       </div>
-                      <img src="${mapImageUrl}" alt="Map showing earthquake location at ${earthquake.location_display}" style="display: block; width: 100%; max-width: 100%; height: auto; filter: brightness(0.9) contrast(1.1);" />
+                      <img src="${mapImageUrl}" alt="Map showing earthquake location at ${safeLocationDisplay}" style="display: block; width: 100%; max-width: 100%; height: auto; filter: brightness(0.9) contrast(1.1);" />
                       <div style="padding: 12px 20px; background: #0f1419; border-top: 1px solid #2d3748;">
                         <div style="font-size: 10px; color: #6c757d; text-align: center; font-weight: 600;">
                           Map data © <a href="https://www.openstreetmap.org/" style="color: #4A9EFF; text-decoration: none;">OpenStreetMap</a> contributors
@@ -1017,7 +1055,7 @@ exports.handler = async (event, context) => {
                                   ${loc.type}
                                 </div>
                               </div>
-                              <div style="font-size: 14px; font-weight: 800; color: ${severityColor};">
+                              <div style="font-size: 14px; font-weight: 800; color: ${safeSeverityColor};">
                                 ${loc.distance} km
                               </div>
                             </div>
@@ -1229,6 +1267,11 @@ exports.handler = async (event, context) => {
       `,
     };
     
+    // Log HTML length to verify template was generated
+    console.log(`[send-earthquake-alert] 📝 Generated HTML template: ${baseEmailContent.html.length} characters`);
+    console.log(`[send-earthquake-alert] 📝 HTML contains magnitude: ${baseEmailContent.html.includes(safeMagnitudeFormatted)}`);
+    console.log(`[send-earthquake-alert] 📝 HTML contains location: ${baseEmailContent.html.includes(safeLocationDisplay)}`);
+    
     // Download and attach image if available (as inline CID attachment)
     let imageAttachment = null;
     let htmlWithImage = baseEmailContent.html;
@@ -1337,8 +1380,8 @@ exports.handler = async (event, context) => {
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
                 <tr>
                   <td style="padding: 0 40px 30px 40px;">
-                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 0; overflow: hidden; border-top: 3px solid ${severityColor};">
-                      <img src="cid:${cidIdentifier}" alt="Earthquake Visualization - Magnitude ${magnitudeFormatted} near ${earthquake.location_display}" style="display: block; width: 100%; max-width: 100%; height: auto; filter: brightness(0.95) contrast(1.05);" />
+                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 0; overflow: hidden; border-top: 3px solid ${safeSeverityColor};">
+                      <img src="cid:${cidIdentifier}" alt="Earthquake Visualization - Magnitude ${safeMagnitudeFormatted} near ${safeLocationDisplay}" style="display: block; width: 100%; max-width: 100%; height: auto; filter: brightness(0.95) contrast(1.05);" />
                     </div>
                   </td>
                 </tr>
@@ -1395,8 +1438,8 @@ exports.handler = async (event, context) => {
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
                 <tr>
                   <td style="padding: 0 40px 30px 40px;">
-                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 0; overflow: hidden; border-top: 3px solid ${severityColor};">
-                      <img src="cid:${imageAttachment.content_id}" alt="Earthquake Visualization - Magnitude ${magnitudeFormatted} near ${earthquake.location_display}" style="display: block; width: 100%; max-width: 100%; height: auto; filter: brightness(0.95) contrast(1.05);" />
+                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 0; overflow: hidden; border-top: 3px solid ${safeSeverityColor};">
+                      <img src="cid:${imageAttachment.content_id}" alt="Earthquake Visualization - Magnitude ${safeMagnitudeFormatted} near ${safeLocationDisplay}" style="display: block; width: 100%; max-width: 100%; height: auto; filter: brightness(0.95) contrast(1.05);" />
                     </div>
                   </td>
                 </tr>
@@ -1435,8 +1478,10 @@ exports.handler = async (event, context) => {
             console.error(`[send-earthquake-alert] ❌ Attachment has no content_id! Skipping attachment for ${email}`);
             imageAttachment = null;
           } else {
-            // Ensure attachment has all required fields for Resend inline images
-            const attachment = {
+            // Create BOTH inline and regular attachment
+            // Inline: displays in email body via CID reference
+            // Regular: available as downloadable attachment
+            const inlineAttachment = {
               filename: imageAttachment.filename,
               content: imageAttachment.content, // base64 string
               content_type: imageAttachment.content_type,
@@ -1444,25 +1489,35 @@ exports.handler = async (event, context) => {
               content_disposition: 'inline', // Required for inline images
             };
             
-            emailContent.attachments = [attachment];
-            console.log(`[send-earthquake-alert] 📎 Adding image attachment to email for ${email}`);
-            console.log(`[send-earthquake-alert] 📎 Attachment details:`, {
-              filename: attachment.filename,
-              content_id: attachment.content_id,
-              content_type: attachment.content_type,
-              content_disposition: attachment.content_disposition,
-              content_length: attachment.content.length,
-              content_preview: attachment.content.substring(0, 50) + '...',
-              has_cid_in_html: htmlWithImage.includes(`cid:${attachment.content_id}`),
-              cid_in_html_count: (htmlWithImage.match(new RegExp(`cid:${attachment.content_id}`, 'g')) || []).length,
-              html_contains_cid: htmlWithImage.includes(`cid:${attachment.content_id}`)
+            const regularAttachment = {
+              filename: imageAttachment.filename,
+              content: imageAttachment.content, // Same base64 string
+              content_type: imageAttachment.content_type,
+              // No content_id for regular attachment
+              content_disposition: 'attachment', // Regular downloadable attachment
+            };
+            
+            // Add both: inline first (for email body), then regular (for download)
+            emailContent.attachments = [inlineAttachment, regularAttachment];
+            console.log(`[send-earthquake-alert] 📎 Adding image as BOTH inline and regular attachment for ${email}`);
+            console.log(`[send-earthquake-alert] 📎 Inline attachment (for email body):`, {
+              filename: inlineAttachment.filename,
+              content_id: inlineAttachment.content_id,
+              content_type: inlineAttachment.content_type,
+              content_disposition: inlineAttachment.content_disposition,
+            });
+            console.log(`[send-earthquake-alert] 📎 Regular attachment (for download):`, {
+              filename: regularAttachment.filename,
+              content_type: regularAttachment.content_type,
+              content_disposition: regularAttachment.content_disposition,
+              content_length: regularAttachment.content.length,
             });
             
             // Verify the CID format in HTML
-            const cidPattern = new RegExp(`cid:${attachment.content_id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
+            const cidPattern = new RegExp(`cid:${inlineAttachment.content_id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
             const cidMatches = htmlWithImage.match(cidPattern);
             if (!cidMatches || cidMatches.length === 0) {
-              console.error(`[send-earthquake-alert] ❌ CRITICAL: CID "${attachment.content_id}" not found in HTML!`);
+              console.error(`[send-earthquake-alert] ❌ CRITICAL: CID "${inlineAttachment.content_id}" not found in HTML!`);
               console.error(`[send-earthquake-alert] ❌ HTML snippet around image:`, htmlWithImage.substring(htmlWithImage.indexOf('See attached'), htmlWithImage.indexOf('See attached') + 200));
             } else {
               console.log(`[send-earthquake-alert] ✅ CID verified in HTML (found ${cidMatches.length} time(s))`);

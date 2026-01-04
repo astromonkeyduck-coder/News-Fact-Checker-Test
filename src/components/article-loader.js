@@ -1041,15 +1041,38 @@
             // Render primary image ONCE if it exists
             if (primary) {
                 const absoluteImageUrl = ensureAbsoluteImageUrl(primary);
-                // Add error handling for get-uploaded-image URLs that might 404
+                // Add retry logic for get-uploaded-image URLs that might have propagation delays
                 const isUploadedImage = absoluteImageUrl.includes('get-uploaded-image');
-                const errorHandler = isUploadedImage 
-                    ? `this.onerror=null; this.style.display='none'; const parent=this.parentElement; if(parent && !parent.querySelector('.image-error')) { parent.innerHTML='<p class=\\'image-error\\' style=\\'color: rgba(255,255,255,0.5); padding: 1rem; text-align: center; font-size: 0.875rem;\\'>Image unavailable</p>'; }`
-                    : `this.style.display='none'; this.parentElement.innerHTML='<p style=\\'color: rgba(255,255,255,0.6); padding: 2rem; text-align: center;\\'>Image could not be loaded</p>';`;
                 
-                bodyHTML += `<div class="article-media">
-                    <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)}" loading="lazy" onerror="this.onerror=null; this.style.display='none'; const p=this.parentElement; if(p && !p.querySelector('.image-error')) { p.innerHTML='<p class=\\'image-error\\' style=\\'color: rgba(255,255,255,0.4); padding: 0.5rem; text-align: center; font-size: 0.8125rem; margin: 0;\\'>Image unavailable</p>'; }">
-                </div>`;
+                if (isUploadedImage) {
+                    // For uploaded images, add retry logic with exponential backoff
+                    bodyHTML += `<div class="article-media" data-image-url="${escapeHtml(absoluteImageUrl)}">
+                        <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)}" loading="lazy" 
+                             onerror="(function(img) {
+                                const container = img.parentElement;
+                                if (!container) return;
+                                const retryCount = parseInt(container.dataset.retryCount || '0');
+                                if (retryCount < 5) {
+                                    container.dataset.retryCount = (retryCount + 1).toString();
+                                    const delays = [1000, 2000, 3000, 5000, 8000];
+                                    setTimeout(() => {
+                                        img.src = img.src.split('?')[0] + '?t=' + Date.now();
+                                    }, delays[retryCount]);
+                                } else {
+                                    img.style.display='none';
+                                    if (!container.querySelector('.image-error')) {
+                                        container.innerHTML='<p class=\\'image-error\\' style=\\'color: rgba(255,255,255,0.4); padding: 0.5rem; text-align: center; font-size: 0.8125rem; margin: 0;\\'>Image unavailable</p>';
+                                    }
+                                }
+                             })(this);">
+                    </div>`;
+                } else {
+                    // For regular images, use simple error handling
+                    bodyHTML += `<div class="article-media">
+                        <img src="${escapeHtml(absoluteImageUrl)}" alt="${escapeHtml(title)}" loading="lazy" 
+                             onerror="this.style.display='none'; this.parentElement.innerHTML='<p style=\\'color: rgba(255,255,255,0.6); padding: 2rem; text-align: center;\\'>Image could not be loaded</p>';">
+                    </div>`;
+                }
             }
             
             // Render secondary images ONLY if they exist and are different from primary
@@ -1075,9 +1098,31 @@
             const hasCoordinates = post.lat && post.lon;
             const magnitude = post.assets?.magnitude || post.magnitude;
             
+            console.log('[ArticleLoader] Earthquake check:', {
+                isEarthquake,
+                hasCoordinates,
+                lat: post.lat,
+                lon: post.lon,
+                magnitude,
+                event_type: post.event_type,
+                category: post.category,
+                hasAssets: !!post.assets,
+                hasImpactAssessment: !!post.assets?.impact_assessment,
+                hasTsunamiAssessment: !!post.assets?.tsunami_assessment,
+                hasAftershockForecast: !!post.assets?.aftershock_forecast,
+                hasAnomalyDetection: !!post.assets?.anomaly_detection,
+            });
+            
             if (isEarthquake && hasCoordinates) {
                 // Add earthquake-specific enhancements
+                console.log('[ArticleLoader] Adding earthquake enhancements...');
                 bodyHTML += await generateEarthquakeEnhancements(post, magnitude);
+            } else {
+                console.warn('[ArticleLoader] Skipping earthquake enhancements:', {
+                    isEarthquake,
+                    hasCoordinates,
+                    reason: !isEarthquake ? 'not an earthquake' : 'missing coordinates'
+                });
             }
             
             bodyElement.innerHTML = bodyHTML;
