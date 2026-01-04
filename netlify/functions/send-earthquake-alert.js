@@ -761,6 +761,7 @@ exports.handler = async (event, context) => {
     }
     
     // Include coordinates if available (optional, only if we have space)
+    // Format: 40.5388°N, 120.6800°W
     if (coordinates && keyFacts.length < 4) {
       keyFacts.push({ label: 'Coordinates', value: coordinates });
     }
@@ -771,11 +772,61 @@ exports.handler = async (event, context) => {
     // Cap at 5 facts max
     const finalFacts = keyFacts.slice(0, 5);
     
-    // Generate short summary (1-2 sentences max)
-    const summary = `A preliminary magnitude ${magnitudeFormatted} earthquake was recorded ${region ? `near ${region}` : 'in the region'}, according to the U.S. Geological Survey.${magnitude >= 5.0 ? ' No damage reports have been indicated at this time.' : ''}`;
+    // Generate short summary (1-2 sentences max) - Newsroom tone, calm and authoritative
+    let summary = '';
+    if (magnitude >= 7.0) {
+      summary = `A magnitude ${magnitudeFormatted} earthquake was recorded ${region ? `near ${region}` : 'in the region'} by the U.S. Geological Survey. Monitoring for updates.`;
+    } else if (magnitude >= 5.0) {
+      summary = `A magnitude ${magnitudeFormatted} earthquake was recorded ${region ? `near ${region}` : 'in the region'} by the U.S. Geological Survey.`;
+    } else {
+      summary = `A preliminary magnitude ${magnitudeFormatted} earthquake was recorded ${region ? `near ${region}` : 'in the region'} by the U.S. Geological Survey.`;
+    }
     
     // Determine alert type for header pill
     const alertType = magnitude >= 7.0 ? 'BREAKING' : magnitude >= 5.0 ? 'ALERT' : 'WATCH';
+    
+    // Alert type theming system
+    const alertTheme = {
+      'EARTHQUAKE': {
+        accentColor: '#2563EB', // Blue
+        pillBorder: '#2563EB',
+        pillText: '#2563EB',
+        categoryLabel: 'Seismic Alert'
+      },
+      'VOLCANO': {
+        accentColor: '#F97316', // Orange
+        pillBorder: '#F97316',
+        pillText: '#F97316',
+        categoryLabel: 'Volcano Alert'
+      },
+      'WATCH': {
+        accentColor: '#6B7280', // Neutral gray
+        pillBorder: '#6B7280',
+        pillText: '#6B7280',
+        categoryLabel: 'Seismic Alert'
+      },
+      'WARNING': {
+        accentColor: '#DC2626', // Red
+        pillBorder: '#DC2626',
+        pillText: '#DC2626',
+        categoryLabel: 'Seismic Alert'
+      },
+      'BREAKING': {
+        accentColor: '#DC2626', // Red
+        pillBorder: '#DC2626',
+        pillText: '#DC2626',
+        categoryLabel: 'Seismic Alert'
+      },
+      'ALERT': {
+        accentColor: '#2563EB', // Blue
+        pillBorder: '#2563EB',
+        pillText: '#2563EB',
+        categoryLabel: 'Seismic Alert'
+      }
+    };
+    
+    // Get theme for current alert type (default to EARTHQUAKE)
+    const theme = alertTheme[alertType] || alertTheme['EARTHQUAKE'];
     
     // Validate and ensure all template variables are defined
     const safeMagnitudeFormatted = magnitudeFormatted || 'N/A';
@@ -810,6 +861,10 @@ exports.handler = async (event, context) => {
         display: block !important;
         width: 100% !important;
         padding: 8px 0 !important;
+        text-align: left !important;
+      }
+      .facts-table td[style*="text-align: right"] {
+        text-align: right !important;
       }
       .button-table {
         width: 100% !important;
@@ -822,6 +877,7 @@ exports.handler = async (event, context) => {
         display: block !important;
         width: 100% !important;
         text-align: center !important;
+        box-sizing: border-box !important;
       }
     }
   </style>
@@ -832,9 +888,16 @@ exports.handler = async (event, context) => {
       <td align="center">
         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border: 1px solid #E6EAF2; border-radius: 16px; overflow: hidden;">
           
+          <!-- 4px Accent Bar (Top of Card) -->
+          <tr>
+            <td style="height: 4px; background-color: ${theme.accentColor}; padding: 0; line-height: 0; font-size: 0;">
+              &nbsp;
+            </td>
+          </tr>
+          
           <!-- Header Bar -->
           <tr>
-            <td style="padding: 24px 24px 16px 24px; border-bottom: 1px solid #E6EAF2;">
+            <td style="padding: 24px 24px 12px 24px; border-bottom: 1px solid #E6EAF2;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
                   <td style="vertical-align: middle;">
@@ -844,13 +907,14 @@ exports.handler = async (event, context) => {
                           <img src="https://noteworthynews.co/IMG_5992.PNG" alt="Noteworthy News" width="28" height="28" style="display: block; width: 28px; height: 28px;" />
                         </td>
                         <td style="vertical-align: middle;">
-                          <span style="font-size: 16px; font-weight: 700; color: #111827;">Noteworthy News</span>
+                          <div style="font-size: 20px; font-weight: 700; color: #111827; line-height: 1.2;">Noteworthy News</div>
+                          <div style="font-size: 11px; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">${theme.categoryLabel}</div>
                         </td>
                       </tr>
                     </table>
                   </td>
                   <td align="right" style="vertical-align: middle;">
-                    <span style="display: inline-block; background-color: ${alertType === 'BREAKING' ? '#DC2626' : alertType === 'ALERT' ? '#2563EB' : '#6B7280'}; color: #ffffff; padding: 6px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <span style="display: inline-block; border: 1px solid ${theme.pillBorder}; color: ${theme.pillText}; background-color: transparent; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;">
                       ${alertType}
                     </span>
                   </td>
@@ -866,18 +930,18 @@ exports.handler = async (event, context) => {
               <!-- Headline Block -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td style="padding: 32px 24px 24px 24px;">
-                    <h1 style="margin: 0 0 8px 0; font-size: 32px; font-weight: 800; color: #111827; line-height: 1.2;">
+                  <td style="padding: 28px 24px 20px 24px;">
+                    <h1 style="margin: 0 0 6px 0; font-size: 28px; font-weight: 800; color: #111827; line-height: 1.2; letter-spacing: -0.02em;">
                       M${safeMagnitudeFormatted} Earthquake
                     </h1>
-                    <p style="margin: 0 0 12px 0; font-size: 18px; font-weight: 500; color: #374151; line-height: 1.4;">
+                    <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 500; color: #374151; line-height: 1.4;">
                       Near ${region || safeLocationDisplay}
                     </p>
-                    <p style="margin: 0 0 16px 0; font-size: 14px; color: #6B7280; line-height: 1.5;">
+                    <p style="margin: 0 0 12px 0; font-size: 13px; color: #6B7280; line-height: 1.5;">
                       ${eventTime}
                     </p>
-                    ${safeSeverity !== 'Unknown' ? `
-                    <span style="display: inline-block; background-color: #F3F4F6; color: #374151; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                    ${safeSeverity !== 'Unknown' && safeSeverity !== 'Minor' ? `
+                    <span style="display: inline-block; background-color: #F3F4F6; color: #6B7280; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">
                       ${safeSeverity}
                     </span>
                     ` : ''}
@@ -885,22 +949,22 @@ exports.handler = async (event, context) => {
                 </tr>
               </table>
               
-              <!-- Key Facts (3-5 max) -->
+              <!-- Key Facts (3-5 max) - Premium Fintech-style Table -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
                   <td style="padding: 0 24px 24px 24px;">
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" class="facts-table" style="border-collapse: collapse;">
                       ${finalFacts.map((fact, index) => `
                       <tr>
-                        <td class="facts-table" style="padding: ${index === 0 ? '0' : '12px'} 0 ${index === finalFacts.length - 1 ? '0' : '12px'} 0; border-bottom: ${index === finalFacts.length - 1 ? 'none' : '1px solid #E6EAF2'};">
+                        <td class="facts-table" style="padding: ${index === 0 ? '0' : '14px'} 0 ${index === finalFacts.length - 1 ? '0' : '14px'} 0; border-bottom: ${index === finalFacts.length - 1 ? 'none' : '1px solid #EEF2F7'};">
                           <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                             <tr>
-                              <td class="facts-table" style="width: 40%; padding-right: 16px; vertical-align: top;">
-                                <span style="font-size: 13px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px;">
+                              <td class="facts-table" style="width: auto; padding-right: 16px; vertical-align: top;">
+                                <span style="font-size: 12px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px;">
                                   ${fact.label}
                                 </span>
                               </td>
-                              <td class="facts-table" style="vertical-align: top;">
+                              <td class="facts-table" style="vertical-align: top; text-align: right;">
                                 <span style="font-size: 15px; font-weight: 600; color: #111827;">
                                   ${fact.value}
                                 </span>
@@ -915,13 +979,22 @@ exports.handler = async (event, context) => {
                 </tr>
               </table>
               
-              <!-- Short Summary (1-2 sentences) -->
+              <!-- Short Summary (1-2 sentences) - Newsroom Tone -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td style="padding: 0 24px 32px 24px;">
-                    <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #374151;">
+                  <td style="padding: 0 24px 28px 24px;">
+                    <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #374151;">
                       ${summary}
                     </p>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Divider before CTA -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="padding: 0 24px 24px 24px;">
+                    <div style="height: 1px; background-color: #E6EAF2;"></div>
                   </td>
                 </tr>
               </table>
@@ -936,7 +1009,7 @@ exports.handler = async (event, context) => {
                           <!-- Primary Button: Open on Noteworthy News -->
                           <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto; width: 100%; max-width: 300px;">
                             <tr>
-                              <td align="center" style="background-color: #2563EB; border-radius: 6px;">
+                              <td align="center" style="background-color: #2563EB; border-radius: 8px;">
                                 <a href="https://noteworthynews.co/article.html?id=${encodeURIComponent(`post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}`)}" style="display: inline-block; padding: 14px 28px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none; line-height: 1.5;">
                                   Open on Noteworthy News
                                 </a>
@@ -948,7 +1021,7 @@ exports.handler = async (event, context) => {
                       ${earthquake.usgs_event_url ? `
                       <tr>
                         <td align="center" style="padding-top: 16px;">
-                          <a href="${earthquake.usgs_event_url}" style="font-size: 14px; color: #2563EB; text-decoration: none; font-weight: 500;">
+                          <a href="${earthquake.usgs_event_url}" style="font-size: 14px; color: #2563EB; text-decoration: underline; font-weight: 500;">
                             View on USGS
                           </a>
                         </td>
@@ -964,18 +1037,21 @@ exports.handler = async (event, context) => {
           
           <!-- Footer -->
           <tr>
-            <td style="padding: 24px; border-top: 1px solid #E6EAF2; background-color: #ffffff;">
+            <td style="padding: 32px 24px; border-top: 1px solid #E6EAF2; background-color: #F9FAFB;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
                   <td align="center" style="padding: 0;">
-                    <p style="margin: 0 0 12px 0; font-size: 13px; color: #6B7280; line-height: 1.6;">
+                    <p style="margin: 0 0 10px 0; font-size: 12px; color: #6B7280; line-height: 1.6;">
                       You're receiving this because you subscribed to Noteworthy News alerts.
                     </p>
-                    <p style="margin: 0 0 12px 0; font-size: 13px; color: #6B7280; line-height: 1.6;">
+                    <p style="margin: 0 0 10px 0; font-size: 12px; color: #6B7280; line-height: 1.6;">
                       <a href="{{{UNSUBSCRIBE_URL}}}" style="color: #2563EB; text-decoration: none; font-weight: 500;">Manage preferences</a> · <a href="{{{UNSUBSCRIBE_URL}}}" style="color: #2563EB; text-decoration: none; font-weight: 500;">Unsubscribe</a>
                     </p>
-                    <p style="margin: 0; font-size: 12px; color: #9CA3AF; line-height: 1.5;">
+                    <p style="margin: 0 0 8px 0; font-size: 11px; color: #9CA3AF; line-height: 1.5;">
                       Data source: USGS
+                    </p>
+                    <p style="margin: 0; font-size: 11px; color: #9CA3AF; line-height: 1.5;">
+                      Tip: Add us to your contacts to ensure delivery.
                     </p>
                   </td>
                 </tr>
@@ -1100,11 +1176,15 @@ exports.handler = async (event, context) => {
             
             // Add <img> tag in HTML that references the CID
             // Insert between summary and CTA section (optional image, clean styling)
+            // Include "Shareable graphic" label above image
             const imageHtml = `
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td style="padding: 0 24px 32px 24px;">
-                    <img src="cid:${cidIdentifier}" alt="Earthquake Visualization - Magnitude ${safeMagnitudeFormatted} near ${safeLocationDisplay}" style="display: block; width: 100%; max-width: 100%; height: auto; border-radius: 8px;" />
+                  <td style="padding: 0 24px 20px 24px;">
+                    <p style="margin: 0 0 12px 0; font-size: 11px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">
+                      Shareable graphic
+                    </p>
+                    <img src="cid:${cidIdentifier}" alt="Earthquake Visualization - Magnitude ${safeMagnitudeFormatted} near ${safeLocationDisplay}" style="display: block; width: 100%; max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #E6EAF2;" />
                   </td>
                 </tr>
               </table>
@@ -1150,12 +1230,15 @@ exports.handler = async (event, context) => {
       const imageHtml = `
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td style="padding: 0 24px 32px 24px;">
-                    <img src="cid:${imageAttachment.content_id}" alt="Earthquake Visualization - Magnitude ${safeMagnitudeFormatted} near ${safeLocationDisplay}" style="display: block; width: 100%; max-width: 100%; height: auto; border-radius: 8px;" />
+                  <td style="padding: 0 24px 20px 24px;">
+                    <p style="margin: 0 0 12px 0; font-size: 11px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">
+                      Shareable graphic
+                    </p>
+                    <img src="cid:${imageAttachment.content_id}" alt="Earthquake Visualization - Magnitude ${safeMagnitudeFormatted} near ${safeLocationDisplay}" style="display: block; width: 100%; max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #E6EAF2;" />
                   </td>
                 </tr>
               </table>
-      `;
+            `;
       // Insert between summary and CTA section
       htmlWithImage = htmlWithImage.replace(
         /(<!-- CTA Section \(Primary Action\) -->)/,

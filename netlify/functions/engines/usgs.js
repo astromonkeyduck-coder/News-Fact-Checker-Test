@@ -345,6 +345,135 @@ function extractUSGSImages(eventDetail) {
 }
 
 /**
+ * Scrape USGS images directly from the event page HTML
+ * This is a fallback when the API doesn't return images but they're visible on the website
+ */
+async function scrapeUSGSImagesFromPage(eventPageUrl, logger) {
+  if (!eventPageUrl) return [];
+  
+  try {
+    logger.info('🌐 Attempting to scrape images from USGS event page', { url: eventPageUrl });
+    
+    const response = await fetch(eventPageUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; NoteworthyNews/1.0)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+      }
+    });
+    
+    if (!response.ok) {
+      logger.warn('Failed to fetch USGS event page', { url: eventPageUrl, status: response.status });
+      return [];
+    }
+    
+    const html = await response.text();
+    const images = [];
+    const usedUrls = new Set();
+    
+    // Extract image URLs from HTML using regex patterns
+    // USGS event pages typically have images in:
+    // 1. <img> tags with src attributes
+    // 2. Background images in style attributes
+    // 3. Links to image files
+    
+    // Pattern 1: <img src="...">
+    const imgTagPattern = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+    let match;
+    while ((match = imgTagPattern.exec(html)) !== null && images.length < 2) {
+      const url = match[1];
+      if (url && !usedUrls.has(url)) {
+        // Check if it's a USGS image (shakemap, intensity, etc.)
+        if (url.includes('usgs.gov') && 
+            (url.includes('shakemap') || 
+             url.includes('intensity') || 
+             url.includes('pga') || 
+             url.includes('pgv') || 
+             url.includes('mmi') ||
+             url.includes('map') ||
+             url.includes('plot') ||
+             /\.(png|jpg|jpeg|gif|webp)/i.test(url))) {
+          // Convert relative URLs to absolute
+          const absoluteUrl = url.startsWith('http') ? url : `https://earthquake.usgs.gov${url.startsWith('/') ? url : '/' + url}`;
+          images.push({
+            url: absoluteUrl,
+            type: 'scraped-html',
+            filename: 'scraped-from-page',
+            scraped: true
+          });
+          usedUrls.add(absoluteUrl);
+        }
+      }
+    }
+    
+    // Pattern 2: Background images in style attributes
+    const stylePattern = /style=["'][^"']*background-image:\s*url\(["']?([^"')]+)["']?\)/gi;
+    while ((match = stylePattern.exec(html)) !== null && images.length < 2) {
+      const url = match[1];
+      if (url && !usedUrls.has(url) && url.includes('usgs.gov')) {
+        const absoluteUrl = url.startsWith('http') ? url : `https://earthquake.usgs.gov${url.startsWith('/') ? url : '/' + url}`;
+        images.push({
+          url: absoluteUrl,
+          type: 'scraped-html-style',
+          filename: 'scraped-from-style',
+          scraped: true
+        });
+        usedUrls.add(absoluteUrl);
+      }
+    }
+    
+    // Pattern 3: Direct links to image files in href attributes
+    const linkPattern = /<a[^>]+href=["']([^"']+\.(png|jpg|jpeg|gif|webp))["'][^>]*>/gi;
+    while ((match = linkPattern.exec(html)) !== null && images.length < 2) {
+      const url = match[1];
+      if (url && !usedUrls.has(url) && url.includes('usgs.gov')) {
+        const absoluteUrl = url.startsWith('http') ? url : `https://earthquake.usgs.gov${url.startsWith('/') ? url : '/' + url}`;
+        images.push({
+          url: absoluteUrl,
+          type: 'scraped-html-link',
+          filename: 'scraped-from-link',
+          scraped: true
+        });
+        usedUrls.add(absoluteUrl);
+      }
+    }
+    
+    // Pattern 4: Look for shakemap URLs in the HTML (common pattern)
+    const shakemapPattern = /https?:\/\/[^"'\s]+shakemap[^"'\s]+\.(png|jpg|jpeg|gif|webp)/gi;
+    while ((match = shakemapPattern.exec(html)) !== null && images.length < 2) {
+      const url = match[0];
+      if (url && !usedUrls.has(url)) {
+        images.push({
+          url: url,
+          type: 'scraped-shakemap',
+          filename: 'scraped-shakemap',
+          scraped: true
+        });
+        usedUrls.add(url);
+      }
+    }
+    
+    if (images.length > 0) {
+      logger.info(`✅ Scraped ${images.length} image(s) from USGS event page`, {
+        images: images.map(img => ({
+          type: img.type,
+          url: img.url.substring(0, 100)
+        }))
+      });
+    } else {
+      logger.debug('No images found in USGS event page HTML', { url: eventPageUrl });
+    }
+    
+    return images.slice(0, 2); // Return max 2 images
+  } catch (error) {
+    logger.warn('Error scraping images from USGS event page', {
+      error: error.message,
+      url: eventPageUrl
+    });
+    return [];
+  }
+}
+
+/**
  * Generate branded image for earthquake
  */
 async function generateBrandedImage(magnitude, location, usgsImages, eventId, logger, coordinates = null) {
@@ -879,9 +1008,18 @@ async function processEarthquake(feature, logger, forceEmail = false) {
             logger.info(`✅ USGS images found on retry ${retry + 1}`, { count: usgsImages.length, eventId });
             break;
           } else {
-            // Log what products are available for debugging
-            const availableProducts = eventDetail?.properties?.products ? Object.keys(eventDetail.properties.products) : [];
-            logger.debug(`Retry ${retry + 1}: Still no images, available products: ${availableProducts.join(', ')}`, { eventId });
+            // FALLBACK: Try scraping from HTML page on retry
+            const eventPageUrl = props.url || `https://earthquake.usgs.gov/earthquakes/eventpage/${eventId}`;
+            const scrapedImages = await scrapeUSGSImagesFromPage(eventPageUrl, logger);
+            if (scrapedImages.length > 0) {
+              usgsImages = scrapedImages;
+              logger.info(`✅ USGS images found via HTML scraping on retry ${retry + 1}`, { count: usgsImages.length, eventId });
+              break;
+            } else {
+              // Log what products are available for debugging
+              const availableProducts = eventDetail?.properties?.products ? Object.keys(eventDetail.properties.products) : [];
+              logger.debug(`Retry ${retry + 1}: Still no images, available products: ${availableProducts.join(', ')}`, { eventId });
+            }
           }
         }
       }
@@ -889,23 +1027,40 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     
     // Log final image count with detailed diagnostics
     if (usgsImages.length === 0) {
-      // Log what products are available for debugging
-      const availableProducts = eventDetail?.properties?.products ? Object.keys(eventDetail.properties.products) : [];
-      const productCounts = {};
-      if (eventDetail?.properties?.products) {
-        for (const [key, productList] of Object.entries(eventDetail.properties.products)) {
-          productCounts[key] = Array.isArray(productList) ? productList.length : 0;
-        }
-      }
+      // FALLBACK: Try scraping images directly from the USGS event page HTML
+      // The user reported that images are visible on the website even when the API doesn't return them
+      const eventPageUrl = props.url || `https://earthquake.usgs.gov/earthquakes/eventpage/${eventId}`;
+      logger.info('🔄 No images from API, trying HTML scraping fallback', { eventPageUrl });
       
-      logger.warn('⚠️ No USGS images available for earthquake - image will be generated without USGS maps', { 
-        eventId, 
-        hasDetailUrl: !!detailUrl,
-        hasEventDetail: !!eventDetail,
-        availableProducts: availableProducts,
-        productCounts: productCounts,
-        detailUrl: detailUrl
-      });
+      const scrapedImages = await scrapeUSGSImagesFromPage(eventPageUrl, logger);
+      if (scrapedImages.length > 0) {
+        usgsImages = scrapedImages;
+        logger.info(`✅ Found ${usgsImages.length} image(s) via HTML scraping`, {
+          images: usgsImages.map(img => ({
+            type: img.type,
+            url: img.url.substring(0, 100)
+          }))
+        });
+      } else {
+        // Log what products are available for debugging
+        const availableProducts = eventDetail?.properties?.products ? Object.keys(eventDetail.properties.products) : [];
+        const productCounts = {};
+        if (eventDetail?.properties?.products) {
+          for (const [key, productList] of Object.entries(eventDetail.properties.products)) {
+            productCounts[key] = Array.isArray(productList) ? productList.length : 0;
+          }
+        }
+        
+        logger.warn('⚠️ No USGS images available for earthquake - image will be generated without USGS maps', { 
+          eventId, 
+          hasDetailUrl: !!detailUrl,
+          hasEventDetail: !!eventDetail,
+          availableProducts: availableProducts,
+          productCounts: productCounts,
+          detailUrl: detailUrl,
+          scrapedFromHTML: false
+        });
+      }
       
       // For magnitude 6.0+, mark for continuous retry until USGS images are found
       // The retry function will check every minute and update the image when USGS images appear

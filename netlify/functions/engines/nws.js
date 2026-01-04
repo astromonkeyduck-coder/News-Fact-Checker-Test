@@ -204,6 +204,11 @@ async function processAlert(feature, logger) {
     } catch (postError) {
       logger.warn('Failed to create website post', postError);
     }
+    
+    // Send location-based alerts for new events (non-blocking)
+    sendLocationAlertsForEvent(storedEvent, logger).catch(err => {
+      logger.error('Error sending location alerts:', err);
+    });
   }
   
   // WEATHER ALERT EMAILS DISABLED - User requested no weather alert emails
@@ -294,6 +299,54 @@ async function storeEvent(event, logger) {
   } catch (error) {
     logger.error('Failed to store event', error, { canonical_id: event.canonical_id });
     throw error;
+  }
+}
+
+/**
+ * Send location-based alerts for new events (non-blocking)
+ */
+async function sendLocationAlertsForEvent(event, logger) {
+  // Only send for new events with location data
+  if (!event.lat || !event.lon) {
+    return;
+  }
+
+  try {
+    const { getUsersNearEvent } = require('../lib/getLocationAlertUsers');
+    const { checkAndSendLocationAlert } = require('../send-location-alert');
+
+    // Get users near this event
+    const nearbyUsers = await getUsersNearEvent(event, 'weather');
+
+    if (nearbyUsers.length === 0) {
+      return;
+    }
+
+    logger.info(`Found ${nearbyUsers.length} user(s) near weather event ${event.canonical_id}`);
+
+    // Send alerts to nearby users (non-blocking, don't wait)
+    const alertPromises = nearbyUsers.map(user => 
+      checkAndSendLocationAlert(
+        user.email,
+        user.userName,
+        {
+          ...event,
+          latitude: event.lat,
+          longitude: event.lon,
+        },
+        'Weather Alert'
+      ).catch(err => {
+        logger.error(`Failed to send location alert to ${user.email}:`, err);
+      })
+    );
+
+    // Don't wait for all alerts - fire and forget
+    Promise.all(alertPromises).catch(err => {
+      logger.error('Error sending location alerts:', err);
+    });
+  } catch (error) {
+    // Don't fail event storage if location alerts fail
+    logger.error('Error processing location alerts:', error);
   }
 }
 

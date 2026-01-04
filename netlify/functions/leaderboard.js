@@ -220,6 +220,29 @@ exports.handler = async (event, context) => {
         console.log("[Leaderboard] Real-time broadcast not available (this is OK)");
       }
 
+      // Check for position changes and send notification (non-blocking)
+      // Note: This requires userEmail to be passed in the request body
+      try {
+        const userEmail = body.userEmail; // Optional - user must provide email to get notifications
+        if (userEmail) {
+          const { checkAndNotifyPositionChange } = require("./send-leaderboard-notification");
+          checkAndNotifyPositionChange(
+            finalUserId,
+            userEmail,
+            filteredUserName,
+            gameType,
+            newScore.score,
+            scores
+          ).catch(err => {
+            console.error("[Leaderboard] Failed to check position change:", err);
+            // Don't fail the request if notification check fails
+          });
+        }
+      } catch (error) {
+        // Notification module not available - graceful degradation
+        console.log("[Leaderboard] Position notification not available (this is OK)");
+      }
+
       return {
         statusCode: 200,
         headers,

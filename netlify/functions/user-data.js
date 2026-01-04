@@ -95,7 +95,13 @@ exports.handler = async (event, context) => {
               },
               bookmarks: [],
               readingHistory: [],
-              preferences: {},
+              preferences: {
+                emails: {
+                  leaderboard: true,
+                  streak: true,
+                  location: false,
+                },
+              },
               createdAt: new Date().toISOString(),
             }),
           };
@@ -133,7 +139,13 @@ exports.handler = async (event, context) => {
               comments: 0,
               tipsSubmitted: 0,
             },
-            preferences: {},
+            preferences: {
+              emails: {
+                leaderboard: true,  // Default: enabled if email provided
+                streak: true,        // Default: enabled
+                location: false,     // Default: disabled (must opt-in)
+              },
+            },
             createdAt: new Date().toISOString(),
           };
         }
@@ -148,9 +160,30 @@ exports.handler = async (event, context) => {
 
         // Update preferences if provided
         if (updates.preferences) {
+          // Initialize preferences structure if it doesn't exist
+          if (!userData.preferences) {
+            userData.preferences = {
+              emails: {
+                leaderboard: true,
+                streak: true,
+                location: false,
+              },
+            };
+          }
+          
+          // Merge preferences (deep merge for emails object)
+          if (updates.preferences.emails) {
+            userData.preferences.emails = {
+              ...userData.preferences.emails,
+              ...updates.preferences.emails,
+            };
+          }
+          
+          // Merge other preferences
           userData.preferences = {
             ...userData.preferences,
             ...updates.preferences,
+            emails: userData.preferences.emails, // Preserve merged emails
           };
         }
 
@@ -162,6 +195,18 @@ exports.handler = async (event, context) => {
         // Update reading history if provided
         if (updates.readingHistory) {
           userData.readingHistory = updates.readingHistory;
+        }
+
+        // Update location preferences if provided
+        if (updates.preferences?.location) {
+          if (!userData.preferences) {
+            userData.preferences = {};
+          }
+          userData.preferences.location = {
+            ...userData.preferences.location,
+            ...updates.preferences.location,
+            lastUpdated: new Date().toISOString(),
+          };
         }
 
         // Update last modified

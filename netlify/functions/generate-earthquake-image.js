@@ -321,29 +321,30 @@ async function prepareUSGSImage(imageBuffer, targetWidth, targetHeight) {
  */
 /**
  * Generate satellite/map image URL from coordinates
- * Uses OpenStreetMap StaticMap service (free, no API key needed)
+ * Uses multiple fallback providers for reliability
  */
 function generateSatelliteMapUrl(lat, lon, zoom = 11, width = 600, height = 400) {
   if (lat == null || lon == null) return null;
   
-  // Use OpenStreetMap StaticMap service with satellite/terrain style
-  // Note: OpenStreetMap doesn't have true satellite, but we can use terrain/hybrid
-  try {
-    const baseUrl = 'https://staticmap.openstreetmap.de/staticmap.php';
-    const params = new URLSearchParams({
-      center: `${lat},${lon}`,
-      zoom: zoom.toString(),
-      size: `${width}x${height}`,
-      markers: `${lat},${lon},red-pushpin`,
-      // Use terrain style for more visual detail
-      maptype: 'terrain',
-    });
-    
-    return `${baseUrl}?${params.toString()}`;
-  } catch (error) {
-    console.warn('[generate-earthquake-image] ⚠️ Error generating satellite map URL:', error.message);
-    return null;
-  }
+  // Try multiple static map providers in order of reliability
+  const providers = [
+    // Primary: OpenStreetMap France static map service (more reliable)
+    {
+      name: 'OSM France',
+      url: `https://staticmap.openstreetmap.fr/staticmap.php?center=${lat},${lon}&zoom=${zoom}&size=${width}x${height}&markers=${lat},${lon},red-pushpin&maptype=terrain`
+    },
+    // Fallback: Use OpenStreetMap tile service with a tile-based approach
+    // This requires fetching and compositing tiles, but is more reliable
+    {
+      name: 'OSM Tile Service',
+      url: null, // Will be handled separately if needed
+      isTileBased: true
+    }
+  ];
+  
+  // For now, return the primary provider URL
+  // If this fails during download, the error will be caught and logged
+  return providers[0].url;
 }
 
 async function generateImage(magnitude, location, usgsImages, eventId, templateType = 'standard', coordinates = null) {
@@ -859,52 +860,76 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     // This fills the second slot when only 1 USGS image is found
     if (slotsRemaining > 0) {
       try {
-        const satelliteUrl = generateSatelliteMapUrl(lat, lon, 11, outputWidth, IMAGE_AREA_HEIGHT);
-        if (satelliteUrl) {
-          console.log(`[generate-earthquake-image] 🛰️ Generating satellite/map image from coordinates:`, {
-            lat,
-            lon,
-            url: satelliteUrl.substring(0, 100)
-          });
+        // Try multiple static map providers if one fails
+        const providers = [
+          // Primary: OpenStreetMap France (more reliable)
+          `https://staticmap.openstreetmap.fr/staticmap.php?center=${lat},${lon}&zoom=11&size=${outputWidth}x${IMAGE_AREA_HEIGHT}&markers=${lat},${lon},red-pushpin&maptype=terrain`,
+          // Fallback 1: Use OSM tile service with a tile-based static map
+          // Calculate center tile and use it (simpler but less ideal)
+          (() => {
+            const zoom = 11;
+            const n = Math.pow(2, zoom);
+            const tileX = Math.floor((lon + 180) / 360 * n);
+            const tileY = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n);
+            return `https://tile.openstreetmap.org/${zoom}/${tileX}/${tileY}.png`;
+          })()
+        ];
+        
+        let satelliteBuffer = null;
+        let usedProvider = null;
+        
+        for (let i = 0; i < providers.length && !satelliteBuffer; i++) {
+          const providerUrl = providers[i];
+          if (!providerUrl) continue; // Skip null providers for now
           
-          // Use the pre-calculated imageWidth to ensure alignment with USGS images
-          // imageWidth was already calculated based on totalImages (USGS + satellite)
-          console.log(`[generate-earthquake-image] 📥 Downloading satellite/map image from: ${satelliteUrl.substring(0, 100)}`);
-          console.log(`[generate-earthquake-image] 📐 Using pre-calculated imageWidth: ${imageWidth}px (matches USGS images)`);
-          const satelliteBuffer = await downloadImage(satelliteUrl);
-          
-          if (satelliteBuffer) {
-            console.log(`[generate-earthquake-image] ✅ Downloaded satellite/map image: ${Math.round(satelliteBuffer.length / 1024)}KB`);
-            console.log(`[generate-earthquake-image] 🔧 Processing satellite/map image to ${imageWidth}x${IMAGE_AREA_HEIGHT}`);
-            const processedSatellite = await prepareUSGSImage(satelliteBuffer, imageWidth, IMAGE_AREA_HEIGHT);
+          try {
+            console.log(`[generate-earthquake-image] 🛰️ Trying satellite map provider ${i + 1}/${providers.length}:`, {
+              lat,
+              lon,
+              url: providerUrl.substring(0, 100)
+            });
             
-            if (processedSatellite) {
-              // Position satellite image: if we have 1 USGS image, put satellite next to it; otherwise center it
-              const x = IMAGE_PADDING + (successfullyAddedImages * (imageWidth + IMAGE_SPACING));
-              const y = IMAGE_AREA_Y;
-              
-              console.log(`[generate-earthquake-image] 📍 Positioning satellite/map image at (${x}, ${y})`);
-              
-              compositeInputs.push({
-                input: processedSatellite,
-                left: x,
-                top: y,
-                blend: 'over',
-              });
-              successfullyAddedImages++;
-              console.log(`[generate-earthquake-image] ✅ Added satellite/map image to composite`, { 
-                position: `(${x}, ${y})`,
-                size: `${imageWidth}x${IMAGE_AREA_HEIGHT}`,
-                bufferSize: `${Math.round(processedSatellite.length / 1024)}KB`
-              });
-            } else {
-              console.error(`[generate-earthquake-image] ❌ prepareUSGSImage returned null for satellite image`);
+            satelliteBuffer = await downloadImage(providerUrl);
+            if (satelliteBuffer) {
+              usedProvider = i + 1;
+              console.log(`[generate-earthquake-image] ✅ Successfully downloaded from provider ${i + 1}`);
+              break;
             }
+          } catch (error) {
+            console.warn(`[generate-earthquake-image] ⚠️ Provider ${i + 1} failed:`, error.message);
+            // Continue to next provider
+          }
+        }
+        
+        if (satelliteBuffer) {
+          console.log(`[generate-earthquake-image] ✅ Downloaded satellite/map image from provider ${usedProvider}: ${Math.round(satelliteBuffer.length / 1024)}KB`);
+          console.log(`[generate-earthquake-image] 🔧 Processing satellite/map image to ${imageWidth}x${IMAGE_AREA_HEIGHT}`);
+          const processedSatellite = await prepareUSGSImage(satelliteBuffer, imageWidth, IMAGE_AREA_HEIGHT);
+          
+          if (processedSatellite) {
+            // Position satellite image: if we have 1 USGS image, put satellite next to it; otherwise center it
+            const x = IMAGE_PADDING + (successfullyAddedImages * (imageWidth + IMAGE_SPACING));
+            const y = IMAGE_AREA_Y;
+            
+            console.log(`[generate-earthquake-image] 📍 Positioning satellite/map image at (${x}, ${y})`);
+            
+            compositeInputs.push({
+              input: processedSatellite,
+              left: x,
+              top: y,
+              blend: 'over',
+            });
+            successfullyAddedImages++;
+            console.log(`[generate-earthquake-image] ✅ Added satellite/map image to composite`, { 
+              position: `(${x}, ${y})`,
+              size: `${imageWidth}x${IMAGE_AREA_HEIGHT}`,
+              bufferSize: `${Math.round(processedSatellite.length / 1024)}KB`
+            });
           } else {
-            console.error(`[generate-earthquake-image] ❌ downloadImage returned null for satellite image`);
+            console.error(`[generate-earthquake-image] ❌ prepareUSGSImage returned null for satellite image`);
           }
         } else {
-          console.warn(`[generate-earthquake-image] ⚠️ Could not generate satellite map URL`);
+          console.warn(`[generate-earthquake-image] ⚠️ All satellite map providers failed - no map image available`);
         }
       } catch (error) {
         console.error(`[generate-earthquake-image] ❌ Error processing satellite/map image:`, {
