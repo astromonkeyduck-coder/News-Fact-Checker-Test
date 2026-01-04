@@ -256,6 +256,14 @@ async function prepareUSGSImage(imageBuffer, targetWidth, targetHeight) {
     const image = sharp(imageBuffer);
     const metadata = await image.metadata();
     
+    console.log(`[generate-earthquake-image] 📐 USGS image metadata:`, {
+      originalWidth: metadata.width,
+      originalHeight: metadata.height,
+      format: metadata.format,
+      targetWidth,
+      targetHeight
+    });
+    
     const imageAspect = metadata.width / metadata.height;
     const targetAspect = targetWidth / targetHeight;
     
@@ -273,6 +281,12 @@ async function prepareUSGSImage(imageBuffer, targetWidth, targetHeight) {
       top = Math.round((height - targetHeight) / 2);
     }
     
+    console.log(`[generate-earthquake-image] 🔧 Resizing USGS image:`, {
+      resizeTo: `${width}x${height}`,
+      extractFrom: `left=${left}, top=${top}`,
+      extractSize: `${targetWidth}x${targetHeight}`
+    });
+    
     const processed = await image
       .resize(width, height, { 
         fit: 'cover',
@@ -287,9 +301,16 @@ async function prepareUSGSImage(imageBuffer, targetWidth, targetHeight) {
       })
       .toBuffer();
     
+    console.log(`[generate-earthquake-image] ✅ USGS image processed: ${Math.round(processed.length / 1024)}KB`);
+    
     return processed;
   } catch (error) {
-    console.error('[generate-earthquake-image] Error processing USGS image:', error);
+    console.error('[generate-earthquake-image] ❌ Error processing USGS image:', {
+      error: error.message,
+      stack: error.stack,
+      targetWidth,
+      targetHeight
+    });
     return null;
   }
 }
@@ -299,6 +320,32 @@ async function prepareUSGSImage(imageBuffer, targetWidth, targetHeight) {
  * @param {string} templateType - 'standard' (4K), 'square' (1080x1080), 'wide' (1920x1080)
  */
 async function generateImage(magnitude, location, usgsImages, eventId, templateType = 'standard') {
+  // CRITICAL: Validate usgsImages is an array BEFORE any operations
+  // This prevents TypeError from .slice() or .length on non-array types
+  if (!Array.isArray(usgsImages)) {
+    console.warn(`[generate-earthquake-image] ⚠️ usgsImages is not an array, converting:`, {
+      type: typeof usgsImages,
+      value: usgsImages
+    });
+    usgsImages = usgsImages ? [usgsImages] : [];
+  }
+  
+  // Now safe to log with array operations
+  console.log(`[generate-earthquake-image] 📥 INPUT VALIDATION:`, {
+    magnitude,
+    location,
+    eventId,
+    hasUsgsImages: !!(usgsImages && usgsImages.length > 0),
+    usgsImageCount: usgsImages?.length || 0,
+    usgsImagesType: typeof usgsImages,
+    isArray: Array.isArray(usgsImages),
+    usgsImagesPreview: usgsImages && usgsImages.length > 0 ? JSON.stringify(usgsImages.slice(0, 2).map(img => ({
+      hasUrl: !!img?.url,
+      url: img?.url?.substring(0, 80),
+      type: img?.type,
+      filename: img?.filename
+    }))) : 'null'
+  });
   // Load template
   const possiblePaths = [
     path.join(__dirname, '2ndUSGSTemp.png'),
@@ -669,6 +716,16 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
   const IMAGE_PADDING = Math.round(20 * scaleFactor);
   const IMAGE_SPACING = Math.round(15 * scaleFactor);
   
+  console.log(`[generate-earthquake-image] 📸 USGS Image Processing:`, {
+    hasUsgsImages: !!(usgsImages && usgsImages.length > 0),
+    usgsImageCount: usgsImages?.length || 0,
+    imageAreaY: IMAGE_AREA_Y,
+    imageAreaHeight: IMAGE_AREA_HEIGHT,
+    imagePadding: IMAGE_PADDING,
+    imageSpacing: IMAGE_SPACING,
+    scaleFactor: scaleFactor.toFixed(3)
+  });
+  
   let successfullyAddedImages = 0;
   
   if (usgsImages && usgsImages.length > 0) {
@@ -678,19 +735,31 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
       ? Math.floor((imageAreaWidth - IMAGE_SPACING) / 2)
       : imageAreaWidth;
     
+    console.log(`[generate-earthquake-image] 📸 Processing ${numImages} USGS image(s):`, {
+      imageAreaWidth,
+      imageWidth,
+      imageHeight: IMAGE_AREA_HEIGHT
+    });
+    
     for (let i = 0; i < numImages; i++) {
       const usgsImage = usgsImages[i];
       if (!usgsImage || !usgsImage.url) {
+        console.warn(`[generate-earthquake-image] ⚠️ USGS image ${i + 1} missing URL, skipping`);
         continue;
       }
       
       try {
+        console.log(`[generate-earthquake-image] 📥 Downloading USGS image ${i + 1}/${numImages} from: ${usgsImage.url.substring(0, 100)}`);
         const imageBuffer = await downloadImage(usgsImage.url);
         if (imageBuffer) {
+          console.log(`[generate-earthquake-image] ✅ Downloaded USGS image ${i + 1}: ${Math.round(imageBuffer.length / 1024)}KB`);
+          console.log(`[generate-earthquake-image] 🔧 Processing USGS image ${i + 1} to ${imageWidth}x${IMAGE_AREA_HEIGHT}`);
           const processedImage = await prepareUSGSImage(imageBuffer, imageWidth, IMAGE_AREA_HEIGHT);
           if (processedImage) {
             const x = IMAGE_PADDING + (i * (imageWidth + IMAGE_SPACING));
             const y = IMAGE_AREA_Y;
+            
+            console.log(`[generate-earthquake-image] 📍 Positioning USGS image ${i + 1} at (${x}, ${y})`);
             
             compositeInputs.push({
               input: processedImage,
@@ -699,11 +768,24 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
               blend: 'over',
             });
             successfullyAddedImages++;
-            console.log(`[generate-earthquake-image] ✅ Added USGS image ${i + 1}/${numImages}`, { url: usgsImage.url.substring(0, 80) });
+            console.log(`[generate-earthquake-image] ✅ Added USGS image ${i + 1}/${numImages} to composite`, { 
+              url: usgsImage.url.substring(0, 80),
+              position: `(${x}, ${y})`,
+              size: `${imageWidth}x${IMAGE_AREA_HEIGHT}`,
+              bufferSize: `${Math.round(processedImage.length / 1024)}KB`
+            });
+          } else {
+            console.error(`[generate-earthquake-image] ❌ prepareUSGSImage returned null for image ${i + 1}`);
           }
+        } else {
+          console.error(`[generate-earthquake-image] ❌ downloadImage returned null for image ${i + 1}`);
         }
       } catch (error) {
-        console.error(`[generate-earthquake-image] ❌ Error processing USGS image ${i + 1}:`, error.message);
+        console.error(`[generate-earthquake-image] ❌ Error processing USGS image ${i + 1}:`, {
+          error: error.message,
+          stack: error.stack,
+          url: usgsImage.url?.substring(0, 100)
+        });
       }
     }
   } else {
@@ -758,6 +840,19 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
   
   // Composite all layers
   console.log(`[generate-earthquake-image] 🎨 Compositing ${compositeInputs.length} layer(s) onto template...`);
+  console.log(`[generate-earthquake-image] 🎨 Composite inputs detail:`, {
+    totalLayers: compositeInputs.length,
+    layerDetails: compositeInputs.map((layer, idx) => ({
+      index: idx,
+      hasInput: !!layer.input,
+      inputType: layer.input ? (Buffer.isBuffer(layer.input) ? 'Buffer' : typeof layer.input) : 'null',
+      inputSize: layer.input ? (Buffer.isBuffer(layer.input) ? `${Math.round(layer.input.length / 1024)}KB` : 'unknown') : 'null',
+      left: layer.left,
+      top: layer.top,
+      blend: layer.blend
+    }))
+  });
+  
   compositePipeline = compositePipeline.composite(compositeInputs, {
     blend: 'over',
   });
