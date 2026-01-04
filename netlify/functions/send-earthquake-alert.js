@@ -1236,10 +1236,38 @@ exports.handler = async (event, context) => {
         
         if (!imageAttachment) {
           console.log(`[send-earthquake-alert] ⚠️ No image attachment for ${email} - imageAttachment is null or invalid`);
+          console.log(`[send-earthquake-alert] ⚠️ Email will be sent WITHOUT image attachment for ${email}`);
+        } else {
+          console.log(`[send-earthquake-alert] ✅ Email prepared WITH image attachment for ${email}:`, {
+            attachmentCount: emailContent.attachments?.length || 0,
+            hasInline: emailContent.attachments?.some(a => a.content_disposition === 'inline') || false,
+            hasRegular: emailContent.attachments?.some(a => a.content_disposition === 'attachment') || false,
+            contentId: imageAttachment.content_id
+          });
         }
         
+        // CRITICAL: Log email content before sending
+        console.log(`[send-earthquake-alert] 📧 FINAL EMAIL CONTENT for ${email}:`, {
+          hasAttachments: !!emailContent.attachments,
+          attachmentCount: emailContent.attachments?.length || 0,
+          attachments: emailContent.attachments?.map(a => ({
+            filename: a.filename,
+            content_id: a.content_id,
+            content_disposition: a.content_disposition,
+            content_type: a.content_type,
+            content_length: a.content?.length || 0
+          })) || [],
+          htmlLength: emailContent.html?.length || 0,
+          htmlContainsCid: emailContent.html?.includes('cid:') || false
+        });
+        
         const result = await resend.emails.send(emailContent);
-        console.log(`[send-earthquake-alert] 📧 Email sent to ${email}:`, result.data?.id || 'unknown');
+        console.log(`[send-earthquake-alert] 📧 Email sent to ${email}:`, {
+          emailId: result.data?.id || 'unknown',
+          hasError: !!result.error,
+          error: result.error || null,
+          attachmentCount: emailContent.attachments?.length || 0
+        });
         return result;
       })
     );

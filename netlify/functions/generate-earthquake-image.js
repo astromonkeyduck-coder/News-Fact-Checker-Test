@@ -651,7 +651,7 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
   let compositePipeline = template;
   
   // CRITICAL: Verify template dimensions before scaling
-  const templateMetadata = await template.metadata();
+  // Reuse existing templateMetadata from line 361 (already loaded)
   console.log(`[generate-earthquake-image] 📐 Template metadata:`, {
     width: templateMetadata.width,
     height: templateMetadata.height,
