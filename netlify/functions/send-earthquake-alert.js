@@ -100,6 +100,14 @@ async function downloadImageForEmail(imageUrl) {
  * Main handler
  */
 exports.handler = async (event, context) => {
+  // CRITICAL: Log function invocation immediately
+  console.log('[send-earthquake-alert] 🚀 FUNCTION INVOKED', {
+    httpMethod: event.httpMethod,
+    hasBody: !!event.body,
+    bodyLength: event.body?.length || 0,
+    timestamp: new Date().toISOString()
+  });
+  
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -109,10 +117,12 @@ exports.handler = async (event, context) => {
   
   // Handle OPTIONS
   if (event.httpMethod === "OPTIONS") {
+    console.log('[send-earthquake-alert] ⚙️ OPTIONS request - returning 204');
     return { statusCode: 204, headers, body: "" };
   }
   
   if (event.httpMethod !== "POST") {
+    console.error('[send-earthquake-alert] ❌ Invalid method:', event.httpMethod);
     return {
       statusCode: 405,
       headers,
@@ -176,7 +186,8 @@ exports.handler = async (event, context) => {
       hasImageUrl: !!imageUrl,
       imageUrl: imageUrl?.substring(0, 100),
       eventId: earthquake?.event_id,
-      magnitude: earthquake?.magnitude
+      magnitude: earthquake?.magnitude,
+      fullImageUrl: imageUrl // Log full URL for debugging
     });
     
     if (!earthquake || !earthquake.magnitude || !earthquake.location_display) {
@@ -331,11 +342,11 @@ exports.handler = async (event, context) => {
             
             // Add <img> tag in HTML that references the CID
             // MUST match the content_id exactly (without cid: prefix)
-            const imageHtml = `
-              <div style="margin: 20px 0; text-align: center;">
-                <img src="cid:${cidIdentifier}" alt="Earthquake visualization" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
-              </div>
-            `;
+            // Use a simpler, more reliable approach - insert directly after the "See attached" paragraph
+            const imageHtml = `<div style="margin: 20px 0; text-align: center;"><img src="cid:${cidIdentifier}" alt="Earthquake visualization" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" /></div>`;
+            
+            console.log(`[send-earthquake-alert] 🔗 CID reference: cid:${cidIdentifier}`);
+            console.log(`[send-earthquake-alert] 🔗 Image HTML: ${imageHtml.substring(0, 100)}...`);
             
             // Insert image after "See attached image for details" paragraph
             // Use a more reliable replacement that finds the paragraph and inserts after it

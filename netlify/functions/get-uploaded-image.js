@@ -89,16 +89,96 @@ exports.handler = async (event, context) => {
         });
         
         console.log(`[get-uploaded-image] Response from ${storeName}: ${response.status} ${response.statusText}`);
+        const contentType = response.headers.get('content-type') || '';
+        console.log(`[get-uploaded-image] Content-Type: ${contentType}`);
         
         if (response.ok) {
-          const arrayBuffer = await response.arrayBuffer();
-          if (arrayBuffer && arrayBuffer.byteLength > 0) {
-            imageData = arrayBuffer;
-            foundStore = storeName;
-            console.log(`[get-uploaded-image] ✅ Found image in ${storeName}: ${Math.round(arrayBuffer.byteLength / 1024)}KB`);
-            break;
+          // Check if response is JSON (Netlify Blobs might return JSON with a URL)
+          if (contentType.includes('application/json')) {
+            const jsonData = await response.json().catch(() => null);
+            if (jsonData && jsonData.url) {
+              console.log(`[get-uploaded-image] ⚠️ Blobs API returned JSON with URL, fetching from: ${jsonData.url}`);
+              // Follow the URL to get the actual image
+              try {
+                const imageResponse = await fetch(jsonData.url);
+                if (imageResponse.ok) {
+                  const arrayBuffer = await imageResponse.arrayBuffer();
+                  if (arrayBuffer && arrayBuffer.byteLength > 0) {
+                    // Verify it's actually an image (not more JSON)
+                    const firstBytes = new Uint8Array(arrayBuffer.slice(0, 4));
+                    const isPNG = firstBytes[0] === 0x89 && firstBytes[1] === 0x50 && firstBytes[2] === 0x4E && firstBytes[3] === 0x47;
+                    const isJPEG = firstBytes[0] === 0xFF && firstBytes[1] === 0xD8;
+                    if (isPNG || isJPEG) {
+                      imageData = arrayBuffer;
+                      foundStore = storeName;
+                      console.log(`[get-uploaded-image] ✅ Found image via redirect URL: ${Math.round(arrayBuffer.byteLength / 1024)}KB (${isPNG ? 'PNG' : 'JPEG'})`);
+                      break;
+                    } else {
+                      console.warn(`[get-uploaded-image] ⚠️ Redirect URL did not return valid image (magic bytes: ${Array.from(firstBytes).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ')})`);
+                    }
+                  }
+                } else {
+                  console.warn(`[get-uploaded-image] ⚠️ Failed to fetch from redirect URL: ${imageResponse.status} ${imageResponse.statusText}`);
+                }
+              } catch (redirectErr) {
+                console.warn(`[get-uploaded-image] ⚠️ Error fetching from redirect URL:`, redirectErr.message);
+              }
+            } else {
+              console.warn(`[get-uploaded-image] ⚠️ JSON response but no URL field:`, JSON.stringify(jsonData).substring(0, 200));
+            }
           } else {
-            console.warn(`[get-uploaded-image] ⚠️ Empty response from ${storeName}`);
+            // Binary response - get as arrayBuffer
+            const arrayBuffer = await response.arrayBuffer();
+            if (arrayBuffer && arrayBuffer.byteLength > 0) {
+              // Check if it's actually JSON (starts with {)
+              const firstBytes = new Uint8Array(arrayBuffer.slice(0, 10));
+              const startsWithJson = firstBytes[0] === 0x7b; // '{' character
+              
+              if (startsWithJson) {
+                // It's JSON, try to parse and get URL
+                const text = new TextDecoder().decode(arrayBuffer);
+                try {
+                  const jsonData = JSON.parse(text);
+                  if (jsonData.url) {
+                    console.log(`[get-uploaded-image] ⚠️ Response is JSON (despite content-type), fetching from: ${jsonData.url}`);
+                    try {
+                      const imageResponse = await fetch(jsonData.url);
+                      if (imageResponse.ok) {
+                        const imageArrayBuffer = await imageResponse.arrayBuffer();
+                        if (imageArrayBuffer && imageArrayBuffer.byteLength > 0) {
+                          // Verify it's actually an image (not more JSON)
+                          const firstBytes = new Uint8Array(imageArrayBuffer.slice(0, 4));
+                          const isPNG = firstBytes[0] === 0x89 && firstBytes[1] === 0x50 && firstBytes[2] === 0x4E && firstBytes[3] === 0x47;
+                          const isJPEG = firstBytes[0] === 0xFF && firstBytes[1] === 0xD8;
+                          if (isPNG || isJPEG) {
+                            imageData = imageArrayBuffer;
+                            foundStore = storeName;
+                            console.log(`[get-uploaded-image] ✅ Found image via JSON URL: ${Math.round(imageArrayBuffer.byteLength / 1024)}KB (${isPNG ? 'PNG' : 'JPEG'})`);
+                            break;
+                          } else {
+                            console.warn(`[get-uploaded-image] ⚠️ Redirect URL did not return valid image (magic bytes: ${Array.from(firstBytes).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ')})`);
+                          }
+                        }
+                      } else {
+                        console.warn(`[get-uploaded-image] ⚠️ Failed to fetch from redirect URL: ${imageResponse.status} ${imageResponse.statusText}`);
+                      }
+                    } catch (redirectErr) {
+                      console.warn(`[get-uploaded-image] ⚠️ Error fetching from redirect URL:`, redirectErr.message);
+                    }
+                  }
+                } catch (parseErr) {
+                  console.warn(`[get-uploaded-image] ⚠️ Failed to parse JSON response:`, parseErr.message);
+                }
+              } else {
+                // It's actual binary image data
+                imageData = arrayBuffer;
+                foundStore = storeName;
+                console.log(`[get-uploaded-image] ✅ Found image in ${storeName}: ${Math.round(arrayBuffer.byteLength / 1024)}KB`);
+                break;
+              }
+            } else {
+              console.warn(`[get-uploaded-image] ⚠️ Empty response from ${storeName}`);
+            }
           }
         } else if (response.status === 404) {
           console.log(`[get-uploaded-image] Image not found in ${storeName} (404)`);
