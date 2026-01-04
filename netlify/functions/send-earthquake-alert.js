@@ -357,10 +357,84 @@ async function findNearbyVenues(lat, lon, radiusKm = 50) {
 
 /**
  * Download image for email attachment
- * Handles both direct binary responses and JSON responses with redirect URLs (from get-uploaded-image)
+ * Uses Netlify Blobs SDK directly to avoid propagation delays
+ * Falls back to HTTP fetch if SDK fails
  */
 async function downloadImageForEmail(imageUrl) {
   try {
+    // Extract image key from URL
+    // Format: https://noteworthynews.co/.netlify/functions/get-uploaded-image?key=earthquake-xxx-standard-timestamp.png
+    let imageKey = null;
+    try {
+      const urlObj = new URL(imageUrl.startsWith('/') ? `https://noteworthynews.co${imageUrl}` : imageUrl);
+      imageKey = urlObj.searchParams.get('key');
+    } catch (urlError) {
+      console.warn(`[send-earthquake-alert] ⚠️ Could not parse URL to extract key: ${urlError.message}`);
+    }
+    
+    // Try SDK first (more reliable, no propagation delay)
+    if (imageKey) {
+      try {
+        const { getStore } = require("@netlify/blobs");
+        const siteID = process.env.NETLIFY_SITE_ID;
+        const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
+        
+        if (siteID && token) {
+          console.log(`[send-earthquake-alert] 📥 Attempting to fetch image via SDK: ${imageKey}`);
+          
+          const store = getStore({
+            name: "post-media",
+            siteID: siteID,
+            token: token,
+          });
+          
+          // Retry logic with exponential backoff (for propagation delays)
+          let imageData = null;
+          const maxRetries = 5;
+          const retryDelays = [1000, 2000, 3000, 5000, 8000]; // 1s, 2s, 3s, 5s, 8s
+          
+          for (let retry = 0; retry < maxRetries; retry++) {
+            try {
+              imageData = await store.get(imageKey, { type: "arrayBuffer" });
+              
+              if (imageData && imageData.byteLength > 0) {
+                // Verify it's a valid PNG
+                const firstBytes = new Uint8Array(imageData.slice(0, 4));
+                const isPNG = firstBytes[0] === 0x89 && firstBytes[1] === 0x50 && firstBytes[2] === 0x4E && firstBytes[3] === 0x47;
+                
+                if (isPNG) {
+                  console.log(`[send-earthquake-alert] ✅ Image fetched via SDK (retry ${retry + 1}/${maxRetries}): ${Math.round(imageData.byteLength / 1024)}KB`);
+                  const buffer = Buffer.from(imageData);
+                  return {
+                    buffer: buffer,
+                    contentType: 'image/png'
+                  };
+                } else {
+                  console.warn(`[send-earthquake-alert] ⚠️ SDK returned data but not valid PNG (retry ${retry + 1}/${maxRetries})`);
+                }
+              } else {
+                console.warn(`[send-earthquake-alert] ⚠️ SDK returned empty data (retry ${retry + 1}/${maxRetries})`);
+              }
+            } catch (sdkError) {
+              console.warn(`[send-earthquake-alert] ⚠️ SDK fetch failed (retry ${retry + 1}/${maxRetries}): ${sdkError.message}`);
+            }
+            
+            // Wait before retry (except on last attempt)
+            if (retry < maxRetries - 1) {
+              await new Promise(resolve => setTimeout(resolve, retryDelays[retry]));
+            }
+          }
+          
+          console.warn(`[send-earthquake-alert] ⚠️ SDK fetch failed after ${maxRetries} retries, falling back to HTTP`);
+        } else {
+          console.warn(`[send-earthquake-alert] ⚠️ Missing NETLIFY_SITE_ID or NETLIFY_BLOB_READ_WRITE_TOKEN, falling back to HTTP`);
+        }
+      } catch (sdkRequireError) {
+        console.warn(`[send-earthquake-alert] ⚠️ Could not load @netlify/blobs SDK: ${sdkRequireError.message}, falling back to HTTP`);
+      }
+    }
+    
+    // Fallback to HTTP fetch (original method)
     // If it's a relative URL, make it absolute
     let fullUrl = imageUrl;
     if (imageUrl.startsWith('/')) {
@@ -368,7 +442,7 @@ async function downloadImageForEmail(imageUrl) {
       fullUrl = `${baseUrl}${imageUrl}`;
     }
     
-    console.log(`[send-earthquake-alert] 📥 Fetching image from: ${fullUrl}`);
+    console.log(`[send-earthquake-alert] 📥 Fetching image via HTTP: ${fullUrl}`);
     const response = await fetch(fullUrl);
     
     if (!response.ok) {
@@ -676,38 +750,28 @@ exports.handler = async (event, context) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Earthquake Alert</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5; padding: 20px 0;">
+<body style="margin: 0; padding: 0; background-color: #0a0e1a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #0a0e1a; padding: 20px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; background-color: #1a1f2e; border: 1px solid #2d3748; border-radius: 0; box-shadow: 0 8px 32px rgba(0,0,0,0.4); overflow: hidden;">
           
-          <!-- Header with gradient -->
+          <!-- Header with dark gradient -->
           <tr>
-            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 40px; text-align: center;">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                <tr>
-                  <td align="center">
-                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-                      NOTEWORTHY NEWS
-                    </h1>
-                    <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.9); font-size: 12px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase;">
-                      Breaking Alert
-                    </p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          
-          <!-- Breaking Badge -->
-          <tr>
-            <td style="padding: 20px 40px 0 40px;">
+            <td style="background: linear-gradient(135deg, #0a1929 0%, #1a2332 50%, #0f1419 100%); padding: 35px 40px; border-bottom: 3px solid #4A9EFF;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
                   <td>
-                    <div style="display: inline-block; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); color: #ffffff; padding: 8px 16px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; box-shadow: 0 2px 8px rgba(255,107,107,0.3);">
-                      🚨 BREAKING NEWS
+                    <h1 style="margin: 0; color: #4A9EFF; font-size: 32px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 20px rgba(74,158,255,0.5);">
+                      NOTEWORTHY
+                    </h1>
+                    <p style="margin: 4px 0 0 0; color: #ffffff; font-size: 11px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; opacity: 0.8;">
+                      NEWS
+                    </p>
+                  </td>
+                  <td align="right">
+                    <div style="display: inline-block; background: #ff4757; color: #ffffff; padding: 10px 20px; border-radius: 0; font-size: 10px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; border: 2px solid #ff6b7a; box-shadow: 0 0 15px rgba(255,71,87,0.4);">
+                      BREAKING
                     </div>
                   </td>
                 </tr>
@@ -717,27 +781,27 @@ exports.handler = async (event, context) => {
           
           <!-- Main Content -->
           <tr>
-            <td style="padding: 30px 40px;">
+            <td style="padding: 0; background-color: #1a1f2e;">
               
-              <!-- Magnitude Card -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: linear-gradient(135deg, ${severityBg} 0%, ${severityBg}dd 100%); border-left: 4px solid ${severityColor}; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);">
+              <!-- Magnitude Card - Bold Dark Design -->
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%); border-left: 5px solid ${severityColor}; margin-bottom: 0; border-top: 1px solid #2d3748; border-bottom: 1px solid #2d3748;">
                 <tr>
-                  <td style="padding: 25px;">
+                  <td style="padding: 35px 40px;">
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                       <tr>
-                        <td width="60%" style="vertical-align: middle;">
-                          <div style="font-size: 14px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+                        <td width="65%" style="vertical-align: middle;">
+                          <div style="font-size: 11px; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
                             Magnitude
                           </div>
-                          <div style="font-size: 48px; font-weight: 800; color: ${severityColor}; line-height: 1; margin-bottom: 4px;">
+                          <div style="font-size: 72px; font-weight: 900; color: ${severityColor}; line-height: 1; margin-bottom: 8px; text-shadow: 0 0 30px ${severityColor}40; letter-spacing: -2px;">
                             M${magnitudeFormatted}
                           </div>
-                          <div style="font-size: 13px; font-weight: 600; color: ${severityColor}; text-transform: uppercase; letter-spacing: 0.5px;">
-                            ${severity} Earthquake
+                          <div style="font-size: 14px; font-weight: 700; color: #ffffff; text-transform: uppercase; letter-spacing: 1.5px; background: ${severityColor}; padding: 6px 12px; display: inline-block; border: 1px solid ${severityColor};">
+                            ${severity}
                           </div>
                         </td>
-                        <td width="40%" align="right" style="vertical-align: middle;">
-                          <div style="display: inline-block; background: ${severityColor}; color: #ffffff; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; box-shadow: 0 4px 16px ${severityColor}40;">
+                        <td width="35%" align="right" style="vertical-align: middle;">
+                          <div style="display: inline-block; background: linear-gradient(135deg, ${severityColor} 0%, ${severityColor}dd 100%); color: #ffffff; width: 100px; height: 100px; border-radius: 0; display: flex; align-items: center; justify-content: center; font-size: 42px; font-weight: 900; border: 3px solid ${severityColor}; box-shadow: 0 0 25px ${severityColor}60, inset 0 0 20px rgba(0,0,0,0.3);">
                             ${magnitudeFormatted}
                           </div>
                         </td>
@@ -748,98 +812,98 @@ exports.handler = async (event, context) => {
               </table>
               
               <!-- Location & Details -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0; background-color: #1a1f2e;">
                 <tr>
-                  <td>
-                    <div style="font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 15px; line-height: 1.3;">
-                      📍 ${earthquake.location_display}
+                  <td style="padding: 35px 40px;">
+                    <div style="font-size: 24px; font-weight: 800; color: #ffffff; margin-bottom: 12px; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #2d3748; padding-bottom: 15px;">
+                      ${earthquake.location_display}
                     </div>
-                    <div style="font-size: 15px; color: #666; line-height: 1.6; margin-bottom: 20px;">
-                      A magnitude <strong style="color: ${severityColor};">${magnitudeFormatted}</strong> earthquake was detected by the <strong>U.S. Geological Survey</strong> near <strong>${earthquake.location_display}</strong>.
+                    <div style="font-size: 15px; color: #a0aec0; line-height: 1.7; margin-bottom: 25px; font-weight: 400;">
+                      A magnitude <strong style="color: ${severityColor}; font-weight: 700;">${magnitudeFormatted}</strong> earthquake was detected by the <strong style="color: #ffffff;">U.S. Geological Survey</strong> near <strong style="color: #4A9EFF;">${earthquake.location_display}</strong>.
                     </div>
                     ${locationDetails ? `
-                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 3px solid ${severityColor};">
-                      <div style="font-size: 12px; font-weight: 600; color: #868e96; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">
-                        📋 Location Details
+                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 20px; margin-bottom: 20px; border-left: 4px solid #4A9EFF;">
+                      <div style="font-size: 11px; font-weight: 700; color: #4A9EFF; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
+                        Location Details
                       </div>
-                      <div style="font-size: 14px; color: #212529; line-height: 1.8;">
-                        ${locationDetails.city ? `<strong>City:</strong> ${locationDetails.city}<br>` : ''}
-                        ${locationDetails.county ? `<strong>County:</strong> ${locationDetails.county}<br>` : ''}
-                        ${locationDetails.state ? `<strong>State/Region:</strong> ${locationDetails.state}<br>` : ''}
-                        ${locationDetails.country ? `<strong>Country:</strong> ${locationDetails.country}<br>` : ''}
-                        ${locationDetails.postcode ? `<strong>Postal Code:</strong> ${locationDetails.postcode}` : ''}
+                      <div style="font-size: 14px; color: #e2e8f0; line-height: 2; font-weight: 500;">
+                        ${locationDetails.city ? `<span style="color: #6c757d; font-weight: 600;">CITY:</span> <span style="color: #ffffff;">${locationDetails.city}</span><br>` : ''}
+                        ${locationDetails.county ? `<span style="color: #6c757d; font-weight: 600;">COUNTY:</span> <span style="color: #ffffff;">${locationDetails.county}</span><br>` : ''}
+                        ${locationDetails.state ? `<span style="color: #6c757d; font-weight: 600;">STATE:</span> <span style="color: #ffffff;">${locationDetails.state}</span><br>` : ''}
+                        ${locationDetails.country ? `<span style="color: #6c757d; font-weight: 600;">COUNTRY:</span> <span style="color: #ffffff;">${locationDetails.country}</span><br>` : ''}
+                        ${locationDetails.postcode ? `<span style="color: #6c757d; font-weight: 600;">POSTAL:</span> <span style="color: #ffffff;">${locationDetails.postcode}</span>` : ''}
                       </div>
                     </div>
                     ` : ''}
                     ${impactDescription ? `
-                    <div style="background: linear-gradient(135deg, ${severityBg} 0%, ${severityBg}dd 100%); border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 3px solid ${severityColor};">
-                      <div style="font-size: 12px; font-weight: 600; color: ${severityColor}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-                        ⚠️ Impact Assessment
+                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 20px; margin-bottom: 20px; border-left: 4px solid ${severityColor};">
+                      <div style="font-size: 11px; font-weight: 700; color: ${severityColor}; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
+                        Impact Assessment
                       </div>
-                      <div style="font-size: 14px; color: #212529; line-height: 1.6; font-weight: 500;">
+                      <div style="font-size: 15px; color: #e2e8f0; line-height: 1.7; font-weight: 500;">
                         ${impactDescription}
                       </div>
                       ${estimatedAffected ? `
-                      <div style="font-size: 13px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1);">
-                        Estimated affected area: <strong>${estimatedAffected}</strong>
+                      <div style="font-size: 13px; color: #6c757d; margin-top: 12px; padding-top: 12px; border-top: 1px solid #2d3748; font-weight: 600;">
+                        <span style="color: #4A9EFF;">AFFECTED AREA:</span> <span style="color: #ffffff;">${estimatedAffected}</span>
                       </div>
                       ` : ''}
                     </div>
                     ` : ''}
                     ${tsunamiAssessment && tsunamiAssessment.riskLevel !== 'LOW' ? `
-                    <div style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 3px solid #f57c00;">
-                      <div style="font-size: 12px; font-weight: 600; color: #e65100; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-                        🌊 ${tsunamiAssessment.riskLevel === 'HIGH' ? '⚠️ HIGH' : 'MEDIUM'} TSUNAMI RISK
+                    <div style="background: linear-gradient(135deg, #1a0f0a 0%, #2d1a0f 100%); border: 1px solid #ff6b35; padding: 20px; margin-bottom: 20px; border-left: 4px solid #ff6b35;">
+                      <div style="font-size: 11px; font-weight: 700; color: #ff6b35; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
+                        ${tsunamiAssessment.riskLevel === 'HIGH' ? 'HIGH' : 'MEDIUM'} TSUNAMI RISK
                       </div>
-                      <div style="font-size: 14px; color: #212529; line-height: 1.6; font-weight: 500;">
+                      <div style="font-size: 15px; color: #ffffff; line-height: 1.7; font-weight: 500;">
                         ${tsunamiAssessment.assessment || 'Tsunami risk detected. Monitor official tsunami warnings.'}
                       </div>
                       ${tsunamiAssessment.travelTime ? `
-                      <div style="font-size: 13px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1);">
-                        Estimated travel time to coast: <strong>${tsunamiAssessment.travelTime.hours}h ${tsunamiAssessment.travelTime.minutes}m</strong>
+                      <div style="font-size: 13px; color: #ff6b35; margin-top: 12px; padding-top: 12px; border-top: 1px solid #2d3748; font-weight: 700;">
+                        <span style="color: #ff6b35;">TRAVEL TIME:</span> <span style="color: #ffffff;">${tsunamiAssessment.travelTime.hours}h ${tsunamiAssessment.travelTime.minutes}m</span>
                       </div>
                       ` : ''}
                     </div>
                     ` : ''}
                     ${aftershockForecast && aftershockForecast.probability24h >= 50 ? `
-                    <div style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 3px solid #9c27b0;">
-                      <div style="font-size: 12px; font-weight: 600; color: #7b1fa2; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-                        📊 Aftershock Forecast
+                    <div style="background: #0f1419; border: 1px solid #6c5ce7; padding: 20px; margin-bottom: 20px; border-left: 4px solid #6c5ce7;">
+                      <div style="font-size: 11px; font-weight: 700; color: #6c5ce7; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
+                        Aftershock Forecast
                       </div>
-                      <div style="font-size: 14px; color: #212529; line-height: 1.6; font-weight: 500;">
-                        ${aftershockForecast.probability24h}% chance of significant aftershocks (M≥${aftershockForecast.expectedLargestAftershock.toFixed(1)}) within 24 hours.
+                      <div style="font-size: 15px; color: #e2e8f0; line-height: 1.7; font-weight: 500; margin-bottom: 12px;">
+                        <span style="color: #6c5ce7; font-weight: 700; font-size: 18px;">${aftershockForecast.probability24h}%</span> chance of significant aftershocks (M≥${aftershockForecast.expectedLargestAftershock.toFixed(1)}) within 24 hours.
                       </div>
-                      <div style="font-size: 13px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1);">
-                        Expected largest aftershock: <strong>M${aftershockForecast.expectedLargestAftershock.toFixed(1)}</strong><br>
-                        ${aftershockForecast.recommendation || ''}
+                      <div style="font-size: 13px; color: #6c757d; margin-top: 12px; padding-top: 12px; border-top: 1px solid #2d3748; font-weight: 600;">
+                        <span style="color: #6c5ce7;">EXPECTED LARGEST:</span> <span style="color: #ffffff; font-weight: 700;">M${aftershockForecast.expectedLargestAftershock.toFixed(1)}</span><br>
+                        <span style="color: #a0aec0; margin-top: 8px; display: block;">${aftershockForecast.recommendation || ''}</span>
                       </div>
                     </div>
                     ` : ''}
                     ${anomalyDetection && anomalyDetection.anomalyLevel !== 'NORMAL' ? `
-                    <div style="background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 3px solid #d32f2f;">
-                      <div style="font-size: 12px; font-weight: 600; color: #c62828; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-                        ⚠️ ${anomalyDetection.anomalyLevel} ANOMALY DETECTED
+                    <div style="background: linear-gradient(135deg, #1a0a0a 0%, #2d1414 100%); border: 1px solid #ff4757; padding: 20px; margin-bottom: 20px; border-left: 4px solid #ff4757;">
+                      <div style="font-size: 11px; font-weight: 700; color: #ff4757; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
+                        ${anomalyDetection.anomalyLevel} ANOMALY DETECTED
                       </div>
-                      <div style="font-size: 14px; color: #212529; line-height: 1.6; font-weight: 500;">
+                      <div style="font-size: 15px; color: #ffffff; line-height: 1.7; font-weight: 500;">
                         ${anomalyDetection.summary}
                       </div>
                       ${anomalyDetection.anomalies && anomalyDetection.anomalies.length > 0 ? `
-                      <div style="font-size: 13px; color: #666; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1);">
-                        ${anomalyDetection.anomalies.map(a => `• ${a.description}`).join('<br>')}
+                      <div style="font-size: 13px; color: #ff6b7a; margin-top: 12px; padding-top: 12px; border-top: 1px solid #2d3748; font-weight: 600; line-height: 1.8;">
+                        ${anomalyDetection.anomalies.map(a => `<div style="margin-bottom: 6px;">▸ ${a.description}</div>`).join('')}
                       </div>
                       ` : ''}
                     </div>
                     ` : ''}
                     ${impactAssessment && impactAssessment.riskScore ? `
-                    <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 3px solid #388e3c;">
-                      <div style="font-size: 12px; font-weight: 600; color: #2e7d32; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-                        📊 Risk Assessment
+                    <div style="background: #0f1419; border: 1px solid #4A9EFF; padding: 20px; margin-bottom: 20px; border-left: 4px solid #4A9EFF;">
+                      <div style="font-size: 11px; font-weight: 700; color: #4A9EFF; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
+                        Risk Assessment
                       </div>
-                      <div style="font-size: 14px; color: #212529; line-height: 1.6;">
-                        <strong>Risk Score:</strong> ${impactAssessment.riskScore}/100 (${impactAssessment.severity})<br>
-                        ${impactAssessment.affectedPopulation ? `<strong>Affected Population:</strong> ${(impactAssessment.affectedPopulation / 1000).toFixed(1)}K people<br>` : ''}
+                      <div style="font-size: 14px; color: #e2e8f0; line-height: 2; font-weight: 500;">
+                        <div style="margin-bottom: 8px;"><span style="color: #6c757d; font-weight: 700;">RISK SCORE:</span> <span style="color: #4A9EFF; font-weight: 700; font-size: 18px;">${impactAssessment.riskScore}/100</span> <span style="color: #ffffff;">(${impactAssessment.severity})</span></div>
+                        ${impactAssessment.affectedPopulation ? `<div style="margin-bottom: 8px;"><span style="color: #6c757d; font-weight: 700;">AFFECTED:</span> <span style="color: #ffffff;">${(impactAssessment.affectedPopulation / 1000).toFixed(1)}K people</span></div>` : ''}
                         ${impactAssessment.criticalInfrastructure ? `
-                        <strong>Critical Infrastructure:</strong> ${impactAssessment.criticalInfrastructure.hospitals} hospitals, ${impactAssessment.criticalInfrastructure.airports} airports, ${impactAssessment.criticalInfrastructure.powerPlants} power plants
+                        <div><span style="color: #6c757d; font-weight: 700;">INFRASTRUCTURE:</span> <span style="color: #ffffff;">${impactAssessment.criticalInfrastructure.hospitals} hospitals, ${impactAssessment.criticalInfrastructure.airports} airports, ${impactAssessment.criticalInfrastructure.powerPlants} power plants</span></div>
                         ` : ''}
                       </div>
                     </div>
@@ -850,19 +914,19 @@ exports.handler = async (event, context) => {
               
               ${mapImageUrl ? `
               <!-- Static Map -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
                 <tr>
-                  <td>
-                    <div style="background: #ffffff; border-radius: 12px; padding: 0; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); border: 1px solid #e9ecef;">
-                      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 12px 20px;">
-                        <div style="font-size: 13px; font-weight: 600; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;">
-                          🗺️ Location Map
+                  <td style="padding: 0 40px 30px 40px;">
+                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 0; overflow: hidden; border-top: 3px solid #4A9EFF;">
+                      <div style="background: linear-gradient(135deg, #0a1929 0%, #1a2332 100%); padding: 15px 20px; border-bottom: 2px solid #4A9EFF;">
+                        <div style="font-size: 11px; font-weight: 700; color: #4A9EFF; text-transform: uppercase; letter-spacing: 2px;">
+                          Location Map
                         </div>
                       </div>
-                      <img src="${mapImageUrl}" alt="Map showing earthquake location at ${earthquake.location_display}" style="display: block; width: 100%; max-width: 100%; height: auto;" />
-                      <div style="padding: 12px 20px; background: #f8f9fa; border-top: 1px solid #e9ecef;">
-                        <div style="font-size: 11px; color: #868e96; text-align: center;">
-                          Map data © <a href="https://www.openstreetmap.org/" style="color: #667eea; text-decoration: none;">OpenStreetMap</a> contributors
+                      <img src="${mapImageUrl}" alt="Map showing earthquake location at ${earthquake.location_display}" style="display: block; width: 100%; max-width: 100%; height: auto; filter: brightness(0.9) contrast(1.1);" />
+                      <div style="padding: 12px 20px; background: #0f1419; border-top: 1px solid #2d3748;">
+                        <div style="font-size: 10px; color: #6c757d; text-align: center; font-weight: 600;">
+                          Map data © <a href="https://www.openstreetmap.org/" style="color: #4A9EFF; text-decoration: none;">OpenStreetMap</a> contributors
                         </div>
                       </div>
                     </div>
@@ -873,50 +937,49 @@ exports.handler = async (event, context) => {
               
               ${locationDetails ? `
               <!-- Area Facts -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
                 <tr>
-                  <td>
-                    <div style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-radius: 12px; padding: 20px; border: 1px solid #e9ecef; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                      <div style="font-size: 14px; font-weight: 700; color: #1a1a1a; margin-bottom: 15px; display: flex; align-items: center;">
-                        <span style="font-size: 20px; margin-right: 8px;">📊</span>
+                  <td style="padding: 0 40px 30px 40px;">
+                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 20px; border-left: 4px solid #4A9EFF;">
+                      <div style="font-size: 11px; font-weight: 700; color: #4A9EFF; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px;">
                         Area Information
                       </div>
                       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                         <tr>
                           ${locationDetails.country ? `
-                          <td style="padding: 8px 0; border-bottom: 1px solid #e9ecef;">
-                            <div style="font-size: 12px; color: #868e96; margin-bottom: 4px;">Country</div>
-                            <div style="font-size: 14px; font-weight: 600; color: #212529;">${locationDetails.country}</div>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #2d3748;">
+                            <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px; font-weight: 700; text-transform: uppercase;">Country</div>
+                            <div style="font-size: 15px; font-weight: 700; color: #ffffff;">${locationDetails.country}</div>
                           </td>
                           ` : ''}
                           ${locationDetails.state ? `
-                          <td style="padding: 8px 0; border-bottom: 1px solid #e9ecef;">
-                            <div style="font-size: 12px; color: #868e96; margin-bottom: 4px;">State/Region</div>
-                            <div style="font-size: 14px; font-weight: 600; color: #212529;">${locationDetails.state}</div>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #2d3748;">
+                            <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px; font-weight: 700; text-transform: uppercase;">State/Region</div>
+                            <div style="font-size: 15px; font-weight: 700; color: #ffffff;">${locationDetails.state}</div>
                           </td>
                           ` : ''}
                         </tr>
                         ${locationDetails.city || locationDetails.county ? `
                         <tr>
                           ${locationDetails.city ? `
-                          <td style="padding: 8px 0; border-bottom: 1px solid #e9ecef;">
-                            <div style="font-size: 12px; color: #868e96; margin-bottom: 4px;">City/Town</div>
-                            <div style="font-size: 14px; font-weight: 600; color: #212529;">${locationDetails.city}</div>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #2d3748;">
+                            <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px; font-weight: 700; text-transform: uppercase;">City/Town</div>
+                            <div style="font-size: 15px; font-weight: 700; color: #ffffff;">${locationDetails.city}</div>
                           </td>
                           ` : ''}
                           ${locationDetails.county ? `
-                          <td style="padding: 8px 0; border-bottom: 1px solid #e9ecef;">
-                            <div style="font-size: 12px; color: #868e96; margin-bottom: 4px;">County</div>
-                            <div style="font-size: 14px; font-weight: 600; color: #212529;">${locationDetails.county}</div>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #2d3748;">
+                            <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px; font-weight: 700; text-transform: uppercase;">County</div>
+                            <div style="font-size: 15px; font-weight: 700; color: #ffffff;">${locationDetails.county}</div>
                           </td>
                           ` : ''}
                         </tr>
                         ` : ''}
                         ${earthquake.lat && earthquake.lon ? `
                         <tr>
-                          <td colspan="2" style="padding: 8px 0;">
-                            <div style="font-size: 12px; color: #868e96; margin-bottom: 4px;">Distance from Epicenter</div>
-                            <div style="font-size: 14px; font-weight: 600; color: #212529;">
+                          <td colspan="2" style="padding: 10px 0;">
+                            <div style="font-size: 11px; color: #6c757d; margin-bottom: 6px; font-weight: 700; text-transform: uppercase;">Distance from Epicenter</div>
+                            <div style="font-size: 15px; font-weight: 700; color: #4A9EFF;">
                               ${locationDetails.city ? `Nearest city: ${locationDetails.city}` : 'Rural/Remote area'}
                             </div>
                           </td>
@@ -931,31 +994,30 @@ exports.handler = async (event, context) => {
               
               ${nearbyLocations.length > 0 ? `
               <!-- Nearby Important Locations -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
                 <tr>
-                  <td>
-                    <div style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); border-radius: 12px; padding: 20px; border: 1px solid #e9ecef; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                      <div style="font-size: 14px; font-weight: 700; color: #1a1a1a; margin-bottom: 15px; display: flex; align-items: center;">
-                        <span style="font-size: 20px; margin-right: 8px;">🏙️</span>
+                  <td style="padding: 0 40px 30px 40px;">
+                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 20px; border-left: 4px solid #6c5ce7;">
+                      <div style="font-size: 11px; font-weight: 700; color: #6c5ce7; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
                         Nearby Important Locations
                       </div>
-                      <div style="font-size: 13px; color: #666; margin-bottom: 15px;">
+                      <div style="font-size: 13px; color: #a0aec0; margin-bottom: 15px; font-weight: 500;">
                         Cities, towns, and landmarks within 50km of the epicenter:
                       </div>
                       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                         ${nearbyLocations.slice(0, 6).map(loc => `
                         <tr>
-                          <td style="padding: 10px 0; border-bottom: 1px solid #e9ecef;">
+                          <td style="padding: 12px 0; border-bottom: 1px solid #2d3748;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                               <div>
-                                <div style="font-size: 14px; font-weight: 600; color: #212529; margin-bottom: 4px;">
+                                <div style="font-size: 15px; font-weight: 700; color: #ffffff; margin-bottom: 4px;">
                                   ${loc.name}
                                 </div>
-                                <div style="font-size: 12px; color: #868e96; text-transform: capitalize;">
+                                <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">
                                   ${loc.type}
                                 </div>
                               </div>
-                              <div style="font-size: 13px; font-weight: 600; color: ${severityColor};">
+                              <div style="font-size: 14px; font-weight: 800; color: ${severityColor};">
                                 ${loc.distance} km
                               </div>
                             </div>
@@ -971,31 +1033,30 @@ exports.handler = async (event, context) => {
               
               ${nearbyEducation.length > 0 ? `
               <!-- Nearby Educational Institutions -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
                 <tr>
-                  <td>
-                    <div style="background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%); border-radius: 12px; padding: 20px; border: 1px solid #e9ecef; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                      <div style="font-size: 14px; font-weight: 700; color: #1a1a1a; margin-bottom: 15px; display: flex; align-items: center;">
-                        <span style="font-size: 20px; margin-right: 8px;">🎓</span>
+                  <td style="padding: 0 40px 30px 40px;">
+                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 20px; border-left: 4px solid #4A9EFF;">
+                      <div style="font-size: 11px; font-weight: 700; color: #4A9EFF; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
                         Nearby Educational Institutions
                       </div>
-                      <div style="font-size: 13px; color: #666; margin-bottom: 15px;">
+                      <div style="font-size: 13px; color: #a0aec0; margin-bottom: 15px; font-weight: 500;">
                         Colleges, universities, and schools in the area:
                       </div>
                       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                         ${nearbyEducation.map(edu => `
                         <tr>
-                          <td style="padding: 10px 0; border-bottom: 1px solid #e9ecef;">
+                          <td style="padding: 12px 0; border-bottom: 1px solid #2d3748;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                               <div>
-                                <div style="font-size: 14px; font-weight: 600; color: #212529; margin-bottom: 4px;">
+                                <div style="font-size: 15px; font-weight: 700; color: #ffffff; margin-bottom: 4px;">
                                   ${edu.name}
                                 </div>
-                                <div style="font-size: 12px; color: #868e96; text-transform: capitalize;">
+                                <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">
                                   ${edu.type === 'university' ? 'University' : edu.type === 'college' ? 'College' : 'School'}
                                 </div>
                               </div>
-                              <div style="font-size: 13px; font-weight: 600; color: #1976d2;">
+                              <div style="font-size: 14px; font-weight: 800; color: #4A9EFF;">
                                 ${edu.distance} km
                               </div>
                             </div>
@@ -1011,31 +1072,30 @@ exports.handler = async (event, context) => {
               
               ${nearbyVenues.length > 0 ? `
               <!-- Nearby Event Venues -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
                 <tr>
-                  <td>
-                    <div style="background: linear-gradient(135deg, #fff3e0 0%, #ffffff 100%); border-radius: 12px; padding: 20px; border: 1px solid #e9ecef; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                      <div style="font-size: 14px; font-weight: 700; color: #1a1a1a; margin-bottom: 15px; display: flex; align-items: center;">
-                        <span style="font-size: 20px; margin-right: 8px;">🎭</span>
+                  <td style="padding: 0 40px 30px 40px;">
+                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 20px; border-left: 4px solid #ff6b35;">
+                      <div style="font-size: 11px; font-weight: 700; color: #ff6b35; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
                         Nearby Event Venues & Entertainment
                       </div>
-                      <div style="font-size: 13px; color: #666; margin-bottom: 15px;">
+                      <div style="font-size: 13px; color: #a0aec0; margin-bottom: 15px; font-weight: 500;">
                         Theaters, stadiums, and venues that may host events:
                       </div>
                       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                         ${nearbyVenues.slice(0, 6).map(venue => `
                         <tr>
-                          <td style="padding: 10px 0; border-bottom: 1px solid #e9ecef;">
+                          <td style="padding: 12px 0; border-bottom: 1px solid #2d3748;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                               <div>
-                                <div style="font-size: 14px; font-weight: 600; color: #212529; margin-bottom: 4px;">
+                                <div style="font-size: 15px; font-weight: 700; color: #ffffff; margin-bottom: 4px;">
                                   ${venue.name}
                                 </div>
-                                <div style="font-size: 12px; color: #868e96; text-transform: capitalize;">
+                                <div style="font-size: 12px; color: #6c757d; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">
                                   ${venue.type.replace(/_/g, ' ')}
                                 </div>
                               </div>
-                              <div style="font-size: 13px; font-weight: 600; color: #f57c00;">
+                              <div style="font-size: 14px; font-weight: 800; color: #ff6b35;">
                                 ${venue.distance} km
                               </div>
                             </div>
@@ -1043,9 +1103,9 @@ exports.handler = async (event, context) => {
                         </tr>
                         `).join('')}
                       </table>
-                      <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e9ecef;">
-                        <div style="font-size: 12px; color: #868e96; font-style: italic;">
-                          💡 Note: These venues may host concerts, festivals, sports events, or other gatherings. Check local event listings for scheduled activities.
+                      <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #2d3748;">
+                        <div style="font-size: 12px; color: #6c757d; font-weight: 500; line-height: 1.6;">
+                          Note: These venues may host concerts, festivals, sports events, or other gatherings. Check local event listings for scheduled activities.
                         </div>
                       </div>
                     </div>
@@ -1055,65 +1115,71 @@ exports.handler = async (event, context) => {
               ` : ''}
               
               <!-- Details Grid -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
                 <tr>
-                  <td width="50%" style="padding-right: 10px; vertical-align: top;">
-                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; border: 1px solid #e9ecef;">
-                      <div style="font-size: 11px; font-weight: 600; color: #868e96; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-                        ⏰ Event Time
-                      </div>
-                      <div style="font-size: 14px; font-weight: 600; color: #212529;">
-                        ${eventTime}
-                      </div>
-                    </div>
+                  <td style="padding: 0 40px 30px 40px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <tr>
+                        <td width="50%" style="padding-right: 10px; vertical-align: top;">
+                          <div style="background: #0f1419; border: 1px solid #2d3748; padding: 18px; border-left: 3px solid #4A9EFF;">
+                            <div style="font-size: 10px; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">
+                              Event Time
+                            </div>
+                            <div style="font-size: 15px; font-weight: 700; color: #ffffff;">
+                              ${eventTime}
+                            </div>
+                          </div>
+                        </td>
+                        ${coordinates ? `
+                        <td width="50%" style="padding-left: 10px; vertical-align: top;">
+                          <div style="background: #0f1419; border: 1px solid #2d3748; padding: 18px; border-left: 3px solid #6c5ce7;">
+                            <div style="font-size: 10px; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">
+                              Coordinates
+                            </div>
+                            <div style="font-size: 14px; font-weight: 700; color: #4A9EFF; font-family: 'Courier New', monospace; letter-spacing: 0.5px;">
+                              ${coordinates}
+                            </div>
+                          </div>
+                        </td>
+                        ` : depth ? `
+                        <td width="50%" style="padding-left: 10px; vertical-align: top;">
+                          <div style="background: #0f1419; border: 1px solid #2d3748; padding: 18px; border-left: 3px solid #ff6b35;">
+                            <div style="font-size: 10px; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">
+                              Depth
+                            </div>
+                            <div style="font-size: 15px; font-weight: 700; color: #ffffff;">
+                              ${depth}
+                            </div>
+                          </div>
+                        </td>
+                        ` : '<td width="50%"></td>'}
+                      </tr>
+                      ${depth && coordinates ? `
+                      <tr>
+                        <td colspan="2" style="padding-top: 10px;">
+                          <div style="background: #0f1419; border: 1px solid #2d3748; padding: 18px; border-left: 3px solid #ff6b35;">
+                            <div style="font-size: 10px; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">
+                              Depth
+                            </div>
+                            <div style="font-size: 15px; font-weight: 700; color: #ffffff;">
+                              ${depth}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                      ` : ''}
+                    </table>
                   </td>
-                  ${coordinates ? `
-                  <td width="50%" style="padding-left: 10px; vertical-align: top;">
-                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; border: 1px solid #e9ecef;">
-                      <div style="font-size: 11px; font-weight: 600; color: #868e96; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-                        📐 Coordinates
-                      </div>
-                      <div style="font-size: 14px; font-weight: 600; color: #212529; font-family: 'Courier New', monospace;">
-                        ${coordinates}
-                      </div>
-                    </div>
-                  </td>
-                  ` : depth ? `
-                  <td width="50%" style="padding-left: 10px; vertical-align: top;">
-                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; border: 1px solid #e9ecef;">
-                      <div style="font-size: 11px; font-weight: 600; color: #868e96; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-                        ⬇️ Depth
-                      </div>
-                      <div style="font-size: 14px; font-weight: 600; color: #212529;">
-                        ${depth}
-                      </div>
-                    </div>
-                  </td>
-                  ` : '<td width="50%"></td>'}
                 </tr>
-                ${depth && coordinates ? `
-                <tr>
-                  <td colspan="2" style="padding-top: 10px;">
-                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; border: 1px solid #e9ecef;">
-                      <div style="font-size: 11px; font-weight: 600; color: #868e96; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-                        ⬇️ Depth
-                      </div>
-                      <div style="font-size: 14px; font-weight: 600; color: #212529;">
-                        ${depth}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-                ` : ''}
               </table>
               
               <!-- Image Placeholder (will be replaced with actual image) -->
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
                 <tr>
-                  <td>
-                    <div style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px; padding: 20px; text-align: center; border: 2px dashed #dee2e6;">
-                      <div style="font-size: 14px; color: #868e96; font-weight: 500;">
-                        📸 Detailed visualization below
+                  <td style="padding: 0 40px 30px 40px;">
+                    <div style="background: #0f1419; border: 2px solid #2d3748; padding: 30px; text-align: center; border-left: 4px solid #4A9EFF;">
+                      <div style="font-size: 13px; color: #6c757d; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                        Detailed Visualization Below
                       </div>
                     </div>
                   </td>
@@ -1123,8 +1189,8 @@ exports.handler = async (event, context) => {
               <!-- USGS Link -->
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
-                  <td align="center" style="padding: 20px 0; border-top: 1px solid #e9ecef;">
-                    <a href="${earthquake.usgs_event_url || 'https://earthquake.usgs.gov'}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(102,126,234,0.3); transition: all 0.3s ease;">
+                  <td align="center" style="padding: 30px 40px; border-top: 2px solid #2d3748; background: #0f1419;">
+                    <a href="${earthquake.usgs_event_url || 'https://earthquake.usgs.gov'}" style="display: inline-block; background: linear-gradient(135deg, #4A9EFF 0%, #5BB5FF 100%); color: #ffffff; text-decoration: none; padding: 16px 36px; border-radius: 0; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; border: 2px solid #4A9EFF; box-shadow: 0 0 25px rgba(74,158,255,0.4);">
                       View on USGS Website →
                     </a>
                   </td>
@@ -1136,16 +1202,16 @@ exports.handler = async (event, context) => {
           
           <!-- Footer -->
           <tr>
-            <td style="background: #f8f9fa; padding: 25px 40px; text-align: center; border-top: 1px solid #e9ecef;">
+            <td style="background: linear-gradient(135deg, #0a0e1a 0%, #0f1419 100%); padding: 30px 40px; text-align: center; border-top: 3px solid #4A9EFF;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
                   <td>
-                    <p style="margin: 0; font-size: 12px; color: #868e96; line-height: 1.6;">
-                      <strong style="color: #495057;">Noteworthy News</strong><br>
-                      Real-time breaking news alerts<br>
-                      <a href="https://noteworthynews.co" style="color: #667eea; text-decoration: none;">noteworthynews.co</a>
+                    <p style="margin: 0; font-size: 13px; color: #ffffff; line-height: 1.8; font-weight: 700;">
+                      <span style="color: #4A9EFF; font-size: 16px; letter-spacing: 2px;">NOTEWORTHY NEWS</span><br>
+                      <span style="color: #a0aec0; font-size: 11px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase;">Real-time breaking news alerts</span><br>
+                      <a href="https://noteworthynews.co" style="color: #4A9EFF; text-decoration: none; font-weight: 700; font-size: 12px; letter-spacing: 1px;">noteworthynews.co</a>
                     </p>
-                    <p style="margin: 15px 0 0 0; font-size: 11px; color: #adb5bd;">
+                    <p style="margin: 20px 0 0 0; font-size: 10px; color: #6c757d; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
                       Data provided by the U.S. Geological Survey
                     </p>
                   </td>
@@ -1268,11 +1334,11 @@ exports.handler = async (event, context) => {
             // MUST match the content_id exactly (without cid: prefix)
             // Replace the placeholder div with the actual image
             const imageHtml = `
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
                 <tr>
-                  <td>
-                    <div style="background: #ffffff; border-radius: 12px; padding: 0; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); border: 1px solid #e9ecef;">
-                      <img src="cid:${cidIdentifier}" alt="Earthquake Visualization - Magnitude ${magnitudeFormatted} near ${earthquake.location_display}" style="display: block; width: 100%; max-width: 100%; height: auto; border-radius: 12px;" />
+                  <td style="padding: 0 40px 30px 40px;">
+                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 0; overflow: hidden; border-top: 3px solid ${severityColor};">
+                      <img src="cid:${cidIdentifier}" alt="Earthquake Visualization - Magnitude ${magnitudeFormatted} near ${earthquake.location_display}" style="display: block; width: 100%; max-width: 100%; height: auto; filter: brightness(0.95) contrast(1.05);" />
                     </div>
                   </td>
                 </tr>
@@ -1283,7 +1349,7 @@ exports.handler = async (event, context) => {
             console.log(`[send-earthquake-alert] 🔗 Image HTML: ${imageHtml.substring(0, 100)}...`);
             
             // Replace the placeholder div with the actual image
-            const placeholderRegex = /<div style="background: linear-gradient\(135deg, #f8f9fa 0%, #e9ecef 100%\); border-radius: 12px; padding: 20px; text-align: center; border: 2px dashed #dee2e6;">[\s\S]*?<\/div>/;
+            const placeholderRegex = /<div style="background: #0f1419; border: 2px solid #2d3748; padding: 30px; text-align: center; border-left: 4px solid #4A9EFF;">[\s\S]*?<\/div>/;
             if (placeholderRegex.test(baseEmailContent.html)) {
               htmlWithImage = baseEmailContent.html.replace(
                 placeholderRegex,
@@ -1292,7 +1358,7 @@ exports.handler = async (event, context) => {
             } else {
               // Fallback: insert before the USGS link section
               htmlWithImage = baseEmailContent.html.replace(
-                /(<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">\s*<tr>\s*<td align="center" style="padding: 20px 0; border-top: 1px solid #e9ecef;">)/,
+                /(<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">\s*<tr>\s*<td align="center" style="padding: 30px 40px; border-top: 2px solid #2d3748; background: #0f1419;">)/,
                 `${imageHtml.trim()}$1`
               );
             }
@@ -1326,11 +1392,11 @@ exports.handler = async (event, context) => {
     if (imageAttachment && !htmlWithImage.includes(`cid:${imageAttachment.content_id}`)) {
       console.warn(`[send-earthquake-alert] ⚠️ CID not found in HTML, forcing insertion`);
       const imageHtml = `
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 25px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 0;">
                 <tr>
-                  <td>
-                    <div style="background: #ffffff; border-radius: 12px; padding: 0; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); border: 1px solid #e9ecef;">
-                      <img src="cid:${imageAttachment.content_id}" alt="Earthquake Visualization - Magnitude ${magnitudeFormatted} near ${earthquake.location_display}" style="display: block; width: 100%; max-width: 100%; height: auto; border-radius: 12px;" />
+                  <td style="padding: 0 40px 30px 40px;">
+                    <div style="background: #0f1419; border: 1px solid #2d3748; padding: 0; overflow: hidden; border-top: 3px solid ${severityColor};">
+                      <img src="cid:${imageAttachment.content_id}" alt="Earthquake Visualization - Magnitude ${magnitudeFormatted} near ${earthquake.location_display}" style="display: block; width: 100%; max-width: 100%; height: auto; filter: brightness(0.95) contrast(1.05);" />
                     </div>
                   </td>
                 </tr>
@@ -1338,7 +1404,7 @@ exports.handler = async (event, context) => {
       `;
       // Insert before the USGS link section
       htmlWithImage = htmlWithImage.replace(
-        /(<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">\s*<tr>\s*<td align="center" style="padding: 20px 0; border-top: 1px solid #e9ecef;">)/,
+        /(<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">\s*<tr>\s*<td align="center" style="padding: 30px 40px; border-top: 2px solid #2d3748; background: #0f1419;">)/,
         `${imageHtml.trim()}$1`
       );
       console.log(`[send-earthquake-alert] ✅ Image HTML force-inserted`);
