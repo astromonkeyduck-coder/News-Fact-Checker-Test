@@ -10203,7 +10203,7 @@ Write in a sophisticated, analytical style. Be comprehensive (600-800 words), nu
                         if (isRateLimit) {
                             aiResponse.innerHTML = '<p style="color: rgba(255, 200, 100, 0.9);">⚠️ Rate limit reached. Please try again in a moment.</p>';
                         } else {
-                            aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Unable to load spotlight. Please try again later.</p>';
+                            aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Unable to generate spotlight content. Please try again later.</p>';
                         }
                     }
                     return ''; // Return empty string so Promise.allSettled doesn't fail

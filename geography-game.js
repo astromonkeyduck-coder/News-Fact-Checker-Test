@@ -1207,6 +1207,11 @@ class GeographyGame {
                         this.panX = (containerHeight - scaledHeight) / 2;
                     }
                     
+                    // Force center if panY is positive (map too far right) - reset to center
+                    if (this.panY > 0 && scaledWidth <= containerWidth) {
+                        this.panY = 0; // Center it
+                    }
+                    
                     this.hasInitiallyCentered = true; // Mark that we've done initial centering
                     
                     console.log('Initial map position set (centered):', {
@@ -3377,15 +3382,8 @@ class GeographyGame {
     updateStats() {
         this.scoreEl.textContent = this.score;
         
-        // Update combo display - only show for combos of 3+
-        if (this.comboEl && this.comboStat) {
-            if (this.combo >= 3) {
-                this.comboEl.textContent = `${this.combo}x`;
-                this.comboStat.style.display = 'flex';
-            } else {
-                this.comboStat.style.display = 'none';
-            }
-        }
+        // Combo stat panel removed - only popup notifications are shown
+        // Combo tracking still works for notifications and scoring
         
         // Update progress bar
         if (this.progressBarFill && this.progressText) {

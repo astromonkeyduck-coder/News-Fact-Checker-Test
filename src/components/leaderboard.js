@@ -34,8 +34,26 @@ const leaderboardLoggerInstance = (function() {
     };
 })();
 // Use leaderboardLoggerInstance directly to avoid conflicts with other logger declarations
-// Use var instead of const to allow redeclaration if file is loaded multiple times
-var logger = leaderboardLoggerInstance;
+// Store on window to prevent redeclaration errors if file is loaded multiple times
+if (typeof window !== 'undefined') {
+    window.leaderboardLogger = window.leaderboardLogger || leaderboardLoggerInstance;
+}
+
+// Reference logger from window to avoid const redeclaration errors
+// Check if this file has already been loaded to prevent redeclaration
+if (typeof window !== 'undefined') {
+    if (!window.__leaderboardFileLoaded__) {
+        // First load - mark as loaded and create logger reference
+        window.__leaderboardFileLoaded__ = true;
+        window.__leaderboardLogger__ = window.leaderboardLogger || leaderboardLoggerInstance;
+    }
+    // Always use window reference to avoid redeclaration errors
+    // Use var to allow redeclaration if file loads multiple times
+    var logger = window.__leaderboardLogger__ || window.leaderboardLogger || leaderboardLoggerInstance;
+} else {
+    // No window object (Node.js environment) - use instance directly
+    var logger = leaderboardLoggerInstance;
+}
 
 class Leaderboard {
     constructor(gameType = 'fact-checker') {
