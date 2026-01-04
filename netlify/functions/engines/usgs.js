@@ -689,13 +689,13 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     logger.warn('⚠️ No detail URL available for earthquake - cannot fetch USGS images', { eventId });
   }
   
-  // Generate branded image ONLY if magnitude meets requirements (>= 2.0 for testing, normally 2.5)
+  // Generate branded image ONLY if magnitude meets requirements (>= 1.5 for testing, normally 2.5)
   // Lower magnitude earthquakes are processed but won't get images
   let imageUrl = null;
   const coordinates = feature.geometry?.coordinates;
   
-  // Lower threshold to 2.0 for testing - change back to 2.5 later
-  const IMAGE_GENERATION_THRESHOLD = 2.0;
+  // Lower threshold to 1.5 for testing - change back to 2.5 later
+  const IMAGE_GENERATION_THRESHOLD = 1.5;
   
   if (magnitude >= IMAGE_GENERATION_THRESHOLD) {
     // Generate branded image (will use template's baked-in images if usgsImages is empty)

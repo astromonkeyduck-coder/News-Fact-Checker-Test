@@ -613,10 +613,12 @@ async function storeImage(imageBuffer, eventId) {
     
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
+      console.error(`[generate-earthquake-image] ❌ Failed to store image: ${response.status} ${response.statusText}`, errorText.substring(0, 500));
       throw new Error(`Netlify Blobs API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
     
-    console.log(`[generate-earthquake-image] ✅ Image stored via REST API: ${imageKey} (${Math.round(imageBuffer.length / 1024)}KB)`);
+    console.log(`[generate-earthquake-image] ✅ Image stored via REST API: ${imageKey} (${Math.round(imageBuffer.length / 1024)}KB) in store: ${storeName}`);
+    console.log(`[generate-earthquake-image] ✅ Store URL: https://api.netlify.com/api/v1/sites/${siteID}/blobs/${storeName}/${encodeURIComponent(imageKey)}`);
   } catch (error) {
     console.error(`[generate-earthquake-image] ❌ Failed to store image via REST API:`, error.message);
     // Don't fail the entire function - return URL anyway

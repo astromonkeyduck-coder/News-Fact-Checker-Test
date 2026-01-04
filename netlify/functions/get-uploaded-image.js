@@ -71,11 +71,16 @@ exports.handler = async (event, context) => {
     let imageData = null;
     let foundStore = null;
     
+    console.log(`[get-uploaded-image] Looking for image: ${imageKey}`);
+    console.log(`[get-uploaded-image] Site ID: ${siteID ? siteID.substring(0, 8) + '...' : 'MISSING'}, Token: ${token ? 'PRESENT' : 'MISSING'}`);
+    
     // Try to find the media in any of the stores using REST API
     // Note: siteID and token are guaranteed to exist after early validation above
     for (const storeName of storeNames) {
       try {
         const apiUrl = `https://api.netlify.com/api/v1/sites/${siteID}/blobs/${storeName}/${encodeURIComponent(imageKey)}`;
+        console.log(`[get-uploaded-image] Trying store: ${storeName}, URL: ${apiUrl.substring(0, 100)}...`);
+        
         const response = await fetch(apiUrl, {
           method: 'GET',
           headers: {
@@ -83,16 +88,24 @@ exports.handler = async (event, context) => {
           },
         });
         
+        console.log(`[get-uploaded-image] Response from ${storeName}: ${response.status} ${response.statusText}`);
+        
         if (response.ok) {
           const arrayBuffer = await response.arrayBuffer();
           if (arrayBuffer && arrayBuffer.byteLength > 0) {
             imageData = arrayBuffer;
             foundStore = storeName;
+            console.log(`[get-uploaded-image] ✅ Found image in ${storeName}: ${Math.round(arrayBuffer.byteLength / 1024)}KB`);
             break;
+          } else {
+            console.warn(`[get-uploaded-image] ⚠️ Empty response from ${storeName}`);
           }
-        } else if (response.status !== 404) {
+        } else if (response.status === 404) {
+          console.log(`[get-uploaded-image] Image not found in ${storeName} (404)`);
+        } else {
           // Log non-404 errors but continue trying other stores
-          console.warn(`[get-uploaded-image] Error fetching from ${storeName}:`, response.status, response.statusText);
+          const errorText = await response.text().catch(() => '');
+          console.warn(`[get-uploaded-image] Error fetching from ${storeName}:`, response.status, response.statusText, errorText.substring(0, 200));
         }
       } catch (fetchErr) {
         // Network error, try next store
@@ -125,13 +138,25 @@ exports.handler = async (event, context) => {
     // Retrieve image from Blobs (already fetched above via REST API)
     try {
       if (!imageData) {
-        console.warn('[get-uploaded-image] Image not found in any store', { imageKey });
+        console.error('[get-uploaded-image] ❌ Image not found in any store', { 
+          imageKey,
+          triedStores: storeNames,
+          siteID: siteID ? siteID.substring(0, 8) + '...' : 'MISSING',
+          hasToken: !!token
+        });
         return {
           statusCode: 404,
           headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify({ error: "Media not found", key: imageKey }),
+          body: JSON.stringify({ 
+            error: "Media not found", 
+            key: imageKey,
+            triedStores: storeNames,
+            message: "Image not found in post-media, newsletter-images, or uploaded-images stores"
+          }),
         };
       }
+      
+      console.log(`[get-uploaded-image] ✅ Image found in ${foundStore}, size: ${Math.round(imageData.byteLength / 1024)}KB`);
 
       // Determine content type from key extension
       let contentType = "image/png";
