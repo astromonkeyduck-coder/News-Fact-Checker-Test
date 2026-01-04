@@ -666,21 +666,9 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
         kernel: 'lanczos3',
         withoutEnlargement: false,
       });
-    console.log(`[generate-earthquake-image] 📐 Template scaled to ${outputWidth}x${outputHeight} for 4K output`);
-    
-    // Verify scaled template dimensions
-    const scaledMetadata = await compositePipeline.metadata();
-    console.log(`[generate-earthquake-image] 📐 Scaled template metadata:`, {
-      width: scaledMetadata.width,
-      height: scaledMetadata.height,
-      format: scaledMetadata.format,
-      expectedDimensions: `${outputWidth}x${outputHeight}`
-    });
-    
-    if (scaledMetadata.width !== outputWidth || scaledMetadata.height !== outputHeight) {
-      console.error(`[generate-earthquake-image] ❌ CRITICAL: Template scaling failed! Expected ${outputWidth}x${outputHeight}, got ${scaledMetadata.width}x${scaledMetadata.height}`);
-      throw new Error(`Template scaling failed: expected ${outputWidth}x${outputHeight}, got ${scaledMetadata.width}x${scaledMetadata.height}`);
-    }
+    console.log(`[generate-earthquake-image] 📐 Template will be scaled to ${outputWidth}x${outputHeight} for 4K output`);
+    // Note: Sharp's resize is lazy - actual resize happens during processing
+    // We verify final dimensions after composite is generated (see below)
   }
   
   // Composite all layers
