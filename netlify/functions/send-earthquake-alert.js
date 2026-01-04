@@ -58,6 +58,21 @@ async function downloadImageForEmail(imageUrl) {
       return null;
     }
     
+    // Validate it's actually a valid image by checking magic bytes BEFORE returning
+    const magicBytes = buffer.slice(0, 8);
+    const isPNG = magicBytes[0] === 0x89 && magicBytes[1] === 0x50 && magicBytes[2] === 0x4E && magicBytes[3] === 0x47;
+    const isJPEG = magicBytes[0] === 0xFF && magicBytes[1] === 0xD8;
+    
+    if (!isPNG && !isJPEG) {
+      console.error('[send-earthquake-alert] ❌ Downloaded data is not a valid PNG or JPEG image!');
+      console.error('[send-earthquake-alert] ❌ Magic bytes:', Array.from(magicBytes).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
+      console.error('[send-earthquake-alert] ❌ First 100 bytes (hex):', buffer.slice(0, 100).toString('hex'));
+      console.error('[send-earthquake-alert] ❌ First 100 bytes (text):', buffer.slice(0, 100).toString('utf8').substring(0, 100));
+      return null; // Don't return corrupted data
+    }
+    
+    console.log(`[send-earthquake-alert] ✅ Image format validated: ${isPNG ? 'PNG' : 'JPEG'}`);
+    
     return {
       buffer: buffer,
       contentType: contentType,

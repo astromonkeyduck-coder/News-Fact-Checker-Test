@@ -1280,6 +1280,27 @@ class GeographyGame {
         // Hide any start game prompts
         this.hideStartGamePrompt();
         
+        // Show loading screen and request fullscreen
+        this.showLoadingScreen();
+        
+        // Request fullscreen
+        this.requestFullscreen().then(() => {
+            // Wait a moment for fullscreen to activate, then hide loading and start game
+            setTimeout(() => {
+                this.hideLoadingScreen();
+                this.actuallyStartGame();
+            }, 1500); // 1.5 second delay for loading screen
+        }).catch((error) => {
+            console.warn('Fullscreen request failed:', error);
+            // Still start the game even if fullscreen fails
+            setTimeout(() => {
+                this.hideLoadingScreen();
+                this.actuallyStartGame();
+            }, 1500);
+        });
+    }
+    
+    actuallyStartGame() {
         this.gameActive = true;
         this.score = 0;
         this.correct = 0;
@@ -1364,6 +1385,61 @@ class GeographyGame {
         }
     }
     
+    showLoadingScreen() {
+        const loadingScreen = document.getElementById('gameLoadingScreen');
+        if (loadingScreen) {
+            loadingScreen.style.display = 'flex';
+            // Trigger reflow to ensure display change is applied
+            loadingScreen.offsetHeight;
+            loadingScreen.classList.add('show');
+        }
+    }
+    
+    hideLoadingScreen() {
+        const loadingScreen = document.getElementById('gameLoadingScreen');
+        if (loadingScreen) {
+            loadingScreen.classList.remove('show');
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+            }, 500); // Wait for fade out animation
+        }
+    }
+    
+    async requestFullscreen() {
+        const element = document.documentElement;
+        
+        try {
+            if (element.requestFullscreen) {
+                await element.requestFullscreen();
+            } else if (element.webkitRequestFullscreen) {
+                await element.webkitRequestFullscreen();
+            } else if (element.mozRequestFullScreen) {
+                await element.mozRequestFullScreen();
+            } else if (element.msRequestFullscreen) {
+                await element.msRequestFullscreen();
+            }
+        } catch (error) {
+            console.warn('Fullscreen request failed:', error);
+            throw error;
+        }
+    }
+    
+    exitFullscreen() {
+        try {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        } catch (error) {
+            console.warn('Exit fullscreen failed:', error);
+        }
+    }
+    
     showHint() {
         if (!this.gameActive || !this.currentCountry) return;
         
@@ -1402,6 +1478,9 @@ class GeographyGame {
     }
     
     resetGame() {
+        // Exit fullscreen when resetting
+        this.exitFullscreen();
+        
         // Hide game complete screen
         const gameOver = document.getElementById('gameOverGeo');
         if (gameOver) {

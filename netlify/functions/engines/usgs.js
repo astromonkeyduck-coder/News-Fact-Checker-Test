@@ -693,6 +693,13 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     logger.warn('⚠️ No detail URL available for earthquake - cannot fetch USGS images', { eventId });
   }
   
+  // Check if event already exists to avoid regenerating images unnecessarily
+  const { data: existingEvent } = await supabase
+    .from('verified_events')
+    .select('image_url, assets')
+    .eq('canonical_id', canonicalId)
+    .single();
+  
   // Generate branded image ONLY if magnitude meets requirements (>= 1.5 for testing, normally 2.5)
   // Lower magnitude earthquakes are processed but won't get images
   let imageUrl = null;
@@ -702,9 +709,24 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   const IMAGE_GENERATION_THRESHOLD = 1.5;
   
   if (magnitude >= IMAGE_GENERATION_THRESHOLD) {
-    // Generate branded image (will use template's baked-in images if usgsImages is empty)
-    imageUrl = await generateBrandedImage(magnitude, locationDisplay, usgsImages, eventId, logger, coordinates);
-    logger.info('Image generation completed', { magnitude, hasImage: !!imageUrl, eventId });
+    // Only generate new image if:
+    // 1. Event doesn't exist yet (new earthquake)
+    // 2. Event exists but has no image
+    // 3. USGS images are now available (were empty before, now have images)
+    const existingUsgsImages = existingEvent?.assets?.usgs_images || [];
+    const shouldGenerateNewImage = !existingEvent || 
+                                   !existingEvent.image_url || 
+                                   (existingUsgsImages.length === 0 && usgsImages.length > 0);
+    
+    if (shouldGenerateNewImage) {
+      // Generate branded image (will use template's baked-in images if usgsImages is empty)
+      imageUrl = await generateBrandedImage(magnitude, locationDisplay, usgsImages, eventId, logger, coordinates);
+      logger.info('Image generation completed', { magnitude, hasImage: !!imageUrl, eventId, reason: !existingEvent ? 'new_earthquake' : !existingEvent.image_url ? 'no_existing_image' : 'usgs_images_now_available' });
+    } else {
+      // Reuse existing image
+      imageUrl = existingEvent.image_url;
+      logger.info('Reusing existing image', { magnitude, eventId, imageUrl: imageUrl?.substring(0, 100) });
+    }
   } else {
     logger.info(`Skipping image generation - magnitude below ${IMAGE_GENERATION_THRESHOLD} threshold`, { magnitude, eventId });
   }
