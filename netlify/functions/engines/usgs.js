@@ -408,8 +408,24 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
       has_image: !!imageUrl
     });
     
-    // Extract depth from event
+    // Extract depth from event (check multiple locations)
     const depth = earthquake.depth || earthquake.assets?.depth || earthquake.raw?.geometry?.coordinates?.[2] || null;
+    
+    // Extract coordinates if not at top level
+    const lat = earthquake.lat || earthquake.raw?.geometry?.coordinates?.[1] || null;
+    const lon = earthquake.lon || earthquake.raw?.geometry?.coordinates?.[0] || null;
+    
+    // Log what we're extracting for debugging
+    logger.info('Extracting earthquake data for email', {
+      canonical_id: earthquake.canonical_id,
+      hasLat: !!lat,
+      hasLon: !!lon,
+      hasDepth: !!depth,
+      hasAssets: !!earthquake.assets,
+      assetKeys: earthquake.assets ? Object.keys(earthquake.assets) : [],
+      hasRaw: !!earthquake.raw,
+      rawGeometry: earthquake.raw?.geometry ? 'present' : 'missing'
+    });
     
     // Build complete earthquake object with all data needed for email template
     const earthquakeData = {
@@ -419,9 +435,9 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
           time: earthquake.published_at,
           time_ms: new Date(earthquake.published_at).getTime(),
           usgs_event_url: earthquake.source_url,
-      // Add coordinates for map generation
-      lat: earthquake.lat || null,
-      lon: earthquake.lon || null,
+      // Add coordinates for map generation (with fallback to raw geometry)
+      lat: lat,
+      lon: lon,
       // Add depth for display
       depth: depth,
       // Add assets for all Tier features (impact assessment, tsunami risk, etc.)
@@ -915,10 +931,61 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       hasNewImage,
       alert_sent_before: originalAlertSent,
       alert_sent_after_reset: storedEvent.alert_sent,
-      hasImageUrl: !!imageUrl
+      hasImageUrl: !!imageUrl,
+      storedEventHasLat: !!storedEvent.lat,
+      storedEventHasLon: !!storedEvent.lon,
+      storedEventHasDepth: !!(storedEvent.depth || storedEvent.assets?.depth),
+      storedEventHasAssets: !!storedEvent.assets,
+      storedEventAssetKeys: storedEvent.assets ? Object.keys(storedEvent.assets) : []
     });
     
-    const alertSent = await sendEmailAlert(storedEvent, imageUrl, logger);
+    // Ensure storedEvent has all necessary fields (fallback to raw data if missing)
+    // CRITICAL: send-earthquake-alert expects these fields at top level
+    const enrichedEvent = {
+      ...storedEvent,
+      // Ensure magnitude is at top level (needed for email template)
+      magnitude: storedEvent.assets?.magnitude || storedEvent.raw?.properties?.mag || magnitude || null,
+      // Ensure lat/lon are present (fallback to raw geometry)
+      lat: storedEvent.lat || storedEvent.raw?.geometry?.coordinates?.[1] || null,
+      lon: storedEvent.lon || storedEvent.raw?.geometry?.coordinates?.[0] || null,
+      // Ensure depth is at top level (fallback to assets or raw)
+      depth: storedEvent.depth || storedEvent.assets?.depth || storedEvent.raw?.geometry?.coordinates?.[2] || null,
+      // Ensure assets object exists
+      assets: storedEvent.assets || {},
+      // Ensure location_display exists
+      location_display: storedEvent.location_display || storedEvent.raw?.properties?.place || 'Unknown Location',
+      // Ensure published_at exists
+      published_at: storedEvent.published_at || storedEvent.raw?.properties?.time ? new Date(storedEvent.raw.properties.time).toISOString() : new Date().toISOString(),
+      // Ensure time_ms exists (needed for email time formatting)
+      time_ms: storedEvent.published_at ? new Date(storedEvent.published_at).getTime() : (storedEvent.raw?.properties?.time ? new Date(storedEvent.raw.properties.time).getTime() : Date.now()),
+      // Ensure time exists (fallback for email time formatting)
+      time: storedEvent.published_at || (storedEvent.raw?.properties?.time ? new Date(storedEvent.raw.properties.time).toISOString() : new Date().toISOString()),
+      // Ensure event_id exists (needed for image filename)
+      event_id: storedEvent.assets?.event_id || storedEvent.raw?.id || eventId || 'unknown',
+      // Ensure source_url exists
+      source_url: storedEvent.source_url || storedEvent.raw?.properties?.url || null,
+      // Ensure usgs_event_url exists (alias for source_url)
+      usgs_event_url: storedEvent.source_url || storedEvent.raw?.properties?.url || null
+    };
+    
+    logger.info('📦 Enriched event data for email', {
+      canonical_id: canonicalId,
+      hasMagnitude: !!enrichedEvent.magnitude,
+      magnitude: enrichedEvent.magnitude,
+      hasLat: !!enrichedEvent.lat,
+      hasLon: !!enrichedEvent.lon,
+      hasDepth: !!enrichedEvent.depth,
+      hasAssets: !!enrichedEvent.assets,
+      assetKeys: enrichedEvent.assets ? Object.keys(enrichedEvent.assets) : [],
+      hasLocationDisplay: !!enrichedEvent.location_display,
+      locationDisplay: enrichedEvent.location_display,
+      hasPublishedAt: !!enrichedEvent.published_at,
+      hasTimeMs: !!enrichedEvent.time_ms,
+      hasEventId: !!enrichedEvent.event_id,
+      eventId: enrichedEvent.event_id
+    });
+    
+    const alertSent = await sendEmailAlert(enrichedEvent, imageUrl, logger);
     if (alertSent) {
       // Update alert_sent status
       await supabase
