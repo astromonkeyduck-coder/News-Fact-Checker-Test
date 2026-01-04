@@ -131,21 +131,35 @@ function cleanLocation(place) {
 }
 
 /**
+ * Check if a string contains non-ASCII characters (non-English)
+ * @param {string} str - String to check
+ * @returns {boolean} True if contains non-ASCII characters
+ */
+function containsNonASCII(str) {
+  if (!str) return false;
+  // Check for non-ASCII characters (outside basic Latin range)
+  return /[^\x00-\x7F]/.test(str);
+}
+
+/**
  * Enhance location with reverse geocoding for more detailed information
  * @param {string} place - Raw location string from USGS
  * @param {number|null} lat - Latitude
  * @param {number|null} lon - Longitude
- * @returns {Promise<string>} Enhanced location string
+ * @returns {Promise<{location: string, englishName?: string}>} Enhanced location with optional English translation
  */
 async function enhanceLocationWithGeocoding(place, lat, lon) {
   // Start with cleaned location
   let location = cleanLocation(place);
+  let englishName = null;
+  const hasNonASCII = containsNonASCII(location);
   
   // If we have coordinates, try reverse geocoding for more details
   // Check for null/undefined, not falsy (0 is a valid coordinate)
   if (lat != null && lon != null) {
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`;
+      // Request English names explicitly
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1&accept-language=en`;
       const response = await fetch(url, {
         headers: {
           'User-Agent': 'NoteworthyNews/1.0 (contact@noteworthynews.co)',
@@ -156,11 +170,11 @@ async function enhanceLocationWithGeocoding(place, lat, lon) {
         const data = await response.json();
         const address = data.address || {};
         
-        // Build detailed location string
+        // Build detailed location string with English names
         const parts = [];
         
-        // Add city/town/village
-        const city = address.city || address.town || address.village || address.municipality;
+        // Prefer English name if available, otherwise use local name
+        const city = address['name:en'] || address.city || address.town || address.village || address.municipality;
         if (city) parts.push(city);
         
         // Add state (expand abbreviation if needed)
@@ -178,7 +192,28 @@ async function enhanceLocationWithGeocoding(place, lat, lon) {
         
         // If we got good geocoding data, use it
         if (parts.length > 0) {
-          location = parts.join(', ');
+          const geocodedLocation = parts.join(', ');
+          
+          // If original location has non-ASCII characters, keep it as primary and use geocoded as English
+          if (hasNonASCII) {
+            // If geocoded location is different and appears to be in English, use it as English name
+            if (geocodedLocation !== location && !containsNonASCII(geocodedLocation)) {
+              englishName = geocodedLocation;
+            }
+            // Keep original location as primary display
+          } else {
+            // Original is already in English, use geocoded if it's better
+            location = geocodedLocation;
+          }
+        }
+        
+        // Also check display_name for English version (fallback)
+        if (hasNonASCII && !englishName && data.display_name) {
+          const displayName = data.display_name;
+          // If display_name is in English and different from location, use it as English name
+          if (!containsNonASCII(displayName) && displayName !== location) {
+            englishName = displayName;
+          }
         }
       }
     } catch (error) {
@@ -187,7 +222,11 @@ async function enhanceLocationWithGeocoding(place, lat, lon) {
     }
   }
   
-  return location;
+  // Return object with location and optional English translation
+  return {
+    location,
+    englishName: englishName || undefined
+  };
 }
 
 /**

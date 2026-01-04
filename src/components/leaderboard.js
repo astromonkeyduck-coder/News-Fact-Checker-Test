@@ -25,14 +25,18 @@
 
 // Use the logger from window (safe even if redeclared elsewhere)
 // Use a unique variable name to avoid conflicts with other scripts
-const leaderboardLoggerInstance = (function() {
-    return window.leaderboardLogger || (typeof window !== 'undefined' && window.logger) || {
-        debug: (...args) => console.log('[Leaderboard]', ...args),
-        error: (...args) => console.error('[Leaderboard]', ...args),
-        warn: (...args) => console.warn('[Leaderboard]', ...args),
-        log: (...args) => console.log('[Leaderboard]', ...args)
-    };
-})();
+// Check if already defined to prevent redeclaration
+if (typeof window === 'undefined' || !window.__leaderboardLoggerInstance__) {
+  window.__leaderboardLoggerInstance__ = (function() {
+      return window.leaderboardLogger || (typeof window !== 'undefined' && window.logger) || {
+          debug: (...args) => console.log('[Leaderboard]', ...args),
+          error: (...args) => console.error('[Leaderboard]', ...args),
+          warn: (...args) => console.warn('[Leaderboard]', ...args),
+          log: (...args) => console.log('[Leaderboard]', ...args)
+      };
+  })();
+}
+const leaderboardLoggerInstance = window.__leaderboardLoggerInstance__;
 // Use leaderboardLoggerInstance directly to avoid conflicts with other logger declarations
 // Store on window to prevent redeclaration errors if file is loaded multiple times
 if (typeof window !== 'undefined') {
@@ -55,7 +59,12 @@ if (typeof window !== 'undefined') {
     var logger = leaderboardLoggerInstance;
 }
 
-class Leaderboard {
+// Prevent redeclaration - only define class if not already defined
+// Fix: Check window exists first, then check flag (prevents short-circuit in Node.js)
+if (typeof window !== 'undefined' && !window.__LeaderboardClassDefined__) {
+  window.__LeaderboardClassDefined__ = true;
+  
+  class Leaderboard {
     constructor(gameType = 'fact-checker') {
         this.gameType = gameType;
         this.scores = [];
@@ -394,8 +403,11 @@ class Leaderboard {
         div.textContent = text;
         return div.innerHTML;
     }
+  }
+  
+  // Make it globally available
+  if (typeof window !== 'undefined') {
+    window.Leaderboard = Leaderboard;
+  }
 }
-
-// Make it globally available
-window.Leaderboard = Leaderboard;
 

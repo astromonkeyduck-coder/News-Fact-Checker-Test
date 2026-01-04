@@ -129,6 +129,19 @@ exports.handler = async (event, context) => {
           if (!response.ok) {
             const errorText = await response.text().catch(() => '');
             console.log(`[get-uploaded-image] Error response body: ${errorText.substring(0, 500)}`);
+            
+            // Special handling for 401 Unauthorized
+            if (response.status === 401) {
+              console.error(`[get-uploaded-image] ❌ 401 Unauthorized - Netlify Blobs authentication failed`, {
+                storeName,
+                keyVariant,
+                hasToken: !!token,
+                tokenLength: token ? token.length : 0,
+                siteID: siteID ? siteID.substring(0, 8) + '...' : 'MISSING',
+                error: errorText.substring(0, 200)
+              });
+              // Continue to next store/key variant instead of failing immediately
+            }
           }
           
           if (response.ok) {
@@ -237,7 +250,7 @@ exports.handler = async (event, context) => {
     // Check if requesting metadata
     if (imageKey.startsWith('metadata-')) {
       if (imageData) {
-        try {
+      try {
           const metadata = JSON.parse(Buffer.from(imageData).toString('utf-8'));
           return {
             statusCode: 200,
@@ -255,12 +268,51 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Retrieve image from Blobs (already fetched above via REST API)
+    // If REST API failed, try SDK as fallback (for images stored via SDK)
+    if (!imageData) {
+      console.log('[get-uploaded-image] REST API failed, trying SDK fallback...');
+      try {
+        const { getStore } = require("@netlify/blobs");
+        
+        sdkFallbackLoop: for (const storeName of storeNames) {
+          for (const keyVariant of keyVariants) {
+            try {
+              const store = getStore({
+                name: storeName,
+                siteID: siteID,
+                token: token,
+              });
+              
+              const sdkImage = await store.get(keyVariant, { type: "arrayBuffer" });
+              if (sdkImage && sdkImage.byteLength > 0) {
+                imageData = sdkImage;
+                foundStore = storeName;
+                console.log(`[get-uploaded-image] ✅ Found image via SDK fallback in ${storeName}: ${Math.round(sdkImage.byteLength / 1024)}KB`);
+                break sdkFallbackLoop;
+              }
+            } catch (sdkErr) {
+              // Continue to next variant
+              console.log(`[get-uploaded-image] SDK fallback failed for ${storeName}/${keyVariant}:`, sdkErr.message);
+            }
+          }
+        }
+      } catch (sdkFallbackErr) {
+        console.warn('[get-uploaded-image] SDK fallback error:', sdkFallbackErr.message);
+      }
+    }
+
+    // Retrieve image from Blobs (already fetched above via REST API or SDK)
     try {
       if (!imageData) {
+        // Extract event ID from key for better error message
+        const eventIdMatch = imageKey.match(/earthquake-([^-]+)/);
+        const eventId = eventIdMatch ? eventIdMatch[1] : 'unknown';
+        
         console.error('[get-uploaded-image] ❌ Image not found in any store', { 
           imageKey,
+          eventId,
           triedStores: storeNames,
+          triedKeyVariants: keyVariants,
           siteID: siteID ? siteID.substring(0, 8) + '...' : 'MISSING',
           hasToken: !!token
         });
@@ -270,8 +322,11 @@ exports.handler = async (event, context) => {
           body: JSON.stringify({ 
             error: "Media not found", 
             key: imageKey,
+            eventId: eventId,
             triedStores: storeNames,
-            message: "Image not found in post-media, newsletter-images, or uploaded-images stores"
+            triedKeyVariants: keyVariants,
+            message: "Image not found in post-media, newsletter-images, or uploaded-images stores. The image may not have been stored, may have expired, or may need to be regenerated.",
+            suggestion: eventId !== 'unknown' ? `You may need to regenerate the image for event ${eventId}` : "You may need to regenerate this image"
           }),
         };
       }

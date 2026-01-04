@@ -9417,7 +9417,12 @@ class NoteworthyChat extends HTMLElement {
   }
 }
 
-customElements.define('noteworthy-chat-widget', NoteworthyChat);
+// Prevent redeclaration - only define custom element if not already defined
+if (typeof customElements !== 'undefined' && !customElements.get('noteworthy-chat-widget')) {
+  customElements.define('noteworthy-chat-widget', NoteworthyChat);
+} else if (typeof customElements !== 'undefined') {
+  console.warn('[NoteworthyChat] Custom element already defined, skipping registration');
+}
 
 // ACCEPTANCE TESTS: Add test functions to window for debugging
 if (typeof window !== 'undefined') {

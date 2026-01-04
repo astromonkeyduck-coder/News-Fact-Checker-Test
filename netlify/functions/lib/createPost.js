@@ -220,6 +220,7 @@ async function createPostFromEvent(event, category, source) {
     source: source,
     location: event.location_display,
     location_display: event.location_display, // Also store as location_display for earthquake enhancements
+    location_english_name: event.location_english_name || null, // English translation for non-English locations
     eventId: event.canonical_id,
     severity: event.severity,
     event_type: event.event_type,

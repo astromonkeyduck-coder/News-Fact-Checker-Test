@@ -280,12 +280,32 @@
     }
 
     /**
+     * Generate professional SVG icon
+     */
+    function getIconSVG(iconType, size = 20, color = 'currentColor') {
+        const icons = {
+            location: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`,
+            chart: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>`,
+            wave: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c.6.4 1.2.8 2 1 1.1.2 2.2.2 3.2 0 .8-.2 1.4-.6 2-1 .6.4 1.2.8 2 1 1.1.2 2.2.2 3.2 0 .8-.2 1.4-.6 2-1 .6.4 1.2.8 2 1 1.1.2 2.2.2 3.2 0 .8-.2 1.4-.6 2-1"></path><path d="M2 16c.6.4 1.2.8 2 1 1.1.2 2.2.2 3.2 0 .8-.2 1.4-.6 2-1 .6.4 1.2.8 2 1 1.1.2 2.2.2 3.2 0 .8-.2 1.4-.6 2-1 .6.4 1.2.8 2 1 1.1.2 2.2.2 3.2 0 .8-.2 1.4-.6 2-1"></path></svg>`,
+            document: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
+            dollar: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>`,
+            globe: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`,
+            play: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`,
+            warning: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
+            lightbulb: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21h6"></path><path d="M12 3a6 6 0 0 0 0 12c1.657 0 3-1.343 3-3V9a3 3 0 0 0-3-3 3 3 0 0 0-3 3v3c0 1.657 1.343 3 3 3z"></path></svg>`,
+            city: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-4"></path><line x1="9" y1="9" x2="9" y2="9"></line><line x1="9" y1="12" x2="9" y2="12"></line><line x1="9" y1="15" x2="9" y2="15"></line><line x1="9" y1="18" x2="9" y2="18"></line></svg>`
+        };
+        return icons[iconType] || '';
+    }
+    
+    /**
      * Generate earthquake-specific enhancements (location details, nearby places, assessments, etc.)
      */
     async function generateEarthquakeEnhancements(post, magnitude) {
         const lat = post.lat;
         const lon = post.lon;
         const locationDisplay = post.location_display || post.location || 'Unknown Location';
+        const locationEnglishName = post.location_english_name || post.assets?.location_english_name || null;
         const magnitudeFormatted = magnitude ? magnitude.toFixed(1) : 'N/A';
         const depth = post.assets?.depth || post.depth;
         const depthFormatted = depth ? `${depth.toFixed(1)} km` : null;
@@ -308,7 +328,10 @@
         // Add location details section
         html += `
             <div class="earthquake-details-section" style="margin: 2rem 0; padding: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-                <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #fff;">📍 Location Details</h2>
+                <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="display: inline-flex; align-items: center; color: #4A9EFF;">${getIconSVG('location', 24, '#4A9EFF')}</span>
+                    Location Details
+                </h2>
                 <div class="earthquake-details-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                     <div class="detail-card" style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
                         <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">Magnitude</div>
@@ -326,7 +349,14 @@
                     </div>
                     <div class="detail-card" style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
                         <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">Location</div>
-                        <div style="font-size: 0.875rem; font-weight: 600; color: #fff;">${escapeHtml(locationDisplay)}</div>
+                        <div style="font-size: 0.875rem; font-weight: 600; color: #fff;">
+                            ${escapeHtml(locationDisplay)}
+                            ${locationEnglishName && locationEnglishName !== locationDisplay ? `
+                                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.7); margin-top: 0.25rem; font-weight: 400;">
+                                    ${escapeHtml(locationEnglishName)}
+                                </div>
+                            ` : ''}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -339,7 +369,10 @@
                                  impactAssessment.severity === 'MODERATE' ? '#fbc02d' : '#388e3c';
             html += `
                 <div class="impact-assessment-section" style="margin: 2rem 0; padding: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 12px; border-left: 4px solid ${severityColor};">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff;">📊 Impact Assessment</h2>
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="display: inline-flex; align-items: center; color: ${severityColor};">${getIconSVG('chart', 24, severityColor)}</span>
+                        Impact Assessment
+                    </h2>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
                         <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
                             <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">Risk Score</div>
@@ -356,10 +389,24 @@
                         ${impactAssessment.criticalInfrastructure ? `
                         <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
                             <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">Critical Infrastructure</div>
-                            <div style="font-size: 1.25rem; font-weight: 700; color: #fff;">
-                                ${impactAssessment.criticalInfrastructure.hospitals} hospitals, 
-                                ${impactAssessment.criticalInfrastructure.airports} airports
+                            <div style="font-size: 1rem; font-weight: 600; color: #fff; line-height: 1.6;">
+                                ${impactAssessment.criticalInfrastructure.hospitals || 0} hospitals<br>
+                                ${impactAssessment.criticalInfrastructure.schools || 0} schools<br>
+                                ${impactAssessment.criticalInfrastructure.airports || 0} airports<br>
+                                ${impactAssessment.criticalInfrastructure.powerPlants || 0} power plants
                             </div>
+                        </div>
+                        ` : ''}
+                        ${impactAssessment.affectedRadius ? `
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">Affected Radius</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #fff;">${impactAssessment.affectedRadius.toFixed(1)} km</div>
+                        </div>
+                        ` : ''}
+                        ${impactAssessment.populationDensity ? `
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">Population Density</div>
+                            <div style="font-size: 1.25rem; font-weight: 700; color: #fff;">${impactAssessment.populationDensity.toFixed(0)}/km²</div>
                         </div>
                         ` : ''}
                     </div>
@@ -372,7 +419,10 @@
             const riskColor = tsunamiAssessment.riskLevel === 'HIGH' ? '#d32f2f' : '#f57c00';
             html += `
                 <div class="tsunami-risk-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(255,152,0,0.1) 0%, rgba(255,152,0,0.05) 100%); border-radius: 12px; border-left: 4px solid ${riskColor};">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff;">🌊 Tsunami Risk Assessment</h2>
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="display: inline-flex; align-items: center; color: ${riskColor};">${getIconSVG('wave', 24, riskColor)}</span>
+                        Tsunami Risk Assessment
+                    </h2>
                     <div style="font-size: 1.125rem; font-weight: 600; color: ${riskColor}; margin-bottom: 0.5rem;">
                         ${tsunamiAssessment.riskLevel} RISK
                     </div>
@@ -394,7 +444,10 @@
         if (aftershockForecast && aftershockForecast.probability24h >= 40) {
             html += `
                 <div class="aftershock-forecast-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(156,39,176,0.1) 0%, rgba(156,39,176,0.05) 100%); border-radius: 12px; border-left: 4px solid #9c27b0;">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff;">📊 Aftershock Forecast</h2>
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="display: inline-flex; align-items: center; color: #9c27b0;">${getIconSVG('chart', 24, '#9c27b0')}</span>
+                        Aftershock Forecast
+                    </h2>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
                         <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
                             <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">24 Hour Probability</div>
@@ -411,7 +464,10 @@
                     ${aftershockForecast.recommendation ? `
                     <div style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
                         <div style="font-size: 0.875rem; color: rgba(255,255,255,0.9);">
-                            💡 <strong>Recommendation:</strong> ${aftershockForecast.recommendation}
+                            <span style="display: inline-flex; align-items: center; gap: 0.5rem; vertical-align: middle;">
+                                <span style="display: inline-flex; align-items: center; color: #9c27b0;">${getIconSVG('lightbulb', 16, '#9c27b0')}</span>
+                                <strong>Recommendation:</strong> ${aftershockForecast.recommendation}
+                            </span>
                         </div>
                     </div>
                     ` : ''}
@@ -425,7 +481,10 @@
                                 anomalyDetection.anomalyLevel === 'MEDIUM' ? '#f57c00' : '#fbc02d';
             html += `
                 <div class="anomaly-detection-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(211,47,47,0.1) 0%, rgba(211,47,47,0.05) 100%); border-radius: 12px; border-left: 4px solid ${anomalyColor};">
-                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff;">⚠️ Anomaly Detection</h2>
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="display: inline-flex; align-items: center; color: ${anomalyColor};">${getIconSVG('warning', 24, anomalyColor)}</span>
+                        Anomaly Detection
+                    </h2>
                     <div style="font-size: 1.125rem; font-weight: 600; color: ${anomalyColor}; margin-bottom: 0.5rem;">
                         ${anomalyDetection.anomalyLevel} ANOMALY LEVEL
                     </div>
@@ -446,13 +505,101 @@
             `;
         }
         
-        // Add 3D visualization container
+        // Add Economic Impact section (if available)
+        if (impactAssessment?.economicImpact && impactAssessment.economicImpact.estimatedGDP) {
+            const economic = impactAssessment.economicImpact;
+            html += `
+                <div class="economic-impact-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(76,175,80,0.1) 0%, rgba(76,175,80,0.05) 100%); border-radius: 12px; border-left: 4px solid #4caf50;">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="display: inline-flex; align-items: center; color: #4caf50;">${getIconSVG('dollar', 24, '#4caf50')}</span>
+                        Economic Impact Assessment
+                    </h2>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        ${economic.estimatedGDP ? `
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">Estimated GDP Affected</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #4caf50;">$${(economic.estimatedGDP / 1000000000).toFixed(2)}B</div>
+                            <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-top: 0.25rem;">${economic.country || 'Region'}</div>
+                        </div>
+                        ` : ''}
+                        ${economic.gdpPerCapita ? `
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem;">GDP Per Capita</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #4caf50;">$${economic.gdpPerCapita.toLocaleString()}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Add Historical Context section (if available)
+        if (impactAssessment?.historicalComparison && impactAssessment.historicalComparison.count > 0) {
+            const historical = impactAssessment.historicalComparison;
+            html += `
+                <div class="historical-context-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(33,150,243,0.1) 0%, rgba(33,150,243,0.05) 100%); border-radius: 12px; border-left: 4px solid #2196f3;">
+                    <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="display: inline-flex; align-items: center; color: #2196f3;">${getIconSVG('document', 24, '#2196f3')}</span>
+                        Historical Context
+                    </h2>
+                    <div style="font-size: 0.875rem; color: rgba(255,255,255,0.8); margin-bottom: 1rem; line-height: 1.6;">
+                        ${historical.count} similar earthquake${historical.count !== 1 ? 's' : ''} recorded in this region historically.
+                    </div>
+                    ${historical.largest ? `
+                    <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 0.5rem;">
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.25rem;">Largest Historical Event</div>
+                        <div style="font-size: 1.125rem; font-weight: 700; color: #2196f3;">M${historical.largest.magnitude?.toFixed(1) || 'N/A'}</div>
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 0.25rem;">${historical.largest.date ? new Date(historical.largest.date).toLocaleDateString() : 'Date unknown'}</div>
+                    </div>
+                    ` : ''}
+                    ${historical.similar && historical.similar.length > 0 ? `
+                    <div style="margin-top: 1rem;">
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Similar Events (within 0.5 magnitude)</div>
+                        <div style="display: grid; gap: 0.5rem;">
+                            ${historical.similar.slice(0, 3).map(eq => `
+                                <div style="padding: 0.75rem; background: rgba(255,255,255,0.05); border-radius: 6px; border-left: 3px solid #2196f3;">
+                                    <div style="font-size: 0.875rem; font-weight: 600; color: #fff;">M${eq.magnitude?.toFixed(1) || 'N/A'}</div>
+                                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6);">${eq.date ? new Date(eq.date).toLocaleDateString() : 'Date unknown'}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
+        // Add 3D visualization container with enhanced features
         html += `
             <div class="earthquake-3d-container" style="margin: 2rem 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.15); background: rgba(0,0,0,0.3);">
-                <div style="padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                    <h3 style="margin: 0; color: #fff; font-size: 1.125rem; font-weight: 600;">🌐 3D Earthquake Visualization</h3>
+                <div style="padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0; color: #fff; font-size: 1.125rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="display: inline-flex; align-items: center;">${getIconSVG('globe', 20, '#fff')}</span>
+                        Interactive 3D Visualization
+                    </h3>
+                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8);">Drag to rotate • Scroll to zoom</div>
                 </div>
-                <div id="earthquake-3d-viewer" style="width: 100%; height: 500px; background: #1a1a1a;"></div>
+                <div id="earthquake-3d-viewer" style="width: 100%; height: 600px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); position: relative;">
+                    <div style="position: absolute; top: 10px; right: 10px; z-index: 10; background: rgba(0,0,0,0.7); padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.75rem; color: rgba(255,255,255,0.9);">
+                        Epicenter: ${lat?.toFixed(4) || 'N/A'}°N, ${lon?.toFixed(4) || 'N/A'}°E
+                        ${depth ? ` • Depth: ${depth.toFixed(1)} km` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add animation section placeholder (will be populated if animation exists)
+        html += `
+            <div id="earthquake-animation-section" style="margin: 2rem 0; display: none;">
+                <div style="padding: 1rem; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px 12px 0 0;">
+                    <h3 style="margin: 0; color: #fff; font-size: 1.125rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="display: inline-flex; align-items: center;">${getIconSVG('play', 20, '#fff')}</span>
+                        Shake Intensity Animation
+                    </h3>
+                </div>
+                <div id="earthquake-animation-container" style="width: 100%; background: rgba(0,0,0,0.3); border-radius: 0 0 12px 12px; padding: 1rem; text-align: center;">
+                    <img id="earthquake-animation-img" src="" alt="Earthquake shake intensity animation" style="max-width: 100%; border-radius: 8px; display: none;">
+                </div>
             </div>
         `;
         
@@ -504,15 +651,20 @@
             directionalLight.position.set(10, 10, 5);
             scene.add(directionalLight);
             
-            // Create Earth sphere
-            const earthGeometry = new window.THREE.SphereGeometry(5, 32, 32);
+            // Create Earth sphere with texture (if available, otherwise use gradient material)
+            const earthGeometry = new window.THREE.SphereGeometry(5, 64, 64);
             const earthMaterial = new window.THREE.MeshPhongMaterial({ 
                 color: 0x2233ff,
                 emissive: 0x112244,
-                shininess: 100
+                shininess: 100,
+                specular: 0x222222
             });
             const earth = new window.THREE.Mesh(earthGeometry, earthMaterial);
             scene.add(earth);
+            
+            // Add subtle grid lines for reference
+            const gridHelper = new window.THREE.GridHelper(20, 20, 0x444444, 0x222222);
+            scene.add(gridHelper);
             
             // Calculate position on sphere (convert lat/lon to 3D coordinates)
             const phi = (90 - lat) * (Math.PI / 180);
@@ -522,17 +674,35 @@
             const y = radius * Math.cos(phi);
             const z = radius * Math.sin(phi) * Math.sin(theta);
             
-            // Create epicenter marker (pulsing sphere)
-            const epicenterGeometry = new window.THREE.SphereGeometry(0.3, 16, 16);
+            // Create epicenter marker (pulsing sphere) - size scales with magnitude
+            const epicenterSize = Math.min(0.2 + (magnitude / 20), 0.5);
+            const epicenterGeometry = new window.THREE.SphereGeometry(epicenterSize, 32, 32);
             const epicenterMaterial = new window.THREE.MeshPhongMaterial({ 
                 color: 0xff0000,
                 emissive: 0xff4444,
                 transparent: true,
-                opacity: 0.9
+                opacity: 0.95
             });
             const epicenter = new window.THREE.Mesh(epicenterGeometry, epicenterMaterial);
             epicenter.position.set(x, y, z);
             scene.add(epicenter);
+            
+            // Add multiple pulsing rings for visual impact
+            for (let i = 0; i < 3; i++) {
+                const ringSize = epicenterSize * (1.5 + i * 0.5);
+                const ringGeometry = new window.THREE.RingGeometry(ringSize, ringSize + 0.1, 32);
+                const ringMaterial = new window.THREE.MeshBasicMaterial({ 
+                    color: 0xff0000,
+                    side: window.THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.3 - (i * 0.1)
+                });
+                const ring = new window.THREE.Mesh(ringGeometry, ringMaterial);
+                ring.position.set(x, y, z);
+                ring.lookAt(0, 0, 0);
+                ring.userData.pulseOffset = i * 0.3;
+                scene.add(ring);
+            }
             
             // Create depth indicator (line from surface to depth)
             if (depth) {
@@ -564,23 +734,91 @@
             ring.lookAt(0, 0, 0); // Face outward from Earth
             scene.add(ring);
             
-            // Position camera
+            // Position camera with better initial view
             camera.position.set(15, 10, 15);
             camera.lookAt(x, y, z);
             
-            // Animation loop
+            // Add orbit controls for interactivity
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            let cameraDistance = 20;
+            
+            container.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            
+            container.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const deltaX = e.clientX - previousMousePosition.x;
+                    const deltaY = e.clientY - previousMousePosition.y;
+                    
+                    // Rotate camera around epicenter using spherical coordinates
+                    const direction = new window.THREE.Vector3();
+                    direction.subVectors(camera.position, new window.THREE.Vector3(x, y, z));
+                    const radius = direction.length();
+                    
+                    // Convert to spherical coordinates manually
+                    const theta = Math.atan2(direction.z, direction.x);
+                    const phi = Math.acos(direction.y / radius);
+                    
+                    const newTheta = theta - deltaX * 0.01;
+                    const newPhi = Math.max(0.1, Math.min(Math.PI - 0.1, phi + deltaY * 0.01));
+                    
+                    // Convert back to Cartesian
+                    camera.position.x = x + radius * Math.sin(newPhi) * Math.cos(newTheta);
+                    camera.position.y = y + radius * Math.cos(newPhi);
+                    camera.position.z = z + radius * Math.sin(newPhi) * Math.sin(newTheta);
+                    
+                    camera.lookAt(x, y, z);
+                    
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                }
+            });
+            
+            container.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+            
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                cameraDistance += e.deltaY * 0.01;
+                cameraDistance = Math.max(10, Math.min(50, cameraDistance));
+                
+                // Get direction from epicenter to camera
+                const direction = new window.THREE.Vector3();
+                direction.subVectors(camera.position, new window.THREE.Vector3(x, y, z));
+                direction.normalize();
+                
+                // Move camera along direction vector
+                camera.position.set(x, y, z);
+                camera.position.add(direction.multiplyScalar(cameraDistance));
+                camera.lookAt(x, y, z);
+            });
+            
+            // Animation loop with enhanced effects
             let pulseScale = 1.0;
+            let time = 0;
             function animate() {
                 requestAnimationFrame(animate);
+                time += 0.016; // ~60fps
                 
                 // Rotate Earth slowly
-                earth.rotation.y += 0.002;
+                earth.rotation.y += 0.001;
                 
-                // Pulse epicenter
-                pulseScale += 0.02;
-                if (pulseScale > 1.3) pulseScale = 1.0;
+                // Pulse epicenter with magnitude-based intensity
+                pulseScale = 1.0 + Math.sin(time * 2) * (0.2 + magnitude / 50);
                 epicenter.scale.set(pulseScale, pulseScale, pulseScale);
-                epicenterMaterial.opacity = 0.5 + (pulseScale - 1.0) * 0.5;
+                epicenterMaterial.opacity = 0.7 + Math.sin(time * 2) * 0.25;
+                
+                // Pulse rings
+                scene.children.forEach(child => {
+                    if (child.userData.pulseOffset !== undefined) {
+                        const ringPulse = 1.0 + Math.sin((time + child.userData.pulseOffset) * 1.5) * 0.3;
+                        child.scale.set(ringPulse, ringPulse, 1);
+                        child.material.opacity = 0.2 + Math.sin((time + child.userData.pulseOffset) * 1.5) * 0.2;
+                    }
+                });
                 
                 renderer.render(scene, camera);
             }
@@ -743,7 +981,10 @@
         let html = '';
         
         if (locations.length > 0 || education.length > 0 || venues.length > 0) {
-            html += '<h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #fff;">🏙️ Nearby Important Locations</h2>';
+            html += `<h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                <span style="display: inline-flex; align-items: center; color: #4A9EFF;">${getIconSVG('city', 24, '#4A9EFF')}</span>
+                Nearby Important Locations
+            </h2>`;
             
             if (locations.length > 0) {
                 html += `
@@ -799,7 +1040,10 @@
                             `).join('')}
                         </div>
                         <div style="margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; font-size: 0.875rem; color: rgba(255,255,255,0.7); font-style: italic;">
-                            💡 These venues may host concerts, festivals, sports events, or other gatherings. Check local event listings for scheduled activities.
+                            <span style="display: inline-flex; align-items: center; gap: 0.5rem; vertical-align: middle;">
+                                <span style="display: inline-flex; align-items: center; color: #4A9EFF;">${getIconSVG('lightbulb', 16, '#4A9EFF')}</span>
+                                These venues may host concerts, festivals, sports events, or other gatherings. Check local event listings for scheduled activities.
+                            </span>
                         </div>
                     </div>
                 `;
@@ -1127,6 +1371,16 @@
             
             bodyElement.innerHTML = bodyHTML;
             
+            // Render article tags if they exist
+            const tagsContainer = document.getElementById('article-tags');
+            if (tagsContainer && post.tags && Array.isArray(post.tags) && post.tags.length > 0) {
+                tagsContainer.style.display = 'flex';
+                tagsContainer.innerHTML = post.tags.map(tag => {
+                    const tagText = escapeHtml(tag);
+                    return `<a href="/index.html?tag=${encodeURIComponent(tag)}" class="article-tag">${tagText}</a>`;
+                }).join('');
+            }
+            
             // Initialize earthquake map and 3D visualization if it exists (after DOM update)
             if (isEarthquake && hasCoordinates) {
                 // Use setTimeout to ensure DOM is fully updated
@@ -1134,7 +1388,43 @@
                     initializeEarthquakeMap(post.lat, post.lon, magnitude, post.location_display || post.location);
                     const depth = post.assets?.depth || post.depth;
                     initialize3DVisualization(post.lat, post.lon, magnitude, depth, post.location_display || post.location);
+                    
+                    // Try to load animation if available (for magnitude 3.0+)
+                    const eventId = post.assets?.event_id || post.event_id || post.id;
+                    if (eventId && magnitude >= 3.0) {
+                        loadEarthquakeAnimation(eventId, magnitude);
+                    }
                 }, 100);
+            }
+            
+            /**
+             * Load earthquake animation if available
+             */
+            function loadEarthquakeAnimation(eventId, magnitude) {
+                const animationSection = document.getElementById('earthquake-animation-section');
+                const animationImg = document.getElementById('earthquake-animation-img');
+                if (!animationSection || !animationImg) return;
+                
+                // Try to fetch animation
+                const baseUrl = window.location.origin;
+                const animationUrl = `${baseUrl}/.netlify/functions/get-uploaded-image?key=earthquake-${eventId}-animation`;
+                
+                // Check if animation exists
+                fetch(animationUrl, { method: 'HEAD' })
+                    .then(response => {
+                        if (response.ok) {
+                            animationImg.src = animationUrl;
+                            animationImg.style.display = 'block';
+                            animationSection.style.display = 'block';
+                            animationImg.onerror = () => {
+                                animationSection.style.display = 'none';
+                            };
+                        }
+                    })
+                    .catch(() => {
+                        // Animation not available, hide section
+                        animationSection.style.display = 'none';
+                    });
             }
             
             // Initialize comments

@@ -832,6 +832,7 @@ exports.handler = async (event, context) => {
     const safeMagnitudeFormatted = magnitudeFormatted || 'N/A';
     const safeSeverity = severity || 'Unknown';
     const safeLocationDisplay = earthquake.location_display || 'Unknown Location';
+    const safeLocationEnglishName = earthquake.location_english_name || earthquake.assets?.location_english_name || null;
     const safeCoordinates = coordinates || null;
     const safeDepth = depth || null;
     
@@ -936,6 +937,9 @@ exports.handler = async (event, context) => {
                     </h1>
                     <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 500; color: #374151; line-height: 1.4;">
                       Near ${region || safeLocationDisplay}
+                      ${safeLocationEnglishName && safeLocationEnglishName !== safeLocationDisplay ? `
+                        <span style="font-size: 14px; color: #6B7280; font-weight: 400;"> (${safeLocationEnglishName})</span>
+                      ` : ''}
                     </p>
                     <p style="margin: 0 0 12px 0; font-size: 13px; color: #6B7280; line-height: 1.5;">
                       ${eventTime}
@@ -1016,6 +1020,13 @@ exports.handler = async (event, context) => {
                               </td>
                             </tr>
                           </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td align="center" style="padding-top: 12px;">
+                          <p style="margin: 0; font-size: 12px; color: #6B7280; line-height: 1.5;">
+                            Interactive 3D visualization • Advanced AI assessments • Animations
+                          </p>
                         </td>
                       </tr>
                       ${earthquake.usgs_event_url ? `

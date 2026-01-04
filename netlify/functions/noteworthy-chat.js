@@ -1236,6 +1236,9 @@ RESPONSE STYLE:
       let maxToolIterations = 3; // Prevent infinite loops
       let toolIteration = 0;
       
+      // Track email confirmation data for response (declared outside loop for scope)
+      let emailConfirmationData = null;
+      
       while (message && message.tool_calls && message.tool_calls.length > 0 && toolIteration < maxToolIterations) {
         toolIteration++;
         console.log(`[Noteworthy Chat] Tool call detected (iteration ${toolIteration}):`, 
@@ -1247,9 +1250,6 @@ RESPONSE STYLE:
           content: message.content || null,
           tool_calls: message.tool_calls
         });
-        
-        // Track email confirmation data for response
-        let emailConfirmationData = null;
         
         // Execute tool calls
         for (const toolCall of message.tool_calls) {
