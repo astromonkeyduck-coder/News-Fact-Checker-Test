@@ -151,27 +151,30 @@ function extractUSGSImages(eventDetail) {
   
   // Helper function to extract images from a product
   const extractFromProduct = (product, productType) => {
-    if (!product || !product.contents) return false;
+    if (!product) return false;
     
     let foundAny = false;
     
-    for (const [key, content] of Object.entries(product.contents)) {
-      if (!content || !content.url) continue;
-      
-      // Check if this looks like an image (more permissive)
-      if (isImageKey(key) || isImageKey(content.url)) {
+    // Check if product has contents (most common case)
+    if (product.contents && typeof product.contents === 'object') {
+      for (const [key, content] of Object.entries(product.contents)) {
+        if (!content || !content.url) continue;
+        
         const url = content.url;
         
         // Skip if we already have this exact URL
         if (usedUrls.has(url)) continue;
         
-        // Check if URL looks like an image (more permissive - check for image-like paths)
+        // More permissive: check if URL looks like an image OR if key suggests it's an image
+        // This catches images even if the URL doesn't have a file extension
         const isImageUrl = /\.(png|jpg|jpeg|gif|webp)/i.test(url) ||
                           /\/download\//i.test(url) ||
                           /\/image/i.test(url) ||
                           /\/map/i.test(url) ||
                           /\/plot/i.test(url) ||
-                          /shakemap/i.test(url);
+                          /shakemap/i.test(url) ||
+                          isImageKey(key) ||
+                          isImageKey(url);
         
         if (isImageUrl) {
           images.push({
@@ -183,6 +186,29 @@ function extractUSGSImages(eventDetail) {
           foundAny = true;
           
           // Stop after finding 2 images
+          if (images.length >= 2) return true;
+        }
+      }
+    }
+    
+    // Also check if product has a direct URL (some products might have images at product level)
+    if (!foundAny && product.url && typeof product.url === 'string') {
+      const url = product.url;
+      if (!usedUrls.has(url)) {
+        const isImageUrl = /\.(png|jpg|jpeg|gif|webp)/i.test(url) ||
+                          /\/download\//i.test(url) ||
+                          /\/image/i.test(url) ||
+                          /\/map/i.test(url) ||
+                          /shakemap/i.test(url);
+        
+        if (isImageUrl) {
+          images.push({
+            url: url,
+            type: productType,
+            filename: 'product-url',
+          });
+          usedUrls.add(url);
+          foundAny = true;
           if (images.length >= 2) return true;
         }
       }
@@ -274,12 +300,44 @@ function extractUSGSImages(eventDetail) {
     // Log available products for debugging
     const availableProducts = Object.keys(products);
     const productCounts = {};
+    const productDetails = {};
+    const productStructures = {};
+    
     for (const [key, productList] of Object.entries(products)) {
       productCounts[key] = Array.isArray(productList) ? productList.length : 0;
+      
+      // Log detailed structure of first product to help debug
+      if (Array.isArray(productList) && productList.length > 0) {
+        const firstProduct = productList[0];
+        productStructures[key] = {
+          hasContents: !!firstProduct?.contents,
+          contentsType: typeof firstProduct?.contents,
+          contentsIsObject: firstProduct?.contents && typeof firstProduct?.contents === 'object',
+          contentsKeys: firstProduct?.contents ? Object.keys(firstProduct?.contents).slice(0, 10) : [],
+          productKeys: Object.keys(firstProduct).slice(0, 10),
+          hasUrl: !!firstProduct?.url,
+          hasId: !!firstProduct?.id,
+          id: firstProduct?.id?.substring(0, 50)
+        };
+        
+        // Log sample content keys and URLs from first product
+        if (firstProduct?.contents && typeof firstProduct.contents === 'object') {
+          const contentEntries = Object.entries(firstProduct.contents).slice(0, 10);
+          productDetails[key] = {
+            sampleKeys: contentEntries.map(([k]) => k),
+            sampleUrls: contentEntries
+              .filter(([, c]) => c?.url)
+              .map(([, c]) => c.url.substring(0, 80))
+          };
+        }
+      }
     }
+    
     console.log(`[extractUSGSImages] ⚠️ No images found. Available products:`, {
       productTypes: availableProducts,
-      productCounts: productCounts
+      productCounts: productCounts,
+      productDetails: productDetails,
+      productStructures: productStructures
     });
   }
   
@@ -332,7 +390,9 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
             url: img?.url?.substring(0, 100)
           }))
         });
-        const imageBuffer = await generateImage(magnitude, location, usgsImagesArray, eventId, 'standard');
+        // Pass coordinates for satellite/map image generation
+        // coordinates format: [lon, lat, depth] from feature.geometry.coordinates
+        const imageBuffer = await generateImage(magnitude, location, usgsImagesArray, eventId, 'standard', coordinates);
         imageUrl = await storeImage(imageBuffer, eventId, 'standard');
         logger.info('Branded image generated via direct call', { 
           url: imageUrl,
@@ -394,7 +454,7 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
         location,
         usgsImages,
         eventId,
-          // Note: coordinates removed - user removed fallback image generation
+        coordinates, // [lon, lat, depth] - for satellite/map image generation
       }),
         signal: controller.signal,
     });
@@ -723,11 +783,12 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   const place = props.place || 'Unknown Location';
   const time = props.time || Date.now();
   
-  // Extract coordinates for enhanced location geocoding
+  // Extract coordinates for enhanced location geocoding and satellite image generation
   const coordinates = feature.geometry?.coordinates; // [lon, lat, depth]
   // Use nullish coalescing to preserve valid 0 values (prime meridian/equator)
   const lat = coordinates?.[1] ?? null;
   const lon = coordinates?.[0] ?? null;
+  const hasCoordinates = lat != null && lon != null;
   
   // Use enhanced location with reverse geocoding for more accurate location
   let locationDisplay = cleanLocation(place);
@@ -875,10 +936,14 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     // 1. Event doesn't exist yet (new earthquake)
     // 2. Event exists but has no image
     // 3. USGS images are now available (were empty before, now have images)
+    // 4. CRITICAL: If we have coordinates but no USGS images, regenerate to add satellite image
     const existingUsgsImages = existingEvent?.assets?.usgs_images || [];
+    // Use the hasCoordinates variable declared at line 791 (outer scope)
     const shouldGenerateNewImage = !existingEvent || 
                                    !existingEvent.image_url || 
-                                   (existingUsgsImages.length === 0 && usgsImages.length > 0);
+                                   (existingUsgsImages.length === 0 && usgsImages.length > 0) ||
+                                   // Regenerate if we have coordinates but no USGS images (to add satellite image)
+                                   (hasCoordinates && usgsImages.length === 0 && existingUsgsImages.length === 0);
     
     if (shouldGenerateNewImage) {
       // Generate branded image (will use template's baked-in images if usgsImages is empty)
