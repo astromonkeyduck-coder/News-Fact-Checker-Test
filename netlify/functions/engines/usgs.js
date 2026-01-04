@@ -372,8 +372,18 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
   // Removed magnitude >= 7.0 check - now sends for all
   
   // Check if alert already sent
+  // NOTE: This check is bypassed when forceEmail is true (alert_sent is reset before calling this function)
+  logger.info('📧 sendEmailAlert called', {
+    canonical_id: earthquake.canonical_id,
+    alert_sent: earthquake.alert_sent,
+    hasImageUrl: !!imageUrl
+  });
+  
   if (earthquake.alert_sent) {
-    logger.info('Alert already sent for this event', { canonical_id: earthquake.canonical_id });
+    logger.warn('⚠️ Alert already sent for this event - returning early', { 
+      canonical_id: earthquake.canonical_id,
+      alert_sent: earthquake.alert_sent
+    });
     return false;
   }
   
@@ -885,27 +895,28 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   });
   
   if (shouldSendEmail) {
-    // Only force email if it's new OR there's a new image
-    // Don't force duplicate emails just because it's the most recent
-    const shouldForceEmail = forceEmail && (isNew || hasNewImage);
+    // If forceEmail is true, always send (even if already sent)
+    // This ensures the most recent earthquake always gets an email
     const originalAlertSent = storedEvent.alert_sent;
     
-    if (shouldForceEmail && storedEvent.alert_sent) {
+    if (forceEmail && storedEvent.alert_sent) {
+      // Temporarily reset alert_sent to allow email to be sent
       storedEvent.alert_sent = false;
       logger.info('Forcing email for most recent earthquake', { 
         canonical_id: canonicalId,
-        reason: isNew ? 'new_earthquake' : 'new_image'
+        reason: forceEmail ? 'most_recent_earthquake' : (isNew ? 'new_earthquake' : 'new_image')
       });
-    } else if (forceEmail && storedEvent.alert_sent && !isNew && !hasNewImage) {
-      // Don't send duplicate email if already sent and no new image
-      logger.info('Skipping duplicate email - already sent and no new image', { 
-        canonical_id: canonicalId,
-        forceEmail,
-        isNew,
-        hasNewImage
-      });
-      return { isNew, event: storedEvent };
     }
+    
+    logger.info('🚀 SENDING EMAIL ALERT', {
+      canonical_id: canonicalId,
+      forceEmail,
+      isNew,
+      hasNewImage,
+      alert_sent_before: originalAlertSent,
+      alert_sent_after_reset: storedEvent.alert_sent,
+      hasImageUrl: !!imageUrl
+    });
     
     const alertSent = await sendEmailAlert(storedEvent, imageUrl, logger);
     if (alertSent) {
