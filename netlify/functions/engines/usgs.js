@@ -627,10 +627,10 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   
   const magnitude = props.mag || 0;
   
-  // Lower threshold for testing - process earthquakes >= 1.0
-  // Images will only be generated if magnitude >= 2.5 (see below)
-  if (magnitude < 1.0) {
-    logger.debug('Skipping earthquake below magnitude 1.0', { magnitude, eventId });
+  // Process earthquakes >= 0.5
+  // Images will only be generated if magnitude >= 0.5 (see below)
+  if (magnitude < 0.5) {
+    logger.debug('Skipping earthquake below magnitude 0.5', { magnitude, eventId });
     return null;
   }
   
@@ -700,13 +700,13 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     .eq('canonical_id', canonicalId)
     .single();
   
-  // Generate branded image ONLY if magnitude meets requirements (>= 1.5 for testing, normally 2.5)
+  // Generate branded image ONLY if magnitude meets requirements (>= 0.5)
   // Lower magnitude earthquakes are processed but won't get images
   let imageUrl = null;
   const coordinates = feature.geometry?.coordinates;
   
-  // Lower threshold to 1.5 for testing - change back to 2.5 later
-  const IMAGE_GENERATION_THRESHOLD = 1.5;
+  // Threshold set to 0.5
+  const IMAGE_GENERATION_THRESHOLD = 0.5;
   
   if (magnitude >= IMAGE_GENERATION_THRESHOLD) {
     // Only generate new image if:
