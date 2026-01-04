@@ -453,6 +453,7 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
   // STEP 6: Render SVG using resvg (supports embedded fonts better than librsvg)
   // resvg properly handles @font-face with data URIs and embedded base64 fonts
   let textOverlayBuffer;
+  const tempFontFiles = []; // Declare outside try block for cleanup in catch
   try {
     // resvg options - fonts are embedded in SVG via @font-face, but we also register font buffers
     // CRITICAL: Use 'original' mode to preserve exact SVG dimensions, don't scale
@@ -469,25 +470,45 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     };
     
     // CRITICAL: Register font buffers with resvg
-    // resvg expects fontFiles to be an array of Buffer objects directly
-    if (FONT_BUFFERS.regular && FONT_BUFFERS.bold) {
-      svgOptions.font.fontFiles = [
-        FONT_BUFFERS.regular,
-        FONT_BUFFERS.bold,
-      ];
-      console.log('[generate-earthquake-image] ✅ Registered font buffers with resvg', {
-        regularSize: FONT_BUFFERS.regular.length,
-        boldSize: FONT_BUFFERS.bold.length,
-        loadSystemFonts: true,
-        defaultFontFamily: 'Roboto'
-      });
-    } else {
-      console.warn('[generate-earthquake-image] ⚠️ Font buffers not available for resvg!', {
-        hasRegular: !!FONT_BUFFERS.regular,
-        hasBold: !!FONT_BUFFERS.bold
-      });
-      // Don't throw - let resvg try with system fonts
-      console.warn('[generate-earthquake-image] ⚠️ Will attempt rendering with system fonts only');
+    // Try writing fonts to temp files first (resvg may need file paths, not buffers)
+    try {
+      if (FONT_BUFFERS.regular && FONT_BUFFERS.bold) {
+        // Write fonts to temporary files in /tmp (available in Netlify functions)
+        const tempDir = '/tmp';
+        const regularFontPath = path.join(tempDir, `roboto-regular-${Date.now()}.ttf`);
+        const boldFontPath = path.join(tempDir, `roboto-bold-${Date.now()}.ttf`);
+        
+        fs.writeFileSync(regularFontPath, FONT_BUFFERS.regular);
+        fs.writeFileSync(boldFontPath, FONT_BUFFERS.bold);
+        
+        tempFontFiles.push(regularFontPath, boldFontPath);
+        svgOptions.font.fontFiles = tempFontFiles;
+        
+        console.log('[generate-earthquake-image] ✅ Registered font files with resvg', {
+          regularPath: regularFontPath,
+          boldPath: boldFontPath,
+          regularSize: FONT_BUFFERS.regular.length,
+          boldSize: FONT_BUFFERS.bold.length,
+          loadSystemFonts: true
+        });
+      } else {
+        console.warn('[generate-earthquake-image] ⚠️ Font buffers not available for resvg!', {
+          hasRegular: !!FONT_BUFFERS.regular,
+          hasBold: !!FONT_BUFFERS.bold
+        });
+        // Don't throw - let resvg try with system fonts
+        console.warn('[generate-earthquake-image] ⚠️ Will attempt rendering with system fonts only');
+      }
+    } catch (fontFileError) {
+      console.warn('[generate-earthquake-image] ⚠️ Failed to write font files, trying buffers instead:', fontFileError.message);
+      // Fallback to buffers if file writing fails
+      if (FONT_BUFFERS.regular && FONT_BUFFERS.bold) {
+        svgOptions.font.fontFiles = [
+          FONT_BUFFERS.regular,
+          FONT_BUFFERS.bold,
+        ];
+        console.log('[generate-earthquake-image] ✅ Using font buffers as fallback');
+      }
     }
     
     // Use resvg.Resvg constructor to render SVG to PNG
@@ -591,7 +612,34 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
         throw statsError; // Re-throw critical errors
       }
     }
+    
+    // Clean up temporary font files
+    if (tempFontFiles.length > 0) {
+      try {
+        tempFontFiles.forEach(fontPath => {
+          if (fs.existsSync(fontPath)) {
+            fs.unlinkSync(fontPath);
+          }
+        });
+        console.log('[generate-earthquake-image] ✅ Cleaned up temporary font files');
+      } catch (cleanupError) {
+        console.warn('[generate-earthquake-image] ⚠️ Failed to clean up temp font files:', cleanupError.message);
+      }
+    }
   } catch (resvgError) {
+    // Clean up temporary font files on error
+    if (tempFontFiles && tempFontFiles.length > 0) {
+      try {
+        tempFontFiles.forEach(fontPath => {
+          if (fs.existsSync(fontPath)) {
+            fs.unlinkSync(fontPath);
+          }
+        });
+      } catch (cleanupError) {
+        // Ignore cleanup errors
+      }
+    }
+    
     console.error('[generate-earthquake-image] ❌ resvg rendering failed:', resvgError.message);
     console.error('[generate-earthquake-image] ❌ resvg error stack:', resvgError.stack);
     // Don't fall back to broken rendering - throw error so we know it failed
