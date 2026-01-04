@@ -10106,160 +10106,108 @@ function initNewsletterSubscription() {
                 console.log('Using existing AI response, skipping text generation');
                 textResponse = Promise.resolve(aiResponse.innerHTML);
             } else {
-                // Show loading state but don't block
+                // Show loading state
                 if (aiResponse) {
-                    aiResponse.innerHTML = '<p style="color: rgba(255, 255, 255, 0.7);">🔍 Searching for breaking news about ' + currentCountry.name + '...</p>';
+                    aiResponse.innerHTML = '<p style="color: rgba(255, 255, 255, 0.7);">🤖 Generating comprehensive spotlight for ' + currentCountry.name + '...</p>';
                 }
                 
-                // FIRST: Search for breaking news about the country
-                const searchQuery = `breaking news ${currentCountry.name} today latest 2025`;
-                console.log('[Spotlight] 🔍 Searching for breaking news:', searchQuery);
+                // Comprehensive prompt focusing on culture, geopolitics, and profound insights
+                const textPrompt = `Provide a comprehensive, profound, and detailed spotlight on ${currentCountry.name}. This should be a sophisticated analysis covering:
+
+1. ## 🏛️ Geopolitical Context
+   - Current geopolitical position and strategic importance
+   - Regional influence and international relationships
+   - Key alliances, conflicts, or diplomatic relationships
+   - Economic power and global significance
+   - Military and security considerations
+
+2. ## 🎭 Cultural Depth
+   - Rich cultural traditions, customs, and practices
+   - Historical cultural influences and evolution
+   - Art, literature, music, and intellectual contributions
+   - Social structures, values, and worldviews
+   - Religious and philosophical traditions
+   - Language and communication styles
+
+3. ## 📜 Historical Significance
+   - Pivotal historical moments and their lasting impact
+   - How history shapes current identity and politics
+   - Historical relationships with other nations
+   - Colonial or imperial legacies (if applicable)
+   - National identity formation
+
+4. ## 🌍 Current State & Challenges
+   - Contemporary political landscape and key players
+   - Economic conditions and major industries
+   - Social issues, demographics, and internal dynamics
+   - Environmental challenges and resources
+   - Future prospects and emerging trends
+
+5. ## 💡 Unique Insights
+   - What makes this country particularly significant or interesting
+   - Lesser-known but important aspects
+   - Cultural nuances that outsiders might miss
+   - Intellectual or philosophical contributions to global thought
+
+Write in a sophisticated, analytical style. Be comprehensive (600-800 words), nuanced, and provide deep cultural and geopolitical insights. Use ## for section headers. Focus on profound understanding, not breaking news headlines.`;
                 
-                const searchPromise = fetch('/.netlify/functions/search-web', {
+                // Call the AI directly
+                textResponse = fetch('/.netlify/functions/noteworthy-chat', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        query: searchQuery
+                        message: textPrompt,
+                        chatHistory: []
                     })
-                }).then(response => {
+                }).then(async response => {
                     if (!response.ok) {
-                        console.warn('[Spotlight] Web search failed:', response.status);
-                        return { results: [] };
+                        // Try to get error details from response body
+                        let errorMessage = `API error: ${response.status}`;
+                        try {
+                            const errorText = await response.text();
+                            if (errorText) {
+                                try {
+                                    const errorData = JSON.parse(errorText);
+                                    errorMessage = errorData.error || errorData.message || errorMessage;
+                                    console.error('[Spotlight] API error details:', errorData);
+                                } catch (e) {
+                                    // If not JSON, use the text as error message
+                                    errorMessage = errorText.substring(0, 200);
+                                }
+                            }
+                        } catch (e) {
+                            // If we can't read the response, just use status code
+                        }
+                        throw new Error(errorMessage);
                     }
                     return response.json();
-                }).catch(error => {
-                    console.error('[Spotlight] Web search error:', error);
-                    return { results: [] };
-                });
-                
-                // Wait for search results, then build prompt with real-time news
-                textResponse = searchPromise.then(searchData => {
-                    const searchResults = searchData.results || [];
-                    console.log('[Spotlight] ✅ Found', searchResults.length, 'search results');
-                    
-                    // Build breaking news context from search results
-                    let breakingNewsContext = '';
-                    if (searchResults.length > 0) {
-                        breakingNewsContext = '\n\n**BREAKING NEWS CONTEXT (Real-time information from web search):**\n';
-                        searchResults.slice(0, 5).forEach((result, index) => {
-                            breakingNewsContext += `${index + 1}. **${result.title || 'News Item'}**\n`;
-                            breakingNewsContext += `   ${result.snippet || 'No details available'}\n`;
-                            if (result.url) {
-                                breakingNewsContext += `   Source: ${result.url}\n`;
-                            }
-                            breakingNewsContext += '\n';
-                        });
-                    } else {
-                        breakingNewsContext = '\n\n**Note:** Real-time web search did not return specific breaking news results. Use your knowledge to provide the most recent and relevant information available.';
-                    }
-                    
-                    const textPrompt = `You are a breaking news expert. Provide a spotlight on ${currentCountry.name} focusing on REAL, CURRENT breaking news and recent developments. 
-
-CRITICAL REQUIREMENTS:
-- Focus on BREAKING NEWS and CURRENT EVENTS (not general culture, history, or tourism)
-- Use the web search results provided below as your PRIMARY source for breaking news
-- If search results contain breaking news, prioritize and highlight those stories with specific details
-- Include specific details: dates, locations, names, and what makes it newsworthy
-- If no breaking news is found in search results, provide the MOST RECENT significant developments you know about (but clearly indicate if this is from your knowledge base, not real-time search)
-- Write in THREE sections with clear headers:
-
-1. ## 🔥 Breaking News
-   Current breaking news stories, recent events, or major developments happening RIGHT NOW or in the past few days/weeks. Prioritize the most urgent and impactful stories.
-
-2. ## 📰 Recent Developments  
-   Important recent news, policy changes, or significant events from the past few months that provide context for current events.
-
-3. ## 🌍 Current Context
-   What's happening in ${currentCountry.name} right now that people should know about - political, economic, social, or environmental developments.
-
-${breakingNewsContext}
-
-IMPORTANT FORMATTING AND CONTENT RULES:
-- Use ## for section headers (exactly as shown above)
-- Keep it engaging and informative, around 400-500 words total
-- Do NOT use markdown formatting (##, **, etc.) within paragraph text - only for section headers
-- Focus on REAL, VERIFIED breaking news and current events
-- Include specific dates, locations, names, and details when available from search results
-- If you reference information from search results, mention it naturally in context
-- NEVER make up or invent breaking news events
-- If no real breaking news is available, say so clearly rather than fabricating stories
-- If search results seem outdated or irrelevant, acknowledge this and provide the most recent verified information you have
-- Always prioritize accuracy and verification over sensationalism`;
-                    
-                    // Update loading message
-                    if (aiResponse) {
-                        aiResponse.innerHTML = '<p style="color: rgba(255, 255, 255, 0.7);">🤖 Generating breaking news spotlight...</p>';
-                    }
-                    
-                    // Now call the AI with the enhanced prompt
-                    return fetch('/.netlify/functions/noteworthy-chat', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            message: textPrompt,
-                            chatHistory: []
-                        })
-                    }).then(async response => {
-                        if (!response.ok) {
-                            // Try to get error details from response body
-                            let errorMessage = `API error: ${response.status}`;
-                            try {
-                                const errorText = await response.text();
-                                if (errorText) {
-                                    try {
-                                        const errorData = JSON.parse(errorText);
-                                        errorMessage = errorData.error || errorData.message || errorMessage;
-                                        console.error('[Spotlight] API error details:', errorData);
-                                    } catch (e) {
-                                        // If not JSON, use the text as error message
-                                        errorMessage = errorText.substring(0, 200);
-                                    }
-                                }
-                            } catch (e) {
-                                // If we can't read the response, just use status code
-                            }
-                            throw new Error(errorMessage);
-                        }
-                        return response.json();
-                    }).then(data => {
-                        if (data.reply) {
-                            aiThinking.style.display = 'none';
-                            const formattedResponse = formatAIResponse(data.reply);
-                            aiResponse.innerHTML = formattedResponse;
-                            return formattedResponse;
-                        } else {
-                            throw new Error('No reply from AI');
-                        }
-                    }).catch(async error => {
-                        // Suppress 429 (rate limit) errors - expected behavior
-                        const isRateLimit = error.message?.includes('429') || error.message?.includes('rate limit');
-                        if (!isRateLimit) {
-                            console.error('[Spotlight] Error fetching AI text content:', error);
-                            // Try to get more details from the error response if available
-                            if (error.response) {
-                                try {
-                                    const errorData = await error.response.json();
-                                    console.error('[Spotlight] Error details:', errorData);
-                                } catch (e) {
-                                    // Ignore JSON parse errors
-                                }
-                            }
-                        }
+                }).then(data => {
+                    if (data.reply) {
                         aiThinking.style.display = 'none';
-                        if (aiResponse) {
-                            if (isRateLimit) {
-                                aiResponse.innerHTML = '<p style="color: rgba(255, 200, 100, 0.9);">⚠️ Rate limit reached. Please try again in a moment.</p>';
-                            } else {
-                                aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Unable to load breaking news. Please try again later.</p>';
-                            }
+                        const formattedResponse = formatAIResponse(data.reply);
+                        aiResponse.innerHTML = formattedResponse;
+                        return formattedResponse;
+                    } else {
+                        throw new Error('No reply from AI');
+                    }
+                }).catch(async error => {
+                    // Suppress 429 (rate limit) errors - expected behavior
+                    const isRateLimit = error.message?.includes('429') || error.message?.includes('rate limit');
+                    if (!isRateLimit) {
+                        console.error('[Spotlight] Error fetching AI text content:', error);
+                    }
+                    aiThinking.style.display = 'none';
+                    if (aiResponse) {
+                        if (isRateLimit) {
+                            aiResponse.innerHTML = '<p style="color: rgba(255, 200, 100, 0.9);">⚠️ Rate limit reached. Please try again in a moment.</p>';
+                        } else {
+                            aiResponse.innerHTML = '<p style="color: rgba(255, 100, 100, 0.9);">⚠️ Unable to load spotlight. Please try again later.</p>';
                         }
-                        return ''; // Return empty string so Promise.allSettled doesn't fail
-                    });
-                }); // Close the searchPromise.then() chain
+                    }
+                    return ''; // Return empty string so Promise.allSettled doesn't fail
+                });
             }
             
             // Reset success flag at start of generation

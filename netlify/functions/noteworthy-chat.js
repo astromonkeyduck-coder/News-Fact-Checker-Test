@@ -1100,12 +1100,11 @@ RESPONSE STYLE:
 
     let r;
     try {
-      // For spotlight requests, do NOT use web search tool - use knowledge base only
-      // Enable web search for ALL requests (including spotlight) to get real-time current events
-      const useWebSearch = true; // Always enable deep research
+      // For spotlight requests, disable web search - just use knowledge base
+      const useWebSearch = !isSpotlightRequest; // Disable web search for spotlight
       
       if (isSpotlightRequest) {
-        console.log('[Noteworthy Chat] Spotlight request detected - enabling deep web research for current events');
+        console.log('[Noteworthy Chat] Spotlight request detected - using knowledge base only (no web search)');
       } else {
         console.log('[Noteworthy Chat] Using Chat Completions API with search_web function for reliable web search');
       }
@@ -1117,7 +1116,7 @@ RESPONSE STYLE:
         messages: messages,
       };
       
-      // Add tools for non-spotlight requests
+      // Add tools only for non-spotlight requests
       if (useWebSearch) {
         requestBody.tools = [
           {

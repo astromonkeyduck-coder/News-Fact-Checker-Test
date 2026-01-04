@@ -214,6 +214,13 @@ exports.handler = async (event, context) => {
     if (imageUrl) {
       console.log(`[send-earthquake-alert] 📸 Downloading image from: ${imageUrl}`);
       const imageData = await downloadImageForEmail(imageUrl);
+      console.log(`[send-earthquake-alert] 📸 Image download result:`, {
+        hasImageData: !!imageData,
+        hasBuffer: !!(imageData && imageData.buffer),
+        bufferLength: imageData?.buffer?.length || 0,
+        contentType: imageData?.contentType
+      });
+      
       if (imageData && imageData.buffer) {
         // Validate buffer
         if (!Buffer.isBuffer(imageData.buffer)) {
@@ -271,16 +278,26 @@ exports.handler = async (event, context) => {
         if (base64Content && base64Content.length > 0) {
           // Create CID (Content-ID) for inline image embedding
           // IMPORTANT: CID in content_id must match what's used in HTML cid: reference
-          const cidIdentifier = `earthquake-image-${earthquake.event_id || Date.now()}`;
+          // Use a simpler, more reliable CID format
+          const cidIdentifier = `earthquake-${earthquake.event_id || Date.now()}`;
+          
+          console.log(`[send-earthquake-alert] 📎 Creating attachment with CID: ${cidIdentifier}`);
+          console.log(`[send-earthquake-alert] 📎 Base64 length: ${base64Content.length}, Buffer length: ${imageData.buffer.length}`);
           
           imageAttachment = {
             filename: `earthquake-m${earthquake.magnitude.toFixed(1)}-${earthquake.event_id || 'unknown'}.png`,
-            content: base64Content,
+            content: base64Content, // Already base64 string
             content_type: imageData.contentType || 'image/png',
-            // Use same identifier - Resend will handle the Content-ID header format
-            // HTML will reference it as cid:identifier
+            // Resend expects content_id without cid: prefix - just the identifier
             content_id: cidIdentifier,
           };
+          
+          console.log(`[send-earthquake-alert] ✅ Attachment created:`, {
+            filename: imageAttachment.filename,
+            content_id: imageAttachment.content_id,
+            content_type: imageAttachment.content_type,
+            content_size: Math.round(imageAttachment.content.length / 1024) + 'KB'
+          });
           
           // Add <img> tag in HTML that references the CID
           // MUST match the content_id exactly (without cid: prefix)

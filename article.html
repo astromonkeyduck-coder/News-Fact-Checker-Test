@@ -91,35 +91,31 @@
     
     <style>
         /* Premium Article Page Styles */
-        /* Override global body/html styles for article pages */
-        html body.article-page,
+        /* Override global body/html styles for article pages - MUST override styles.css */
+        html.article-page-active,
+        html.article-page-active body,
         body.article-page {
             background: linear-gradient(180deg, #07152a 0%, #0d1f3a 50%, #07152a 100%) !important;
             background-color: #07152a !important;
+            background-image: none !important;
             padding-top: 0 !important;
             margin: 0;
             min-height: 100vh;
             color: white;
             position: relative;
-            overflow-x: hidden;
+            overflow-x: hidden !important;
         }
         
-        /* Ensure html element also has correct background when body has article-page class */
-        html.article-page-active {
-            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 50%, #07152a 100%) !important;
-            background-color: #07152a !important;
-            overflow-x: hidden;
+        /* Remove ALL background pseudo-elements from global styles.css */
+        body.article-page::before,
+        body.article-page::after,
+        html.article-page-active::before,
+        html.article-page-active::after {
+            display: none !important;
+            content: none !important;
         }
         
-        .article-page {
-            min-height: 100vh;
-            background: linear-gradient(180deg, #07152a 0%, #0d1f3a 50%, #07152a 100%);
-            color: white;
-            position: relative;
-            overflow-x: hidden;
-        }
-        
-        /* Subtle background with minimal visual noise - removed excessive horizontal lines */
+        /* Subtle background with NO horizontal lines */
         .article-page::before {
             content: '';
             position: fixed;
@@ -127,26 +123,12 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
-                radial-gradient(circle at 50% 50%, rgba(74, 144, 226, 0.03) 0%, transparent 70%),
-                linear-gradient(180deg, #07152a 0%, #0d1f3a 50%, #07152a 100%);
+            background: radial-gradient(circle at 50% 50%, rgba(74, 144, 226, 0.02) 0%, transparent 70%);
             z-index: 0;
             pointer-events: none;
         }
         
-        /* REMOVED: Excessive horizontal lines - replaced with single subtle radial glow */
-        .article-page::after {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 50% 50%, rgba(74, 144, 226, 0.02) 0%, transparent 60%);
-            z-index: 0;
-            pointer-events: none;
-            opacity: 1;
-        }
+        /* NO ::after pseudo-element - completely removed horizontal lines */
         
         /* Subtle Starfield Background - reduced opacity */
         .starfield {
@@ -192,6 +174,7 @@
                 padding-left: 24px;
                 padding-right: 24px;
                 padding-top: 48px;
+                padding-bottom: 80px;
             }
         }
         
@@ -199,7 +182,8 @@
             .article-container {
                 padding-left: 32px;
                 padding-right: 32px;
-                padding-top: 56px;
+                padding-top: 64px;
+                padding-bottom: 96px;
                 gap: 40px;
             }
         }
@@ -263,15 +247,22 @@
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-radius: 24px;
-            padding: 40px;
+            padding: 48px;
             border: 1px solid rgba(74, 144, 226, 0.2);
             box-shadow: 
                 0 8px 32px rgba(0, 0, 0, 0.25),
                 inset 0 1px 0 rgba(255, 255, 255, 0.08);
-            margin-bottom: 32px;
+            margin-bottom: 40px;
             position: relative;
             overflow: hidden;
             box-sizing: border-box;
+        }
+        
+        @media (max-width: 640px) {
+            .article-header-panel {
+                padding: 32px 24px;
+                margin-bottom: 32px;
+            }
         }
         
         .article-header-panel::before {
@@ -440,16 +431,23 @@
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
             border-radius: 24px;
-            padding: 32px;
+            padding: 40px;
             border: 1px solid rgba(74, 144, 226, 0.15);
             box-shadow: 
                 0 8px 32px rgba(0, 0, 0, 0.2),
                 inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            box-sizing: border-box;
         }
         
         @media (min-width: 1024px) {
             .article-body-panel {
-                padding: 48px;
+                padding: 56px;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .article-body-panel {
+                padding: 32px 24px;
             }
         }
         
@@ -493,6 +491,28 @@
             padding-top: 12px;
             padding-bottom: 12px;
             position: relative;
+        }
+        
+        /* Hide broken images gracefully */
+        .article-media img[src=""],
+        .article-media img:not([src]) {
+            display: none;
+        }
+        
+        .article-media .image-error {
+            color: rgba(255, 255, 255, 0.3);
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.8125rem;
+            margin: 0;
+            background: transparent;
+            border: none;
+        }
+        
+        .article-media:has(.image-error) {
+            min-height: 0;
+            padding: 0;
+            margin: 24px 0;
         }
         
         .article-body p.update-block::before {
@@ -1075,11 +1095,6 @@
             </nav>
         </div>
     </header>
-    
-    <!-- DEBUG: ARTICLE PAGE - VERIFY THIS APPEARS -->
-    <div style="position: fixed; top: 80px; left: 0; right: 0; background: #ff0000; color: white; padding: 20px; text-align: center; z-index: 9999; font-size: 24px; font-weight: bold;">
-        🔴 DEBUG: ARTICLE PAGE - IF YOU SEE THIS, WE'RE EDITING THE RIGHT FILE 🔴
-    </div>
     
     <!-- Main Article Content -->
     <main class="article-container">
