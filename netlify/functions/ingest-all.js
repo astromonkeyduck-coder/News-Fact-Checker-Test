@@ -7,20 +7,44 @@
  * Configure in Netlify Dashboard → Functions → ingest-all → Schedule
  */
 
-const supabase = require('./lib/supabaseClient');
-const { createLogger } = require('./lib/logger');
-const crypto = require('crypto');
+let supabase;
+let createLogger;
+let engines;
 
-// Explicitly require all engines so zisi bundler can find them
-// This helps zisi understand the dependencies at build time
-const engines = {
-  usgs: require('./engines/usgs'),
-  nws: require('./engines/nws'),
-  faa: require('./engines/faa'),
-  uscg: require('./engines/uscg'),
-  volcano: require('./engines/volcano'),
-  embassy: require('./engines/embassy'),
-};
+// Try to load dependencies - handle errors gracefully
+try {
+  console.log('[ingest-all] Loading dependencies...');
+  supabase = require('./lib/supabaseClient');
+  console.log('[ingest-all] ✓ Supabase client loaded');
+  
+  const loggerModule = require('./lib/logger');
+  createLogger = loggerModule.createLogger;
+  console.log('[ingest-all] ✓ Logger loaded');
+  
+  // Explicitly require all engines so zisi bundler can find them
+  // This helps zisi understand the dependencies at build time
+  console.log('[ingest-all] Loading engines...');
+  engines = {};
+  
+  const engineList = ['usgs', 'nws', 'faa', 'uscg', 'volcano', 'embassy'];
+  for (const engineName of engineList) {
+    try {
+      engines[engineName] = require(`./engines/${engineName}`);
+      console.log(`[ingest-all] ✓ Engine ${engineName} loaded`);
+    } catch (engineError) {
+      console.error(`[ingest-all] ✗ Failed to load engine ${engineName}:`, engineError.message);
+      // Continue loading other engines
+    }
+  }
+  
+  console.log('[ingest-all] ✓ All dependencies loaded');
+} catch (initError) {
+  console.error('[ingest-all] Initialization error:', initError);
+  console.error('[ingest-all] Error stack:', initError.stack);
+  // Will be handled in handler
+}
+
+const crypto = require('crypto');
 
 /**
  * Check if an engine is enabled
@@ -133,73 +157,168 @@ async function runEngine(engineName) {
  * Main handler
  */
 exports.handler = async (event, context) => {
-  const dryRun = isDryRun();
-  console.log(`[ingest-all] Starting ingestion run (DRY_RUN=${dryRun})`);
-  
-  const engines = ['usgs', 'nws', 'faa', 'uscg', 'volcano', 'embassy'];
-  const results = {
-    started_at: new Date().toISOString(),
-    dry_run: dryRun,
-    engines: {},
-    summary: {
-      total_engines: 0,
-      enabled_engines: 0,
-      successful: 0,
-      failed: 0,
-    },
+  const startTime = Date.now();
+  const getRemainingTime = () => {
+    if (context && typeof context.getRemainingTimeInMillis === 'function') {
+      return context.getRemainingTimeInMillis();
+    }
+    // Fallback: assume 26 seconds for pro tier, 10 seconds for free tier
+    const elapsed = Date.now() - startTime;
+    return Math.max(2000, 26000 - elapsed); // Leave 2 seconds buffer
   };
   
-  // Run each enabled engine sequentially
-  for (const engine of engines) {
-    const enabled = isEngineEnabled(engine);
-    results.summary.total_engines++;
-    
-    if (!enabled) {
-      console.log(`[ingest-all] Engine ${engine} is disabled (ENABLE_${engine.toUpperCase()}=false)`);
-      results.engines[engine] = { enabled: false, skipped: true };
-      continue;
-    }
-    
-    results.summary.enabled_engines++;
-    console.log(`[ingest-all] Running engine: ${engine}`);
-    
-    try {
-      const result = await runEngine(engine);
-      results.engines[engine] = {
-        enabled: true,
-        success: result.success,
-        count_new: result.count_new || 0,
-        count_updated: result.count_updated || 0,
-        count_total_seen: result.count_total_seen || 0,
-        error: result.error || null,
-      };
-      
-      if (result.success) {
-        results.summary.successful++;
-      } else {
-        results.summary.failed++;
-      }
-    } catch (error) {
-      console.error(`[ingest-all] Fatal error running engine ${engine}:`, error);
-      results.engines[engine] = {
-        enabled: true,
+  console.log('[ingest-all] Handler invoked');
+  console.log('[ingest-all] Remaining time:', getRemainingTime(), 'ms');
+  
+  // Check if dependencies loaded successfully
+  if (!supabase) {
+    const errorMsg = 'Supabase client not initialized. Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.';
+    console.error(`[ingest-all] ${errorMsg}`);
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         success: false,
-        error: error.message,
-      };
-      results.summary.failed++;
-    }
+        error: errorMsg,
+        hint: 'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Netlify environment variables',
+      }),
+    };
   }
   
-  results.finished_at = new Date().toISOString();
-  console.log(`[ingest-all] Completed: ${results.summary.successful} successful, ${results.summary.failed} failed`);
+  if (!engines || !createLogger) {
+    const errorMsg = 'Engines or logger not initialized. Check function dependencies.';
+    console.error(`[ingest-all] ${errorMsg}`);
+    console.error('[ingest-all] engines:', !!engines, 'createLogger:', !!createLogger);
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        success: false,
+        error: errorMsg,
+      }),
+    };
+  }
   
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(results, null, 2),
-  };
+  try {
+    const dryRun = isDryRun();
+    console.log(`[ingest-all] Starting ingestion run (DRY_RUN=${dryRun})`);
+    console.log(`[ingest-all] Available engines:`, Object.keys(engines));
+    
+    const engineList = ['usgs', 'nws', 'faa', 'uscg', 'volcano', 'embassy'];
+    const results = {
+      started_at: new Date().toISOString(),
+      dry_run: dryRun,
+      engines: {},
+      summary: {
+        total_engines: 0,
+        enabled_engines: 0,
+        successful: 0,
+        failed: 0,
+      },
+    };
+    
+    // Run each enabled engine sequentially
+    for (const engine of engineList) {
+      // Check timeout before each engine
+      const remaining = getRemainingTime();
+      if (remaining < 5000) {
+        console.warn(`[ingest-all] ⚠️ Low time remaining (${remaining}ms), skipping remaining engines`);
+        results.summary.timeout_warning = true;
+        break;
+      }
+      
+      const enabled = isEngineEnabled(engine);
+      results.summary.total_engines++;
+      
+      if (!enabled) {
+        console.log(`[ingest-all] Engine ${engine} is disabled (ENABLE_${engine.toUpperCase()}=false)`);
+        results.engines[engine] = { enabled: false, skipped: true };
+        continue;
+      }
+      
+      // Check if engine module exists
+      if (!engines[engine]) {
+        console.error(`[ingest-all] Engine ${engine} module not found`);
+        results.engines[engine] = {
+          enabled: true,
+          success: false,
+          error: 'Engine module not loaded',
+        };
+        results.summary.failed++;
+        continue;
+      }
+      
+      results.summary.enabled_engines++;
+      console.log(`[ingest-all] Running engine: ${engine} (${remaining}ms remaining)`);
+      
+      try {
+        const engineStartTime = Date.now();
+        const result = await runEngine(engine);
+        const engineDuration = Date.now() - engineStartTime;
+        console.log(`[ingest-all] Engine ${engine} completed in ${engineDuration}ms`);
+        
+        results.engines[engine] = {
+          enabled: true,
+          success: result.success,
+          count_new: result.count_new || 0,
+          count_updated: result.count_updated || 0,
+          count_total_seen: result.count_total_seen || 0,
+          error: result.error || null,
+          duration_ms: engineDuration,
+        };
+        
+        if (result.success) {
+          results.summary.successful++;
+        } else {
+          results.summary.failed++;
+        }
+      } catch (error) {
+        console.error(`[ingest-all] Fatal error running engine ${engine}:`, error);
+        console.error(`[ingest-all] Error stack:`, error.stack);
+        results.engines[engine] = {
+          enabled: true,
+          success: false,
+          error: error.message,
+          error_type: error.name,
+        };
+        results.summary.failed++;
+      }
+    }
+    
+    results.finished_at = new Date().toISOString();
+    results.duration_ms = Date.now() - startTime;
+    console.log(`[ingest-all] Completed in ${results.duration_ms}ms: ${results.summary.successful} successful, ${results.summary.failed} failed`);
+    
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(results, null, 2),
+    };
+  } catch (error) {
+    console.error('[ingest-all] Fatal error in handler:', error);
+    console.error('[ingest-all] Error name:', error.name);
+    console.error('[ingest-all] Error message:', error.message);
+    console.error('[ingest-all] Error stack:', error.stack);
+    
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        success: false,
+        error: error.message,
+        error_type: error.name,
+        stack: process.env.NETLIFY_DEV ? error.stack : undefined,
+      }),
+    };
+  }
 };
 
 // Scheduled function configuration

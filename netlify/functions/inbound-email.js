@@ -116,8 +116,14 @@ function containsIngestCommand(subject, textBody, htmlBody) {
     foundInText,
     foundInHtml,
     shouldTrigger,
-    subjectPreview: subjectStr.substring(0, 50),
-    textPreview: textStr.substring(0, 50)
+    subjectPreview: subjectStr.substring(0, 100),
+    textPreview: textStr.substring(0, 100),
+    htmlPreview: htmlStr.substring(0, 100),
+    subjectLength: subjectStr.length,
+    textLength: textStr.length,
+    htmlLength: htmlStr.length,
+    rawSubject: subject,
+    rawTextBody: textBody?.substring(0, 100)
   });
   
   return shouldTrigger;
@@ -294,9 +300,17 @@ exports.handler = async (event, context) => {
     const eventType = webhookData.type || 'email.received';
     const emailData = webhookData.data || webhookData;
     
-    // Extract email information
-    const fromEmail = emailData.from || emailData.from_email || emailData.sender || '';
-    let toEmail = emailData.to || emailData.to_email || emailData.recipient || '';
+    // DEBUG: Log full webhook structure to understand format
+    console.log('[Inbound Email] Full webhook structure:', {
+      hasType: !!webhookData.type,
+      hasData: !!webhookData.data,
+      dataKeys: webhookData.data ? Object.keys(webhookData.data) : [],
+      topLevelKeys: Object.keys(webhookData)
+    });
+    
+    // Extract email information - try multiple field names
+    const fromEmail = emailData.from || emailData.from_email || emailData.sender || emailData['from'] || '';
+    let toEmail = emailData.to || emailData.to_email || emailData.recipient || emailData['to'] || '';
     
     // Handle array format (e.g., ["email@example.com"] or [{email: "email@example.com"}])
     if (Array.isArray(toEmail)) {
@@ -311,16 +325,22 @@ exports.handler = async (event, context) => {
     // Ensure toEmail is a string
     toEmail = String(toEmail || '');
     
-    const subject = emailData.subject || '';
-    const textBody = emailData.text || emailData.text_body || emailData.body || '';
-    const htmlBody = emailData.html || emailData.html_body || '';
+    // Extract subject and body - try multiple field names
+    const subject = emailData.subject || emailData['subject'] || emailData.Subject || '';
+    const textBody = emailData.text || emailData.text_body || emailData.body || emailData['text'] || emailData.plain_text || '';
+    const htmlBody = emailData.html || emailData.html_body || emailData['html'] || emailData.HTML || '';
 
     console.log('[Inbound Email] Email details:', {
       from: fromEmail,
       to: toEmail,
       subject: subject,
+      subjectLength: subject.length,
+      textBodyLength: textBody.length,
+      htmlBodyLength: htmlBody.length,
       hasText: !!textBody,
       hasHtml: !!htmlBody,
+      textBodyPreview: textBody.substring(0, 100),
+      subjectPreview: subject.substring(0, 100)
     });
 
     // Check if email is to richard@noteworthynews.co
