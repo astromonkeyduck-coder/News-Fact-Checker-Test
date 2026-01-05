@@ -217,6 +217,11 @@ function extractUSGSImages(eventDetail) {
   // Use new extraction method
   const candidates = extractUsgsProductImages(eventDetail);
   
+  // Handle case where extractUsgsProductImages returns undefined or null
+  if (!candidates || !Array.isArray(candidates)) {
+    return [];
+  }
+  
   // Convert to legacy format
   const images = candidates.map(c => ({
     url: c.url,
