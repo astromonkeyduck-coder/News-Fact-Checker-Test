@@ -1841,6 +1841,7 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   
   return { isNew, event: storedEvent };
 }
+}
 
 /**
  * Run USGS engine
@@ -1948,4 +1949,3 @@ module.exports = {
   fetchEventDetail,
   extractUSGSImages,
 };
-}
