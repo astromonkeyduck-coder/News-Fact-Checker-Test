@@ -47,7 +47,7 @@ const ENABLE_4K = true;
 // DYNAMIC TEXT PLACEMENT
 const ANCHOR_X = 50;
 const ALIGN_SHIFT_X = 18;
-const HEADLINE_BASELINE_Y_BASE = 70; // Moved up to be above red banner, then down 20px
+const HEADLINE_BASELINE_Y_BASE = 100; // Moved up to be above red banner, then down 20px, then down another 20px, then down 10px
 const HEADLINE_BLOCK_OFFSET_Y = 100;
 const HEADLINE_BASELINE_Y = HEADLINE_BASELINE_Y_BASE + HEADLINE_BLOCK_OFFSET_Y;
 const LOCATION_OFFSET = 75;
@@ -337,7 +337,10 @@ function createVisualEffectsSVG(width, height, magnitude, scaleFactor = 1.0) {
 /**
  * Download image from URL
  */
-async function downloadImage(url, retries = 3) {
+/**
+ * PHASE 2: Enhanced image download with detailed logging
+ */
+async function downloadImage(url, retries = 5) {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       console.log(`[generate-earthquake-image] 📥 Downloading image (attempt ${attempt + 1}/${retries}): ${url.substring(0, 100)}`);
@@ -348,25 +351,45 @@ async function downloadImage(url, retries = 3) {
       const response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; NoteworthyNews/1.0)',
-          'Accept': 'image/png,image/jpeg,image/gif,image/webp,*/*'
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'image/png,image/jpeg,image/gif,image/webp,*/*',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Referer': 'https://noteworthynews.co/'
         }
       });
       
       clearTimeout(timeoutId);
       
+      const status = response.status;
+      const contentType = response.headers.get('content-type') || '';
+      
+      // PHASE 2: Detailed logging
+      console.log(`[generate-earthquake-image] 📊 Download response:`, {
+        url: url.substring(0, 100),
+        attempt: attempt + 1,
+        status,
+        contentType,
+        contentLength: response.headers.get('content-length') || 'unknown'
+      });
+      
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(`HTTP ${status}: ${response.statusText}`);
       }
       
-      const contentType = response.headers.get('content-type') || '';
+      // PHASE 2: Fail if content-type is text/html or application/json (likely HTML landing page)
+      if (contentType.includes('text/html') || contentType.includes('application/json')) {
+        console.error(`[generate-earthquake-image] ❌ Response is HTML/JSON, not an image (content-type: ${contentType})`);
+        throw new Error(`Expected image but got ${contentType}`);
+      }
+      
       if (!contentType.startsWith('image/')) {
-        console.warn(`[generate-earthquake-image] ⚠️ Response is not an image (content-type: ${contentType}), but proceeding...`);
+        console.warn(`[generate-earthquake-image] ⚠️ Response content-type is not image/* (${contentType}), but proceeding...`);
       }
       
       const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
       
-      // Validate it's actually an image by checking magic bytes
+      // PHASE 2: Validate magic bytes - fail if not an image
       const bytes = new Uint8Array(arrayBuffer);
       const isPNG = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47;
       const isJPEG = bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF;
@@ -375,11 +398,20 @@ async function downloadImage(url, retries = 3) {
                      bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50;
       
       if (!isPNG && !isJPEG && !isGIF && !isWebP) {
-        console.warn(`[generate-earthquake-image] ⚠️ Downloaded data doesn't appear to be a valid image (magic bytes: ${Array.from(bytes.slice(0, 4)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ')}), but proceeding...`);
+        const magicBytes = Array.from(bytes.slice(0, 4)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' ');
+        console.error(`[generate-earthquake-image] ❌ Downloaded data is not a valid image (magic bytes: ${magicBytes})`);
+        throw new Error(`Invalid image format (magic bytes: ${magicBytes})`);
       }
       
-      const buffer = Buffer.from(arrayBuffer);
-      console.log(`[generate-earthquake-image] ✅ Successfully downloaded image: ${Math.round(buffer.length / 1024)}KB (${contentType})`);
+      // PHASE 2: Final success log with details
+      console.log(`[generate-earthquake-image] ✅ Successfully downloaded image:`, {
+        url: url.substring(0, 100),
+        attempt: attempt + 1,
+        status,
+        contentType,
+        bufferSize: `${Math.round(buffer.length / 1024)}KB`,
+        format: isPNG ? 'PNG' : isJPEG ? 'JPEG' : isGIF ? 'GIF' : isWebP ? 'WebP' : 'unknown'
+      });
       return buffer;
       
     } catch (error) {
@@ -388,6 +420,12 @@ async function downloadImage(url, retries = 3) {
         console.error(`[generate-earthquake-image] ❌ Download timeout (attempt ${attempt + 1}/${retries}): ${url.substring(0, 100)}`);
       } else {
         console.error(`[generate-earthquake-image] ❌ Download failed (attempt ${attempt + 1}/${retries}): ${error.message}`);
+        console.error(`[generate-earthquake-image] ❌ Error details:`, {
+          name: error.name,
+          message: error.message,
+          code: error.code,
+          stack: error.stack?.substring(0, 200)
+        });
       }
       
       if (isLastAttempt) {
@@ -477,70 +515,240 @@ async function prepareUSGSImage(imageBuffer, targetWidth, targetHeight) {
  * @param {string} templateType - 'standard' (4K), 'square' (1080x1080), 'wide' (1920x1080)
  */
 /**
- * Generate location map image URL from coordinates
- * CREDIBILITY REQUIREMENTS:
- * - Always includes epicenter marker (red dot/pin)
- * - Marker size scales with magnitude (subtle for M<3, more visible for M5+)
- * - Uses terrain map style (NOT satellite imagery)
- * - Returns null if coordinates are missing (map omitted entirely)
+ * PHASE 3: Generate fallback location map image (server-side, no external DNS dependency)
+ * Creates a simple location card image with gradient background, pin icon, and coordinates
  */
-function generateLocationMapUrl(lat, lon, magnitude = 0, zoom = 11, width = 600, height = 400) {
-  if (lat == null || lon == null) return null;
-  
-  // Scale marker prominence by magnitude for credibility
-  // Always use red-pushpin (standard supported marker style)
-  // Adjust zoom level to control marker prominence:
-  // - M < 3: Lower zoom (wider view) = marker appears smaller/more subtle
-  // - M 3-5: Medium zoom = balanced view
-  // - M 5+: Higher zoom (closer view) = marker appears larger/more prominent
-  const markerStyle = 'red-pushpin'; // Standard marker, always visible
-  
-  // Adjust zoom level based on magnitude for marker prominence and context
-  let adjustedZoom = zoom;
-  if (magnitude >= 6.0) {
-    adjustedZoom = 11; // Closer view for major quakes (marker more prominent)
-  } else if (magnitude >= 5.0) {
-    adjustedZoom = 11; // Standard zoom for significant quakes
-  } else if (magnitude >= 3.0) {
-    adjustedZoom = 10; // Slightly wider view for medium quakes
-  } else {
-    adjustedZoom = 9; // Wider view for small quakes (marker appears more subtle)
+async function renderFallbackMapPng({ lat, lon, zoom = 11, width = 600, height = 400, locationText = null }) {
+  try {
+    // Create a simple gradient background (dark to light)
+    const gradient = sharp({
+      create: {
+        width: width,
+        height: height,
+        channels: 3,
+        background: { r: 30, g: 30, b: 40 } // Dark blue-gray
+      }
+    });
+    
+    // Create gradient overlay (lighter at top, darker at bottom)
+    const gradientOverlay = Buffer.from(`
+      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:rgba(60,80,120,0.6);stop-opacity:1" />
+            <stop offset="100%" style="stop-color:rgba(20,30,50,0.8);stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <rect width="${width}" height="${height}" fill="url(#grad)" />
+      </svg>
+    `);
+    
+    // Composite gradient
+    let mapImage = await gradient
+      .composite([{ input: gradientOverlay, blend: 'over' }])
+      .png()
+      .toBuffer();
+    
+    // Add text overlay with location info
+    const textSVG = Buffer.from(`
+      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <text x="${width / 2}" y="${height / 2 - 30}" 
+              font-family="Arial, sans-serif" font-size="24" font-weight="bold" 
+              fill="#FFFFFF" text-anchor="middle">
+          ${locationText ? escapeSVGText(locationText) : 'Earthquake Location'}
+        </text>
+        <text x="${width / 2}" y="${height / 2 + 10}" 
+              font-family="Arial, sans-serif" font-size="18" 
+              fill="#CCCCCC" text-anchor="middle">
+          ${lat.toFixed(4)}°N, ${Math.abs(lon).toFixed(4)}°${lon < 0 ? 'W' : 'E'}
+        </text>
+        <!-- Simple pin icon (red circle) -->
+        <circle cx="${width / 2}" cy="${height / 2 - 50}" r="12" fill="#FF0000" stroke="#FFFFFF" stroke-width="2"/>
+      </svg>
+    `);
+    
+    mapImage = await sharp(mapImage)
+      .composite([{ input: textSVG, blend: 'over' }])
+      .png()
+      .toBuffer();
+    
+    console.log(`[generate-earthquake-image] ✅ Generated fallback map image: ${width}x${height} (${Math.round(mapImage.length / 1024)}KB)`);
+    return mapImage;
+  } catch (error) {
+    console.error(`[generate-earthquake-image] ❌ Error generating fallback map:`, error.message);
+    return null;
   }
-  
-  // Primary: OpenStreetMap France static map service (terrain style, NOT satellite)
-  // Always includes epicenter marker for credibility
-  const mapUrl = `https://staticmap.openstreetmap.fr/staticmap.php?center=${lat},${lon}&zoom=${adjustedZoom}&size=${width}x${height}&markers=${lat},${lon},${markerStyle}&maptype=terrain`;
-  
-  return mapUrl;
 }
 
-async function generateImage(magnitude, location, usgsImages, eventId, templateType = 'standard', coordinates = null) {
-  // CRITICAL: Validate usgsImages is an array BEFORE any operations
-  // This prevents TypeError from .slice() or .length on non-array types
-  if (!Array.isArray(usgsImages)) {
-    console.warn(`[generate-earthquake-image] ⚠️ usgsImages is not an array, converting:`, {
-      type: typeof usgsImages,
-      value: usgsImages
-    });
-    usgsImages = usgsImages ? [usgsImages] : [];
+/**
+ * PHASE 4: Build exactly 2 image sources (USGS or fallback)
+ * Returns array of [{ type: "usgs"|"fallback", buffer, label }] with exactly 2 items
+ */
+async function buildTwoImageSources({ usgsCandidates, coordinates, locationText, imageWidth, imageHeight, logger }) {
+  const sources = [];
+  const maxImages = 2;
+  
+  logger = logger || { info: console.log, warn: console.warn, error: console.error };
+  
+  // PHASE 4: Try to download/process USGS images in priority order
+  if (usgsCandidates && usgsCandidates.length > 0) {
+    logger.info(`[buildTwoImageSources] 📸 Processing ${usgsCandidates.length} USGS candidate(s)...`);
+    
+    for (const candidate of usgsCandidates) {
+      if (sources.length >= maxImages) break;
+      
+      try {
+        const imageBuffer = await downloadImage(candidate.url, 3);
+        if (imageBuffer) {
+          const processedImage = await prepareUSGSImage(imageBuffer, imageWidth, imageHeight);
+          if (processedImage) {
+            sources.push({
+              type: 'usgs',
+              buffer: processedImage,
+              label: `${candidate.productType}/${candidate.path || 'image'}`,
+              url: candidate.url
+            });
+            logger.info(`[buildTwoImageSources] ✅ Added USGS image ${sources.length}/${maxImages}: ${candidate.productType}`);
+          } else {
+            logger.warn(`[buildTwoImageSources] ⚠️ Failed to process USGS image: ${candidate.url.substring(0, 80)}`);
+          }
+        } else {
+          logger.warn(`[buildTwoImageSources] ⚠️ Failed to download USGS image: ${candidate.url.substring(0, 80)}`);
+        }
+      } catch (error) {
+        logger.warn(`[buildTwoImageSources] ⚠️ Error processing USGS candidate: ${error.message}`);
+      }
+    }
+  } else {
+    logger.info(`[buildTwoImageSources] ℹ️ No USGS candidates provided`);
   }
   
-  // Now safe to log with array operations
+  // PHASE 4: Fill remaining slots with fallback maps
+  const fallbacksNeeded = maxImages - sources.length;
+  if (fallbacksNeeded > 0 && coordinates && coordinates.lat != null && coordinates.lon != null) {
+    logger.info(`[buildTwoImageSources] 🗺️ Generating ${fallbacksNeeded} fallback map(s)...`);
+    
+    for (let i = 0; i < fallbacksNeeded; i++) {
+      const fallbackMap = await renderFallbackMapPng({
+        lat: coordinates.lat,
+        lon: coordinates.lon,
+        width: imageWidth,
+        height: imageHeight,
+        locationText: locationText || 'Earthquake Location'
+      });
+      
+      if (fallbackMap) {
+        const processedMap = await prepareUSGSImage(fallbackMap, imageWidth, imageHeight);
+        if (processedMap) {
+          sources.push({
+            type: 'fallback',
+            buffer: processedMap,
+            label: `location-map-${i + 1}`,
+            url: null
+          });
+          logger.info(`[buildTwoImageSources] ✅ Added fallback map ${sources.length}/${maxImages}`);
+        }
+      }
+    }
+  }
+  
+  // PHASE 4: Worst case - duplicate first image if we still don't have 2
+  if (sources.length === 1) {
+    logger.warn(`[buildTwoImageSources] ⚠️ Only 1 image available, duplicating to reach 2`);
+    sources.push({
+      type: sources[0].type,
+      buffer: sources[0].buffer,
+      label: `${sources[0].label}-duplicate`,
+      url: sources[0].url
+    });
+  }
+  
+  // PHASE 4: If still 0, create 2 fallback maps (no coordinates case)
+  if (sources.length === 0) {
+    logger.warn(`[buildTwoImageSources] ⚠️ No images available, creating 2 generic fallback maps`);
+    for (let i = 0; i < 2; i++) {
+      const fallbackMap = await renderFallbackMapPng({
+        lat: 0,
+        lon: 0,
+        width: imageWidth,
+        height: imageHeight,
+        locationText: locationText || 'Location Unknown'
+      });
+      if (fallbackMap) {
+        const processedMap = await prepareUSGSImage(fallbackMap, imageWidth, imageHeight);
+        if (processedMap) {
+          sources.push({
+            type: 'fallback',
+            buffer: processedMap,
+            label: `generic-fallback-${i + 1}`,
+            url: null
+          });
+        }
+      }
+    }
+  }
+  
+  logger.info(`[buildTwoImageSources] ✅ Final: ${sources.length} image source(s) ready`, {
+    types: sources.map(s => s.type),
+    labels: sources.map(s => s.label)
+  });
+  
+  return sources.slice(0, maxImages); // Guarantee exactly 2
+}
+
+/**
+ * PHASE 5: Updated to fetch GeoJSON detail and extract products internally
+ */
+async function generateImage(magnitude, location, eventId, templateType = 'standard', coordinates = null, detailUrl = null) {
+  // PHASE 5: Fetch GeoJSON detail and extract products
+  // Import from engines/usgs.js (functions are exported)
+  const usgsEngine = require('./engines/usgs');
+  const fetchUsgsDetailGeoJson = usgsEngine.fetchUsgsDetailGeoJson;
+  const extractUsgsProductImages = usgsEngine.extractUsgsProductImages;
+  
   console.log(`[generate-earthquake-image] 📥 INPUT VALIDATION:`, {
     magnitude,
     location,
     eventId,
-    hasUsgsImages: !!(usgsImages && usgsImages.length > 0),
-    usgsImageCount: usgsImages?.length || 0,
-    usgsImagesType: typeof usgsImages,
-    isArray: Array.isArray(usgsImages),
-    usgsImagesPreview: usgsImages && usgsImages.length > 0 ? JSON.stringify(usgsImages.slice(0, 2).map(img => ({
-      hasUrl: !!img?.url,
-      url: img?.url?.substring(0, 80),
-      type: img?.type,
-      filename: img?.filename
-    }))) : 'null'
+    hasDetailUrl: !!detailUrl,
+    hasCoordinates: !!(coordinates && coordinates[0] != null && coordinates[1] != null)
   });
+  
+  // PHASE 5: Fetch GeoJSON detail
+  let usgsCandidates = [];
+  if (eventId || detailUrl) {
+    console.log(`[generate-earthquake-image] 📡 Fetching USGS detail GeoJSON...`);
+    const detailJson = await fetchUsgsDetailGeoJson({ eventId, detailUrl, logger: { info: console.log, warn: console.warn, error: console.error } });
+    
+    if (detailJson) {
+      // PHASE 5: Extract product images
+      usgsCandidates = extractUsgsProductImages(detailJson);
+      console.log(`[generate-earthquake-image] 📸 Extracted ${usgsCandidates.length} USGS image candidate(s) from products:`, {
+        productTypes: usgsCandidates.map(c => c.productType),
+        paths: usgsCandidates.map(c => c.path)
+      });
+      
+      // PHASE 5: Log WHY we got 0 images if that's the case
+      if (usgsCandidates.length === 0 && detailJson.properties && detailJson.properties.products) {
+        const products = detailJson.properties.products;
+        const productTypes = Object.keys(products);
+        const productCounts = {};
+        for (const [key, productList] of Object.entries(products)) {
+          productCounts[key] = Array.isArray(productList) ? productList.length : 0;
+        }
+        console.warn(`[generate-earthquake-image] ⚠️ No USGS image candidates found. Available products:`, {
+          productTypes,
+          productCounts,
+          reason: productTypes.length === 0 ? 'No products available yet (may take 5-10 minutes for shakemaps)' : 'Products exist but no image contents found'
+        });
+      }
+    } else {
+      console.warn(`[generate-earthquake-image] ⚠️ Failed to fetch USGS detail GeoJSON (eventId: ${eventId}, detailUrl: ${detailUrl})`);
+    }
+  } else {
+    console.warn(`[generate-earthquake-image] ⚠️ No eventId or detailUrl provided - skipping USGS image extraction`);
+  }
+  
   // Format magnitude text
   const magnitudeText = `M${magnitude.toFixed(1)}`;
   
@@ -911,250 +1119,76 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     },
   ];
   
-  // Add USGS images if provided
-  // CRITICAL: We need at least one image, so log if none are provided
+  // PHASE 4: Build exactly 2 image sources using new approach
   const IMAGE_AREA_Y = Math.round(410 * scaleFactor);
   const IMAGE_AREA_HEIGHT = Math.round(250 * scaleFactor);
   const IMAGE_PADDING = Math.round(20 * scaleFactor);
   const IMAGE_SPACING = Math.round(15 * scaleFactor);
+  const imageAreaWidth = outputWidth - (IMAGE_PADDING * 2);
+  const imageWidth = Math.floor((imageAreaWidth - IMAGE_SPACING) / 2); // Always 2 images side-by-side
   
-  console.log(`[generate-earthquake-image] 📸 USGS Image Processing:`, {
-    hasUsgsImages: !!(usgsImages && usgsImages.length > 0),
-    usgsImageCount: usgsImages?.length || 0,
+  console.log(`[generate-earthquake-image] 📸 Building 2 image sources...`, {
     imageAreaY: IMAGE_AREA_Y,
     imageAreaHeight: IMAGE_AREA_HEIGHT,
-    imagePadding: IMAGE_PADDING,
-    imageSpacing: IMAGE_SPACING,
-    scaleFactor: scaleFactor.toFixed(3)
+    imageWidth,
+    imageHeight: IMAGE_AREA_HEIGHT,
+    usgsCandidates: usgsCandidates.length
   });
   
-  let successfullyAddedImages = 0;
-  let usgsImageCount = 0; // Track how many USGS images were successfully added
-  let locationMapCount = 0; // Track how many location maps were successfully added
-  
-  // Extract coordinates if provided
+  // Extract coordinates
   const lat = coordinates?.[1] ?? null;
   const lon = coordinates?.[0] ?? null;
-  const hasCoordinates = lat != null && lon != null;
   
-  console.log(`[generate-earthquake-image] 🗺️ Coordinate check:`, {
-    hasCoordinates,
-    lat,
-    lon,
-    coordinatesProvided: !!coordinates
-  });
-  
-  // CRITICAL: Calculate total number of images upfront to determine correct width for all images
-  // This prevents misalignment when location map is added after USGS images
-  const maxUsgsImages = Math.min(usgsImages?.length || 0, 2);
-  const willAddMap = hasCoordinates && maxUsgsImages < 2;
-  const totalImages = maxUsgsImages + (willAddMap ? 1 : 0);
-    const imageAreaWidth = outputWidth - (IMAGE_PADDING * 2);
-  // Calculate image width based on TOTAL images (USGS + location map), not just USGS
-  const imageWidth = totalImages === 2 
-      ? Math.floor((imageAreaWidth - IMAGE_SPACING) / 2)
-      : imageAreaWidth;
-  
-  console.log(`[generate-earthquake-image] 📐 Image dimension calculation:`, {
-    maxUsgsImages,
-    willAddMap,
-    totalImages,
-    imageAreaWidth,
+  // PHASE 4: Use buildTwoImageSources to guarantee exactly 2 images
+  const imageSources = await buildTwoImageSources({
+    usgsCandidates,
+    coordinates: lat != null && lon != null ? { lat, lon } : null,
+    locationText: location,
     imageWidth,
-    imageHeight: IMAGE_AREA_HEIGHT
+    imageHeight: IMAGE_AREA_HEIGHT,
+    logger: { info: console.log, warn: console.warn, error: console.error }
   });
   
-  if (usgsImages && usgsImages.length > 0) {
-    const numImages = Math.min(usgsImages.length, 2);
+  // PHASE 4: Add exactly 2 images to composite
+  let usgsImageCount = 0;
+  let locationMapCount = 0;
+  
+  for (let i = 0; i < imageSources.length; i++) {
+    const source = imageSources[i];
+    const x = IMAGE_PADDING + (i * (imageWidth + IMAGE_SPACING));
+    const y = IMAGE_AREA_Y;
     
-    console.log(`[generate-earthquake-image] 📸 Processing ${numImages} USGS image(s) with width ${imageWidth}px (total images will be ${totalImages}):`, {
-      imageAreaWidth,
-      imageWidth,
-      imageHeight: IMAGE_AREA_HEIGHT,
-      totalImages,
-      usgsImageUrls: usgsImages.slice(0, 2).map(img => img.url?.substring(0, 100))
+    compositeInputs.push({
+      input: source.buffer,
+      left: x,
+      top: y,
+      blend: 'over',
     });
     
-    // CRITICAL: Try ALL USGS images, not just the first 2, in case some fail
-    const imagesToTry = usgsImages.slice(0, Math.min(usgsImages.length, 4)); // Try up to 4 in case some fail
-    
-    for (let i = 0; i < imagesToTry.length && successfullyAddedImages < 2; i++) {
-      const usgsImage = imagesToTry[i];
-      if (!usgsImage || !usgsImage.url) {
-        console.warn(`[generate-earthquake-image] ⚠️ USGS image ${i + 1} missing URL, skipping`);
-        continue;
-      }
-      
-      try {
-        console.log(`[generate-earthquake-image] 📥 Downloading USGS image ${i + 1}/${imagesToTry.length} from: ${usgsImage.url}`);
-        const imageBuffer = await downloadImage(usgsImage.url);
-        if (imageBuffer) {
-          console.log(`[generate-earthquake-image] ✅ Downloaded USGS image ${i + 1}: ${Math.round(imageBuffer.length / 1024)}KB`);
-          console.log(`[generate-earthquake-image] 🔧 Processing USGS image ${i + 1} to ${imageWidth}x${IMAGE_AREA_HEIGHT}`);
-          const processedImage = await prepareUSGSImage(imageBuffer, imageWidth, IMAGE_AREA_HEIGHT);
-          if (processedImage) {
-            const x = IMAGE_PADDING + (successfullyAddedImages * (imageWidth + IMAGE_SPACING));
-            const y = IMAGE_AREA_Y;
-            
-            console.log(`[generate-earthquake-image] 📍 Positioning USGS image ${successfullyAddedImages + 1} at (${x}, ${y})`);
-            
-            compositeInputs.push({
-              input: processedImage,
-              left: x,
-              top: y,
-              blend: 'over',
-            });
-            successfullyAddedImages++;
-            usgsImageCount++;
-            console.log(`[generate-earthquake-image] ✅ Added USGS image ${usgsImageCount}/2 to composite`, { 
-              url: usgsImage.url.substring(0, 80),
-              position: `(${x}, ${y})`,
-              size: `${imageWidth}x${IMAGE_AREA_HEIGHT}`,
-              bufferSize: `${Math.round(processedImage.length / 1024)}KB`,
-              type: usgsImage.type,
-              scraped: usgsImage.scraped || false
-            });
-            
-            // Stop if we have 2 images
-            if (successfullyAddedImages >= 2) {
-              console.log(`[generate-earthquake-image] ✅ Reached maximum of 2 images, stopping`);
-              break;
-            }
-          } else {
-            console.error(`[generate-earthquake-image] ❌ prepareUSGSImage returned null for image ${i + 1} - will try next image`);
-          }
-        } else {
-          console.error(`[generate-earthquake-image] ❌ downloadImage returned null for image ${i + 1} (URL may be invalid or inaccessible) - will try next image`);
-        }
-      } catch (error) {
-        console.error(`[generate-earthquake-image] ❌ Error processing USGS image ${i + 1}:`, {
-          error: error.message,
-          stack: error.stack,
-          url: usgsImage.url?.substring(0, 100),
-          type: usgsImage.type,
-          scraped: usgsImage.scraped || false
-        });
-        // Continue to next image instead of failing completely
-      }
-    }
-    
-    // CRITICAL: Warn if we had USGS images but none succeeded
-    if (usgsImages.length > 0 && successfullyAddedImages === 0) {
-      console.error(`[generate-earthquake-image] ❌ CRITICAL: ${usgsImages.length} USGS image(s) were provided but ALL failed to download/process!`);
-      console.error(`[generate-earthquake-image] ❌ This should not happen - check image URLs and download function`);
-      console.error(`[generate-earthquake-image] ❌ Failed URLs:`, usgsImages.map(img => img.url?.substring(0, 150)));
-    }
-  } else {
-    console.warn(`[generate-earthquake-image] ⚠️ No USGS images provided - image will use template only (no earthquake-specific maps)`);
-  }
-  
-  // Add location map image if coordinates are available and we have space
-  // CREDIBILITY: Map always includes epicenter marker, only shown if coordinates are precise
-  // This ensures we always have 2 images when coordinates are available (1 USGS + 1 map, or 2 maps if no USGS)
-  if (hasCoordinates) {
-    const maxTotalImages = 2; // We can fit 2 images side-by-side
-    const slotsRemaining = maxTotalImages - successfullyAddedImages;
-    
-    // Always add location map if we have coordinates and space
-    // CRITICAL: Map includes epicenter marker for credibility
-    if (slotsRemaining > 0) {
-      try {
-        // Generate map URL with epicenter marker (scaled by magnitude)
-        const mapUrl = generateLocationMapUrl(lat, lon, magnitude, 11, outputWidth, IMAGE_AREA_HEIGHT);
-        
-        if (mapUrl) {
-          console.log(`[generate-earthquake-image] 🗺️ Generating location map with epicenter marker:`, {
-            lat,
-            lon,
-            magnitude,
-            url: mapUrl.substring(0, 100)
-          });
-          
-          const mapBuffer = await downloadImage(mapUrl);
-          
-          if (mapBuffer) {
-            console.log(`[generate-earthquake-image] ✅ Downloaded location map: ${Math.round(mapBuffer.length / 1024)}KB`);
-            console.log(`[generate-earthquake-image] 🔧 Processing location map to ${imageWidth}x${IMAGE_AREA_HEIGHT}`);
-            const processedMap = await prepareUSGSImage(mapBuffer, imageWidth, IMAGE_AREA_HEIGHT);
-            
-            if (processedMap) {
-              // Position map: if we have 1 USGS image, put map next to it; otherwise center it
-              const x = IMAGE_PADDING + (successfullyAddedImages * (imageWidth + IMAGE_SPACING));
-              const y = IMAGE_AREA_Y;
-              
-              console.log(`[generate-earthquake-image] 📍 Positioning location map at (${x}, ${y})`);
-              
-              compositeInputs.push({
-                input: processedMap,
-                left: x,
-                top: y,
-                blend: 'over',
-              });
-              successfullyAddedImages++;
-              locationMapCount++;
-              console.log(`[generate-earthquake-image] ✅ Added location map to composite (with epicenter marker)`, { 
-                position: `(${x}, ${y})`,
-                size: `${imageWidth}x${IMAGE_AREA_HEIGHT}`,
-                bufferSize: `${Math.round(processedMap.length / 1024)}KB`,
-                magnitude,
-                hasEpicenterMarker: true
-              });
-            } else {
-              console.error(`[generate-earthquake-image] ❌ prepareUSGSImage returned null for location map`);
-            }
-          } else {
-            console.warn(`[generate-earthquake-image] ⚠️ Failed to download location map`);
-          }
-        } else {
-          console.warn(`[generate-earthquake-image] ⚠️ Could not generate location map URL (missing coordinates)`);
-        }
-      } catch (error) {
-        console.error(`[generate-earthquake-image] ❌ Error processing location map:`, {
-          error: error.message,
-          stack: error.stack,
-          lat,
-          lon,
-          magnitude
-        });
-      }
+    if (source.type === 'usgs') {
+      usgsImageCount++;
     } else {
-      console.log(`[generate-earthquake-image] ℹ️ Location map skipped - all image slots filled (${successfullyAddedImages} USGS images)`);
+      locationMapCount++;
     }
-  } else {
-    console.log(`[generate-earthquake-image] ℹ️ No coordinates provided - skipping location map (credibility requirement: map only shown with precise coordinates)`);
+    
+    console.log(`[generate-earthquake-image] ✅ Added ${source.type} image ${i + 1}/2:`, {
+      type: source.type,
+      label: source.label,
+      position: `(${x}, ${y})`,
+      size: `${imageWidth}x${IMAGE_AREA_HEIGHT}`
+    });
   }
   
-  // Log final image count
-  if (successfullyAddedImages === 0) {
-    console.warn(`[generate-earthquake-image] ⚠️ WARNING: No images were successfully added to the final image!`);
-    console.warn(`[generate-earthquake-image] ⚠️ The template may have baked-in images, but no earthquake-specific maps will appear.`);
-    
-    // CRITICAL: If we had USGS images but none worked, this is a problem
-    if (usgsImages && usgsImages.length > 0) {
-      console.error(`[generate-earthquake-image] ❌ CRITICAL ERROR: ${usgsImages.length} USGS image(s) were provided but NONE were successfully added!`);
-      console.error(`[generate-earthquake-image] ❌ This means all image downloads/processing failed.`);
-      console.error(`[generate-earthquake-image] ❌ Image will be generated with only location map (if available) or template only.`);
-      console.error(`[generate-earthquake-image] ❌ Failed USGS image URLs:`, usgsImages.map(img => ({
-        url: img.url?.substring(0, 150),
-        type: img.type,
-        filename: img.filename,
-        scraped: img.scraped || false
-      })));
-    }
-  } else {
-    console.log(`[generate-earthquake-image] ✅ Successfully added ${successfullyAddedImages} image(s) to final image:`, {
-      usgsImages: usgsImageCount,
-      locationMaps: locationMapCount,
-      total: successfullyAddedImages
-    });
-    
-    // CRITICAL: Warn if we only have location map when USGS images were expected
-    if (usgsImages && usgsImages.length > 0 && usgsImageCount === 0) {
-      console.error(`[generate-earthquake-image] ❌ CRITICAL: USGS images were provided (${usgsImages.length}) but NONE were successfully added!`);
-      console.error(`[generate-earthquake-image] ❌ Only location map will appear (${locationMapCount} map(s)) - this is NOT acceptable!`);
-      console.error(`[generate-earthquake-image] ❌ All USGS image downloads/processing failed. Check URLs and network connectivity.`);
-    }
-  }
+  console.log(`[generate-earthquake-image] ✅ Final image composition:`, {
+    totalImages: imageSources.length,
+    usgsImages: usgsImageCount,
+    locationMaps: locationMapCount
+  });
+  
+  // OLD CODE REMOVED - Now using buildTwoImageSources above
+  /*
+  if (usgsImages && usgsImages.length > 0) {
+  */
   
   // CRITICAL: Log what will be in the final composite
   console.log(`[generate-earthquake-image] 📊 COMPOSITE LAYERS:`, {
@@ -1462,7 +1496,8 @@ exports.handler = async (event, context) => {
   
   try {
     const body = JSON.parse(event.body || "{}");
-    const { magnitude, location, usgsImages, eventId, coordinates } = body;
+    // PHASE 5: Accept eventId/detailUrl instead of usgsImages
+    const { magnitude, location, eventId, coordinates, detailUrl } = body;
     
     if (!magnitude || !location || !eventId) {
       return {
@@ -1474,12 +1509,11 @@ exports.handler = async (event, context) => {
       };
     }
     
-    console.log(`[generate-earthquake-image] Generating image for M${magnitude} near ${location}`);
+    console.log(`[generate-earthquake-image] Generating image for M${magnitude} near ${location} (eventId: ${eventId})`);
     
-    // Generate single standard image (multi-template can be enabled later if needed)
-    // For now, keep it simple and backward compatible
-    // coordinates format: [lon, lat, depth] or null
-    const imageBuffer = await generateImage(magnitude, location, usgsImages || [], eventId, 'standard', coordinates);
+    // PHASE 5: New signature - pass eventId/detailUrl instead of usgsImages
+    // The function will fetch GeoJSON detail and extract products internally
+    const imageBuffer = await generateImage(magnitude, location, eventId, 'standard', coordinates, detailUrl);
     const imageUrl = await storeImage(imageBuffer, eventId, 'standard');
     
     return {

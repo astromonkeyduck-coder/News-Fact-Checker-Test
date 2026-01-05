@@ -12,16 +12,17 @@ const { getStore } = require('@netlify/blobs');
 /**
  * Generate animated video frames with visual effects
  */
-async function generateVideoFrames(magnitude, location, usgsImages, eventId, coordinates = null) {
+// PHASE 6: Updated to use eventId/detailUrl instead of usgsImages
+async function generateVideoFrames(magnitude, location, eventId, coordinates = null, detailUrl = null) {
   const { generateImage } = require('./generate-earthquake-image');
   
-  const frameCount = 30; // 30 frames for 2-second video at 15fps
+  const frameCount = 60; // 60 frames for smooth animation (6 seconds at 10fps - slow and professional)
   const frames = [];
   
   console.log(`[generate-earthquake-video] 🎬 Generating ${frameCount} frames for video...`);
   
-  // Generate base image (with effects)
-  const baseImageBuffer = await generateImage(magnitude, location, usgsImages || [], eventId, 'standard', coordinates);
+  // PHASE 6: Generate base image - function will fetch GeoJSON detail and extract products internally
+  const baseImageBuffer = await generateImage(magnitude, location, eventId, 'standard', coordinates, detailUrl);
   const baseImage = sharp(baseImageBuffer);
   const metadata = await baseImage.metadata();
   const width = metadata.width;
@@ -30,7 +31,7 @@ async function generateVideoFrames(magnitude, location, usgsImages, eventId, coo
   // Create animated frames with varying effects
   for (let i = 0; i < frameCount; i++) {
     const progress = i / frameCount;
-    const time = progress * Math.PI * 2; // Full cycle
+    const time = progress * Math.PI * 4; // Slower cycle (4π instead of 2π for slower, more controlled animation)
     
     // Create animated effects overlay
     const effectsSVG = createAnimatedEffectsSVG(width, height, magnitude, time, progress);
@@ -40,11 +41,12 @@ async function generateVideoFrames(magnitude, location, usgsImages, eventId, coo
       .toBuffer();
     
     // Composite animated effects on base image (4K filter, flash, roundabout)
+    // Use 'over' blend with the effects as a subtle overlay
     const frame = await baseImage
       .clone()
       .composite([{
         input: effectsBuffer,
-        blend: 'overlay', // Overlay blend for 4K enhancement effect
+        blend: 'over', // Over blend - effects sit on top
         left: 0,
         top: 0
       }])
@@ -67,96 +69,323 @@ async function generateVideoFrames(magnitude, location, usgsImages, eventId, coo
  */
 function createAnimatedEffectsSVG(width, height, magnitude, time, progress) {
   const centerX = width * 0.5;
-  const centerY = height * 0.6;
-  const roundaboutRadius = 40; // Small roundabout animation
-  const flashIntensity = Math.min(0.3, magnitude / 25) * (0.5 + Math.sin(time) * 0.5); // Pulsating flash
-  const orbitingDotRadius = 8;
-  const orbitAngle = time * 0.5; // Slower orbit
-  const orbitingDotX = centerX + Math.cos(orbitAngle) * roundaboutRadius;
-  const orbitingDotY = centerY + Math.sin(orbitAngle) * roundaboutRadius;
+  const centerY = height * 0.6 - 70; // Moved up 70 pixels (was 50, now 70 - user requested +20 more)
+  const scaleFactor = width / 940;
+  
+  // Professional news-style effects
+  
+  // 1. Seismic wave effects - expanding ripples from epicenter (SLOW and controlled)
+  const waveSpeed = 0.15; // Much slower expansion for professional look
+  const waveCount = 3; // Fewer waves, more controlled
+  const waves = [];
+  for (let i = 0; i < waveCount; i++) {
+    const waveProgress = (progress + i * 0.33) % 1.0; // Staggered waves
+    const waveRadius = waveProgress * Math.min(width, height) * 0.4; // Waves expand more slowly
+    const waveOpacity = (1 - waveProgress) * 0.4; // Subtle visibility
+    const waveIntensity = magnitude / 10; // Moderate intensity
+    const waveThickness = (3 + waveIntensity * 2) * scaleFactor;
+    waves.push({ radius: waveRadius, opacity: waveOpacity, intensity: waveIntensity, thickness: waveThickness });
+  }
+  
+  // 2. Subtle flash effect - very slow pulse (barely noticeable, professional)
+  const flashPulse = Math.sin(time * 0.5); // Very slow, subtle pulse
+  const flashIntensity = Math.min(0.2, magnitude / 20) * (0.3 + Math.abs(flashPulse) * 0.2);
+  const flashRadius = Math.min(width, height) * (0.12 + Math.abs(flashPulse) * 0.05);
+  
+  // 3. Intensity-based color (red for high magnitude, yellow for medium, white for low)
+  const magnitudeColor = magnitude >= 6.0 ? 'rgba(255, 30, 30, 0.9)' : 
+                         magnitude >= 4.0 ? 'rgba(255, 180, 40, 0.8)' : 
+                         'rgba(255, 255, 255, 0.7)';
+  
+  // 4. Professional intensity visualization - MMI (Modified Mercalli Intensity) rings (SLOW)
+  const mmiRings = [];
+  const mmiLevels = Math.min(4, Math.ceil(magnitude / 1.5)); // MMI levels based on magnitude
+  for (let i = 0; i < mmiLevels; i++) {
+    const ringProgress = (progress + i * 0.25) % 1.0;
+    const ringRadius = (40 + i * 35 + Math.sin(time * 0.8) * 5) * scaleFactor; // Much slower pulse
+    const ringOpacity = (0.3 - i * 0.06) * (0.6 + Math.sin(time * 0.8) * 0.2); // Subtle variation
+    mmiRings.push({ radius: ringRadius, opacity: ringOpacity, level: i + 1 });
+  }
+  
+  // 5. Intensity heat map effect - very subtle, slow pulse
+  const heatMapOpacity = 0.15 + Math.sin(time * 0.6) * 0.1; // Very slow, subtle pulse
+  
+  // 9. Seismic activity indicator bars (like a seismograph) - SLOW movement
+  const barCount = 8;
+  const bars = [];
+  for (let i = 0; i < barCount; i++) {
+    const barX = width * 0.1 + (i * width * 0.1);
+    const barHeight = (20 + Math.sin(time * 0.8 + i * 0.3) * 12 + magnitude * 4) * scaleFactor; // Much slower
+    const barOpacity = 0.4 + Math.sin(time * 0.8 + i * 0.3) * 0.2; // Subtle variation
+    bars.push({ x: barX, height: barHeight, opacity: barOpacity });
+  }
+  
+  // 10. ANIMATED RED BORDER LINES - Moving around the entire image perimeter (SLOW)
+  const borderThickness = 4 * scaleFactor;
+  const borderSpeed = 0.1; // Much slower border movement for professional look
+  const borderProgress = (time * borderSpeed) % 1.0;
+  const borderLength = 60 * scaleFactor; // Length of each moving segment
+  const borderGap = 20 * scaleFactor; // Gap between segments
+  
+  // Calculate border positions (clockwise around perimeter)
+  const borderSegments = [];
+  const totalPerimeter = (width + height) * 2;
+  const segmentCount = Math.floor(totalPerimeter / (borderLength + borderGap));
+  
+  for (let i = 0; i < segmentCount; i++) {
+    const segmentProgress = (borderProgress + i / segmentCount) % 1.0;
+    const position = segmentProgress * totalPerimeter;
+    
+    let x1, y1, x2, y2;
+    
+    // Top edge
+    if (position < width) {
+      x1 = position;
+      y1 = 0;
+      x2 = Math.min(position + borderLength, width);
+      y2 = 0;
+    }
+    // Right edge
+    else if (position < width + height) {
+      x1 = width;
+      y1 = position - width;
+      x2 = width;
+      y2 = Math.min(position - width + borderLength, height);
+    }
+    // Bottom edge
+    else if (position < width * 2 + height) {
+      x1 = width - (position - width - height);
+      y1 = height;
+      x2 = Math.max(width - (position - width - height + borderLength), 0);
+      y2 = height;
+    }
+    // Left edge
+    else {
+      x1 = 0;
+      y1 = height - (position - width * 2 - height);
+      x2 = 0;
+      y2 = Math.max(height - (position - width * 2 - height + borderLength), 0);
+    }
+    
+    borderSegments.push({ x1, y1, x2, y2 });
+  }
   
   return `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <!-- 4K Enhancement Filter - Sharpening and contrast boost -->
-        <filter id="4kEnhance${Math.floor(time)}" x="0%" y="0%" width="100%" height="100%">
-          <feConvolveMatrix order="3" kernelMatrix="0 -1 0 -1 5 -1 0 -1 0" preserveAlpha="true"/>
-          <feColorMatrix type="saturate" values="1.1"/>
-          <feComponentTransfer>
-            <feFuncR type="gamma" amplitude="1" exponent="0.95"/>
-            <feFuncG type="gamma" amplitude="1" exponent="0.95"/>
-            <feFuncB type="gamma" amplitude="1" exponent="0.95"/>
-          </feComponentTransfer>
-        </filter>
+        <!-- Seismic wave gradient -->
+        <radialGradient id="waveGrad${Math.floor(time * 100)}" cx="50%" cy="50%">
+          <stop offset="0%" stop-color="${magnitudeColor}" stop-opacity="0.7"/>
+          <stop offset="50%" stop-color="${magnitudeColor}" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="${magnitudeColor}" stop-opacity="0"/>
+        </radialGradient>
         
         <!-- Flash effect gradient -->
-        <radialGradient id="flashGradient${Math.floor(time)}" cx="50%" cy="50%">
+        <radialGradient id="flashGrad${Math.floor(time * 100)}" cx="50%" cy="50%">
           <stop offset="0%" stop-color="rgba(255, 255, 255, ${flashIntensity})" stop-opacity="1"/>
-          <stop offset="30%" stop-color="rgba(255, 255, 255, ${flashIntensity * 0.5})" stop-opacity="0.8"/>
+          <stop offset="40%" stop-color="rgba(255, 255, 255, ${flashIntensity * 0.5})" stop-opacity="0.8"/>
           <stop offset="100%" stop-color="rgba(255, 255, 255, 0)" stop-opacity="0"/>
         </radialGradient>
         
-        <!-- Roundabout animation gradient -->
-        <linearGradient id="roundaboutGradient${Math.floor(time)}" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="rgba(74, 158, 255, 0.4)"/>
-          <stop offset="50%" stop-color="rgba(74, 158, 255, 0.2)"/>
-          <stop offset="100%" stop-color="rgba(74, 158, 255, 0)"/>
-        </linearGradient>
+        <!-- Heat map gradient -->
+        <radialGradient id="heatGrad${Math.floor(time * 100)}" cx="50%" cy="50%">
+          <stop offset="0%" stop-color="${magnitudeColor}" stop-opacity="${heatMapOpacity}"/>
+          <stop offset="70%" stop-color="${magnitudeColor}" stop-opacity="${heatMapOpacity * 0.5}"/>
+          <stop offset="100%" stop-color="${magnitudeColor}" stop-opacity="0"/>
+        </radialGradient>
       </defs>
       
-      <!-- 4K Enhancement overlay (subtle sharpening effect) -->
-      <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(255, 255, 255, 0.02)" filter="url(#4kEnhance${Math.floor(time)})" opacity="0.3"/>
+      <!-- Heat map effect - intensity visualization -->
+      <circle cx="${centerX}" cy="${centerY}" r="${Math.min(width, height) * 0.35}" 
+              fill="url(#heatGrad${Math.floor(time * 100)})" 
+              opacity="${heatMapOpacity}"/>
       
-      <!-- Flash effect (pulsating white flash) -->
-      <circle cx="${centerX}" cy="${centerY}" r="${Math.min(width, height) * (0.25 + Math.sin(time) * 0.1)}" fill="url(#flashGradient${Math.floor(time)})" opacity="${0.2 + Math.sin(time) * 0.2}">
-        <animate attributeName="opacity" values="${0.2 + Math.sin(time) * 0.2};${0.4 + Math.sin(time) * 0.2};${0.2 + Math.sin(time) * 0.2}" dur="3s" repeatCount="indefinite"/>
-        <animate attributeName="r" values="${Math.min(width, height) * 0.25};${Math.min(width, height) * 0.35};${Math.min(width, height) * 0.25}" dur="3s" repeatCount="indefinite"/>
-      </circle>
+      <!-- Seismic waves - expanding ripples (more dramatic) -->
+      ${waves.map((wave, i) => `
+        <circle cx="${centerX}" cy="${centerY}" r="${wave.radius}" 
+                fill="none" 
+                stroke="${magnitudeColor}" 
+                stroke-width="${wave.thickness}" 
+                opacity="${wave.opacity}"
+                stroke-dasharray="${15 * scaleFactor} ${8 * scaleFactor}"/>
+      `).join('')}
       
-      <!-- Small roundabout animation (rotating circle) -->
-      <g transform="translate(${centerX}, ${centerY})">
-        <circle cx="0" cy="0" r="${roundaboutRadius}" fill="none" stroke="url(#roundaboutGradient${Math.floor(time)})" stroke-width="2" opacity="0.6">
-          <animateTransform
-            attributeName="transform"
-            type="rotate"
-            values="0;360"
-            dur="8s"
-            repeatCount="indefinite"/>
-        </circle>
-        <!-- Small dot that orbits -->
-        <circle cx="${roundaboutRadius}" cy="0" r="${orbitingDotRadius}" fill="rgba(74, 158, 255, 0.8)">
-          <animateTransform
-            attributeName="transform"
-            type="rotate"
-            values="0;360"
-            dur="8s"
-            repeatCount="indefinite"/>
-        </circle>
-      </g>
+      <!-- MMI Intensity rings - professional visualization -->
+      ${mmiRings.map((ring, i) => `
+        <circle cx="${centerX}" cy="${centerY}" r="${ring.radius}" 
+                fill="none" 
+                stroke="${magnitudeColor}" 
+                stroke-width="${(3 + ring.level * 0.5) * scaleFactor}" 
+                opacity="${ring.opacity}"/>
+      `).join('')}
+      
+      <!-- Dramatic flash effect -->
+      <circle cx="${centerX}" cy="${centerY}" r="${flashRadius}" 
+              fill="url(#flashGrad${Math.floor(time * 100)})" 
+              opacity="${0.25 + Math.abs(flashPulse) * 0.35}"/>
+      
+      <!-- Seismic activity indicator bars (seismograph style) -->
+      ${bars.map((bar, i) => `
+        <rect x="${bar.x}" y="${height * 0.85}" width="${15 * scaleFactor}" 
+              height="${-bar.height}" 
+              fill="${magnitudeColor}" 
+              opacity="${bar.opacity}"
+              rx="${2 * scaleFactor}"/>
+      `).join('')}
+      
+      <!-- Epicenter marker - smooth, slow pulsing center point (like a heartbeat) - KEEP THIS (user likes it) -->
+      <!-- Use smooth easing function for natural animation - keep slow and controlled -->
+      <circle cx="${centerX}" cy="${centerY}" r="${(10 + Math.sin(time * 0.8) * 3) * scaleFactor}" 
+              fill="${magnitudeColor}" 
+              opacity="${0.85 + Math.sin(time * 0.8) * 0.12}"/>
+      <circle cx="${centerX}" cy="${centerY}" r="${(5 + Math.sin(time * 0.8) * 1.5) * scaleFactor}" 
+              fill="rgba(255, 255, 255, 0.95)" 
+              opacity="1"/>
+      <circle cx="${centerX}" cy="${centerY}" r="${(2.5 + Math.sin(time * 0.8) * 0.8) * scaleFactor}" 
+              fill="${magnitudeColor}" 
+              opacity="1"/>
+      
+      <!-- ANIMATED RED BORDER LINES - Moving around entire perimeter -->
+      ${borderSegments.map((segment, i) => `
+        <line x1="${segment.x1}" y1="${segment.y1}" x2="${segment.x2}" y2="${segment.y2}" 
+              stroke="rgba(255, 0, 0, 1)" 
+              stroke-width="${borderThickness}" 
+              stroke-linecap="round"
+              opacity="${0.9 + Math.sin(time * 4 + i) * 0.1}"/>
+      `).join('')}
     </svg>
   `;
 }
 
 /**
  * Convert frames to animated GIF
- * Note: Sharp doesn't directly support animated GIF creation
- * For now, we'll return the first frame and note that full GIF encoding
- * requires a library like gifencoder or a service
+ * Uses gifenc (pure JS, no dependencies) or gifencoder as fallback
  */
 async function framesToAnimatedGIF(frames, width, height) {
-  console.log(`[generate-earthquake-video] 🎥 Processing ${frames.length} frames...`);
+  console.log(`[generate-earthquake-video] 🎥 Processing ${frames.length} frames to animated GIF...`);
   
-  // Sharp doesn't support animated GIF creation directly
-  // For production, you'd use a library like 'gifencoder' or 'gif.js'
-  // For now, we'll create a simple approach using the frames
-  
-  // Return first frame as placeholder - full GIF requires additional library
-  // TODO: Integrate gifencoder or similar for full animated GIF support
-  console.log(`[generate-earthquake-video] ⚠️ Full animated GIF encoding requires gifencoder library`);
-  console.log(`[generate-earthquake-video] 💡 Returning first frame - can be enhanced with gifencoder`);
-  
-  // For now, return first frame (can be enhanced later)
-  return frames[0];
+  // Try gifenc first (pure JS, no system dependencies)
+  try {
+    const { GIFEncoder, quantize, applyPalette } = require('gifenc');
+    const sharp = require('sharp');
+    
+    console.log(`[generate-earthquake-video] 🎬 Using gifenc (pure JS encoder)...`);
+    
+    // Create GIF encoder
+    const gif = GIFEncoder({
+      width: width,
+      height: height,
+      repeat: 0 // Repeat forever
+    });
+    
+    // CRITICAL: Use a shared palette for all frames to ensure smooth animation
+    // Generate palette from a sample of frames (first, middle, last)
+    const sampleFrames = [frames[0], frames[Math.floor(frames.length / 2)], frames[frames.length - 1]];
+    const allSamplePixels = [];
+    
+    for (const sampleFrame of sampleFrames) {
+      const image = sharp(sampleFrame);
+      const { data } = await image
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      const rgba = new Uint8ClampedArray(data);
+      // Sample every 10th pixel to speed up palette generation
+      for (let i = 0; i < rgba.length; i += 40) {
+        allSamplePixels.push(rgba[i], rgba[i + 1], rgba[i + 2], rgba[i + 3]);
+      }
+    }
+    
+    const sampleRgba = new Uint8ClampedArray(allSamplePixels);
+    const sharedPalette = quantize(sampleRgba, 256);
+    
+    console.log(`[generate-earthquake-video] ✅ Generated shared palette with ${sharedPalette.length} colors`);
+    
+    // Process each frame with shared palette
+    for (let i = 0; i < frames.length; i++) {
+      const frame = frames[i];
+      
+      // Convert PNG buffer to RGBA array
+      const image = sharp(frame);
+      const { data, info } = await image
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      
+      // Convert to Uint8ClampedArray (RGBA format)
+      const rgba = new Uint8ClampedArray(data);
+      
+      // Apply shared palette to get indexed bitmap (ensures color consistency across frames)
+      const index = applyPalette(rgba, sharedPalette);
+      
+      // Write frame with delay (67ms = 15fps for smoother animation while still controlled)
+      gif.writeFrame(index, width, height, { 
+        palette: sharedPalette,
+        delay: 67 // 15fps for smoother animation while maintaining professional look
+      });
+      
+      if ((i + 1) % 10 === 0) {
+        console.log(`[generate-earthquake-video] ✅ Processed ${i + 1}/${frames.length} frames`);
+      }
+    }
+    
+    // Finish encoding
+    gif.finish();
+    
+    // Get the output bytes
+    const gifBytes = gif.bytes();
+    const gifBuffer = Buffer.from(gifBytes);
+    
+    console.log(`[generate-earthquake-video] ✅ Created animated GIF with gifenc: ${Math.round(gifBuffer.length / 1024)}KB`);
+    return gifBuffer;
+    
+  } catch (gifencError) {
+    console.warn(`[generate-earthquake-video] ⚠️ gifenc not available: ${gifencError.message}`);
+    
+    // Fallback to gifencoder if available
+    try {
+      const GIFEncoder = require('gifencoder');
+      const { createCanvas, loadImage } = require('canvas');
+      
+      console.log(`[generate-earthquake-video] 🎬 Using gifencoder (requires canvas)...`);
+      
+      const encoder = new GIFEncoder(width, height);
+      encoder.setRepeat(0); // 0 = repeat forever
+      encoder.setDelay(67); // ~15fps
+      encoder.setQuality(10);
+      
+      const canvas = createCanvas(width, height);
+      const ctx = canvas.getContext('2d');
+      
+      encoder.start();
+      
+      for (let i = 0; i < frames.length; i++) {
+        const frame = frames[i];
+        const image = await loadImage(frame);
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(image, 0, 0);
+        encoder.addFrame(ctx);
+        
+        if ((i + 1) % 10 === 0) {
+          console.log(`[generate-earthquake-video] ✅ Processed ${i + 1}/${frames.length} frames`);
+        }
+      }
+      
+      encoder.finish();
+      const gifBuffer = encoder.out.getData();
+      
+      console.log(`[generate-earthquake-video] ✅ Created animated GIF with gifencoder: ${Math.round(gifBuffer.length / 1024)}KB`);
+      return Buffer.from(gifBuffer);
+      
+    } catch (gifencoderError) {
+      // Final fallback: Return first frame
+      console.error(`[generate-earthquake-video] ❌ GIF encoding failed: ${gifencoderError.message}`);
+      console.error(`[generate-earthquake-video] 💡 Install gifenc: npm install gifenc`);
+      console.error(`[generate-earthquake-video] 💡 Or install gifencoder + canvas: npm install gifencoder canvas`);
+      console.error(`[generate-earthquake-video] 💡 Returning first frame as fallback (all ${frames.length} frames generated)`);
+      return frames[0];
+    }
+  }
 }
 
 /**
@@ -198,6 +427,11 @@ async function storeVideo(videoBuffer, eventId) {
   }
 }
 
+// Export functions for local testing
+exports.generateVideoFrames = generateVideoFrames;
+exports.framesToAnimatedGIF = framesToAnimatedGIF;
+exports.createAnimatedEffectsSVG = createAnimatedEffectsSVG;
+
 /**
  * Main handler
  */
@@ -223,7 +457,8 @@ exports.handler = async (event, context) => {
   
   try {
     const body = JSON.parse(event.body || "{}");
-    const { magnitude, location, eventId, lat, lon, usgsImages } = body;
+    // PHASE 6: Accept eventId/detailUrl instead of usgsImages
+    const { magnitude, location, eventId, lat, lon, detailUrl } = body;
     
     if (!magnitude || !location || !eventId) {
       return {
@@ -235,10 +470,13 @@ exports.handler = async (event, context) => {
       };
     }
     
-    console.log(`[generate-earthquake-video] 🎬 Starting video generation for M${magnitude} earthquake near ${location}`);
+    console.log(`[generate-earthquake-video] 🎬 Starting video generation for M${magnitude} earthquake near ${location} (eventId: ${eventId})`);
     
-    // Generate video frames
-    const { frames, width, height } = await generateVideoFrames(magnitude, location, usgsImages, eventId, { lat, lon });
+    // BUG FIX: Convert coordinates object { lat, lon } to array format [lon, lat] expected by generateImage
+    const coordinatesArray = (lat != null && lon != null) ? [lon, lat] : null;
+    
+    // PHASE 6: Generate video frames - function will fetch GeoJSON detail and extract products internally
+    const { frames, width, height } = await generateVideoFrames(magnitude, location, eventId, coordinatesArray, detailUrl);
     
     // Convert frames to animated GIF
     console.log(`[generate-earthquake-video] 🎬 Converting ${frames.length} frames to animated GIF...`);

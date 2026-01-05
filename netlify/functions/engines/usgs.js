@@ -49,35 +49,181 @@ async function fetchUSGSFeed(feedType = 'all_hour', logger) {
 }
 
 /**
- * Fetch detailed event data from USGS
+ * Fetch detailed event data from USGS GeoJSON detail endpoint
+ * PHASE 1: Primary method for getting event data (replaces HTML scraping)
  */
-async function fetchEventDetail(detailUrl, logger) {
-  if (!detailUrl) return null;
+async function fetchUsgsDetailGeoJson({ eventId, detailUrl, logger }) {
+  // If detailUrl provided, use it; otherwise construct from eventId
+  let url = detailUrl;
+  if (!url && eventId) {
+    url = `https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/${eventId}.geojson`;
+  }
+  
+  if (!url) {
+    if (logger) logger.warn('No detailUrl or eventId provided for GeoJSON fetch');
+    return null;
+  }
   
   try {
-    const response = await fetch(detailUrl);
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; NoteworthyNews/1.0)',
+        'Accept': 'application/geo+json, application/json'
+      }
+    });
+    
     if (!response.ok) {
-      logger.warn('Failed to fetch event detail', { url: detailUrl, status: response.status });
+      if (logger) logger.warn('Failed to fetch USGS detail GeoJSON', { url, status: response.status });
       return null;
     }
-    return await response.json();
+    
+    const json = await response.json();
+    if (logger) logger.info('✅ Fetched USGS detail GeoJSON', { eventId, url, hasProperties: !!json.properties });
+    return json;
   } catch (error) {
-    logger.warn('Error fetching event detail', error, { url: detailUrl });
+    if (logger) logger.warn('Error fetching USGS detail GeoJSON', { error: error.message, url, eventId });
     return null;
   }
 }
 
 /**
- * Extract USGS images from event detail
- * IMPROVED: More comprehensive search, less restrictive matching
- * Priority order (for immediate availability):
- * 1. Shakemap products - best quality maps (available within 5-10 minutes)
- * 2. Immediate products (DYFI, origin, location) - available within 0-3 minutes
- * 3. All other products - comprehensive fallback
- * 
- * NEW: Also constructs shakemap image URLs from product IDs
+ * Fetch detailed event data from USGS (legacy wrapper for backward compatibility)
+ */
+async function fetchEventDetail(detailUrl, logger) {
+  if (!detailUrl) return null;
+  return fetchUsgsDetailGeoJson({ detailUrl, logger });
+}
+
+/**
+ * Extract USGS product images from GeoJSON detail
+ * PHASE 1: Primary extraction method using products.contents
+ * Returns array of image candidates with metadata for ranking
+ */
+function extractUsgsProductImages(detailJson) {
+  const candidates = [];
+  
+  if (!detailJson || !detailJson.properties || !detailJson.properties.products) {
+    return candidates;
+  }
+  
+  const products = detailJson.properties.products;
+  
+  // Priority order: shakemap > dyfi > losspager/pager > others
+  const productPriority = {
+    'shakemap': 1,
+    'dyfi': 2,
+    'losspager': 3,
+    'pager': 3,
+    'origin': 4,
+    'location': 4,
+    'moment-tensor': 5,
+    'focal-mechanism': 5
+  };
+  
+  // Path preference keywords (best first)
+  const pathPreference = ['intensity', 'mmi', 'pga', 'pgv', 'map', 'plot'];
+  
+  // Helper to score a path
+  function scorePath(path) {
+    const lowerPath = path.toLowerCase();
+    for (let i = 0; i < pathPreference.length; i++) {
+      if (lowerPath.includes(pathPreference[i])) {
+        return pathPreference.length - i; // Higher score = better
+      }
+    }
+    return 0;
+  }
+  
+  // Helper to check if content is an image
+  function isImageContent(content) {
+    if (!content || !content.url) return false;
+    
+    // Check contentType
+    if (content.contentType && content.contentType.startsWith('image/')) {
+      return true;
+    }
+    
+    // Check URL extension
+    const url = content.url.toLowerCase();
+    if (/\.(png|jpg|jpeg|gif|webp)(\?|$)/.test(url)) {
+      // Exclude known non-image patterns
+      if (url.includes('.xml') || url.includes('.json') || url.includes('.txt') ||
+          url.includes('/contents') || url.includes('/metadata') || url.includes('/attenuation')) {
+        return false;
+      }
+      return true;
+    }
+    
+    return false;
+  }
+  
+  // Process each product type
+  for (const [productType, productList] of Object.entries(products)) {
+    if (!Array.isArray(productList) || productList.length === 0) continue;
+    
+    const priority = productPriority[productType] || 999;
+    
+    // For each product instance, find the "best" one
+    for (const product of productList) {
+      if (!product || !product.contents || typeof product.contents !== 'object') continue;
+      
+      // Get preferred weight and update time for ranking
+      const preferredWeight = product.preferredWeight || 0;
+      const updateTime = product.updateTime || 0;
+      
+      // Extract all image contents from this product
+      for (const [path, content] of Object.entries(product.contents)) {
+        if (!isImageContent(content)) continue;
+        
+        // Skip if we already have this exact URL
+        const url = content.url;
+        if (candidates.some(c => c.url === url)) continue;
+        
+        // Calculate score: priority (lower is better) + path preference + preferredWeight
+        const pathScore = scorePath(path);
+        const candidateScore = priority * 1000 - pathScore * 10 - preferredWeight;
+        
+        candidates.push({
+          url: url,
+          contentType: content.contentType || 'image/jpeg',
+          productType: productType,
+          path: path,
+          updateTime: updateTime,
+          weight: preferredWeight,
+          score: candidateScore,
+          productId: product.id
+        });
+      }
+    }
+  }
+  
+  // Sort by score (lower score = higher priority), then by updateTime (newer first)
+  candidates.sort((a, b) => {
+    if (a.score !== b.score) return a.score - b.score;
+    return b.updateTime - a.updateTime;
+  });
+  
+  // Return top 6 candidates (we only need 2, but want fallback options)
+  return candidates.slice(0, 6);
+}
+
+/**
+ * Extract USGS images from event detail (legacy wrapper for backward compatibility)
+ * PHASE 1: Now uses extractUsgsProductImages internally
  */
 function extractUSGSImages(eventDetail) {
+  // Use new extraction method
+  const candidates = extractUsgsProductImages(eventDetail);
+  
+  // Convert to legacy format
+  const images = candidates.map(c => ({
+    url: c.url,
+    type: c.productType,
+    filename: c.path || 'unknown'
+  }));
+  
+  // Legacy code below kept for reference but now uses new method above
+  /* LEGACY CODE - NOW USING extractUsgsProductImages ABOVE
   const images = [];
   const usedUrls = new Set(); // Track URLs to avoid exact duplicates
   
@@ -88,22 +234,41 @@ function extractUSGSImages(eventDetail) {
   const products = eventDetail.properties.products;
   
   // Helper function to check if a key looks like an image
+  // STRICT: Must have actual image file extension
   const isImageKey = (key) => {
     const lowerKey = key.toLowerCase();
-    return /\.(png|jpg|jpeg|gif|webp)$/i.test(key) || 
-           lowerKey.includes('image') || 
-           lowerKey.includes('map') || 
-           lowerKey.includes('plot') ||
-           lowerKey.includes('shakemap') ||
-           lowerKey.includes('intensity') ||
-           lowerKey.includes('contour') ||
-           lowerKey.includes('pga') ||
-           lowerKey.includes('pgv') ||
-           lowerKey.includes('mmi') ||
-           lowerKey.includes('focal') ||
-           lowerKey.includes('mechanism') ||
-           lowerKey.includes('beachball') ||
-           lowerKey.includes('beach-ball');
+    // MUST have image extension - no exceptions
+    if (!/\.(png|jpg|jpeg|gif|webp)$/i.test(key)) {
+      return false;
+    }
+    // Exclude known non-image files even if they have image-like extensions
+    if (lowerKey.includes('.xml') || lowerKey.includes('.json') || 
+        lowerKey.includes('.txt') || lowerKey.includes('contents') ||
+        lowerKey.includes('metadata') || lowerKey.includes('attenuation')) {
+      return false;
+    }
+    return true;
+  };
+  
+  // Helper function to check if URL is definitely an image
+  const isDefinitelyImageUrl = (url) => {
+    if (!url || typeof url !== 'string') return false;
+    const lowerUrl = url.toLowerCase();
+    
+    // MUST have image file extension
+    if (!/\.(png|jpg|jpeg|gif|webp)(\?|$)/i.test(url)) {
+      return false;
+    }
+    
+    // Exclude known non-image file patterns
+    if (lowerUrl.includes('.xml') || lowerUrl.includes('.json') || 
+        lowerUrl.includes('.txt') || lowerUrl.includes('/contents') ||
+        lowerUrl.includes('/metadata') || lowerUrl.includes('/attenuation') ||
+        lowerUrl.includes('contents.xml') || lowerUrl.includes('attenuation_curves')) {
+      return false;
+    }
+    
+    return true;
   };
   
   // Helper function to construct shakemap image URLs
@@ -165,16 +330,8 @@ function extractUSGSImages(eventDetail) {
         // Skip if we already have this exact URL
         if (usedUrls.has(url)) continue;
         
-        // More permissive: check if URL looks like an image OR if key suggests it's an image
-        // This catches images even if the URL doesn't have a file extension
-        const isImageUrl = /\.(png|jpg|jpeg|gif|webp)/i.test(url) ||
-                          /\/download\//i.test(url) ||
-                          /\/image/i.test(url) ||
-                          /\/map/i.test(url) ||
-                          /\/plot/i.test(url) ||
-                          /shakemap/i.test(url) ||
-                          isImageKey(key) ||
-                          isImageKey(url);
+        // STRICT: Must be a real image file - check both URL and key
+        const isImageUrl = isDefinitelyImageUrl(url) && isImageKey(key);
         
         if (isImageUrl) {
                 images.push({
@@ -195,11 +352,8 @@ function extractUSGSImages(eventDetail) {
     if (!foundAny && product.url && typeof product.url === 'string') {
       const url = product.url;
       if (!usedUrls.has(url)) {
-        const isImageUrl = /\.(png|jpg|jpeg|gif|webp)/i.test(url) ||
-                          /\/download\//i.test(url) ||
-                          /\/image/i.test(url) ||
-                          /\/map/i.test(url) ||
-                          /shakemap/i.test(url);
+        // STRICT: Must be a real image file
+        const isImageUrl = isDefinitelyImageUrl(url);
         
         if (isImageUrl) {
           images.push({
@@ -229,12 +383,16 @@ function extractUSGSImages(eventDetail) {
     }
     
     // If we still need images, try constructing URLs from product ID
+    // Constructed URLs are potential image locations - they'll be validated during download
     if (images.length < 2) {
       const constructedUrls = constructShakemapImageUrls(product);
       for (const constructedImage of constructedUrls) {
               if (images.length >= 2) break;
-        images.push(constructedImage);
-        usedUrls.add(constructedImage.url);
+        // Only add constructed URLs that look like real image files
+        if (isDefinitelyImageUrl(constructedImage.url)) {
+          images.push(constructedImage);
+          usedUrls.add(constructedImage.url);
+        }
       }
       if (images.length >= 2) break;
     }
@@ -265,7 +423,7 @@ function extractUSGSImages(eventDetail) {
     }
   }
   
-  // Final pass: If we still need more images, search everything again (less restrictive)
+  // Final pass: If we still need more images, search everything again (STRICT - only real images)
   if (images.length < 2) {
     for (const productType of Object.keys(products)) {
         if (images.length >= 2) break;
@@ -277,8 +435,8 @@ function extractUSGSImages(eventDetail) {
           if (images.length >= 2) break;
           if (!content || !content.url) continue;
           
-          // Very permissive: any image-like URL
-          if (/\.(png|jpg|jpeg|gif|webp)/i.test(content.url) && !usedUrls.has(content.url)) {
+          // STRICT: Must be a real image file
+          if (isDefinitelyImageUrl(content.url) && isImageKey(key) && !usedUrls.has(content.url)) {
                 images.push({
                   url: content.url,
                   type: productType,
@@ -380,20 +538,41 @@ async function scrapeUSGSImagesFromPage(eventPageUrl, logger) {
     // 2. Background images in style attributes
     // 3. Links to image files
     
-    // Pattern 1: <img src="..."> - MOST COMMON
+    // Helper function to check if URL is definitely an image (same as extractUSGSImages)
+    const isDefinitelyImageUrl = (url) => {
+      if (!url || typeof url !== 'string') return false;
+      const lowerUrl = url.toLowerCase();
+      
+      // MUST have image file extension
+      if (!/\.(png|jpg|jpeg|gif|webp)(\?|$)/i.test(url)) {
+        return false;
+      }
+      
+      // Exclude known non-image file patterns
+      if (lowerUrl.includes('.xml') || lowerUrl.includes('.json') || 
+          lowerUrl.includes('.txt') || lowerUrl.includes('/contents') ||
+          lowerUrl.includes('/metadata') || lowerUrl.includes('/attenuation') ||
+          lowerUrl.includes('contents.xml') || lowerUrl.includes('attenuation_curves')) {
+        return false;
+      }
+      
+      return true;
+    };
+    
+    // Pattern 1: <img src="..."> - MOST COMMON (IMPROVED: More flexible matching)
     const imgTagPattern = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
     let match;
     let imgCount = 0;
-    while ((match = imgTagPattern.exec(html)) !== null && images.length < 2) {
+    while ((match = imgTagPattern.exec(html)) !== null && images.length < 10) { // Check more images
       const url = match[1];
       if (url && !usedUrls.has(url)) {
-        // Very permissive: any URL that looks like an image or contains USGS-related keywords
-        const isUSGSImage = url.includes('usgs.gov') || url.includes('earthquake.usgs.gov');
-        const isImageFile = /\.(png|jpg|jpeg|gif|webp|svg)/i.test(url);
-        const isImagePath = /\/image|\/map|\/plot|\/shakemap|\/intensity|\/download/i.test(url);
-        const hasImageKeywords = /shakemap|intensity|pga|pgv|mmi|contour|map|plot|beachball|focal/i.test(url);
+        // More flexible: Accept any image URL that could be from USGS
+        const isUSGSImage = url.includes('usgs.gov') || url.includes('earthquake.usgs.gov') || 
+                           url.includes('shakemap') || url.includes('intensity') || 
+                           url.includes('realtime') || url.includes('product');
+        const isImageFile = isDefinitelyImageUrl(url);
         
-        if (isUSGSImage && (isImageFile || isImagePath || hasImageKeywords)) {
+        if (isUSGSImage && isImageFile) {
           // Convert relative URLs to absolute
           const absoluteUrl = url.startsWith('http') ? url : `https://earthquake.usgs.gov${url.startsWith('/') ? url : '/' + url}`;
           images.push({
@@ -408,9 +587,9 @@ async function scrapeUSGSImagesFromPage(eventPageUrl, logger) {
       }
     }
     
-    // Pattern 2: Background images in style attributes
+    // Pattern 2: Background images in style attributes (IMPROVED: More patterns)
     const stylePattern = /style=["'][^"']*background-image:\s*url\(["']?([^"')]+)["']?\)/gi;
-    while ((match = stylePattern.exec(html)) !== null && images.length < 2) {
+    while ((match = stylePattern.exec(html)) !== null && images.length < 10) {
       const url = match[1];
       if (url && !usedUrls.has(url)) {
         const isUSGSImage = url.includes('usgs.gov') || url.includes('earthquake.usgs.gov');
@@ -468,28 +647,43 @@ async function scrapeUSGSImagesFromPage(eventPageUrl, logger) {
       }
     }
     
-    // Pattern 4b: Look for shakemap product URLs (even without file extension)
-    const shakemapUrlPattern = /https?:\/\/[^"'\s<>]+(?:usgs\.gov|earthquake\.usgs\.gov)[^"'\s<>]*\/realtime\/product\/shakemap\/[^"'\s<>]+/gi;
-    while ((match = shakemapUrlPattern.exec(html)) !== null && images.length < 2) {
-      const baseUrl = match[0];
-      // Try common image file names
-      const imageExtensions = ['intensity.jpg', 'pga.jpg', 'pgv.jpg', 'mmi.jpg', 'intensity.png', 'pga.png'];
+    // Pattern 4b: Look for shakemap product URLs (IMPROVED: More comprehensive matching)
+    const shakemapUrlPattern = /https?:\/\/[^"'\s<>]+(?:usgs\.gov|earthquake\.usgs\.gov)[^"'\s<>]*(?:\/realtime\/product\/shakemap\/|shakemap|intensity|mmi|pga|pgv)[^"'\s<>]*/gi;
+    while ((match = shakemapUrlPattern.exec(html)) !== null && images.length < 10) {
+      const baseUrl = match[0].replace(/\/$/, ''); // Remove trailing slash
+      // EXPANDED: More image types and variations
+      const imageExtensions = [
+        'intensity.jpg', 'pga.jpg', 'pgv.jpg', 'mmi.jpg', 'psa03.jpg', 'psa10.jpg', 'psa30.jpg',
+        'intensity.png', 'pga.png', 'pgv.png', 'mmi.png', 'psa03.png', 'psa10.png', 'psa30.png',
+        'intensity_km.jpg', 'pga_km.jpg', 'pgv_km.jpg',
+        'download/intensity.jpg', 'download/pga.jpg', 'download/pgv.jpg', 'download/mmi.jpg',
+        'download/intensity.png', 'download/pga.png', 'download/pgv.png', 'download/mmi.png'
+      ];
       for (const ext of imageExtensions) {
-        const url = baseUrl + '/download/' + ext;
-        if (!usedUrls.has(url)) {
-          images.push({
-            url: url,
-            type: 'scraped-shakemap-constructed',
-            filename: ext,
-            scraped: true,
-            constructed: true
-          });
-          usedUrls.add(url);
-          logger.debug(`[scrapeUSGSImagesFromPage] Constructed shakemap URL: ${url.substring(0, 100)}`);
-          if (images.length >= 2) break;
+        // Try multiple URL patterns
+        const urlPatterns = [
+          baseUrl + '/' + ext,
+          baseUrl + '/download/' + ext,
+          baseUrl.replace(/\/product\/shakemap\/[^\/]+$/, '/product/shakemap/' + ext),
+          baseUrl + ext
+        ];
+        for (const url of urlPatterns) {
+          if (!usedUrls.has(url) && isDefinitelyImageUrl(url)) {
+            images.push({
+              url: url,
+              type: 'scraped-shakemap-constructed',
+              filename: ext,
+              scraped: true,
+              constructed: true
+            });
+            usedUrls.add(url);
+            logger.debug(`[scrapeUSGSImagesFromPage] Found constructed shakemap image: ${url.substring(0, 100)}`);
+            if (images.length >= 10) break;
+          }
         }
+        if (images.length >= 10) break;
       }
-      if (images.length >= 2) break;
+      if (images.length >= 10) break;
     }
     
     // Pattern 5: Look for data-src, data-lazy-src, data-original (lazy-loaded images)
@@ -611,7 +805,9 @@ async function scrapeUSGSImagesFromPage(eventPageUrl, logger) {
       logger.debug('No images found in USGS event page HTML', { url: eventPageUrl });
     }
   
-  return images.slice(0, 2); // Return max 2 images
+  // Return up to 10 images (we'll validate and pick the best 2 later)
+  // This gives us more options to choose from
+  return images.slice(0, 10);
   } catch (error) {
     logger.warn('Error scraping images from USGS event page', {
       error: error.message,
@@ -623,8 +819,9 @@ async function scrapeUSGSImagesFromPage(eventPageUrl, logger) {
 
 /**
  * Generate branded image for earthquake
+ * BUG FIX: Added detailUrl parameter to pass GeoJSON detail URL
  */
-async function generateBrandedImage(magnitude, location, usgsImages, eventId, logger, coordinates = null) {
+async function generateBrandedImage(magnitude, location, usgsImages, eventId, logger, coordinates = null, detailUrl = null) {
   const dryRun = isDryRun();
   
   if (dryRun) {
@@ -667,9 +864,10 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
             url: img?.url?.substring(0, 100)
           }))
         });
-        // Pass coordinates for satellite/map image generation
-        // coordinates format: [lon, lat, depth] from feature.geometry.coordinates
-        const imageBuffer = await generateImage(magnitude, location, usgsImagesArray, eventId, 'standard', coordinates);
+        // PHASE 5: New signature - pass eventId/detailUrl instead of usgsImages
+        // The function will fetch GeoJSON detail and extract products internally
+        // BUG FIX: Use detailUrl parameter instead of accessing undefined feature
+        const imageBuffer = await generateImage(magnitude, location, eventId, 'standard', coordinates, detailUrl);
         imageUrl = await storeImage(imageBuffer, eventId, 'standard');
         logger.info('Branded image generated via direct call', { 
           url: imageUrl,
@@ -1105,14 +1303,76 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   // CRITICAL: We MUST have at least one image, so retry if needed
   const detailUrl = props.detail;
   let eventDetail = null;
-  let usgsImages = [];
   
-  if (detailUrl) {
+  // PRIORITY 1: Scrape images directly from USGS event page HTML FIRST
+  // The user confirmed images are visible immediately on the website
+  // This is faster and more reliable than waiting for API products
+  const eventPageUrl = props.url || `https://earthquake.usgs.gov/earthquakes/eventpage/${eventId}`;
+  logger.info('🌐 PRIORITY 1: Scraping images from USGS event page HTML (immediate availability)', { eventPageUrl });
+  
+  let usgsImages = await scrapeUSGSImagesFromPage(eventPageUrl, logger);
+  
+  if (usgsImages.length > 0) {
+    logger.info(`✅ Found ${usgsImages.length} image(s) via HTML scraping (immediate)`, {
+      images: usgsImages.map(img => ({
+        type: img.type,
+        url: img.url.substring(0, 150),
+        filename: img.filename,
+        scraped: img.scraped || false
+      }))
+    });
+    
+    // Validate that scraped images are actually accessible
+    logger.info('🔍 Validating scraped image URLs...');
+    const validatedImages = [];
+    for (const img of usgsImages) {
+      try {
+        const testResponse = await fetch(img.url, { 
+          method: 'HEAD',
+          headers: { 'User-Agent': 'NoteworthyNews/1.0' },
+          signal: AbortSignal.timeout(5000) // 5 second timeout
+        });
+        if (testResponse.ok) {
+          const contentType = testResponse.headers.get('content-type') || '';
+          if (contentType.startsWith('image/')) {
+            validatedImages.push(img);
+            logger.info(`✅ Validated scraped image: ${img.url.substring(0, 100)} (${contentType})`);
+          } else {
+            logger.warn(`⚠️ Scraped URL is not an image (${contentType}): ${img.url.substring(0, 100)}`);
+          }
+        } else {
+          logger.warn(`⚠️ Scraped image URL returned ${testResponse.status}: ${img.url.substring(0, 100)}`);
+        }
+      } catch (error) {
+        logger.warn(`⚠️ Could not validate scraped image URL: ${error.message}`, { url: img.url.substring(0, 100) });
+      }
+    }
+    
+    if (validatedImages.length > 0) {
+      // Take the best 2 validated images (prioritize shakemap/intensity images)
+      const prioritizedImages = validatedImages.sort((a, b) => {
+        const aPriority = (a.type?.includes('shakemap') || a.url?.includes('shakemap') || a.url?.includes('intensity')) ? 1 : 0;
+        const bPriority = (b.type?.includes('shakemap') || b.url?.includes('shakemap') || b.url?.includes('intensity')) ? 1 : 0;
+        return bPriority - aPriority; // Higher priority first
+      });
+      usgsImages = prioritizedImages.slice(0, 2); // Take top 2
+      logger.info(`✅ Using ${usgsImages.length} validated image(s) from HTML scraping (selected from ${validatedImages.length} candidates)`);
+    } else {
+      logger.warn('⚠️ No validated images from HTML scraping, falling back to API');
+      usgsImages = [];
+    }
+  } else {
+    logger.info('⚠️ No images found via HTML scraping, trying API products');
+  }
+  
+  // PRIORITY 2: Extract USGS images from API products (fallback if HTML scraping found nothing)
+  if (usgsImages.length === 0 && detailUrl) {
+    logger.info('🔄 PRIORITY 2: Trying API products (may take 5-10 minutes for shakemaps)');
     // Try fetching event detail (images may take a few minutes to appear)
     eventDetail = await fetchEventDetail(detailUrl, logger);
     if (eventDetail) {
       usgsImages = extractUSGSImages(eventDetail);
-      logger.info('📸 USGS images extracted', {
+      logger.info('📸 USGS images extracted from API', {
         eventId,
         imageCount: usgsImages.length,
         images: usgsImages.map(img => ({
@@ -1160,22 +1420,13 @@ async function processEarthquake(feature, logger, forceEmail = false) {
         maxRetries = 2; // Reduce to 2 retries if time is tight
       }
       
+      // If no images found, retry API multiple times with increasing delays
+      // USGS images can take 5-15 minutes to appear after earthquake, especially for smaller ones
       for (let retry = 0; retry < maxRetries && usgsImages.length === 0; retry++) {
         logger.info(`No USGS images found, retry ${retry + 1}/${maxRetries} after ${retryDelays[retry]/1000}s...`, { eventId, magnitude });
         await new Promise(resolve => setTimeout(resolve, retryDelays[retry]));
         
-        // ALWAYS try HTML scraping first on retries - it's often faster than waiting for API
-        // HTML scraping can find images that are visible on the page but not yet in the API
-        const eventPageUrl = props.url || `https://earthquake.usgs.gov/earthquakes/eventpage/${eventId}`;
-        logger.info(`🔄 Retry ${retry + 1}: Trying HTML scraping first (often faster than API)`, { eventPageUrl });
-        const scrapedImages = await scrapeUSGSImagesFromPage(eventPageUrl, logger);
-        if (scrapedImages.length > 0) {
-          usgsImages = scrapedImages;
-          logger.info(`✅ USGS images found via HTML scraping on retry ${retry + 1}`, { count: usgsImages.length, eventId });
-          break;
-        }
-        
-        // If HTML scraping didn't work, try API again
+        // Try API again (HTML scraping already done first, so just retry API)
         eventDetail = await fetchEventDetail(detailUrl, logger);
         if (eventDetail) {
           usgsImages = extractUSGSImages(eventDetail);
@@ -1193,57 +1444,6 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     
     // Log final image count with detailed diagnostics
     if (usgsImages.length === 0) {
-      // FALLBACK: Try scraping images directly from the USGS event page HTML
-      // The user reported that images are visible on the website even when the API doesn't return them
-      const eventPageUrl = props.url || `https://earthquake.usgs.gov/earthquakes/eventpage/${eventId}`;
-      logger.info('🔄 No images from API, trying HTML scraping fallback', { eventPageUrl });
-      
-      const scrapedImages = await scrapeUSGSImagesFromPage(eventPageUrl, logger);
-      if (scrapedImages.length > 0) {
-        usgsImages = scrapedImages;
-        logger.info(`✅ Found ${usgsImages.length} image(s) via HTML scraping`, {
-          images: usgsImages.map(img => ({
-            type: img.type,
-            url: img.url.substring(0, 150),
-            filename: img.filename,
-            scraped: img.scraped || false
-          }))
-        });
-        
-        // CRITICAL: Validate that scraped images are actually accessible
-        logger.info('🔍 Validating scraped image URLs...');
-        const validatedImages = [];
-        for (const img of usgsImages) {
-          try {
-            const testResponse = await fetch(img.url, { 
-              method: 'HEAD',
-              headers: { 'User-Agent': 'NoteworthyNews/1.0' },
-              signal: AbortSignal.timeout(5000) // 5 second timeout
-            });
-            if (testResponse.ok) {
-              const contentType = testResponse.headers.get('content-type') || '';
-              if (contentType.startsWith('image/')) {
-                validatedImages.push(img);
-                logger.info(`✅ Validated scraped image: ${img.url.substring(0, 100)} (${contentType})`);
-              } else {
-                logger.warn(`⚠️ Scraped URL is not an image (${contentType}): ${img.url.substring(0, 100)}`);
-              }
-            } else {
-              logger.warn(`⚠️ Scraped image URL returned ${testResponse.status}: ${img.url.substring(0, 100)}`);
-            }
-          } catch (error) {
-            logger.warn(`⚠️ Could not validate scraped image URL: ${error.message}`, { url: img.url.substring(0, 100) });
-          }
-        }
-        
-        if (validatedImages.length > 0) {
-          usgsImages = validatedImages;
-          logger.info(`✅ ${validatedImages.length} scraped image(s) validated and ready for use`);
-        } else {
-          logger.warn(`⚠️ All ${scrapedImages.length} scraped images failed validation - they may not be accessible`);
-          // Keep them anyway - downloadImage will retry
-        }
-      } else {
         // Log what products are available for debugging
         const availableProducts = eventDetail?.properties?.products ? Object.keys(eventDetail.properties.products) : [];
         const productCounts = {};
@@ -1344,7 +1544,24 @@ async function processEarthquake(feature, logger, forceEmail = false) {
         reason: !existingEvent ? 'new_earthquake' : !existingEvent.image_url ? 'no_existing_image' : 'usgs_images_now_available'
       });
       
-      imageUrl = await generateBrandedImage(magnitude, locationDisplay, usgsImages, eventId, logger, coordinates);
+      // CRITICAL: Log what images we're passing to image generation
+      logger.info('📤 Passing USGS images to image generator', {
+        eventId,
+        imageCount: usgsImages.length,
+        hasImages: usgsImages.length > 0,
+        images: usgsImages.map(img => ({
+          type: img.type,
+          url: img.url?.substring(0, 100),
+          filename: img.filename,
+          scraped: img.scraped || false,
+          constructed: img.constructed || false
+        })),
+        hasCoordinates: !!coordinates,
+        coordinates: coordinates ? [coordinates[0], coordinates[1]] : null
+      });
+      
+      // BUG FIX: Pass detailUrl to generateBrandedImage (extracted at line 1303)
+      imageUrl = await generateBrandedImage(magnitude, locationDisplay, usgsImages, eventId, logger, coordinates, detailUrl);
       
       // CRITICAL: Verify imageUrl was actually generated
       if (!imageUrl || imageUrl.trim() === '') {
@@ -1855,7 +2072,10 @@ async function run(logger) {
   }
 }
 
+// PHASE 1: Export new functions
 module.exports = {
+  fetchUsgsDetailGeoJson,
+  extractUsgsProductImages,
   run,
   fetchEventDetail,
   extractUSGSImages,
