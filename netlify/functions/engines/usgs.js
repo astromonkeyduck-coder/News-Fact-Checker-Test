@@ -1232,6 +1232,7 @@ async function storeEvent(event, logger) {
     throw error;
   }
 }
+}
 
 /**
  * Process a single earthquake feature
@@ -1840,7 +1841,6 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   }
   
   return { isNew, event: storedEvent };
-}
 }
 
 /**
