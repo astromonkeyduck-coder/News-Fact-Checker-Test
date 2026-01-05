@@ -134,14 +134,37 @@ function createAnimatedEffectsSVG(width, height, magnitude, time, progress) {
                          magnitude >= 4.0 ? 'rgba(255, 180, 40, 0.8)' : 
                          'rgba(255, 255, 255, 0.7)';
   
-  // 4. Professional intensity visualization - MMI (Modified Mercalli Intensity) rings (SLOW)
-  const mmiRings = [];
-  const mmiLevels = Math.min(4, Math.ceil(magnitude / 1.5)); // MMI levels based on magnitude
-  for (let i = 0; i < mmiLevels; i++) {
-    const ringProgress = (progress + i * 0.25) % 1.0;
-    const ringRadius = (40 + i * 35 + Math.sin(time * 0.8) * 5) * scaleFactor; // Much slower pulse
-    const ringOpacity = (0.3 - i * 0.06) * (0.6 + Math.sin(time * 0.8) * 0.2); // Subtle variation
-    mmiRings.push({ radius: ringRadius, opacity: ringOpacity, level: i + 1 });
+  // 4. Accurate earthquake rings - P-wave, S-wave, Surface wave (based on magnitude)
+  // Calculate approximate felt radius in km based on magnitude
+  // Formula: felt radius ≈ 10^(magnitude - 3) km (rough approximation)
+  const feltRadiusKm = Math.pow(10, magnitude - 3);
+  
+  // Convert km to pixels (estimate: for full image, use ~10km per 100px as baseline)
+  // This is approximate since we don't have exact zoom level for the full image
+  const kmPerPixel = 0.1; // ~10km per 100px for full image view
+  const feltRadiusPx = Math.min(feltRadiusKm / kmPerPixel, Math.min(width, height) * 0.3);
+  
+  // Create three rings representing different wave phases (with smooth pulsing animation)
+  const earthquakeRings = [];
+  const ringTypes = [
+    { name: 'P-wave', color: '#60A5FA', baseRadius: 0.3, opacity: 0.4 }, // Blue - fastest
+    { name: 'S-wave', color: '#FBBF24', baseRadius: 0.6, opacity: 0.5 }, // Yellow - secondary
+    { name: 'Surface', color: '#DC2626', baseRadius: 1.0, opacity: 0.6 }  // Red - most destructive
+  ];
+  
+  for (let i = 0; i < ringTypes.length; i++) {
+    const ringType = ringTypes[i];
+    const baseRadius = feltRadiusPx * ringType.baseRadius;
+    // Smooth pulsing animation (slow and controlled)
+    const pulseAmount = Math.sin(time * 0.8) * (baseRadius * 0.1); // 10% pulse variation
+    const ringRadius = Math.max(baseRadius + pulseAmount, 20 * scaleFactor); // Minimum 20px
+    const ringOpacity = ringType.opacity * (0.7 + Math.sin(time * 0.8) * 0.2); // Subtle opacity variation
+    earthquakeRings.push({
+      radius: ringRadius,
+      opacity: ringOpacity,
+      color: ringType.color,
+      name: ringType.name
+    });
   }
   
   // 5. Intensity heat map effect - very subtle, slow pulse
@@ -247,12 +270,12 @@ function createAnimatedEffectsSVG(width, height, magnitude, time, progress) {
                 stroke-dasharray="${15 * scaleFactor} ${8 * scaleFactor}"/>
       `).join('')}
       
-      <!-- MMI Intensity rings - professional visualization -->
-      ${mmiRings.map((ring, i) => `
+      <!-- Accurate earthquake rings - P-wave (blue), S-wave (yellow), Surface wave (red) -->
+      ${earthquakeRings.map((ring, i) => `
         <circle cx="${centerX}" cy="${centerY}" r="${ring.radius}" 
                 fill="none" 
-                stroke="${magnitudeColor}" 
-                stroke-width="${(3 + ring.level * 0.5) * scaleFactor}" 
+                stroke="${ring.color}" 
+                stroke-width="${(2 + i * 0.5) * scaleFactor}" 
                 opacity="${ring.opacity}"/>
       `).join('')}
       

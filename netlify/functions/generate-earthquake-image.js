@@ -1007,8 +1007,27 @@ async function buildTwoImageSources({ eventId, detailUrl, coordinates, locationT
   logger = logger || { info: console.log, warn: console.warn, error: console.error };
   
   // STEP 0: Extract coordinates for logging
+  // CRITICAL: Ensure correct coordinate order
+  // coordinates can be: [lon, lat] array OR {lat, lon} object
   const lat = coordinates?.lat ?? coordinates?.[1] ?? null;
   const lon = coordinates?.lon ?? coordinates?.[0] ?? null;
+  
+  // CRITICAL VALIDATION: Log coordinates to catch mismatches
+  if (lat != null && lon != null) {
+    logger.info(`[buildTwoImageSources] 🔍 COORDINATE VALIDATION:`, {
+      eventId,
+      extractedLat: lat,
+      extractedLon: lon,
+      coordinateFormat: Array.isArray(coordinates) ? 'array [lon, lat]' : 'object {lat, lon}',
+      rawCoordinates: coordinates
+    });
+    
+    // Sanity check: lat should be between -90 and 90, lon between -180 and 180
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      logger.error(`[buildTwoImageSources] ❌ INVALID COORDINATES: lat=${lat}, lon=${lon} - OUT OF RANGE!`);
+      throw new Error(`Invalid coordinates: lat=${lat}, lon=${lon} (must be lat: -90 to 90, lon: -180 to 180)`);
+    }
+  }
   
   // STEP 1: Fetch GeoJSON detail for THIS eventId (event-locked)
   let detailJson = null;
@@ -1309,6 +1328,21 @@ async function buildTwoImageSources({ eventId, detailUrl, coordinates, locationT
         let productionMethod = 'unknown';
         
         try {
+          // CRITICAL: Validate coordinates before Mapbox call
+          if (lat == null || lon == null) {
+            throw new Error(`Missing coordinates: lat=${lat}, lon=${lon}`);
+          }
+          
+          // CRITICAL: Log Mapbox request with coordinates for debugging
+          logger.info(`[buildTwoImageSources] 🛰️ Requesting Mapbox satellite image:`, {
+            eventId,
+            lat,
+            lon,
+            zoom: mapZoom,
+            expectedLocation: locationText,
+            coordinatesValid: (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180)
+          });
+          
           // STEP 1: Fetch Mapbox satellite image
           const satelliteImage = await generateMapboxSatelliteImage({
             lat,
@@ -1556,13 +1590,33 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
   // PHASE 5: Functions are imported inside buildTwoImageSources to avoid module loading issues
   
   // FORENSIC LOGGING: Log render request details
+  // CRITICAL: Extract coordinates correctly
+  // coordinates can be: [lon, lat] array OR {lat, lon} object
   const lat = coordinates?.[1] ?? coordinates?.lat ?? null;
   const lon = coordinates?.[0] ?? coordinates?.lon ?? null;
+  
+  // CRITICAL VALIDATION: Verify coordinates match expected location
+  // For Los Angeles: lat should be ~34, lon should be ~-118
+  // For Assam, India: lat should be ~26, lon should be ~92
+  if (lat != null && lon != null) {
+    // Sanity check: lat should be between -90 and 90, lon between -180 and 180
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      throw new Error(`Invalid coordinates: lat=${lat}, lon=${lon} (must be lat: -90 to 90, lon: -180 to 180)`);
+    }
+    
+    // Additional validation: Check if coordinates seem swapped
+    // If lat is > 90 or < -90, or lon is > 180 or < -180, coordinates might be swapped
+    if (Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+      console.error(`[generate-earthquake-image] ⚠️ WARNING: Coordinates may be swapped! lat=${lat}, lon=${lon}`);
+    }
+  }
   
   console.log(`[generate-earthquake-image] 🔍 FORENSIC: Render request:`, {
     eventId,
     detailUrl,
     coordinates: { lat, lon },
+    rawCoordinates: coordinates,
+    coordinateFormat: Array.isArray(coordinates) ? 'array [lon, lat]' : (coordinates ? 'object {lat, lon}' : 'null'),
     magnitude,
     location,
     timestamp: new Date().toISOString()
@@ -1972,7 +2026,24 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
     logger: { info: console.log, warn: console.warn, error: console.error }
   });
   
+  // CRITICAL ASSERTION: Must have exactly 2 image sources
+  if (!imageSources || imageSources.length !== 2) {
+    throw new Error(`FATAL: compositor did not receive exactly 2 image sources. Got ${imageSources?.length || 0} sources. EventId: ${eventId}`);
+  }
+  
+  // CRITICAL: Log buffer hashes BEFORE compositing to verify correct buffers
+  console.log(`[generate-earthquake-image] 🔍 COMPOSITE INPUT BUFFERS (BEFORE COMPOSITING):`, imageSources.map((i, idx) => ({
+    index: idx + 1,
+    label: i.label,
+    hash: i.bufferHash || getBufferHash(i.buffer),
+    method: i.productionMethod || 'unknown',
+    type: i.type,
+    source: i.source,
+    url: i.url ? i.url.substring(0, 80) : 'N/A (fallback)'
+  })));
+  
   // PHASE 4: Add exactly 2 images to composite
+  // CRITICAL: ONLY use buffers from buildTwoImageSources() - NO OTHER SOURCES
   let usgsImageCount = 0;
   let locationMapCount = 0;
   
