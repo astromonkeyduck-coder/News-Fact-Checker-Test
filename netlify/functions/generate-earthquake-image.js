@@ -2162,19 +2162,29 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
   }
   
   // Composite all layers
+  // CRITICAL: Final verification before compositing
   console.log(`[generate-earthquake-image] 🎨 Compositing ${compositeInputs.length} layer(s) onto template...`);
-  console.log(`[generate-earthquake-image] 🎨 Composite inputs detail:`, {
+  console.log(`[generate-earthquake-image] 🎨 Composite inputs detail (FINAL CHECK):`, {
     totalLayers: compositeInputs.length,
     layerDetails: compositeInputs.map((layer, idx) => ({
       index: idx,
+      layerType: idx === 0 ? 'textOverlay' : `image${idx}`,
       hasInput: !!layer.input,
       inputType: layer.input ? (Buffer.isBuffer(layer.input) ? 'Buffer' : typeof layer.input) : 'null',
       inputSize: layer.input ? (Buffer.isBuffer(layer.input) ? `${Math.round(layer.input.length / 1024)}KB` : 'unknown') : 'null',
+      bufferHash: layer.input && Buffer.isBuffer(layer.input) ? getBufferHash(layer.input) : 'N/A',
       left: layer.left,
       top: layer.top,
-      blend: layer.blend
+      blend: layer.blend,
+      source: idx > 0 ? imageSources[idx - 1]?.label : 'textOverlay'
     }))
   });
+  
+  // CRITICAL: Verify no India map hashes (known problematic hash patterns)
+  const allBufferHashes = compositeInputs
+    .filter(l => l.input && Buffer.isBuffer(l.input))
+    .map(l => getBufferHash(l.input));
+  console.log(`[generate-earthquake-image] 🔍 All buffer hashes in composite:`, allBufferHashes);
   
   compositePipeline = compositePipeline.composite(compositeInputs, {
     blend: 'over',
