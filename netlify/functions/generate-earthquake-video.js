@@ -296,7 +296,7 @@ function createAnimatedEffectsSVG(width, height, magnitude, time, progress) {
 
 /**
  * Convert frames to animated GIF
- * Uses gifenc (pure JS, no dependencies) or gifencoder as fallback
+ * Uses gifenc (pure JS, no dependencies)
  */
 async function framesToAnimatedGIF(frames, width, height) {
   console.log(`[generate-earthquake-video] 🎥 Processing ${frames.length} frames to animated GIF...`);
@@ -377,51 +377,11 @@ async function framesToAnimatedGIF(frames, width, height) {
     return gifBuffer;
     
   } catch (gifencError) {
-    console.warn(`[generate-earthquake-video] ⚠️ gifenc not available: ${gifencError.message}`);
-    
-    // Fallback to gifencoder if available
-    try {
-      const GIFEncoder = require('gifencoder');
-      const { createCanvas, loadImage } = require('canvas');
-      
-      console.log(`[generate-earthquake-video] 🎬 Using gifencoder (requires canvas)...`);
-      
-      const encoder = new GIFEncoder(width, height);
-      encoder.setRepeat(0); // 0 = repeat forever
-      encoder.setDelay(67); // ~15fps
-      encoder.setQuality(10);
-      
-      const canvas = createCanvas(width, height);
-      const ctx = canvas.getContext('2d');
-      
-      encoder.start();
-      
-      for (let i = 0; i < frames.length; i++) {
-        const frame = frames[i];
-        const image = await loadImage(frame);
-        ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(image, 0, 0);
-        encoder.addFrame(ctx);
-        
-        if ((i + 1) % 10 === 0) {
-          console.log(`[generate-earthquake-video] ✅ Processed ${i + 1}/${frames.length} frames`);
-        }
-      }
-      
-      encoder.finish();
-      const gifBuffer = encoder.out.getData();
-      
-      console.log(`[generate-earthquake-video] ✅ Created animated GIF with gifencoder: ${Math.round(gifBuffer.length / 1024)}KB`);
-      return Buffer.from(gifBuffer);
-      
-    } catch (gifencoderError) {
-      // Final fallback: Return first frame
-      console.error(`[generate-earthquake-video] ❌ GIF encoding failed: ${gifencoderError.message}`);
-      console.error(`[generate-earthquake-video] 💡 Install gifenc: npm install gifenc`);
-      console.error(`[generate-earthquake-video] 💡 Or install gifencoder + canvas: npm install gifencoder canvas`);
-      console.error(`[generate-earthquake-video] 💡 Returning first frame as fallback (all ${frames.length} frames generated)`);
-      return frames[0];
-    }
+    // Final fallback: Return first frame if gifenc fails
+    console.error(`[generate-earthquake-video] ❌ GIF encoding failed: ${gifencError.message}`);
+    console.error(`[generate-earthquake-video] 💡 gifenc should be installed: npm install gifenc`);
+    console.error(`[generate-earthquake-video] 💡 Returning first frame as fallback (all ${frames.length} frames generated)`);
+    return frames[0];
   }
 }
 
