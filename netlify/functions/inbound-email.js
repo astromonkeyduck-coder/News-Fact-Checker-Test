@@ -28,6 +28,7 @@ const crypto = require('crypto');
 
 /**
  * Call ingest-all function via HTTP
+ * Uses fire-and-forget approach to avoid webhook timeouts
  */
 async function triggerIngestAll() {
   const siteUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || 'https://noteworthynews.co';
@@ -45,23 +46,29 @@ async function triggerIngestAll() {
       headers: {
         'Content-Type': 'application/json',
       },
+      timeout: 5000, // 5 second timeout - just to verify the request was accepted
     };
 
     const client = url.protocol === 'https:' ? https : http;
     const req = client.request(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-      res.on('end', () => {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          console.log(`[Inbound Email] ingest-all triggered successfully`);
-          resolve({ success: true, statusCode: res.statusCode, data });
-        } else {
-          console.error(`[Inbound Email] ingest-all returned status ${res.statusCode}: ${data}`);
-          reject(new Error(`HTTP ${res.statusCode}: ${data}`));
-        }
-      });
+      // Fire-and-forget: resolve immediately when we get a response (even if it's still processing)
+      // We don't wait for the full response body since ingest-all can take 15-20 seconds
+      console.log(`[Inbound Email] ingest-all request accepted (status ${res.statusCode})`);
+      
+      // If status is 200-299, consider it successful (ingest-all is running)
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        resolve({ success: true, statusCode: res.statusCode, message: 'Ingest-all triggered successfully' });
+      } else {
+        // For non-2xx, we still want to read the error to log it
+        let data = '';
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        res.on('end', () => {
+          console.error(`[Inbound Email] ingest-all returned status ${res.statusCode}: ${data.substring(0, 500)}`);
+          reject(new Error(`HTTP ${res.statusCode}: ${data.substring(0, 200)}`));
+        });
+      }
     });
 
     req.on('error', (error) => {
@@ -69,6 +76,14 @@ async function triggerIngestAll() {
       reject(error);
     });
 
+    req.on('timeout', () => {
+      console.warn(`[Inbound Email] Request timeout (ingest-all may still be processing)`);
+      req.destroy();
+      // Even on timeout, consider it successful if we got this far (request was sent)
+      resolve({ success: true, statusCode: 202, message: 'Ingest-all request sent (processing)' });
+    });
+
+    req.setTimeout(5000); // 5 second timeout
     req.end();
   });
 }
