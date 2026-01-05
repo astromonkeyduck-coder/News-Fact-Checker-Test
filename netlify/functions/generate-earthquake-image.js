@@ -541,7 +541,6 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
       filename: img?.filename
     }))) : 'null'
   });
-  
   // Format magnitude text
   const magnitudeText = `M${magnitude.toFixed(1)}`;
   
