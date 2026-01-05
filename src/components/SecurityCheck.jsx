@@ -30,7 +30,7 @@ const securityConfig = typeof window !== 'undefined' && window.securityConfig
   : defaultSecurityConfig;
 
 /**
- * Animated Spinner Component
+ * Animated Spinner Component - Horizontal Progress Bar Style
  */
 function SecuritySpinner() {
   return (
@@ -40,49 +40,75 @@ function SecuritySpinner() {
       aria-busy="true"
       aria-label="Verifying your browser"
       style={{
-        width: '48px',
-        height: '48px',
+          width: '100%',
+          maxWidth: '479px',
+          height: '123px',
         margin: '0 auto 1.5rem',
         position: 'relative',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        transform: 'rotate(-2deg)'
       }}
     >
-      {/* Rotating border circle */}
+      {/* Outer frame - light brown */}
       <div
         style={{
           position: 'absolute',
           width: '100%',
           height: '100%',
-          border: '4px solid rgba(74, 144, 226, 0.2)',
-          borderTop: '4px solid #4A90E2',
-          borderRadius: '50%',
-          animation: 'securitySpin 1s linear infinite',
-          top: 0,
-          left: 0
+          backgroundColor: '#D4A574',
+          borderRadius: '8px',
+          border: '2px solid #C4955F',
+          boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.2)'
         }}
       />
-      {/* Shield icon overlay - static, not rotating */}
+      
+      {/* Inner track - blue-gray background */}
       <div
         style={{
           position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          fontSize: '20px',
-          color: '#4A90E2',
-          opacity: 0.8,
-          zIndex: 2,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          pointerEvents: 'none',
-          willChange: 'auto'
+          width: 'calc(100% - 12px)',
+          height: 'calc(100% - 12px)',
+          top: '6px',
+          left: '6px',
+          backgroundColor: '#6B7A8F',
+          borderRadius: '6px',
+          overflow: 'hidden'
         }}
-      >
-        🛡️
-      </div>
+      />
+      
+      {/* Progress fill - lighter blue-gray, animated */}
+      <div
+        className="security-progress-fill"
+        style={{
+          position: 'absolute',
+          height: 'calc(100% - 12px)',
+          top: '6px',
+          left: '6px',
+          width: '0%',
+          backgroundColor: '#8FA0B8',
+          borderRadius: '6px',
+          animation: 'securityProgress 2s ease-in-out infinite',
+          boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.3)'
+        }}
+      />
+      
+      {/* Reddish-orange circular indicator on the right */}
+      <div
+        style={{
+          position: 'absolute',
+          right: '8px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: '16px',
+          height: '16px',
+          backgroundColor: '#FF6B4A',
+          borderRadius: '50%',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+          zIndex: 2
+        }}
+      />
     </div>
   );
 }
@@ -289,9 +315,10 @@ export default function SecurityCheck({
       {/* Add CSS animation if not already present */}
       {typeof document !== 'undefined' && !document.querySelector('style[data-security-check]') && (
         <style>{`
-          @keyframes securitySpin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+          @keyframes securityProgress {
+            0% { width: 0%; }
+            50% { width: 85%; }
+            100% { width: 0%; }
           }
         `}</style>
       )}
