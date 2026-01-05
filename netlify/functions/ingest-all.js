@@ -23,19 +23,17 @@ try {
   
   // Explicitly require all engines so zisi bundler can find them
   // This helps zisi understand the dependencies at build time
+  // NOTE: Must use static requires (not dynamic) for zisi bundler to work
   console.log('[ingest-all] Loading engines...');
-  engines = {};
-  
-  const engineList = ['usgs', 'nws', 'faa', 'uscg', 'volcano', 'embassy'];
-  for (const engineName of engineList) {
-    try {
-      engines[engineName] = require(`./engines/${engineName}`);
-      console.log(`[ingest-all] ✓ Engine ${engineName} loaded`);
-    } catch (engineError) {
-      console.error(`[ingest-all] ✗ Failed to load engine ${engineName}:`, engineError.message);
-      // Continue loading other engines
-    }
-  }
+  engines = {
+    usgs: require('./engines/usgs'),
+    nws: require('./engines/nws'),
+    faa: require('./engines/faa'),
+    uscg: require('./engines/uscg'),
+    volcano: require('./engines/volcano'),
+    embassy: require('./engines/embassy'),
+  };
+  console.log('[ingest-all] ✓ All engines loaded');
   
   console.log('[ingest-all] ✓ All dependencies loaded');
 } catch (initError) {
