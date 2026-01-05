@@ -155,21 +155,19 @@ async function runEngine(engineName) {
  * Main handler
  */
 exports.handler = async (event, context) => {
-  // Wrap everything in try-catch to ensure we always return a response
-  try {
-    const startTime = Date.now();
-    const getRemainingTime = () => {
-      if (context && typeof context.getRemainingTimeInMillis === 'function') {
-        return context.getRemainingTimeInMillis();
-      }
-      // Fallback: assume 26 seconds for pro tier, 10 seconds for free tier
-      const elapsed = Date.now() - startTime;
-      return Math.max(2000, 26000 - elapsed); // Leave 2 seconds buffer
-    };
-    
-    console.log('[ingest-all] Handler invoked');
-    console.log('[ingest-all] Remaining time:', getRemainingTime(), 'ms');
+  const startTime = Date.now();
+  const getRemainingTime = () => {
+    if (context && typeof context.getRemainingTimeInMillis === 'function') {
+      return context.getRemainingTimeInMillis();
+    }
+    // Fallback: assume 26 seconds for pro tier, 10 seconds for free tier
+    const elapsed = Date.now() - startTime;
+    return Math.max(2000, 26000 - elapsed); // Leave 2 seconds buffer
+  };
   
+  console.log('[ingest-all] Handler invoked');
+  console.log('[ingest-all] Remaining time:', getRemainingTime(), 'ms');
+
   // Check if dependencies loaded successfully
   if (!supabase) {
     const errorMsg = 'Supabase client not initialized. Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.';
