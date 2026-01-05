@@ -2068,18 +2068,18 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
       position: `(${x}, ${y})`,
       size: `${imageWidth}x${IMAGE_AREA_HEIGHT}`
     });
-            
-            compositeInputs.push({
+              
+              compositeInputs.push({
       input: source.buffer,
-              left: x,
-              top: y,
-              blend: 'over',
-            });
+                left: x,
+                top: y,
+                blend: 'over',
+              });
     
     if (source.type === 'usgs') {
       usgsImageCount++;
           } else {
-      locationMapCount++;
+              locationMapCount++;
     }
     
     console.log(`[generate-earthquake-image] ✅ Added ${source.type} image ${i + 1}/2:`, {
@@ -2102,15 +2102,30 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
     selectedImages: finalSelectedImages
   });
   
-  // OLD CODE REMOVED - Now using buildTwoImageSources above
-  /*
-  if (usgsImages && usgsImages.length > 0) {
-  */
+  // CRITICAL: Verify compositeInputs contains ONLY buffers from buildTwoImageSources()
+  // compositeInputs should have: [textOverlay, image1, image2] = 3 total
+  if (compositeInputs.length !== 3) {
+    throw new Error(`FATAL: compositeInputs has ${compositeInputs.length} layers, expected 3 (textOverlay + 2 images). EventId: ${eventId}`);
+  }
+  
+  // CRITICAL: Verify the 2 image buffers match what buildTwoImageSources() returned
+  const imageBuffersInComposite = compositeInputs.slice(1); // Skip text overlay (index 0)
+  for (let i = 0; i < imageBuffersInComposite.length; i++) {
+    const compositeBuffer = imageBuffersInComposite[i].input;
+    const sourceBuffer = imageSources[i].buffer;
+    const compositeHash = getBufferHash(compositeBuffer);
+    const sourceHash = getBufferHash(sourceBuffer);
+    
+    if (compositeHash !== sourceHash) {
+      throw new Error(`FATAL: Composite buffer ${i + 1} hash mismatch! Composite: ${compositeHash}, Source: ${sourceHash}. EventId: ${eventId}`);
+    }
+  }
   
   // CRITICAL: Log what will be in the final composite
-  console.log(`[generate-earthquake-image] 📊 COMPOSITE LAYERS:`, {
+  console.log(`[generate-earthquake-image] 📊 COMPOSITE LAYERS (VERIFIED):`, {
     totalLayers: compositeInputs.length,
-    hasTextOverlay: false, // Template already has text baked in
+    textOverlay: true,
+    imageCount: imageSources.length,
     hasUSGSImages: usgsImageCount > 0,
     usgsImageCount: usgsImageCount,
     locationMapCount: locationMapCount,
@@ -2118,7 +2133,8 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
     outputDimensions: `${outputWidth}x${outputHeight}`,
     scaleFactor: scaleFactor.toFixed(3),
     magnitudeText: magnitudeText,
-    locationText: location.toUpperCase()
+    locationText: location.toUpperCase(),
+    bufferHashes: imageSources.map(s => getBufferHash(s.buffer))
   });
   
   // Scale template to match output dimensions if 4K is enabled
