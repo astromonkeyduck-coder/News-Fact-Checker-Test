@@ -98,6 +98,8 @@ async function fetchEventDetail(detailUrl, logger) {
  * Extract USGS product images from GeoJSON detail
  * PHASE 1: Primary extraction method using products.contents
  * Returns array of image candidates with metadata for ranking
+ * 
+ * EXPORTED: Single source of truth for product extraction
  */
 function extractUsgsProductImages(detailJson) {
   const candidates = [];
@@ -1304,70 +1306,16 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   const detailUrl = props.detail;
   let eventDetail = null;
   
-  // PRIORITY 1: Scrape images directly from USGS event page HTML FIRST
-  // The user confirmed images are visible immediately on the website
-  // This is faster and more reliable than waiting for API products
-  const eventPageUrl = props.url || `https://earthquake.usgs.gov/earthquakes/eventpage/${eventId}`;
-  logger.info('🌐 PRIORITY 1: Scraping images from USGS event page HTML (immediate availability)', { eventPageUrl });
+  // ARCHITECTURE CHANGE: HTML scraping REMOVED to prevent cross-event contamination
+  // Images must come ONLY from eventId's GeoJSON detail products (event-locked)
+  // This ensures no images from other earthquakes can leak in
+  logger.info('🔒 EVENT-LOCKED: Using ONLY GeoJSON detail products (HTML scraping disabled)', { eventId, detailUrl });
   
-  let usgsImages = await scrapeUSGSImagesFromPage(eventPageUrl, logger);
+  let usgsImages = [];
   
-  if (usgsImages.length > 0) {
-    logger.info(`✅ Found ${usgsImages.length} image(s) via HTML scraping (immediate)`, {
-      images: usgsImages.map(img => ({
-        type: img.type,
-        url: img.url.substring(0, 150),
-        filename: img.filename,
-        scraped: img.scraped || false
-      }))
-    });
-    
-    // Validate that scraped images are actually accessible
-    logger.info('🔍 Validating scraped image URLs...');
-    const validatedImages = [];
-    for (const img of usgsImages) {
-      try {
-        const testResponse = await fetch(img.url, { 
-          method: 'HEAD',
-          headers: { 'User-Agent': 'NoteworthyNews/1.0' },
-          signal: AbortSignal.timeout(5000) // 5 second timeout
-        });
-        if (testResponse.ok) {
-          const contentType = testResponse.headers.get('content-type') || '';
-          if (contentType.startsWith('image/')) {
-            validatedImages.push(img);
-            logger.info(`✅ Validated scraped image: ${img.url.substring(0, 100)} (${contentType})`);
-          } else {
-            logger.warn(`⚠️ Scraped URL is not an image (${contentType}): ${img.url.substring(0, 100)}`);
-          }
-        } else {
-          logger.warn(`⚠️ Scraped image URL returned ${testResponse.status}: ${img.url.substring(0, 100)}`);
-        }
-      } catch (error) {
-        logger.warn(`⚠️ Could not validate scraped image URL: ${error.message}`, { url: img.url.substring(0, 100) });
-      }
-    }
-    
-    if (validatedImages.length > 0) {
-      // Take the best 2 validated images (prioritize shakemap/intensity images)
-      const prioritizedImages = validatedImages.sort((a, b) => {
-        const aPriority = (a.type?.includes('shakemap') || a.url?.includes('shakemap') || a.url?.includes('intensity')) ? 1 : 0;
-        const bPriority = (b.type?.includes('shakemap') || b.url?.includes('shakemap') || b.url?.includes('intensity')) ? 1 : 0;
-        return bPriority - aPriority; // Higher priority first
-      });
-      usgsImages = prioritizedImages.slice(0, 2); // Take top 2
-      logger.info(`✅ Using ${usgsImages.length} validated image(s) from HTML scraping (selected from ${validatedImages.length} candidates)`);
-    } else {
-      logger.warn('⚠️ No validated images from HTML scraping, falling back to API');
-      usgsImages = [];
-    }
-  } else {
-    logger.info('⚠️ No images found via HTML scraping, trying API products');
-  }
-  
-  // PRIORITY 2: Extract USGS images from API products (fallback if HTML scraping found nothing)
-  if (usgsImages.length === 0 && detailUrl) {
-    logger.info('🔄 PRIORITY 2: Trying API products (may take 5-10 minutes for shakemaps)');
+  // PRIORITY 1: Extract USGS images from API products ONLY (event-locked via detailUrl)
+  if (detailUrl) {
+    logger.info('🔄 PRIORITY 1: Extracting images from GeoJSON detail products (event-locked)');
     // Try fetching event detail (images may take a few minutes to appear)
     eventDetail = await fetchEventDetail(detailUrl, logger);
     if (eventDetail) {
@@ -1386,65 +1334,10 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       logger.warn('⚠️ No event detail available for image extraction', { eventId, detailUrl });
     }
     
-    // If no images found, retry multiple times with increasing delays
-    // USGS images can take 5-15 minutes to appear after earthquake, especially for smaller ones
-    // For smaller earthquakes (< 5.0), use shorter retries to avoid timeout
-    // For larger earthquakes (>= 5.0), use longer retries as images are more likely
-    if (usgsImages.length === 0 && eventDetail) {
-      // CRITICAL: USGS images can take 5-10 minutes to generate, but we can't wait that long
-      // Strategy: Try multiple times with increasing delays, then rely on HTML scraping
-      // HTML scraping often works even when API doesn't have images yet (images are on the page)
-      // Keep retry delays SHORT to avoid timeouts - rely on HTML scraping instead
-      const isLargeEarthquake = magnitude >= 5.0;
-      let maxRetries = 2; // Only 2 retries to stay fast
-      let retryDelays = isLargeEarthquake 
-        ? [3000, 5000]  // 3s, 5s for large earthquakes (total: 8s)
-        : [2000, 3000];   // 2s, 3s for small earthquakes (total: 5s)
-      
-      // Calculate total retry time to ensure we don't timeout
-      const totalRetryTime = retryDelays.reduce((sum, delay) => sum + delay, 0);
-      const maxFunctionTime = 55000; // Leave 5s buffer before 60s timeout
-      
-      if (totalRetryTime > maxFunctionTime) {
-        logger.warn('Retry delays too long, reducing to prevent timeout', { 
-          eventId, 
-          magnitude, 
-          totalRetryTime,
-          maxFunctionTime 
-        });
-        // Use shorter delays if calculated time is too long
-        // If we're running out of time, reduce to 2 retries with shorter delays
-        // Fix: Actually use shorter delays (reduced from original) to prevent timeout
-        const adjustedDelays = isLargeEarthquake ? [2000, 3000] : [1000, 2000];
-        retryDelays = adjustedDelays;
-        maxRetries = 2; // Reduce to 2 retries if time is tight
-      }
-      
-      // If no images found, retry API multiple times with increasing delays
-      // USGS images can take 5-15 minutes to appear after earthquake, especially for smaller ones
-      for (let retry = 0; retry < maxRetries && usgsImages.length === 0; retry++) {
-        logger.info(`No USGS images found, retry ${retry + 1}/${maxRetries} after ${retryDelays[retry]/1000}s...`, { eventId, magnitude });
-        await new Promise(resolve => setTimeout(resolve, retryDelays[retry]));
-        
-        // Try API again (HTML scraping already done first, so just retry API)
-        eventDetail = await fetchEventDetail(detailUrl, logger);
-        if (eventDetail) {
-          usgsImages = extractUSGSImages(eventDetail);
-          if (usgsImages.length > 0) {
-            logger.info(`✅ USGS images found on retry ${retry + 1} via API`, { count: usgsImages.length, eventId });
-            break;
-          } else {
-            // Log what products are available for debugging
-            const availableProducts = eventDetail?.properties?.products ? Object.keys(eventDetail.properties.products) : [];
-            logger.debug(`Retry ${retry + 1}: Still no images from API, available products: ${availableProducts.join(', ')}`, { eventId });
-          }
-        }
-      }
-    }
-    
-    // Log final image count with detailed diagnostics
+    // ARCHITECTURE CHANGE: No retries with HTML scraping fallback
+    // If API products don't have images, use fallback maps (no cross-event contamination)
+    // USGS images can take 5-15 minutes to appear, but we won't use wrong images
     if (usgsImages.length === 0) {
-      // Log what products are available for debugging
       const availableProducts = eventDetail?.properties?.products ? Object.keys(eventDetail.properties.products) : [];
       const productCounts = {};
       if (eventDetail?.properties?.products) {
@@ -1453,56 +1346,31 @@ async function processEarthquake(feature, logger, forceEmail = false) {
         }
       }
       
-      logger.warn('⚠️ No USGS images available for earthquake - image will be generated without USGS maps', { 
+      logger.warn('⚠️ No USGS images available for earthquake - will use fallback maps', { 
         eventId, 
         hasDetailUrl: !!detailUrl,
         hasEventDetail: !!eventDetail,
         availableProducts: availableProducts,
         productCounts: productCounts,
         detailUrl: detailUrl,
-        scrapedFromHTML: false,
-        eventPageUrl: eventPageUrl
+        reason: 'No image products found in GeoJSON (event-locked)'
       });
     } else {
-      logger.info('✅ USGS images extracted successfully', { 
+      // FORENSIC LOGGING: Log extracted images with event binding verification
+      logger.info('✅ USGS images extracted (event-locked)', { 
         count: usgsImages.length, 
         eventId,
-        imageTypes: usgsImages.map(img => img.type),
-        imageUrls: usgsImages.map(img => img.url.substring(0, 100))
+        imageDetails: usgsImages.map(img => ({
+          type: img.type,
+          url: img.url,
+          filename: img.filename,
+          eventIdInUrl: img.url?.toLowerCase().includes(eventId?.toLowerCase() || '')
+        }))
       });
-      
-      // Validate that the image URLs are actually accessible
-      // This helps catch issues early before image generation
-      for (let i = 0; i < usgsImages.length; i++) {
-        const img = usgsImages[i];
-        try {
-          const testResponse = await fetch(img.url, { 
-            method: 'HEAD',
-            headers: { 'User-Agent': 'NoteworthyNews/1.0' },
-            signal: AbortSignal.timeout(5000) // 5 second timeout
-          });
-          if (!testResponse.ok) {
-            logger.warn(`⚠️ USGS image URL ${i + 1} returned ${testResponse.status}: ${img.url.substring(0, 100)}`);
-          } else {
-            const contentType = testResponse.headers.get('content-type') || '';
-            if (!contentType.startsWith('image/')) {
-              logger.warn(`⚠️ USGS image URL ${i + 1} doesn't appear to be an image (content-type: ${contentType}): ${img.url.substring(0, 100)}`);
-            } else {
-              logger.debug(`✅ USGS image URL ${i + 1} validated: ${contentType}`);
-            }
-          }
-        } catch (error) {
-          logger.warn(`⚠️ Could not validate USGS image URL ${i + 1}: ${error.message}`, { url: img.url.substring(0, 100) });
-        }
-      }
     }
   } else {
     logger.warn('⚠️ No detail URL available for earthquake - cannot fetch USGS images', { eventId });
   }
-  
-  // Missing closing brace added above - the else block properly closes the if at line 1369
-  
-  // Note: The else block above closes the if (usgsImages.length === 0 && detailUrl) statement at line 1369
   
   // Check if event already exists to avoid regenerating images unnecessarily
   const { data: existingEvent } = await supabase
@@ -2071,7 +1939,6 @@ async function run(logger) {
     };
   }
 }
-}
 
 // PHASE 1: Export new functions
 module.exports = {
@@ -2081,3 +1948,4 @@ module.exports = {
   fetchEventDetail,
   extractUSGSImages,
 };
+}

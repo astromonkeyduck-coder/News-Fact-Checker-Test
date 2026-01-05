@@ -15,6 +15,20 @@ const { getStore } = require('@netlify/blobs');
 // PHASE 6: Updated to use eventId/detailUrl instead of usgsImages
 async function generateVideoFrames(magnitude, location, eventId, coordinates = null, detailUrl = null) {
   const { generateImage } = require('./generate-earthquake-image');
+  const crypto = require('crypto');
+  
+  // FORENSIC LOGGING: Log video generation request
+  const lat = coordinates?.[1] ?? coordinates?.lat ?? null;
+  const lon = coordinates?.[0] ?? coordinates?.lon ?? null;
+  
+  console.log(`[generate-earthquake-video] 🔍 FORENSIC: Video render request:`, {
+    eventId,
+    detailUrl,
+    coordinates: { lat, lon },
+    magnitude,
+    location,
+    timestamp: new Date().toISOString()
+  });
   
   const frameCount = 60; // 60 frames for smooth animation (6 seconds at 10fps - slow and professional)
   const frames = [];
@@ -22,7 +36,12 @@ async function generateVideoFrames(magnitude, location, eventId, coordinates = n
   console.log(`[generate-earthquake-video] 🎬 Generating ${frameCount} frames for video...`);
   
   // PHASE 6: Generate base image - function will fetch GeoJSON detail and extract products internally
+  // This ensures event-locked image selection (no cross-event contamination)
   const baseImageBuffer = await generateImage(magnitude, location, eventId, 'standard', coordinates, detailUrl);
+  
+  // FORENSIC: Log base image buffer hash
+  const baseImageHash = crypto.createHash('sha1').update(baseImageBuffer).digest('hex').substring(0, 8);
+  console.log(`[generate-earthquake-video] 🔍 FORENSIC: Base image buffer hash: ${baseImageHash} (eventId: ${eventId})`);
   const baseImage = sharp(baseImageBuffer);
   const metadata = await baseImage.metadata();
   const width = metadata.width;
@@ -53,12 +72,30 @@ async function generateVideoFrames(magnitude, location, eventId, coordinates = n
       .png()
       .toBuffer();
     
+    // FORENSIC: Log frame buffer hash for first and last frames
+    if (i === 0 || i === frameCount - 1) {
+      const frameHash = crypto.createHash('sha1').update(frame).digest('hex').substring(0, 8);
+      console.log(`[generate-earthquake-video] 🔍 FORENSIC: Frame ${i + 1} buffer hash: ${frameHash} (eventId: ${eventId})`);
+    }
+    
     frames.push(frame);
     
     if ((i + 1) % 10 === 0) {
       console.log(`[generate-earthquake-video] ✅ Generated ${i + 1}/${frameCount} frames`);
     }
   }
+  
+  // FORENSIC LOGGING: Log final video generation summary
+  console.log(`[generate-earthquake-video] 🔍 FORENSIC: Video generation complete:`, {
+    eventId,
+    detailUrl,
+    coordinates: { lat, lon },
+    frameCount: frames.length,
+    dimensions: `${width}x${height}`,
+    baseImageHash,
+    firstFrameHash: frames.length > 0 ? crypto.createHash('sha1').update(frames[0]).digest('hex').substring(0, 8) : null,
+    lastFrameHash: frames.length > 0 ? crypto.createHash('sha1').update(frames[frames.length - 1]).digest('hex').substring(0, 8) : null
+  });
   
   return { frames, width, height };
 }
@@ -474,6 +511,13 @@ exports.handler = async (event, context) => {
     
     // BUG FIX: Convert coordinates object { lat, lon } to array format [lon, lat] expected by generateImage
     const coordinatesArray = (lat != null && lon != null) ? [lon, lat] : null;
+    
+    // FORENSIC: Log coordinate conversion
+    console.log(`[generate-earthquake-video] 🔍 FORENSIC: Coordinate conversion:`, {
+      received: { lat, lon },
+      converted: coordinatesArray,
+      eventId
+    });
     
     // PHASE 6: Generate video frames - function will fetch GeoJSON detail and extract products internally
     const { frames, width, height } = await generateVideoFrames(magnitude, location, eventId, coordinatesArray, detailUrl);

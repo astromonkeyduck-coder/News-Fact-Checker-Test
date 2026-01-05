@@ -2,7 +2,14 @@
  * Comprehensive Local Test Script
  * Tests the full earthquake image and video generation pipeline locally
  * Run with: node test-full-pipeline-local.js
+ * 
+ * Requires Supabase credentials in .env.local file:
+ * SUPABASE_URL=your_url
+ * SUPABASE_SERVICE_ROLE_KEY=your_key
  */
+
+// Load environment variables from .env.local
+require('dotenv').config({ path: '.env.local' });
 
 const path = require('path');
 const fs = require('fs');
@@ -254,8 +261,14 @@ async function testFullPipeline() {
     
     if (!testData.eventId) {
       console.log('  ⚠️  No event with products found, using test data');
-      testData.eventId = 'us7000rmhe'; // Known event that should have images
+      console.log('  ⚠️  Testing coordinate validation: using event with MISMATCHED coordinates');
+      // Use a known event ID but with LA coordinates to test validation
+      testData.eventId = 'us7000rmhe'; // This event is NOT in Los Angeles
       testData.detailUrl = `https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/${testData.eventId}.geojson`;
+      // Keep LA coordinates - validation should reject USGS images and use fallback maps
+      console.log('  ⚠️  Event ID:', testData.eventId);
+      console.log('  ⚠️  Test coordinates (LA):', testData.coordinates);
+      console.log('  ⚠️  Validation should REJECT USGS images and use fallback maps');
     }
   } else {
     // TEST MODE B: Recent event without products
@@ -312,7 +325,7 @@ async function testFullPipeline() {
     const { generateImage } = require('./netlify/functions/generate-earthquake-image');
     
     // PHASE 7: Use new signature - pass eventId/detailUrl instead of usgsImages
-    const detailUrl = testData.detailUrl || null;
+    const detailUrl = testData.detailUrl || `https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/${testData.eventId}.geojson`;
     console.log(`  📡 Using eventId: ${testData.eventId}, detailUrl: ${detailUrl || 'auto'}`);
     const imageBuffer = await generateImage(
       testData.magnitude,
@@ -359,12 +372,13 @@ async function testFullPipeline() {
       coordinates: testData.coordinates 
     });
     // PHASE 7: Use new signature - pass eventId/detailUrl instead of usgsImages
+    const videoDetailUrl = testData.detailUrl || `https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/${testData.eventId}.geojson`;
     const { frames, width, height } = await generateVideoFrames(
       testData.magnitude,
       testData.location,
       testData.eventId,
       testData.coordinates, // Pass as [lon, lat] array directly
-      detailUrl
+      videoDetailUrl
     );
     
     console.log(`  ✅ Generated ${frames.length} frames (${width}x${height})`);

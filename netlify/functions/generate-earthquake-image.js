@@ -11,6 +11,7 @@ const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
 const resvg = require('@resvg/resvg-js');
+const crypto = require('crypto');
 
 // Load embedded fonts (base64)
 let FONT_DATA = null;
@@ -340,7 +341,7 @@ function createVisualEffectsSVG(width, height, magnitude, scaleFactor = 1.0) {
 /**
  * PHASE 2: Enhanced image download with detailed logging
  */
-async function downloadImage(url, retries = 5) {
+async function downloadImage(url, retries = 5, eventId = null) {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       console.log(`[generate-earthquake-image] 📥 Downloading image (attempt ${attempt + 1}/${retries}): ${url.substring(0, 100)}`);
@@ -348,8 +349,10 @@ async function downloadImage(url, retries = 5) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
       
+      // STRICT: Manual redirect handling to validate event binding
       const response = await fetch(url, {
         signal: controller.signal,
+        redirect: 'manual',  // Don't follow redirects automatically
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept': 'image/png,image/jpeg,image/gif,image/webp,*/*',
@@ -359,6 +362,27 @@ async function downloadImage(url, retries = 5) {
       });
       
       clearTimeout(timeoutId);
+      
+      // STRICT: Validate redirects before following
+      if ([301, 302, 303, 307, 308].includes(response.status)) {
+        const redirectUrl = response.headers.get('location');
+        if (!redirectUrl) {
+          throw new Error(`Redirect with no location header (status ${response.status})`);
+        }
+        
+        // Resolve absolute URL
+        const absoluteRedirectUrl = new URL(redirectUrl, url).toString();
+        
+        // STRICT: Verify redirect URL is bound to eventId
+        if (eventId && !verifyEventBinding(absoluteRedirectUrl, eventId)) {
+          throw new Error(`Redirect URL not bound to eventId ${eventId}: ${absoluteRedirectUrl.substring(0, 100)}`);
+        }
+        
+        console.log(`[generate-earthquake-image] 🔄 Following validated redirect: ${absoluteRedirectUrl.substring(0, 100)}`);
+        
+        // Recursively follow redirect (with remaining retries)
+        return downloadImage(absoluteRedirectUrl, retries - attempt, eventId);
+      }
       
       const status = response.status;
       const contentType = response.headers.get('content-type') || '';
@@ -403,14 +427,18 @@ async function downloadImage(url, retries = 5) {
         throw new Error(`Invalid image format (magic bytes: ${magicBytes})`);
       }
       
-      // PHASE 2: Final success log with details
+      // FORENSIC: Calculate buffer hash for tracking
+      const bufferHash = crypto.createHash('sha1').update(buffer).digest('hex').substring(0, 8);
+      
+      // PHASE 2: Final success log with details + buffer hash
       console.log(`[generate-earthquake-image] ✅ Successfully downloaded image:`, {
         url: url.substring(0, 100),
         attempt: attempt + 1,
         status,
         contentType,
         bufferSize: `${Math.round(buffer.length / 1024)}KB`,
-        format: isPNG ? 'PNG' : isJPEG ? 'JPEG' : isGIF ? 'GIF' : isWebP ? 'WebP' : 'unknown'
+        format: isPNG ? 'PNG' : isJPEG ? 'JPEG' : isGIF ? 'GIF' : isWebP ? 'WebP' : 'unknown',
+        bufferHash: bufferHash  // FORENSIC: Hash for cross-event contamination detection
       });
       return buffer;
       
@@ -515,12 +543,160 @@ async function prepareUSGSImage(imageBuffer, targetWidth, targetHeight) {
  * @param {string} templateType - 'standard' (4K), 'square' (1080x1080), 'wide' (1920x1080)
  */
 /**
- * PHASE 3: Generate fallback location map image (server-side, no external DNS dependency)
- * Creates a simple location card image with gradient background, pin icon, and coordinates
+ * Generate Mapbox Satellite image with epicenter overlay
+ * Uses Mapbox Static Images API for satellite imagery
  */
-async function renderFallbackMapPng({ lat, lon, zoom = 11, width = 600, height = 400, locationText = null }) {
+async function generateMapboxSatelliteImage({ lat, lon, zoom, width, height, logger }) {
+  // Sanity checks
+  if (lat < -85 || lat > 85) {
+    throw new Error(`Invalid latitude: ${lat} (must be between -85 and 85)`);
+  }
+  if (lon < -180 || lon > 180) {
+    throw new Error(`Invalid longitude: ${lon} (must be between -180 and 180)`);
+  }
+  
+  const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN;
+  if (!MAPBOX_TOKEN) {
+    if (logger) logger.warn(`[generateMapboxSatelliteImage] ⚠️ MAPBOX_TOKEN not set, cannot generate satellite image`);
+    throw new Error('MAPBOX_TOKEN environment variable not set');
+  }
+  
+  // Mapbox Static Images API URL
+  // Format: https://api.mapbox.com/styles/v1/{username}/{style_id}/static/{overlay}/{lon},{lat},{zoom}/{width}x{height}@{2x}?access_token={token}
+  // We use mapbox/satellite-v9 for satellite imagery
+  // No overlay markers from Mapbox - we'll add our own
+  const baseUrl = 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static';
+  const url = `${baseUrl}/${lon},${lat},${zoom}/${width}x${height}@2x?access_token=${MAPBOX_TOKEN}`;
+  
+  if (logger) {
+    logger.info(`[generateMapboxSatelliteImage] 📡 Requesting Mapbox satellite image:`, {
+      lat,
+      lon,
+      zoom,
+      width,
+      height,
+      url: url.substring(0, 100) + '...'
+    });
+  }
+  
   try {
-    // Create a simple gradient background (dark to light)
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'NoteworthyNews/1.0'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`Mapbox API error: ${response.status} ${response.statusText} - ${errorText.substring(0, 200)}`);
+    }
+    
+    const imageBuffer = Buffer.from(await response.arrayBuffer());
+    
+    if (logger) {
+      const bufferHash = getBufferHash(imageBuffer);
+      logger.info(`[generateMapboxSatelliteImage] ✅ Mapbox satellite image fetched: ${width}x${height}, bufferHash: ${bufferHash}`);
+    }
+    
+    return imageBuffer;
+  } catch (error) {
+    if (logger) {
+      logger.error(`[generateMapboxSatelliteImage] ❌ Failed to fetch Mapbox satellite image: ${error.message}`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Overlay epicenter graphics on satellite image (NO TEXT)
+ * Epicenter is at center of image (width/2, height/2) since Mapbox centers on coordinates
+ */
+async function overlayEpicenterGraphics(imageBuffer, width, height, logger) {
+  // Epicenter is at center of image
+  const centerX = width / 2;
+  const centerY = height / 2;
+  
+  // Create SVG overlay with epicenter graphics (NO TEXT)
+  const overlaySVG = Buffer.from(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <!-- Outer ring (60px radius, red, 25% opacity) -->
+      <circle cx="${centerX}" cy="${centerY}" r="60" fill="none" stroke="#DC2626" stroke-width="2" opacity="0.25"/>
+      
+      <!-- Inner ring (30px radius, red, 35% opacity) -->
+      <circle cx="${centerX}" cy="${centerY}" r="30" fill="none" stroke="#DC2626" stroke-width="2" opacity="0.35"/>
+      
+      <!-- Crosshair - horizontal line -->
+      <line x1="${centerX - 80}" y1="${centerY}" x2="${centerX + 80}" y2="${centerY}" stroke="#FFFFFF" stroke-width="1.5" opacity="0.8"/>
+      
+      <!-- Crosshair - vertical line -->
+      <line x1="${centerX}" y1="${centerY - 80}" x2="${centerX}" y2="${centerY + 80}" stroke="#FFFFFF" stroke-width="1.5" opacity="0.8"/>
+      
+      <!-- Epicenter dot (10px radius, red fill, white stroke) -->
+      <circle cx="${centerX}" cy="${centerY}" r="10" fill="#DC2626" stroke="#FFFFFF" stroke-width="2"/>
+    </svg>
+  `);
+  
+  try {
+    const finalImage = await sharp(imageBuffer)
+      .composite([{ input: overlaySVG, blend: 'over' }])
+      .png()
+      .toBuffer();
+    
+    if (logger) {
+      const overlayHash = getBufferHash(finalImage);
+      logger.info(`[overlayEpicenterGraphics] ✅ Epicenter graphics overlaid, bufferHash: ${overlayHash}`);
+    }
+    
+    return finalImage;
+  } catch (error) {
+    if (logger) {
+      logger.error(`[overlayEpicenterGraphics] ❌ Failed to overlay epicenter graphics: ${error.message}`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * PHASE 3: Generate fallback location map image (server-side, with actual map tiles)
+ * DEPRECATED: Replaced by generateMapboxSatelliteImage
+ * Attempts to fetch OpenStreetMap tiles and stitch them, falls back to gradient card if tiles fail
+ */
+async function renderFallbackMapPng({ lat, lon, zoom = 11, width = 600, height = 400, locationText = null, logger = null }) {
+  try {
+    // Try to fetch actual map tiles first
+    try {
+      const mapImage = await fetchAndStitchMapTiles({ lat, lon, zoom, width, height, logger });
+      if (mapImage) {
+        // Add location pin and text overlay
+        const overlaySVG = Buffer.from(`
+          <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+            <!-- Red pin marker at center -->
+            <circle cx="${width / 2}" cy="${height / 2}" r="8" fill="#FF0000" stroke="#FFFFFF" stroke-width="2"/>
+            <polygon points="${width / 2},${height / 2 + 8} ${width / 2 - 6},${height / 2 + 18} ${width / 2 + 6},${height / 2 + 18}" fill="#FF0000" stroke="#FFFFFF" stroke-width="1"/>
+            ${locationText ? `
+            <rect x="${width / 2 - 100}" y="${height - 60}" width="200" height="40" fill="rgba(0,0,0,0.7)" rx="4"/>
+            <text x="${width / 2}" y="${height - 35}" 
+                  font-family="Arial, sans-serif" font-size="14" font-weight="bold" 
+                  fill="#FFFFFF" text-anchor="middle">
+              ${escapeSVGText(locationText)}
+            </text>
+            ` : ''}
+          </svg>
+        `);
+        
+        const finalImage = await sharp(mapImage)
+          .composite([{ input: overlaySVG, blend: 'over' }])
+          .png()
+          .toBuffer();
+        
+        if (logger) logger.info(`[renderFallbackMapPng] ✅ Generated map with tiles: ${width}x${height}`);
+        return finalImage;
+      }
+    } catch (tileError) {
+      if (logger) logger.warn(`[renderFallbackMapPng] ⚠️ Map tiles failed, using gradient fallback: ${tileError.message}`);
+    }
+    
+    // FALLBACK: Create a simple gradient background (dark to light)
     const gradient = sharp({
       create: {
         width: width,
@@ -572,182 +748,908 @@ async function renderFallbackMapPng({ lat, lon, zoom = 11, width = 600, height =
       .png()
       .toBuffer();
     
-    console.log(`[generate-earthquake-image] ✅ Generated fallback map image: ${width}x${height} (${Math.round(mapImage.length / 1024)}KB)`);
+    if (logger) logger.info(`[renderFallbackMapPng] ✅ Generated gradient fallback map: ${width}x${height}`);
     return mapImage;
   } catch (error) {
-    console.error(`[generate-earthquake-image] ❌ Error generating fallback map:`, error.message);
+    if (logger) logger.error(`[renderFallbackMapPng] ❌ Error generating fallback map: ${error.message}`);
     return null;
   }
 }
 
 /**
- * PHASE 4: Build exactly 2 image sources (USGS or fallback)
- * Returns array of [{ type: "usgs"|"fallback", buffer, label }] with exactly 2 items
+ * Generate Mapbox Satellite image with epicenter overlay
+ * Uses Mapbox Static Images API for satellite imagery
  */
-async function buildTwoImageSources({ usgsCandidates, coordinates, locationText, imageWidth, imageHeight, logger }) {
+async function generateMapboxSatelliteImage({ lat, lon, zoom, width, height, logger }) {
+  // Sanity checks
+  if (lat < -85 || lat > 85) {
+    throw new Error(`Invalid latitude: ${lat} (must be between -85 and 85)`);
+  }
+  if (lon < -180 || lon > 180) {
+    throw new Error(`Invalid longitude: ${lon} (must be between -180 and 180)`);
+  }
+  
+  const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN;
+  if (!MAPBOX_TOKEN) {
+    if (logger) logger.warn(`[generateMapboxSatelliteImage] ⚠️ MAPBOX_TOKEN not set, cannot generate satellite image`);
+    throw new Error('MAPBOX_TOKEN environment variable not set');
+  }
+  
+  // Mapbox Static Images API URL
+  // Format: https://api.mapbox.com/styles/v1/{username}/{style_id}/static/{overlay}/{lon},{lat},{zoom}/{width}x{height}@{2x}?access_token={token}
+  // We use mapbox/satellite-v9 for satellite imagery
+  // No overlay markers from Mapbox - we'll add our own
+  const baseUrl = 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static';
+  const url = `${baseUrl}/${lon},${lat},${zoom}/${width}x${height}@2x?access_token=${MAPBOX_TOKEN}`;
+  
+  if (logger) {
+    logger.info(`[generateMapboxSatelliteImage] 📡 Requesting Mapbox satellite image:`, {
+      lat,
+      lon,
+      zoom,
+      width,
+      height,
+      url: url.substring(0, 100) + '...'
+    });
+  }
+  
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'NoteworthyNews/1.0'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`Mapbox API error: ${response.status} ${response.statusText} - ${errorText.substring(0, 200)}`);
+    }
+    
+    const imageBuffer = Buffer.from(await response.arrayBuffer());
+    
+    if (logger) {
+      const bufferHash = getBufferHash(imageBuffer);
+      logger.info(`[generateMapboxSatelliteImage] ✅ Mapbox satellite image fetched: ${width}x${height}, bufferHash: ${bufferHash}`);
+    }
+    
+    return imageBuffer;
+  } catch (error) {
+    if (logger) {
+      logger.error(`[generateMapboxSatelliteImage] ❌ Failed to fetch Mapbox satellite image: ${error.message}`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Overlay epicenter graphics on satellite image (NO TEXT)
+ * Epicenter is at center of image (width/2, height/2) since Mapbox centers on coordinates
+ */
+async function overlayEpicenterGraphics(imageBuffer, width, height, logger) {
+  // Epicenter is at center of image
+  const centerX = width / 2;
+  const centerY = height / 2;
+  
+  // Create SVG overlay with epicenter graphics (NO TEXT)
+  const overlaySVG = Buffer.from(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <!-- Outer ring (60px radius, red, 25% opacity) -->
+      <circle cx="${centerX}" cy="${centerY}" r="60" fill="none" stroke="#DC2626" stroke-width="2" opacity="0.25"/>
+      
+      <!-- Inner ring (30px radius, red, 35% opacity) -->
+      <circle cx="${centerX}" cy="${centerY}" r="30" fill="none" stroke="#DC2626" stroke-width="2" opacity="0.35"/>
+      
+      <!-- Crosshair - horizontal line -->
+      <line x1="${centerX - 80}" y1="${centerY}" x2="${centerX + 80}" y2="${centerY}" stroke="#FFFFFF" stroke-width="1.5" opacity="0.8"/>
+      
+      <!-- Crosshair - vertical line -->
+      <line x1="${centerX}" y1="${centerY - 80}" x2="${centerX}" y2="${centerY + 80}" stroke="#FFFFFF" stroke-width="1.5" opacity="0.8"/>
+      
+      <!-- Epicenter dot (10px radius, red fill, white stroke) -->
+      <circle cx="${centerX}" cy="${centerY}" r="10" fill="#DC2626" stroke="#FFFFFF" stroke-width="2"/>
+    </svg>
+  `);
+  
+  try {
+    const finalImage = await sharp(imageBuffer)
+      .composite([{ input: overlaySVG, blend: 'over' }])
+      .png()
+      .toBuffer();
+    
+    if (logger) {
+      const overlayHash = getBufferHash(finalImage);
+      logger.info(`[overlayEpicenterGraphics] ✅ Epicenter graphics overlaid, bufferHash: ${overlayHash}`);
+    }
+    
+    return finalImage;
+  } catch (error) {
+    if (logger) {
+      logger.error(`[overlayEpicenterGraphics] ❌ Failed to overlay epicenter graphics: ${error.message}`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Fetch and stitch OpenStreetMap tiles into a single image
+ * CRITICAL: lon is X-axis, lat is Y-axis in Web Mercator
+ * DEPRECATED: This function is replaced by generateMapboxSatelliteImage
+ */
+async function fetchAndStitchMapTiles({ lat, lon, zoom, width, height, logger }) {
+  // FORENSIC LOGGING: Log input parameters
+  if (logger) {
+    logger.info(`[fetchAndStitchMapTiles] 🔍 FORENSIC: Input parameters:`, {
+      inputLat: lat,
+      inputLon: lon,
+      zoom: zoom,
+      width: width,
+      height: height
+    });
+  }
+  
+  const TILE_SIZE = 256;
+  const tilesX = Math.ceil(width / TILE_SIZE);
+  const tilesY = Math.ceil(height / TILE_SIZE);
+  
+  // Convert lat/lon to tile coordinates (Web Mercator projection)
+  // CRITICAL: lon is X-axis, lat is Y-axis
+  function deg2num(lat, lon, zoom) {
+    const n = Math.pow(2, zoom);
+    // X tile: based on longitude (lon is X-axis)
+    const xtile = Math.floor((lon + 180) / 360 * n);
+    // Y tile: based on latitude (lat is Y-axis, but Web Mercator uses inverted Y)
+    const ytile = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n);
+    return { x: xtile, y: ytile };
+  }
+  
+  const centerTile = deg2num(lat, lon, zoom);
+  const startX = centerTile.x - Math.floor(tilesX / 2);
+  const startY = centerTile.y - Math.floor(tilesY / 2);
+  const endX = startX + tilesX - 1;
+  const endY = startY + tilesY - 1;
+  
+  // FORENSIC LOGGING: Log computed tile coordinates
+  if (logger) {
+    logger.info(`[fetchAndStitchMapTiles] 🔍 FORENSIC: Computed tile coordinates:`, {
+      centerTileX: centerTile.x,
+      centerTileY: centerTile.y,
+      tileRangeX: { min: startX, max: endX },
+      tileRangeY: { min: startY, max: endY },
+      tilesX: tilesX,
+      tilesY: tilesY,
+      stitchedWidth: tilesX * TILE_SIZE,
+      stitchedHeight: tilesY * TILE_SIZE
+    });
+  }
+  
+  // SANITY CHECK: Verify tile coordinates are reasonable for the input location
+  // For LA (lon ~ -118, lat ~ 34), at zoom 11:
+  // Expected X tile range: approximately 200-300 (Western US)
+  // Expected Y tile range: approximately 300-400 (Southern US)
+  // If computed tiles are way off (e.g., X > 1000 or Y > 1000 for zoom 11), something is wrong
+  const maxReasonableTile = Math.pow(2, zoom);
+  if (centerTile.x < 0 || centerTile.x >= maxReasonableTile || 
+      centerTile.y < 0 || centerTile.y >= maxReasonableTile) {
+    if (logger) {
+      logger.error(`[fetchAndStitchMapTiles] ❌ SANITY CHECK FAILED: Invalid tile coordinates`, {
+        centerTileX: centerTile.x,
+        centerTileY: centerTile.y,
+        maxReasonableTile: maxReasonableTile,
+        zoom: zoom,
+        inputLat: lat,
+        inputLon: lon
+      });
+    }
+    throw new Error(`Invalid tile coordinates: x=${centerTile.x}, y=${centerTile.y} for zoom=${zoom}`);
+  }
+  
+  // Additional sanity check: For Western US (lon < -100), X tile should be roughly in first half
+  // For Eastern US (lon > -100), X tile should be roughly in second half
+  // This is a rough check - if lon is -118 but X tile is > 500 at zoom 11, something is swapped
+  if (lon < -100 && centerTile.x > maxReasonableTile * 0.6) {
+    if (logger) {
+      logger.error(`[fetchAndStitchMapTiles] ❌ SANITY CHECK FAILED: X tile too high for Western US longitude`, {
+        inputLon: lon,
+        computedXTile: centerTile.x,
+        maxReasonableTile: maxReasonableTile,
+        expectedRange: `0-${Math.floor(maxReasonableTile * 0.6)}`
+      });
+    }
+    throw new Error(`X tile coordinate mismatch: lon=${lon} but xTile=${centerTile.x} (expected < ${Math.floor(maxReasonableTile * 0.6)})`);
+  }
+  
+  // Fetch all tiles
+  const tilePromises = [];
+  for (let y = 0; y < tilesY; y++) {
+    for (let x = 0; x < tilesX; x++) {
+      const tileX = startX + x;
+      const tileY = startY + y;
+      const tileUrl = `https://tile.openstreetmap.org/${zoom}/${tileX}/${tileY}.png`;
+      
+      tilePromises.push(
+        fetch(tileUrl, {
+          headers: { 'User-Agent': 'NoteworthyNews/1.0' }
+        })
+          .then(res => res.ok ? res.arrayBuffer() : null)
+          .then(buf => buf ? Buffer.from(buf) : null)
+          .catch(() => null)
+          .then(buffer => ({ x, y, buffer }))
+      );
+    }
+  }
+  
+  const tiles = await Promise.all(tilePromises);
+  const validTiles = tiles.filter(t => t.buffer);
+  
+  if (validTiles.length === 0) {
+    throw new Error('No tiles fetched');
+  }
+  
+  // Stitch tiles together
+  const stitchedWidth = tilesX * TILE_SIZE;
+  const stitchedHeight = tilesY * TILE_SIZE;
+  const composites = [];
+  
+  for (const tile of validTiles) {
+    if (tile.buffer) {
+      composites.push({
+        input: tile.buffer,
+        left: tile.x * TILE_SIZE,
+        top: tile.y * TILE_SIZE
+      });
+    }
+  }
+  
+  let stitched = sharp({
+    create: {
+      width: stitchedWidth,
+      height: stitchedHeight,
+      channels: 3,
+      background: { r: 200, g: 200, b: 200 }
+    }
+  });
+  
+  if (composites.length > 0) {
+    stitched = stitched.composite(composites);
+  }
+  
+  // Crop to desired size and center on coordinates
+  const cropX = Math.max(0, Math.floor((stitchedWidth - width) / 2));
+  const cropY = Math.max(0, Math.floor((stitchedHeight - height) / 2));
+  
+  const finalImage = await stitched
+    .extract({ left: cropX, top: cropY, width: Math.min(width, stitchedWidth - cropX), height: Math.min(height, stitchedHeight - cropY) })
+    .resize(width, height, { fit: 'cover' })
+    .png()
+    .toBuffer();
+  
+  return finalImage;
+}
+
+/**
+ * ARCHITECTURE CHANGE: Build exactly 2 validated image sources (EVENT-LOCKED)
+ * 
+ * MANDATORY FLOW:
+ * 1. Fetch GeoJSON detail for eventId (validates event-locking)
+ * 2. Extract products ONLY from this eventId's GeoJSON
+ * 3. Build ranked candidate list (shakemap/dyfi, intensity/mmi/pga/pgv first)
+ * 4. Download and validate top candidates (cap at 4, pick first 2 successful)
+ * 5. Fill remaining slots with fallback maps
+ * 
+ * Returns array of [{ type: "usgs"|"fallback", buffer, label, source }] with exactly 2 items
+ */
+/**
+ * Helper: Generate buffer hash for forensic tracking
+ */
+function getBufferHash(buffer) {
+  if (!buffer || !Buffer.isBuffer(buffer)) return 'null';
+  return crypto.createHash('sha1').update(buffer).digest('hex').substring(0, 8);
+}
+
+/**
+ * Helper: Normalize event ID by removing prefix
+ */
+function stripPrefix(id = '') {
+  return id.toLowerCase().replace(/^(us|ak|ci|nc|nn|pr|tx|hv|mb|se|uw)/, '');
+}
+
+/**
+ * Helper: Verify URL is from the same eventId (STRICT event binding)
+ * Requires exact path segment match - no partial matching
+ */
+function verifyEventBinding(url, eventId) {
+  if (!url || !eventId) return false;
+  const u = url.toLowerCase();
+  const id = eventId.toLowerCase();
+  
+  // Split URL into segments (path + query, but not fragment)
+  const segments = u.split(/[\/?#]/g);
+  
+  // STRICT: Exact segment match (strongest check)
+  if (segments.includes(id)) return true;
+  
+  // Common USGS patterns: ".../eventpage/{id}/..."
+  if (u.includes(`/eventpage/${id}/`)) return true;
+  
+  // Common USGS product patterns: ".../product/{type}/{id}/..."
+  if (u.includes(`/product/`) && u.includes(`/${id}/`)) return true;
+  
+  // NO PARTIAL MATCHES - reject if we get here
+  return false;
+}
+
+async function buildTwoImageSources({ eventId, detailUrl, coordinates, locationText, imageWidth, imageHeight, logger }) {
   const sources = [];
   const maxImages = 2;
+  const maxCandidatesToDownload = 4; // Download up to 4, pick best 2
   
   logger = logger || { info: console.log, warn: console.warn, error: console.error };
   
-  // PHASE 4: Try to download/process USGS images in priority order
-  if (usgsCandidates && usgsCandidates.length > 0) {
-    logger.info(`[buildTwoImageSources] 📸 Processing ${usgsCandidates.length} USGS candidate(s)...`);
+  // STEP 0: Extract coordinates for logging
+  const lat = coordinates?.lat ?? coordinates?.[1] ?? null;
+  const lon = coordinates?.lon ?? coordinates?.[0] ?? null;
+  
+  // STEP 1: Fetch GeoJSON detail for THIS eventId (event-locked)
+  let detailJson = null;
+  let usgsCandidates = [];
+  
+  if (eventId || detailUrl) {
+    logger.info(`[buildTwoImageSources] 🔒 Fetching event-locked GeoJSON detail for eventId: ${eventId}`);
     
-    for (const candidate of usgsCandidates) {
-      if (sources.length >= maxImages) break;
-      
-      try {
-        const imageBuffer = await downloadImage(candidate.url, 3);
-        if (imageBuffer) {
-          const processedImage = await prepareUSGSImage(imageBuffer, imageWidth, imageHeight);
-          if (processedImage) {
-            sources.push({
-              type: 'usgs',
-              buffer: processedImage,
-              label: `${candidate.productType}/${candidate.path || 'image'}`,
-              url: candidate.url
-            });
-            logger.info(`[buildTwoImageSources] ✅ Added USGS image ${sources.length}/${maxImages}: ${candidate.productType}`);
-          } else {
-            logger.warn(`[buildTwoImageSources] ⚠️ Failed to process USGS image: ${candidate.url.substring(0, 80)}`);
-          }
-        } else {
-          logger.warn(`[buildTwoImageSources] ⚠️ Failed to download USGS image: ${candidate.url.substring(0, 80)}`);
-        }
-      } catch (error) {
-        logger.warn(`[buildTwoImageSources] ⚠️ Error processing USGS candidate: ${error.message}`);
+    // Define functions inline (to avoid Supabase dependency in engines/usgs.js)
+    // These match the implementation in engines/usgs.js exactly
+    async function fetchUsgsDetailGeoJson({ eventId, detailUrl, logger }) {
+      let url = detailUrl;
+      if (!url && eventId) {
+        url = `https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/${eventId}.geojson`;
       }
+      if (!url) {
+        if (logger) logger.warn('No detailUrl or eventId provided for GeoJSON fetch');
+        return null;
+      }
+      try {
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; NoteworthyNews/1.0)',
+            'Accept': 'application/geo+json, application/json'
+          }
+        });
+        if (!response.ok) {
+          if (logger) logger.warn('Failed to fetch USGS detail GeoJSON', { url, status: response.status });
+          return null;
+        }
+        const json = await response.json();
+        if (logger) logger.info('✅ Fetched USGS detail GeoJSON', { eventId, url, hasProperties: !!json.properties });
+        return json;
+      } catch (error) {
+        if (logger) logger.warn('Error fetching USGS detail GeoJSON', { error: error.message, url, eventId });
+        return null;
+      }
+    }
+    
+    function extractUsgsProductImages(detailJson) {
+      const candidates = [];
+      if (!detailJson || !detailJson.properties || !detailJson.properties.products) {
+        return candidates;
+      }
+      const products = detailJson.properties.products;
+      const productPriority = {
+        'shakemap': 1,
+        'dyfi': 2,
+        'losspager': 3,
+        'pager': 3,
+        'origin': 4,
+        'location': 4,
+        'moment-tensor': 5,
+        'focal-mechanism': 5
+      };
+      const pathPreference = ['intensity', 'mmi', 'pga', 'pgv', 'map', 'plot'];
+      function scorePath(path) {
+        const lowerPath = path.toLowerCase();
+        for (let i = 0; i < pathPreference.length; i++) {
+          if (lowerPath.includes(pathPreference[i])) {
+            return pathPreference.length - i;
+          }
+        }
+        return 0;
+      }
+      function isImageContent(content) {
+        if (!content || !content.url) return false;
+        if (content.contentType && content.contentType.startsWith('image/')) {
+          return true;
+        }
+        const url = content.url.toLowerCase();
+        if (/\.(png|jpg|jpeg|gif|webp)(\?|$)/.test(url)) {
+          if (url.includes('.xml') || url.includes('.json') || url.includes('.txt') ||
+              url.includes('/contents') || url.includes('/metadata') || url.includes('/attenuation')) {
+            return false;
+          }
+          return true;
+        }
+        return false;
+      }
+      for (const [productType, productList] of Object.entries(products)) {
+        if (!Array.isArray(productList) || productList.length === 0) continue;
+        const priority = productPriority[productType] || 999;
+        for (const product of productList) {
+          if (!product || !product.contents || typeof product.contents !== 'object') continue;
+          const preferredWeight = product.preferredWeight || 0;
+          const updateTime = product.updateTime || 0;
+          for (const [path, content] of Object.entries(product.contents)) {
+            if (!isImageContent(content)) continue;
+            const url = content.url;
+            if (candidates.some(c => c.url === url)) continue;
+            const pathScore = scorePath(path);
+            const candidateScore = priority * 1000 - pathScore * 10 - preferredWeight;
+            candidates.push({
+              url: url,
+              contentType: content.contentType || 'image/jpeg',
+              productType: productType,
+              path: path,
+              updateTime: updateTime,
+              weight: preferredWeight,
+              score: candidateScore,
+              productId: product.id
+            });
+          }
+        }
+      }
+      candidates.sort((a, b) => {
+        if (a.score !== b.score) return a.score - b.score;
+        return b.updateTime - a.updateTime;
+      });
+      return candidates.slice(0, 6);
+    }
+    
+    detailJson = await fetchUsgsDetailGeoJson({ eventId, detailUrl, logger });
+    
+    if (detailJson) {
+      // STRICT EVENT BINDING: Verify GeoJSON is for the same eventId (exact match only)
+      const geoJsonEventId = detailJson.id || detailJson.properties?.ids?.split(',')[0]?.trim() || '';
+      const geoId = geoJsonEventId.toLowerCase();
+      const reqId = (eventId || '').toLowerCase();
+      
+      // STRICT: Only accept if exact match OR prefix-stripped match
+      const geoIdStripped = stripPrefix(geoId);
+      const reqIdStripped = stripPrefix(reqId);
+      
+      const strictMatch = geoId === reqId || geoIdStripped === reqIdStripped;
+      
+      if (!strictMatch) {
+        logger.error(`[buildTwoImageSources] ❌ CRITICAL: GeoJSON eventId STRICT mismatch!`);
+        logger.error(`[buildTwoImageSources]   Request eventId: ${reqId} (stripped: ${reqIdStripped})`);
+        logger.error(`[buildTwoImageSources]   GeoJSON eventId: ${geoId} (stripped: ${geoIdStripped})`);
+        logger.error(`[buildTwoImageSources] ❌ REJECTING ALL USGS IMAGES - will use fallback maps`);
+        detailJson = null; // Force fallback
+  } else {
+        logger.info(`[buildTwoImageSources] ✅ STRICT Event binding verified: eventId=${reqId}, geoJsonId=${geoId}, match=${strictMatch}`);
+      }
+      
+      if (detailJson) {
+        // STEP 2: Extract products ONLY from this eventId's GeoJSON
+        usgsCandidates = extractUsgsProductImages(detailJson);
+        
+        // HARD EVENT BINDING: Filter candidates to only those with eventId in URL
+        const originalCount = usgsCandidates.length;
+        const rejectedCandidates = [];
+        usgsCandidates = usgsCandidates.filter(candidate => {
+          const isBound = verifyEventBinding(candidate.url, eventId);
+          if (!isBound) {
+            rejectedCandidates.push({
+              url: candidate.url.substring(0, 100),
+              productType: candidate.productType,
+              path: candidate.path,
+              reason: 'eventId not found in URL'
+            });
+          }
+          return isBound;
+        });
+        
+        if (usgsCandidates.length < originalCount) {
+          logger.warn(`[buildTwoImageSources] ⚠️ Filtered ${originalCount - usgsCandidates.length} candidates due to event binding check`, {
+            eventId,
+            rejectedCount: rejectedCandidates.length,
+            rejectedCandidates: rejectedCandidates.slice(0, 5)  // Log first 5 rejected
+          });
+        }
+        
+        // Log products present (FORENSIC LOGGING)
+        const products = detailJson.properties?.products || {};
+        const productKeys = Object.keys(products);
+        const productCounts = {};
+        for (const [key, productList] of Object.entries(products)) {
+          productCounts[key] = Array.isArray(productList) ? productList.length : 0;
+        }
+        
+        // FORENSIC: Log products present with strict match status
+        const geoJsonEventId = detailJson.id || detailJson.properties?.ids?.split(',')[0]?.trim() || '';
+        const geoId = geoJsonEventId.toLowerCase();
+        const reqId = (eventId || '').toLowerCase();
+        const geoIdStripped = stripPrefix(geoId);
+        const reqIdStripped = stripPrefix(reqId);
+        const strictMatch = geoId === reqId || geoIdStripped === reqIdStripped;
+        
+        logger.info(`[buildTwoImageSources] 📦 FORENSIC: Products present:`, {
+          eventId: reqId,
+          geoJsonEventId: geoId,
+          strictMatch: strictMatch,
+          detailUrl,
+          coordinates: { lat, lon },
+          productKeys,
+          productCounts,
+          candidateCount: usgsCandidates.length,
+          topCandidates: usgsCandidates.slice(0, 6).map(c => ({
+            url: c.url,
+            productType: c.productType,
+            path: c.path,
+            updateTime: c.updateTime,
+            eventIdInUrl: verifyEventBinding(c.url, eventId),
+            urlBindingPassed: verifyEventBinding(c.url, eventId)
+          }))
+        });
+        
+        // HARD GUARD: If no candidates, force fallback-only mode
+        const forceFallbackOnly = usgsCandidates.length === 0;
+        if (forceFallbackOnly) {
+          logger.warn(`[buildTwoImageSources] 🔒 FORCE FALLBACK-ONLY: candidateCount=0, skipping ALL USGS downloads`);
+          logger.warn(`[buildTwoImageSources] 🔒 This event has NO shakemap/dyfi/pager products - will generate fallback maps only`);
+        } else {
+          // STEP 3: Download and validate top candidates (cap at 4)
+          const candidatesToDownload = usgsCandidates.slice(0, maxCandidatesToDownload);
+          logger.info(`[buildTwoImageSources] 📥 Downloading top ${candidatesToDownload.length} candidate(s) (max ${maxCandidatesToDownload})...`);
+          
+          for (const candidate of candidatesToDownload) {
+          if (sources.length >= maxImages) break;
+          
+          try {
+            // HARD EVENT BINDING: Double-check URL contains eventId
+            if (!verifyEventBinding(candidate.url, eventId)) {
+              logger.error(`[buildTwoImageSources] ❌ REJECTED: URL does not contain eventId ${eventId}: ${candidate.url.substring(0, 100)}`);
+              continue;
+            }
+            
+            const imageBuffer = await downloadImage(candidate.url, 3, eventId);
+            if (imageBuffer) {
+              const bufferHash = getBufferHash(imageBuffer);
+              logger.info(`[buildTwoImageSources] 📥 Downloaded image buffer hash: ${bufferHash} (${candidate.url.substring(0, 80)})`);
+              
+              // Validate content type
+              const processedImage = await prepareUSGSImage(imageBuffer, imageWidth, imageHeight);
+              if (processedImage) {
+                const processedHash = getBufferHash(processedImage);
+                sources.push({
+                  type: 'usgs',
+                  buffer: processedImage,
+                  label: `${candidate.productType}/${candidate.path || 'image'}`,
+                  url: candidate.url,
+                  source: 'usgs',
+                  bufferHash: processedHash,
+                  rawBufferHash: bufferHash,
+                  productType: candidate.productType,
+                  path: candidate.path
+                });
+                sources.push({
+                  type: 'usgs',
+                  buffer: processedImage,
+                  label: `${candidate.productType}/${candidate.path || 'image'}`,
+                  url: candidate.url,
+                  source: 'usgs',
+                  bufferHash: processedHash,
+                  rawBufferHash: bufferHash,
+                  productType: candidate.productType,
+                  path: candidate.path,
+                  productionMethod: 'downloadImage + prepareUSGSImage'
+                });
+                logger.info(`[buildTwoImageSources] ✅ Added USGS image ${sources.length}/${maxImages}: ${candidate.productType}/${candidate.path} (hash: ${processedHash})`);
+              } else {
+                logger.warn(`[buildTwoImageSources] ⚠️ Failed to process USGS image: ${candidate.url.substring(0, 80)}`);
+              }
+            } else {
+              logger.warn(`[buildTwoImageSources] ⚠️ Failed to download USGS image: ${candidate.url.substring(0, 80)}`);
+            }
+          } catch (error) {
+            logger.warn(`[buildTwoImageSources] ⚠️ Error processing USGS candidate: ${error.message}`);
+          }
+        }
+        } // End else block for forceFallbackOnly
+      }
+    } else {
+      logger.warn(`[buildTwoImageSources] ⚠️ Failed to fetch GeoJSON detail - will use fallback maps`);
     }
   } else {
-    logger.info(`[buildTwoImageSources] ℹ️ No USGS candidates provided`);
+    logger.warn(`[buildTwoImageSources] ⚠️ No eventId or detailUrl provided - will use fallback maps`);
   }
   
-  // PHASE 4: Fill remaining slots with fallback maps
+  // STEP 4: Fill remaining slots with fallback maps (deterministic guarantee of 2 images)
   const fallbacksNeeded = maxImages - sources.length;
-  if (fallbacksNeeded > 0 && coordinates && coordinates.lat != null && coordinates.lon != null) {
-    logger.info(`[buildTwoImageSources] 🗺️ Generating ${fallbacksNeeded} fallback map(s)...`);
+  if (fallbacksNeeded > 0) {
+    const lat = coordinates?.lat ?? coordinates?.[1] ?? null;
+    const lon = coordinates?.lon ?? coordinates?.[0] ?? null;
     
-    for (let i = 0; i < fallbacksNeeded; i++) {
-      const fallbackMap = await renderFallbackMapPng({
-        lat: coordinates.lat,
-        lon: coordinates.lon,
-        width: imageWidth,
-        height: imageHeight,
-        locationText: locationText || 'Earthquake Location'
-      });
+    if (lat != null && lon != null) {
+      const reason = usgsCandidates.length === 0 ? 'no USGS products (forceFallbackOnly)' : 'download failed';
+      logger.info(`[buildTwoImageSources] 🗺️ Generating ${fallbacksNeeded} fallback map(s) (reason: ${reason})...`);
+      logger.info(`[buildTwoImageSources] 🗺️ Fallback coordinates: lat=${lat}, lon=${lon}, zoom=11`);
       
-      if (fallbackMap) {
-        const processedMap = await prepareUSGSImage(fallbackMap, imageWidth, imageHeight);
-        if (processedMap) {
-          sources.push({
-            type: 'fallback',
-            buffer: processedMap,
-            label: `location-map-${i + 1}`,
-            url: null
+      // STEP 4A: Generate Mapbox Satellite fallback maps (MANDATORY)
+      // Generate exactly 2 satellite images: regional (zoom 7) and local (zoom 11)
+      logger.info(`[buildTwoImageSources] 🛰️ Generating ${fallbacksNeeded} Mapbox satellite fallback map(s)...`);
+      
+      const mapboxResults = [];
+      const mapboxZoomLevels = [7, 11]; // Regional and local views
+      
+      for (let i = 0; i < fallbacksNeeded && i < mapboxZoomLevels.length; i++) {
+        const mapZoom = mapboxZoomLevels[i];
+        const mapType = i === 0 ? 'regional' : 'local';
+        
+        logger.info(`[buildTwoImageSources] 🛰️ Generating Mapbox satellite map ${i + 1}/${fallbacksNeeded} (${mapType}, zoom=${mapZoom})...`);
+        
+        let fallbackMap = null;
+        let productionMethod = 'unknown';
+        
+        try {
+          // STEP 1: Fetch Mapbox satellite image
+          const satelliteImage = await generateMapboxSatelliteImage({
+            lat,
+            lon,
+            zoom: mapZoom,
+            width: imageWidth,
+            height: imageHeight,
+            logger
           });
-          logger.info(`[buildTwoImageSources] ✅ Added fallback map ${sources.length}/${maxImages}`);
+          
+          if (satelliteImage) {
+            // STEP 2: Overlay epicenter graphics (NO TEXT)
+            fallbackMap = await overlayEpicenterGraphics(satelliteImage, imageWidth, imageHeight, logger);
+            productionMethod = 'mapbox-satellite';
+            
+            const mapHash = getBufferHash(fallbackMap);
+            logger.info(`[buildTwoImageSources] ✅ Mapbox satellite map ${i + 1} generated, bufferHash: ${mapHash}`);
+          }
+        } catch (mapboxError) {
+          logger.warn(`[buildTwoImageSources] ⚠️ Mapbox satellite failed for map ${i + 1}: ${mapboxError.message}`);
+          // Will fall through to location card fallback
+        }
+        
+        // STEP 3: If Mapbox failed, generate location card as last resort
+        if (!fallbackMap) {
+          logger.warn(`[buildTwoImageSources] ⚠️ Mapbox failed, generating location card for map ${i + 1}...`);
+          const locationCard = await generateLocationCard({
+            locationText: locationText || 'Earthquake Location',
+            width: imageWidth,
+            height: imageHeight,
+            coordinates: { lat, lon },
+            logger
+          });
+          if (locationCard) {
+            const cardHash = getBufferHash(locationCard);
+            logger.info(`[buildTwoImageSources] ✅ Location card generated for map ${i + 1}, bufferHash: ${cardHash}`);
+            fallbackMap = locationCard;
+            productionMethod = 'generateLocationCard (mapbox-fallback)';
+          }
+        }
+        
+        // STEP 4: If still no buffer, create minimal emergency fallback
+        if (!fallbackMap) {
+          logger.error(`[buildTwoImageSources] ❌ All methods failed, creating minimal buffer for map ${i + 1}...`);
+          const minimalSVG = Buffer.from(`
+            <svg width="${imageWidth}" height="${imageHeight}" xmlns="http://www.w3.org/2000/svg">
+              <rect width="${imageWidth}" height="${imageHeight}" fill="#1e1e2e"/>
+              <text x="${imageWidth / 2}" y="${imageHeight / 2}" font-family="Arial" font-size="24" fill="#FFFFFF" text-anchor="middle">
+                ${locationText || 'Earthquake Location'}
+              </text>
+              <text x="${imageWidth / 2}" y="${imageHeight / 2 + 30}" font-family="Arial" font-size="16" fill="#CCCCCC" text-anchor="middle">
+                ${lat.toFixed(4)}°N, ${Math.abs(lon).toFixed(4)}°${lon < 0 ? 'W' : 'E'}
+              </text>
+            </svg>
+          `);
+          fallbackMap = await sharp(minimalSVG).png().toBuffer();
+          const minimalHash = getBufferHash(fallbackMap);
+          logger.info(`[buildTwoImageSources] ✅ Minimal buffer created for map ${i + 1}, bufferHash: ${minimalHash}`);
+          productionMethod = 'minimalSVG (emergency fallback)';
+        }
+        
+        mapboxResults.push({ buffer: fallbackMap, method: productionMethod, zoom: mapZoom });
+      }
+      
+      // STEP 4B: Process and add all generated fallback maps
+      for (let i = 0; i < mapboxResults.length; i++) {
+        const result = mapboxResults[i];
+        if (result.buffer) {
+          const rawHash = getBufferHash(result.buffer);
+          logger.info(`[buildTwoImageSources] 📊 Fallback ${i + 1} raw buffer hash: ${rawHash}, productionMethod: ${result.method}, zoom: ${result.zoom}`);
+          
+          const processedMap = await prepareUSGSImage(result.buffer, imageWidth, imageHeight);
+          if (processedMap) {
+            const processedHash = getBufferHash(processedMap);
+            sources.push({
+              type: 'fallback',
+              buffer: processedMap,
+              label: `location-map-${i + 1}`,
+              url: null,
+              source: 'fallback',
+              bufferHash: processedHash,
+              rawBufferHash: rawHash,
+              productionMethod: result.method
+            });
+            logger.info(`[buildTwoImageSources] ✅ Added fallback map ${sources.length}/${maxImages} (processedHash: ${processedHash}, method: ${result.method}, zoom: ${result.zoom})`);
+          } else {
+            logger.error(`[buildTwoImageSources] ❌ Failed to process fallback map ${i + 1}`);
+          }
         }
       }
+      
+      // STEP 4C: If we still need more maps (shouldn't happen, but guarantee 2)
+      if (sources.length < maxImages) {
+        logger.warn(`[buildTwoImageSources] ⚠️ Only ${sources.length} fallback maps generated, need ${maxImages - sources.length} more`);
+        for (let i = sources.length; i < maxImages; i++) {
+          const locationCard = await generateLocationCard({
+            locationText: locationText || 'Earthquake Location',
+            width: imageWidth,
+            height: imageHeight,
+            coordinates: { lat, lon },
+            logger
+          });
+          if (locationCard) {
+            const processedCard = await prepareUSGSImage(locationCard, imageWidth, imageHeight);
+            if (processedCard) {
+              const cardHash = getBufferHash(processedCard);
+              sources.push({
+                type: 'fallback',
+                buffer: processedCard,
+                label: `location-card-${i + 1}`,
+                url: null,
+                source: 'fallback',
+                bufferHash: cardHash,
+                rawBufferHash: getBufferHash(locationCard),
+                productionMethod: 'generateLocationCard (guarantee-2)'
+              });
+              logger.info(`[buildTwoImageSources] ✅ Added location card ${sources.length}/${maxImages} (hash: ${cardHash})`);
+            }
+          }
+        }
+      }
+      
+      // FORENSIC LOGGING: Log Mapbox fallback generation summary
+      logger.info(`[buildTwoImageSources] 🛰️ FORENSIC: Mapbox satellite fallback summary:`, {
+        provider: 'mapbox',
+        lat,
+        lon,
+        zoomLevels: mapboxZoomLevels.slice(0, fallbacksNeeded),
+        imageDimensions: `${imageWidth}x${imageHeight}`,
+        generatedMaps: mapboxResults.length,
+        bufferHashes: mapboxResults.map((r, idx) => ({
+          map: idx + 1,
+          hash: getBufferHash(r.buffer),
+          method: r.method,
+          zoom: r.zoom
+        }))
+      });
+    } else {
+      logger.warn(`[buildTwoImageSources] ⚠️ Cannot generate fallback maps: coordinates missing`);
     }
   }
   
-  // PHASE 4: Worst case - duplicate first image if we still don't have 2
+  // STEP 5: Guarantee exactly 2 images (deterministic)
   if (sources.length === 1) {
     logger.warn(`[buildTwoImageSources] ⚠️ Only 1 image available, duplicating to reach 2`);
     sources.push({
       type: sources[0].type,
       buffer: sources[0].buffer,
       label: `${sources[0].label}-duplicate`,
-      url: sources[0].url
+      url: sources[0].url,
+      source: sources[0].source
     });
   }
   
-  // PHASE 4: If still 0, create 2 fallback maps (no coordinates case)
   if (sources.length === 0) {
-    logger.warn(`[buildTwoImageSources] ⚠️ No images available, creating 2 generic fallback maps`);
+    logger.warn(`[buildTwoImageSources] ⚠️ No images available, creating 2 generic location cards`);
+    // Generate simple location card images (no external network required)
     for (let i = 0; i < 2; i++) {
-      const fallbackMap = await renderFallbackMapPng({
-        lat: 0,
-        lon: 0,
+      const locationCard = await generateLocationCard({
+        locationText: locationText || 'Location Unknown',
         width: imageWidth,
         height: imageHeight,
-        locationText: locationText || 'Location Unknown'
+        logger
       });
-      if (fallbackMap) {
-        const processedMap = await prepareUSGSImage(fallbackMap, imageWidth, imageHeight);
-        if (processedMap) {
-          sources.push({
-            type: 'fallback',
-            buffer: processedMap,
-            label: `generic-fallback-${i + 1}`,
-            url: null
-          });
-        }
+      if (locationCard) {
+        sources.push({
+          type: 'fallback',
+          buffer: locationCard,
+          label: `location-card-${i + 1}`,
+          url: null,
+          source: 'fallback-card'
+        });
       }
     }
   }
   
-  logger.info(`[buildTwoImageSources] ✅ Final: ${sources.length} image source(s) ready`, {
-    types: sources.map(s => s.type),
-    labels: sources.map(s => s.label)
+  // FORENSIC LOGGING: Log once per event with full details
+  const finalImages = sources.slice(0, maxImages).map(s => ({
+    source: s.source,
+    type: s.type,
+    label: s.label,
+    sourceUrl: s.url || null,
+    bufferHash: s.bufferHash || getBufferHash(s.buffer),
+    rawBufferHash: s.rawBufferHash || null,
+    productType: s.productType || null,
+    path: s.path || null,
+    productionMethod: s.productionMethod || (s.type === 'usgs' ? 'downloadImage + prepareUSGSImage' : 'unknown'),
+    cacheKey: s.source === 'usgs' && s.url ? `usgsimg:${eventId}:${s.productType}:${crypto.createHash('sha1').update(s.url).digest('hex').substring(0, 8)}` : null
+  }));
+  
+  logger.info(`[buildTwoImageSources] ✅ FORENSIC: Final selected images:`, {
+    eventId,
+    detailUrl,
+    coordinates: { lat, lon },
+    selectedImages: finalImages,
+    usgsCount: sources.filter(s => s.source === 'usgs').length,
+    fallbackCount: sources.filter(s => s.source === 'fallback').length,
+    totalSources: sources.length,
+    forceFallbackOnly: usgsCandidates.length === 0
   });
   
   return sources.slice(0, maxImages); // Guarantee exactly 2
 }
 
 /**
+ * Generate a simple location card image (fallback when maps fail)
+ */
+async function generateLocationCard({ locationText, width, height, coordinates = null, logger }) {
+  // CRITICAL: Always generate NEW buffer from scratch - never reuse
+  const lat = coordinates?.lat ?? coordinates?.[1] ?? null;
+  const lon = coordinates?.lon ?? coordinates?.[0] ?? null;
+  
+  if (logger) logger.info(`[generateLocationCard] 🎴 Generating location card from scratch (${width}x${height})...`);
+  
+  try {
+    const coordText = (lat != null && lon != null) 
+      ? `${lat.toFixed(4)}°N, ${Math.abs(lon).toFixed(4)}°${lon < 0 ? 'W' : 'E'}`
+      : 'Location Map';
+    
+    const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="${width}" height="${height}" fill="#1a1a2e"/>
+      <text x="50%" y="45%" font-family="Arial, sans-serif" font-size="${Math.min(width, height) / 15}" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="bold">${locationText || 'Earthquake Location'}</text>
+      <text x="50%" y="55%" font-family="Arial, sans-serif" font-size="${Math.min(width, height) / 20}" fill="#888" text-anchor="middle" dominant-baseline="middle">${coordText}</text>
+    </svg>`;
+    
+    const svgBuffer = Buffer.from(svg);
+    const pngBuffer = await sharp(svgBuffer).png().toBuffer();
+    
+    if (logger) {
+      const cardHash = getBufferHash(pngBuffer);
+      logger.info(`[generateLocationCard] ✅ Location card generated, bufferHash: ${cardHash}`);
+    }
+    
+    return pngBuffer;
+  } catch (error) {
+    if (logger) logger.warn(`[generateLocationCard] Failed to generate location card: ${error.message}`);
+    return null;
+  }
+}
+
+/**
  * PHASE 5: Updated to fetch GeoJSON detail and extract products internally
  */
 async function generateImage(magnitude, location, eventId, templateType = 'standard', coordinates = null, detailUrl = null) {
-  // PHASE 5: Fetch GeoJSON detail and extract products
-  // Import from engines/usgs.js (functions are exported)
-  const usgsEngine = require('./engines/usgs');
-  const fetchUsgsDetailGeoJson = usgsEngine.fetchUsgsDetailGeoJson;
-  const extractUsgsProductImages = usgsEngine.extractUsgsProductImages;
+  // PHASE 5: Functions are imported inside buildTwoImageSources to avoid module loading issues
   
-  console.log(`[generate-earthquake-image] 📥 INPUT VALIDATION:`, {
+  // FORENSIC LOGGING: Log render request details
+  const lat = coordinates?.[1] ?? coordinates?.lat ?? null;
+  const lon = coordinates?.[0] ?? coordinates?.lon ?? null;
+  
+  console.log(`[generate-earthquake-image] 🔍 FORENSIC: Render request:`, {
+    eventId,
+    detailUrl,
+    coordinates: { lat, lon },
     magnitude,
     location,
-    eventId,
-    hasDetailUrl: !!detailUrl,
-    hasCoordinates: !!(coordinates && coordinates[0] != null && coordinates[1] != null)
+    timestamp: new Date().toISOString()
   });
   
-  // PHASE 5: Fetch GeoJSON detail
-  let usgsCandidates = [];
-  if (eventId || detailUrl) {
-    console.log(`[generate-earthquake-image] 📡 Fetching USGS detail GeoJSON...`);
-    const detailJson = await fetchUsgsDetailGeoJson({ eventId, detailUrl, logger: { info: console.log, warn: console.warn, error: console.error } });
-    
-    if (detailJson) {
-      // PHASE 5: Extract product images
-      usgsCandidates = extractUsgsProductImages(detailJson);
-      console.log(`[generate-earthquake-image] 📸 Extracted ${usgsCandidates.length} USGS image candidate(s) from products:`, {
-        productTypes: usgsCandidates.map(c => c.productType),
-        paths: usgsCandidates.map(c => c.path)
-      });
-      
-      // PHASE 5: Log WHY we got 0 images if that's the case
-      if (usgsCandidates.length === 0 && detailJson.properties && detailJson.properties.products) {
-        const products = detailJson.properties.products;
-        const productTypes = Object.keys(products);
-        const productCounts = {};
-        for (const [key, productList] of Object.entries(products)) {
-          productCounts[key] = Array.isArray(productList) ? productList.length : 0;
-        }
-        console.warn(`[generate-earthquake-image] ⚠️ No USGS image candidates found. Available products:`, {
-          productTypes,
-          productCounts,
-          reason: productTypes.length === 0 ? 'No products available yet (may take 5-10 minutes for shakemaps)' : 'Products exist but no image contents found'
-        });
-      }
-    } else {
-      console.warn(`[generate-earthquake-image] ⚠️ Failed to fetch USGS detail GeoJSON (eventId: ${eventId}, detailUrl: ${detailUrl})`);
-    }
-  } else {
-    console.warn(`[generate-earthquake-image] ⚠️ No eventId or detailUrl provided - skipping USGS image extraction`);
-  }
+  // ARCHITECTURE CHANGE: Build and validate image sources BEFORE generation
+  // This prevents geographic mismatches by locking selection to eventId's GeoJSON products
+  // OLD CODE REMOVED: No longer fetch GeoJSON separately - buildTwoImageSources does it internally
   
   // Format magnitude text
   const magnitudeText = `M${magnitude.toFixed(1)}`;
@@ -926,7 +1828,7 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
     // CRITICAL: Register font buffers with resvg
     // Try writing fonts to temp files first (resvg may need file paths, not buffers)
     try {
-      if (FONT_BUFFERS.regular && FONT_BUFFERS.bold) {
+    if (FONT_BUFFERS.regular && FONT_BUFFERS.bold) {
         // Write fonts to temporary files in /tmp (available in Netlify functions)
         const tempDir = '/tmp';
         const regularFontPath = path.join(tempDir, `roboto-regular-${Date.now()}.ttf`);
@@ -941,15 +1843,15 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
         console.log('[generate-earthquake-image] ✅ Registered font files with resvg', {
           regularPath: regularFontPath,
           boldPath: boldFontPath,
-          regularSize: FONT_BUFFERS.regular.length,
+        regularSize: FONT_BUFFERS.regular.length,
           boldSize: FONT_BUFFERS.bold.length,
           loadSystemFonts: true
-        });
-      } else {
-        console.warn('[generate-earthquake-image] ⚠️ Font buffers not available for resvg!', {
-          hasRegular: !!FONT_BUFFERS.regular,
-          hasBold: !!FONT_BUFFERS.bold
-        });
+      });
+    } else {
+      console.warn('[generate-earthquake-image] ⚠️ Font buffers not available for resvg!', {
+        hasRegular: !!FONT_BUFFERS.regular,
+        hasBold: !!FONT_BUFFERS.bold
+      });
         // Don't throw - let resvg try with system fonts
         console.warn('[generate-earthquake-image] ⚠️ Will attempt rendering with system fonts only');
       }
@@ -1127,25 +2029,24 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
   const imageAreaWidth = outputWidth - (IMAGE_PADDING * 2);
   const imageWidth = Math.floor((imageAreaWidth - IMAGE_SPACING) / 2); // Always 2 images side-by-side
   
-  console.log(`[generate-earthquake-image] 📸 Building 2 image sources...`, {
+  console.log(`[generate-earthquake-image] 📸 Building 2 validated image sources (event-locked)...`, {
     imageAreaY: IMAGE_AREA_Y,
     imageAreaHeight: IMAGE_AREA_HEIGHT,
     imageWidth,
     imageHeight: IMAGE_AREA_HEIGHT,
-    usgsCandidates: usgsCandidates.length
+    eventId,
+    hasDetailUrl: !!detailUrl
   });
   
-  // Extract coordinates
-  const lat = coordinates?.[1] ?? null;
-  const lon = coordinates?.[0] ?? null;
-  
-  // PHASE 4: Use buildTwoImageSources to guarantee exactly 2 images
+  // ARCHITECTURE CHANGE: buildTwoImageSources now handles event-locked fetching internally
+  // This ensures images are validated BEFORE compositing (no guess-and-check loop)
   const imageSources = await buildTwoImageSources({
-    usgsCandidates,
-    coordinates: lat != null && lon != null ? { lat, lon } : null,
+    eventId, // Required for event-locking
+    detailUrl, // Required for event-locking
+    coordinates, // Pass as-is (can be array [lon, lat] or object {lat, lon})
     locationText: location,
-    imageWidth,
-    imageHeight: IMAGE_AREA_HEIGHT,
+      imageWidth,
+      imageHeight: IMAGE_AREA_HEIGHT,
     logger: { info: console.log, warn: console.warn, error: console.error }
   });
   
@@ -1153,36 +2054,59 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
   let usgsImageCount = 0;
   let locationMapCount = 0;
   
+  // FORENSIC LOGGING: Log final selected images with buffer hashes
+  const finalSelectedImages = [];
+  
   for (let i = 0; i < imageSources.length; i++) {
     const source = imageSources[i];
     const x = IMAGE_PADDING + (i * (imageWidth + IMAGE_SPACING));
-    const y = IMAGE_AREA_Y;
-    
-    compositeInputs.push({
-      input: source.buffer,
-      left: x,
-      top: y,
-      blend: 'over',
+            const y = IMAGE_AREA_Y;
+            
+    const bufferHash = getBufferHash(source.buffer);
+    finalSelectedImages.push({
+      index: i + 1,
+      source: source.source,
+      type: source.type,
+      label: source.label,
+      url: source.url || 'N/A (fallback)',
+      bufferHash,
+      productType: source.productType || null,
+      path: source.path || null,
+      position: `(${x}, ${y})`,
+      size: `${imageWidth}x${IMAGE_AREA_HEIGHT}`
     });
+            
+            compositeInputs.push({
+      input: source.buffer,
+              left: x,
+              top: y,
+              blend: 'over',
+            });
     
     if (source.type === 'usgs') {
       usgsImageCount++;
-    } else {
+          } else {
       locationMapCount++;
     }
     
     console.log(`[generate-earthquake-image] ✅ Added ${source.type} image ${i + 1}/2:`, {
       type: source.type,
       label: source.label,
-      position: `(${x}, ${y})`,
+      bufferHash,
+                position: `(${x}, ${y})`,
       size: `${imageWidth}x${IMAGE_AREA_HEIGHT}`
     });
   }
   
-  console.log(`[generate-earthquake-image] ✅ Final image composition:`, {
+  // FORENSIC LOGGING: Final composition summary
+  console.log(`[generate-earthquake-image] 🔍 FORENSIC: Final image composition:`, {
+    eventId,
+    detailUrl,
+    coordinates: { lat, lon },
     totalImages: imageSources.length,
-    usgsImages: usgsImageCount,
-    locationMaps: locationMapCount
+      usgsImages: usgsImageCount,
+      locationMaps: locationMapCount,
+    selectedImages: finalSelectedImages
   });
   
   // OLD CODE REMOVED - Now using buildTwoImageSources above
@@ -1194,7 +2118,7 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
   console.log(`[generate-earthquake-image] 📊 COMPOSITE LAYERS:`, {
     totalLayers: compositeInputs.length,
     hasTextOverlay: false, // Template already has text baked in
-    hasUSGSImages: successfullyAddedImages > 0,
+    hasUSGSImages: usgsImageCount > 0,
     usgsImageCount: usgsImageCount,
     locationMapCount: locationMapCount,
     templateDimensions: `${actualWidth}x${actualHeight}`,
@@ -1345,7 +2269,7 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
     fileSize: `${Math.round(composite.length / 1024)}KB`,
     isValidPNG: isPNG,
     containsText: true, // Template already has text baked in
-    containsUSGSImages: successfullyAddedImages > 0,
+    containsUSGSImages: usgsImageCount > 0,
     magnitude: magnitudeText,
     location: location.toUpperCase(),
     totalCompositeLayers: compositeInputs.length
@@ -1361,6 +2285,10 @@ exports.storeImage = storeImage;
 
 /**
  * Store generated image using Netlify Blobs SDK (v8.2.0 is CommonJS compatible)
+ */
+/**
+ * Store generated image using Netlify Blobs
+ * FORENSIC: Cache key includes eventId to prevent cross-event contamination
  */
 async function storeImage(imageBuffer, eventId, templateType = 'standard') {
   const siteID = process.env.NETLIFY_SITE_ID;
