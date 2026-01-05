@@ -543,14 +543,14 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
   });
   // Load template
   const possiblePaths = [
-    path.join(__dirname, '2ndUSGSTemp.png'),
-    path.join(path.dirname(__dirname), '2ndUSGSTemp.png'),
-    path.join(__dirname, '../../2ndUSGSTemp.png'),
-    path.join(process.cwd(), 'netlify/functions/2ndUSGSTemp.png'),
-    path.join(process.cwd(), '2ndUSGSTemp.png'),
-    path.resolve('./2ndUSGSTemp.png'),
-    '/var/task/netlify/functions/2ndUSGSTemp.png',
-    '/var/task/2ndUSGSTemp.png',
+    path.join(__dirname, '3rdUSGSTemp.png'),
+    path.join(path.dirname(__dirname), '3rdUSGSTemp.png'),
+    path.join(__dirname, '../../3rdUSGSTemp.png'),
+    path.join(process.cwd(), 'netlify/functions/3rdUSGSTemp.png'),
+    path.join(process.cwd(), '3rdUSGSTemp.png'),
+    path.resolve('./3rdUSGSTemp.png'),
+    '/var/task/netlify/functions/3rdUSGSTemp.png',
+    '/var/task/3rdUSGSTemp.png',
   ];
   
   let templateBuffer = null;
@@ -578,7 +578,7 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
       baseUrl = process.env.URL;
     }
     
-    for (const httpPath of [`${baseUrl}/2ndUSGSTemp.png`, `${baseUrl}/netlify/functions/2ndUSGSTemp.png`]) {
+    for (const httpPath of [`${baseUrl}/3rdUSGSTemp.png`, `${baseUrl}/netlify/functions/3rdUSGSTemp.png`]) {
       try {
         const response = await fetch(httpPath);
         if (response.ok) {
@@ -615,6 +615,9 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     console.warn(`[generate-earthquake-image] Template dimensions (${actualWidth}x${actualHeight}) don't match expected (${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT})`);
   }
   
+  // Format magnitude text
+  const magnitudeText = `M${magnitude.toFixed(1)}`;
+  
   // Calculate dimensions based on template type
   let outputWidth, outputHeight, scaleFactor;
   
@@ -641,9 +644,6 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     outputHeight = actualHeight;
     scaleFactor = 1.0;
   }
-  
-  // Format magnitude text
-  const magnitudeText = `M${magnitude.toFixed(1)}`;
   
   // STEP 5: Create text overlay SVG
   console.log(`[generate-earthquake-image] 📝 Creating text overlay SVG...`);
@@ -1507,7 +1507,7 @@ exports.handler = async (event, context) => {
     
     // Add specific error context
     if (error?.message?.includes('Template not found')) {
-      errorDetails.details = 'Template file (2ndUSGSTemp.png) could not be loaded';
+      errorDetails.details = 'Template file (3rdUSGSTemp.png) could not be loaded';
     } else if (error?.message?.includes('Font')) {
       errorDetails.details = 'Font loading or validation failed';
     } else if (error?.message?.includes('resvg')) {
