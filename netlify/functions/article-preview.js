@@ -77,7 +77,16 @@ exports.handler = async (event) => {
       token: token,
     });
 
-    const postKey = articleId.startsWith('post-') ? articleId : `post-${articleId}`;
+    // Handle different article ID formats: post-{id}, usgs-{eventId}, or plain {id}
+    let postKey;
+    if (articleId.startsWith('post-')) {
+      postKey = articleId;
+    } else if (articleId.startsWith('usgs-')) {
+      // For usgs-{eventId} format, try both post-usgs-{eventId} and post-{articleId}
+      postKey = `post-${articleId}`;
+    } else {
+      postKey = `post-${articleId}`;
+    }
     
     // Add timeout protection for blob storage calls
     let postData;
@@ -194,12 +203,81 @@ exports.handler = async (event) => {
       playerUrl = `https://noteworthynews.co/video-player.html?url=${encodeURIComponent(absoluteVideoUrl)}`;
     }
     
-    // For earthquakes, format title as "BREAKING: M___ Earthquake Near ___."
+    // Helper function to get earthquake hashtags
+    function getEarthquakeHashtags(location) {
+      if (!location) return '#terremoto #地震';
+      
+      const locationLower = location.toLowerCase();
+      
+      // Language mapping based on location
+      const languageMap = {
+        // Spanish-speaking countries/regions
+        'mexico': '#terremoto', 'méxico': '#terremoto', 'spain': '#terremoto', 'españa': '#terremoto',
+        'chile': '#terremoto', 'peru': '#terremoto', 'perú': '#terremoto', 'colombia': '#terremoto',
+        'argentina': '#terremoto', 'ecuador': '#terremoto', 'guatemala': '#terremoto', 'honduras': '#terremoto',
+        'nicaragua': '#terremoto', 'el salvador': '#terremoto', 'costa rica': '#terremoto', 'panama': '#terremoto',
+        'panamá': '#terremoto', 'venezuela': '#terremoto', 'bolivia': '#terremoto', 'paraguay': '#terremoto',
+        'uruguay': '#terremoto', 'dominican republic': '#terremoto', 'puerto rico': '#terremoto', 'california': '#terremoto',
+        // Japanese regions
+        'japan': '#地震', 'tokyo': '#地震', 'osaka': '#地震', 'kyoto': '#地震', 'hokkaido': '#地震', 'okinawa': '#地震',
+        // Chinese-speaking regions
+        'china': '#地震', 'taiwan': '#地震', 'hong kong': '#地震', 'beijing': '#地震', 'shanghai': '#地震',
+        // French-speaking regions
+        'france': '#séisme', 'haiti': '#séisme', 'quebec': '#séisme',
+        // Portuguese-speaking regions
+        'brazil': '#terremoto', 'brasil': '#terremoto', 'portugal': '#terremoto',
+        // Italian
+        'italy': '#terremoto', 'italia': '#terremoto',
+        // Turkish
+        'turkey': '#deprem', 'türkiye': '#deprem',
+        // Greek
+        'greece': '#σεισμός',
+        // Indonesian
+        'indonesia': '#gempa', 'jakarta': '#gempa',
+        // Filipino
+        'philippines': '#lindol', 'manila': '#lindol',
+        // Arabic
+        'saudi arabia': '#زلزال', 'uae': '#زلزال', 'egypt': '#زلزال',
+        // Russian
+        'russia': '#землетрясение', 'moscow': '#землетрясение',
+        // Korean
+        'south korea': '#지진', 'korea': '#지진', 'seoul': '#지진',
+        // Hindi/Urdu
+        'india': '#भूकंप', 'pakistan': '#زلزلہ',
+        // Vietnamese
+        'vietnam': '#độngđất',
+        // Thai
+        'thailand': '#แผ่นดินไหว', 'bangkok': '#แผ่นดินไหว'
+      };
+      
+      // Find matching language
+      let relevantTag = null;
+      for (const [key, tag] of Object.entries(languageMap)) {
+        if (locationLower.includes(key)) {
+          relevantTag = tag;
+          break;
+        }
+      }
+      
+      // Default: Spanish, Japanese, and English
+      const hashtags = ['#terremoto', '#地震'];
+      if (relevantTag && !hashtags.includes(relevantTag)) {
+        hashtags.push(relevantTag);
+      } else if (!relevantTag) {
+        hashtags.push('#earthquake');
+      }
+      
+      return hashtags.join(' ');
+    }
+    
+    // For earthquakes, format title as "BREAKING: M___ Earthquake Near ___. #hashtags"
     let formattedTitle = title;
     const isEarthquake = post.category === 'Earthquake' || post.event_type === 'earthquake' || post.source === 'USGS';
-    if (isEarthquake && post.magnitude && post.location_display) {
+    if (isEarthquake && post.magnitude && (post.location_display || post.location)) {
       const magnitudeFormatted = typeof post.magnitude === 'number' ? post.magnitude.toFixed(1) : post.magnitude;
-      formattedTitle = `BREAKING: M${magnitudeFormatted} Earthquake Near ${post.location_display}.`;
+      const location = post.location_display || post.location;
+      const hashtags = getEarthquakeHashtags(location);
+      formattedTitle = `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}. ${hashtags}`;
     }
     
     // Log image selection for debugging social media previews

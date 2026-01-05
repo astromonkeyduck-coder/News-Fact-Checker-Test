@@ -167,6 +167,68 @@ async function fetchLocationDetails(lat, lon) {
 }
 
 /**
+ * Format location name with country/territory context for clarity
+ * Handles ambiguous names like "Yukon" (could be territory or city)
+ */
+function formatLocationWithContext(locationName, locationDetails) {
+  if (!locationName) return null;
+  
+  // List of ambiguous location names that need country/territory context
+  const ambiguousLocations = {
+    'yukon': {
+      'canada': 'Yukon Territory, Canada',
+      'usa': 'Yukon, Oklahoma, USA',
+      'default': 'Yukon Territory, Canada' // Default assumption for northern coordinates
+    },
+    'alaska': {
+      'usa': 'Alaska, USA',
+      'default': 'Alaska, USA'
+    },
+    'hawaii': {
+      'usa': 'Hawaii, USA',
+      'default': 'Hawaii, USA'
+    },
+    'california': {
+      'usa': 'California, USA',
+      'mexico': 'Baja California, Mexico',
+      'default': 'California, USA'
+    },
+    'georgia': {
+      'usa': 'Georgia, USA',
+      'default': 'Georgia, USA'
+    },
+    'washington': {
+      'usa': 'Washington, USA',
+      'default': 'Washington, USA'
+    }
+  };
+  
+  const locationLower = locationName.toLowerCase().trim();
+  const country = locationDetails?.country?.toLowerCase() || '';
+  
+  // Check if this is an ambiguous location
+  if (ambiguousLocations[locationLower]) {
+    const mapping = ambiguousLocations[locationLower];
+    if (country && mapping[country]) {
+      return mapping[country];
+    }
+    return mapping.default || locationName;
+  }
+  
+  // For non-ambiguous locations, add country if available and not already present
+  if (locationDetails?.country && !locationName.toLowerCase().includes(locationDetails.country.toLowerCase())) {
+    // Only add country if location name doesn't already include it
+    const countryName = locationDetails.country;
+    // For territories/provinces, format as "Location, Country"
+    if (locationDetails.state === locationName || locationDetails.region === locationName) {
+      return `${locationName}, ${countryName}`;
+    }
+  }
+  
+  return locationName;
+}
+
+/**
  * Estimate population within radius (rough approximation)
  * Uses a simple formula based on distance from major cities
  * This is a placeholder - real population data would require a proper API
@@ -833,7 +895,9 @@ exports.handler = async (event, context) => {
     }
     
     // Include region/state if available (prefer state over full location)
-    const region = locationDetails?.state || locationDetails?.county || locationDetails?.country || null;
+    // Format region with country context for clarity (e.g., "Yukon Territory, Canada" instead of just "Yukon")
+    const rawRegion = locationDetails?.state || locationDetails?.county || locationDetails?.country || null;
+    const region = rawRegion ? formatLocationWithContext(rawRegion, locationDetails) : null;
     if (region) {
       keyFacts.push({ label: 'Region', value: region });
     }
@@ -1014,8 +1078,8 @@ exports.handler = async (event, context) => {
                       M${safeMagnitudeFormatted} Earthquake
                     </h1>
                     <p style="margin: 0 0 8px 0; font-size: 16px; font-weight: 500; color: #374151; line-height: 1.4;">
-                      Near ${region || safeLocationDisplay}
-                      ${safeLocationEnglishName && safeLocationEnglishName !== safeLocationDisplay ? `
+                      Near ${region || formatLocationWithContext(safeLocationDisplay, locationDetails) || safeLocationDisplay}
+                      ${safeLocationEnglishName && safeLocationEnglishName !== safeLocationDisplay && safeLocationEnglishName !== region ? `
                         <span style="font-size: 14px; color: #6B7280; font-weight: 400;"> (${safeLocationEnglishName})</span>
                       ` : ''}
                     </p>

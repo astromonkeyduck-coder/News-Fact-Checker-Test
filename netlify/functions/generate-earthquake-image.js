@@ -56,9 +56,9 @@ const LOCATION_OFFSET = 75;
 const SAFE_LEFT = ANCHOR_X + ALIGN_SHIFT_X;
 const SAFE_RIGHT_RATIO = 0.58;
 
-// Headline - Updated format: "BREAKING: M___ Earthquake Near ___."
-const BREAKING_TEXT = "BREAKING:";
-const EARTHQUAKE_NEAR_TEXT = "Earthquake Near";
+// Headline - Original format: "Breaking News:" then "M___ EARTHQUAKE NEAR" then location
+const BREAKING_TEXT = "Breaking News:";
+const EARTHQUAKE_NEAR_TEXT = "EARTHQUAKE NEAR";
 const HEADLINE_FONT_SIZE_BASE = 65;
 const MAGNITUDE_FONT_SIZE_RATIO = 0.95;
 const MAGNITUDE_GAP = 18;
@@ -96,12 +96,12 @@ function estimateTextWidth(text, fontSize) {
  * Create SVG overlay with embedded fonts
  */
 function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templateHeight, scaleFactor = 1.0) {
-  // Format: "BREAKING: M#.# Earthquake Near [Location]."
+  // Format: "Breaking News:" (line 1), "M#.# EARTHQUAKE NEAR" (line 2), "[LOCATION]" (line 3, all caps)
   const escapedBreaking = escapeSVGText(BREAKING_TEXT);
   const escapedMag = escapeSVGText(magnitudeText);
   const escapedEarthquakeNear = escapeSVGText(EARTHQUAKE_NEAR_TEXT);
-  // Location with proper capitalization and period
-  const locationFormatted = locationText.charAt(0).toUpperCase() + locationText.slice(1).toLowerCase() + '.';
+  // Location in all caps (no period)
+  const locationFormatted = locationText.toUpperCase();
   const escapedLocation = escapeSVGText(locationFormatted);
   
   // Scale all constants
@@ -131,7 +131,7 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
   let headlineFontSize = Math.round(HEADLINE_FONT_SIZE_BASE * scaleFactor);
   let magnitudeFontSize = Math.round(headlineFontSize * MAGNITUDE_FONT_SIZE_RATIO);
   
-  // Measure text widths for new format: "BREAKING: M#.# Earthquake Near [Location]."
+  // Measure text widths for format: "Breaking News:" (line 1), "M#.# EARTHQUAKE NEAR" (line 2), "[LOCATION]" (line 3)
   let breakingWidth = estimateTextWidth(BREAKING_TEXT, headlineFontSize);
   let magWidth = estimateTextWidth(magnitudeText, magnitudeFontSize);
   let earthquakeNearWidth = estimateTextWidth(EARTHQUAKE_NEAR_TEXT, headlineFontSize);
@@ -139,14 +139,17 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
   const locationFontSizeMin = Math.round(LOCATION_FONT_SIZE_MIN * scaleFactor);
   let locationWidth = estimateTextWidth(locationFormatted, locationFontSize);
   
-  // Calculate total width for first line: "BREAKING: M#.# Earthquake Near"
-  let firstLineWidth = breakingWidth + scaledTextGap + magWidth + scaledTextGap + earthquakeNearWidth;
+  // Calculate total width for line 1: "Breaking News:"
+  let firstLineWidth = breakingWidth;
   
-  // Calculate total width for second line: "[Location]."
-  let secondLineWidth = locationWidth;
+  // Calculate total width for line 2: "M#.# EARTHQUAKE NEAR"
+  let secondLineWidth = magWidth + scaledTextGap + earthquakeNearWidth;
+  
+  // Calculate total width for line 3: "[LOCATION]"
+  let thirdLineWidth = locationWidth;
   
   // Auto-reduce font sizes if needed
-  const maxLineWidth = Math.max(firstLineWidth, secondLineWidth);
+  const maxLineWidth = Math.max(firstLineWidth, Math.max(secondLineWidth, thirdLineWidth));
   if (maxLineWidth > maxTextWidth) {
     const fitScaleFactor = maxTextWidth / maxLineWidth;
     const minHeadlineSize = Math.round(50 * scaleFactor);
@@ -159,21 +162,25 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
     magWidth = estimateTextWidth(magnitudeText, magnitudeFontSize);
     earthquakeNearWidth = estimateTextWidth(EARTHQUAKE_NEAR_TEXT, headlineFontSize);
     locationWidth = estimateTextWidth(locationFormatted, locationFontSize);
-    firstLineWidth = breakingWidth + scaledTextGap + magWidth + scaledTextGap + earthquakeNearWidth;
-    secondLineWidth = locationWidth;
+    firstLineWidth = breakingWidth;
+    secondLineWidth = magWidth + scaledTextGap + earthquakeNearWidth;
+    thirdLineWidth = locationWidth;
     
     console.log(`[generate-earthquake-image] Text auto-sized: headline=${headlineFontSize}px, location=${locationFontSize}px`);
   }
   
-  // Position for first line: "BREAKING: M#.# Earthquake Near"
+  // Position for line 1: "Breaking News:"
   const breakingX = alignedX;
-  const magX = alignedX + breakingWidth + scaledTextGap;
-  const earthquakeNearX = alignedX + breakingWidth + scaledTextGap + magWidth + scaledTextGap;
-  const firstLineY = scaledHeadlineBaselineY;
+  const breakingY = scaledHeadlineBaselineY;
   
-  // Position for second line: "[Location]."
+  // Position for line 2: "M#.# EARTHQUAKE NEAR"
+  const magX = alignedX;
+  const earthquakeNearX = alignedX + magWidth + scaledTextGap;
+  const secondLineY = scaledHeadlineBaselineY + scaledLocationOffset;
+  
+  // Position for line 3: "[LOCATION]" (all caps)
   const locationX = alignedX;
-  const locationY = scaledHeadlineBaselineY + scaledLocationOffset;
+  const locationY = scaledHeadlineBaselineY + (scaledLocationOffset * 2);
   
   // Use Roboto if fonts are loaded, otherwise fallback
   // Build @font-face declarations with base64 embedded fonts
@@ -200,10 +207,10 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
           }
         </style>
       </defs>
-      <!-- BREAKING: (white, bold) -->
+      <!-- Breaking News: (white, bold) - Line 1 -->
       <text 
         x="${breakingX}" 
-        y="${firstLineY}" 
+        y="${breakingY}" 
         font-family="${fontFamily}" 
         font-size="${headlineFontSize}" 
         font-weight="bold"
@@ -213,10 +220,10 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
         ${escapedBreaking}
       </text>
       
-      <!-- Magnitude: M#.# (red, bold) -->
+      <!-- Magnitude: M#.# (red, bold) - Line 2 start -->
       <text 
         x="${magX}" 
-        y="${firstLineY}" 
+        y="${secondLineY}" 
         font-family="${fontFamily}" 
         font-size="${magnitudeFontSize}" 
         font-weight="bold"
@@ -226,10 +233,10 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
         ${escapedMag}
       </text>
       
-      <!-- Earthquake Near (white, bold) -->
+      <!-- EARTHQUAKE NEAR (white, bold) - Line 2 continuation -->
       <text 
         x="${earthquakeNearX}" 
-        y="${firstLineY}" 
+        y="${secondLineY}" 
         font-family="${fontFamily}" 
         font-size="${headlineFontSize}" 
         font-weight="bold"
@@ -239,7 +246,7 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
         ${escapedEarthquakeNear}
       </text>
       
-      <!-- Location: e.g. California. (red, bold) -->
+      <!-- Location: e.g. WATSONVILLE, CALIFORNIA (red, bold, all caps) - Line 3 -->
       <text 
         x="${locationX}" 
         y="${locationY}" 
@@ -638,7 +645,10 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
   // Format magnitude text
   const magnitudeText = `M${magnitude.toFixed(1)}`;
   
-  // STEP 6: Validate font loading (MANDATORY - THROW ERROR IF FAILS)
+  // STEP 5: Create text overlay SVG
+  console.log(`[generate-earthquake-image] 📝 Creating text overlay SVG...`);
+  
+  // Validate fonts before proceeding
   const fontLoaded = !!(FONT_DATA.regular && FONT_DATA.bold);
   if (!fontLoaded) {
     const errorMsg = `Fonts not loaded! Regular: ${!!FONT_DATA.regular}, Bold: ${!!FONT_DATA.bold}`;
@@ -708,7 +718,7 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     // CRITICAL: Register font buffers with resvg
     // Try writing fonts to temp files first (resvg may need file paths, not buffers)
     try {
-    if (FONT_BUFFERS.regular && FONT_BUFFERS.bold) {
+      if (FONT_BUFFERS.regular && FONT_BUFFERS.bold) {
         // Write fonts to temporary files in /tmp (available in Netlify functions)
         const tempDir = '/tmp';
         const regularFontPath = path.join(tempDir, `roboto-regular-${Date.now()}.ttf`);
@@ -723,15 +733,15 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
         console.log('[generate-earthquake-image] ✅ Registered font files with resvg', {
           regularPath: regularFontPath,
           boldPath: boldFontPath,
-        regularSize: FONT_BUFFERS.regular.length,
+          regularSize: FONT_BUFFERS.regular.length,
           boldSize: FONT_BUFFERS.bold.length,
           loadSystemFonts: true
-      });
-    } else {
-      console.warn('[generate-earthquake-image] ⚠️ Font buffers not available for resvg!', {
-        hasRegular: !!FONT_BUFFERS.regular,
-        hasBold: !!FONT_BUFFERS.bold
-      });
+        });
+      } else {
+        console.warn('[generate-earthquake-image] ⚠️ Font buffers not available for resvg!', {
+          hasRegular: !!FONT_BUFFERS.regular,
+          hasBold: !!FONT_BUFFERS.bold
+        });
         // Don't throw - let resvg try with system fonts
         console.warn('[generate-earthquake-image] ⚠️ Will attempt rendering with system fonts only');
       }
@@ -883,7 +893,7 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
   }
   
   // Format location for logging (same format as in createDynamicTextSVG)
-  const locationFormattedForLog = location ? (location.charAt(0).toUpperCase() + location.slice(1).toLowerCase() + '.') : 'Unknown Location.';
+  const locationFormattedForLog = location ? location.toUpperCase() : 'UNKNOWN LOCATION';
   
   console.log(`[generate-earthquake-image] ✅ SVG text overlay created: ${outputWidth}x${outputHeight}`);
   console.log(`[generate-earthquake-image] Template dimensions: ${actualWidth}x${actualHeight}, output: ${outputWidth}x${outputHeight}`);
@@ -1149,15 +1159,15 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
   // CRITICAL: Log what will be in the final composite
   console.log(`[generate-earthquake-image] 📊 COMPOSITE LAYERS:`, {
     totalLayers: compositeInputs.length,
-    hasTextOverlay: true, // Always first layer
+    hasTextOverlay: false, // Template already has text baked in
     hasUSGSImages: successfullyAddedImages > 0,
-    usgsImageCount: successfullyAddedImages,
+    usgsImageCount: usgsImageCount,
+    locationMapCount: locationMapCount,
     templateDimensions: `${actualWidth}x${actualHeight}`,
     outputDimensions: `${outputWidth}x${outputHeight}`,
     scaleFactor: scaleFactor.toFixed(3),
     magnitudeText: magnitudeText,
-    locationText: location.toUpperCase(),
-    textOverlaySize: `${Math.round(textOverlayBuffer.length / 1024)}KB`
+    locationText: location.toUpperCase()
   });
   
   // Scale template to match output dimensions if 4K is enabled
@@ -1300,7 +1310,7 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
     scaleFactor: scaleFactor.toFixed(3),
     fileSize: `${Math.round(composite.length / 1024)}KB`,
     isValidPNG: isPNG,
-    containsText: compositeHasText || compositeInputs.length > 0, // Use actual check if available
+    containsText: true, // Template already has text baked in
     containsUSGSImages: successfullyAddedImages > 0,
     magnitude: magnitudeText,
     location: location.toUpperCase(),

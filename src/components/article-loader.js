@@ -304,13 +304,14 @@
         getOrCreateMeta('description', 'name').setAttribute('content', description);
         getOrCreateLink('canonical').setAttribute('href', url);
 
-        // For earthquakes, format title as "BREAKING: M___ Earthquake Near ___."
+        // For earthquakes, format title as "BREAKING: M___ Earthquake Near ___. #hashtags"
         const isEarthquake = post.category === 'Earthquake' || post.event_type === 'earthquake' || post.source === 'USGS';
         let formattedTitle = title;
         if (isEarthquake && post.magnitude && (post.location_display || post.location)) {
             const magnitudeFormatted = typeof post.magnitude === 'number' ? post.magnitude.toFixed(1) : post.magnitude;
             const location = post.location_display || post.location;
-            formattedTitle = `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}.`;
+            const hashtags = getEarthquakeHashtags(location);
+            formattedTitle = `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}. ${hashtags}`;
         }
 
         // Open Graph
@@ -470,12 +471,13 @@
      * Generate earthquake-specific enhancements (location details, nearby places, assessments, etc.)
      */
     async function generateEarthquakeEnhancements(post, magnitude) {
-        const lat = post.lat;
-        const lon = post.lon;
+        // Get coordinates from multiple possible locations
+        const lat = post.lat || post.raw?.geometry?.coordinates?.[1] || post.assets?.lat || null;
+        const lon = post.lon || post.raw?.geometry?.coordinates?.[0] || post.assets?.lon || null;
         const locationDisplay = post.location_display || post.location || 'Unknown Location';
         const locationEnglishName = post.location_english_name || post.assets?.location_english_name || null;
         const magnitudeFormatted = magnitude ? magnitude.toFixed(1) : 'N/A';
-        const depth = post.assets?.depth || post.depth;
+        const depth = post.assets?.depth || post.depth || post.raw?.geometry?.coordinates?.[2] || null;
         const depthFormatted = depth ? `${depth.toFixed(1)} km` : null;
         
         // Extract assessment data
@@ -486,12 +488,14 @@
         
         let html = '';
         
-        // Add interactive map container
-        html += `
-            <div class="earthquake-map-container" style="margin: 2rem 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
-                <div id="earthquake-interactive-map" style="width: 100%; height: 500px; background: #f0f0f0;"></div>
-            </div>
-        `;
+        // Add interactive map container (only if we have coordinates)
+        if (lat && lon) {
+            html += `
+                <div class="earthquake-map-container" style="margin: 2rem 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+                    <div id="earthquake-interactive-map" style="width: 100%; height: 500px; background: #f0f0f0;"></div>
+                </div>
+            `;
+        }
         
         // Add location details section
         html += `
@@ -511,10 +515,12 @@
                         <div style="font-size: 1.5rem; font-weight: 700; color: #fff;">${depthFormatted}</div>
                     </div>
                     ` : ''}
+                    ${lat && lon ? `
                     <div class="detail-card" style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
                         <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">Coordinates</div>
                         <div style="font-size: 0.875rem; font-weight: 600; color: #fff; font-family: 'Courier New', monospace;">${Math.abs(lat).toFixed(4)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? 'E' : 'W'}</div>
                     </div>
+                    ` : ''}
                     <div class="detail-card" style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
                         <div style="font-size: 0.75rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">Location</div>
                         <div style="font-size: 0.875rem; font-weight: 600; color: #fff;">
@@ -1403,12 +1409,20 @@
             console.log('[ArticleLoader] Fetched', posts.length, 'posts, looking for articleId:', articleId);
             
             // Find the post - try multiple ID formats
-            // Posts can have id as: articleId, post-{articleId}, or stored as postId field
+            // Posts can have id as: articleId, post-{articleId}, usgs-{eventId}, or stored as postId field
             const post = posts.find(p => {
                 // Direct match
                 if (p.id === articleId) return true;
                 // Match with post- prefix
                 if (p.id === `post-${articleId}`) return true;
+                // Match usgs- prefix (e.g., usgs-ak2026ahhwhz)
+                if (articleId.startsWith('usgs-')) {
+                    const eventId = articleId.substring(5); // Remove 'usgs-' prefix
+                    // Try matching with post-usgs- prefix
+                    if (p.id === `post-usgs-${eventId}` || p.id === `post-${articleId}`) return true;
+                    // Try matching event_id or canonical_id
+                    if (p.event_id === eventId || p.canonical_id === `usgs:${eventId}`) return true;
+                }
                 // Match postId field if it exists
                 if (p.postId === articleId || p.postId === `post-${articleId}`) return true;
                 // Match if articleId has post- prefix and p.id doesn't
@@ -1676,7 +1690,19 @@
             
             // Check if this is an earthquake post and add enhanced content
             const isEarthquake = post.event_type === 'earthquake' || post.category === 'Earthquake' || post.category === 'EARTHQUAKE' || post.source === 'USGS';
-            const hasCoordinates = post.lat && post.lon;
+            // Check for coordinates in multiple places (lat/lon at top level, or in raw geometry, or in assets)
+            const hasCoordinates = (post.lat && post.lon) || 
+                                   (post.raw?.geometry?.coordinates?.[1] && post.raw?.geometry?.coordinates?.[0]) ||
+                                   (post.assets?.lat && post.assets?.lon);
+            // Get coordinates from any available source
+            if (!post.lat && post.raw?.geometry?.coordinates) {
+                post.lat = post.raw.geometry.coordinates[1];
+                post.lon = post.raw.geometry.coordinates[0];
+            }
+            if (!post.lat && post.assets) {
+                post.lat = post.assets.lat;
+                post.lon = post.assets.lon;
+            }
             const magnitude = post.assets?.magnitude || post.magnitude;
             
             console.log('[ArticleLoader] Earthquake check:', {
@@ -1694,7 +1720,8 @@
                 hasAnomalyDetection: !!post.assets?.anomaly_detection,
             });
             
-            if (isEarthquake && hasCoordinates) {
+            // Show enhancements if it's an earthquake (even without coordinates, we can show assessments)
+            if (isEarthquake) {
                 // Add earthquake-specific enhancements
                 console.log('[ArticleLoader] Adding earthquake enhancements...', {
                     isEarthquake,
@@ -1703,7 +1730,8 @@
                     lat: post.lat,
                     lon: post.lon,
                     source: post.source,
-                    category: post.category
+                    category: post.category,
+                    hasAssets: !!post.assets
                 });
                 const enhancementsHTML = await generateEarthquakeEnhancements(post, magnitude);
                 bodyHTML += enhancementsHTML;
@@ -1715,7 +1743,7 @@
                     source: post.source,
                     category: post.category,
                     event_type: post.event_type,
-                    reason: !isEarthquake ? 'not an earthquake' : 'missing coordinates'
+                    reason: 'not an earthquake'
                 });
             }
             
@@ -1781,12 +1809,22 @@
             // Initialize comments
             const commentsContainer = document.getElementById('article-comments');
             if (commentsContainer) {
-                commentsContainer.setAttribute('data-article-id', articleId);
+                // Normalize articleId for comments (handle usgs- prefix, post- prefix, etc.)
+                let commentArticleId = articleId;
+                if (articleId.startsWith('usgs-')) {
+                    // For usgs-{eventId}, try both formats
+                    commentArticleId = `post-${articleId}`;
+                } else if (!articleId.startsWith('post-')) {
+                    // Ensure post- prefix for consistency
+                    commentArticleId = `post-${articleId}`;
+                }
+                
+                commentsContainer.setAttribute('data-article-id', commentArticleId);
                 // Ensure comment section container exists
                 if (!commentsContainer.querySelector('.comment-section')) {
                     const commentSectionDiv = document.createElement('div');
                     commentSectionDiv.className = 'comment-section';
-                    commentSectionDiv.setAttribute('data-article-id', articleId);
+                    commentSectionDiv.setAttribute('data-article-id', commentArticleId);
                     commentsContainer.appendChild(commentSectionDiv);
                 }
                 
@@ -1797,25 +1835,25 @@
                             window.commentSections = {};
                         }
                         // Only initialize if not already initialized
-                        if (!window.commentSections[articleId]) {
+                        if (!window.commentSections[commentArticleId]) {
                             try {
-                                window.commentSections[articleId] = new window.CommentSection(articleId);
-                                console.log('[ArticleLoader] Comment section initialized for', articleId);
+                                window.commentSections[commentArticleId] = new window.CommentSection(commentArticleId);
+                                console.log('[ArticleLoader] Comment section initialized for', commentArticleId);
                             } catch (error) {
                                 console.error('[ArticleLoader] Failed to initialize comment section:', error);
                             }
                         } else {
                             // Re-render if already initialized
                             try {
-                                window.commentSections[articleId].render();
+                                window.commentSections[commentArticleId].render();
                             } catch (error) {
                                 console.error('[ArticleLoader] Failed to render comment section:', error);
                             }
                         }
                     } else {
-                        // Wait for CommentSection to load (try up to 5 seconds)
+                        // Wait for CommentSection to load (try up to 10 seconds)
                         let attempts = 0;
-                        const maxAttempts = 25; // 25 * 200ms = 5 seconds
+                        const maxAttempts = 50; // 50 * 200ms = 10 seconds
                         const checkInterval = setInterval(() => {
                             attempts++;
                             if (window.CommentSection) {
@@ -1823,13 +1861,23 @@
                                 initComments();
                             } else if (attempts >= maxAttempts) {
                                 clearInterval(checkInterval);
-                                console.error('[ArticleLoader] CommentSection failed to load after 5 seconds');
+                                console.error('[ArticleLoader] CommentSection failed to load after 10 seconds');
+                                // Show error message to user
+                                const errorDiv = document.createElement('div');
+                                errorDiv.style.cssText = 'padding: 1rem; background: rgba(255,0,0,0.1); border: 1px solid rgba(255,0,0,0.3); border-radius: 8px; color: #ff6b6b; margin: 1rem 0;';
+                                errorDiv.textContent = 'Comments failed to load. Please refresh the page.';
+                                commentsContainer.appendChild(errorDiv);
                             }
                         }, 200);
                     }
                 };
                 
-                initComments();
+                // Wait a bit for DOM to settle, then initialize
+                setTimeout(() => {
+                    initComments();
+                }, 100);
+            } else {
+                console.error('[ArticleLoader] Comments container not found!');
             }
             
             // Load sidebar content
