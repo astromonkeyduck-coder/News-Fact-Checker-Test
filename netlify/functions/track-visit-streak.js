@@ -162,7 +162,7 @@ async function trackVisit(userEmail, userName = null) {
     await saveStreakData(userEmail, streakData);
 
     // Check if this is a milestone (streak of 2, 3, 5, 7, 10, 14, 30, etc.)
-    const streakCount = streakData.currentStreak - 1; // Actual streak count (starts after day 2)
+    // Use the streakCount already calculated above (line 146)
     
     // Check if we've already sent email for this milestone (avoid duplicates)
     const lastEmailSent = streakData.lastEmailSent || {};
