@@ -281,7 +281,21 @@ exports.handler = async (event, context) => {
     
     // Extract email information
     const fromEmail = emailData.from || emailData.from_email || emailData.sender || '';
-    const toEmail = emailData.to || emailData.to_email || emailData.recipient || '';
+    let toEmail = emailData.to || emailData.to_email || emailData.recipient || '';
+    
+    // Handle array format (e.g., ["email@example.com"] or [{email: "email@example.com"}])
+    if (Array.isArray(toEmail)) {
+      toEmail = toEmail.length > 0 ? (toEmail[0].email || toEmail[0]) : '';
+    }
+    
+    // Handle object format (e.g., {email: "email@example.com"})
+    if (toEmail && typeof toEmail === 'object' && toEmail.email) {
+      toEmail = toEmail.email;
+    }
+    
+    // Ensure toEmail is a string
+    toEmail = String(toEmail || '');
+    
     const subject = emailData.subject || '';
     const textBody = emailData.text || emailData.text_body || emailData.body || '';
     const htmlBody = emailData.html || emailData.html_body || '';
@@ -296,7 +310,7 @@ exports.handler = async (event, context) => {
 
     // Check if email is to richard@noteworthynews.co
     const targetEmail = 'richard@noteworthynews.co';
-    const isTargetEmail = toEmail.toLowerCase().includes(targetEmail.toLowerCase());
+    const isTargetEmail = toEmail && typeof toEmail === 'string' ? toEmail.toLowerCase().includes(targetEmail.toLowerCase()) : false;
     
     if (!isTargetEmail) {
       console.log(`[Inbound Email] Email not to ${targetEmail}, ignoring`);
