@@ -541,6 +541,10 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
       filename: img?.filename
     }))) : 'null'
   });
+  
+  // Format magnitude text
+  const magnitudeText = `M${magnitude.toFixed(1)}`;
+  
   // Load template
   const possiblePaths = [
     path.join(__dirname, '3rdUSGSTemp.png'),
@@ -614,9 +618,6 @@ async function generateImage(magnitude, location, usgsImages, eventId, templateT
   if (actualWidth !== TEMPLATE_WIDTH || actualHeight !== TEMPLATE_HEIGHT) {
     console.warn(`[generate-earthquake-image] Template dimensions (${actualWidth}x${actualHeight}) don't match expected (${TEMPLATE_WIDTH}x${TEMPLATE_HEIGHT})`);
   }
-  
-  // Format magnitude text
-  const magnitudeText = `M${magnitude.toFixed(1)}`;
   
   // Calculate dimensions based on template type
   let outputWidth, outputHeight, scaleFactor;
