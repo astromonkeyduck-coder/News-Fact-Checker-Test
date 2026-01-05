@@ -643,6 +643,116 @@ async function renderFallbackMapPng({ lat, lon, zoom = 11, width = 600, height =
 }
 
 /**
+ * Generate Mapbox Satellite image with epicenter overlay
+ * Uses Mapbox Static Images API for satellite imagery
+ */
+async function generateMapboxSatelliteImage({ lat, lon, zoom, width, height, logger }) {
+  // Sanity checks
+  if (lat < -85 || lat > 85) {
+    throw new Error(`Invalid latitude: ${lat} (must be between -85 and 85)`);
+  }
+  if (lon < -180 || lon > 180) {
+    throw new Error(`Invalid longitude: ${lon} (must be between -180 and 180)`);
+  }
+  
+  const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN;
+  if (!MAPBOX_TOKEN) {
+    if (logger) logger.warn(`[generateMapboxSatelliteImage] ⚠️ MAPBOX_TOKEN not set, cannot generate satellite image`);
+    throw new Error('MAPBOX_TOKEN environment variable not set');
+  }
+  
+  // Mapbox Static Images API URL
+  // Format: https://api.mapbox.com/styles/v1/{username}/{style_id}/static/{lon},{lat},{zoom}/{width}x{height}@{2x}?access_token={token}
+  // We use mapbox/satellite-v9 for satellite imagery
+  // No overlay markers from Mapbox - we'll add our own
+  // Note: URL format is {lon},{lat},{zoom} (lon first, then lat)
+  const baseUrl = 'https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static';
+  const url = `${baseUrl}/${lon},${lat},${zoom}/${width}x${height}@2x?access_token=${MAPBOX_TOKEN}`;
+  
+  // CRITICAL: Log the URL (without token) for debugging
+  if (logger) {
+    const urlWithoutToken = url.replace(/access_token=[^&]+/, 'access_token=***');
+    logger.info(`[generateMapboxSatelliteImage] 🔗 Mapbox API URL: ${urlWithoutToken}`);
+  }
+  
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'NoteworthyNews/1.0'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`Mapbox API error: ${response.status} ${response.statusText} - ${errorText.substring(0, 200)}`);
+    }
+    
+    const imageBuffer = Buffer.from(await response.arrayBuffer());
+    
+    if (logger) {
+      const bufferHash = getBufferHash(imageBuffer);
+      logger.info(`[generateMapboxSatelliteImage] ✅ Mapbox satellite image fetched: ${width}x${height}, bufferHash: ${bufferHash}`);
+    }
+    
+    return imageBuffer;
+  } catch (error) {
+    if (logger) {
+      logger.error(`[generateMapboxSatelliteImage] ❌ Failed to fetch Mapbox satellite image: ${error.message}`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Overlay epicenter graphics on satellite image (NO TEXT)
+ * Epicenter is at center of image (width/2, height/2) since Mapbox centers on coordinates
+ */
+async function overlayEpicenterGraphics(imageBuffer, width, height, logger) {
+  // Epicenter is at center of image
+  const centerX = width / 2;
+  const centerY = height / 2;
+  
+  // Create SVG overlay with epicenter graphics (NO TEXT)
+  const overlaySVG = Buffer.from(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <!-- Outer ring (60px radius, red, 25% opacity) -->
+      <circle cx="${centerX}" cy="${centerY}" r="60" fill="none" stroke="#DC2626" stroke-width="2" opacity="0.25"/>
+      
+      <!-- Inner ring (30px radius, red, 35% opacity) -->
+      <circle cx="${centerX}" cy="${centerY}" r="30" fill="none" stroke="#DC2626" stroke-width="2" opacity="0.35"/>
+      
+      <!-- Crosshair - horizontal line -->
+      <line x1="${centerX - 80}" y1="${centerY}" x2="${centerX + 80}" y2="${centerY}" stroke="#FFFFFF" stroke-width="1.5" opacity="0.8"/>
+      
+      <!-- Crosshair - vertical line -->
+      <line x1="${centerX}" y1="${centerY - 80}" x2="${centerX}" y2="${centerY + 80}" stroke="#FFFFFF" stroke-width="1.5" opacity="0.8"/>
+      
+      <!-- Epicenter dot (10px radius, red fill, white stroke) -->
+      <circle cx="${centerX}" cy="${centerY}" r="10" fill="#DC2626" stroke="#FFFFFF" stroke-width="2"/>
+    </svg>
+  `);
+  
+  try {
+    const finalImage = await sharp(imageBuffer)
+      .composite([{ input: overlaySVG, blend: 'over' }])
+      .png()
+      .toBuffer();
+    
+    if (logger) {
+      const overlayHash = getBufferHash(finalImage);
+      logger.info(`[overlayEpicenterGraphics] ✅ Epicenter graphics overlaid, bufferHash: ${overlayHash}`);
+    }
+    
+    return finalImage;
+  } catch (error) {
+    if (logger) {
+      logger.error(`[overlayEpicenterGraphics] ❌ Failed to overlay epicenter graphics: ${error.message}`);
+    }
+    throw error;
+  }
+}
+
+/**
  * Fetch and stitch OpenStreetMap tiles into a single image
  * CRITICAL: lon is X-axis, lat is Y-axis in Web Mercator
  * DEPRECATED: This function is replaced by generateMapboxSatelliteImage
