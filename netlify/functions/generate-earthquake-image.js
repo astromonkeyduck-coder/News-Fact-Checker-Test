@@ -47,7 +47,7 @@ const ENABLE_4K = true;
 // DYNAMIC TEXT PLACEMENT
 const ANCHOR_X = 50;
 const ALIGN_SHIFT_X = 18;
-const HEADLINE_BASELINE_Y_BASE = 50; // Moved up to be above red banner
+const HEADLINE_BASELINE_Y_BASE = 70; // Moved up to be above red banner, then down 20px
 const HEADLINE_BLOCK_OFFSET_Y = 100;
 const HEADLINE_BASELINE_Y = HEADLINE_BASELINE_Y_BASE + HEADLINE_BLOCK_OFFSET_Y;
 const LOCATION_OFFSET = 75;
