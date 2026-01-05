@@ -94,18 +94,33 @@ function extractTextFromHtml(html) {
 
 /**
  * Check if email content contains "ingest" command
+ * Case-insensitive search in subject, text body, and HTML body
  */
 function containsIngestCommand(subject, textBody, htmlBody) {
   const searchText = 'ingest';
-  const subjectLower = (subject || '').toLowerCase();
-  const textLower = (textBody || '').toLowerCase();
-  const htmlText = extractTextFromHtml(htmlBody);
   
-  return (
-    subjectLower.includes(searchText) ||
-    textLower.includes(searchText) ||
-    htmlText.includes(searchText)
-  );
+  // Ensure all inputs are strings
+  const subjectStr = String(subject || '').toLowerCase();
+  const textStr = String(textBody || '').toLowerCase();
+  const htmlStr = extractTextFromHtml(String(htmlBody || ''));
+  
+  // Check if "ingest" appears in any of the email content
+  const foundInSubject = subjectStr.includes(searchText);
+  const foundInText = textStr.includes(searchText);
+  const foundInHtml = htmlStr.includes(searchText);
+  
+  const shouldTrigger = foundInSubject || foundInText || foundInHtml;
+  
+  console.log('[Inbound Email] Checking for "ingest" command:', {
+    foundInSubject,
+    foundInText,
+    foundInHtml,
+    shouldTrigger,
+    subjectPreview: subjectStr.substring(0, 50),
+    textPreview: textStr.substring(0, 50)
+  });
+  
+  return shouldTrigger;
 }
 
 /**
@@ -341,10 +356,22 @@ exports.handler = async (event, context) => {
     }
 
     // Trigger ingest-all
-    console.log('[Inbound Email] Email contains "ingest" command, triggering ingest-all...');
+    console.log('[Inbound Email] ✅ Email contains "ingest" command, triggering ingest-all...');
+    console.log('[Inbound Email] Email details:', {
+      from: fromEmail,
+      to: toEmail,
+      subject: subject,
+      hasText: !!textBody,
+      hasHtml: !!htmlBody
+    });
     
     try {
       const result = await triggerIngestAll();
+      
+      console.log('[Inbound Email] ✅ ingest-all triggered successfully:', {
+        statusCode: result.statusCode,
+        success: result.success
+      });
       
       return {
         statusCode: 200,
@@ -354,11 +381,17 @@ exports.handler = async (event, context) => {
           message: 'Ingest-all triggered successfully',
           triggered: true,
           from: fromEmail,
+          to: toEmail,
           subject: subject,
+          result: result
         }),
       };
     } catch (triggerError) {
-      console.error('[Inbound Email] Failed to trigger ingest-all:', triggerError);
+      console.error('[Inbound Email] ❌ Failed to trigger ingest-all:', triggerError);
+      console.error('[Inbound Email] Error details:', {
+        message: triggerError.message,
+        stack: triggerError.stack
+      });
       
       return {
         statusCode: 500,
@@ -367,6 +400,9 @@ exports.handler = async (event, context) => {
           success: false,
           error: 'Failed to trigger ingest-all',
           message: triggerError.message,
+          from: fromEmail,
+          to: toEmail,
+          subject: subject
         }),
       };
     }
