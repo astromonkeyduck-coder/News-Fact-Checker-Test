@@ -924,21 +924,21 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
     
     try {
       const imageResponse = await fetch(functionUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        magnitude,
-        location,
-        usgsImages,
-        eventId,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          magnitude,
+          location,
+          usgsImages,
+          eventId,
           coordinates, // [lon, lat, depth] - for location map image generation (with epicenter marker)
-      }),
+        }),
         signal: controller.signal,
-    });
+      });
       
       clearTimeout(timeoutId);
     
-    if (!imageResponse.ok) {
+      if (!imageResponse.ok) {
       const errorText = await imageResponse.text().catch(() => 'Unknown error');
       let errorData;
       try {
@@ -970,8 +970,8 @@ async function generateBrandedImage(magnitude, location, usgsImages, eventId, lo
         console.error('[USGS Engine] ❌ Image generation failed:');
         console.error(JSON.stringify(errorDetails, null, 2));
         console.error('[USGS Engine] Full error response (first 2000 chars):', errorText.substring(0, 2000));
-      return null;
-    }
+        return null;
+      }
     
     const imageData = await imageResponse.json();
     logger.info('Branded image generated', { url: imageData.url });
@@ -1938,6 +1938,7 @@ async function run(logger) {
       count_total_seen: 0,
     };
   }
+}
 }
 
 // PHASE 1: Export new functions
