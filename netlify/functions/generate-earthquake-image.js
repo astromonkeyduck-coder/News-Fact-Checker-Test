@@ -706,29 +706,68 @@ async function generateMapboxSatelliteImage({ lat, lon, zoom, width, height, log
 /**
  * Overlay epicenter graphics on satellite image (NO TEXT)
  * Epicenter is at center of image (width/2, height/2) since Mapbox centers on coordinates
+ * Includes accurate earthquake rings based on magnitude and zoom level
  */
-async function overlayEpicenterGraphics(imageBuffer, width, height, logger) {
+async function overlayEpicenterGraphics(imageBuffer, width, height, logger, magnitude = null, zoom = null) {
   // Epicenter is at center of image
   const centerX = width / 2;
   const centerY = height / 2;
   
+  // Calculate accurate earthquake ring radii based on magnitude and zoom
+  // Ring sizes represent approximate felt radius in kilometers
+  // At zoom 7 (regional): ~50km per 100px
+  // At zoom 11 (local): ~1.5km per 100px
+  let ringRadii = [];
+  let ringColors = [];
+  let ringOpacities = [];
+  
+  if (magnitude && zoom) {
+    // Calculate approximate felt radius in km based on magnitude
+    // Formula: felt radius ≈ 10^(magnitude - 3) km (rough approximation)
+    const feltRadiusKm = Math.pow(10, magnitude - 3);
+    
+    // Convert km to pixels based on zoom level
+    // Approximate: zoom 7 = ~50km/100px, zoom 11 = ~1.5km/100px
+    const kmPerPixel = zoom <= 7 ? 0.5 : (zoom <= 9 ? 0.2 : 0.015);
+    const feltRadiusPx = Math.min(feltRadiusKm / kmPerPixel, Math.min(width, height) * 0.4);
+    
+    // Create multiple rings representing different wave phases
+    // Ring 1: P-wave (primary, fastest) - inner ring
+    const pWaveRadius = feltRadiusPx * 0.3;
+    // Ring 2: S-wave (secondary) - middle ring
+    const sWaveRadius = feltRadiusPx * 0.6;
+    // Ring 3: Surface wave (most destructive) - outer ring
+    const surfaceWaveRadius = feltRadiusPx;
+    
+    ringRadii = [pWaveRadius, sWaveRadius, surfaceWaveRadius];
+    ringColors = ['#60A5FA', '#FBBF24', '#DC2626']; // Blue (P-wave), Yellow (S-wave), Red (Surface)
+    ringOpacities = [0.4, 0.5, 0.6];
+  } else {
+    // Fallback: use fixed-size rings if magnitude/zoom not provided
+    ringRadii = [30, 60, 100];
+    ringColors = ['#60A5FA', '#FBBF24', '#DC2626'];
+    ringOpacities = [0.4, 0.5, 0.6];
+  }
+  
+  // Build SVG rings
+  let ringsSVG = '';
+  for (let i = 0; i < ringRadii.length; i++) {
+    const radius = Math.max(ringRadii[i], 20); // Minimum 20px radius
+    ringsSVG += `      <!-- ${i === 0 ? 'P-wave' : i === 1 ? 'S-wave' : 'Surface wave'} ring (${Math.round(radius)}px radius) -->\n`;
+    ringsSVG += `      <circle cx="${centerX}" cy="${centerY}" r="${radius}" fill="none" stroke="${ringColors[i]}" stroke-width="${i === ringRadii.length - 1 ? '3' : '2'}" opacity="${ringOpacities[i]}"/>\n`;
+  }
+  
   // Create SVG overlay with epicenter graphics (NO TEXT)
   const overlaySVG = Buffer.from(`
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <!-- Outer ring (60px radius, red, 25% opacity) -->
-      <circle cx="${centerX}" cy="${centerY}" r="60" fill="none" stroke="#DC2626" stroke-width="2" opacity="0.25"/>
-      
-      <!-- Inner ring (30px radius, red, 35% opacity) -->
-      <circle cx="${centerX}" cy="${centerY}" r="30" fill="none" stroke="#DC2626" stroke-width="2" opacity="0.35"/>
-      
-      <!-- Crosshair - horizontal line -->
-      <line x1="${centerX - 80}" y1="${centerY}" x2="${centerX + 80}" y2="${centerY}" stroke="#FFFFFF" stroke-width="1.5" opacity="0.8"/>
+${ringsSVG}      <!-- Crosshair - horizontal line -->
+      <line x1="${centerX - 100}" y1="${centerY}" x2="${centerX + 100}" y2="${centerY}" stroke="#FFFFFF" stroke-width="2" opacity="0.9"/>
       
       <!-- Crosshair - vertical line -->
-      <line x1="${centerX}" y1="${centerY - 80}" x2="${centerX}" y2="${centerY + 80}" stroke="#FFFFFF" stroke-width="1.5" opacity="0.8"/>
+      <line x1="${centerX}" y1="${centerY - 100}" x2="${centerX}" y2="${centerY + 100}" stroke="#FFFFFF" stroke-width="2" opacity="0.9"/>
       
-      <!-- Epicenter dot (10px radius, red fill, white stroke) -->
-      <circle cx="${centerX}" cy="${centerY}" r="10" fill="#DC2626" stroke="#FFFFFF" stroke-width="2"/>
+      <!-- Epicenter dot (12px radius, red fill, white stroke) -->
+      <circle cx="${centerX}" cy="${centerY}" r="12" fill="#DC2626" stroke="#FFFFFF" stroke-width="3"/>
     </svg>
   `);
   
@@ -960,7 +999,7 @@ function verifyEventBinding(url, eventId) {
   return false;
 }
 
-async function buildTwoImageSources({ eventId, detailUrl, coordinates, locationText, imageWidth, imageHeight, logger }) {
+async function buildTwoImageSources({ eventId, detailUrl, coordinates, locationText, imageWidth, imageHeight, logger, magnitude = null }) {
   const sources = [];
   const maxImages = 2;
   const maxCandidatesToDownload = 4; // Download up to 4, pick best 2
@@ -1282,7 +1321,7 @@ async function buildTwoImageSources({ eventId, detailUrl, coordinates, locationT
           
           if (satelliteImage) {
             // STEP 2: Overlay epicenter graphics (NO TEXT)
-            fallbackMap = await overlayEpicenterGraphics(satelliteImage, imageWidth, imageHeight, logger);
+            fallbackMap = await overlayEpicenterGraphics(satelliteImage, imageWidth, imageHeight, logger, magnitude, mapZoom);
             productionMethod = 'mapbox-satellite';
             
             const mapHash = getBufferHash(fallbackMap);
@@ -1929,6 +1968,7 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
     locationText: location,
       imageWidth,
       imageHeight: IMAGE_AREA_HEIGHT,
+    magnitude, // Pass magnitude for accurate earthquake rings
     logger: { info: console.log, warn: console.warn, error: console.error }
   });
   
