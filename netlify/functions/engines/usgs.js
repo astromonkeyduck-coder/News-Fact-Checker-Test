@@ -1444,29 +1444,25 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     
     // Log final image count with detailed diagnostics
     if (usgsImages.length === 0) {
-        // Log what products are available for debugging
-        const availableProducts = eventDetail?.properties?.products ? Object.keys(eventDetail.properties.products) : [];
-        const productCounts = {};
-        if (eventDetail?.properties?.products) {
-          for (const [key, productList] of Object.entries(eventDetail.properties.products)) {
-            productCounts[key] = Array.isArray(productList) ? productList.length : 0;
-          }
+      // Log what products are available for debugging
+      const availableProducts = eventDetail?.properties?.products ? Object.keys(eventDetail.properties.products) : [];
+      const productCounts = {};
+      if (eventDetail?.properties?.products) {
+        for (const [key, productList] of Object.entries(eventDetail.properties.products)) {
+          productCounts[key] = Array.isArray(productList) ? productList.length : 0;
         }
-        
+      }
+      
       logger.warn('⚠️ No USGS images available for earthquake - image will be generated without USGS maps', { 
         eventId, 
         hasDetailUrl: !!detailUrl,
-          hasEventDetail: !!eventDetail,
-          availableProducts: availableProducts,
-          productCounts: productCounts,
-          detailUrl: detailUrl,
-          scrapedFromHTML: false,
-          eventPageUrl: eventPageUrl
-        });
-      }
-      
-      // For magnitude 6.0+, mark for continuous retry until USGS images are found
-      // The retry function will check every minute and update the image when USGS images appear
+        hasEventDetail: !!eventDetail,
+        availableProducts: availableProducts,
+        productCounts: productCounts,
+        detailUrl: detailUrl,
+        scrapedFromHTML: false,
+        eventPageUrl: eventPageUrl
+      });
     } else {
       logger.info('✅ USGS images extracted successfully', { 
         count: usgsImages.length, 
@@ -1503,6 +1499,10 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   } else {
     logger.warn('⚠️ No detail URL available for earthquake - cannot fetch USGS images', { eventId });
   }
+  
+  // Missing closing brace added above - the else block properly closes the if at line 1369
+  
+  // Note: The else block above closes the if (usgsImages.length === 0 && detailUrl) statement at line 1369
   
   // Check if event already exists to avoid regenerating images unnecessarily
   const { data: existingEvent } = await supabase
@@ -2070,6 +2070,7 @@ async function run(logger) {
       count_total_seen: 0,
     };
   }
+}
 }
 
 // PHASE 1: Export new functions
