@@ -1325,7 +1325,9 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     // Try fetching event detail (images may take a few minutes to appear)
     eventDetail = await fetchEventDetail(detailUrl, logger);
     if (eventDetail) {
-      usgsImages = extractUSGSImages(eventDetail);
+      const extractedImages = extractUSGSImages(eventDetail);
+      // Ensure usgsImages is always an array
+      usgsImages = Array.isArray(extractedImages) ? extractedImages : [];
       logger.info('📸 USGS images extracted from API', {
         eventId,
         imageCount: usgsImages.length,
