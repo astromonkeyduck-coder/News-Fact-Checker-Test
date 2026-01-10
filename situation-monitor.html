@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en" class="situation-monitor-page">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Situation Monitor - Global Intelligence Dashboard | Noteworthy News</title>
+    <link rel="icon" type="image/png" href="IMG_5794.PNG">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="src/styles/situation-monitor.css">
+    
+    <!-- D3.js and TopoJSON for map (must load before modules) -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/topojson@3/dist/topojson.min.js"></script>
+</head>
+<body class="situation-monitor-page">
+    <!-- Header (matching Noteworthy News style) -->
+    <header class="main-header">
+        <div class="header-container">
+            <div class="header-left">
+                <div class="header-logo">
+                    <a href="index.html" class="logo-link" aria-label="Go to Noteworthy News homepage">
+                        <img src="IMG_5794.PNG" alt="Noteworthy News Logo" style="height: 32px !important; width: 32px !important; max-width: 32px !important; max-height: 32px !important; display: block !important;">
+                    </a>
+                </div>
+                <div class="brand-info">
+                    <h1><span class="brand-name">Noteworthy News</span></h1>
+                    <p>Trusted Independent News & Media Literacy</p>
+                </div>
+            </div>
+            
+            <!-- Center Group: Main Navigation -->
+            <div class="header-center">
+                <nav class="main-nav" id="mainNav">
+                    <ul>
+                        <li><a href="index.html#news-section" class="nav-link">News</a></li>
+                        <li><a href="index.html#geography-game-section" class="nav-link">Games</a></li>
+                        <li><a href="index.html#credibility-section" class="nav-link">Credibility</a></li>
+                        <li><a href="index.html#about-section" class="nav-link">About</a></li>
+                        <li><a href="index.html#ai-assistant-section" class="nav-link">AI Chat</a></li>
+                    </ul>
+                </nav>
+            </div>
+            
+            <div class="header-right">
+                <!-- Music Controls -->
+                <div class="music-controls-panel">
+                    <button class="music-play-pause-btn" id="sitmonMusicBtn" aria-label="Toggle Background Music" title="Toggle Background Music">
+                        <svg class="play-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 18V5l9-2v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+                            <circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/>
+                            <circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/>
+                        </svg>
+                        <svg class="pause-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+                            <rect x="6" y="4" width="4" height="16" fill="currentColor" fill-opacity="0.8"/>
+                            <rect x="14" y="4" width="4" height="16" fill="currentColor" fill-opacity="0.8"/>
+                        </svg>
+                    </button>
+                    <div class="volume-control">
+                        <button class="volume-icon-btn" id="sitmonVolumeBtn" aria-label="Toggle Mute" title="Toggle Mute">
+                            <svg class="volume-high-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <svg class="volume-mute-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+                                <path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+                                <path d="M23 9l-6 6M17 9l6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <input type="range" class="volume-slider" id="sitmonVolumeSlider" min="0" max="100" value="50" aria-label="Volume" title="Volume">
+                    </div>
+                </div>
+                <a href="contact.html" class="feedback-btn" aria-label="Send Feedback" title="Send Feedback">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px; color: currentColor;">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+                        <path d="M8 10h.01M12 10h.01M16 10h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </a>
+            </div>
+            
+            <!-- Mobile Menu Toggle -->
+            <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle mobile menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+    
+    <!-- Mobile Navigation Overlay -->
+    <div class="mobile-nav" id="mobileNav">
+        <nav class="mobile-nav-content">
+            <ul>
+                <li><a href="index.html#news-section" class="nav-link">News</a></li>
+                <li><a href="index.html#geography-game-section" class="nav-link">Games</a></li>
+                <li><a href="index.html#credibility-section" class="nav-link">Credibility</a></li>
+                <li><a href="index.html#about-section" class="nav-link">About</a></li>
+                <li><a href="index.html#ai-assistant-section" class="nav-link">AI Chat</a></li>
+                <li><a href="contact.html" class="nav-link">Feedback</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <main class="situation-monitor-page" style="padding-top: 80px;">
+        <div id="situation-monitor-container"></div>
+    </main>
+
+    <!-- Background Music for Situation Monitor -->
+    <audio id="situationMonitorMusic" preload="auto" loop>
+        <source src="Arabian.wav" type="audio/wav">
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- Cookie Consent Banner -->
+    <script src="src/components/cookie-banner.js"></script>
+
+    <!-- Mobile Menu Script -->
+    <script>
+        // Initialize mobile menu
+        (function() {
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const mobileNav = document.getElementById('mobileNav');
+            
+            if (!mobileMenuToggle || !mobileNav) return;
+            
+            // Toggle mobile menu
+            mobileMenuToggle.addEventListener('click', () => {
+                mobileNav.classList.toggle('active');
+                mobileMenuToggle.classList.toggle('active');
+                mobileMenuToggle.setAttribute('aria-expanded', mobileNav.classList.contains('active'));
+            });
+            
+            // Close menu when clicking a link
+            const mobileNavLinks = mobileNav.querySelectorAll('.nav-link');
+            mobileNavLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileNav.classList.remove('active');
+                    mobileMenuToggle.classList.remove('active');
+                    mobileMenuToggle.setAttribute('aria-expanded', 'false');
+                });
+            });
+            
+            // Close menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!mobileMenuToggle.contains(e.target) && !mobileNav.contains(e.target)) {
+                    mobileNav.classList.remove('active');
+                    mobileMenuToggle.classList.remove('active');
+                    mobileMenuToggle.setAttribute('aria-expanded', 'false');
+                }
+            });
+            
+            // Close menu on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && mobileNav.classList.contains('active')) {
+                    mobileNav.classList.remove('active');
+                    mobileMenuToggle.classList.remove('active');
+                    mobileMenuToggle.setAttribute('aria-expanded', 'false');
+                }
+            });
+        })();
+    </script>
+
+    <!-- Situation Monitor Scripts -->
+    <script type="module">
+        import { SituationMonitorShell } from './src/components/situation-monitor/SituationMonitorShell.js';
+        
+        // Wait for D3 and TopoJSON to load, then initialize
+        function initSituationMonitor() {
+            if (typeof window.d3 === 'undefined' || typeof window.topojson === 'undefined') {
+                console.warn('[SituationMonitor] Waiting for D3/TopoJSON to load...');
+                setTimeout(initSituationMonitor, 100);
+                return;
+            }
+            
+            // DOMContentLoaded may have already fired, so check readyState
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    const shell = new SituationMonitorShell('situation-monitor-container');
+                    window.situationMonitor = shell;
+                });
+            } else {
+                // DOM already loaded
+                const shell = new SituationMonitorShell('situation-monitor-container');
+                window.situationMonitor = shell;
+            }
+        }
+        
+        // Start initialization
+        initSituationMonitor();
+    </script>
+
+    <!-- Audio Control Script -->
+    <script>
+        // Play Arabian.wav automatically when page loads
+        (function() {
+            const audio = document.getElementById('situationMonitorMusic');
+            if (!audio) return;
+
+            // Set volume (adjust as needed, 0.0 to 1.0)
+            audio.volume = 0.5;
+
+            // Try to play when page loads
+            function playMusic() {
+                const playPromise = audio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise
+                        .then(() => {
+                            console.log('🎵 Arabian.wav started playing');
+                        })
+                        .catch(error => {
+                            console.warn('🎵 Audio autoplay prevented:', error);
+                            // Autoplay was prevented - user interaction required
+                            // Add a button to let user start music manually
+                            addMusicButton();
+                        });
+                }
+            }
+
+            // Add a button to start music if autoplay fails
+            function addMusicButton() {
+                const button = document.createElement('button');
+                button.innerHTML = '🎵 Play Background Music';
+                button.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    padding: 12px 24px;
+                    background: rgba(34, 211, 238, 0.2);
+                    border: 2px solid rgba(34, 211, 238, 0.4);
+                    border-radius: 12px;
+                    color: #22d3ee;
+                    font-weight: 600;
+                    cursor: pointer;
+                    z-index: 1000;
+                    font-size: 0.9rem;
+                    transition: all 0.3s ease;
+                `;
+                button.onmouseover = () => {
+                    button.style.background = 'rgba(34, 211, 238, 0.3)';
+                    button.style.borderColor = 'rgba(34, 211, 238, 0.6)';
+                };
+                button.onmouseout = () => {
+                    button.style.background = 'rgba(34, 211, 238, 0.2)';
+                    button.style.borderColor = 'rgba(34, 211, 238, 0.4)';
+                };
+                button.onclick = () => {
+                    audio.play().then(() => {
+                        button.innerHTML = '⏸️ Pause Music';
+                        button.onclick = () => {
+                            if (audio.paused) {
+                                audio.play();
+                                button.innerHTML = '⏸️ Pause Music';
+                            } else {
+                                audio.pause();
+                                button.innerHTML = '▶️ Play Music';
+                            }
+                        };
+                    }).catch(err => {
+                        console.error('Failed to play audio:', err);
+                    });
+                };
+                document.body.appendChild(button);
+            }
+
+            // Wait for page to be interactive, then try to play
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    setTimeout(playMusic, 500); // Small delay to ensure everything is loaded
+                });
+            } else {
+                setTimeout(playMusic, 500);
+            }
+
+            // Music Controls
+            const musicBtn = document.getElementById('sitmonMusicBtn');
+            const volumeSlider = document.getElementById('sitmonVolumeSlider');
+            const volumeBtn = document.getElementById('sitmonVolumeBtn');
+            const playIcon = musicBtn?.querySelector('.play-icon');
+            const pauseIcon = musicBtn?.querySelector('.pause-icon');
+            const volumeHighIcon = volumeBtn?.querySelector('.volume-high-icon');
+            const volumeMuteIcon = volumeBtn?.querySelector('.volume-mute-icon');
+
+            // Load saved volume from localStorage
+            const savedVolume = localStorage.getItem('sitmonMusicVolume');
+            if (savedVolume !== null) {
+                audio.volume = parseFloat(savedVolume);
+                if (volumeSlider) volumeSlider.value = (audio.volume * 100).toString();
+            }
+
+            // Update play/pause button
+            function updatePlayPauseButton() {
+                if (!musicBtn || !playIcon || !pauseIcon) return;
+                
+                if (audio.paused) {
+                    playIcon.style.display = 'block';
+                    pauseIcon.style.display = 'none';
+                    musicBtn.title = 'Play Background Music';
+                } else {
+                    playIcon.style.display = 'none';
+                    pauseIcon.style.display = 'block';
+                    musicBtn.title = 'Pause Background Music';
+                }
+            }
+
+            // Update volume icon
+            function updateVolumeIcon() {
+                if (!volumeBtn || !volumeHighIcon || !volumeMuteIcon) return;
+                
+                if (audio.volume === 0 || audio.muted) {
+                    volumeHighIcon.style.display = 'none';
+                    volumeMuteIcon.style.display = 'block';
+                    volumeBtn.title = 'Unmute';
+                } else {
+                    volumeHighIcon.style.display = 'block';
+                    volumeMuteIcon.style.display = 'none';
+                    volumeBtn.title = 'Mute';
+                }
+            }
+
+            // Play/Pause button
+            if (musicBtn) {
+                musicBtn.addEventListener('click', () => {
+                    if (audio.paused) {
+                        audio.play().then(() => {
+                            updatePlayPauseButton();
+                        }).catch(err => {
+                            console.error('Failed to play audio:', err);
+                        });
+                    } else {
+                        audio.pause();
+                        updatePlayPauseButton();
+                    }
+                });
+
+                audio.addEventListener('play', updatePlayPauseButton);
+                audio.addEventListener('pause', updatePlayPauseButton);
+                updatePlayPauseButton();
+            }
+
+            // Volume slider
+            if (volumeSlider) {
+                volumeSlider.addEventListener('input', (e) => {
+                    const volume = e.target.value / 100;
+                    audio.volume = volume;
+                    audio.muted = false;
+                    localStorage.setItem('sitmonMusicVolume', volume.toString());
+                    updateVolumeIcon();
+                });
+
+                // Update slider when volume changes externally
+                audio.addEventListener('volumechange', () => {
+                    if (!audio.muted) {
+                        volumeSlider.value = (audio.volume * 100).toString();
+                    }
+                    updateVolumeIcon();
+                });
+            }
+
+            // Mute/Unmute button
+            if (volumeBtn) {
+                volumeBtn.addEventListener('click', () => {
+                    if (audio.muted || audio.volume === 0) {
+                        audio.muted = false;
+                        if (audio.volume === 0) {
+                            audio.volume = 0.5;
+                            if (volumeSlider) volumeSlider.value = '50';
+                            localStorage.setItem('sitmonMusicVolume', '0.5');
+                        }
+                    } else {
+                        audio.muted = true;
+                    }
+                    updateVolumeIcon();
+                });
+            }
+
+            // Initial volume icon state
+            updateVolumeIcon();
+        })();
+    </script>
+</body>
+</html>

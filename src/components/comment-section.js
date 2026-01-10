@@ -435,6 +435,11 @@ window.commentSections = {};
 document.addEventListener('DOMContentLoaded', function() {
   const articleCards = document.querySelectorAll('.article-card');
   articleCards.forEach((card, index) => {
+    // Skip cards with data-no-comments attribute
+    if (card.dataset.noComments === 'true') {
+      return;
+    }
+    
     const articleId = card.dataset.articleId || `article-${index}`;
     card.dataset.articleId = articleId;
     

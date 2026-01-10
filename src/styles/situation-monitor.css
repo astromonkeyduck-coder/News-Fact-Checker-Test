@@ -1,0 +1,1165 @@
+/**
+ * Situation Monitor Styles
+ * Matches Noteworthy News design system
+ */
+
+/* Music Controls Panel */
+.music-controls-panel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.25rem;
+  background: rgba(7, 21, 42, 0.3);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: 8px;
+}
+
+.music-play-pause-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.9);
+  transition: color 0.2s ease;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.music-play-pause-btn:hover {
+  color: #22d3ee;
+}
+
+.music-play-pause-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.volume-icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.9);
+  transition: color 0.2s ease;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.volume-icon-btn:hover {
+  color: #22d3ee;
+}
+
+.volume-icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.volume-slider {
+  width: 80px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #22d3ee;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+  background: #4A90E2;
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #22d3ee;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.volume-slider::-moz-range-thumb:hover {
+  background: #4A90E2;
+}
+
+/* GLOBAL: Remove ALL bullets from navigation lists - must be first */
+body.situation-monitor-page header ul,
+body.situation-monitor-page header ol,
+body.situation-monitor-page header li,
+body.situation-monitor-page .main-nav ul,
+body.situation-monitor-page .main-nav ol,
+body.situation-monitor-page .main-nav li,
+body.situation-monitor-page nav ul,
+body.situation-monitor-page nav ol,
+body.situation-monitor-page nav li {
+  list-style: none !important;
+  list-style-type: none !important;
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+}
+
+body.situation-monitor-page header ul li::before,
+body.situation-monitor-page header ol li::before,
+body.situation-monitor-page .main-nav ul li::before,
+body.situation-monitor-page .main-nav ol li::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* Page Wrapper - matches site container width */
+.situation-monitor-page {
+  min-height: 100vh;
+  background: transparent;
+}
+
+.sitmon-page-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Page Header */
+.sitmon-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(5, 15, 35, 0.95) 0%, rgba(7, 21, 42, 0.95) 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  min-height: auto;
+}
+
+.sitmon-header-left {
+  flex: 1;
+}
+
+.sitmon-page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #22d3ee;
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #22d3ee 0%, #4A90E2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sitmon-page-subtitle {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 1rem 0;
+}
+
+.sitmon-status-chip {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  background: rgba(34, 211, 238, 0.2);
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #22d3ee;
+}
+
+.sitmon-header-right {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* Ensure all icons in header are constrained */
+.sitmon-header-right svg,
+.sitmon-header-right .sitmon-icon {
+  width: 18px !important;
+  height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+  flex-shrink: 0;
+}
+
+/* Icon Sizing System - Prevents icons from becoming massive */
+/* Global rule: ALL SVGs in situation monitor must be constrained (except the world map) */
+.sitmon-page-wrapper svg:not(.sitmon-map svg),
+.situation-monitor-page svg:not(.sitmon-map svg),
+.sitmon-page-wrapper svg:not(#sitmon-map svg),
+.situation-monitor-page svg:not(#sitmon-map svg) {
+  max-width: 24px !important;
+  max-height: 24px !important;
+}
+
+/* Explicitly exclude map container from icon sizing */
+.sitmon-map svg,
+#sitmon-map svg,
+.sitmon-map-container svg {
+  max-width: none !important;
+  max-height: none !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.sitmon-icon {
+  width: 18px !important;
+  height: 18px !important;
+  flex: 0 0 18px !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+}
+
+.sitmon-icon svg {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+}
+
+.sitmon-refresh-btn {
+  padding: 0.5rem 1rem;
+  background: rgba(74, 158, 255, 0.2);
+  border: 1px solid rgba(74, 158, 255, 0.4);
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  height: auto;
+  line-height: 1;
+  min-height: 36px;
+  max-height: 40px;
+}
+
+.sitmon-refresh-btn .sitmon-icon {
+  flex-shrink: 0;
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.sitmon-refresh-btn svg {
+  width: 18px !important;
+  height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+  flex-shrink: 0;
+}
+
+.sitmon-refresh-btn:hover {
+  background: rgba(74, 158, 255, 0.3);
+  border-color: rgba(74, 158, 255, 0.6);
+  transform: translateY(-1px);
+}
+
+.sitmon-auto-refresh-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  height: auto;
+  line-height: 1;
+  min-height: 36px;
+}
+
+.sitmon-auto-refresh-toggle input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Main Dashboard Grid */
+.sitmon-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Map Card */
+.sitmon-map-card {
+  background: linear-gradient(135deg, rgba(5, 15, 35, 0.95) 0%, rgba(7, 21, 42, 0.95) 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sitmon-map-card .sitmon-card-body {
+  flex: 1;
+  padding: 0;
+  position: relative;
+  min-height: clamp(420px, 55vh, 640px);
+}
+
+.sitmon-map {
+  width: 100%;
+  height: 100%;
+  min-height: clamp(420px, 55vh, 640px);
+  position: relative;
+  background: linear-gradient(135deg, rgba(5, 15, 35, 0.95) 0%, rgba(7, 21, 42, 0.95) 100%);
+  overflow: hidden;
+}
+
+/* Panels Stack */
+.sitmon-panels-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Panel Card Base */
+.sitmon-panel-card {
+  background: linear-gradient(135deg, rgba(5, 15, 35, 0.95) 0%, rgba(7, 21, 42, 0.95) 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sitmon-panel-card:hover {
+  border-color: rgba(34, 211, 238, 0.4);
+  box-shadow: 0 8px 24px rgba(34, 211, 238, 0.1);
+}
+
+.sitmon-card-header {
+  padding: 1rem 1.25rem;
+  background: rgba(7, 21, 42, 0.5);
+  border-bottom: 1px solid rgba(74, 158, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.sitmon-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #22d3ee;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sitmon-card-body {
+  padding: 1.25rem;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 120px;
+}
+
+/* Secondary Panels Grid */
+.sitmon-secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+/* Panel Content Styles */
+.sitmon-panel-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.7);
+  min-height: 200px;
+}
+
+.sitmon-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(74, 158, 255, 0.2);
+  border-top-color: #4A90E2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.sitmon-panel-error {
+  padding: 1rem;
+  text-align: center;
+  color: rgba(255, 107, 107, 0.9);
+}
+
+.sitmon-error-message {
+  margin-bottom: 1rem;
+}
+
+.sitmon-retry-btn {
+  padding: 0.5rem 1rem;
+  background: rgba(74, 158, 255, 0.2);
+  border: 1px solid rgba(74, 158, 255, 0.4);
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.sitmon-retry-btn:hover {
+  background: rgba(74, 158, 255, 0.3);
+  border-color: rgba(74, 158, 255, 0.6);
+}
+
+/* Empty State */
+.sitmon-empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.sitmon-empty-state-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+  color: rgba(74, 158, 255, 0.6);
+}
+
+/* News Panel Styles */
+.sitmon-news-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sitmon-news-item {
+  padding: 1rem;
+  background: rgba(7, 21, 42, 0.3);
+  border-radius: 8px;
+  border-left: 3px solid rgba(74, 158, 255, 0.5);
+  transition: all 0.2s ease;
+}
+
+.sitmon-news-item:hover {
+  background: rgba(7, 21, 42, 0.5);
+  border-left-color: #4A90E2;
+}
+
+.sitmon-news-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.sitmon-news-source {
+  font-weight: 600;
+  color: #4A90E2;
+}
+
+.sitmon-news-title {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.sitmon-news-title a {
+  color: #fff;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.sitmon-news-title a:hover {
+  color: #4A90E2;
+}
+
+.sitmon-news-description {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+}
+
+/* Markets Panel */
+.sitmon-markets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sitmon-market-item {
+  padding: 1rem;
+  background: rgba(7, 21, 42, 0.3);
+  border-radius: 8px;
+}
+
+.sitmon-market-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.sitmon-market-name {
+  font-weight: 600;
+  color: #4A90E2;
+}
+
+.sitmon-market-price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0.5rem 0;
+}
+
+.sitmon-market-change {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.sitmon-market-change.positive {
+  color: #4ecdc4;
+}
+
+.sitmon-market-change.negative {
+  color: #ff6b6b;
+}
+
+/* Earthquake Panel */
+.sitmon-earthquakes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sitmon-earthquake-item {
+  padding: 1rem;
+  background: rgba(7, 21, 42, 0.3);
+  border-radius: 8px;
+  border-left: 3px solid #ff6b6b;
+}
+
+.sitmon-earthquake-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.sitmon-earthquake-magnitude {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ff6b6b;
+}
+
+.sitmon-earthquake-place {
+  font-weight: 600;
+  color: #fff;
+  margin: 0.5rem 0;
+}
+
+.sitmon-earthquake-details {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.sitmon-earthquake-details a {
+  color: #4A90E2;
+  text-decoration: none;
+}
+
+.sitmon-earthquake-details a:hover {
+  text-decoration: underline;
+}
+
+/* Weather Alerts Panel */
+.sitmon-alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sitmon-alert-item {
+  padding: 1rem;
+  background: rgba(7, 21, 42, 0.3);
+  border-radius: 8px;
+  border-left: 3px solid;
+}
+
+.sitmon-alert-extreme {
+  border-left-color: #ff3333;
+}
+
+.sitmon-alert-severe {
+  border-left-color: #ff6b6b;
+}
+
+.sitmon-alert-moderate {
+  border-left-color: #ffaa00;
+}
+
+.sitmon-alert-minor {
+  border-left-color: #4A90E2;
+}
+
+.sitmon-alert-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.sitmon-alert-event {
+  font-weight: 600;
+  color: #fff;
+}
+
+.sitmon-alert-severity {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sitmon-alert-headline {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.sitmon-alert-areas {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 0.5rem;
+}
+
+/* Character/Intel Panel */
+.sitmon-characters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sitmon-character-item {
+  padding: 1rem;
+  background: rgba(7, 21, 42, 0.3);
+  border-radius: 8px;
+}
+
+.sitmon-character-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.sitmon-character-name {
+  font-weight: 600;
+  color: #4A90E2;
+}
+
+.sitmon-character-count {
+  font-weight: 700;
+  color: #fff;
+  background: rgba(74, 158, 255, 0.2);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.sitmon-character-details {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Correlation Panel */
+.sitmon-correlations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sitmon-correlation-item {
+  padding: 1rem;
+  background: rgba(7, 21, 42, 0.3);
+  border-radius: 8px;
+  border-left: 3px solid #22d3ee;
+}
+
+.sitmon-correlation-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.sitmon-correlation-topic {
+  font-weight: 600;
+  color: #22d3ee;
+  text-transform: capitalize;
+}
+
+.sitmon-correlation-count {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.sitmon-correlation-momentum {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0.5rem 0;
+}
+
+.sitmon-correlation-items {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(74, 158, 255, 0.2);
+}
+
+.sitmon-correlation-item-link {
+  margin: 0.25rem 0;
+  font-size: 0.85rem;
+}
+
+.sitmon-correlation-item-link a {
+  color: #4A90E2;
+  text-decoration: none;
+}
+
+.sitmon-correlation-item-link a:hover {
+  text-decoration: underline;
+}
+
+/* Narrative Panel */
+.sitmon-narrative-stats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(74, 158, 255, 0.2);
+}
+
+.sitmon-narrative-stat {
+  flex: 1;
+  text-align: center;
+  padding: 0.5rem;
+  background: rgba(7, 21, 42, 0.3);
+  border-radius: 8px;
+}
+
+.sitmon-stat-label {
+  display: block;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0.25rem;
+}
+
+.sitmon-stat-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #4A90E2;
+}
+
+.sitmon-narrative-section {
+  margin: 1rem 0;
+}
+
+.sitmon-narrative-section h4 {
+  font-size: 1rem;
+  color: #4A90E2;
+  margin-bottom: 0.5rem;
+}
+
+.sitmon-narrative-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sitmon-narrative-item {
+  padding: 0.75rem;
+  background: rgba(7, 21, 42, 0.3);
+  border-radius: 8px;
+  border-left: 3px solid;
+}
+
+.sitmon-narrative-crossing {
+  border-left-color: #ffaa00;
+}
+
+.sitmon-narrative-fringe {
+  border-left-color: #ff6b6b;
+}
+
+.sitmon-narrative-title {
+  margin-bottom: 0.25rem;
+}
+
+.sitmon-narrative-title a {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.sitmon-narrative-title a:hover {
+  color: #4A90E2;
+}
+
+.sitmon-narrative-source {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0.25rem 0;
+}
+
+.sitmon-narrative-keywords {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 0.5rem;
+}
+
+.sitmon-keyword {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  background: rgba(74, 158, 255, 0.2);
+  border-radius: 4px;
+  margin: 0.125rem;
+  font-size: 0.8rem;
+}
+
+/* Monitors Panel */
+.sitmon-monitor-form-container {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(7, 21, 42, 0.3);
+  border-radius: 8px;
+}
+
+.sitmon-monitor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sitmon-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sitmon-form-group label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+}
+
+.sitmon-form-group input {
+  padding: 0.5rem;
+  background: rgba(5, 15, 35, 0.8);
+  border: 1px solid rgba(74, 158, 255, 0.3);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.sitmon-form-group input:focus {
+  outline: none;
+  border-color: #4A90E2;
+}
+
+.sitmon-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.sitmon-form-submit {
+  padding: 0.75rem;
+  background: rgba(74, 158, 255, 0.2);
+  border: 1px solid rgba(74, 158, 255, 0.4);
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.sitmon-form-submit:hover {
+  background: rgba(74, 158, 255, 0.3);
+  border-color: rgba(74, 158, 255, 0.6);
+}
+
+.sitmon-monitors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sitmon-monitor-item {
+  padding: 1rem;
+  background: rgba(7, 21, 42, 0.3);
+  border-radius: 8px;
+  border-left: 3px solid;
+}
+
+.sitmon-monitor-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.sitmon-monitor-name {
+  font-weight: 600;
+  color: #4A90E2;
+}
+
+.sitmon-monitor-remove {
+  background: transparent;
+  border: none;
+  color: rgba(255, 107, 107, 0.8);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.sitmon-monitor-remove:hover {
+  color: #ff6b6b;
+}
+
+.sitmon-monitor-keywords {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0.5rem 0;
+}
+
+.sitmon-monitor-location {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0.25rem 0;
+}
+
+.sitmon-monitor-matches {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 0.5rem;
+}
+
+.sitmon-monitor-matches strong {
+  color: #4A90E2;
+  font-size: 1.1rem;
+}
+
+/* Tooltip */
+.sitmon-tooltip {
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Scrollbar Styling */
+.sitmon-card-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sitmon-card-body::-webkit-scrollbar-track {
+  background: rgba(5, 15, 35, 0.5);
+  border-radius: 4px;
+}
+
+.sitmon-card-body::-webkit-scrollbar-thumb {
+  background: rgba(74, 158, 255, 0.3);
+  border-radius: 4px;
+}
+
+.sitmon-card-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 158, 255, 0.5);
+}
+
+/* Mobile Responsive */
+@media (max-width: 900px) {
+  .sitmon-page-wrapper {
+    padding: 1.5rem 1rem;
+  }
+
+  .sitmon-dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .sitmon-map-card .sitmon-card-body {
+    min-height: 320px;
+  }
+
+  .sitmon-map {
+    min-height: 320px;
+  }
+
+  .sitmon-secondary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sitmon-page-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .sitmon-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .sitmon-tooltip {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .sitmon-page-wrapper {
+    padding: 1rem 0.75rem;
+  }
+
+  .sitmon-page-title {
+    font-size: 1.5rem;
+  }
+
+  .sitmon-map-card .sitmon-card-body {
+    min-height: 280px;
+  }
+
+  .sitmon-map {
+    min-height: 280px;
+  }
+
+  .sitmon-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Ensure no left nav bullets appear */
+.sitmon-page-wrapper ul,
+.sitmon-page-wrapper ol {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.sitmon-page-wrapper li {
+  list-style: none;
+}
+
+/* CRITICAL: Remove ALL bullets from navigation - must be at top level to override everything */
+body.situation-monitor-page ul,
+body.situation-monitor-page ol,
+.situation-monitor-page ul,
+.situation-monitor-page ol,
+.situation-monitor-page nav ul,
+.situation-monitor-page nav ol,
+.situation-monitor-page .main-nav ul,
+.situation-monitor-page .main-nav ol,
+.situation-monitor-page .main-nav li,
+.situation-monitor-page header ul,
+.situation-monitor-page header ol,
+.situation-monitor-page header li,
+.situation-monitor-page nav li {
+  list-style: none !important;
+  list-style-type: none !important;
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+  margin: 0 !important;
+}
+
+/* Remove any ::before pseudo-elements that might show bullets */
+.situation-monitor-page ul li::before,
+.situation-monitor-page ol li::before,
+.situation-monitor-page nav ul li::before,
+.situation-monitor-page nav ol li::before,
+.situation-monitor-page .main-nav ul li::before,
+.situation-monitor-page .main-nav ol li::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* Hide mobile nav on desktop - ensure it's completely hidden */
+@media (min-width: 769px) {
+  .situation-monitor-page .mobile-nav,
+  body.situation-monitor-page .mobile-nav {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateX(-100%) !important;
+    position: absolute !important;
+    left: -9999px !important;
+  }
+  
+  .situation-monitor-page .mobile-menu-toggle,
+  body.situation-monitor-page .mobile-menu-toggle {
+    display: none !important;
+  }
+}
+
+/* Ensure mobile nav content doesn't show bullets when visible on mobile */
+.situation-monitor-page .mobile-nav-content ul,
+.situation-monitor-page .mobile-nav-content ol,
+.situation-monitor-page .mobile-nav-content li {
+  list-style: none !important;
+  list-style-type: none !important;
+  padding-left: 0 !important;
+  margin: 0 !important;
+}

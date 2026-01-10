@@ -9734,6 +9734,9 @@ function initNewsletterSubscription() {
         if (aiThinking) aiThinking.style.display = 'none';
         if (spotlightError) spotlightError.style.display = 'none';
         
+        // Mark generation as successful since we're restoring valid content
+        spotlightGenerationSuccessful = true;
+        
         // If spotlight is visible, play/resume country music
         if (isSpotlightVisible && currentCountry && countryMusicMap[currentCountry.name]) {
             saveBackgroundMusicState();
@@ -10235,8 +10238,13 @@ Write in a sophisticated, analytical style. Be comprehensive (600-800 words), nu
                     });
             }
             
-            // Reset success flag at start of generation
-            spotlightGenerationSuccessful = false;
+            // Reset success flag at start of generation ONLY if we're doing a completely new generation
+            // If we're restoring partial data (hasExistingAIResponse), preserve the flag since we already have valid content
+            if (!hasExistingAIResponse) {
+                spotlightGenerationSuccessful = false;
+            }
+            // If hasExistingAIResponse is true, the flag was already set to true by restoreSpotlight()
+            // and we should preserve it so music can play even if image generation fails
             
             // Keep isGenerating = true to prevent duplicate calls
             // Only clear it when generation completes or fails
@@ -10327,6 +10335,7 @@ Write in a sophisticated, analytical style. Be comprehensive (600-800 words), nu
             
             // Generation succeeded - clear flag and play music
             isGenerating = false;
+            spotlightGenerationSuccessful = true; // Set flag so music can play when section becomes visible
             updateButtonStates();
             
             // Generation succeeded - now play music and save data
