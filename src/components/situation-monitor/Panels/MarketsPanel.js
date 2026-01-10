@@ -18,6 +18,10 @@ export class MarketsPanel extends BasePanel {
 
   async init() {
     super.init(); // Call BasePanel.init() to set up DOM structure (idempotent)
+    // Set up retry callback to reload markets data
+    this.onRetry = () => {
+      this.loadMarkets();
+    };
     await this.loadMarkets();
     this.setupRefresh();
   }

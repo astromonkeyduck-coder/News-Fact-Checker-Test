@@ -52,11 +52,21 @@ function getAuth0Config() {
 }
 
 let auth0Client = null;
+let auth0Initializing = false;
+let auth0Initialized = false;
 
 /**
- * Initialize Auth0
+ * Initialize Auth0 (idempotent - only runs once)
  */
 async function initAuth0() {
+  // Prevent double initialization
+  if (auth0Initialized || auth0Initializing) {
+    console.log('[Auth0] Already initialized or initializing, skipping');
+    return;
+  }
+  
+  auth0Initializing = true;
+  
   try {
     console.log('[Auth0] Starting initialization...');
     console.log('[Auth0] Checking for SDK...', { 
@@ -110,6 +120,7 @@ async function initAuth0() {
         'auth0': typeof auth0
       });
       // Error notification suppressed
+      auth0Initializing = false; // Reset flag on early return
       return;
     }
     
@@ -121,12 +132,14 @@ async function initAuth0() {
     // If config is missing, fail silently
     if (!auth0Config) {
       console.log('[Auth0] Configuration not available, skipping initialization');
+      auth0Initializing = false;
       return;
     }
     
     // Create Auth0 client - createAuth0Client is available globally from the SDK
     auth0Client = await createClient(auth0Config);
     console.log('[Auth0] Client created successfully');
+    auth0Initialized = true;
 
     // CRITICAL: Handle callback from Auth0 redirect
     // This MUST be called when authentication parameters are present in the URL
@@ -223,6 +236,8 @@ async function initAuth0() {
     setTimeout(async () => {
       await bindAuthButtons();
     }, 100);
+    
+    auth0Initializing = false; // Reset flag on successful completion
   } catch (error) {
     console.error('[Auth0] Initialization error:', error);
     console.warn('[Auth0] Make sure you have:');
@@ -230,6 +245,7 @@ async function initAuth0() {
     console.warn('[Auth0] 2. Added allowed callback URLs in Auth0 Dashboard');
     console.warn('[Auth0] 3. Added allowed logout URLs in Auth0 Dashboard');
     // Error notification suppressed
+    auth0Initializing = false; // Reset flag on error to allow retry
   }
 }
 

@@ -40,7 +40,7 @@ function SecuritySpinner() {
       aria-busy="true"
       aria-label="Verifying your browser"
       style={{
-        width: '100%',
+          width: '100%',
         maxWidth: '400px',
         height: '8px',
         margin: '0 auto 2rem',

@@ -19,6 +19,10 @@ export class EarthquakePanel extends BasePanel {
 
   async init() {
     super.init(); // Call BasePanel.init() to set up DOM structure (idempotent)
+    // Set up retry callback to reload earthquakes data
+    this.onRetry = () => {
+      this.loadEarthquakes();
+    };
     await this.loadEarthquakes();
     this.setupRefresh();
   }

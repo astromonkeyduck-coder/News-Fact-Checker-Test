@@ -36,6 +36,7 @@ export class SituationMonitorShell {
     this.clusterDrawer = null;
     this.bigBoardOverlay = null;
     this.diagnosticsPanel = null;
+    this._refreshing = false; // Guard for single-flight refresh
     
     // Don't await - let it run asynchronously
     this.init().catch(err => {
@@ -66,6 +67,29 @@ export class SituationMonitorShell {
             <div class="sitmon-status-chip" id="sitmon-status-chip">Updated</div>
           </div>
           <div class="sitmon-header-right">
+            <!-- Music Controls -->
+            <div class="sitmon-music-controls">
+              <button id="sitmonMusicBtn" class="sitmon-music-btn" aria-label="Play/Pause Background Music" title="Play/Pause Background Music">
+                <svg class="sitmon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
+                  <path d="M9 18V5l9-2v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+                  <circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/>
+                  <circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="1.8" fill="currentColor" fill-opacity="0.2"/>
+                </svg>
+              </button>
+              <button id="sitmonVolumeBtn" class="sitmon-music-btn" aria-label="Mute/Unmute Background Music" title="Mute/Unmute Background Music">
+                <svg class="sitmon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
+                  <path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <input type="range" id="sitmonVolumeSlider" class="sitmon-volume-slider" min="0" max="100" value="50" aria-label="Volume" title="Volume">
+              <button id="sitmonSkipBtn" class="sitmon-music-btn music-skip-btn" aria-label="Skip to Next Song" title="Skip to Next Song">
+                <svg class="sitmon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
+                  <path d="M5 4v16l11-8L5 4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+                  <path d="M19 4v16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
             <button class="sitmon-refresh-btn" id="sitmon-refresh-btn" aria-label="Refresh all data">
               <svg class="sitmon-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="18" height="18" preserveAspectRatio="xMidYMid meet">
                 <path d="M1 4v6h6M23 20v-6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -580,6 +604,13 @@ export class SituationMonitorShell {
   }
 
   async refreshAll() {
+    // Single-flight: prevent multiple simultaneous refreshes
+    if (this._refreshing) {
+      console.log('[SituationMonitorShell] Refresh already in progress, skipping');
+      return;
+    }
+    
+    this._refreshing = true;
     console.log('[SituationMonitorShell] Refreshing all data...');
 
     // Update UI state
@@ -597,76 +628,81 @@ export class SituationMonitorShell {
     }
 
     try {
-    // Refresh data panels
-    await Promise.all([
-      this.panels.news.loadNews(),
-      this.panels.markets.loadMarkets(),
-      this.panels.earthquakes.loadEarthquakes(),
-      this.panels.weather.loadAlerts()
-    ]);
+      // Refresh data panels
+      await Promise.all([
+        this.panels.news.loadNews(),
+        this.panels.markets.loadMarkets(),
+        this.panels.earthquakes.loadEarthquakes(),
+        this.panels.weather.loadAlerts()
+      ]);
 
-    // Update analysis panels with news data
-    const headlines = this.panels.news.getHeadlines();
-    if (headlines && headlines.length > 0) {
-      this.panels.intel.update(headlines);
-      this.panels.correlation.update(headlines);
-      this.panels.narrative.update(headlines);
-      this.panels.monitors.updateMatches(headlines);
-      
-      // Process headlines into map events
-      try {
-        const newEvents = await this.eventPipeline.processAndMerge(headlines, this.mapEvents);
-        this.mapEvents = newEvents;
+      // Update analysis panels with news data
+      const headlines = this.panels.news.getHeadlines();
+      if (headlines && headlines.length > 0) {
+        this.panels.intel.update(headlines);
+        this.panels.correlation.update(headlines);
+        this.panels.narrative.update(headlines);
+        this.panels.monitors.updateMatches(headlines);
         
-        // Update map with events
-        if (this.mapView) {
-          this.mapView.updateEvents(this.mapEvents);
+        // Process headlines into map events
+        try {
+          const newEvents = await this.eventPipeline.processAndMerge(headlines, this.mapEvents);
+          this.mapEvents = newEvents;
+          
+          // Update map with events
+          if (this.mapView) {
+            this.mapView.updateEvents(this.mapEvents);
+          }
+          
+          // Update big board overlay
+          if (this.bigBoardOverlay) {
+            this.bigBoardOverlay.update(this.mapEvents);
+          }
+          
+          // Update diagnostics panel
+          if (this.diagnosticsPanel && this.diagnosticsPanel.isEnabled) {
+            this.diagnosticsPanel.mapEvents = this.mapEvents;
+            this.diagnosticsPanel.update();
+          }
+          
+          // Save geocode cache
+          this.eventPipeline.saveCache();
+        } catch (error) {
+          console.error('[SituationMonitorShell] Event pipeline error:', error);
         }
-        
-        // Update big board overlay
-        if (this.bigBoardOverlay) {
-          this.bigBoardOverlay.update(this.mapEvents);
-        }
-        
-        // Update diagnostics panel
-        if (this.diagnosticsPanel && this.diagnosticsPanel.isEnabled) {
-          this.diagnosticsPanel.mapEvents = this.mapEvents;
-          this.diagnosticsPanel.update();
-        }
-        
-        // Save geocode cache
-        this.eventPipeline.saveCache();
-      } catch (error) {
-        console.error('[SituationMonitorShell] Event pipeline error:', error);
       }
-    }
 
-    // Update map with earthquakes (unchanged - earthquakes work independently)
-    const earthquakes = this.panels.earthquakes.getEarthquakes();
-    if (earthquakes && this.mapView) {
-      earthquakes.slice(0, 20).forEach(eq => {
-        this.mapView.addEarthquake(eq.lat, eq.lon, eq.magnitude);
-      });
-    }
+      // Update map with earthquakes (unchanged - earthquakes work independently)
+      // Clear old earthquake timeouts before adding new ones
+      if (this.mapView) {
+        this.mapView.clearEarthquakeTimeouts();
+      }
+      
+      const earthquakes = this.panels.earthquakes.getEarthquakes();
+      if (earthquakes && this.mapView) {
+        earthquakes.slice(0, 20).forEach(eq => {
+          this.mapView.addEarthquake(eq.lat, eq.lon, eq.magnitude);
+        });
+      }
 
-    // Update status
-    if (statusChip) {
-      statusChip.textContent = 'Updated';
-      statusChip.classList.remove('updating');
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      statusChip.title = `Last updated: ${timeStr}`;
-    }
-    
-    if (refreshBtn) {
-      refreshBtn.classList.remove('loading');
-      refreshBtn.disabled = false;
-    }
-    
-    // Show success toast
-    this.showToast('All data refreshed successfully', 'success');
+      // Update status
+      if (statusChip) {
+        statusChip.textContent = 'Updated';
+        statusChip.classList.remove('updating');
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        statusChip.title = `Last updated: ${timeStr}`;
+      }
+      
+      if (refreshBtn) {
+        refreshBtn.classList.remove('loading');
+        refreshBtn.disabled = false;
+      }
+      
+      // Show success toast
+      this.showToast('All data refreshed successfully', 'success');
 
-    console.log('[SituationMonitorShell] Refresh complete');
+      console.log('[SituationMonitorShell] Refresh complete');
     } catch (error) {
       console.error('[SituationMonitorShell] Refresh error:', error);
       
@@ -683,6 +719,9 @@ export class SituationMonitorShell {
       
       // Show error toast
       this.showToast('Some data failed to refresh', 'error');
+    } finally {
+      // Always reset refreshing flag, even if error occurred
+      this._refreshing = false;
     }
   }
 

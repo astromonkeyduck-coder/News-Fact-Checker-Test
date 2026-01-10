@@ -29,6 +29,10 @@ export class RSSIntelligencePanel extends BasePanel {
 
   async init() {
     super.init(); // Call BasePanel.init() to set up DOM structure (idempotent)
+    // Set up retry callback to reload headlines
+    this.onRetry = () => {
+      this.loadHeadlines();
+    };
     this.setupControls(); // Setup controls after DOM is ready
     await this.loadHeadlines();
     this.setupRefresh();

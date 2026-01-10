@@ -4,8 +4,7 @@
 
 import { BasePanel } from './BasePanel.js';
 import { fetchRSSFeed } from '../data/fetchers.js';
-import { parseRSS } from '../data/parsers.js';
-import { NEWS_FEEDS } from '../data/sources.js';
+import { RSS_FEEDS } from '../../../rss/feeds.js';
 
 export class NewsPanel extends BasePanel {
   constructor(containerId) {
@@ -21,6 +20,10 @@ export class NewsPanel extends BasePanel {
 
   async init() {
     super.init(); // Call BasePanel.init() to set up DOM structure (idempotent)
+    // Set up retry callback to reload news data
+    this.onRetry = () => {
+      this.loadNews();
+    };
     await this.loadNews();
     this.setupRefresh();
   }
@@ -32,24 +35,29 @@ export class NewsPanel extends BasePanel {
     try {
       const allHeadlines = [];
       
-      // Fetch from all categories
-      for (const category of Object.keys(NEWS_FEEDS)) {
-        for (const feed of NEWS_FEEDS[category]) {
-          try {
-            const feedData = await fetchRSSFeed(feed.url, feed.name);
-            const items = parseRSS(feedData.content);
-            
-            items.forEach(item => {
+      // Fetch from enabled RSS feeds (using feed IDs)
+      const enabledFeeds = RSS_FEEDS.filter(feed => feed.enabledByDefault);
+      
+      for (const feed of enabledFeeds) {
+        try {
+          const feedData = await fetchRSSFeed(feed.id, feed.name);
+          
+          // feedData.items is already parsed from the proxy
+          if (feedData.items && Array.isArray(feedData.items)) {
+            feedData.items.forEach(item => {
               allHeadlines.push({
-                ...item,
+                title: item.title,
+                link: item.url,
+                description: item.snippet || '',
+                timestamp: new Date(item.publishedAt).getTime(),
                 source: feed.name,
-                category: feed.category,
-                reliability: feed.reliability
+                category: feed.regions?.[0] || 'world',
+                reliability: 'high'
               });
             });
-          } catch (error) {
-            console.warn(`[NewsPanel] Failed to load ${feed.name}:`, error);
           }
+        } catch (error) {
+          console.warn(`[NewsPanel] Failed to load ${feed.name}:`, error);
         }
       }
 
@@ -61,7 +69,7 @@ export class NewsPanel extends BasePanel {
       this.setLoading(false);
     } catch (error) {
       console.error('[NewsPanel] Load error:', error);
-      this.setError(error);
+      this.setError(error.message || 'Failed to load news');
       this.setLoading(false);
     }
   }

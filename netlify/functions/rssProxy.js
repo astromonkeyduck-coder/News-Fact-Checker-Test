@@ -1,8 +1,8 @@
 /**
- * RSS Feed Fetcher - Single Feed
- * GET /.netlify/functions/rss-feed?feedId=<id> OR ?feedUrl=<url>
+ * RSS Proxy - Server-side RSS fetcher
+ * GET /.netlify/functions/rssProxy?source=<feedId>
  * 
- * Fetches a single RSS feed server-side to avoid CORS.
+ * Fetches RSS feeds server-side to avoid CORS.
  * Only allows feeds from the registry (SSRF protection).
  */
 
@@ -14,21 +14,14 @@ const cache = new Map();
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 /**
- * Get feed from registry
+ * Get feed from registry by ID
  */
-function getFeed(feedId, feedUrl) {
-  if (feedId) {
-    return RSS_FEEDS.find(f => f.id === feedId);
-  }
-  if (feedUrl) {
-    // SSRF protection: only allow URLs from registry
-    return RSS_FEEDS.find(f => f.feedUrl === feedUrl);
-  }
-  return null;
+function getFeedById(feedId) {
+  return RSS_FEEDS.find(f => f.id === feedId);
 }
 
 /**
- * Parse and normalize RSS feed
+ * Fetch and parse RSS feed
  */
 async function fetchAndParseFeed(feed) {
   const cacheKey = `feed_${feed.id}`;
@@ -60,7 +53,7 @@ async function fetchAndParseFeed(feed) {
     
     return result;
   } catch (error) {
-    console.error(`[RSS Feed] Error fetching ${feed.id}:`, error.message);
+    console.error(`[RSS Proxy] Error fetching ${feed.id}:`, error.message);
     throw error;
   }
 }
@@ -94,39 +87,36 @@ exports.handler = async (event, context) => {
     };
   }
   
-        try {
-    const { feedId, feedUrl } = event.queryStringParameters || {};
+  try {
+    const { source } = event.queryStringParameters || {};
     
-    if (!feedId && !feedUrl) {
+    if (!source) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Missing feedId or feedUrl parameter' })
+        body: JSON.stringify({ error: 'Missing source parameter (feedId)' })
       };
     }
     
-    const feed = getFeed(feedId, feedUrl);
-
+    const feed = getFeedById(source);
+    
     if (!feed) {
       return {
         statusCode: 404,
         headers,
-        body: JSON.stringify({ error: 'Feed not found in registry' })
+        body: JSON.stringify({ error: `Feed "${source}" not found in registry` })
       };
     }
-
-    // Check if feed is disabled
-    // (In production, check against user config)
     
     const result = await fetchAndParseFeed(feed);
-
+    
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify(result)
     };
   } catch (error) {
-    console.error('[RSS Feed] Handler error:', error);
+    console.error('[RSS Proxy] Handler error:', error);
     return {
       statusCode: 500,
       headers,

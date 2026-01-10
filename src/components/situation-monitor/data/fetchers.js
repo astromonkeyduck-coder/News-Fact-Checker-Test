@@ -140,42 +140,64 @@ async function fetchWithRetry(url, options = {}, maxRetries = 3) {
   throw lastError;
 }
 
+// Single-flight pattern: track in-flight requests
+const inFlightRequests = new Map();
+
 /**
- * Fetch RSS feed with caching
+ * Fetch RSS feed via Netlify Function (server-side proxy)
  */
-export async function fetchRSSFeed(feedUrl, feedName) {
-  const cacheKey = `rss_${feedName}_${feedUrl}`;
+export async function fetchRSSFeed(feedId, feedName) {
+  const cacheKey = `rss_${feedId}`;
   const cached = getCached(cacheKey, 'news');
   if (cached) {
     return cached;
   }
 
-  try {
-    // Try direct fetch first
-    const response = await fetchWithRetry(feedUrl);
-    const text = await response.text();
-    
-    const result = {
-      url: feedUrl,
-      name: feedName,
-      content: text,
-      fetchedAt: new Date().toISOString()
-    };
-
-    setCached(cacheKey, result, 'news');
-    return result;
-  } catch (error) {
-    console.warn(`[Fetcher] RSS fetch failed for ${feedName}:`, error);
-    
-    // Return cached data even if expired (for offline/failure resilience)
-    const expired = getExpiredCache(cacheKey);
-    if (expired) {
-      console.log(`[Fetcher] Using expired cache for ${feedName}`);
-      return expired;
-    }
-
-    throw error;
+  // Single-flight: if request already in progress, return same promise
+  if (inFlightRequests.has(cacheKey)) {
+    return inFlightRequests.get(cacheKey);
   }
+
+  const fetchPromise = (async () => {
+    try {
+      // Use Netlify Function proxy to avoid CORS
+      const response = await fetchWithRetry(`/.netlify/functions/rssProxy?source=${encodeURIComponent(feedId)}`);
+      
+      if (!response.ok) {
+        throw new Error(`RSS Proxy HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Transform to expected format
+      const result = {
+        url: data.source?.feedUrl || '',
+        name: data.source?.name || feedName,
+        content: '', // Not needed - items are already parsed
+        items: data.items || [],
+        fetchedAt: data.fetchedAt || new Date().toISOString()
+      };
+
+      setCached(cacheKey, result, 'news');
+      return result;
+    } catch (error) {
+      console.warn(`[Fetcher] RSS fetch failed for ${feedName}:`, error);
+      
+      // Return cached data even if expired (for offline/failure resilience)
+      const expired = getExpiredCache(cacheKey);
+      if (expired) {
+        console.log(`[Fetcher] Using expired cache for ${feedName}`);
+        return expired;
+      }
+
+      throw error;
+    } finally {
+      inFlightRequests.delete(cacheKey);
+    }
+  })();
+
+  inFlightRequests.set(cacheKey, fetchPromise);
+  return fetchPromise;
 }
 
 /**
@@ -257,18 +279,50 @@ export async function fetchEarthquakes(minMagnitude = 4.5) {
 }
 
 /**
- * Fetch crypto markets
+ * Fetch crypto markets via Netlify Function (server-side proxy)
  */
 export async function fetchMarkets() {
   const cacheKey = 'markets_crypto';
-  
-  try {
-    const url = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true';
-    return await fetchJSON(url, cacheKey, 'markets');
-  } catch (error) {
-    console.warn('[Fetcher] Markets fetch failed:', error);
-    return null;
+  const cached = getCached(cacheKey, 'markets');
+  if (cached) {
+    return cached;
   }
+
+  // Single-flight: if request already in progress, return same promise
+  if (inFlightRequests.has(cacheKey)) {
+    return inFlightRequests.get(cacheKey);
+  }
+
+  const fetchPromise = (async () => {
+    try {
+      // Use Netlify Function proxy to avoid CORS
+      const response = await fetchWithRetry(`/.netlify/functions/marketsProxy?source=crypto_simple_price`);
+      
+      if (!response.ok) {
+        throw new Error(`Markets Proxy HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setCached(cacheKey, data, 'markets');
+      return data;
+    } catch (error) {
+      console.warn('[Fetcher] Markets fetch failed:', error);
+      
+      // Return expired cache if available
+      const expired = getExpiredCache(cacheKey);
+      if (expired) {
+        console.log(`[Fetcher] Using expired cache for markets`);
+        return expired;
+      }
+      
+      return null;
+    } finally {
+      inFlightRequests.delete(cacheKey);
+    }
+  })();
+
+  inFlightRequests.set(cacheKey, fetchPromise);
+  return fetchPromise;
 }
 
 /**

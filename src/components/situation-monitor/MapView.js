@@ -28,6 +28,7 @@ export class MapView {
     this.eventMarkers = new Map(); // Track event markers
     this.clusterMarkers = new Map(); // Track cluster markers
     this.currentZoom = 1.0; // Track zoom level for clustering
+    this.earthquakeTimeouts = new Map(); // Track earthquake fade-out timeouts
     
     this.init();
   }
@@ -361,6 +362,7 @@ export class MapView {
 
     const g = this.svg.append('g').attr('class', 'earthquakes');
     const radius = Math.min(magnitude * 2.5, 18);
+    const earthquakeId = `eq_${lat}_${lon}_${magnitude}_${Date.now()}`;
 
     const circle = g.append('circle')
       .attr('cx', x)
@@ -394,15 +396,47 @@ export class MapView {
       .style('opacity', 0.8);
 
     // Fade out after 15 seconds
-    setTimeout(() => {
-      // Check if circle still exists before transitioning
-      if (circle && circle.node() && circle.node().parentNode) {
-        circle.transition()
-          .duration(2000)
-          .style('opacity', 0)
-          .remove();
+    const timeoutId = setTimeout(() => {
+      // Verify circle and its parent still exist, and MapView is still valid
+      const node = circle.node();
+      if (node && node.parentNode && this.svg && this.svg.node() && this.svg.node().contains(node)) {
+        // Re-select to ensure valid D3 selection
+        const circleSelection = window.d3.select(node);
+        if (!circleSelection.empty()) {
+          try {
+            circleSelection
+              .transition()
+              .duration(2000)
+              .style('opacity', 0)
+              .on('end', function() {
+                // Remove after transition completes
+                const parent = this.parentNode;
+                if (parent) {
+                  parent.removeChild(this);
+                }
+              });
+          } catch (e) {
+            // If transition fails, just remove directly
+            if (node.parentNode) {
+              node.parentNode.removeChild(node);
+            }
+          }
+        }
       }
+      this.earthquakeTimeouts.delete(earthquakeId);
     }, 15000);
+    
+    this.earthquakeTimeouts.set(earthquakeId, timeoutId);
+  }
+  
+  /**
+   * Clear all earthquake timeouts (on cleanup/refresh)
+   */
+  clearEarthquakeTimeouts() {
+    for (const timeoutId of this.earthquakeTimeouts.values()) {
+      clearTimeout(timeoutId);
+    }
+    this.earthquakeTimeouts.clear();
   }
 
   addMonitorMarker(monitor) {
@@ -778,6 +812,9 @@ export class MapView {
   }
   
   destroy() {
+    // Clear all earthquake timeouts
+    this.clearEarthquakeTimeouts();
+    
     if (this.tooltip) {
       this.tooltip.remove();
     }

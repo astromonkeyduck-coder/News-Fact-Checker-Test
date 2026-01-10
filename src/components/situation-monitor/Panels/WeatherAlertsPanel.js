@@ -19,6 +19,10 @@ export class WeatherAlertsPanel extends BasePanel {
 
   async init() {
     super.init(); // Call BasePanel.init() to set up DOM structure (idempotent)
+    // Set up retry callback to reload alerts data
+    this.onRetry = () => {
+      this.loadAlerts();
+    };
     await this.loadAlerts();
     this.setupRefresh();
   }

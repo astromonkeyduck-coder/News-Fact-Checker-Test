@@ -277,9 +277,61 @@ export function extractLocationCandidates(headline) {
  * Geocode a location candidate using Nominatim (OpenStreetMap)
  * Free, no API key required, but rate-limited
  */
-export async function geocodeNominatim(candidate, options = {}) {
-  const { timeout = 5000, userAgent = 'Noteworthy-News-Situation-Monitor/1.0' } = options;
+/**
+ * Validate geocoding query before sending
+ */
+function validateGeocodeQuery(text) {
+  if (!text || typeof text !== 'string') {
+    return false;
+  }
   
+  const trimmed = text.trim();
+  
+  // Length checks
+  if (trimmed.length < 2 || trimmed.length > 60) {
+    return false;
+  }
+  
+  // Word count check
+  const words = trimmed.split(/\s+/);
+  if (words.length > 6) {
+    return false;
+  }
+  
+  // Banned phrases (garbage patterns)
+  const bannedPhrases = [
+    'terms that directly relate to',
+    'the same league as',
+    'exposed unusual scenarios',
+    'may be numbered with',
+    'that directly relate'
+  ];
+  
+  const lowerQuery = trimmed.toLowerCase();
+  for (const phrase of bannedPhrases) {
+    if (lowerQuery.includes(phrase)) {
+      return false;
+    }
+  }
+  
+  // Must have at least one capitalized word or known place keyword
+  const hasCapitalized = /[A-Z]/.test(trimmed);
+  const placeKeywords = ['city', 'country', 'state', 'region', 'capital', 'island', 'mountain', 'river'];
+  const hasPlaceKeyword = placeKeywords.some(kw => lowerQuery.includes(kw));
+  
+  if (!hasCapitalized && !hasPlaceKeyword) {
+    // Check for common country/city names
+    const commonPlaces = ['america', 'united states', 'uk', 'france', 'germany', 'japan', 'china', 'russia', 'india', 'brazil', 'mexico', 'canada', 'australia'];
+    const hasCommonPlace = commonPlaces.some(place => lowerQuery.includes(place));
+    if (!hasCommonPlace) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+export async function geocodeNominatim(candidate, options = {}) {
   // If we already have coordinates from country alias, return them
   if (candidate.lat && candidate.lon) {
     return {
@@ -292,50 +344,31 @@ export async function geocodeNominatim(candidate, options = {}) {
     };
   }
   
+  // Validate query before sending
+  if (!validateGeocodeQuery(candidate.text)) {
+    console.warn(`[Geocoding] Skipping invalid query: "${candidate.text}"`);
+    return null;
+  }
+  
   try {
+    // Use Netlify Function proxy to avoid CORS
     const query = encodeURIComponent(candidate.text);
-    const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1&addressdetails=1`;
+    const url = `/.netlify/functions/geocodeProxy?q=${query}`;
     
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-    
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': userAgent
-      },
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
+    const response = await fetch(url);
     
     if (!response.ok) {
-      throw new Error(`Nominatim HTTP ${response.status}`);
+      throw new Error(`Geocode Proxy HTTP ${response.status}`);
     }
     
     const data = await response.json();
     
-    if (data && data.length > 0) {
-      const result = data[0];
-      const lat = parseFloat(result.lat);
-      const lon = parseFloat(result.lon);
-      
-      // Determine precision
-      let precision = 'unknown';
-      if (result.address) {
-        if (result.address.city || result.address.town || result.address.village) {
-          precision = 'city';
-        } else if (result.address.state || result.address.region) {
-          precision = 'region';
-        } else if (result.address.country) {
-          precision = 'country';
-        }
-      }
-      
+    if (data && data.lat && data.lon) {
       return {
-        lat,
-        lon,
-        label: result.display_name || candidate.text,
-        precision,
+        lat: data.lat,
+        lon: data.lon,
+        label: data.displayName || candidate.text,
+        precision: data.precision || 'unknown',
         confidence: candidate.confidence * 0.9, // Slightly reduce confidence after geocoding
         geocoder: 'nominatim'
       };
@@ -343,11 +376,7 @@ export async function geocodeNominatim(candidate, options = {}) {
     
     return null;
   } catch (error) {
-    if (error.name === 'AbortError') {
-      console.warn(`[Geocoding] Timeout geocoding "${candidate.text}"`);
-    } else {
-      console.warn(`[Geocoding] Nominatim error for "${candidate.text}":`, error);
-    }
+    console.warn(`[Geocoding] Geocode error for "${candidate.text}":`, error);
     return null;
   }
 }
@@ -360,9 +389,10 @@ export class GeocodeQueue {
   constructor(options = {}) {
     this.queue = [];
     this.processing = false;
-    this.maxPerCycle = options.maxPerCycle || 5;
+    this.maxPerCycle = options.maxPerCycle || 1; // Reduced to 1 to prevent spam
     this.cache = new Map(); // Cache geocoding results
     this.cacheTTL = 30 * 24 * 60 * 60 * 1000; // 30 days
+    this.inFlight = new Map(); // Single-flight pattern
   }
   
   /**
