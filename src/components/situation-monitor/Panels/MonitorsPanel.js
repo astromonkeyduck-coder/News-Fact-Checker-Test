@@ -8,7 +8,13 @@ export class MonitorsPanel extends BasePanel {
   constructor(containerId, mapView) {
     super(containerId, 'Custom Monitors', { collapsible: true });
     this.mapView = mapView;
+    // Initialize monitors as empty array first, then load
+    this.monitors = [];
     this.monitors = this.loadMonitors();
+    // Ensure it's always an array
+    if (!Array.isArray(this.monitors)) {
+      this.monitors = [];
+    }
     this.init();
   }
 
@@ -38,6 +44,10 @@ export class MonitorsPanel extends BasePanel {
 
   setupForm() {
     const contentEl = this.getContentElement();
+    if (!contentEl) {
+      console.warn('[MonitorsPanel] Cannot setup form - content element not found');
+      return;
+    }
     const form = contentEl.querySelector('.sitmon-monitor-form');
     
     if (form) {
@@ -110,6 +120,11 @@ export class MonitorsPanel extends BasePanel {
   }
 
   render() {
+    // Ensure monitors is always an array
+    if (!this.monitors || !Array.isArray(this.monitors)) {
+      this.monitors = this.loadMonitors();
+    }
+    
     const monitorsList = this.monitors.map(monitor => `
       <div class="sitmon-monitor-item">
         <div class="sitmon-monitor-header">
@@ -167,7 +182,12 @@ export class MonitorsPanel extends BasePanel {
     super.render(content);
 
     // Bind remove buttons
-    const removeButtons = this.getContentElement().querySelectorAll('.sitmon-monitor-remove');
+    const contentEl = this.getContentElement();
+    if (!contentEl) {
+      console.warn('[MonitorsPanel] Cannot bind remove buttons - content element not found');
+      return;
+    }
+    const removeButtons = contentEl.querySelectorAll('.sitmon-monitor-remove');
     removeButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');

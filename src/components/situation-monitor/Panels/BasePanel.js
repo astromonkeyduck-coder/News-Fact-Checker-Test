@@ -116,8 +116,15 @@ export class BasePanel {
 
   getContentElement() {
     const container = document.getElementById(this.containerId);
-    if (!container) return null;
-    return container.querySelector('.sitmon-panel-content');
+    if (!container) {
+      console.warn(`[BasePanel] Container #${this.containerId} not found`);
+      return null;
+    }
+    const contentEl = container.querySelector('.sitmon-panel-content');
+    if (!contentEl) {
+      console.warn(`[BasePanel] Content element not found in container #${this.containerId}`);
+    }
+    return contentEl;
   }
   
   showEmptyState(message = 'No data yet – will refresh automatically') {
@@ -138,6 +145,10 @@ export class BasePanel {
 
   render(content) {
     const contentEl = this.getContentElement();
+    if (!contentEl) {
+      console.error(`[BasePanel] Content element not found for container #${this.containerId}`);
+      return;
+    }
     if (typeof content === 'string') {
       contentEl.innerHTML = content;
     } else {
