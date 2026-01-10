@@ -30,7 +30,7 @@ const securityConfig = typeof window !== 'undefined' && window.securityConfig
   : defaultSecurityConfig;
 
 /**
- * Animated Spinner Component - Horizontal Progress Bar Style
+ * Animated Spinner Component - Modern Sleek Design
  */
 function SecuritySpinner() {
   return (
@@ -40,72 +40,53 @@ function SecuritySpinner() {
       aria-busy="true"
       aria-label="Verifying your browser"
       style={{
-          width: '100%',
-          maxWidth: '479px',
-          height: '123px',
-        margin: '0 auto 1.5rem',
+        width: '100%',
+        maxWidth: '400px',
+        height: '8px',
+        margin: '0 auto 2rem',
         position: 'relative',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
-        transform: 'rotate(-2deg)'
+        justifyContent: 'center'
       }}
     >
-      {/* Outer frame - light brown */}
+      {/* Background track */}
       <div
         style={{
           position: 'absolute',
           width: '100%',
           height: '100%',
-          backgroundColor: '#D4A574',
-          borderRadius: '8px',
-          border: '2px solid #C4955F',
-          boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.2)'
-        }}
-      />
-      
-      {/* Inner track - blue-gray background */}
-      <div
-        style={{
-          position: 'absolute',
-          width: 'calc(100% - 12px)',
-          height: 'calc(100% - 12px)',
-          top: '6px',
-          left: '6px',
-          backgroundColor: '#6B7A8F',
-          borderRadius: '6px',
+          backgroundColor: 'rgba(34, 211, 238, 0.1)',
+          borderRadius: '4px',
           overflow: 'hidden'
         }}
       />
       
-      {/* Progress fill - lighter blue-gray, animated */}
+      {/* Animated progress fill */}
       <div
         className="security-progress-fill"
         style={{
           position: 'absolute',
-          height: 'calc(100% - 12px)',
-          top: '6px',
-          left: '6px',
+          height: '100%',
           width: '0%',
-          backgroundColor: '#8FA0B8',
-          borderRadius: '6px',
-          animation: 'securityProgress 2s ease-in-out infinite',
-          boxShadow: 'inset 0 1px 2px rgba(255, 255, 255, 0.3)'
+          background: 'linear-gradient(90deg, #22d3ee 0%, #4A90E2 50%, #22d3ee 100%)',
+          backgroundSize: '200% 100%',
+          borderRadius: '4px',
+          animation: 'securityProgress 2s ease-in-out infinite, securityShimmer 2s linear infinite',
+          boxShadow: '0 0 20px rgba(34, 211, 238, 0.5), 0 0 40px rgba(74, 144, 226, 0.3)'
         }}
       />
       
-      {/* Reddish-orange circular indicator on the right */}
+      {/* Glowing dots that move along the track */}
       <div
         style={{
           position: 'absolute',
-          right: '8px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          width: '16px',
-          height: '16px',
-          backgroundColor: '#FF6B4A',
+          width: '12px',
+          height: '12px',
+          backgroundColor: '#22d3ee',
           borderRadius: '50%',
-          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+          boxShadow: '0 0 15px rgba(34, 211, 238, 0.8), 0 0 30px rgba(34, 211, 238, 0.4)',
+          animation: 'securityDotMove 2s ease-in-out infinite',
           zIndex: 2
         }}
       />
@@ -237,26 +218,42 @@ export default function SecurityCheck({
           {loadingMessage}
         </p>
 
-        {/* Progress indicator (subtle) */}
+        {/* Progress indicator (modern, subtle) */}
         {isVerifying && (
           <div 
             style={{
               width: '100%',
-              maxWidth: '200px',
+              maxWidth: '240px',
               margin: '0 auto 1.5rem',
-              height: '2px',
-              background: 'rgba(74, 144, 226, 0.2)',
-              borderRadius: '1px',
-              overflow: 'hidden'
+              height: '3px',
+              background: 'rgba(34, 211, 238, 0.15)',
+              borderRadius: '2px',
+              overflow: 'hidden',
+              position: 'relative'
             }}
           >
             <div
               style={{
                 width: `${verificationProgress}%`,
                 height: '100%',
-                background: 'linear-gradient(90deg, #4A90E2, #5BA3F5)',
+                background: 'linear-gradient(90deg, #22d3ee 0%, #4A90E2 100%)',
                 transition: 'width 0.3s ease',
-                borderRadius: '1px'
+                borderRadius: '2px',
+                boxShadow: '0 0 10px rgba(34, 211, 238, 0.5)'
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                right: `${100 - verificationProgress}%`,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '8px',
+                height: '8px',
+                backgroundColor: '#22d3ee',
+                borderRadius: '50%',
+                boxShadow: '0 0 10px rgba(34, 211, 238, 0.8)',
+                transition: 'right 0.3s ease'
               }}
             />
           </div>
@@ -314,11 +311,22 @@ export default function SecurityCheck({
 
       {/* Add CSS animation if not already present */}
       {typeof document !== 'undefined' && !document.querySelector('style[data-security-check]') && (
-        <style>{`
+        <style data-security-check>{`
           @keyframes securityProgress {
-            0% { width: 0%; }
-            50% { width: 85%; }
-            100% { width: 0%; }
+            0% { width: 0%; left: 0; }
+            50% { width: 85%; left: 0; }
+            100% { width: 0%; left: 100%; }
+          }
+          @keyframes securityShimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+          }
+          @keyframes securityDotMove {
+            0% { left: 0; opacity: 0; transform: scale(0.8); }
+            10% { opacity: 1; transform: scale(1); }
+            50% { left: 85%; opacity: 1; transform: scale(1); }
+            90% { opacity: 1; transform: scale(1); }
+            100% { left: 100%; opacity: 0; transform: scale(0.8); }
           }
         `}</style>
       )}

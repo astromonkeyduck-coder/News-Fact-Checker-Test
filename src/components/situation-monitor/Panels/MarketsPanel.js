@@ -9,6 +9,7 @@ export class MarketsPanel extends BasePanel {
   constructor(containerId) {
     super(containerId, 'Markets', { collapsible: true });
     this.marketData = null;
+    // Initialize asynchronously - don't call init() here, it's called once in async init()
     // Don't await - let it run asynchronously
     this.init().catch(err => {
       console.error('[MarketsPanel] Init error:', err);
@@ -16,6 +17,7 @@ export class MarketsPanel extends BasePanel {
   }
 
   async init() {
+    super.init(); // Call BasePanel.init() to set up DOM structure (idempotent)
     await this.loadMarkets();
     this.setupRefresh();
   }

@@ -11,11 +11,13 @@ import { IntelFeedPanel } from './Panels/IntelFeedPanel.js';
 import { CorrelationPanel } from './Panels/CorrelationPanel.js';
 import { NarrativePanel } from './Panels/NarrativePanel.js';
 import { MonitorsPanel } from './Panels/MonitorsPanel.js';
+import { RSSIntelligencePanel } from './Panels/RSSIntelligencePanel.js';
 import { EventPipeline } from './data/eventPipeline.js';
 import { EventDrawer } from './EventDrawer.js';
 import { ClusterDrawer } from './ClusterDrawer.js';
 import { BigBoardOverlay } from './BigBoardOverlay.js';
 import { DiagnosticsPanel } from './DiagnosticsPanel.js';
+import { showLoader, setLoaderProgress, setLoaderPhase, hideLoader } from '../../loader/IntelLoader.js';
 
 export class SituationMonitorShell {
   constructor(containerId) {
@@ -42,9 +44,14 @@ export class SituationMonitorShell {
   }
 
   async init() {
+    // Show loader immediately
+    showLoader({ phase: 'AUTH' });
+    setLoaderProgress(0.05);
+    
     const container = document.getElementById(this.containerId);
     if (!container) {
       console.error(`[SituationMonitorShell] Container #${this.containerId} not found`);
+      hideLoader();
       return;
     }
 
@@ -81,7 +88,7 @@ export class SituationMonitorShell {
               <h2 class="sitmon-card-title">World Map</h2>
             </div>
             <div class="sitmon-card-body">
-              <div id="sitmon-map" class="sitmon-map"></div>
+            <div id="sitmon-map" class="sitmon-map"></div>
             </div>
           </div>
 
@@ -146,29 +153,69 @@ export class SituationMonitorShell {
             </div>
             <div class="sitmon-card-body" id="sitmon-panel-weather-body"></div>
           </div>
+
+          <div class="sitmon-panel-card" id="sitmon-panel-rss">
+            <div class="sitmon-card-header">
+              <h2 class="sitmon-card-title">RSS Intelligence</h2>
+            </div>
+            <div class="sitmon-card-body" id="sitmon-panel-rss-body"></div>
+          </div>
         </div>
       </div>
     `;
 
+    setLoaderPhase('DECRYPT');
+    setLoaderProgress(0.15);
+    
     // Initialize map
     await this.initMap();
+    
+    setLoaderPhase('SYNC');
+    setLoaderProgress(0.35);
 
     // Initialize panels
     this.initPanels();
+    
+    setLoaderProgress(0.50);
 
     // Setup controls
     this.setupControls();
+    
+    setLoaderProgress(0.60);
+    
+    // Initialize enhancement features
+    this.initToastSystem();
+    this.initKeyboardShortcuts();
+    
+    setLoaderProgress(0.70);
     
     // Initialize drawers and overlays
     this.initDrawers();
     this.initBigBoardOverlay();
     this.initDiagnostics();
+    
+    setLoaderPhase('RENDER');
+    setLoaderProgress(0.80);
 
     // Initial data load
     await this.refreshAll();
+    
+    setLoaderProgress(0.95);
 
     // Setup auto-refresh
     this.setupAutoRefresh();
+    
+    // Show keyboard hint only after successful initialization
+    this.initKeyboardHint();
+    
+    // All systems ready - hide loader
+    setLoaderPhase('READY');
+    setLoaderProgress(1.0);
+    
+    // Small delay for "READY" phase to be visible
+    setTimeout(() => {
+      hideLoader();
+    }, 500);
   }
 
   async initMap() {
@@ -239,24 +286,24 @@ export class SituationMonitorShell {
     try {
       // Clear placeholder before initializing map
       mapContainer.innerHTML = '';
-      
-      this.mapView = new MapView('sitmon-map', {
+
+    this.mapView = new MapView('sitmon-map', {
         width: Math.max(width, 400),
         height: Math.max(height, 300)
-      });
+    });
 
       // Handle resize with debounce
       let resizeTimeout;
       const handleResize = () => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
-          if (this.mapView && mapContainer) {
+      if (this.mapView && mapContainer) {
             const newRect = mapContainer.getBoundingClientRect();
             const newWidth = newRect.width || width;
             const newHeight = newRect.height || height;
             if (newWidth > 0 && newHeight > 0) {
-              this.mapView.resize(newWidth, newHeight);
-            }
+        this.mapView.resize(newWidth, newHeight);
+      }
           }
         }, 250);
       };
@@ -305,6 +352,9 @@ export class SituationMonitorShell {
     this.panels.correlation = new CorrelationPanel('sitmon-panel-correlation-body');
     this.panels.narrative = new NarrativePanel('sitmon-panel-narrative-body');
     this.panels.monitors = new MonitorsPanel('sitmon-panel-monitors-body', this.mapView);
+    
+    // RSS Intelligence panel
+    this.panels.rss = new RSSIntelligencePanel('sitmon-panel-rss-body');
 
     // Setup cross-panel updates
     this.panels.news.onRetry = () => this.panels.news.loadNews();
@@ -316,6 +366,7 @@ export class SituationMonitorShell {
   setupControls() {
     const refreshBtn = document.getElementById('sitmon-refresh-btn');
     const autoRefreshCheckbox = document.getElementById('sitmon-auto-refresh');
+    const statusChip = document.getElementById('sitmon-status-chip');
 
     if (refreshBtn) {
       refreshBtn.addEventListener('click', () => this.refreshAll());
@@ -325,8 +376,169 @@ export class SituationMonitorShell {
       autoRefreshCheckbox.addEventListener('change', (e) => {
         this.autoRefresh = e.target.checked;
         this.setupAutoRefresh();
+        this.showToast(
+          e.target.checked ? 'Auto-refresh enabled' : 'Auto-refresh disabled',
+          'info'
+        );
       });
     }
+    
+    // Store status chip reference
+    this.statusChip = statusChip;
+  }
+  
+  initToastSystem() {
+    // Create toast container if it doesn't exist
+    let container = document.querySelector('.sitmon-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.className = 'sitmon-toast-container';
+      document.body.appendChild(container);
+    }
+    this.toastContainer = container;
+  }
+  
+  showToast(message, type = 'info', title = null) {
+    if (!this.toastContainer) return;
+    
+    const toast = document.createElement('div');
+    toast.className = `sitmon-toast ${type}`;
+    
+    // Icon based on type
+    let iconSvg = '';
+    if (type === 'success') {
+      iconSvg = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    } else if (type === 'error') {
+      iconSvg = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    } else {
+      iconSvg = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    }
+    
+    toast.innerHTML = `
+      <div class="sitmon-toast-icon" style="color: ${type === 'success' ? '#4ecdc4' : type === 'error' ? '#ff6b6b' : '#4A90E2'}">${iconSvg}</div>
+      <div class="sitmon-toast-content">
+        ${title ? `<div class="sitmon-toast-title">${title}</div>` : ''}
+        <div class="sitmon-toast-message">${message}</div>
+      </div>
+      <button class="sitmon-toast-close" aria-label="Close">×</button>
+    `;
+    
+    this.toastContainer.appendChild(toast);
+    
+    // Auto-remove after 4 seconds
+    const autoRemove = setTimeout(() => {
+      this.removeToast(toast);
+    }, 4000);
+    
+    // Close button
+    const closeBtn = toast.querySelector('.sitmon-toast-close');
+    closeBtn.addEventListener('click', () => {
+      clearTimeout(autoRemove);
+      this.removeToast(toast);
+    });
+    
+    return toast;
+  }
+  
+  removeToast(toast) {
+    if (!toast) return;
+    toast.classList.add('hiding');
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 300);
+  }
+  
+  initKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      // Don't trigger shortcuts when typing in inputs
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+        return;
+      }
+      
+      // Ctrl/Cmd + R - Refresh
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        this.refreshAll();
+        this.showToast('Refreshing all data...', 'info');
+      }
+      
+      // R - Quick refresh (without Ctrl)
+      if (e.key === 'r' && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+        // Only if not in a focused element
+        if (document.activeElement === document.body || document.activeElement.tagName === 'DIV') {
+          this.refreshAll();
+          this.showToast('Refreshing all data...', 'info');
+        }
+      }
+      
+      // Escape - Close drawers
+      if (e.key === 'Escape') {
+        if (this.eventDrawer && this.eventDrawer.isOpen) {
+          this.eventDrawer.close();
+        }
+        if (this.clusterDrawer && this.clusterDrawer.isOpen) {
+          this.clusterDrawer.close();
+        }
+      }
+      
+      // ? - Toggle keyboard hints
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+        const hint = document.querySelector('.sitmon-keyboard-hint');
+        if (hint) {
+          hint.classList.toggle('hidden');
+        }
+      }
+    });
+  }
+  
+  initKeyboardHint() {
+    // Create keyboard shortcut hint panel
+    const hint = document.createElement('div');
+    hint.className = 'sitmon-keyboard-hint';
+    hint.innerHTML = `
+      <button class="sitmon-keyboard-hint-close" aria-label="Close keyboard hints" style="position: absolute; top: 8px; right: 8px; background: transparent; border: none; color: rgba(255, 255, 255, 0.6); cursor: pointer; padding: 4px; font-size: 18px; line-height: 1; transition: color 0.2s;">×</button>
+      <div class="sitmon-keyboard-hint-title">Keyboard Shortcuts</div>
+      <ul class="sitmon-keyboard-hint-list">
+        <li class="sitmon-keyboard-hint-item">
+          <span>Refresh data</span>
+          <span class="sitmon-keyboard-hint-key">R</span>
+        </li>
+        <li class="sitmon-keyboard-hint-item">
+          <span>Close drawers</span>
+          <span class="sitmon-keyboard-hint-key">Esc</span>
+        </li>
+        <li class="sitmon-keyboard-hint-item">
+          <span>Toggle hints</span>
+          <span class="sitmon-keyboard-hint-key">?</span>
+        </li>
+      </ul>
+    `;
+    document.body.appendChild(hint);
+    
+    // Close button handler
+    const closeBtn = hint.querySelector('.sitmon-keyboard-hint-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        hint.classList.add('hidden');
+      });
+      closeBtn.addEventListener('mouseenter', () => {
+        closeBtn.style.color = '#fff';
+      });
+      closeBtn.addEventListener('mouseleave', () => {
+        closeBtn.style.color = 'rgba(255, 255, 255, 0.6)';
+      });
+    }
+    
+    // Hide after 10 seconds, or on click
+    setTimeout(() => {
+      hint.classList.add('hidden');
+    }, 10000);
+    
+    hint.addEventListener('click', () => {
+      hint.classList.add('hidden');
+    });
   }
 
   initDrawers() {
@@ -352,7 +564,7 @@ export class SituationMonitorShell {
       // Will be called after refreshAll updates events
     }
   }
-  
+
   setupAutoRefresh() {
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
@@ -370,6 +582,21 @@ export class SituationMonitorShell {
   async refreshAll() {
     console.log('[SituationMonitorShell] Refreshing all data...');
 
+    // Update UI state
+    const refreshBtn = document.getElementById('sitmon-refresh-btn');
+    const statusChip = this.statusChip;
+    
+    if (refreshBtn) {
+      refreshBtn.classList.add('loading');
+      refreshBtn.disabled = true;
+    }
+    
+    if (statusChip) {
+      statusChip.textContent = 'Updating...';
+      statusChip.classList.add('updating');
+    }
+
+    try {
     // Refresh data panels
     await Promise.all([
       this.panels.news.loadNews(),
@@ -422,7 +649,41 @@ export class SituationMonitorShell {
       });
     }
 
+    // Update status
+    if (statusChip) {
+      statusChip.textContent = 'Updated';
+      statusChip.classList.remove('updating');
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      statusChip.title = `Last updated: ${timeStr}`;
+    }
+    
+    if (refreshBtn) {
+      refreshBtn.classList.remove('loading');
+      refreshBtn.disabled = false;
+    }
+    
+    // Show success toast
+    this.showToast('All data refreshed successfully', 'success');
+
     console.log('[SituationMonitorShell] Refresh complete');
+    } catch (error) {
+      console.error('[SituationMonitorShell] Refresh error:', error);
+      
+      // Update status on error
+      if (statusChip) {
+        statusChip.textContent = 'Error';
+        statusChip.classList.remove('updating');
+      }
+      
+      if (refreshBtn) {
+        refreshBtn.classList.remove('loading');
+        refreshBtn.disabled = false;
+      }
+      
+      // Show error toast
+      this.showToast('Some data failed to refresh', 'error');
+    }
   }
 
   destroy() {

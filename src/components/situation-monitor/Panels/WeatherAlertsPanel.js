@@ -10,6 +10,7 @@ export class WeatherAlertsPanel extends BasePanel {
   constructor(containerId) {
     super(containerId, 'Weather Alerts', { collapsible: true });
     this.alerts = [];
+    // Initialize asynchronously - don't call init() here, it's called once in async init()
     // Don't await - let it run asynchronously
     this.init().catch(err => {
       console.error('[WeatherAlertsPanel] Init error:', err);
@@ -17,6 +18,7 @@ export class WeatherAlertsPanel extends BasePanel {
   }
 
   async init() {
+    super.init(); // Call BasePanel.init() to set up DOM structure (idempotent)
     await this.loadAlerts();
     this.setupRefresh();
   }

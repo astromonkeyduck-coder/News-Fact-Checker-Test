@@ -12,6 +12,7 @@ export class NewsPanel extends BasePanel {
     super(containerId, 'News Feed', { collapsible: true });
     this.headlines = [];
     this.currentFeed = 'all';
+    // Initialize asynchronously - don't call init() here, it's called once in async init()
     // Don't await - let it run asynchronously
     this.init().catch(err => {
       console.error('[NewsPanel] Init error:', err);
@@ -19,6 +20,7 @@ export class NewsPanel extends BasePanel {
   }
 
   async init() {
+    super.init(); // Call BasePanel.init() to set up DOM structure (idempotent)
     await this.loadNews();
     this.setupRefresh();
   }

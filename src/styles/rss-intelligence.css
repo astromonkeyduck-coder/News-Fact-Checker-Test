@@ -1,0 +1,260 @@
+/**
+ * RSS Intelligence Panel Styles
+ * Copyright-compliant design with clear attribution
+ */
+
+/* RSS Controls */
+.rss-controls {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(74, 158, 255, 0.2);
+}
+
+.rss-controls-top {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.rss-search {
+  flex: 1;
+  padding: 0.625rem 1rem;
+  background: rgba(7, 21, 42, 0.5);
+  border: 1px solid rgba(74, 158, 255, 0.3);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.rss-search:focus {
+  outline: none;
+  border-color: #4A90E2;
+  background: rgba(7, 21, 42, 0.7);
+}
+
+.rss-search::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.rss-refresh-btn {
+  padding: 0.625rem 1.25rem;
+  background: rgba(74, 158, 255, 0.2);
+  border: 1px solid rgba(74, 158, 255, 0.4);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.rss-refresh-btn:hover {
+  background: rgba(74, 158, 255, 0.3);
+  border-color: #4A90E2;
+}
+
+.rss-controls-filters {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.rss-controls-filters select {
+  flex: 1;
+  min-width: 120px;
+  padding: 0.5rem 0.75rem;
+  background: rgba(7, 21, 42, 0.5);
+  border: 1px solid rgba(74, 158, 255, 0.3);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rss-controls-filters select:focus {
+  outline: none;
+  border-color: #4A90E2;
+}
+
+.rss-controls-filters select option {
+  background: rgba(5, 15, 35, 0.95);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.rss-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.rss-last-updated {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.rss-count {
+  color: rgba(34, 211, 238, 0.9);
+  font-weight: 500;
+}
+
+/* RSS Headlines List */
+.rss-headlines-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rss-empty {
+  text-align: center;
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* RSS Headline Item */
+.rss-headline-item {
+  padding: 1rem;
+  background: rgba(7, 21, 42, 0.3);
+  border-radius: 8px;
+  border-left: 3px solid rgba(74, 158, 255, 0.5);
+  transition: all 0.2s ease;
+}
+
+.rss-headline-item:hover {
+  background: rgba(7, 21, 42, 0.5);
+  border-left-color: #4A90E2;
+  transform: translateX(2px);
+}
+
+.rss-headline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.rss-headline-title {
+  flex: 1;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.rss-headline-link {
+  color: rgba(255, 255, 255, 0.95);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.rss-headline-link:hover {
+  color: #4A90E2;
+  text-decoration: underline;
+}
+
+.rss-headline-time {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rss-snippet {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  background: rgba(5, 15, 35, 0.4);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.8);
+  border-left: 2px solid rgba(74, 158, 255, 0.3);
+}
+
+.rss-headline-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(74, 158, 255, 0.15);
+  font-size: 0.8rem;
+}
+
+.rss-source {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.rss-source-link {
+  color: #4A90E2;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.rss-source-link:hover {
+  color: #22d3ee;
+  text-decoration: underline;
+}
+
+.rss-via {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+/* RSS Footer / Disclaimer */
+.rss-footer {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(74, 158, 255, 0.2);
+}
+
+.rss-disclaimer {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.6;
+  margin: 0.5rem 0;
+}
+
+.rss-affiliation {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0.5rem 0;
+}
+
+.rss-affiliation a {
+  color: #4A90E2;
+  text-decoration: none;
+}
+
+.rss-affiliation a:hover {
+  text-decoration: underline;
+}
+
+/* Mobile Responsive */
+@media (max-width: 900px) {
+  .rss-controls-top {
+    flex-direction: column;
+  }
+
+  .rss-controls-filters {
+    flex-direction: column;
+  }
+
+  .rss-controls-filters select {
+    width: 100%;
+  }
+
+  .rss-headline-header {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .rss-headline-time {
+    align-self: flex-start;
+  }
+}

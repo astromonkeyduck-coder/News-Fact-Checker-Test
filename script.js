@@ -10130,7 +10130,7 @@ function initNewsletterSubscription() {
                 // But we check defensively anyway
                 if (aiResponse && aiResponse.innerHTML && aiResponse.innerHTML.trim() !== '') {
                     cachedAiResponseHtml = aiResponse.innerHTML;
-                    console.log('Using existing AI response, skipping text generation');
+                console.log('Using existing AI response, skipping text generation');
                     textResponse = Promise.resolve(cachedAiResponseHtml);
                 } else {
                     // Edge case: hasExistingAIResponse was true but aiResponse is now null or empty
@@ -10156,7 +10156,7 @@ function initNewsletterSubscription() {
                 // Show loading state using aiThinking (already shown above with updated text)
                 // Keep aiThinking visible, don't set anything in aiResponse
                 if (aiResponse) {
-                aiResponse.innerHTML = '';
+                    aiResponse.innerHTML = '';
                 }
                 
                 // Comprehensive prompt focusing on culture, geopolitics, and profound insights
@@ -10266,7 +10266,7 @@ Write in a sophisticated, analytical style. Be comprehensive (600-800 words), nu
             // Reset success flag at start of generation ONLY if we're doing a completely new generation
             // If we're restoring partial data (hasExistingAIResponse), preserve the flag since we already have valid content
             if (!hasExistingAIResponse) {
-                spotlightGenerationSuccessful = false;
+            spotlightGenerationSuccessful = false;
             }
             // If hasExistingAIResponse is true, the flag was already set to true by restoreSpotlight()
             // and we should preserve it so music can play even if image generation fails

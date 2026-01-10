@@ -15,16 +15,25 @@ export class BasePanel {
     this.collapsed = false;
     this.loading = false;
     this.error = null;
+    this._domInitialized = false; // Flag to prevent double initialization
     
-    this.init();
+    // Don't call init() here - let child classes handle initialization
+    // This prevents double initialization when child classes override init()
   }
 
   init() {
+    // Idempotent: only initialize DOM once
+    if (this._domInitialized) {
+      return;
+    }
+    
     const container = document.getElementById(this.containerId);
     if (!container) {
       console.error(`[BasePanel] Container #${this.containerId} not found`);
       return;
     }
+    
+    this._domInitialized = true;
 
     // New structure: panels render directly into card-body containers
     // No need to create panel wrapper - it's already in the HTML

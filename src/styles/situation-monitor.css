@@ -1212,3 +1212,480 @@ body.situation-monitor-page ol,
   padding-left: 0 !important;
   margin: 0 !important;
 }
+
+/* ============================================
+   ENHANCEMENTS - Visual & UX Improvements
+   ============================================ */
+
+/* Page Load Animation */
+.sitmon-page-wrapper {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Card Entrance Animations */
+.sitmon-panel-card {
+  animation: slideInRight 0.5s ease-out backwards;
+}
+
+.sitmon-panel-card:nth-child(1) { animation-delay: 0.1s; }
+.sitmon-panel-card:nth-child(2) { animation-delay: 0.2s; }
+.sitmon-panel-card:nth-child(3) { animation-delay: 0.3s; }
+.sitmon-panel-card:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.sitmon-map-card {
+  animation: slideInLeft 0.6s ease-out;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Enhanced Hover Effects */
+.sitmon-panel-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.sitmon-panel-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.1), transparent);
+  transition: left 0.5s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sitmon-panel-card:hover::before {
+  left: 100%;
+}
+
+.sitmon-panel-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(34, 211, 238, 0.15);
+}
+
+/* Refresh Button Loading State */
+.sitmon-refresh-btn.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.sitmon-refresh-btn.loading .sitmon-icon {
+  animation: spin 1s linear infinite;
+}
+
+/* Status Chip Pulse Animation */
+.sitmon-status-chip.updating {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7);
+  }
+  50% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 8px rgba(34, 211, 238, 0);
+  }
+}
+
+/* Toast Notification System */
+.sitmon-toast-container {
+  position: fixed;
+  top: 100px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: none;
+}
+
+.sitmon-toast {
+  background: linear-gradient(135deg, rgba(5, 15, 35, 0.98) 0%, rgba(7, 21, 42, 0.98) 100%);
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  min-width: 300px;
+  max-width: 400px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  pointer-events: auto;
+  animation: toastSlideIn 0.3s ease-out;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sitmon-toast.success {
+  border-color: rgba(78, 205, 196, 0.5);
+}
+
+.sitmon-toast.error {
+  border-color: rgba(255, 107, 107, 0.5);
+}
+
+.sitmon-toast.info {
+  border-color: rgba(74, 158, 255, 0.5);
+}
+
+.sitmon-toast-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.sitmon-toast-content {
+  flex: 1;
+}
+
+.sitmon-toast-title {
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.sitmon-toast-message {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.sitmon-toast-close {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.sitmon-toast-close:hover {
+  color: #fff;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(400px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.sitmon-toast.hiding {
+  animation: toastSlideOut 0.3s ease-in forwards;
+}
+
+@keyframes toastSlideOut {
+  to {
+    opacity: 0;
+    transform: translateX(400px);
+  }
+}
+
+/* Enhanced Loading Spinner */
+.sitmon-spinner {
+  position: relative;
+}
+
+.sitmon-spinner::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid rgba(34, 211, 238, 0.3);
+  border-top-color: #22d3ee;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Smooth Transitions for All Interactive Elements */
+.sitmon-news-item,
+.sitmon-market-item,
+.sitmon-earthquake-item,
+.sitmon-alert-item,
+.sitmon-character-item,
+.sitmon-correlation-item,
+.sitmon-narrative-item,
+.sitmon-monitor-item {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.sitmon-news-item:hover,
+.sitmon-market-item:hover,
+.sitmon-earthquake-item:hover,
+.sitmon-alert-item:hover,
+.sitmon-character-item:hover,
+.sitmon-correlation-item:hover,
+.sitmon-narrative-item:hover,
+.sitmon-monitor-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Focus States for Accessibility */
+.sitmon-refresh-btn:focus-visible,
+.sitmon-retry-btn:focus-visible,
+.sitmon-form-submit:focus-visible,
+.sitmon-monitor-remove:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
+}
+
+/* Keyboard Shortcut Indicator */
+.sitmon-keyboard-hint {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(5, 15, 35, 0.95);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  padding-top: 2rem;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  z-index: 9999;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  max-width: 280px;
+  animation: fadeInUp 0.5s ease-out;
+  position: relative;
+}
+
+.sitmon-keyboard-hint.hidden {
+  display: none;
+}
+
+.sitmon-keyboard-hint-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 18px;
+  line-height: 1;
+  transition: color 0.2s;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.sitmon-keyboard-hint-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sitmon-keyboard-hint-title {
+  font-weight: 600;
+  color: #22d3ee;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.sitmon-keyboard-hint-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sitmon-keyboard-hint-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sitmon-keyboard-hint-key {
+  background: rgba(34, 211, 238, 0.2);
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  color: #22d3ee;
+  font-weight: 600;
+  min-width: 32px;
+  text-align: center;
+}
+
+/* Smooth Scroll Behavior */
+.sitmon-card-body {
+  scroll-behavior: smooth;
+}
+
+/* Enhanced Empty State */
+.sitmon-empty-state {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Progress Indicator for Refresh */
+.sitmon-refresh-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #22d3ee, #4A90E2);
+  border-radius: 0 0 16px 16px;
+  width: 0%;
+  transition: width 0.3s ease;
+  z-index: 10;
+}
+
+.sitmon-page-header {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Enhanced Map Loading State */
+.sitmon-map.loading::after {
+  content: 'Loading map...';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  z-index: 10;
+}
+
+/* Ripple Effect on Button Clicks */
+.sitmon-refresh-btn,
+.sitmon-retry-btn,
+.sitmon-form-submit {
+  position: relative;
+  overflow: hidden;
+}
+
+.sitmon-refresh-btn::after,
+.sitmon-retry-btn::after,
+.sitmon-form-submit::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.sitmon-refresh-btn:active::after,
+.sitmon-retry-btn:active::after,
+.sitmon-form-submit:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* Enhanced Status Chip */
+.sitmon-status-chip {
+  position: relative;
+  overflow: hidden;
+}
+
+.sitmon-status-chip::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.sitmon-status-chip:hover::after {
+  left: 100%;
+}
+
+/* Smooth Panel Content Updates */
+.sitmon-card-body > * {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Enhanced Mobile Experience */
+@media (max-width: 900px) {
+  .sitmon-toast-container {
+    right: 10px;
+    left: 10px;
+    top: 80px;
+  }
+  
+  .sitmon-toast {
+    min-width: auto;
+    max-width: 100%;
+  }
+  
+  .sitmon-keyboard-hint {
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    max-width: none;
+  }
+}

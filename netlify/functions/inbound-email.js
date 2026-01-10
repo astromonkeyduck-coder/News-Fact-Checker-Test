@@ -22,13 +22,12 @@ if (process.env.NETLIFY_DEV || !process.env.RESEND_API_KEY) {
   }
 }
 
-const https = require('https');
-const http = require('http');
 const crypto = require('crypto');
 
 /**
  * Call ingest-all function via HTTP
  * Uses fire-and-forget approach to avoid webhook timeouts
+ * Improved error handling with fetch API
  */
 async function triggerIngestAll() {
   const siteUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || 'https://noteworthynews.co';
@@ -36,56 +35,85 @@ async function triggerIngestAll() {
   
   console.log(`[Inbound Email] Triggering ingest-all at: ${ingestUrl}`);
   
-  return new Promise((resolve, reject) => {
-    const url = new URL(ingestUrl);
-    const options = {
-      hostname: url.hostname,
-      port: url.port || (url.protocol === 'https:' ? 443 : 80),
-      path: url.pathname + url.search,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      timeout: 5000, // 5 second timeout - just to verify the request was accepted
-    };
-
-    const client = url.protocol === 'https:' ? https : http;
-    const req = client.request(options, (res) => {
-      // Fire-and-forget: resolve immediately when we get a response (even if it's still processing)
-      // We don't wait for the full response body since ingest-all can take 15-20 seconds
-      console.log(`[Inbound Email] ingest-all request accepted (status ${res.statusCode})`);
+  try {
+    // Use AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    try {
+      const response = await fetch(ingestUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}), // Send empty body
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      // Read response body for error details
+      let responseText = '';
+      try {
+        responseText = await response.text();
+      } catch (readError) {
+        console.warn('[Inbound Email] Could not read response body:', readError.message);
+      }
+      
+      console.log(`[Inbound Email] ingest-all response: status ${response.status}, body length: ${responseText.length}`);
       
       // If status is 200-299, consider it successful (ingest-all is running)
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        resolve({ success: true, statusCode: res.statusCode, message: 'Ingest-all triggered successfully' });
+      if (response.status >= 200 && response.status < 300) {
+        return { 
+          success: true, 
+          statusCode: response.status, 
+          message: 'Ingest-all triggered successfully',
+          responsePreview: responseText.substring(0, 200)
+        };
       } else {
-        // For non-2xx, we still want to read the error to log it
-        let data = '';
-        res.on('data', (chunk) => {
-          data += chunk;
+        // For non-2xx, parse error details
+        let errorDetails = responseText;
+        try {
+          const errorJson = JSON.parse(responseText);
+          errorDetails = errorJson.error || errorJson.message || responseText;
+        } catch {
+          // Not JSON, use as-is
+        }
+        
+        console.error(`[Inbound Email] ingest-all returned status ${response.status}:`, {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorDetails.substring(0, 500),
+          fullResponse: responseText.substring(0, 1000)
         });
-        res.on('end', () => {
-          console.error(`[Inbound Email] ingest-all returned status ${res.statusCode}: ${data.substring(0, 500)}`);
-          reject(new Error(`HTTP ${res.statusCode}: ${data.substring(0, 200)}`));
-        });
+        
+        throw new Error(`HTTP ${response.status}: ${errorDetails.substring(0, 200)}`);
       }
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      if (fetchError.name === 'AbortError') {
+        // Timeout - but request was sent, so consider it successful
+        console.warn(`[Inbound Email] Request timeout (ingest-all may still be processing)`);
+        return { 
+          success: true, 
+          statusCode: 202, 
+          message: 'Ingest-all request sent (processing - timeout after 10s)' 
+        };
+      }
+      
+      // Re-throw other errors
+      throw fetchError;
+    }
+  } catch (error) {
+    console.error(`[Inbound Email] Error triggering ingest-all:`, {
+      message: error.message,
+      name: error.name,
+      stack: error.stack?.substring(0, 500),
+      url: ingestUrl
     });
-
-    req.on('error', (error) => {
-      console.error(`[Inbound Email] Error triggering ingest-all:`, error);
-      reject(error);
-    });
-
-    req.on('timeout', () => {
-      console.warn(`[Inbound Email] Request timeout (ingest-all may still be processing)`);
-      req.destroy();
-      // Even on timeout, consider it successful if we got this far (request was sent)
-      resolve({ success: true, statusCode: 202, message: 'Ingest-all request sent (processing)' });
-    });
-
-    req.setTimeout(5000); // 5 second timeout
-    req.end();
-  });
+    throw error;
+  }
 }
 
 /**

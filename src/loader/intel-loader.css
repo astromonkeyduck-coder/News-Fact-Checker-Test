@@ -1,0 +1,606 @@
+/**
+ * Intel Loader Styles - NEW STRUCTURE
+ * High-density intelligence system interface
+ * Asymmetric layout with off-center core
+ */
+
+/* Root Variables */
+:root {
+  --nn-il-bg: #010510;
+  --nn-il-bg-dark: #000000;
+  --nn-il-cyan: #22d3ee;
+  --nn-il-cyan-glow: rgba(34, 211, 238, 0.4);
+  --nn-il-blue: #4A90E2;
+  --nn-il-red: #ff6b6b;
+  --nn-il-green: #4ade80;
+  --nn-il-yellow: #fbbf24;
+  --nn-il-text: rgba(255, 255, 255, 0.95);
+  --nn-il-text-dim: rgba(255, 255, 255, 0.7);
+  --nn-il-text-muted: rgba(255, 255, 255, 0.5);
+}
+
+/* Loader Container */
+#nn-intel-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999999;
+  pointer-events: all;
+  overflow: hidden;
+  font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--nn-il-text);
+}
+
+#nn-intel-loader.nn-il-hidden {
+  display: none;
+}
+
+#nn-intel-loader.nn-il-visible {
+  display: block;
+  animation: nn-il-fade-in 0.3s ease-out;
+}
+
+@keyframes nn-il-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Backdrop */
+.nn-il-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at 60% 50%, rgba(34, 211, 238, 0.03) 0%, var(--nn-il-bg) 70%);
+  background-color: var(--nn-il-bg-dark);
+}
+
+/* Noise Canvas */
+.nn-il-noise {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.02;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+/* Scanline Overlay */
+.nn-il-scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(to bottom, transparent, var(--nn-il-cyan-glow), transparent);
+  opacity: 0.2;
+  animation: nn-il-scanline 4s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes nn-il-scanline {
+  0% { top: -1px; opacity: 0; }
+  50% { opacity: 0.2; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* Exit Scanline Wipe */
+#nn-intel-loader.nn-il-scanline-exit .nn-il-scanline {
+  animation: nn-il-scanline-wipe 0.4s ease-out forwards;
+  height: 100%;
+  background: linear-gradient(to bottom, 
+    transparent 0%,
+    var(--nn-il-cyan-glow) 20%,
+    var(--nn-il-cyan-glow) 80%,
+    transparent 100%
+  );
+  opacity: 0.8;
+}
+
+@keyframes nn-il-scanline-wipe {
+  0% {
+    top: -100%;
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+/* ============================================
+   TOP BAR
+   ============================================ */
+.nn-il-top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  border-bottom: 1px solid rgba(34, 211, 238, 0.2);
+  background: rgba(1, 5, 16, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.nn-il-top-left {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--nn-il-cyan);
+  font-weight: 600;
+}
+
+.nn-il-top-right {
+  display: flex;
+  gap: 20px;
+  font-size: 11px;
+  color: var(--nn-il-text-dim);
+}
+
+.nn-il-secure-indicator {
+  color: var(--nn-il-green);
+  font-weight: 600;
+}
+
+/* ============================================
+   LEFT COLUMN (Subsystems + Text)
+   ============================================ */
+.nn-il-left-column {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  width: 40%;
+  height: calc(100vh - 80px); /* Top bar + bottom bar */
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow: hidden;
+}
+
+/* Subsystems */
+.nn-il-subsystems {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.nn-il-subsystem {
+  display: grid;
+  grid-template-columns: 120px 1fr 50px 12px;
+  gap: 10px;
+  align-items: center;
+  font-size: 11px;
+}
+
+.nn-il-subsystem-label {
+  color: var(--nn-il-text);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.nn-il-subsystem-bar {
+  position: relative;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  overflow: hidden;
+}
+
+.nn-il-subsystem-segment {
+  position: absolute;
+  top: 0;
+  width: 8%;
+  height: 100%;
+  border-right: 1px solid rgba(34, 211, 238, 0.1);
+  box-sizing: border-box;
+}
+
+.nn-il-subsystem-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--nn-il-cyan), var(--nn-il-blue));
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px var(--nn-il-cyan-glow);
+}
+
+.nn-il-subsystem-percent {
+  text-align: right;
+  color: var(--nn-il-text-dim);
+  font-size: 10px;
+  min-width: 40px;
+}
+
+.nn-il-subsystem-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.nn-il-status-waiting {
+  background: var(--nn-il-yellow);
+  opacity: 0.5;
+}
+
+.nn-il-status-active {
+  background: var(--nn-il-cyan);
+  box-shadow: 0 0 6px var(--nn-il-cyan-glow);
+  animation: nn-il-pulse 2s ease-in-out infinite;
+}
+
+.nn-il-status-complete {
+  background: var(--nn-il-green);
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.6);
+}
+
+@keyframes nn-il-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Text Stream (Integrated, no box) */
+.nn-il-text-stream {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--nn-il-text-dim);
+}
+
+.nn-il-text-stream::-webkit-scrollbar {
+  width: 4px;
+}
+
+.nn-il-text-stream::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.nn-il-text-stream::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.3);
+  border-radius: 2px;
+}
+
+.nn-il-text-line {
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+
+.nn-il-text-phase {
+  color: var(--nn-il-cyan);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.nn-il-text-sub {
+  color: var(--nn-il-text-dim);
+  padding-left: 12px;
+}
+
+/* ============================================
+   CENTRAL ORB (Off-Center, 4+ Layers)
+   ============================================ */
+.nn-il-core {
+  position: absolute;
+  top: 50%;
+  left: 60%; /* Off-center to the right */
+  transform: translate(-50%, -50%);
+  width: 400px;
+  height: 400px;
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+/* Layer 1: Outer Segmented Ring (12 segments, slowest) */
+.nn-il-ring-outer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+}
+
+.nn-il-segment {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 2px;
+  height: 180px;
+  background: var(--nn-il-cyan);
+  transform-origin: bottom center;
+  opacity: 0.3;
+}
+
+.nn-il-segment:nth-child(1) { transform: translateX(-50%) rotate(0deg); }
+.nn-il-segment:nth-child(2) { transform: translateX(-50%) rotate(30deg); }
+.nn-il-segment:nth-child(3) { transform: translateX(-50%) rotate(60deg); }
+.nn-il-segment:nth-child(4) { transform: translateX(-50%) rotate(90deg); }
+.nn-il-segment:nth-child(5) { transform: translateX(-50%) rotate(120deg); }
+.nn-il-segment:nth-child(6) { transform: translateX(-50%) rotate(150deg); }
+.nn-il-segment:nth-child(7) { transform: translateX(-50%) rotate(180deg); }
+.nn-il-segment:nth-child(8) { transform: translateX(-50%) rotate(210deg); }
+.nn-il-segment:nth-child(9) { transform: translateX(-50%) rotate(240deg); }
+.nn-il-segment:nth-child(10) { transform: translateX(-50%) rotate(270deg); }
+.nn-il-segment:nth-child(11) { transform: translateX(-50%) rotate(300deg); }
+.nn-il-segment:nth-child(12) { transform: translateX(-50%) rotate(330deg); }
+
+.nn-il-ring-outer {
+  animation: nn-il-rotate-slow 60s linear infinite;
+}
+
+@keyframes nn-il-rotate-slow {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Layer 2: Middle Scan Ring (continuous with scanning sweep) */
+.nn-il-ring-middle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 280px;
+  height: 280px;
+  border: 1px solid var(--nn-il-cyan);
+  border-radius: 50%;
+  opacity: 0.4;
+  animation: nn-il-rotate-medium 30s linear infinite reverse;
+}
+
+.nn-il-scan-sweep {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 2px;
+  height: 140px;
+  background: linear-gradient(to bottom, transparent, var(--nn-il-cyan), transparent);
+  transform-origin: bottom center;
+  box-shadow: 0 0 10px var(--nn-il-cyan-glow);
+  animation: nn-il-sweep-rotate 2s linear infinite;
+}
+
+@keyframes nn-il-rotate-medium {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes nn-il-sweep-rotate {
+  from { transform: translateX(-50%) rotate(0deg); }
+  to { transform: translateX(-50%) rotate(360deg); }
+}
+
+/* Layer 3: Inner Data Ring (8 orbiting data points) */
+.nn-il-ring-inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  animation: nn-il-rotate-fast 15s linear infinite;
+}
+
+.nn-il-data-point {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  background: var(--nn-il-cyan);
+  border-radius: 50%;
+  transform-origin: 0 100px;
+  box-shadow: 0 0 6px var(--nn-il-cyan-glow);
+}
+
+.nn-il-data-point:nth-child(1) { transform: translateX(-50%) rotate(0deg) translateY(-100px); }
+.nn-il-data-point:nth-child(2) { transform: translateX(-50%) rotate(45deg) translateY(-100px); }
+.nn-il-data-point:nth-child(3) { transform: translateX(-50%) rotate(90deg) translateY(-100px); }
+.nn-il-data-point:nth-child(4) { transform: translateX(-50%) rotate(135deg) translateY(-100px); }
+.nn-il-data-point:nth-child(5) { transform: translateX(-50%) rotate(180deg) translateY(-100px); }
+.nn-il-data-point:nth-child(6) { transform: translateX(-50%) rotate(225deg) translateY(-100px); }
+.nn-il-data-point:nth-child(7) { transform: translateX(-50%) rotate(270deg) translateY(-100px); }
+.nn-il-data-point:nth-child(8) { transform: translateX(-50%) rotate(315deg) translateY(-100px); }
+
+.nn-il-data-point {
+  animation: nn-il-data-pulse 3s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 0.4s);
+}
+
+@keyframes nn-il-rotate-fast {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes nn-il-data-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+/* Layer 4: Core Center (pulsing dot) */
+.nn-il-core-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nn-il-core-dot {
+  width: 12px;
+  height: 12px;
+  background: var(--nn-il-red);
+  border-radius: 50%;
+  box-shadow: 0 0 20px var(--nn-il-red-glow);
+  animation: nn-il-core-pulse 2s ease-in-out infinite;
+  z-index: 2;
+}
+
+.nn-il-core-glow {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 107, 107, 0.3) 0%, transparent 70%);
+  animation: nn-il-glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes nn-il-core-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+@keyframes nn-il-glow-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.3); opacity: 0.8; }
+}
+
+/* Layer 5: Radial Scan Sweeps (3 independent sweeps) */
+.nn-il-sweep {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 200px;
+  background: linear-gradient(to bottom, transparent, var(--nn-il-cyan), transparent);
+  transform-origin: bottom center;
+  opacity: 0.3;
+  box-shadow: 0 0 8px var(--nn-il-cyan-glow);
+}
+
+.nn-il-sweep-1 {
+  animation: nn-il-sweep-1 8s linear infinite;
+}
+
+.nn-il-sweep-2 {
+  animation: nn-il-sweep-2 12s linear infinite;
+  opacity: 0.2;
+}
+
+.nn-il-sweep-3 {
+  animation: nn-il-sweep-3 16s linear infinite;
+  opacity: 0.15;
+}
+
+@keyframes nn-il-sweep-1 {
+  from { transform: translateX(-50%) rotate(0deg); }
+  to { transform: translateX(-50%) rotate(360deg); }
+}
+
+@keyframes nn-il-sweep-2 {
+  from { transform: translateX(-50%) rotate(120deg); }
+  to { transform: translateX(-50%) rotate(480deg); }
+}
+
+@keyframes nn-il-sweep-3 {
+  from { transform: translateX(-50%) rotate(240deg); }
+  to { transform: translateX(-50%) rotate(600deg); }
+}
+
+/* ============================================
+   BOTTOM HUD BAR
+   ============================================ */
+.nn-il-bottom-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 20px;
+  border-top: 1px solid rgba(34, 211, 238, 0.2);
+  background: rgba(1, 5, 16, 0.8);
+  backdrop-filter: blur(10px);
+  font-size: 11px;
+}
+
+.nn-il-bottom-item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.nn-il-hud-label {
+  color: var(--nn-il-text-muted);
+  font-weight: 600;
+}
+
+.nn-il-hud-value {
+  color: var(--nn-il-cyan);
+  font-family: 'Courier New', monospace;
+  min-width: 80px;
+}
+
+/* ============================================
+   REDUCED MOTION SUPPORT
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+  }
+  
+  .nn-il-ring-outer,
+  .nn-il-ring-middle,
+  .nn-il-ring-inner,
+  .nn-il-sweep,
+  .nn-il-scan-sweep {
+    animation: none !important;
+    transform: none !important;
+  }
+  
+  .nn-il-core-dot,
+  .nn-il-core-glow,
+  .nn-il-data-point {
+    animation: none !important;
+  }
+}
+
+/* ============================================
+   EXIT ANIMATIONS
+   ============================================ */
+#nn-intel-loader.nn-il-exiting .nn-il-ring-outer,
+#nn-intel-loader.nn-il-exiting .nn-il-ring-middle,
+#nn-intel-loader.nn-il-exiting .nn-il-ring-inner {
+  animation-duration: 0.4s;
+  animation-timing-function: ease-out;
+}
+
+#nn-intel-loader.nn-il-fade-out {
+  animation: nn-il-fade-out 0.4s ease-out forwards;
+}
+
+@keyframes nn-il-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}

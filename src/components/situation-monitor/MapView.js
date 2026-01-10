@@ -371,9 +371,6 @@ export class MapView {
       .attr('stroke-width', 1.5)
       .style('cursor', 'pointer')
       .style('opacity', 0)
-      .transition()
-      .duration(300)
-      .style('opacity', 0.8)
       .on('mouseover', (event) => {
         this.showTooltip(event, {
           title: `Earthquake M${magnitude.toFixed(1)}`,
@@ -391,14 +388,20 @@ export class MapView {
         window.d3.select(event.currentTarget)
           .attr('r', radius)
           .style('opacity', 0.8);
-      });
+      })
+      .transition()
+      .duration(300)
+      .style('opacity', 0.8);
 
     // Fade out after 15 seconds
     setTimeout(() => {
-      circle.transition()
-        .duration(2000)
-        .style('opacity', 0)
-        .remove();
+      // Check if circle still exists before transitioning
+      if (circle && circle.node() && circle.node().parentNode) {
+        circle.transition()
+          .duration(2000)
+          .style('opacity', 0)
+          .remove();
+      }
     }, 15000);
   }
 

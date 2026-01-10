@@ -10,12 +10,12 @@
     align-items: center;
     justify-content: center;
     padding: 1rem;
-    background: linear-gradient(180deg, #07152a 0%, #0d1f3a 100%);
+    background: linear-gradient(180deg, #020617 0%, #07152a 50%, #0d1f3a 100%);
     position: relative;
     overflow: hidden;
 }
 
-/* Subtle background pattern */
+/* Subtle background pattern with scanlines */
 .security-check-container::before {
     content: '';
     position: absolute;
@@ -24,27 +24,67 @@
     right: 0;
     bottom: 0;
     background-image: 
-        radial-gradient(circle at 20% 50%, rgba(74, 144, 226, 0.05) 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, rgba(138, 43, 226, 0.05) 0%, transparent 50%);
+        radial-gradient(circle at 20% 50%, rgba(34, 211, 238, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(74, 144, 226, 0.06) 0%, transparent 50%);
     pointer-events: none;
     z-index: 0;
+}
+
+.security-check-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(34, 211, 238, 0.02) 2px,
+        rgba(34, 211, 238, 0.02) 4px
+    );
+    pointer-events: none;
+    z-index: 0;
+    animation: securityScanline 8s linear infinite;
+}
+
+@keyframes securityScanline {
+    0% {
+        transform: translateY(0);
+    }
+    100% {
+        transform: translateY(100px);
+    }
 }
 
 .security-check-card {
     position: relative;
     z-index: 1;
-    background: rgba(15, 23, 42, 0.8);
+    background: linear-gradient(135deg, rgba(5, 15, 35, 0.95) 0%, rgba(7, 21, 42, 0.95) 100%);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(34, 211, 238, 0.2);
     border-radius: 1.5rem;
     padding: 3rem 2rem;
     max-width: 28rem;
     width: 100%;
     box-shadow: 
-        0 20px 60px rgba(0, 0, 0, 0.3),
-        0 0 40px rgba(74, 144, 226, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        0 20px 60px rgba(0, 0, 0, 0.4),
+        0 0 60px rgba(34, 211, 238, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(34, 211, 238, 0.1);
     transition: all 0.3s ease;
+}
+
+.security-check-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.5), transparent);
+    border-radius: 1.5rem 1.5rem 0 0;
 }
 
 /* Mobile adjustments */
@@ -80,6 +120,7 @@
 .security-check-title {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     letter-spacing: -0.02em;
+    text-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
 }
 
 /* Subtitle styling */
@@ -87,25 +128,63 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* Spinner animation - horizontal progress bar */
+/* Spinner animation - modern sleek progress bar */
 @keyframes securityProgress {
     0% {
         width: 0%;
+        left: 0;
     }
     50% {
         width: 85%;
+        left: 0;
     }
     100% {
         width: 0%;
+        left: 100%;
+    }
+}
+
+@keyframes securityShimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+@keyframes securityDotMove {
+    0% {
+        left: 0;
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    10% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        left: 85%;
+        opacity: 1;
+        transform: scale(1);
+    }
+    90% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        left: 100%;
+        opacity: 0;
+        transform: scale(0.8);
     }
 }
 
 .security-spinner {
-    /* Container for horizontal progress bar */
+    /* Container for modern progress bar */
 }
 
 .security-progress-fill {
-    animation: securityProgress 2s ease-in-out infinite;
+    animation: securityProgress 2s ease-in-out infinite, securityShimmer 2s linear infinite;
 }
 
 /* Loading message */
@@ -128,6 +207,11 @@
     .security-spinner .security-progress-fill {
         animation: none;
         width: 50%;
+        background-position: 0 0;
+    }
+    
+    .security-check-container::after {
+        animation: none;
     }
     
     .security-check-card {

@@ -1237,7 +1237,6 @@ async function storeEvent(event, logger) {
     throw error;
   }
 }
-}
 
 /**
  * Process a single earthquake feature
