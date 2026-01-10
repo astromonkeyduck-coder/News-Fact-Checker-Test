@@ -246,13 +246,22 @@ exports.handler = async (event, context) => {
         };
       } catch (triggerError) {
         console.error('[Inbound Email] Failed to trigger ingest-all:', triggerError);
+        console.error('[Inbound Email] Error details:', {
+          message: triggerError.message,
+          name: triggerError.name,
+          stack: triggerError.stack?.substring(0, 1000)
+        });
+        
+        // CRITICAL: Return 200 to Resend even on error to prevent retries
+        // Log the error but acknowledge receipt
         return {
-          statusCode: 500,
+          statusCode: 200,
           headers,
           body: JSON.stringify({
             success: false,
             error: 'Failed to trigger ingest-all',
             message: triggerError.message,
+            note: 'Webhook received but ingest-all failed - check ingest-all logs for details'
           }),
         };
       }
@@ -453,11 +462,15 @@ exports.handler = async (event, context) => {
       console.error('[Inbound Email] ❌ Failed to trigger ingest-all:', triggerError);
       console.error('[Inbound Email] Error details:', {
         message: triggerError.message,
-        stack: triggerError.stack
+        name: triggerError.name,
+        stack: triggerError.stack?.substring(0, 1000)
       });
       
+      // CRITICAL: Return 200 to Resend (acknowledge receipt) even if ingest-all fails
+      // This prevents Resend from retrying the webhook
+      // Log the error but don't fail the webhook
       return {
-        statusCode: 500,
+        statusCode: 200,
         headers,
         body: JSON.stringify({
           success: false,
@@ -465,19 +478,30 @@ exports.handler = async (event, context) => {
           message: triggerError.message,
           from: fromEmail,
           to: toEmail,
-          subject: subject
+          subject: subject,
+          note: 'Webhook received but ingest-all failed - check ingest-all logs for details'
         }),
       };
     }
 
   } catch (error) {
     console.error('[Inbound Email] Error processing webhook:', error);
+    console.error('[Inbound Email] Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack?.substring(0, 1000)
+    });
+    
+    // CRITICAL: Return 200 to Resend even on error to prevent retries
+    // Log the error but acknowledge receipt
     return {
-      statusCode: 500,
+      statusCode: 200,
       headers,
       body: JSON.stringify({
+        success: false,
         error: 'Internal server error',
         message: error.message,
+        note: 'Webhook received but processing failed - check logs for details'
       }),
     };
   }

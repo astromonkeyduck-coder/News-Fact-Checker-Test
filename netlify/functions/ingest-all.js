@@ -10,36 +10,95 @@
 let supabase;
 let createLogger;
 let engines;
+let initError = null; // Store initialization error for handler
 
 // Try to load dependencies - handle errors gracefully
 try {
   console.log('[ingest-all] Loading dependencies...');
-  supabase = require('./lib/supabaseClient');
-  console.log('[ingest-all] ✓ Supabase client loaded');
   
-  const loggerModule = require('./lib/logger');
-  createLogger = loggerModule.createLogger;
-  console.log('[ingest-all] ✓ Logger loaded');
+  // Load Supabase client
+  try {
+    supabase = require('./lib/supabaseClient');
+    console.log('[ingest-all] ✓ Supabase client loaded');
+  } catch (supabaseError) {
+    console.error('[ingest-all] ⚠️ Failed to load Supabase client:', supabaseError.message);
+    throw new Error(`Supabase client load failed: ${supabaseError.message}`);
+  }
+  
+  // Load logger
+  try {
+    const loggerModule = require('./lib/logger');
+    createLogger = loggerModule.createLogger;
+    if (typeof createLogger !== 'function') {
+      throw new Error('createLogger is not a function - check lib/logger.js exports');
+    }
+    console.log('[ingest-all] ✓ Logger loaded');
+  } catch (loggerError) {
+    console.error('[ingest-all] ⚠️ Failed to load logger:', loggerError.message);
+    throw new Error(`Logger load failed: ${loggerError.message}`);
+  }
   
   // Explicitly require all engines so zisi bundler can find them
   // This helps zisi understand the dependencies at build time
   // NOTE: Must use static requires (not dynamic) for zisi bundler to work
   console.log('[ingest-all] Loading engines...');
-  engines = {
-    usgs: require('./engines/usgs'),
-    nws: require('./engines/nws'),
-    faa: require('./engines/faa'),
-    uscg: require('./engines/uscg'),
-    volcano: require('./engines/volcano'),
-    embassy: require('./engines/embassy'),
-  };
-  console.log('[ingest-all] ✓ All engines loaded');
+  engines = {};
   
+  // Load engines with individual error handling
+  // CRITICAL: Use static requires (not template strings) for zisi bundler
+  // Wrap each require in a function to allow zisi to statically analyze them
+  const engineLoaders = [
+    { name: 'usgs', loader: () => require('./engines/usgs') },
+    { name: 'nws', loader: () => require('./engines/nws') },
+    { name: 'faa', loader: () => require('./engines/faa') },
+    { name: 'uscg', loader: () => require('./engines/uscg') },
+    { name: 'volcano', loader: () => require('./engines/volcano') },
+    { name: 'embassy', loader: () => require('./engines/embassy') },
+  ];
+  
+  let enginesLoaded = 0;
+  let enginesFailed = 0;
+  
+  for (const { name, loader } of engineLoaders) {
+    try {
+      console.log(`[ingest-all] Attempting to load engine: ${name}`);
+      const engineModule = loader();
+      if (engineModule) {
+        engines[name] = engineModule;
+        enginesLoaded++;
+        console.log(`[ingest-all] ✓ Engine ${name} loaded successfully`);
+      } else {
+        console.error(`[ingest-all] ⚠️ Engine ${name} returned null/undefined`);
+        enginesFailed++;
+      }
+    } catch (engineError) {
+      enginesFailed++;
+      console.error(`[ingest-all] ⚠️ Failed to load engine ${name}:`, {
+        message: engineError.message,
+        name: engineError.name,
+        code: engineError.code,
+        stack: engineError.stack?.substring(0, 500)
+      });
+      // Don't throw - continue loading other engines
+      // The handler will check if engines are available
+    }
+  }
+  
+  console.log(`[ingest-all] Engine loading summary: ${enginesLoaded} loaded, ${enginesFailed} failed`);
+  
+  if (Object.keys(engines).length === 0) {
+    throw new Error(`No engines loaded successfully (${enginesFailed} failed) - check engine files exist in netlify/functions/engines/ and dependencies are bundled`);
+  }
+  
+  console.log(`[ingest-all] ✓ ${Object.keys(engines).length} engines loaded:`, Object.keys(engines));
   console.log('[ingest-all] ✓ All dependencies loaded');
-} catch (initError) {
-  console.error('[ingest-all] Initialization error:', initError);
-  console.error('[ingest-all] Error stack:', initError.stack);
-  // Will be handled in handler
+} catch (error) {
+  initError = error;
+  console.error('[ingest-all] Initialization error:', error);
+  console.error('[ingest-all] Error name:', error.name);
+  console.error('[ingest-all] Error message:', error.message);
+  console.error('[ingest-all] Error stack:', error.stack);
+  // Will be handled in handler - don't throw here
 }
 
 const crypto = require('crypto');
@@ -168,36 +227,71 @@ exports.handler = async (event, context) => {
   console.log('[ingest-all] Handler invoked');
   console.log('[ingest-all] Remaining time:', getRemainingTime(), 'ms');
 
-  // Check if dependencies loaded successfully
+  // CRITICAL: Check if dependencies loaded successfully with detailed error info
   if (!supabase) {
-    const errorMsg = 'Supabase client not initialized. Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.';
-    console.error(`[ingest-all] ${errorMsg}`);
+    const errorMsg = 'Supabase client not initialized';
+    const errorDetails = {
+      success: false,
+      error: errorMsg,
+      hint: 'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Netlify environment variables',
+      hasSupabaseUrl: !!process.env.SUPABASE_URL,
+      hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      initError: initError ? {
+        message: initError.message,
+        name: initError.name
+      } : null
+    };
+    console.error(`[ingest-all] ${errorMsg}:`, errorDetails);
     return {
       statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        success: false,
-        error: errorMsg,
-        hint: 'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Netlify environment variables',
-      }),
+      body: JSON.stringify(errorDetails),
     };
   }
   
-  if (!engines || !createLogger) {
-    const errorMsg = 'Engines or logger not initialized. Check function dependencies.';
-    console.error(`[ingest-all] ${errorMsg}`);
-    console.error('[ingest-all] engines:', !!engines, 'createLogger:', !!createLogger);
+  if (!createLogger) {
+    const errorMsg = 'Logger not initialized';
+    const errorDetails = {
+      success: false,
+      error: errorMsg,
+      hint: 'Check lib/logger.js exists and exports createLogger',
+      initError: initError ? {
+        message: initError.message,
+        name: initError.name
+      } : null
+    };
+    console.error(`[ingest-all] ${errorMsg}:`, errorDetails);
     return {
       statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        success: false,
-        error: errorMsg,
-      }),
+      body: JSON.stringify(errorDetails),
+    };
+  }
+  
+  // CRITICAL: Check if engines loaded
+  if (!engines || Object.keys(engines).length === 0) {
+    const errorMsg = 'No engines loaded';
+    const errorDetails = {
+      success: false,
+      error: errorMsg,
+      hint: 'Check that engine files exist in netlify/functions/engines/',
+      initError: initError ? {
+        message: initError.message,
+        name: initError.name
+      } : null,
+      enginesDir: 'netlify/functions/engines/'
+    };
+    console.error(`[ingest-all] ${errorMsg}:`, errorDetails);
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(errorDetails),
     };
   }
   
@@ -304,17 +398,33 @@ exports.handler = async (event, context) => {
     console.error('[ingest-all] Error message:', error.message);
     console.error('[ingest-all] Error stack:', error.stack);
     
+    // CRITICAL: Return detailed error info for debugging
+    const errorResponse = {
+      success: false,
+      error: error.message || 'Internal server error',
+      error_type: error.name || 'Error',
+      timestamp: new Date().toISOString(),
+      hasSupabase: !!supabase,
+      hasLogger: !!createLogger,
+      enginesLoaded: engines ? Object.keys(engines).length : 0,
+      initError: initError ? {
+        message: initError.message,
+        name: initError.name
+      } : null
+    };
+    
+    // Only include stack in dev mode
+    if (process.env.NETLIFY_DEV || process.env.NODE_ENV === 'development') {
+      errorResponse.stack = error.stack;
+      errorResponse.initErrorStack = initError?.stack;
+    }
+    
     return {
       statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        success: false,
-        error: error.message || 'Internal server error',
-        error_type: error.name || 'Error',
-        stack: process.env.NETLIFY_DEV ? error.stack : undefined,
-      }),
+      body: JSON.stringify(errorResponse),
     };
   }
 };

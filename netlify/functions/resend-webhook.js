@@ -300,12 +300,22 @@ exports.handler = async (event, context) => {
     
   } catch (error) {
     console.error('[Resend Webhook] Error processing webhook:', error);
+    console.error('[Resend Webhook] Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack?.substring(0, 1000)
+    });
+    
+    // CRITICAL: Return 200 to Resend even on error to prevent retries
+    // Log the error but acknowledge receipt
     return {
-      statusCode: 500,
+      statusCode: 200,
       headers,
       body: JSON.stringify({
+        success: false,
         error: 'Internal server error',
         message: error.message,
+        note: 'Webhook received but processing failed - check logs for details'
       }),
     };
   }
