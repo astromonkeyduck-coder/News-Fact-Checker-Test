@@ -1955,4 +1955,3 @@ module.exports = {
   fetchEventDetail,
   extractUSGSImages,
 };
-}
