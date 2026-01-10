@@ -10,26 +10,62 @@ export class MonitorsPanel extends BasePanel {
     this.mapView = mapView;
     // Initialize monitors as empty array first, then load
     this.monitors = [];
-    this.monitors = this.loadMonitors();
-    // Ensure it's always an array
-    if (!Array.isArray(this.monitors)) {
-      this.monitors = [];
-    }
-    this.init();
+    // Don't call init() here - let SituationMonitorShell call it after DOM is ready
   }
 
   init() {
+    // CRITICAL: Load monitors before initializing, with multiple safety checks
+    try {
+      this.monitors = this.loadMonitors();
+    } catch (e) {
+      console.error('[MonitorsPanel] Error in loadMonitors during init:', e);
+      this.monitors = [];
+    }
+    
+    // CRITICAL: Ensure it's ALWAYS an array - multiple checks
+    if (!this.monitors || !Array.isArray(this.monitors)) {
+      console.warn('[MonitorsPanel] monitors is not an array after loadMonitors, forcing empty array');
+      this.monitors = [];
+    }
+    
+    // CRITICAL: Verify array methods exist
+    if (typeof this.monitors.map !== 'function') {
+      console.error('[MonitorsPanel] CRITICAL: monitors does not have .map() method, forcing empty array');
+      this.monitors = [];
+    }
+    
     super.init();
-    this.render();
-    this.setupForm();
+    
+    // CRITICAL: Only render if container exists and is valid DOM element
+    const container = document.getElementById(this.containerId);
+    if (container && container.nodeType === 1) {
+      try {
+        this.render();
+        this.setupForm();
+      } catch (e) {
+        console.error(`[MonitorsPanel] Error during render/setupForm:`, e);
+      }
+    } else {
+      console.warn(`[MonitorsPanel] Container #${this.containerId} not found or invalid, deferring render`);
+    }
   }
 
   loadMonitors() {
     try {
       const stored = localStorage.getItem('sitmon_monitors');
-      return stored ? JSON.parse(stored) : [];
+      if (!stored) {
+        return [];
+      }
+      const parsed = JSON.parse(stored);
+      // CRITICAL: Always return an array, never undefined or null
+      if (!Array.isArray(parsed)) {
+        console.warn('[MonitorsPanel] Stored monitors is not an array, returning empty array');
+        return [];
+      }
+      return parsed;
     } catch (e) {
-      console.warn('[MonitorsPanel] Failed to load monitors:', e);
+      console.error('[MonitorsPanel] Error loading monitors:', e);
+      // CRITICAL: Always return an array, even on error
       return [];
     }
   }
@@ -101,13 +137,32 @@ export class MonitorsPanel extends BasePanel {
   }
 
   updateMatches(headlines) {
+    // Defensive: ensure monitors is always an array
+    if (!this.monitors || !Array.isArray(this.monitors)) {
+      this.monitors = this.loadMonitors();
+      if (!Array.isArray(this.monitors)) {
+        this.monitors = [];
+      }
+    }
+    
+    // Defensive: ensure headlines is an array
+    if (!headlines || !Array.isArray(headlines)) {
+      headlines = [];
+    }
+    
     this.monitors.forEach(monitor => {
+      // Defensive: ensure monitor has keywords
+      if (!monitor || !monitor.keywords || !Array.isArray(monitor.keywords)) {
+        return;
+      }
+      
       let matches = 0;
       
       headlines.forEach(headline => {
+        if (!headline || !headline.title) return;
         const text = `${headline.title} ${headline.description || ''}`.toLowerCase();
         const hasMatch = monitor.keywords.some(keyword => 
-          text.includes(keyword.toLowerCase())
+          keyword && text.includes(String(keyword).toLowerCase())
         );
         if (hasMatch) matches++;
       });
@@ -120,30 +175,64 @@ export class MonitorsPanel extends BasePanel {
   }
 
   render() {
-    // Ensure monitors is always an array
+    // CRITICAL: Ensure monitors is ALWAYS an array before any array operations
     if (!this.monitors || !Array.isArray(this.monitors)) {
-      this.monitors = this.loadMonitors();
+      try {
+        this.monitors = this.loadMonitors();
+      } catch (e) {
+        console.warn('[MonitorsPanel] Error loading monitors:', e);
+        this.monitors = [];
+      }
+    }
+    // Double-check after loadMonitors - this should NEVER be undefined
+    if (!Array.isArray(this.monitors)) {
+      console.warn('[MonitorsPanel] loadMonitors() did not return an array, using empty array');
+      this.monitors = [];
     }
     
-    const monitorsList = this.monitors.map(monitor => `
+    // Final safety check - if somehow still not an array, force it
+    if (typeof this.monitors.map !== 'function') {
+      console.error('[MonitorsPanel] CRITICAL: monitors is not an array, forcing empty array');
+      this.monitors = [];
+    }
+    
+    const monitorsList = this.monitors.map(monitor => {
+      // Defensive: ensure monitor has required properties
+      if (!monitor || typeof monitor !== 'object') {
+        return '';
+      }
+      try {
+        // Defensive: ensure monitor has required properties for rendering
+        const monitorName = monitor.name ? escapeHtml(String(monitor.name)) : 'Unnamed Monitor';
+        const monitorId = monitor.id ? String(monitor.id) : '';
+        const keywords = Array.isArray(monitor.keywords) 
+          ? monitor.keywords.map(k => `<span class="sitmon-keyword">${escapeHtml(String(k))}</span>`).join(', ')
+          : 'No keywords';
+        const matchCount = typeof monitor.matchCount === 'number' ? monitor.matchCount : 0;
+        const locationHtml = (monitor.lat && monitor.lon && typeof monitor.lat === 'number' && typeof monitor.lon === 'number')
+          ? `<div class="sitmon-monitor-location">Location: ${monitor.lat.toFixed(2)}, ${monitor.lon.toFixed(2)}</div>`
+          : '';
+        
+        return `
       <div class="sitmon-monitor-item">
         <div class="sitmon-monitor-header">
-          <span class="sitmon-monitor-name">${escapeHtml(monitor.name)}</span>
-          <button class="sitmon-monitor-remove" data-id="${monitor.id}" aria-label="Remove monitor">×</button>
+          <span class="sitmon-monitor-name">${monitorName}</span>
+          <button class="sitmon-monitor-remove" data-id="${monitorId}" aria-label="Remove monitor">×</button>
         </div>
         <div class="sitmon-monitor-keywords">
-          Keywords: ${monitor.keywords.map(k => `<span class="sitmon-keyword">${escapeHtml(k)}</span>`).join(', ')}
+          Keywords: ${keywords}
         </div>
-        ${monitor.lat && monitor.lon ? `
-          <div class="sitmon-monitor-location">
-            Location: ${monitor.lat.toFixed(2)}, ${monitor.lon.toFixed(2)}
-          </div>
-        ` : ''}
+        ${locationHtml}
         <div class="sitmon-monitor-matches">
-          Matches: <strong>${monitor.matchCount}</strong>
+          Matches: <strong>${matchCount}</strong>
         </div>
       </div>
-    `).join('');
+    `;
+      } catch (e) {
+        console.warn('[MonitorsPanel] Error rendering monitor:', e, monitor);
+        return '';
+      }
+    }).filter(html => html && html.trim() !== '').join('');
 
     const content = `
       <div class="sitmon-monitor-form-container">

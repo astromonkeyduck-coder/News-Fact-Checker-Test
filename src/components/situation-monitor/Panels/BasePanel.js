@@ -29,7 +29,8 @@ export class BasePanel {
     
     const container = document.getElementById(this.containerId);
     if (!container) {
-      console.error(`[BasePanel] Container #${this.containerId} not found`);
+      console.warn(`[BasePanel] Container #${this.containerId} not found, DOM may not be ready yet`);
+      // Don't mark as initialized if container doesn't exist - allow retry
       return;
     }
     
@@ -118,12 +119,24 @@ export class BasePanel {
   }
 
   getContentElement() {
+    // CRITICAL: Always validate container exists and is a valid DOM element
+    if (!this.containerId || typeof this.containerId !== 'string') {
+      console.error(`[BasePanel] Invalid containerId:`, this.containerId);
+      return null;
+    }
+    
     // The container IS the content element (sitmon-card-body)
     const container = document.getElementById(this.containerId);
     if (!container) {
-      console.warn(`[BasePanel] Container #${this.containerId} not found`);
+      return null; // Don't log here - let render() handle logging
+    }
+    
+    // CRITICAL: Verify it's actually a DOM element (nodeType 1 = ELEMENT_NODE)
+    if (!container.nodeType || container.nodeType !== 1) {
+      console.error(`[BasePanel] Container #${this.containerId} is not a valid DOM element (nodeType: ${container.nodeType})`);
       return null;
     }
+    
     // Container is already the body element, return it directly
     return container;
   }
@@ -145,13 +158,49 @@ export class BasePanel {
   }
 
   render(content) {
+    // CRITICAL: Never try to set innerHTML on null - always check first
     const contentEl = this.getContentElement();
     if (!contentEl) {
-      console.error(`[BasePanel] Content element not found for container #${this.containerId}`);
+      console.warn(`[BasePanel] Content element not found for container #${this.containerId}, attempting initialization`);
+      // Try to initialize DOM if not already done
+      if (!this._domInitialized) {
+        try {
+          this.init();
+          const retryEl = this.getContentElement();
+          if (retryEl) {
+            if (typeof content === 'string') {
+              retryEl.innerHTML = content;
+            }
+            return;
+          }
+        } catch (e) {
+          console.error(`[BasePanel] Error during retry initialization:`, e);
+        }
+      }
+      // If still no element, log and return - DO NOT throw or set innerHTML on null
+      console.warn(`[BasePanel] Cannot render - container #${this.containerId} does not exist in DOM`);
       return;
     }
+    
+    // CRITICAL: Double-check element is still valid before setting innerHTML
+    if (!contentEl || !contentEl.nodeType || contentEl.nodeType !== 1) {
+      console.error(`[BasePanel] Content element is invalid for container #${this.containerId} (nodeType: ${contentEl?.nodeType})`);
+      return;
+    }
+    
+    // CRITICAL: Verify element is still in the DOM
+    if (!contentEl.parentNode && !contentEl.isConnected) {
+      console.warn(`[BasePanel] Content element for container #${this.containerId} is not in DOM`);
+      return;
+    }
+    
     if (typeof content === 'string') {
-      contentEl.innerHTML = content;
+      try {
+        contentEl.innerHTML = content;
+      } catch (e) {
+        console.error(`[BasePanel] Error setting innerHTML for container #${this.containerId}:`, e);
+        // Don't throw - just log and return
+      }
     } else {
       contentEl.innerHTML = '';
       contentEl.appendChild(content);
