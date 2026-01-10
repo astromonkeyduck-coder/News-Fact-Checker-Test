@@ -38,3 +38,23 @@ netlify/functions/email-name-mapping.js
 
 # Large media files
 NWvidddd.MOV
+
+# Personal files (resumes, videos, etc.)
+*.mp4
+*Resume*
+*resume*
+*College*
+*Essay*
+Supernova.*
+
+# Screen recordings and test videos
+ScreenRecording_*.m4a
+ScreenRecording_*.mov
+ScreenRecording_*.mp4
+copy_*.MOV
+copy_*.mov
+copy_*.mp4
+
+# Analytics CSV files with personal data
+emailaccount_analytics_*.csv
+*analytics_content*.csv

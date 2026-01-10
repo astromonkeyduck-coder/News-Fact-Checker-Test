@@ -1826,44 +1826,124 @@ export class NoteworthyChat extends HTMLElement {
         const endpoint = this.getAttribute('data-endpoint') || '/.netlify/functions/noteworthy-chat';
         const realtimeEndpoint = endpoint.replace('/noteworthy-chat', '/realtime-voice');
         
-        const sessionRes = await fetch(realtimeEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ voice: currentVoice }),
-        });
+        // Retry logic for fetching ephemeral token (handles intermittent failures)
+        const MAX_RETRIES = 3;
+        const RETRY_DELAYS = [500, 1000, 2000]; // Exponential backoff: 500ms, 1s, 2s
+        let sessionData: any;
+        let lastError: Error | null = null;
         
-        if (!sessionRes.ok) {
-          // Try to get error details from response
-          let errorMessage = 'Failed to create voice session';
+        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
           try {
-            const errorData = await sessionRes.json();
-            errorMessage = errorData.error || errorData.message || errorMessage;
-            if (errorData.details) {
-              console.error('[Voice Mode] Error details:', errorData.details);
+            if (attempt > 0) {
+              const delay = RETRY_DELAYS[attempt - 1];
+              console.log(`[Voice Mode] Retrying token fetch (attempt ${attempt + 1}/${MAX_RETRIES}) after ${delay}ms...`);
+              if (voiceStatusText) {
+                voiceStatusText.textContent = `Retrying connection (${attempt + 1}/${MAX_RETRIES})...`;
+              }
+              await new Promise(resolve => setTimeout(resolve, delay));
             }
-          } catch (e) {
-            // If response isn't JSON, use status text
-            errorMessage = `${errorMessage}: ${sessionRes.status} ${sessionRes.statusText}`;
+            
+            // Create AbortController for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+            
+            const sessionRes = await fetch(realtimeEndpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ voice: currentVoice }),
+              signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!sessionRes.ok) {
+              // Try to get error details from response
+              let errorMessage = 'Failed to create voice session';
+              try {
+                const errorData = await sessionRes.json();
+                errorMessage = errorData.error || errorData.message || errorMessage;
+                if (errorData.details) {
+                  console.error('[Voice Mode] Error details:', errorData.details);
+                }
+              } catch (e) {
+                // If response isn't JSON, use status text
+                errorMessage = `${errorMessage}: ${sessionRes.status} ${sessionRes.statusText}`;
+              }
+              
+              // Don't retry on 4xx errors (client errors)
+              if (sessionRes.status >= 400 && sessionRes.status < 500) {
+                throw new Error(errorMessage);
+              }
+              
+              // Retry on 5xx errors (server errors)
+              lastError = new Error(errorMessage);
+              console.warn(`[Voice Mode] Server error (will retry):`, {
+                attempt: attempt + 1,
+                status: sessionRes.status,
+                error: errorMessage
+              });
+              continue; // Retry
+            }
+            
+            sessionData = await sessionRes.json();
+            
+            // CRITICAL FIX: OpenAI Realtime API authenticates via WebSocket SUBPROTOCOLS, not URL parameters
+            // Browser WebSockets cannot send headers, so we use subprotocols array
+            // Format: ["realtime", "openai-insecure-api-key.{ephemeralToken}"]
+            
+            // Get token (support both ephemeralToken and ephemeral_token for compatibility)
+            const ephemeralToken = (sessionData as any).ephemeralToken || (sessionData as any).ephemeral_token;
+            
+            if (!ephemeralToken) {
+              console.error(`[Voice Mode] ❌ No ephemeral token in response (attempt ${attempt + 1}/${MAX_RETRIES})`);
+              lastError = new Error('No ephemeral token received from server');
+              continue; // Retry
+            }
+            
+            // Validate token format
+            if (!ephemeralToken.startsWith('ek_')) {
+              console.error('[Voice Mode] ❌ CRITICAL: Received token does not start with "ek_"!');
+              lastError = new Error('Invalid token format - token must start with "ek_"');
+              continue; // Retry
+            }
+            
+            // Success! Token received and validated
+            console.log(`[Voice Mode] ✅ Token received successfully on attempt ${attempt + 1}`);
+            break; // Exit retry loop
+            
+          } catch (error: any) {
+            // Handle abort (timeout)
+            if (error.name === 'AbortError') {
+              lastError = new Error('Request timeout - server took too long to respond');
+              console.warn(`[Voice Mode] Request timeout (attempt ${attempt + 1}/${MAX_RETRIES})`);
+              if (attempt < MAX_RETRIES - 1) {
+                continue; // Retry
+              }
+            } else if (error.message?.includes('Invalid token format') || error.message?.includes('No ephemeral token')) {
+              // These are retryable errors
+              lastError = error;
+              if (attempt < MAX_RETRIES - 1) {
+                continue; // Retry
+              }
+            } else {
+              // Non-retryable error (client errors, network errors, etc.)
+              throw error;
+            }
           }
-          throw new Error(errorMessage);
         }
         
-        const sessionData = await sessionRes.json();
-        
-        // CRITICAL FIX: OpenAI Realtime API authenticates via WebSocket SUBPROTOCOLS, not URL parameters
-        // Browser WebSockets cannot send headers, so we use subprotocols array
-        // Format: ["realtime", "openai-insecure-api-key.{ephemeralToken}"]
-        
-        // Get token (support both ephemeralToken and ephemeral_token for compatibility)
-        const ephemeralToken = (sessionData as any).ephemeralToken || (sessionData as any).ephemeral_token;
-        
+        // Check if we have valid session data after all retries
+        const ephemeralToken = sessionData ? ((sessionData as any).ephemeralToken || (sessionData as any).ephemeral_token) : null;
         if (!ephemeralToken) {
-          throw new Error('No ephemeral token received from server');
-        }
-        
-        // Validate token format
-        if (!ephemeralToken.startsWith('ek_')) {
-          throw new Error('Invalid token format - token must start with "ek_"');
+          console.error('[Voice Mode] ❌ CRITICAL: No ephemeral token received after all retries!');
+          console.error('[Voice Mode] Last error:', lastError);
+          console.error('[Voice Mode] Final session data:', sessionData);
+          
+          if (voiceStatusText) {
+            voiceStatusText.textContent = 'Connection failed - please try again';
+          }
+          
+          throw new Error(lastError?.message || 'No ephemeral token received from server after multiple attempts');
         }
         
         // Redact token in logs (show only first 8 chars)

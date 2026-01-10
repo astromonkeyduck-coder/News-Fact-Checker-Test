@@ -18,6 +18,11 @@ class NoteworthyChat extends HTMLElement {
     const endpoint = this.getAttribute('data-endpoint') || '/.netlify/functions/noteworthy-chat';
     const openOnLoad = this.getAttribute('data-open') === 'true';
     const initialAudioState = localStorage.getItem('noteworthy-ai-audio') === 'true';
+    
+    // Feature flag: Enable/disable ElevenLabs voices in UI
+    // Set to true to show ElevenLabs voice options, false to hide them
+    // Backend code remains functional regardless of this setting
+    const ENABLE_ELEVENLABS_VOICES = false;
     const audioIconHTML = initialAudioState
       ? '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: currentColor;"><path d="M4 8v8h4l5 5V3L8 8H4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.12"/><path d="M15 10c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M17 6c3.3 0 6 2.7 6 6s-2.7 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><path d="M17 3c5 0 9 4 9 9s-4 9-9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.7"/></svg>'
       : '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em; color: rgba(255,255,255,0.5);"><path d="M4 8v8h4l5 5V3L8 8H4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.08" opacity="0.6"/><path d="M15 10c0 1.1.9 2 2 2s2-.9 2-2-.9-2-2-2-2 .9-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 6c3.3 0 6 2.7 6 6s-2.7 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.25"/><path d="M17 3c5 0 9 4 9 9s-4 9-9 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.2"/><path d="M2 2l20 20" stroke="#ff4444" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="1"/><path d="M3 3l18 18" stroke="#ff6666" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/></svg>';
@@ -769,6 +774,26 @@ class NoteworthyChat extends HTMLElement {
           transition: opacity 0.2s;
           color: #4A90E2;
           flex-shrink: 0;
+        }
+        .voice-option.voice-elevenlabs {
+          position: relative;
+          border-left: 3px solid #FF6B35;
+        }
+        .voice-option.voice-elevenlabs.hidden {
+          display: none !important;
+        }
+        .voice-badge {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+          color: white;
+          font-size: 10px;
+          font-weight: 600;
+          padding: 2px 6px;
+          border-radius: 4px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
         
         .voice-label-integrated {
@@ -3135,6 +3160,95 @@ class NoteworthyChat extends HTMLElement {
                       <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                   </div>
+                  <!-- ElevenLabs Voices -->
+                  <div class="voice-option voice-elevenlabs" data-value="elevenlabs:21m00Tcm4TlvDq8ikWAM" data-voice-id="21m00Tcm4TlvDq8ikWAM">
+                    <span class="voice-name">Rachel (ElevenLabs)</span>
+                    <span class="voice-desc">Professional & Clear</span>
+                    <span class="voice-badge">Premium</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option voice-elevenlabs" data-value="elevenlabs:AZnzlk1XvdvUeBnXmlld" data-voice-id="AZnzlk1XvdvUeBnXmlld">
+                    <span class="voice-name">Domi (ElevenLabs)</span>
+                    <span class="voice-desc">Warm & Friendly</span>
+                    <span class="voice-badge">Premium</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option voice-elevenlabs" data-value="elevenlabs:EXAVITQu4vr4xnSDxMaL" data-voice-id="EXAVITQu4vr4xnSDxMaL">
+                    <span class="voice-name">Bella (ElevenLabs)</span>
+                    <span class="voice-desc">Energetic & Expressive</span>
+                    <span class="voice-badge">Premium</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option voice-elevenlabs" data-value="elevenlabs:ErXwobaYiN019PkySvjV" data-voice-id="ErXwobaYiN019PkySvjV">
+                    <span class="voice-name">Antoni (ElevenLabs)</span>
+                    <span class="voice-desc">Deep & Authoritative</span>
+                    <span class="voice-badge">Premium</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option voice-elevenlabs" data-value="elevenlabs:MF3mGyEYCl7XYWbV9V6O" data-voice-id="MF3mGyEYCl7XYWbV9V6O">
+                    <span class="voice-name">Elli (ElevenLabs)</span>
+                    <span class="voice-desc">Soft & Gentle</span>
+                    <span class="voice-badge">Premium</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option voice-elevenlabs" data-value="elevenlabs:TxGEqnHWrfWFTfGW9XjX" data-voice-id="TxGEqnHWrfWFTfGW9XjX">
+                    <span class="voice-name">Josh (ElevenLabs)</span>
+                    <span class="voice-desc">Casual & Friendly</span>
+                    <span class="voice-badge">Premium</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option voice-elevenlabs" data-value="elevenlabs:VR6AewLTigWG4xSOukaG" data-voice-id="VR6AewLTigWG4xSOukaG">
+                    <span class="voice-name">Arnold (ElevenLabs)</span>
+                    <span class="voice-desc">Strong & Confident</span>
+                    <span class="voice-badge">Premium</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option voice-elevenlabs" data-value="elevenlabs:pNInz6obpgDQGcFmaJgB" data-voice-id="pNInz6obpgDQGcFmaJgB">
+                    <span class="voice-name">Adam (ElevenLabs)</span>
+                    <span class="voice-desc">Professional Male</span>
+                    <span class="voice-badge">Premium</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option voice-elevenlabs" data-value="elevenlabs:yoZ06aMxZJJ28mfd3POQ" data-voice-id="yoZ06aMxZJJ28mfd3POQ">
+                    <span class="voice-name">Sam (ElevenLabs)</span>
+                    <span class="voice-desc">Clear & Articulate</span>
+                    <span class="voice-badge">Premium</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option voice-elevenlabs" data-value="elevenlabs:piTKgcLEGmPE4e6mEKli" data-voice-id="piTKgcLEGmPE4e6mEKli">
+                    <span class="voice-name">Nicole (ElevenLabs)</span>
+                    <span class="voice-desc">Professional Female</span>
+                    <span class="voice-badge">Premium</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="voice-option voice-elevenlabs" data-value="elevenlabs:z9fAnlkpzviPz146aGWa" data-voice-id="z9fAnlkpzviPz146aGWa">
+                    <span class="voice-name">Glinda (ElevenLabs)</span>
+                    <span class="voice-desc">Elegant & Sophisticated</span>
+                    <span class="voice-badge">Premium</span>
+                    <svg class="voice-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3428,6 +3542,21 @@ class NoteworthyChat extends HTMLElement {
       </div>
     `;
 
+    // Hide ElevenLabs voices if feature is disabled
+    // Set ENABLE_ELEVENLABS_VOICES to true at the top of connectedCallback to show them
+    if (!ENABLE_ELEVENLABS_VOICES) {
+      // Hide all ElevenLabs voice options in the UI
+      setTimeout(() => {
+        const voiceList = this.root.querySelector('#voiceList');
+        if (voiceList) {
+          const elevenLabsVoices = voiceList.querySelectorAll('.voice-option.voice-elevenlabs');
+          elevenLabsVoices.forEach(voice => {
+            voice.classList.add('hidden');
+          });
+        }
+      }, 0);
+    }
+
     // Capture root for use in nested functions
     const root = this.root;
     
@@ -3582,23 +3711,34 @@ class NoteworthyChat extends HTMLElement {
       // Supported voices for OpenAI Realtime API
       const SUPPORTED_VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse', 'marin', 'cedar'];
       
-      // Initialize: Remove any unsupported voices and ensure a valid voice is active
+      // Helper function to check if voice is ElevenLabs
+      const isElevenLabsVoice = (voiceValue) => {
+        return voiceValue && voiceValue.startsWith('elevenlabs:');
+      };
+      
+      // Helper function to extract OpenAI voice from ElevenLabs voice string
+      const getOpenAIVoice = (voiceValue) => {
+        if (isElevenLabsVoice(voiceValue)) {
+          // For ElevenLabs voices, use a default OpenAI voice for the session
+          // The actual audio will come from ElevenLabs
+          return 'alloy'; // Default fallback
+        }
+        return voiceValue;
+      };
+      
+      // Initialize: Ensure a valid voice is active
       const voiceOptions = voiceList.querySelectorAll('.voice-option');
       let hasValidActive = false;
       
       voiceOptions.forEach(option => {
         const voiceValue = option.dataset.value;
-        // Remove unsupported voices from DOM
-        if (!SUPPORTED_VOICES.includes(voiceValue)) {
-          console.warn(`[Voice Mode] Removing unsupported voice option: ${voiceValue}`);
-          option.remove();
-          return;
-        }
         
-        // Check if this is a valid active voice
-        if (option.classList.contains('active') && SUPPORTED_VOICES.includes(voiceValue)) {
-          hasValidActive = true;
-          currentVoice = voiceValue;
+        // Check if this is a valid active voice (OpenAI or ElevenLabs)
+        if (option.classList.contains('active')) {
+          if (SUPPORTED_VOICES.includes(voiceValue) || isElevenLabsVoice(voiceValue)) {
+            hasValidActive = true;
+            currentVoice = voiceValue;
+          }
         }
       });
       
@@ -3611,20 +3751,20 @@ class NoteworthyChat extends HTMLElement {
         }
       }
       
-      // Add click handlers to remaining valid voice options
-      const validVoiceOptions = voiceList.querySelectorAll('.voice-option');
-      validVoiceOptions.forEach(option => {
+      // Add click handlers to all voice options
+      const allVoiceOptions = voiceList.querySelectorAll('.voice-option');
+      allVoiceOptions.forEach(option => {
         option.addEventListener('click', () => {
           const selectedVoice = option.dataset.value;
           
-          // Validate voice is supported before using
-          if (!SUPPORTED_VOICES.includes(selectedVoice)) {
+          // Validate voice is supported (OpenAI or ElevenLabs)
+          if (!SUPPORTED_VOICES.includes(selectedVoice) && !isElevenLabsVoice(selectedVoice)) {
             console.warn(`[Voice Mode] Attempted to select unsupported voice: ${selectedVoice}`);
             return;
           }
           
           // Remove active from all
-          validVoiceOptions.forEach(opt => opt.classList.remove('active'));
+          allVoiceOptions.forEach(opt => opt.classList.remove('active'));
           // Add active to clicked
           option.classList.add('active');
           // Update current voice
@@ -5939,6 +6079,75 @@ class NoteworthyChat extends HTMLElement {
       }
     }
     
+    // ElevenLabs Text-to-Speech helper function
+    // Note: Uses endpoint captured at top of connectedCallback to avoid 'this' context issues
+    async function convertTextToElevenLabsAudio(text, voiceId) {
+      if (!text || !text.trim()) {
+        console.warn('[ElevenLabs] No text provided for conversion');
+        return null;
+      }
+      
+      try {
+        // Use endpoint captured at top of connectedCallback (line 18)
+        // This avoids 'this' context issues when function is called from nested scopes
+        const elevenlabsEndpoint = endpoint.replace('/noteworthy-chat', '/elevenlabs-tts');
+        
+        console.log(`[ElevenLabs] Converting ${text.length} characters to audio with voice ${voiceId}`);
+        
+        const response = await fetch(elevenlabsEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: text,
+            voice_id: voiceId
+          })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || `ElevenLabs API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Decode base64 audio
+        const audioData = atob(data.audio);
+        const audioBytes = new Uint8Array(audioData.length);
+        for (let i = 0; i < audioData.length; i++) {
+          audioBytes[i] = audioData.charCodeAt(i);
+        }
+        
+        // Create audio blob
+        const blob = new Blob([audioBytes], { type: 'audio/mpeg' });
+        const audioUrl = URL.createObjectURL(blob);
+        
+        console.log(`[ElevenLabs] ✅ Audio generated successfully (${data.character_count} characters)`);
+        
+        return {
+          audioUrl: audioUrl,
+          blob: blob,
+          characterCount: data.character_count,
+          voiceId: voiceId
+        };
+      } catch (error) {
+        console.error('[ElevenLabs] ❌ Error converting text to audio:', error);
+        return null;
+      }
+    }
+    
+    // Helper to check if current voice is ElevenLabs
+    function isElevenLabsVoiceSelected() {
+      return currentVoice && currentVoice.startsWith('elevenlabs:');
+    }
+    
+    // Helper to get ElevenLabs voice ID from current voice
+    function getElevenLabsVoiceId() {
+      if (!isElevenLabsVoiceSelected()) return null;
+      // Extract voice ID from format "elevenlabs:VOICE_ID"
+      const parts = currentVoice.split(':');
+      return parts.length > 1 ? parts[1] : null;
+    }
+    
     async function startVoiceMode() {
       if (voiceModeActive) {
         stopVoiceMode();
@@ -6377,83 +6586,161 @@ class NoteworthyChat extends HTMLElement {
         
         console.log('[Voice Mode] Requesting session from:', realtimeEndpoint, 'with voice:', currentVoice);
         
-        const sessionRes = await fetch(realtimeEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ voice: currentVoice }),
-        });
+        // Retry logic for fetching ephemeral token (handles intermittent failures)
+        const MAX_RETRIES = 3;
+        const RETRY_DELAYS = [500, 1000, 2000]; // Exponential backoff: 500ms, 1s, 2s
+        let sessionData;
+        let lastError;
         
-        if (!sessionRes.ok) {
-          let errorData;
+        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
           try {
+            if (attempt > 0) {
+              const delay = RETRY_DELAYS[attempt - 1];
+              console.log(`[Voice Mode] Retrying token fetch (attempt ${attempt + 1}/${MAX_RETRIES}) after ${delay}ms...`);
+              if (voiceStatusTextIntegrated) {
+                voiceStatusTextIntegrated.textContent = `Retrying connection (${attempt + 1}/${MAX_RETRIES})...`;
+              }
+              await new Promise(resolve => setTimeout(resolve, delay));
+            }
+            
+            // Create AbortController for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+            
+            const sessionRes = await fetch(realtimeEndpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ voice: currentVoice }),
+              signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!sessionRes.ok) {
+              let errorData;
+              try {
+                const text = await sessionRes.text();
+                errorData = text ? JSON.parse(text) : { error: 'Unknown error' };
+              } catch (e) {
+                errorData = { error: `HTTP ${sessionRes.status}: ${sessionRes.statusText}` };
+              }
+              
+              // Don't retry on 4xx errors (client errors)
+              if (sessionRes.status >= 400 && sessionRes.status < 500) {
+                console.error('[Voice Mode] Client error (not retrying):', {
+                  status: sessionRes.status,
+                  statusText: sessionRes.statusText,
+                  error: errorData,
+                  endpoint: realtimeEndpoint
+                });
+                
+                if (voiceStatusTextIntegrated) {
+                  voiceStatusTextIntegrated.textContent = `Error: ${errorData.error || errorData.message || 'Failed to connect'}`;
+                }
+                if (voiceStatusIntegrated) {
+                  voiceStatusIntegrated.classList.add('error');
+                  voiceStatusIntegrated.classList.remove('recording');
+                }
+                
+                throw new Error(errorData.error || errorData.message || `Failed to create voice session: ${sessionRes.status} ${sessionRes.statusText}`);
+              }
+              
+              // Retry on 5xx errors (server errors)
+              lastError = new Error(errorData.error || errorData.message || `Server error: ${sessionRes.status} ${sessionRes.statusText}`);
+              console.warn(`[Voice Mode] Server error (will retry):`, {
+                attempt: attempt + 1,
+                status: sessionRes.status,
+                error: errorData
+              });
+              continue; // Retry
+            }
+            
+            // Parse response
             const text = await sessionRes.text();
-            errorData = text ? JSON.parse(text) : { error: 'Unknown error' };
-          } catch (e) {
-            errorData = { error: `HTTP ${sessionRes.status}: ${sessionRes.statusText}` };
+            sessionData = text ? JSON.parse(text) : {};
+            
+            // Support both ephemeralToken and ephemeral_token for compatibility
+            const receivedToken = sessionData.ephemeralToken || sessionData.ephemeral_token;
+            const tokenPreview = receivedToken ? receivedToken.substring(0, 8) + '...' : 'none';
+            
+            console.log('[Voice Mode] Session response received:', {
+              attempt: attempt + 1,
+              hasSessionId: !!sessionData.session_id,
+              hasEphemeralToken: !!receivedToken,
+              allKeys: Object.keys(sessionData),
+              tokenLength: receivedToken ? receivedToken.length : 0,
+              tokenPreview: tokenPreview,
+              tokenStartsWithEk: receivedToken ? receivedToken.startsWith('ek_') : false
+            });
+            
+            // CRITICAL VALIDATION: Check token format immediately upon receipt
+            if (receivedToken && !receivedToken.startsWith('ek_')) {
+              console.error('[Voice Mode] ❌ CRITICAL: Received token does not start with "ek_"!');
+              console.error('[Voice Mode] Token from server (redacted):', tokenPreview);
+              console.error('[Voice Mode] This token format is INVALID and will cause authentication failure!');
+              console.error('[Voice Mode] Backend should return token starting with "ek_" from client_secret.value');
+              lastError = new Error('Invalid token format received from server');
+              continue; // Retry
+            }
+            
+            // Check if token exists
+            if (!receivedToken) {
+              console.error(`[Voice Mode] ❌ No ephemeral token in response (attempt ${attempt + 1}/${MAX_RETRIES})`);
+              console.error('[Voice Mode] Session data received:', {
+                hasSessionId: !!sessionData.session_id,
+                hasWebsocketUrl: !!sessionData.websocket_url,
+                hasEphemeralToken: !!sessionData.ephemeralToken || !!sessionData.ephemeral_token,
+                allKeys: Object.keys(sessionData)
+              });
+              lastError = new Error('No ephemeral token received from server');
+              continue; // Retry
+            }
+            
+            // Success! Token received and validated
+            console.log(`[Voice Mode] ✅ Token received successfully on attempt ${attempt + 1}`);
+            break; // Exit retry loop
+            
+          } catch (error) {
+            // Handle abort (timeout)
+            if (error.name === 'AbortError') {
+              lastError = new Error('Request timeout - server took too long to respond');
+              console.warn(`[Voice Mode] Request timeout (attempt ${attempt + 1}/${MAX_RETRIES})`);
+              if (attempt < MAX_RETRIES - 1) {
+                continue; // Retry
+              }
+            } else if (error.message.includes('Invalid token format') || error.message.includes('No ephemeral token')) {
+              // These are retryable errors
+              lastError = error;
+              if (attempt < MAX_RETRIES - 1) {
+                continue; // Retry
+              }
+            } else {
+              // Non-retryable error (client errors, network errors, etc.)
+              throw error;
+            }
           }
-          console.error('[Voice Mode] Session creation failed:', {
-            status: sessionRes.status,
-            statusText: sessionRes.statusText,
-            error: errorData,
-            endpoint: realtimeEndpoint
-          });
+        }
+        
+        // Check if we have valid session data after all retries
+        if (!sessionData || (!sessionData.ephemeralToken && !sessionData.ephemeral_token)) {
+          console.error('[Voice Mode] ❌ CRITICAL: No ephemeral token received after all retries!');
+          console.error('[Voice Mode] Last error:', lastError);
+          console.error('[Voice Mode] Final session data:', sessionData);
           
-          // Show user-friendly error message
           if (voiceStatusTextIntegrated) {
-            voiceStatusTextIntegrated.textContent = `Error: ${errorData.error || errorData.message || 'Failed to connect'}`;
+            voiceStatusTextIntegrated.textContent = 'Connection failed - please try again';
           }
           if (voiceStatusIntegrated) {
             voiceStatusIntegrated.classList.add('error');
             voiceStatusIntegrated.classList.remove('recording');
           }
           
-          throw new Error(errorData.error || errorData.message || `Failed to create voice session: ${sessionRes.status} ${sessionRes.statusText}`);
-        }
-        
-        let sessionData;
-        try {
-          const text = await sessionRes.text();
-          sessionData = text ? JSON.parse(text) : {};
-          // Support both ephemeralToken and ephemeral_token for compatibility
-          const receivedToken = sessionData.ephemeralToken || sessionData.ephemeral_token;
-          const tokenPreview = receivedToken ? receivedToken.substring(0, 8) + '...' : 'none';
-          
-          console.log('[Voice Mode] Session response received:', {
-            hasSessionId: !!sessionData.session_id,
-            hasEphemeralToken: !!receivedToken,
-            allKeys: Object.keys(sessionData),
-            tokenLength: receivedToken ? receivedToken.length : 0,
-            tokenPreview: tokenPreview,
-            tokenStartsWithEk: receivedToken ? receivedToken.startsWith('ek_') : false
-          });
-          
-          // CRITICAL VALIDATION: Check token format immediately upon receipt
-          if (receivedToken && !receivedToken.startsWith('ek_')) {
-            console.error('[Voice Mode] ❌ CRITICAL: Received token does not start with "ek_"!');
-            console.error('[Voice Mode] Token from server (redacted):', tokenPreview);
-            console.error('[Voice Mode] This token format is INVALID and will cause authentication failure!');
-            console.error('[Voice Mode] Backend should return token starting with "ek_" from client_secret.value');
-            throw new Error('Invalid token format received from server');
-          }
-        } catch (e) {
-          console.error('[Voice Mode] Failed to parse session response:', e);
-          throw new Error('Invalid response from server');
+          throw new Error(lastError?.message || 'No ephemeral token received from server after multiple attempts');
         }
         
         // CRITICAL FIX: OpenAI Realtime API authenticates via WebSocket SUBPROTOCOLS, not URL parameters
         // Browser WebSockets cannot send headers, so we use subprotocols array
         // Format: ["realtime", "openai-insecure-api-key.{ephemeralToken}"]
-        
-        if (!sessionData.ephemeralToken && !sessionData.ephemeral_token) {
-          console.error('[Voice Mode] ❌ CRITICAL: No ephemeral token received from server!');
-          console.error('[Voice Mode] Session data received:', {
-            hasSessionId: !!sessionData.session_id,
-            hasWebsocketUrl: !!sessionData.websocket_url,
-            hasEphemeralToken: !!sessionData.ephemeralToken || !!sessionData.ephemeral_token,
-            allKeys: Object.keys(sessionData)
-          });
-          throw new Error('No ephemeral token received - cannot authenticate WebSocket connection');
-        }
         
         // Get token (support both ephemeralToken and ephemeral_token for compatibility)
         // Store in module scope so error handlers can access it
@@ -8728,6 +9015,12 @@ class NoteworthyChat extends HTMLElement {
               break;
             }
             
+            // Skip OpenAI audio if ElevenLabs voice is selected (we'll use ElevenLabs audio instead)
+            if (isElevenLabsVoiceSelected()) {
+              console.log('[ElevenLabs] ⏭️ Skipping OpenAI audio delta - using ElevenLabs voice instead');
+              break;
+            }
+            
             if (message.delta) {
               console.log('[Voice Mode] 🔊 Received audio delta, length:', message.delta?.length || 0);
               
@@ -8864,6 +9157,44 @@ class NoteworthyChat extends HTMLElement {
               console.log('[Voice Mode] 📝 Text response complete, showing in sidebar');
               showInVoiceSidebar('essay', { text: fullText });
             }
+            
+            // If ElevenLabs voice is selected, convert text to ElevenLabs audio
+            if (voiceModeActive && isElevenLabsVoiceSelected() && fullText && fullText.trim()) {
+              const elevenLabsVoiceId = getElevenLabsVoiceId();
+              if (elevenLabsVoiceId) {
+                console.log('[ElevenLabs] Converting text response to ElevenLabs audio...');
+                
+                // Cancel any OpenAI audio playback
+                if (voiceAudioEngine) {
+                  voiceAudioEngine.hardStop('switching to ElevenLabs audio');
+                }
+                
+                // Convert and play ElevenLabs audio
+                convertTextToElevenLabsAudio(fullText, elevenLabsVoiceId).then(audioData => {
+                  if (audioData && audioData.audioUrl) {
+                    // Play the audio
+                    const audio = new Audio(audioData.audioUrl);
+                    audio.play().catch(error => {
+                      console.error('[ElevenLabs] Error playing audio:', error);
+                    });
+                    
+                    // Clean up URL when done
+                    audio.onended = () => {
+                      URL.revokeObjectURL(audioData.audioUrl);
+                    };
+                    
+                    // Update UI state
+                    if (voiceStatusTextIntegrated) voiceStatusTextIntegrated.textContent = 'Speaking...';
+                    if (voiceStatusText) voiceStatusText.textContent = 'Speaking...';
+                    
+                    console.log('[ElevenLabs] ✅ Audio playing');
+                  }
+                }).catch(error => {
+                  console.error('[ElevenLabs] Failed to convert text to audio:', error);
+                });
+              }
+            }
+            
             // Clear buffer
             if (websocket && websocket._textBuffer) websocket._textBuffer = '';
             break;
