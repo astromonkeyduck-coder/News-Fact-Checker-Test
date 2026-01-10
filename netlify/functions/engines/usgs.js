@@ -1947,6 +1947,7 @@ async function run(logger) {
   }
 }
 
+}
 // PHASE 1: Export new functions
 module.exports = {
   fetchUsgsDetailGeoJson,
@@ -1954,3 +1955,4 @@ module.exports = {
   run,
   fetchEventDetail,
   extractUSGSImages,
+};
