@@ -10123,15 +10123,40 @@ function initNewsletterSubscription() {
             // Call AI API for text content (only if we don't already have it)
             // Show cached text immediately if available, then update async
             let textResponse;
+            let cachedAiResponseHtml = null; // Save cached content before clearing
             if (hasExistingAIResponse) {
-                // Already have text, use it
-                console.log('Using existing AI response, skipping text generation');
-                textResponse = Promise.resolve(aiResponse.innerHTML);
+                // Already have text, save it before any potential clearing
+                // hasExistingAIResponse is only true if aiResponse exists and has content (see line 9893)
+                // But we check defensively anyway
+                if (aiResponse && aiResponse.innerHTML && aiResponse.innerHTML.trim() !== '') {
+                    cachedAiResponseHtml = aiResponse.innerHTML;
+                    console.log('Using existing AI response, skipping text generation');
+                    textResponse = Promise.resolve(cachedAiResponseHtml);
+                } else {
+                    // Edge case: hasExistingAIResponse was true but aiResponse is now null or empty
+                    // This shouldn't happen, but handle it gracefully
+                    console.warn('[Spotlight] hasExistingAIResponse is true but aiResponse is null/empty, treating as new generation');
+                    cachedAiResponseHtml = null;
+                    // Don't reset hasExistingAIResponse here - we'll handle it in validation
+                    // Show loading state and generate new content
+                    if (aiThinking) {
+                        aiThinking.style.display = 'block';
+                        const thinkingText = aiThinking.querySelector('p');
+                        if (thinkingText && currentCountry) {
+                            thinkingText.textContent = `Generating comprehensive spotlight for ${currentCountry.name}...`;
+                        }
+                    }
+                    if (aiResponse) {
+                        aiResponse.innerHTML = '';
+                    }
+                    // Set textResponse to null - we'll generate new content below
+                    textResponse = null;
+                }
             } else {
                 // Show loading state using aiThinking (already shown above with updated text)
                 // Keep aiThinking visible, don't set anything in aiResponse
                 if (aiResponse) {
-                    aiResponse.innerHTML = '';
+                aiResponse.innerHTML = '';
                 }
                 
                 // Comprehensive prompt focusing on culture, geopolitics, and profound insights
@@ -10252,9 +10277,28 @@ Write in a sophisticated, analytical style. Be comprehensive (600-800 words), nu
             
             // FIRST: Generate text content and wait for it to succeed before generating images
             // This prevents images from generating if text fails
+            // Only proceed if textResponse is defined (will be null in edge case where aiResponse was null)
+            if (!textResponse) {
+                // Edge case: hasExistingAIResponse was true but aiResponse was null when we tried to save it
+                // This means we can't use cached content - treat as generation failure
+                console.error('[Spotlight] textResponse is null - cannot proceed with cached content');
+                spotlightGenerationSuccessful = false;
+                stopCountryMusic();
+                isGenerating = false;
+                updateButtonStates();
+                return; // Exit early
+            }
+            
             textResponse.then(textResult => {
                 // Check if text generation succeeded
-                const hasValidText = textResult && textResult.trim() !== '' && !textResult.includes('⚠️');
+                // IMPORTANT: Only validate warning symbols for fresh API responses, not restored cached content
+                // We check if textResult matches the cached content to determine if it's cached or new
+                // Use saved cachedAiResponseHtml instead of aiResponse.innerHTML (which may have been cleared)
+                // Also validate that cachedAiResponseHtml is not null (edge case: aiResponse was null when saving)
+                const isCachedContent = hasExistingAIResponse && cachedAiResponseHtml && 
+                    cachedAiResponseHtml.trim() !== '' && textResult === cachedAiResponseHtml;
+                const hasValidText = textResult && textResult.trim() !== '' && 
+                    (isCachedContent || !textResult.includes('⚠️'));
                 
                 if (!hasValidText) {
                     // Text generation failed - don't generate images, don't play music
@@ -10322,6 +10366,7 @@ Write in a sophisticated, analytical style. Be comprehensive (600-800 words), nu
             if (!generationSuccessful) {
                 // Generation failed - don't play music, don't save data, show error
                 console.error('[Spotlight] Generation failed - no valid content generated');
+                spotlightGenerationSuccessful = false; // Reset flag so music doesn't play
                 stopCountryMusic(); // Ensure music is stopped
                 isGenerating = false;
                 updateButtonStates();

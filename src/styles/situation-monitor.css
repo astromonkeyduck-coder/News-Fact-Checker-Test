@@ -37,6 +37,29 @@
   height: 18px;
 }
 
+.music-skip-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.9);
+  transition: color 0.2s ease;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.music-skip-btn:hover {
+  color: #22d3ee;
+}
+
+.music-skip-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
 .volume-control {
   display: flex;
   align-items: center;
@@ -426,6 +449,32 @@ body.situation-monitor-page .main-nav ol li::before {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Event Markers and Clusters */
+.event-marker,
+.event-cluster {
+  transition: opacity 0.2s ease;
+}
+
+.event-marker circle,
+.event-cluster circle {
+  transition: r 0.2s ease, opacity 0.2s ease;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.1);
+  }
+}
+
+.event-marker[data-severity="5"] circle:first-child {
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .sitmon-panel-error {

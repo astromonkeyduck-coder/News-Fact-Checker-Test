@@ -44,6 +44,30 @@ function getCached(key, type) {
 }
 
 /**
+ * Get cached data even if expired (for fallback when fetch fails)
+ */
+function getExpiredCache(key) {
+  // Check memory cache first (even if expired)
+  const memEntry = memoryCache.get(key);
+  if (memEntry) {
+    return memEntry.data;
+  }
+
+  // Check localStorage (even if expired)
+  try {
+    const stored = localStorage.getItem(STORAGE_PREFIX + key);
+    if (stored) {
+      const entry = JSON.parse(stored);
+      return entry.data;
+    }
+  } catch (e) {
+    console.warn('[Fetcher] localStorage read error:', e);
+  }
+
+  return null;
+}
+
+/**
  * Set cached data (memory and localStorage)
  */
 function setCached(key, data, type) {
@@ -143,8 +167,8 @@ export async function fetchRSSFeed(feedUrl, feedName) {
   } catch (error) {
     console.warn(`[Fetcher] RSS fetch failed for ${feedName}:`, error);
     
-    // Return cached data even if expired
-    const expired = getCached(cacheKey, 'news');
+    // Return cached data even if expired (for offline/failure resilience)
+    const expired = getExpiredCache(cacheKey);
     if (expired) {
       console.log(`[Fetcher] Using expired cache for ${feedName}`);
       return expired;
@@ -172,8 +196,8 @@ export async function fetchJSON(url, cacheKey, type = 'news', options = {}) {
   } catch (error) {
     console.warn(`[Fetcher] JSON fetch failed for ${cacheKey}:`, error);
     
-    // Return expired cache if available
-    const expired = getCached(cacheKey, type);
+    // Return expired cache if available (for offline/failure resilience)
+    const expired = getExpiredCache(cacheKey);
     if (expired) {
       console.log(`[Fetcher] Using expired cache for ${cacheKey}`);
       return expired;

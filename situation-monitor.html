@@ -55,6 +55,12 @@
                             <rect x="14" y="4" width="4" height="16" fill="currentColor" fill-opacity="0.8"/>
                         </svg>
                     </button>
+                    <button class="music-skip-btn" id="sitmonSkipBtn" aria-label="Skip to Next Song" title="Skip to Next Song">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px;">
+                            <path d="M5 4v16l11-8L5 4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.1"/>
+                            <path d="M19 4v16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
                     <div class="volume-control">
                         <button class="volume-icon-btn" id="sitmonVolumeBtn" aria-label="Toggle Mute" title="Toggle Mute">
                             <svg class="volume-high-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -106,10 +112,30 @@
     </main>
 
     <!-- Background Music for Situation Monitor -->
-    <audio id="situationMonitorMusic" preload="auto" loop>
+    <audio id="situationMonitorMusic" preload="auto">
         <source src="Arabian.wav" type="audio/wav">
         Your browser does not support the audio element.
     </audio>
+    <audio id="situationMonitorMusicSecond" preload="auto">
+        <source src="datacenter.wav" type="audio/wav">
+        Your browser does not support the audio element.
+    </audio>
+    <audio id="situationMonitorMusicThird" preload="auto" loop>
+        <source src="CoolIntelsong.wav" type="audio/wav">
+        Your browser does not support the audio element.
+    </audio>
+    
+    <script>
+        // Pre-check audio file availability on page load
+        (function() {
+            const audioSecond = document.getElementById('situationMonitorMusicSecond');
+            if (audioSecond) {
+                audioSecond.addEventListener('error', (e) => {
+                    console.warn('⚠️ datacenter.wav failed to load. The audio queue will automatically skip to CoolIntelsong.wav when Arabian.wav finishes.');
+                }, { once: true });
+            }
+        })();
+    </script>
 
     <!-- Cookie Consent Banner -->
     <script src="src/components/cookie-banner.js"></script>
@@ -191,16 +217,97 @@
 
     <!-- Audio Control Script -->
     <script>
-        // Play Arabian.wav automatically when page loads
+        // Play Arabian.wav automatically when page loads, then datacenter.wav, then CoolIntelsong.wav
         (function() {
             const audio = document.getElementById('situationMonitorMusic');
-            if (!audio) return;
+            const audioSecond = document.getElementById('situationMonitorMusicSecond');
+            const audioThird = document.getElementById('situationMonitorMusicThird');
+            if (!audio || !audioSecond || !audioThird) return;
 
             // Set volume (adjust as needed, 0.0 to 1.0)
             audio.volume = 0.5;
+            audioSecond.volume = 0.5;
+            audioThird.volume = 0.5;
+
+            // Track which audio is currently active
+            let currentAudio = audio;
+
+            // Helper function to play next track with error handling
+            function playNextTrack(currentTrack, nextTrack, trackName) {
+                return new Promise((resolve) => {
+                    // Check if next track can load
+                    const checkLoad = () => {
+                        if (nextTrack.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+                            currentAudio = nextTrack;
+                            nextTrack.currentTime = 0;
+                            nextTrack.play()
+                                .then(() => {
+                                    console.log(`🎵 ${trackName} started playing`);
+                                    resolve(true);
+                                })
+                                .catch(err => {
+                                    console.warn(`Failed to play ${trackName}, skipping to next:`, err);
+                                    // Try to skip to next track in chain
+                                    if (nextTrack === audioSecond) {
+                                        // datacenter.wav failed, skip to CoolIntelsong.wav
+                                        playNextTrack(audioSecond, audioThird, 'CoolIntelsong.wav').then(resolve);
+                                    } else {
+                                        // CoolIntelsong.wav failed or we're at the end
+                                        resolve(false);
+                                    }
+                                });
+                        } else {
+                            // Wait for track to load, but timeout after 3 seconds
+                            const timeout = setTimeout(() => {
+                                console.warn(`${trackName} failed to load, skipping to next`);
+                                if (nextTrack === audioSecond) {
+                                    playNextTrack(audioSecond, audioThird, 'CoolIntelsong.wav').then(resolve);
+                                } else {
+                                    resolve(false);
+                                }
+                            }, 3000);
+                            
+                            nextTrack.addEventListener('canplay', () => {
+                                clearTimeout(timeout);
+                                checkLoad();
+                            }, { once: true });
+                            
+                            nextTrack.addEventListener('error', () => {
+                                clearTimeout(timeout);
+                                console.warn(`${trackName} has load error, skipping to next`);
+                                if (nextTrack === audioSecond) {
+                                    playNextTrack(audioSecond, audioThird, 'CoolIntelsong.wav').then(resolve);
+                                } else {
+                                    resolve(false);
+                                }
+                            }, { once: true });
+                            
+                            // Trigger load if not already loading
+                            if (nextTrack.readyState === 0) {
+                                nextTrack.load();
+                            }
+                        }
+                    };
+                    
+                    checkLoad();
+                });
+            }
+
+            // When Arabian.wav ends, start datacenter.wav
+            audio.addEventListener('ended', () => {
+                console.log('🎵 Arabian.wav finished, starting datacenter.wav');
+                playNextTrack(audio, audioSecond, 'datacenter.wav');
+            });
+
+            // When datacenter.wav ends, start CoolIntelsong.wav
+            audioSecond.addEventListener('ended', () => {
+                console.log('🎵 datacenter.wav finished, starting CoolIntelsong.wav');
+                playNextTrack(audioSecond, audioThird, 'CoolIntelsong.wav');
+            });
 
             // Try to play when page loads
             function playMusic() {
+                currentAudio = audio;
                 const playPromise = audio.play();
                 
                 if (playPromise !== undefined) {
@@ -245,15 +352,27 @@
                     button.style.borderColor = 'rgba(34, 211, 238, 0.4)';
                 };
                 button.onclick = () => {
+                    currentAudio = audio;
+                    audio.currentTime = 0;
                     audio.play().then(() => {
                         button.innerHTML = '⏸️ Pause Music';
                         button.onclick = () => {
-                            if (audio.paused) {
-                                audio.play();
-                                button.innerHTML = '⏸️ Pause Music';
-                            } else {
+                            const isPlaying = !audio.paused || !audioSecond.paused || !audioThird.paused;
+                            if (isPlaying) {
                                 audio.pause();
+                                audioSecond.pause();
+                                audioThird.pause();
                                 button.innerHTML = '▶️ Play Music';
+                            } else {
+                                const current = getCurrentAudio();
+                                if (current === audio) {
+                                    audio.play();
+                                } else if (current === audioSecond) {
+                                    audioSecond.play();
+                                } else {
+                                    audioThird.play();
+                                }
+                                button.innerHTML = '⏸️ Pause Music';
                             }
                         };
                     }).catch(err => {
@@ -274,6 +393,7 @@
 
             // Music Controls
             const musicBtn = document.getElementById('sitmonMusicBtn');
+            const skipBtn = document.getElementById('sitmonSkipBtn');
             const volumeSlider = document.getElementById('sitmonVolumeSlider');
             const volumeBtn = document.getElementById('sitmonVolumeBtn');
             const playIcon = musicBtn?.querySelector('.play-icon');
@@ -284,22 +404,43 @@
             // Load saved volume from localStorage
             const savedVolume = localStorage.getItem('sitmonMusicVolume');
             if (savedVolume !== null) {
-                audio.volume = parseFloat(savedVolume);
-                if (volumeSlider) volumeSlider.value = (audio.volume * 100).toString();
+                const volume = parseFloat(savedVolume);
+                audio.volume = volume;
+                audioSecond.volume = volume;
+                audioThird.volume = volume;
+                if (volumeSlider) volumeSlider.value = (volume * 100).toString();
+            }
+
+            // Helper function to get the currently playing audio
+            function getCurrentAudio() {
+                if (!audio.paused) return audio;
+                if (!audioSecond.paused) return audioSecond;
+                if (!audioThird.paused) return audioThird;
+                // If all are paused, return the one that should be playing
+                return currentAudio;
+            }
+
+            // Sync volume between all audio elements
+            function syncVolume() {
+                const vol = getCurrentAudio().volume;
+                audio.volume = vol;
+                audioSecond.volume = vol;
+                audioThird.volume = vol;
             }
 
             // Update play/pause button
             function updatePlayPauseButton() {
                 if (!musicBtn || !playIcon || !pauseIcon) return;
                 
-                if (audio.paused) {
-                    playIcon.style.display = 'block';
-                    pauseIcon.style.display = 'none';
-                    musicBtn.title = 'Play Background Music';
-                } else {
+                const isPlaying = !audio.paused || !audioSecond.paused || !audioThird.paused;
+                if (isPlaying) {
                     playIcon.style.display = 'none';
                     pauseIcon.style.display = 'block';
                     musicBtn.title = 'Pause Background Music';
+                } else {
+                    playIcon.style.display = 'block';
+                    pauseIcon.style.display = 'none';
+                    musicBtn.title = 'Play Background Music';
                 }
             }
 
@@ -307,7 +448,8 @@
             function updateVolumeIcon() {
                 if (!volumeBtn || !volumeHighIcon || !volumeMuteIcon) return;
                 
-                if (audio.volume === 0 || audio.muted) {
+                const current = getCurrentAudio();
+                if (current.volume === 0 || current.muted) {
                     volumeHighIcon.style.display = 'none';
                     volumeMuteIcon.style.display = 'block';
                     volumeBtn.title = 'Unmute';
@@ -321,21 +463,114 @@
             // Play/Pause button
             if (musicBtn) {
                 musicBtn.addEventListener('click', () => {
-                    if (audio.paused) {
-                        audio.play().then(() => {
-                            updatePlayPauseButton();
-                        }).catch(err => {
-                            console.error('Failed to play audio:', err);
-                        });
-                    } else {
+                    const isPlaying = !audio.paused || !audioSecond.paused || !audioThird.paused;
+                    if (isPlaying) {
+                        // Pause all
                         audio.pause();
+                        audioSecond.pause();
+                        audioThird.pause();
                         updatePlayPauseButton();
+                    } else {
+                        // Resume from where we left off, or start from beginning
+                        const current = getCurrentAudio();
+                        if (current === audio && audio.currentTime > 0 && audio.currentTime < audio.duration) {
+                            // Resume Arabian.wav
+                            audio.play().then(() => {
+                                updatePlayPauseButton();
+                            }).catch(err => {
+                                console.error('Failed to play audio:', err);
+                            });
+                        } else if (current === audioSecond && audioSecond.currentTime > 0 && audioSecond.currentTime < audioSecond.duration) {
+                            // Resume datacenter.wav
+                            audioSecond.play().then(() => {
+                                updatePlayPauseButton();
+                            }).catch(err => {
+                                console.error('Failed to play audio:', err);
+                            });
+                        } else if (current === audioThird && audioThird.currentTime > 0) {
+                            // Resume CoolIntelsong.wav
+                            audioThird.play().then(() => {
+                                updatePlayPauseButton();
+                            }).catch(err => {
+                                console.error('Failed to play audio:', err);
+                            });
+                        } else {
+                            // Start from beginning (Arabian.wav)
+                            currentAudio = audio;
+                            audio.currentTime = 0;
+                            audio.play().then(() => {
+                                updatePlayPauseButton();
+                            }).catch(err => {
+                                console.error('Failed to play audio:', err);
+                            });
+                        }
                     }
                 });
 
                 audio.addEventListener('play', updatePlayPauseButton);
                 audio.addEventListener('pause', updatePlayPauseButton);
+                audioSecond.addEventListener('play', updatePlayPauseButton);
+                audioSecond.addEventListener('pause', updatePlayPauseButton);
+                audioThird.addEventListener('play', updatePlayPauseButton);
+                audioThird.addEventListener('pause', updatePlayPauseButton);
                 updatePlayPauseButton();
+            }
+
+            // Skip to next song
+            function skipToNext() {
+                const current = getCurrentAudio();
+                const wasPlaying = !current.paused;
+                
+                // Stop all tracks
+                audio.pause();
+                audioSecond.pause();
+                audioThird.pause();
+                
+                // Determine next track
+                if (current === audio) {
+                    // Currently on Arabian.wav, skip to datacenter.wav
+                    console.log('🎵 Skipping to datacenter.wav');
+                    if (wasPlaying) {
+                        playNextTrack(audio, audioSecond, 'datacenter.wav').then(success => {
+                            if (!success) {
+                                // datacenter.wav failed, try CoolIntelsong.wav
+                                console.log('🎵 datacenter.wav unavailable, skipping to CoolIntelsong.wav');
+                                playNextTrack(audioSecond, audioThird, 'CoolIntelsong.wav');
+                            }
+                            updatePlayPauseButton();
+                        });
+                    } else {
+                        currentAudio = audioSecond;
+                        updatePlayPauseButton();
+                    }
+                } else if (current === audioSecond) {
+                    // Currently on datacenter.wav, skip to CoolIntelsong.wav
+                    console.log('🎵 Skipping to CoolIntelsong.wav');
+                    if (wasPlaying) {
+                        playNextTrack(audioSecond, audioThird, 'CoolIntelsong.wav').then(() => {
+                            updatePlayPauseButton();
+                        });
+                    } else {
+                        currentAudio = audioThird;
+                        updatePlayPauseButton();
+                    }
+                } else {
+                    // Currently on CoolIntelsong.wav, loop back to Arabian.wav
+                    console.log('🎵 Skipping to Arabian.wav (start of queue)');
+                    currentAudio = audio;
+                    audio.currentTime = 0;
+                    if (wasPlaying) {
+                        audio.play().catch(err => {
+                            console.error('Failed to play Arabian.wav:', err);
+                        });
+                    }
+                    updatePlayPauseButton();
+                }
+            }
+
+            // Skip button
+            if (skipBtn) {
+                skipBtn.addEventListener('click', skipToNext);
             }
 
             // Volume slider
@@ -343,32 +578,49 @@
                 volumeSlider.addEventListener('input', (e) => {
                     const volume = e.target.value / 100;
                     audio.volume = volume;
+                    audioSecond.volume = volume;
+                    audioThird.volume = volume;
                     audio.muted = false;
+                    audioSecond.muted = false;
+                    audioThird.muted = false;
                     localStorage.setItem('sitmonMusicVolume', volume.toString());
                     updateVolumeIcon();
                 });
 
                 // Update slider when volume changes externally
-                audio.addEventListener('volumechange', () => {
-                    if (!audio.muted) {
-                        volumeSlider.value = (audio.volume * 100).toString();
+                function handleVolumeChange() {
+                    const current = getCurrentAudio();
+                    if (!current.muted) {
+                        volumeSlider.value = (current.volume * 100).toString();
                     }
+                    syncVolume();
                     updateVolumeIcon();
-                });
+                }
+                audio.addEventListener('volumechange', handleVolumeChange);
+                audioSecond.addEventListener('volumechange', handleVolumeChange);
+                audioThird.addEventListener('volumechange', handleVolumeChange);
             }
 
             // Mute/Unmute button
             if (volumeBtn) {
                 volumeBtn.addEventListener('click', () => {
-                    if (audio.muted || audio.volume === 0) {
+                    const current = getCurrentAudio();
+                    if (current.muted || current.volume === 0) {
                         audio.muted = false;
-                        if (audio.volume === 0) {
-                            audio.volume = 0.5;
+                        audioSecond.muted = false;
+                        audioThird.muted = false;
+                        if (current.volume === 0) {
+                            const vol = 0.5;
+                            audio.volume = vol;
+                            audioSecond.volume = vol;
+                            audioThird.volume = vol;
                             if (volumeSlider) volumeSlider.value = '50';
                             localStorage.setItem('sitmonMusicVolume', '0.5');
                         }
                     } else {
                         audio.muted = true;
+                        audioSecond.muted = true;
+                        audioThird.muted = true;
                     }
                     updateVolumeIcon();
                 });

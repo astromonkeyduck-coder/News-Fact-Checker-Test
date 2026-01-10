@@ -5,6 +5,7 @@
 // D3 is loaded from CDN in HTML
 // TopoJSON is loaded from CDN in HTML
 import { HOTSPOTS, CONFLICT_ZONES, CHOKEPOINTS, CABLE_POINTS, MILITARY_BASES, NUCLEAR_FACILITIES } from './data/sources.js';
+import { clusterEvents, getCategoryColor, getSeverityColor } from './data/clustering.js';
 
 export class MapView {
   constructor(containerId, options = {}) {
@@ -23,6 +24,10 @@ export class MapView {
     this.tooltip = null;
     this.markers = new Map();
     this.debounceTimer = null;
+    this.events = []; // MapEvent array
+    this.eventMarkers = new Map(); // Track event markers
+    this.clusterMarkers = new Map(); // Track cluster markers
+    this.currentZoom = 1.0; // Track zoom level for clustering
     
     this.init();
   }
@@ -510,6 +515,265 @@ export class MapView {
     }
   }
 
+  /**
+   * Update events on map
+   */
+  updateEvents(events) {
+    this.events = events || [];
+    this.renderEvents();
+  }
+  
+  /**
+   * Render events with clustering
+   */
+  renderEvents() {
+    if (!this.svg || !this.projection) return;
+    
+    // Remove existing event markers and clusters
+    this.svg.selectAll('.event-marker').remove();
+    this.svg.selectAll('.event-cluster').remove();
+    this.eventMarkers.clear();
+    this.clusterMarkers.clear();
+    
+    if (this.events.length === 0) return;
+    
+    // Cluster events
+    const { individual, clusters } = clusterEvents(this.events, this.projection, {
+      maxIndividual: 25,
+      threshold: 28,
+      currentZoom: this.currentZoom
+    });
+    
+    // Render individual markers
+    const eventG = this.svg.append('g').attr('class', 'event-markers');
+    for (const event of individual) {
+      this.renderEventMarker(eventG, event);
+    }
+    
+    // Render clusters
+    const clusterG = this.svg.append('g').attr('class', 'event-clusters');
+    for (const cluster of clusters) {
+      this.renderCluster(clusterG, cluster);
+    }
+  }
+  
+  /**
+   * Render a single event marker
+   */
+  renderEventMarker(container, event) {
+    if (!event.location || !event.location.lat || !event.location.lon) return;
+    
+    const [x, y] = this.projection([event.location.lon, event.location.lat]);
+    if (!x || !y || !isFinite(x) || !isFinite(y)) return;
+    
+    const color = getCategoryColor(event.category);
+    const severity = event.severity;
+    const radius = severity >= 5 ? 8 : severity >= 4 ? 6 : 5;
+    
+    const marker = container.append('g')
+      .attr('class', 'event-marker')
+      .attr('data-event-id', event.id)
+      .style('cursor', 'pointer');
+    
+    // Outer ring for severity 5 (pulsing effect)
+    if (severity >= 5) {
+      const ring = marker.append('circle')
+        .attr('class', 'event-marker-ring')
+        .attr('cx', x)
+        .attr('cy', y)
+        .attr('r', radius + 3)
+        .attr('fill', 'none')
+        .attr('stroke', color)
+        .attr('stroke-width', 2)
+        .attr('opacity', 0.6)
+        .style('animation', 'pulse 2s ease-in-out infinite');
+    }
+    
+    // Main marker circle
+    const circle = marker.append('circle')
+      .attr('class', 'event-marker-main')
+      .attr('cx', x)
+      .attr('cy', y)
+      .attr('r', radius)
+      .attr('fill', color)
+      .attr('stroke', '#fff')
+      .attr('stroke-width', severity >= 4 ? 2 : 1)
+      .style('opacity', 0.9)
+      .datum(event);
+    
+    // Hover effects - target the main circle specifically, not the ring
+    marker.on('mouseover', (event, d) => {
+      this.showEventTooltip(event, d);
+      window.d3.select(event.currentTarget).select('.event-marker-main')
+        .attr('r', radius + 2)
+        .style('opacity', 1);
+    })
+    .on('mousemove', (event) => {
+      this.moveTooltip(event);
+    })
+    .on('mouseout', (event) => {
+      this.hideTooltip();
+      window.d3.select(event.currentTarget).select('.event-marker-main')
+        .attr('r', radius)
+        .style('opacity', 0.9);
+    })
+    .on('click', (event, d) => {
+      this.onEventClick(d);
+    });
+    
+    this.eventMarkers.set(event.id, marker);
+  }
+  
+  /**
+   * Render a cluster
+   */
+  renderCluster(container, cluster) {
+    const count = cluster.getCount();
+    const maxSeverity = cluster.getMaxSeverity();
+    const category = cluster.getDominantCategory();
+    const color = getCategoryColor(category);
+    
+    const radius = Math.min(8 + Math.sqrt(count) * 2, 20);
+    
+    const clusterG = container.append('g')
+      .attr('class', 'event-cluster')
+      .attr('data-cluster-id', cluster.id)
+      .style('cursor', 'pointer');
+    
+    // Outer ring for high severity clusters
+    if (maxSeverity >= 4) {
+      clusterG.append('circle')
+        .attr('cx', cluster.x)
+        .attr('cy', cluster.y)
+        .attr('r', radius + 2)
+        .attr('fill', 'none')
+        .attr('stroke', color)
+        .attr('stroke-width', 1.5)
+        .attr('opacity', 0.5);
+    }
+    
+    // Cluster circle
+    const circle = clusterG.append('circle')
+      .attr('cx', cluster.x)
+      .attr('cy', cluster.y)
+      .attr('r', radius)
+      .attr('fill', color)
+      .attr('fill-opacity', 0.7)
+      .attr('stroke', '#fff')
+      .attr('stroke-width', 2)
+      .datum(cluster);
+    
+    // Count label
+    clusterG.append('text')
+      .attr('x', cluster.x)
+      .attr('y', cluster.y)
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
+      .attr('fill', '#fff')
+      .attr('font-size', count > 9 ? '11px' : '12px')
+      .attr('font-weight', 'bold')
+      .text(count);
+    
+    // Hover effects
+    clusterG.on('mouseover', (event, d) => {
+      this.showClusterTooltip(event, d);
+      window.d3.select(event.currentTarget).select('circle')
+        .attr('r', radius + 2)
+        .attr('fill-opacity', 0.9);
+    })
+    .on('mousemove', (event) => {
+      this.moveTooltip(event);
+    })
+    .on('mouseout', (event) => {
+      this.hideTooltip();
+      window.d3.select(event.currentTarget).select('circle')
+        .attr('r', radius)
+        .attr('fill-opacity', 0.7);
+    })
+    .on('click', (event, d) => {
+      this.onClusterClick(d);
+    });
+    
+    this.clusterMarkers.set(cluster.id, clusterG);
+  }
+  
+  /**
+   * Show event tooltip
+   */
+  showEventTooltip(event, mapEvent) {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+    
+    this.debounceTimer = setTimeout(() => {
+      const age = mapEvent.getAgeHours();
+      const ageText = age < 1 ? `${Math.floor(age * 60)}m ago` : 
+                      age < 24 ? `${Math.floor(age)}h ago` : 
+                      `${Math.floor(age / 24)}d ago`;
+      
+      let html = `<div style="font-weight: bold; margin-bottom: 4px;">${escapeHtml(mapEvent.title)}</div>`;
+      html += `<div style="color: rgba(255,255,255,0.7); font-size: 11px;">${escapeHtml(mapEvent.source)} • ${ageText}</div>`;
+      if (mapEvent.location && mapEvent.location.label) {
+        html += `<div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: 4px;">📍 ${escapeHtml(mapEvent.location.label)}</div>`;
+      }
+      html += `<div style="color: ${getSeverityColor(mapEvent.severity)}; font-size: 11px; margin-top: 4px;">Severity: ${mapEvent.severity}/5 • ${mapEvent.category}</div>`;
+      
+      this.tooltip
+        .html(html)
+        .style('opacity', 1);
+      
+      this.moveTooltip(event);
+    }, 50);
+  }
+  
+  /**
+   * Show cluster tooltip
+   */
+  showClusterTooltip(event, cluster) {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+    
+    this.debounceTimer = setTimeout(() => {
+      const count = cluster.getCount();
+      const maxSeverity = cluster.getMaxSeverity();
+      const category = cluster.getDominantCategory();
+      
+      let html = `<div style="font-weight: bold; margin-bottom: 4px;">${count} Event${count > 1 ? 's' : ''}</div>`;
+      html += `<div style="color: rgba(255,255,255,0.7); font-size: 11px;">Category: ${category}</div>`;
+      html += `<div style="color: ${getSeverityColor(maxSeverity)}; font-size: 11px; margin-top: 4px;">Max Severity: ${maxSeverity}/5</div>`;
+      html += `<div style="color: rgba(255,255,255,0.6); font-size: 10px; margin-top: 4px;">Click to view details</div>`;
+      
+      this.tooltip
+        .html(html)
+        .style('opacity', 1);
+      
+      this.moveTooltip(event);
+    }, 50);
+  }
+  
+  /**
+   * Handle event click
+   */
+  onEventClick(event) {
+    // Dispatch custom event for event drawer
+    const customEvent = new CustomEvent('sitmon:event-click', {
+      detail: { event }
+    });
+    document.dispatchEvent(customEvent);
+  }
+  
+  /**
+   * Handle cluster click
+   */
+  onClusterClick(cluster) {
+    // Dispatch custom event for cluster drawer
+    const customEvent = new CustomEvent('sitmon:cluster-click', {
+      detail: { cluster }
+    });
+    document.dispatchEvent(customEvent);
+  }
+  
   destroy() {
     if (this.tooltip) {
       this.tooltip.remove();
@@ -518,4 +782,10 @@ export class MapView {
       this.svg.remove();
     }
   }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }

@@ -11,6 +11,11 @@ import { IntelFeedPanel } from './Panels/IntelFeedPanel.js';
 import { CorrelationPanel } from './Panels/CorrelationPanel.js';
 import { NarrativePanel } from './Panels/NarrativePanel.js';
 import { MonitorsPanel } from './Panels/MonitorsPanel.js';
+import { EventPipeline } from './data/eventPipeline.js';
+import { EventDrawer } from './EventDrawer.js';
+import { ClusterDrawer } from './ClusterDrawer.js';
+import { BigBoardOverlay } from './BigBoardOverlay.js';
+import { DiagnosticsPanel } from './DiagnosticsPanel.js';
 
 export class SituationMonitorShell {
   constructor(containerId) {
@@ -19,6 +24,16 @@ export class SituationMonitorShell {
     this.panels = {};
     this.autoRefresh = true;
     this.refreshInterval = null;
+    this.eventPipeline = new EventPipeline({
+      minSeverity: 2,
+      minConfidence: 0.6,
+      maxGeocodePerCycle: 5
+    });
+    this.mapEvents = []; // Track current map events
+    this.eventDrawer = null;
+    this.clusterDrawer = null;
+    this.bigBoardOverlay = null;
+    this.diagnosticsPanel = null;
     
     // Don't await - let it run asynchronously
     this.init().catch(err => {
@@ -143,6 +158,11 @@ export class SituationMonitorShell {
 
     // Setup controls
     this.setupControls();
+    
+    // Initialize drawers and overlays
+    this.initDrawers();
+    this.initBigBoardOverlay();
+    this.initDiagnostics();
 
     // Initial data load
     await this.refreshAll();
@@ -309,6 +329,30 @@ export class SituationMonitorShell {
     }
   }
 
+  initDrawers() {
+    this.eventDrawer = new EventDrawer();
+    this.clusterDrawer = new ClusterDrawer();
+  }
+  
+  initBigBoardOverlay() {
+    // Wait for map to be initialized
+    setTimeout(() => {
+      this.bigBoardOverlay = new BigBoardOverlay();
+      if (this.mapEvents.length > 0) {
+        this.bigBoardOverlay.update(this.mapEvents);
+      }
+    }, 1000);
+  }
+  
+  initDiagnostics() {
+    this.diagnosticsPanel = new DiagnosticsPanel(this.eventPipeline, this.mapEvents);
+    // Update diagnostics when events change
+    const originalUpdate = this.diagnosticsPanel?.update.bind(this.diagnosticsPanel);
+    if (originalUpdate) {
+      // Will be called after refreshAll updates events
+    }
+  }
+  
   setupAutoRefresh() {
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
@@ -341,9 +385,36 @@ export class SituationMonitorShell {
       this.panels.correlation.update(headlines);
       this.panels.narrative.update(headlines);
       this.panels.monitors.updateMatches(headlines);
+      
+      // Process headlines into map events
+      try {
+        const newEvents = await this.eventPipeline.processAndMerge(headlines, this.mapEvents);
+        this.mapEvents = newEvents;
+        
+        // Update map with events
+        if (this.mapView) {
+          this.mapView.updateEvents(this.mapEvents);
+        }
+        
+        // Update big board overlay
+        if (this.bigBoardOverlay) {
+          this.bigBoardOverlay.update(this.mapEvents);
+        }
+        
+        // Update diagnostics panel
+        if (this.diagnosticsPanel && this.diagnosticsPanel.isEnabled) {
+          this.diagnosticsPanel.mapEvents = this.mapEvents;
+          this.diagnosticsPanel.update();
+        }
+        
+        // Save geocode cache
+        this.eventPipeline.saveCache();
+      } catch (error) {
+        console.error('[SituationMonitorShell] Event pipeline error:', error);
+      }
     }
 
-    // Update map with earthquakes
+    // Update map with earthquakes (unchanged - earthquakes work independently)
     const earthquakes = this.panels.earthquakes.getEarthquakes();
     if (earthquakes && this.mapView) {
       earthquakes.slice(0, 20).forEach(eq => {
@@ -361,6 +432,14 @@ export class SituationMonitorShell {
 
     if (this.mapView) {
       this.mapView.destroy();
+    }
+    
+    if (this.bigBoardOverlay) {
+      this.bigBoardOverlay.destroy();
+    }
+    
+    if (this.diagnosticsPanel) {
+      this.diagnosticsPanel.destroy();
     }
 
     Object.values(this.panels).forEach(panel => {
