@@ -196,7 +196,16 @@ module.exports = {
   isFeedUrlAllowed
 };
 
-// ES6 exports for client-side (if needed)
+// ES6 exports for client-side (for ES6 import syntax)
+export {
+  RSS_FEEDS,
+  getFeedById,
+  getEnabledFeeds,
+  getFeedByUrl,
+  isFeedUrlAllowed
+};
+
+// Also set on window for legacy compatibility
 if (typeof window !== 'undefined') {
   window.RSS_FEEDS = RSS_FEEDS;
   window.getFeedById = getFeedById;

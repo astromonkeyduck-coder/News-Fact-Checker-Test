@@ -96,7 +96,7 @@ function estimateTextWidth(text, fontSize) {
 /**
  * Create SVG overlay with embedded fonts
  */
-function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templateHeight, scaleFactor = 1.0, earthquakeTimestamp = null) {
+function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templateHeight, scaleFactor = 1.0, earthquakeTimestamp = null, coordinates = null) {
   // Format: "Breaking News:" (line 1), "M#.# EARTHQUAKE NEAR" (line 2), "[LOCATION]" (line 3, all caps), "[TIMESTAMP]" (line 4)
   const escapedBreaking = escapeSVGText(BREAKING_TEXT);
   const escapedMag = escapeSVGText(magnitudeText);
@@ -105,19 +105,92 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
   const locationFormatted = locationText.toUpperCase();
   const escapedLocation = escapeSVGText(locationFormatted);
   
-  // Format timestamp with milliseconds
+  // Format timestamp with milliseconds - show local time and all US timezones
   let timestampText = '';
   if (earthquakeTimestamp) {
     const date = new Date(earthquakeTimestamp);
-    // Format: "YYYY-MM-DD HH:MM:SS.mmm UTC"
-    const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(date.getUTCDate()).padStart(2, '0');
-    const hours = String(date.getUTCHours()).padStart(2, '0');
-    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-    const seconds = String(date.getUTCSeconds()).padStart(2, '0');
-    const milliseconds = String(date.getUTCMilliseconds()).padStart(3, '0');
-    timestampText = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds} UTC`;
+    
+    // Helper function to format time in a specific timezone
+    const formatTimeInTimezone = (date, timezone, includeDate = false) => {
+      const options = {
+        timeZone: timezone,
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+        timeZoneName: 'short'
+      };
+      if (includeDate) {
+        options.month = 'short';
+        options.day = 'numeric';
+        options.year = 'numeric';
+      }
+      
+      const formatter = new Intl.DateTimeFormat('en-US', options);
+      const parts = formatter.formatToParts(date);
+      
+      let hour = parts.find(p => p.type === 'hour').value;
+      const minute = parts.find(p => p.type === 'minute').value;
+      const second = parts.find(p => p.type === 'second').value;
+      const dayPeriod = parts.find(p => p.type === 'dayPeriod')?.value || '';
+      const tzName = parts.find(p => p.type === 'timeZoneName')?.value || '';
+      
+      // Get milliseconds (need to calculate from UTC)
+      const ms = String(date.getUTCMilliseconds()).padStart(3, '0');
+      
+      let result = `${hour}:${minute}:${second}.${ms} ${dayPeriod} ${tzName}`;
+      
+      if (includeDate) {
+        const month = parts.find(p => p.type === 'month').value;
+        const day = parts.find(p => p.type === 'day').value;
+        const year = parts.find(p => p.type === 'year').value;
+        result = `${month} ${day}, ${year} • ${result}`;
+      }
+      
+      return result;
+    };
+    
+    // Estimate local timezone from coordinates (rough approximation)
+    let localTimezone = 'UTC';
+    if (coordinates) {
+      const lat = coordinates[1] ?? coordinates?.lat ?? null;
+      const lon = coordinates[0] ?? coordinates?.lon ?? null;
+      
+      if (lon != null) {
+        // Rough timezone estimation based on longitude
+        // Each 15 degrees of longitude ≈ 1 hour timezone difference
+        if (lon >= -67.5 && lon < -52.5) {
+          localTimezone = 'America/New_York'; // EST/EDT
+        } else if (lon >= -82.5 && lon < -67.5) {
+          localTimezone = 'America/New_York'; // EST/EDT (eastern US)
+        } else if (lon >= -97.5 && lon < -82.5) {
+          localTimezone = 'America/Chicago'; // CST/CDT (central US)
+        } else if (lon >= -112.5 && lon < -97.5) {
+          localTimezone = 'America/Denver'; // MST/MDT (mountain US)
+        } else if (lon >= -127.5 && lon < -112.5) {
+          localTimezone = 'America/Los_Angeles'; // PST/PDT (pacific US)
+        } else if (lon >= -142.5 && lon < -127.5) {
+          localTimezone = 'America/Anchorage'; // AKST/AKDT (Alaska)
+        } else if (lon >= -157.5 && lon < -142.5) {
+          localTimezone = 'Pacific/Honolulu'; // HST (Hawaii)
+        }
+      }
+    }
+    
+    // Format local time at earthquake location
+    const localTime = formatTimeInTimezone(date, localTimezone, true);
+    
+    // Format all US timezones
+    const estTime = formatTimeInTimezone(date, 'America/New_York');
+    const cstTime = formatTimeInTimezone(date, 'America/Chicago');
+    const mstTime = formatTimeInTimezone(date, 'America/Denver');
+    const pstTime = formatTimeInTimezone(date, 'America/Los_Angeles');
+    const akstTime = formatTimeInTimezone(date, 'America/Anchorage');
+    const hstTime = formatTimeInTimezone(date, 'Pacific/Honolulu');
+    
+    // Build timestamp text: Local time first, then all US timezones
+    // Format: "Local: Jan 10, 2026 • 4:20:36.261 PM EST | EST: 4:20:36.261 PM EST | CST: 3:20:36.261 PM CST | ..."
+    timestampText = `Local: ${localTime} | EST: ${estTime} | CST: ${cstTime} | MST: ${mstTime} | PST: ${pstTime} | AKST: ${akstTime} | HST: ${hstTime}`;
   }
   const escapedTimestamp = escapeSVGText(timestampText);
   
@@ -201,9 +274,10 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
   
   // Position for line 4: "[TIMESTAMP]" (if available)
   // Position timestamp at top left of image
+  // Use smaller font since we're showing multiple timezones
   const timestampX = Math.round(20 * scaleFactor); // 20px from left edge
   const timestampY = Math.round(30 * scaleFactor); // 30px from top edge
-  const timestampFontSize = Math.round(20 * scaleFactor);
+  const timestampFontSize = Math.round(14 * scaleFactor); // Smaller font for multiple timezones
   
   // Use Roboto if fonts are loaded, otherwise fallback
   // Build @font-face declarations with base64 embedded fonts
@@ -283,7 +357,7 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
       </text>
       
       ${timestampText ? `
-      <!-- Timestamp: e.g. 2026-01-10 16:20:36.261 UTC (white, regular, smaller) - Top left corner -->
+      <!-- Timestamp: Shows local time and all US timezones (EST, CST, MST, PST, AKST, HST) with milliseconds - Top left corner -->
       <text 
         x="${timestampX}" 
         y="${timestampY}" 
@@ -291,7 +365,7 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
         font-size="${timestampFontSize}" 
         font-weight="normal"
         fill="${HEADLINE_COLOR}"
-        opacity="0.85"
+        opacity="0.9"
         text-rendering="optimizeLegibility"
         shape-rendering="geometricPrecision">
         ${escapedTimestamp}
@@ -1865,7 +1939,12 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
   const fontFamily = (FONT_DATA.regular && FONT_DATA.bold) ? 'Roboto' : 'Arial, sans-serif';
   
   // Create SVG overlay with embedded fonts (include timestamp)
-  const svgString = createDynamicTextSVG(magnitudeText, location, outputWidth, outputHeight, scaleFactor, earthquakeTimestamp);
+  // Extract coordinates for timestamp calculation
+  const lat = coordinates?.[1] ?? coordinates?.lat ?? null;
+  const lon = coordinates?.[0] ?? coordinates?.lon ?? null;
+  const coordArray = (lat != null && lon != null) ? [lon, lat] : null;
+  
+  const svgString = createDynamicTextSVG(magnitudeText, location, outputWidth, outputHeight, scaleFactor, earthquakeTimestamp, coordArray);
   
   // CRITICAL: Log SVG content to verify text is included
   console.log(`[generate-earthquake-image] 📝 SVG Text Overlay Content:`, {

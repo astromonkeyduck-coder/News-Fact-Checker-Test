@@ -187,16 +187,38 @@ exports.handler = async (event) => {
     const videoUrl = post.video_url || post.video || post.assets?.video_url || null;
     const isGIF = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('get-uploaded-image'));
     
+    // Log all available image sources for debugging
+    console.log('[article-preview] 🔍 Image selection debug:', {
+      articleId,
+      hasVideoUrl: !!videoUrl,
+      videoUrl: videoUrl?.substring(0, 100) || null,
+      isGIF,
+      hasPrimaryImageUrl: !!post.primary_image_url,
+      primaryImageUrl: post.primary_image_url?.substring(0, 100) || null,
+      hasImageUrl: !!post.image_url,
+      imageUrl: post.image_url?.substring(0, 100) || null,
+      hasImage: !!post.image,
+      image: post.image?.substring(0, 100) || null,
+      hasImages: !!post.images,
+      imageCount: post.images?.length || 0,
+      hasAssets: !!post.assets,
+      assetsVideoUrl: post.assets?.video_url?.substring(0, 100) || null,
+      postKeys: Object.keys(post).filter(k => k.includes('image') || k.includes('video') || k.includes('asset'))
+    });
+    
     // Priority order: GIF > PNG > Other images > Default
     let image = null;
+    let imageSource = null;
     if (isGIF && videoUrl) {
       // Use GIF first if available
       image = videoUrl;
-      console.log('[article-preview] ✅ Using GIF for preview:', videoUrl.substring(0, 100));
+      imageSource = 'GIF (video_url)';
+      console.log('[article-preview] ✅ Selected GIF for preview:', videoUrl.substring(0, 100));
     } else if (post.primary_image_url) {
       // Use PNG (primary_image_url) if available
       image = post.primary_image_url;
-      console.log('[article-preview] ✅ Using PNG (primary_image_url) for preview:', image.substring(0, 100));
+      imageSource = 'PNG (primary_image_url)';
+      console.log('[article-preview] ✅ Selected PNG (primary_image_url) for preview:', image.substring(0, 100));
     } else {
       // Fall back to other image fields
       image = post.image_url || 
@@ -204,14 +226,18 @@ exports.handler = async (event) => {
               post.images?.[0] || 
               null;
       if (image) {
-        console.log('[article-preview] ✅ Using fallback image for preview:', image.substring(0, 100));
+        imageSource = post.image_url ? 'image_url' : (post.image ? 'image' : 'images[0]');
+        console.log('[article-preview] ✅ Selected fallback image for preview:', image.substring(0, 100), `(source: ${imageSource})`);
       }
     }
     
     // Only use default if no image found at all
     if (!image) {
+      imageSource = 'DEFAULT (PREVIEWIMAGEBRUH.jpg)';
       console.warn('[article-preview] ⚠️ No image found in post, using default PREVIEWIMAGEBRUH.jpg', {
+        articleId,
         hasVideoUrl: !!videoUrl,
+        videoUrl: videoUrl?.substring(0, 100) || null,
         hasPrimaryImageUrl: !!post.primary_image_url,
         hasImageUrl: !!post.image_url,
         hasImage: !!post.image,
@@ -221,6 +247,13 @@ exports.handler = async (event) => {
       });
       image = 'https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg';
     }
+    
+    console.log('[article-preview] 📸 Final image selection:', {
+      articleId,
+      imageSource,
+      imageUrl: image.substring(0, 100),
+      isDefault: image.includes('PREVIEWIMAGEBRUH.jpg')
+    });
     
     const url = `https://noteworthynews.co/article.html?id=${encodeURIComponent(articleId)}`;
     const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();

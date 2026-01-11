@@ -1426,6 +1426,7 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   // Generate branded image ONLY if magnitude meets requirements (>= 0.5)
   // Lower magnitude earthquakes are processed but won't get images
   let imageUrl = null;
+  let videoUrl = null; // Store video_url (GIF) in variable before event object is created
   // Coordinates already extracted above for geocoding
   
   // Threshold set to 0.5
@@ -1494,14 +1495,20 @@ async function processEarthquake(feature, logger, forceEmail = false) {
           reason: !existingEvent ? 'new_earthquake' : !existingEvent.image_url ? 'no_existing_image' : 'usgs_images_now_available'
         });
         
-        // Generate video with visual effects for social media (only for significant earthquakes)
-        if (magnitude >= 4.0) {
+        // Generate video (GIF) with visual effects for social media - generate for ALL earthquakes that get images
+        // This ensures every email with an image also has a GIF attachment
+        if (imageUrl) { // Only generate video if image was successfully generated
+          let videoTimeoutId = null;
           try {
             logger.info('🎬 Starting video generation for social media preview', { eventId, magnitude });
             const baseUrl = process.env.URL || 'https://noteworthynews.co';
+            // Add timeout to prevent hanging (30 seconds)
+            const videoController = new AbortController();
+            videoTimeoutId = setTimeout(() => videoController.abort(), 30000);
             const videoResponse = await fetch(`${baseUrl}/.netlify/functions/generate-earthquake-video`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
+              signal: videoController.signal,
               body: JSON.stringify({
                 magnitude,
                 location: locationDisplay,
@@ -1511,19 +1518,31 @@ async function processEarthquake(feature, logger, forceEmail = false) {
                 usgsImages: usgsImages || []
               }),
             });
+            clearTimeout(videoTimeoutId);
+            videoTimeoutId = null;
             
             if (videoResponse.ok) {
               const videoData = await videoResponse.json();
               if (videoData.url) {
                 logger.info('✅ Video generation successful', { eventId, videoUrl: videoData.url });
-                // Store video URL in event (will be added to post)
-                event.video_url = videoData.url;
+                // Store video URL in variable (will be added to event object later)
+                videoUrl = videoData.url;
               }
             } else {
               logger.warn('⚠️ Video generation failed (non-critical)', { eventId, status: videoResponse.status });
             }
           } catch (videoError) {
-            logger.warn('⚠️ Video generation error (non-critical)', videoError, { eventId });
+            // Clear timeout if it was set
+            if (videoTimeoutId) {
+              clearTimeout(videoTimeoutId);
+              videoTimeoutId = null;
+            }
+            // Check if it was a timeout
+            if (videoError.name === 'AbortError' || videoError.message?.includes('timeout')) {
+              logger.warn('⚠️ Video generation timed out (non-critical)', { eventId, error: videoError.message });
+            } else {
+              logger.warn('⚠️ Video generation error (non-critical)', videoError, { eventId });
+            }
             // Don't fail the entire process if video generation fails
           }
         }
@@ -1534,7 +1553,7 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       // CRITICAL: Also reuse video_url (GIF) if it exists (stored in assets JSONB)
       const existingVideoUrl = existingEvent.assets?.video_url;
       if (existingVideoUrl) {
-        event.video_url = existingVideoUrl;
+        videoUrl = existingVideoUrl; // Store in variable (will be added to event object later)
         logger.info('Reusing existing video (GIF)', { 
           eventId, 
           videoUrl: existingVideoUrl?.substring(0, 100),
@@ -1696,6 +1715,7 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       ...(detailUrl ? { usgs_detail_url: detailUrl } : {}),
     },
     image_url: imageUrl,
+    video_url: videoUrl, // Include video_url (GIF) in event object
     alert_sent: false,
     alert_sent_at: null,
     raw: feature,
