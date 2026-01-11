@@ -154,13 +154,27 @@ body.situation-monitor-page .main-nav ol li::before {
 }
 
 /* Page Wrapper - matches site container width */
-/* Ensure situation monitor container is visible and not blocked by header */
+/* Ensure situation monitor container is visible and not blocked by header or loader */
 #situation-monitor-container {
   position: relative;
   z-index: 1;
   min-height: 100vh;
   margin-top: 0;
   padding-top: 0;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* CRITICAL: Ensure loader doesn't block content */
+#nn-intel-loader.nn-il-hidden,
+#nn-intel-loader[style*="display: none"],
+#nn-intel-loader[style*="display:none"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -999999 !important;
 }
 
 /* Ensure dark theme background on situation monitor page */
@@ -197,30 +211,43 @@ body.situation-monitor-page::before {
     radial-gradient(circle at 20% 80%, rgba(74, 158, 255, 0.08) 0%, transparent 50%),
     radial-gradient(circle at 80% 20%, rgba(91, 181, 255, 0.08) 0%, transparent 50%),
     radial-gradient(circle at 40% 80%, rgba(155, 89, 182, 0.1) 0%, transparent 50%);
-  z-index: -1;
-  pointer-events: none;
+  z-index: -2 !important; /* Ensure it's behind everything */
+  pointer-events: none !important;
 }
 
 body.situation-monitor-page main.situation-monitor-page {
-  padding-top: 0 !important;
+  padding-top: 80px !important; /* Keep space for fixed header */
   margin-top: 0 !important;
-  background: transparent;
-  color: white;
+  background: transparent !important;
+  color: white !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 1 !important;
+  min-height: calc(100vh - 80px) !important;
 }
 
 .situation-monitor-page {
   min-height: 100vh;
   background: transparent;
   color: white;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 /* Ensure main content area has proper styling */
 body.situation-monitor-page main {
-  background: transparent;
-  color: white;
-  min-height: calc(100vh - 80px);
-  position: relative;
-  z-index: 1;
+  background: transparent !important;
+  color: white !important;
+  min-height: calc(100vh - 80px) !important;
+  position: relative !important;
+  z-index: 1 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  padding-top: 80px !important; /* Space for fixed header */
 }
 
 .sitmon-page-wrapper {
@@ -229,6 +256,11 @@ body.situation-monitor-page main {
   padding: 2rem 1.5rem;
   width: 100%;
   box-sizing: border-box;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 1 !important;
 }
 
 /* Page Header */
