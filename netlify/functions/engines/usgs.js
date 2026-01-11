@@ -823,6 +823,7 @@ async function scrapeUSGSImagesFromPage(eventPageUrl, logger) {
     return [];
   }
 }
+}
 
 /**
  * Generate branded image for earthquake
