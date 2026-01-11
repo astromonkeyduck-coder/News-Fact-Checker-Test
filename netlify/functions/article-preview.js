@@ -449,25 +449,29 @@ exports.handler = async (event) => {
     });
 
     // Handle different article ID formats
+    // Posts are stored with .json extension (see createPost.js: postKey = `post-${postId}.json`)
     let postKey;
     if (articleId.startsWith('post-')) {
-      postKey = articleId;
+      // If it already has .json, use as-is; otherwise add it
+      postKey = articleId.endsWith('.json') ? articleId : `${articleId}.json`;
     } else if (articleId.startsWith('usgs-')) {
-      postKey = `post-${articleId}`;
+      postKey = `post-${articleId}.json`;
     } else {
-      postKey = `post-${articleId}`;
+      postKey = `post-${articleId}.json`;
     }
     
     // Fetch post with timeout
     let postData;
     try {
-      const blobPromise = store.get(postKey, { type: 'text' });
+      // Posts are stored as JSON, so use type: 'json' for automatic parsing
+      const blobPromise = store.get(postKey, { type: 'json' });
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Blob storage timeout')), 10000)
       );
       postData = await Promise.race([blobPromise, timeoutPromise]);
     } catch (blobError) {
       console.error('[article-preview] Blob storage error:', blobError.message);
+      console.error('[article-preview] Looking for key:', postKey);
       // Return prerendered HTML with default image
       return {
         statusCode: 200,
@@ -484,6 +488,7 @@ exports.handler = async (event) => {
     }
     
     if (!postData) {
+      console.error('[article-preview] Post data is null/undefined for key:', postKey);
       return {
         statusCode: 200,
         headers: {
@@ -498,12 +503,33 @@ exports.handler = async (event) => {
       };
     }
     
-    // Parse JSON
+    // postData is already parsed JSON (type: 'json' above)
     let post;
-    try {
-      post = JSON.parse(postData);
-    } catch (parseError) {
-      console.error('[article-preview] JSON parse error:', parseError.message);
+    if (typeof postData === 'string') {
+      // Fallback: if somehow still a string, parse it
+      try {
+        post = JSON.parse(postData);
+      } catch (parseError) {
+        console.error('[article-preview] JSON parse error:', parseError.message);
+        return {
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'public, max-age=300'
+          },
+          body: generatePrerenderedHTML({
+            title: 'Post not found',
+            story: 'The requested article could not be found.',
+            datePosted: new Date().toISOString()
+          }, articleId, userAgent, cardType)
+        };
+      }
+    } else {
+      post = postData;
+    }
+    
+    if (!post || typeof post !== 'object') {
+      console.error('[article-preview] Invalid post data format:', typeof postData);
       return {
         statusCode: 200,
         headers: {
@@ -518,21 +544,23 @@ exports.handler = async (event) => {
       };
     }
     
-    // Log post data structure (debug mode)
-    if (process.env.DEBUG) {
-      console.log('[article-preview] Post data structure:', {
-        hasPrimaryImageUrl: !!post.primary_image_url,
-        hasVideoUrl: !!post.video_url,
-        hasVideo: !!post.video,
-        hasAssets: !!post.assets,
-        hasAssetsVideoUrl: !!post.assets?.video_url,
-        hasImageUrl: !!post.image_url,
-        hasImage: !!post.image,
-        hasImages: !!post.images,
-        imageCount: post.images?.length || 0,
-        keys: Object.keys(post).filter(k => k.includes('image') || k.includes('video') || k.includes('asset'))
-      });
-    }
+    // Log post data structure (always log for debugging)
+    console.log('[article-preview] Post data structure:', {
+      hasPrimaryImageUrl: !!post.primary_image_url,
+      primaryImageUrl: post.primary_image_url || null,
+      hasVideoUrl: !!post.video_url,
+      videoUrl: post.video_url || null,
+      hasVideo: !!post.video,
+      hasAssets: !!post.assets,
+      hasAssetsVideoUrl: !!post.assets?.video_url,
+      assetsVideoUrl: post.assets?.video_url || null,
+      hasImageUrl: !!post.image_url,
+      imageUrl: post.image_url || null,
+      hasImage: !!post.image,
+      hasImages: !!post.images,
+      imageCount: post.images?.length || 0,
+      keys: Object.keys(post).filter(k => k.includes('image') || k.includes('video') || k.includes('asset'))
+    });
     
     // Generate prerendered HTML
     const html = generatePrerenderedHTML(post, articleId, userAgent, cardType);
