@@ -39,6 +39,15 @@
   display: none;
 }
 
+/* Stop all animations when loader is hidden, stopping, exiting, or fading out */
+#nn-intel-loader.nn-il-hidden *,
+#nn-intel-loader.nn-il-stopping *,
+#nn-intel-loader.nn-il-exiting *,
+#nn-intel-loader.nn-il-fade-out * {
+  animation: none !important;
+  animation-play-state: paused !important;
+}
+
 #nn-intel-loader.nn-il-visible {
   display: block;
   animation: nn-il-fade-in 0.3s ease-out;

@@ -1410,10 +1410,10 @@ exports.handler = async (event, context) => {
                                          relativeTime = diffSeconds + ' second' + (diffSeconds > 1 ? 's' : '') + ' ago';
                                        }
                                        
-                                       // Build share text with relative time (grammatically correct: comma after location, period after "ago")
-                                       // Use hashtags from data attribute (computed server-side for consistency)
-                                       const hashtags = e.currentTarget.getAttribute('data-hashtags') || '#terremoto #地震 #earthquake';
-                                       const shareText = 'BREAKING: M' + magnitude + ' Earthquake Near ' + location + ', ' + relativeTime + '.\\n\\n' + hashtags;
+                                      // Build share text with relative time (grammatically correct: comma after location, period after "ago")
+                                      // Use hashtags from data attribute (computed server-side for consistency)
+                                      const hashtags = e.currentTarget.getAttribute('data-hashtags') || '#terremoto #地震 #earthquake';
+                                      const shareText = 'BREAKING: M' + magnitude + ' Earthquake Near ' + location + ', ' + relativeTime + '.\n\n' + hashtags;
                                        const shareUrl = 'https://noteworthynews.co/article.html?id=post-usgs-' + eventId + '&utm_source=email&utm_medium=share&utm_campaign=earthquake_alert';
                                        const twitterUrl = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareText) + '&url=' + encodeURIComponent(shareUrl);
                                        

@@ -700,6 +700,9 @@ export function hideLoader() {
   // Set progress to 100% smoothly
   setLoaderProgress(1.0);
   
+  // Stop all CSS animations immediately
+  loaderElement.classList.add('nn-il-stopping');
+  
   // Accelerate orbital rings briefly (only if not reduced motion)
   if (!reducedMotion) {
     loaderElement.classList.add('nn-il-exiting');

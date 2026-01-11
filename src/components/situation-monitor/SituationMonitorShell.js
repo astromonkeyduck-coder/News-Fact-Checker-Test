@@ -41,8 +41,17 @@ export class SituationMonitorShell {
     this._shellCreated = false; // Guard for double initialization
     
     // Don't await - let it run asynchronously
+    // Add timeout to ensure loader hides even if initialization hangs
+    const initTimeout = setTimeout(() => {
+      console.warn('[SituationMonitorShell] Init timeout - hiding loader');
+      hideLoader();
+    }, 30000); // 30 second timeout
+    
     this.init().catch(err => {
       console.error('[SituationMonitorShell] Init error:', err);
+      hideLoader(); // Ensure loader hides on error
+    }).finally(() => {
+      clearTimeout(initTimeout);
     });
   }
 
@@ -50,8 +59,12 @@ export class SituationMonitorShell {
     // CRITICAL: Prevent double initialization
     if (this._shellCreated) {
       console.warn('[SituationMonitorShell] Shell already created, skipping init');
+      hideLoader(); // Ensure loader is hidden
       return;
     }
+    
+    // Wrap entire init in try-catch to ensure loader always hides
+    try {
     
     // Show loader immediately
     showLoader({ phase: 'AUTH' });
@@ -247,10 +260,17 @@ export class SituationMonitorShell {
     setLoaderPhase('READY');
     setLoaderProgress(1.0);
     
-    // Small delay for "READY" phase to be visible
+    // Small delay for "READY" phase to be visible (reduced from 500ms to 200ms for faster UX)
     setTimeout(() => {
       hideLoader();
-    }, 500);
+    }, 200);
+    } catch (error) {
+      console.error('[SituationMonitorShell] Critical init error:', error);
+      // Ensure loader hides even on error
+      hideLoader();
+      // Show error message to user
+      this.showToast('Initialization error - some features may be unavailable', 'error');
+    }
   }
 
   async initMap() {
