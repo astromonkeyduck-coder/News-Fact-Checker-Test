@@ -1111,7 +1111,8 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
       // Add assets for all Tier features (impact assessment, tsunami risk, etc.)
       assets: earthquake.assets || {},
       // Include video_url if available (for GIF inline display in emails)
-      video_url: earthquake.video_url || null
+      // Check both top level and assets.video_url (stored in assets JSONB)
+      video_url: earthquake.video_url || earthquake.assets?.video_url || null
     };
     
     logger.info('Sending email alert with full earthquake data', { 
@@ -1122,6 +1123,8 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
       hasDepth: !!earthquakeData.depth,
       hasAssets: !!earthquakeData.assets && Object.keys(earthquakeData.assets).length > 0,
       assetKeys: earthquakeData.assets ? Object.keys(earthquakeData.assets) : [],
+      hasVideoUrl: !!earthquakeData.video_url,
+      videoUrl: earthquakeData.video_url?.substring(0, 100) || null
     });
     
     const alertResponse = await fetch(functionUrl, {
@@ -1167,10 +1170,10 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
  */
 async function storeEvent(event, logger) {
   try {
-    // Check if event already exists - need image_url to detect new images
+    // Check if event already exists - need image_url and video_url to detect new images/videos
     const { data: existing, error: checkError } = await supabase
       .from('verified_events')
-      .select('id, alert_sent, alert_sent_at, image_url')
+      .select('id, alert_sent, alert_sent_at, image_url, video_url, assets')
       .eq('canonical_id', event.canonical_id)
       .single();
     
@@ -1204,12 +1207,12 @@ async function storeEvent(event, logger) {
         updateData.image_url = event.image_url;
       }
       
-      // Update video_url if we have a new one (store in assets for now)
+      // Update video_url if we have a new one (store in assets JSONB - database doesn't have video_url column)
       if (event.video_url) {
         if (!updateData.assets) {
           updateData.assets = existing.assets || {};
         }
-        updateData.assets.video_url = event.video_url;
+        updateData.assets.video_url = event.video_url; // Store in assets JSONB
       }
       
       // Preserve alert_sent status (always preserve, whether true or false)
@@ -1504,14 +1507,25 @@ async function processEarthquake(feature, logger, forceEmail = false) {
         }
       }
     } else {
-      // Reuse existing image
+      // Reuse existing image and video
       imageUrl = existingEvent.image_url;
+      // CRITICAL: Also reuse video_url (GIF) if it exists (check both top level and assets)
+      const existingVideoUrl = existingEvent.video_url || existingEvent.assets?.video_url;
+      if (existingVideoUrl) {
+        event.video_url = existingVideoUrl;
+        logger.info('Reusing existing video (GIF)', { 
+          eventId, 
+          videoUrl: existingVideoUrl?.substring(0, 100),
+          source: existingEvent.video_url ? 'top_level' : 'assets'
+        });
+      }
       logger.info('Reusing existing image', { 
         magnitude, 
         eventId, 
         imageUrl: imageUrl?.substring(0, 100),
         hasImageUrl: !!imageUrl,
-        imageUrlLength: imageUrl?.length || 0
+        imageUrlLength: imageUrl?.length || 0,
+        hasVideoUrl: !!existingVideoUrl
       });
       
       // Validate existing image URL
@@ -1784,7 +1798,8 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       // Ensure usgs_event_url exists (alias for source_url)
       usgs_event_url: storedEvent.source_url || storedEvent.raw?.properties?.url || null,
       // Include video_url if available (for GIF inline display in emails)
-      video_url: storedEvent.video_url || event.video_url || null
+      // Check both top level and assets.video_url (for backwards compatibility)
+      video_url: storedEvent.video_url || storedEvent.assets?.video_url || event.video_url || null
     };
     
     logger.info('📦 Enriched event data for email', {

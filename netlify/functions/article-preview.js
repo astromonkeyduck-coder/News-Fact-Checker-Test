@@ -181,23 +181,38 @@ exports.handler = async (event) => {
     const story = post.story || post.text || post.title || '';
     const description = story.length > 200 ? story.substring(0, 200) + '...' : story;
     
-    // CRITICAL: Prioritize primary_image_url (generated earthquake images) for social media previews
-    // This ensures the generated branded earthquake images appear in social media cards
-    const image = post.primary_image_url || 
-                 post.image_url || 
-                 post.image || 
-                 post.images?.[0] || 
-                 'https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg';
+    // CRITICAL: Prioritize GIF (video_url) first, then PNG (primary_image_url) for social media previews
+    // This ensures the generated branded earthquake images (especially animated GIFs) appear in social media cards
+    const videoUrl = post.video_url || post.video || null;
+    const isGIF = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('get-uploaded-image'));
+    
+    // Priority order: GIF > PNG > Other images > Default
+    let image = null;
+    if (isGIF && videoUrl) {
+      // Use GIF first if available
+      image = videoUrl;
+    } else {
+      // Fall back to PNG or other images
+      image = post.primary_image_url || 
+              post.image_url || 
+              post.image || 
+              post.images?.[0] || 
+              null;
+    }
+    
+    // Only use default if no image found at all
+    if (!image) {
+      image = 'https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg';
+    }
+    
     const url = `https://noteworthynews.co/article.html?id=${encodeURIComponent(articleId)}`;
     const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
     
     // Ensure image URL is absolute
     let imageUrl = image.startsWith('http') ? image : `https://noteworthynews.co${image.startsWith('/') ? image : '/' + image}`;
     
-    // Check for video URL for Player Cards
-    const videoUrl = post.video_url || post.video || null;
-    const hasVideo = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('.mp4') || videoUrl.includes('video') || videoUrl.includes('get-uploaded-image'));
-    const isGIF = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('get-uploaded-image'));
+    // Check for video URL for Player Cards (non-GIF videos only)
+    const hasVideo = videoUrl && (videoUrl.includes('.mp4') || videoUrl.includes('video'));
     let playerUrl = null;
     if (hasVideo && !isGIF) {
       // Only create player URL for non-GIF videos (MP4, etc.)
@@ -205,12 +220,8 @@ exports.handler = async (event) => {
       playerUrl = `https://noteworthynews.co/video-player.html?url=${encodeURIComponent(absoluteVideoUrl)}`;
     }
     
-    // For GIFs, use the GIF URL directly as the image for social previews
+    // For social previews, use GIF if available, otherwise use the selected image
     let socialImageUrl = imageUrl;
-    if (isGIF && videoUrl) {
-      const absoluteGifUrl = videoUrl.startsWith('http') ? videoUrl : `https://noteworthynews.co${videoUrl.startsWith('/') ? videoUrl : '/' + videoUrl}`;
-      socialImageUrl = absoluteGifUrl;
-    }
     
     // Helper function to get earthquake hashtags
     function getEarthquakeHashtags(location) {

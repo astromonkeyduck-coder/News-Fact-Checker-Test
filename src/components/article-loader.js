@@ -282,14 +282,31 @@
         const title = escapeHtml(post.title || post.story || post.text || 'Breaking News Story');
         const story = post.story || post.text || post.title || '';
         const description = truncateDescription(story);
-        // Prioritize primary_image_url (generated earthquake images) over other image fields
-        const image = ensureAbsoluteImageUrl(
-            post.primary_image_url || 
-            post.image_url || 
-            post.image || 
-            post.images?.[0] || 
-            null
-        );
+        // CRITICAL: Prioritize GIF (video_url) first, then PNG (primary_image_url) for social media previews
+        // This ensures the generated branded earthquake images (especially animated GIFs) appear in social media cards
+        const videoUrl = post.video_url || post.video || null;
+        const isGIF = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('get-uploaded-image'));
+        
+        // Priority order: GIF > PNG > Other images > Default
+        let image = null;
+        if (isGIF && videoUrl) {
+            // Use GIF first if available
+            image = videoUrl;
+        } else {
+            // Fall back to PNG or other images
+            image = post.primary_image_url || 
+                    post.image_url || 
+                    post.image || 
+                    post.images?.[0] || 
+                    null;
+        }
+        
+        // Only use default if no image found at all
+        if (!image) {
+            image = `${SITE_URL}/PREVIEWIMAGEBRUH.jpg`;
+        }
+        
+        const imageUrl = ensureAbsoluteImageUrl(image);
         const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
         const url = `${SITE_URL}/article.html?id=${encodeURIComponent(postId)}`;
 
@@ -314,11 +331,11 @@
             formattedTitle = `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}. ${hashtags}`;
         }
 
-        // Open Graph
+        // Open Graph - use the selected image (GIF if available, otherwise PNG)
         getOrCreateMeta('og:url').setAttribute('content', url);
         getOrCreateMeta('og:title').setAttribute('content', formattedTitle);
         getOrCreateMeta('og:description').setAttribute('content', description);
-        getOrCreateMeta('og:image').setAttribute('content', image);
+        getOrCreateMeta('og:image').setAttribute('content', imageUrl);
         getOrCreateMeta('og:image:width').setAttribute('content', '1200');
         getOrCreateMeta('og:image:height').setAttribute('content', '630');
         getOrCreateMeta('og:site_name').setAttribute('content', 'Noteworthy News');
@@ -327,19 +344,8 @@
         getOrCreateMeta('article:published_time').setAttribute('content', datePosted);
         getOrCreateMeta('article:author').setAttribute('content', 'Noteworthy News');
 
-        // Check if video is available for Player Card
-        const videoUrl = post.video_url || post.video || null;
-        const hasVideo = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('.mp4') || videoUrl.includes('video') || videoUrl.includes('get-uploaded-image'));
-        const isGIF = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('get-uploaded-image'));
-        
-        // For GIFs, use the GIF URL directly as the image for social previews
-        let socialImage = image;
-        if (isGIF && videoUrl) {
-            socialImage = ensureAbsoluteImageUrl(videoUrl);
-        }
-        
-        // Update og:image to use GIF if available
-        getOrCreateMeta('og:image').setAttribute('content', socialImage);
+        // Check if video is available for Player Card (non-GIF videos only)
+        const hasVideo = videoUrl && (videoUrl.includes('.mp4') || videoUrl.includes('video'));
         
         if (hasVideo && !isGIF) {
             // Use Player Card for non-GIF videos (MP4, etc.)
@@ -358,11 +364,11 @@
             getOrCreateMeta('twitter:player', 'name').setAttribute('content', playerUrl);
             getOrCreateMeta('twitter:player:width', 'name').setAttribute('content', '1280');
             getOrCreateMeta('twitter:player:height', 'name').setAttribute('content', '720');
-            getOrCreateMeta('twitter:image', 'name').setAttribute('content', socialImage);
+            getOrCreateMeta('twitter:image', 'name').setAttribute('content', imageUrl);
         } else {
             // Use summary_large_image for images and GIFs
             getOrCreateMeta('twitter:card', 'name').setAttribute('content', 'summary_large_image');
-            getOrCreateMeta('twitter:image', 'name').setAttribute('content', socialImage);
+            getOrCreateMeta('twitter:image', 'name').setAttribute('content', imageUrl);
         }
         
         getOrCreateMeta('twitter:url', 'name').setAttribute('content', url);
