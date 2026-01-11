@@ -2,6 +2,7 @@
  * Inbound Email Handler
  * Receives inbound emails via Resend webhook and triggers ingest-all when email contains "ingest"
  * Automatically sends a reply email to the sender confirming receipt and action
+ * Processes image attachments and adds Noteworthy News logo overlay
  * 
  * Setup Instructions:
  * 1. Go to Resend Dashboard → Domains → Your Domain → Inbound Routes
@@ -10,13 +11,14 @@
  * 4. Save the route
  * 
  * Usage:
- * Send an email to richard@noteworthynews.co with subject or body containing "ingest"
- * The ingest-all function will be triggered automatically and an auto-reply will be sent
+ * - Send an email to richard@noteworthynews.co with subject or body containing "ingest"
+ *   The ingest-all function will be triggered automatically and an auto-reply will be sent
+ * - Send an email with image attachments to automatically get them back with logo overlay
  * 
- * Auto-Reply:
- * - Sends confirmation email to sender automatically
- * - Confirms if earthquake image generation was triggered
- * - Non-blocking - errors don't fail the webhook
+ * Features:
+ * - Auto-Reply: Sends confirmation email to sender automatically
+ * - Attachment Processing: Processes image attachments and adds Noteworthy News logo (70% opacity, top right)
+ * - Non-blocking: Errors don't fail the webhook
  */
 
 // Load environment variables
@@ -30,6 +32,8 @@ if (process.env.NETLIFY_DEV || !process.env.RESEND_API_KEY) {
 
 const crypto = require('crypto');
 const { Resend } = require('resend');
+const sharp = require('sharp');
+const path = require('path');
 
 /**
  * Call ingest-all function via HTTP
@@ -177,6 +181,621 @@ function containsIngestCommand(subject, textBody, htmlBody) {
   });
   
   return shouldTrigger;
+}
+
+/**
+ * Process image/video attachments and overlay Noteworthy News logo
+ * Returns processed file buffer and metadata
+ */
+async function processAttachmentWithLogo(attachmentUrl, attachmentName, contentType) {
+  try {
+    console.log('[Inbound Email] Processing attachment:', {
+      url: attachmentUrl?.substring(0, 100),
+      name: attachmentName,
+      type: contentType
+    });
+
+    // Check if it's an image or video we can process
+    const isImage = contentType && (
+      contentType.startsWith('image/') ||
+      /\.(jpg|jpeg|png|gif|webp|bmp|tiff)$/i.test(attachmentName || '')
+    );
+
+    const isVideo = contentType && (
+      contentType.startsWith('video/') ||
+      /\.(mp4|mov|avi|mkv|webm|m4v)$/i.test(attachmentName || '')
+    );
+
+    if (!isImage && !isVideo) {
+      console.log('[Inbound Email] Skipping unsupported attachment:', contentType);
+      return null;
+    }
+
+    // Handle video processing
+    if (isVideo) {
+      return await processVideoWithLogo(attachmentUrl, attachmentName, contentType);
+    }
+
+    // Download the attachment
+    let imageBuffer;
+    if (attachmentUrl.startsWith('http://') || attachmentUrl.startsWith('https://')) {
+      const response = await fetch(attachmentUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to download attachment: ${response.status}`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      imageBuffer = Buffer.from(arrayBuffer);
+    } else if (attachmentUrl.startsWith('data:')) {
+      // Handle base64 data URL
+      const base64Data = attachmentUrl.split(',')[1];
+      imageBuffer = Buffer.from(base64Data, 'base64');
+    } else {
+      throw new Error('Unsupported attachment URL format');
+    }
+
+    // Load the logo (try different logo files)
+    const logoPath = path.join(__dirname, '../../IMG_5992.PNG'); // Use the email logo
+    let logoBuffer;
+    try {
+      const fs = require('fs');
+      logoBuffer = fs.readFileSync(logoPath);
+    } catch (logoError) {
+      // Try alternative logo paths
+      const altPaths = [
+        path.join(__dirname, '../../IMG_5794.PNG'),
+        path.join(__dirname, '../../nw-logo.GIF'),
+        path.join(__dirname, '../../logo.svg')
+      ];
+      
+      for (const altPath of altPaths) {
+        try {
+          const fs = require('fs');
+          logoBuffer = fs.readFileSync(altPath);
+          console.log('[Inbound Email] Using logo from:', altPath);
+          break;
+        } catch (e) {
+          continue;
+        }
+      }
+      
+      if (!logoBuffer) {
+        // Try fetching from web
+        try {
+          const logoUrl = 'https://noteworthynews.co/IMG_5992.PNG';
+          const logoResponse = await fetch(logoUrl);
+          if (logoResponse.ok) {
+            const logoArrayBuffer = await logoResponse.arrayBuffer();
+            logoBuffer = Buffer.from(logoArrayBuffer);
+            console.log('[Inbound Email] Fetched logo from web');
+          }
+        } catch (webError) {
+          console.error('[Inbound Email] Failed to fetch logo from web:', webError.message);
+        }
+      }
+    }
+
+    if (!logoBuffer) {
+      throw new Error('Could not load logo file');
+    }
+
+    // Get image dimensions and check if it's an animated GIF
+    const image = sharp(imageBuffer);
+    const imageMetadata = await image.metadata();
+    const imageWidth = imageMetadata.width;
+    const imageHeight = imageMetadata.height;
+    const isAnimatedGIF = contentType === 'image/gif' || /\.gif$/i.test(attachmentName || '');
+    const hasPages = imageMetadata.pages && imageMetadata.pages > 1; // Animated GIFs have multiple pages
+    
+    // Check if it's actually animated (has multiple frames)
+    const isAnimated = isAnimatedGIF && hasPages;
+
+    // Calculate logo size (20% of image width, max 200px)
+    const logoSize = Math.min(imageWidth * 0.2, 200);
+    
+    // Resize logo
+    const logo = sharp(logoBuffer);
+    const resizedLogo = await logo
+      .resize(Math.round(logoSize), null, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .png()
+      .toBuffer();
+
+    // Get resized logo dimensions
+    const logoMetadata = await sharp(resizedLogo).metadata();
+    const logoWidth = logoMetadata.width;
+    const logoHeight = logoMetadata.height;
+
+    // Position: top right corner with padding
+    const padding = 20;
+    const left = imageWidth - logoWidth - padding;
+    const top = padding;
+
+    // Apply opacity to logo by creating a semi-transparent version
+    // Sharp doesn't directly support opacity in composite, so we need to adjust the alpha channel
+    const opacity = 0.7; // 70% opacity
+    
+    // Create a semi-transparent logo by extracting RGBA and adjusting alpha channel
+    const logoWithOpacity = await sharp(resizedLogo)
+      .ensureAlpha()
+      .toBuffer();
+    
+    // Get logo pixel data and adjust alpha
+    const logoData = await sharp(logoWithOpacity)
+      .raw()
+      .ensureAlpha()
+      .toBuffer({ resolveWithObject: true });
+    
+    // Adjust alpha channel for opacity
+    const pixels = logoData.data;
+    for (let i = 3; i < pixels.length; i += 4) {
+      pixels[i] = Math.round(pixels[i] * opacity); // Adjust alpha channel
+    }
+    
+    // Create new buffer with adjusted opacity
+    const transparentLogo = await sharp(pixels, {
+      raw: {
+        width: logoData.info.width,
+        height: logoData.info.height,
+        channels: 4
+      }
+    })
+      .png()
+      .toBuffer();
+
+    // Handle animated GIFs differently - process each frame
+    if (isAnimated) {
+      console.log('[Inbound Email] 🎬 Processing animated GIF with', hasPages, 'frames');
+      const animatedResult = await processAnimatedGIFWithLogo(imageBuffer, transparentLogo, left, top, imageWidth, imageHeight, attachmentName);
+      if (animatedResult) {
+        return animatedResult;
+      }
+      // If animated GIF processing failed, fall through to static image processing
+      console.log('[Inbound Email] ⚠️ Animated GIF processing failed, falling back to static image');
+    }
+
+    // For static images (PNG, JPG, static GIF), composite logo normally
+    const finalImage = await image
+      .composite([{
+        input: transparentLogo,
+        left: left,
+        top: top,
+        blend: 'over'
+      }])
+      .png()
+      .toBuffer();
+
+    console.log('[Inbound Email] ✅ Processed image attachment with logo overlay');
+
+    // Output as PNG for all static images (including static GIFs for better quality)
+    return {
+      buffer: finalImage,
+      contentType: 'image/png',
+      filename: `noteworthy-${attachmentName?.replace(/\.\w+$/, '') || 'processed'}.png`,
+      size: finalImage.length
+    };
+  } catch (error) {
+    console.error('[Inbound Email] ❌ Error processing attachment:', {
+      error: error.message,
+      name: attachmentName,
+      type: contentType
+    });
+    return null;
+  }
+}
+
+/**
+ * Process animated GIF frame by frame to preserve animation
+ */
+async function processAnimatedGIFWithLogo(gifBuffer, logoBuffer, logoLeft, logoTop, width, height, attachmentName) {
+  try {
+    console.log('[Inbound Email] 🎬 Processing animated GIF frame by frame...');
+    
+    const { GIFEncoder, quantize, applyPalette } = require('gifenc');
+    const sharp = require('sharp');
+    
+    // Extract frames from animated GIF
+    const frames = [];
+    const gif = sharp(gifBuffer);
+    const metadata = await gif.metadata();
+    const pageCount = metadata.pages || 1;
+    
+    console.log(`[Inbound Email] Extracting ${pageCount} frames from animated GIF...`);
+    
+    // Extract each frame
+    for (let page = 0; page < pageCount; page++) {
+      const frame = await gif
+        .clone()
+        .png({ page })
+        .toBuffer();
+      frames.push(frame);
+    }
+    
+    console.log(`[Inbound Email] ✅ Extracted ${frames.length} frames`);
+    
+    // Process each frame with logo overlay
+    const processedFrames = [];
+    for (let i = 0; i < frames.length; i++) {
+      const frame = await sharp(frames[i])
+        .composite([{
+          input: logoBuffer,
+          left: logoLeft,
+          top: logoTop,
+          blend: 'over'
+        }])
+        .png()
+        .toBuffer();
+      processedFrames.push(frame);
+      
+      if ((i + 1) % 10 === 0) {
+        console.log(`[Inbound Email] ✅ Processed ${i + 1}/${frames.length} frames`);
+      }
+    }
+    
+    // Create shared palette for consistent colors
+    const sampleFrames = [
+      processedFrames[0], 
+      processedFrames[Math.floor(processedFrames.length / 2)], 
+      processedFrames[processedFrames.length - 1]
+    ];
+    const allSamplePixels = [];
+    
+    for (const sampleFrame of sampleFrames) {
+      const image = sharp(sampleFrame);
+      const { data } = await image
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      const rgba = new Uint8ClampedArray(data);
+      // Sample every 10th pixel
+      for (let j = 0; j < rgba.length; j += 40) {
+        allSamplePixels.push(rgba[j], rgba[j + 1], rgba[j + 2], rgba[j + 3]);
+      }
+    }
+    
+    const sampleRgba = new Uint8ClampedArray(allSamplePixels);
+    const sharedPalette = quantize(sampleRgba, 256);
+    
+    // Create GIF encoder
+    const gifEncoder = GIFEncoder({
+      width: width,
+      height: height,
+      repeat: 0 // Repeat forever
+    });
+    
+    // Encode each processed frame
+    for (let i = 0; i < processedFrames.length; i++) {
+      const frame = processedFrames[i];
+      const image = sharp(frame);
+      const { data } = await image
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      
+      const rgba = new Uint8ClampedArray(data);
+      const index = applyPalette(rgba, sharedPalette);
+      
+      // Use original GIF delay if available, otherwise default to 67ms (15fps)
+      gifEncoder.writeFrame(index, width, height, {
+        palette: sharedPalette,
+        delay: 67 // 15fps
+      });
+    }
+    
+    gifEncoder.finish();
+    const gifBytes = gifEncoder.bytes();
+    const finalGifBuffer = Buffer.from(gifBytes);
+    
+    console.log('[Inbound Email] ✅ Processed animated GIF with logo overlay:', {
+      frames: frames.length,
+      size: Math.round(finalGifBuffer.length / 1024) + 'KB'
+    });
+    
+    return {
+      buffer: finalGifBuffer,
+      contentType: 'image/gif',
+      filename: `noteworthy-${attachmentName?.replace(/\.\w+$/, '') || 'processed'}.gif`,
+      size: finalGifBuffer.length
+    };
+  } catch (error) {
+    console.error('[Inbound Email] ❌ Error processing animated GIF:', {
+      error: error.message,
+      stack: error.stack?.substring(0, 500)
+    });
+    // Fallback: return first frame as static image
+    console.log('[Inbound Email] ⚠️ Falling back to static image');
+    return null;
+  }
+}
+
+/**
+ * Process video attachment and overlay Noteworthy News logo using ffmpeg
+ */
+async function processVideoWithLogo(attachmentUrl, attachmentName, contentType) {
+  try {
+    console.log('[Inbound Email] 🎥 Processing video attachment with logo overlay');
+
+    // Download the video
+    let videoBuffer;
+    if (attachmentUrl.startsWith('http://') || attachmentUrl.startsWith('https://')) {
+      const response = await fetch(attachmentUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to download video: ${response.status}`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      videoBuffer = Buffer.from(arrayBuffer);
+    } else if (attachmentUrl.startsWith('data:')) {
+      const base64Data = attachmentUrl.split(',')[1];
+      videoBuffer = Buffer.from(base64Data, 'base64');
+    } else {
+      throw new Error('Unsupported video URL format');
+    }
+
+    // Load the logo
+    const logoPath = path.join(__dirname, '../../IMG_5992.PNG');
+    let logoBuffer;
+    try {
+      const fs = require('fs');
+      logoBuffer = fs.readFileSync(logoPath);
+    } catch (logoError) {
+      // Try alternative paths
+      const altPaths = [
+        path.join(__dirname, '../../IMG_5794.PNG'),
+        path.join(__dirname, '../../nw-logo.GIF'),
+        path.join(__dirname, '../../logo.svg')
+      ];
+      
+      for (const altPath of altPaths) {
+        try {
+          const fs = require('fs');
+          logoBuffer = fs.readFileSync(altPath);
+          console.log('[Inbound Email] Using logo from:', altPath);
+          break;
+        } catch (e) {
+          continue;
+        }
+      }
+      
+      if (!logoBuffer) {
+        // Try fetching from web
+        try {
+          const logoUrl = 'https://noteworthynews.co/IMG_5992.PNG';
+          const logoResponse = await fetch(logoUrl);
+          if (logoResponse.ok) {
+            const logoArrayBuffer = await logoResponse.arrayBuffer();
+            logoBuffer = Buffer.from(logoArrayBuffer);
+            console.log('[Inbound Email] Fetched logo from web');
+          }
+        } catch (webError) {
+          console.error('[Inbound Email] Failed to fetch logo from web:', webError.message);
+        }
+      }
+    }
+
+    if (!logoBuffer) {
+      throw new Error('Could not load logo file');
+    }
+
+    // Prepare logo for video overlay (resize and apply opacity)
+    const logo = sharp(logoBuffer);
+    const logoMetadata = await logo.metadata();
+    
+    // Resize logo to reasonable size for video (10% of typical video width, max 150px)
+    const logoSize = 150;
+    const resizedLogo = await logo
+      .resize(logoSize, null, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .png()
+      .toBuffer();
+
+    // Apply opacity to logo
+    const opacity = 0.7;
+    const logoData = await sharp(resizedLogo)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    
+    const pixels = Buffer.from(logoData.data);
+    for (let i = 3; i < pixels.length; i += 4) {
+      pixels[i] = Math.round(pixels[i] * opacity);
+    }
+    
+    const transparentLogo = await sharp(pixels, {
+      raw: {
+        width: logoData.info.width,
+        height: logoData.info.height,
+        channels: 4
+      }
+    })
+      .png()
+      .toBuffer();
+
+    // Use ffmpeg to overlay logo on video
+    const { FFmpeg } = require('@ffmpeg/ffmpeg');
+    const { toBlobURL } = require('@ffmpeg/util');
+    
+    const ffmpeg = new FFmpeg();
+    
+    // Load FFmpeg core
+    console.log('[Inbound Email] 📦 Loading FFmpeg WASM core for video processing...');
+    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    });
+    console.log('[Inbound Email] ✅ FFmpeg loaded');
+
+    // Write video and logo to FFmpeg's virtual file system
+    await ffmpeg.writeFile('input.mp4', videoBuffer);
+    await ffmpeg.writeFile('logo.png', transparentLogo);
+    console.log('[Inbound Email] ✅ Wrote video and logo to FFmpeg FS');
+
+    // Get video dimensions for logo positioning
+    // Use ffprobe to get video info, or use a reasonable default
+    const logoWidth = logoData.info.width;
+    const logoHeight = logoData.info.height;
+    const padding = 20;
+
+    // Overlay logo on video (top right corner)
+    // Position: x = video_width - logo_width - padding, y = padding
+    await ffmpeg.exec([
+      '-i', 'input.mp4',
+      '-i', 'logo.png',
+      '-filter_complex', `[0:v][1:v]overlay=W-w-${padding}:${padding}[v]`,
+      '-map', '[v]',
+      '-map', '0:a?', // Include audio if present
+      '-c:v', 'libx264',
+      '-c:a', 'copy', // Copy audio without re-encoding
+      '-preset', 'fast',
+      '-crf', '23',
+      'output.mp4'
+    ]);
+
+    console.log('[Inbound Email] ✅ Video processing complete');
+
+    // Read processed video
+    const processedVideoData = await ffmpeg.readFile('output.mp4');
+    const processedVideoBuffer = Buffer.from(processedVideoData);
+
+    console.log('[Inbound Email] ✅ Processed video attachment with logo overlay:', {
+      size: Math.round(processedVideoBuffer.length / 1024) + 'KB'
+    });
+
+    // Determine output filename
+    const originalExt = attachmentName?.match(/\.(\w+)$/)?.[1] || 'mp4';
+    const outputFilename = `noteworthy-${attachmentName?.replace(/\.\w+$/, '') || 'processed'}.mp4`;
+
+    return {
+      buffer: processedVideoBuffer,
+      contentType: 'video/mp4',
+      filename: outputFilename,
+      size: processedVideoBuffer.length
+    };
+  } catch (error) {
+    console.error('[Inbound Email] ❌ Error processing video:', {
+      error: error.message,
+      name: attachmentName,
+      type: contentType,
+      stack: error.stack?.substring(0, 500)
+    });
+    return null;
+  }
+}
+
+/**
+ * Process email attachments and send back with logo overlay
+ */
+async function processAndReplyWithAttachments(senderEmail, attachments, originalSubject) {
+  if (!attachments || attachments.length === 0) {
+    return null;
+  }
+
+  try {
+    const processedAttachments = [];
+    
+    // Process each attachment
+    for (const attachment of attachments) {
+      // CRITICAL FIX (Bug 1): Resend webhook uses 'download_url' field, not 'url', 'href', or 'content_url'
+      const attachmentUrl = attachment.download_url || attachment.url || attachment.href || attachment.content_url || attachment.downloadUrl;
+      const attachmentName = attachment.filename || attachment.name || attachment.file_name || 'attachment';
+      const contentType = attachment.content_type || attachment.type || attachment.mime_type || 'application/octet-stream';
+
+      if (!attachmentUrl) {
+        console.warn('[Inbound Email] Attachment missing URL (checked: download_url, url, href, content_url):', {
+          attachmentKeys: Object.keys(attachment),
+          attachment: attachment
+        });
+        continue;
+      }
+      
+      console.log('[Inbound Email] Processing attachment:', {
+        name: attachmentName,
+        contentType: contentType,
+        url: attachmentUrl.substring(0, 100) + '...'
+      });
+
+      const processed = await processAttachmentWithLogo(attachmentUrl, attachmentName, contentType);
+      if (processed) {
+        processedAttachments.push(processed);
+      }
+    }
+
+    if (processedAttachments.length === 0) {
+      console.log('[Inbound Email] No processable attachments found');
+      return null;
+    }
+
+    // Send email with processed attachments
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
+
+    // Clean sender email
+    let cleanSenderEmail = senderEmail;
+    const emailMatch = senderEmail.match(/<([^>]+)>/);
+    if (emailMatch) {
+      cleanSenderEmail = emailMatch[1];
+    }
+
+    const emailAttachments = processedAttachments.map(att => ({
+      filename: att.filename,
+      content: att.buffer.toString('base64'),
+      content_type: att.contentType
+    }));
+
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: cleanSenderEmail,
+      replyTo: 'richard@noteworthynews.co',
+      subject: `Re: ${originalSubject || 'Your processed files'}`,
+      html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(46, 204, 113, 0.1) 100%); border-radius: 10px 10px 0 0;">
+              <h2 style="color: #4a90e2; margin: 0; font-size: 24px; font-weight: bold;">Your Files with Noteworthy News Logo</h2>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 30px; background-color: #ffffff;">
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Hey! I've processed your ${processedAttachments.length} file(s) (images and videos) and added the Noteworthy News logo overlay in the top right corner. Check the attachments below.</p>
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0;">Best regards,<br><strong>Noteworthy News</strong></p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+      text: `Hey! I've processed your ${processedAttachments.length} file(s) (images and videos) and added the Noteworthy News logo overlay in the top right corner. Check the attachments.\n\nBest regards,\nNoteworthy News`,
+      attachments: emailAttachments
+    });
+
+    console.log('[Inbound Email] ✅ Sent processed attachments back to sender:', {
+      to: cleanSenderEmail,
+      attachmentCount: processedAttachments.length,
+      emailId: result.data?.id
+    });
+
+    return result;
+  } catch (error) {
+    console.error('[Inbound Email] ❌ Error sending processed attachments:', {
+      error: error.message,
+      name: error.name
+    });
+    return null;
+  }
 }
 
 /**
@@ -557,6 +1176,11 @@ exports.handler = async (event, context) => {
     const subject = emailData.subject || emailData['subject'] || emailData.Subject || '';
     const textBody = emailData.text || emailData.text_body || emailData.body || emailData['text'] || emailData.plain_text || '';
     const htmlBody = emailData.html || emailData.html_body || emailData['html'] || emailData.HTML || '';
+    
+    // CRITICAL FIX (Bug 2): Extract attachments from emailData before using them
+    // Resend webhook format: data.attachments is an array of attachment objects
+    const attachments = emailData.attachments || emailData.attachment || emailData['attachments'] || [];
+    const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
 
     console.log('[Inbound Email] Email details:', {
       from: fromEmail,
@@ -568,7 +1192,10 @@ exports.handler = async (event, context) => {
       hasText: !!textBody,
       hasHtml: !!htmlBody,
       textBodyPreview: textBody.substring(0, 100),
-      subjectPreview: subject.substring(0, 100)
+      subjectPreview: subject.substring(0, 100),
+      hasAttachments: hasAttachments,
+      attachmentCount: attachments.length,
+      attachmentKeys: hasAttachments ? Object.keys(attachments[0] || {}) : []
     });
 
     // Check if email is to richard@noteworthynews.co
@@ -588,16 +1215,27 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // Check for attachments and process them (non-blocking)
+    if (hasAttachments) {
+      console.log('[Inbound Email] 📎 Processing attachments:', attachments.length);
+      // Process attachments (images and videos) with logo overlay
+      processAndReplyWithAttachments(fromEmail, attachments, subject).catch(err => {
+        console.error('[Inbound Email] Attachment processing error (non-blocking):', err);
+      });
+    }
+
     // Check if email contains "ingest" command
     const shouldTrigger = containsIngestCommand(subject, textBody, htmlBody);
     
     if (!shouldTrigger) {
       console.log('[Inbound Email] Email does not contain "ingest" command, ignoring');
       
-      // Send auto-reply even if ingest wasn't triggered
-      sendAutoReply(fromEmail, subject, false).catch(err => {
-        console.error('[Inbound Email] Auto-reply error (non-blocking):', err);
-      });
+      // Send auto-reply even if ingest wasn't triggered (unless we're processing attachments)
+      if (!hasAttachments) {
+        sendAutoReply(fromEmail, subject, false).catch(err => {
+          console.error('[Inbound Email] Auto-reply error (non-blocking):', err);
+        });
+      }
       
       return {
         statusCode: 200,
@@ -605,6 +1243,7 @@ exports.handler = async (event, context) => {
         body: JSON.stringify({ 
           success: true,
           message: 'Email received but does not contain "ingest" command',
+          attachmentsProcessed: hasAttachments
         }),
       };
     }

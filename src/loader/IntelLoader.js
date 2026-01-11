@@ -730,6 +730,12 @@ export function hideLoader() {
       // Remove from DOM after fade completes (prevent memory leaks)
       setTimeout(() => {
         if (loaderElement && loaderElement.parentNode) {
+          // CRITICAL: Force remove immediately to prevent blocking content
+          loaderElement.style.display = 'none';
+          loaderElement.style.visibility = 'hidden';
+          loaderElement.style.pointerEvents = 'none';
+          loaderElement.style.zIndex = '-1';
+          
           loaderElement.parentNode.removeChild(loaderElement);
           loaderElement = null;
           // Reset state for potential reuse
@@ -737,6 +743,9 @@ export function hideLoader() {
           currentProgress = 0;
           currentPhase = 'AUTH';
         }
+        
+        // CRITICAL: Ensure body overflow is restored
+        document.body.style.overflow = '';
         
         // Dispatch event for audio hooks
         window.dispatchEvent(new CustomEvent('nn:loader:hide'));

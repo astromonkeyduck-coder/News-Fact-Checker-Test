@@ -19,10 +19,13 @@
     "add:game": "node scripts/safe-add-game.js",
     "test:earthquake": "node test-earthquake-visual.js",
     "test:earthquake-full": "node test-full-earthquake-pipeline.js",
-    "test:earthquake-last": "node test-last-earthquake.js"
+    "test:earthquake-last": "node test-last-earthquake.js",
+    "test:video": "node test-video-generation-local.js"
   },
   "dependencies": {
     "@auth0/auth0-spa-js": "^2.8.0",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "@netlify/blobs": "8.2.0",
     "@netlify/functions": "^2.6.0",
     "@resvg/resvg-js": "^2.6.2",

@@ -8,6 +8,8 @@
 
 const sharp = require('sharp');
 const { getStore } = require('@netlify/blobs');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * Generate animated video frames with visual effects
@@ -411,13 +413,230 @@ async function framesToAnimatedGIF(frames, width, height) {
 }
 
 /**
+ * Generate TTS audio for earthquake text
+ */
+async function generateTTSAudio(magnitude, location, timestamp = null) {
+  try {
+    // Format text like the video: "BREAKING: M{magnitude} Earthquake Near {location}"
+    const magnitudeText = `M${magnitude.toFixed(1)}`;
+    let text = `BREAKING: ${magnitudeText} Earthquake Near ${location}`;
+    
+    // Add timestamp if provided
+    if (timestamp) {
+      const date = new Date(timestamp);
+      const timeStr = date.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        timeZoneName: 'short'
+      });
+      text += `. ${timeStr}`;
+    }
+    
+    console.log(`[generate-earthquake-video] 🎤 Generating TTS for: "${text}"`);
+    
+    // Call ElevenLabs TTS API
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) {
+      console.warn('[generate-earthquake-video] ⚠️ ELEVENLABS_API_KEY not set, skipping TTS');
+      return null;
+    }
+    
+    // Use custom voice ID
+    const voiceId = 'UgBBYS2sOqTuMpoF3BR0';
+    
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+          style: 0.0,
+          use_speaker_boost: true
+        }
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[generate-earthquake-video] ❌ TTS API error:', response.status, errorText);
+      return null;
+    }
+    
+    const audioBuffer = await response.arrayBuffer();
+    console.log(`[generate-earthquake-video] ✅ TTS generated: ${Math.round(audioBuffer.byteLength / 1024)}KB`);
+    return Buffer.from(audioBuffer);
+  } catch (error) {
+    console.error('[generate-earthquake-video] ❌ TTS generation error:', error.message);
+    return null;
+  }
+}
+
+/**
+ * Load and mix datacenter.wav with TTS audio
+ */
+async function mixAudioWithDatacenter(ttsAudioBuffer, videoDurationSeconds) {
+  try {
+    // Load datacenter.wav
+    const datacenterPath = path.join(__dirname, '../../datacenter.wav');
+    let datacenterBuffer = null;
+    
+    // Try multiple paths
+    const possiblePaths = [
+      datacenterPath,
+      path.join(process.cwd(), 'datacenter.wav'),
+      '/tmp/datacenter.wav',
+    ];
+    
+    for (const wavPath of possiblePaths) {
+      try {
+        if (fs.existsSync(wavPath)) {
+          datacenterBuffer = fs.readFileSync(wavPath);
+          console.log(`[generate-earthquake-video] ✅ Loaded datacenter.wav from: ${wavPath} (${Math.round(datacenterBuffer.length / 1024)}KB)`);
+          break;
+        }
+      } catch (err) {
+        // Continue to next path
+      }
+    }
+    
+    if (!datacenterBuffer) {
+      console.warn('[generate-earthquake-video] ⚠️ datacenter.wav not found, using TTS only');
+      // Return TTS buffer directly (not an object) when no background audio
+      return ttsAudioBuffer;
+    }
+    
+    // Use ffmpeg to mix TTS (foreground) with datacenter.wav (background, lower volume)
+    // This will be done in framesToMP4WithAudio when creating the final video
+    console.log('[generate-earthquake-video] 🎵 Audio mixing will be done during MP4 encoding');
+    
+    // Return object with both audio tracks for mixing
+    return {
+      tts: ttsAudioBuffer,
+      background: datacenterBuffer,
+      duration: videoDurationSeconds
+    };
+  } catch (error) {
+    console.error('[generate-earthquake-video] ❌ Audio mixing error:', error.message);
+    return ttsAudioBuffer; // Return TTS only if mixing fails
+  }
+}
+
+/**
+ * Convert frames to MP4 with audio using @ffmpeg/ffmpeg (WASM)
+ * audioBuffer can be either a Buffer (TTS only) or an object {tts, background, duration} (mixed)
+ */
+async function framesToMP4WithAudio(frames, width, height, audioBuffer, fps = 15) {
+  console.log(`[generate-earthquake-video] 🎥 Converting ${frames.length} frames to MP4 with audio...`);
+  
+  try {
+    const { FFmpeg } = require('@ffmpeg/ffmpeg');
+    const { fetchFile, toBlobURL } = require('@ffmpeg/util');
+    const fs = require('fs');
+    const path = require('path');
+    
+    const ffmpeg = new FFmpeg();
+    
+    // Load FFmpeg core
+    console.log('[generate-earthquake-video] 📦 Loading FFmpeg WASM core...');
+    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    });
+    console.log('[generate-earthquake-video] ✅ FFmpeg loaded');
+    
+    // Write frames to FFmpeg's virtual file system
+    for (let i = 0; i < frames.length; i++) {
+      await ffmpeg.writeFile(`frame_${String(i).padStart(4, '0')}.png`, frames[i]);
+    }
+    console.log(`[generate-earthquake-video] ✅ Wrote ${frames.length} frames to FFmpeg FS`);
+    
+    // Handle audio: either single TTS buffer or mixed audio object
+    const hasBackground = audioBuffer && typeof audioBuffer === 'object' && audioBuffer.background;
+    
+    if (hasBackground) {
+      // Mix TTS (foreground) with datacenter.wav (background, 30% volume)
+      await ffmpeg.writeFile('tts.mp3', audioBuffer.tts);
+      await ffmpeg.writeFile('background.wav', audioBuffer.background);
+      
+      console.log('[generate-earthquake-video] 🎵 Mixing TTS with datacenter.wav background...');
+      
+      // First, convert WAV to MP3 and adjust volume
+      await ffmpeg.exec([
+        '-i', 'background.wav',
+        '-filter:a', 'volume=0.3', // 30% volume for background
+        '-t', String(audioBuffer.duration), // Match video duration
+        '-y',
+        'background_low.mp3'
+      ]);
+      
+      // Mix both audio tracks
+      await ffmpeg.exec([
+        '-i', 'tts.mp3',
+        '-i', 'background_low.mp3',
+        '-filter_complex', '[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=2',
+        '-y',
+        'mixed.mp3'
+      ]);
+      
+      await ffmpeg.writeFile('audio.mp3', await ffmpeg.readFile('mixed.mp3'));
+      console.log('[generate-earthquake-video] ✅ Audio mixed successfully');
+    } else {
+      // Single TTS audio
+      await ffmpeg.writeFile('audio.mp3', audioBuffer);
+      console.log('[generate-earthquake-video] ✅ Using TTS audio only');
+    }
+    
+    // Convert frames to video and add audio
+    await ffmpeg.exec([
+      '-framerate', String(fps),
+      '-i', 'frame_%04d.png',
+      '-i', 'audio.mp3',
+      '-c:v', 'libx264',
+      '-preset', 'medium',
+      '-crf', '23',
+      '-c:a', 'aac',
+      '-b:a', '128k',
+      '-pix_fmt', 'yuv420p',
+      '-shortest', // Match audio duration
+      '-y',
+      'output.mp4'
+    ]);
+    
+    console.log('[generate-earthquake-video] ✅ MP4 encoding complete');
+    
+    // Read output
+    const mp4Data = await ffmpeg.readFile('output.mp4');
+    const mp4Buffer = Buffer.from(mp4Data);
+    
+    console.log(`[generate-earthquake-video] ✅ MP4 generated: ${Math.round(mp4Buffer.length / 1024)}KB`);
+    return mp4Buffer;
+    
+  } catch (error) {
+    console.error('[generate-earthquake-video] ❌ MP4 encoding error:', error.message);
+    console.error('[generate-earthquake-video] Stack:', error.stack);
+    console.error('[generate-earthquake-video] 💡 Falling back to GIF');
+    return null;
+  }
+}
+
+/**
  * Store video in blob storage
  */
-async function storeVideo(videoBuffer, eventId) {
+async function storeVideo(videoBuffer, eventId, format = 'gif') {
   const siteID = process.env.NETLIFY_SITE_ID;
   const token = process.env.NETLIFY_BLOB_READ_WRITE_TOKEN;
   const storeName = "post-media";
-  const videoKey = `earthquake-${eventId}-video-${Date.now()}.gif`;
+  const extension = format === 'mp4' ? 'mp4' : 'gif';
+  const contentType = format === 'mp4' ? 'video/mp4' : 'image/gif';
+  const videoKey = `earthquake-${eventId}-video-${Date.now()}.${extension}`;
   
   if (!siteID || !token) {
     console.warn('[generate-earthquake-video] ⚠️ Missing NETLIFY_SITE_ID or NETLIFY_BLOB_READ_WRITE_TOKEN');
@@ -431,17 +650,17 @@ async function storeVideo(videoBuffer, eventId) {
     token: token,
   });
   
-  console.log(`[generate-earthquake-video] 📤 Storing animated GIF: ${videoKey} (${Math.round(videoBuffer.length / 1024)}KB)`);
+  console.log(`[generate-earthquake-video] 📤 Storing ${format.toUpperCase()}: ${videoKey} (${Math.round(videoBuffer.length / 1024)}KB)`);
   
   try {
     await store.set(videoKey, videoBuffer, {
-      contentType: 'image/gif',
+      contentType: contentType,
     });
     
     const baseUrl = process.env.URL || 'https://noteworthynews.co';
     const videoUrl = `${baseUrl}/.netlify/functions/get-uploaded-image?key=${encodeURIComponent(videoKey)}`;
     
-    console.log(`[generate-earthquake-video] ✅ Animated GIF stored successfully: ${videoUrl}`);
+    console.log(`[generate-earthquake-video] ✅ ${format.toUpperCase()} stored successfully: ${videoUrl}`);
     return videoUrl;
   } catch (error) {
     console.error(`[generate-earthquake-video] ❌ Failed to store video:`, error.message);
@@ -507,12 +726,39 @@ exports.handler = async (event, context) => {
     // PHASE 6: Generate video frames - function will fetch GeoJSON detail and extract products internally
     const { frames, width, height } = await generateVideoFrames(magnitude, location, eventId, coordinatesArray, detailUrl);
     
-    // Convert frames to animated GIF
+    const fps = 15;
+    const videoDuration = frames.length / fps;
+    
+    // Generate TTS audio
+    console.log(`[generate-earthquake-video] 🎤 Generating TTS audio...`);
+    const ttsAudio = await generateTTSAudio(magnitude, location);
+    
+    // Mix with datacenter.wav (returns object with tts and background if found)
+    let finalAudio = null;
+    if (ttsAudio) {
+      console.log(`[generate-earthquake-video] 🎵 Preparing audio with datacenter.wav...`);
+      finalAudio = await mixAudioWithDatacenter(ttsAudio, videoDuration);
+    }
+    
+    // Try to generate MP4 with audio first
+    let mp4Url = null;
+    if (finalAudio) {
+      console.log(`[generate-earthquake-video] 🎥 Attempting MP4 generation with audio...`);
+      const mp4Buffer = await framesToMP4WithAudio(frames, width, height, finalAudio, fps);
+      if (mp4Buffer) {
+        mp4Url = await storeVideo(mp4Buffer, eventId, 'mp4');
+        console.log(`[generate-earthquake-video] ✅ MP4 with audio generated: ${mp4Url}`);
+      }
+    }
+    
+    // Always generate GIF as fallback (for email compatibility)
     console.log(`[generate-earthquake-video] 🎬 Converting ${frames.length} frames to animated GIF...`);
     const gifBuffer = await framesToAnimatedGIF(frames, width, height);
+    const gifUrl = await storeVideo(gifBuffer, eventId, 'gif');
     
-    // Store animated GIF
-    const videoUrl = await storeVideo(gifBuffer, eventId);
+    // Return MP4 if available, otherwise GIF
+    const videoUrl = mp4Url || gifUrl;
+    const format = mp4Url ? 'mp4' : 'gif';
     
     return {
       statusCode: 200,
@@ -520,12 +766,17 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         success: true,
         url: videoUrl,
+        mp4_url: mp4Url || null,
+        gif_url: gifUrl,
         eventId: eventId,
         framesGenerated: frames.length,
         dimensions: `${width}x${height}`,
-        format: 'gif',
-        duration: `${(frames.length / 15).toFixed(1)}s`, // ~15fps
-        note: 'Animated GIF created with visual effects. Can be converted to MP4 for better social media support.'
+        format: format,
+        duration: `${videoDuration.toFixed(1)}s`,
+        hasAudio: !!finalAudio,
+        note: mp4Url 
+          ? 'MP4 video with TTS audio and datacenter.wav background music created. GIF also available for email compatibility.'
+          : 'Animated GIF created with visual effects. MP4 generation requires ffmpeg library (see TODO in code).'
       }),
     };
     

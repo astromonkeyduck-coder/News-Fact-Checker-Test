@@ -263,11 +263,46 @@ export class SituationMonitorShell {
     // Small delay for "READY" phase to be visible (reduced from 500ms to 200ms for faster UX)
     setTimeout(() => {
       hideLoader();
+      
+      // CRITICAL: Ensure container is visible after loader hides
+      setTimeout(() => {
+        const container = document.getElementById(this.containerId);
+        if (container) {
+          // Force visibility
+          container.style.display = 'block';
+          container.style.visibility = 'visible';
+          container.style.opacity = '1';
+          container.style.zIndex = '1';
+          // Ensure wrapper is visible
+          const wrapper = container.querySelector('.sitmon-page-wrapper');
+          if (wrapper) {
+            wrapper.style.display = 'block';
+            wrapper.style.visibility = 'visible';
+            wrapper.style.opacity = '1';
+          }
+          console.log('[SituationMonitorShell] ✅ Container visibility forced after loader hide');
+        } else {
+          console.error('[SituationMonitorShell] ❌ Container not found after loader hide!');
+        }
+      }, 100); // Small delay to ensure loader removal completes
     }, 200);
     } catch (error) {
       console.error('[SituationMonitorShell] Critical init error:', error);
       // Ensure loader hides even on error
       hideLoader();
+      
+      // CRITICAL: Ensure container is visible even on error
+      setTimeout(() => {
+        const container = document.getElementById(this.containerId);
+        if (container) {
+          container.style.display = 'block';
+          container.style.visibility = 'visible';
+          container.style.opacity = '1';
+          container.style.zIndex = '1';
+          console.log('[SituationMonitorShell] ✅ Container visibility forced after error');
+        }
+      }, 100);
+      
       // Show error message to user
       this.showToast('Initialization error - some features may be unavailable', 'error');
     }

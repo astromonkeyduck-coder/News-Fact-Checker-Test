@@ -1455,16 +1455,33 @@ exports.handler = async (event, context) => {
                                     relativeTime = diffSeconds + ' second' + (diffSeconds > 1 ? 's' : '') + ' ago';
                                   }
                                   
-                                  // Build share text with relative time (server-side calculation for email compatibility)
-                                  const shareTextWithTime = getShareTextWithHashtags(safeMagnitudeFormatted, safeLocationDisplay, { ...earthquake, locationDetails }, relativeTime);
-                                  const shareUrl = `https://noteworthynews.co/article.html?id=post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}&utm_source=email&utm_medium=share&utm_campaign=earthquake_alert`;
-                                  const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareTextWithTime)}&url=${encodeURIComponent(shareUrl)}`;
+                                  // Use dynamic Twitter share function that calculates relative time WHEN CLICKED
+                                  // This ensures the time is always current, not the time when the email was sent
+                                  const eventId = earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown';
+                                  
+                                  // Get earthquake timestamp in ISO format (for twitter-share function)
+                                  let earthquakeTimestamp;
+                                  if (earthquake.time_ms) {
+                                    earthquakeTimestamp = new Date(earthquake.time_ms).toISOString();
+                                  } else if (earthquake.time) {
+                                    earthquakeTimestamp = typeof earthquake.time === 'string' ? earthquake.time : new Date(earthquake.time).toISOString();
+                                  } else if (earthquake.timestamp) {
+                                    earthquakeTimestamp = typeof earthquake.timestamp === 'string' ? earthquake.timestamp : new Date(earthquake.timestamp).toISOString();
+                                  } else if (earthquake.updated_at_source) {
+                                    earthquakeTimestamp = typeof earthquake.updated_at_source === 'string' ? earthquake.updated_at_source : new Date(earthquake.updated_at_source).toISOString();
+                                  } else {
+                                    earthquakeTimestamp = new Date().toISOString();
+                                  }
+                                  
+                                  // Build URL to twitter-share function with earthquake data
+                                  // The function will calculate relative time at click time and redirect to Twitter
+                                  const twitterShareFunctionUrl = `https://noteworthynews.co/.netlify/functions/twitter-share?magnitude=${encodeURIComponent(safeMagnitudeFormatted)}&location=${encodeURIComponent(safeLocationDisplay)}&eventId=${encodeURIComponent(eventId)}&timestamp=${encodeURIComponent(earthquakeTimestamp)}`;
                                   
                                   // Use table-based button for better email client compatibility
                                   return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0;">
                                     <tr>
                                       <td align="center" style="background-color: #1DA1F2; border-radius: 6px; padding: 10px 20px;">
-                                        <a href="${twitterShareUrl}" 
+                                        <a href="${twitterShareFunctionUrl}" 
                                          style="display: inline-block; font-size: 14px; font-weight: 600; color: #ffffff !important; text-decoration: none !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
                                           𝕏 Share
                                         </a>
