@@ -1504,9 +1504,9 @@ async function processEarthquake(feature, logger, forceEmail = false) {
           try {
             logger.info('🎬 Starting video generation for social media preview', { eventId, magnitude });
             const baseUrl = process.env.URL || 'https://noteworthynews.co';
-            // Add timeout to prevent hanging (30 seconds)
+            // Add timeout to prevent hanging (45 seconds - increased for reduced frame count)
             const videoController = new AbortController();
-            videoTimeoutId = setTimeout(() => videoController.abort(), 30000);
+            videoTimeoutId = setTimeout(() => videoController.abort(), 45000);
             const videoResponse = await fetch(`${baseUrl}/.netlify/functions/generate-earthquake-video`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },

@@ -30,7 +30,9 @@ async function generateVideoFrames(magnitude, location, eventId, coordinates = n
     timestamp: new Date().toISOString()
   });
   
-  const frameCount = 60; // 60 frames for smooth animation (6 seconds at 10fps - slow and professional)
+  // Reduced frame count for faster generation (30 frames = 2 seconds at 15fps)
+  // This prevents timeout while still providing smooth animation
+  const frameCount = 30; // 30 frames for smooth animation (2 seconds at 15fps - fast and professional)
   const frames = [];
   
   console.log(`[generate-earthquake-video] 🎬 Generating ${frameCount} frames for video...`);

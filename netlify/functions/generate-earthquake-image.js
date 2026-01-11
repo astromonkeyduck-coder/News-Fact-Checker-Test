@@ -2432,16 +2432,21 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
       
       // If channels have variance (stddev > 0), it means there's variation (likely text)
       // Also check if max values are high enough to indicate visible content
-      const hasVariance = (redChannel.stddev > 0 || greenChannel.stddev > 0 || blueChannel.stddev > 0);
+      // Note: stddev might be undefined in some Sharp versions, so check safely
+      const redStddev = redChannel.stddev ?? redChannel.stdev ?? 0;
+      const greenStddev = greenChannel.stddev ?? greenChannel.stdev ?? 0;
+      const blueStddev = blueChannel.stddev ?? blueChannel.stdev ?? 0;
+      const hasVariance = (redStddev > 0 || greenStddev > 0 || blueStddev > 0);
       const hasHighValues = (redChannel.max > 50 || greenChannel.max > 50 || blueChannel.max > 50);
-      compositeHasText = hasVariance && hasHighValues;
+      // Text should have variance OR high values (text can be white on dark background or vice versa)
+      compositeHasText = hasVariance || hasHighValues;
       
       console.log(`[generate-earthquake-image] 📊 Final composite pixel analysis:`, {
         hasVariance: hasVariance,
         hasHighValues: hasHighValues,
-        redStddev: redChannel.stddev?.toFixed(2),
-        greenStddev: greenChannel.stddev?.toFixed(2),
-        blueStddev: blueChannel.stddev?.toFixed(2),
+        redStddev: redStddev?.toFixed(2),
+        greenStddev: greenStddev?.toFixed(2),
+        blueStddev: blueStddev?.toFixed(2),
         redMax: redChannel.max,
         greenMax: greenChannel.max,
         blueMax: blueChannel.max,
