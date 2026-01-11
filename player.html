@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Player - Noteworthy News</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .video-container {
+            width: 100%;
+            max-width: 1280px;
+            position: relative;
+            background: #000;
+        }
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        button {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="video-container">
+        <video id="videoPlayer" controls autoplay muted playsinline>
+            <source id="videoSource" src="" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div id="loading" class="loading">Loading video...</div>
+    </div>
+    
+    <script>
+        // Get article ID from query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const articleId = urlParams.get('id');
+        const directVideoUrl = urlParams.get('url');
+        
+        if (directVideoUrl) {
+            // Direct video URL provided
+            loadVideo(directVideoUrl);
+        } else if (articleId) {
+            // Fetch post data from article-preview function (returns JSON in debug mode or we parse HTML)
+            // For now, try to extract from article-preview's prerendered HTML meta tags
+            fetch(`/.netlify/functions/article-preview?id=${encodeURIComponent(articleId)}&mode=preview`)
+                .then(res => res.text())
+                .then(html => {
+                    // Try to extract video URL from og:video meta tag
+                    const videoMatch = html.match(/<meta\s+property="og:video"\s+content="([^"]+)"/i);
+                    if (videoMatch) {
+                        // If og:video points to player.html, extract the actual video URL
+                        const playerUrl = videoMatch[1];
+                        // For now, we'll need the video URL passed directly
+                        // This is a limitation - we should pass video URL as query param
+                        document.getElementById('loading').textContent = 'Please provide video URL directly: /player.html?url=VIDEO_URL';
+                    } else {
+                        document.getElementById('loading').textContent = 'MP4 video not found for this article. Use /player.html?url=VIDEO_URL directly.';
+                    }
+                })
+                .catch(err => {
+                    console.error('Error fetching video:', err);
+                    document.getElementById('loading').textContent = 'Error loading video. Use /player.html?url=VIDEO_URL directly.';
+                });
+        } else {
+            document.getElementById('loading').textContent = 'No article ID or video URL provided';
+        }
+        
+        function loadVideo(url) {
+            const video = document.getElementById('videoPlayer');
+            const source = document.getElementById('videoSource');
+            const loading = document.getElementById('loading');
+            
+            // Ensure absolute URL
+            const absoluteUrl = url.startsWith('http') ? url : `https://noteworthynews.co${url.startsWith('/') ? url : '/' + url}`;
+            
+            source.src = absoluteUrl;
+            video.load();
+            
+            video.addEventListener('loadeddata', () => {
+                loading.style.display = 'none';
+                video.play().catch(err => {
+                    console.error('Autoplay failed:', err);
+                    // Autoplay may be blocked, but video is loaded
+                });
+            });
+            
+            video.addEventListener('error', (e) => {
+                console.error('Video error:', e);
+                loading.textContent = 'Error loading video';
+            });
+        }
+    </script>
+</body>
+</html>

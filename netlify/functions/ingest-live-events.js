@@ -132,94 +132,156 @@ async function ingestUSGSEarthquakes() {
 }
 
 /**
- * Ingest from RSS feeds (optional, configurable)
+ * Ingest from RSS feeds using existing RSS infrastructure
  */
 async function ingestRSSFeeds() {
   try {
-    const rssFeedsJson = process.env.RSS_FEEDS_JSON;
-    if (!rssFeedsJson) {
-      return []; // No RSS feeds configured
+    // Load RSS feeds from our existing configuration
+    // Use lazy loading pattern (same as rss-aggregate.js and rss-feed.js)
+    let RSS_FEEDS;
+    let parseFeed;
+    let moduleLoadError = null;
+    
+    // Lazy load modules to prevent bundling issues
+    function loadModules() {
+      if (RSS_FEEDS && parseFeed) {
+        return { RSS_FEEDS, parseFeed };
+      }
+      
+      if (moduleLoadError) {
+        throw moduleLoadError;
+      }
+      
+      try {
+        const feedsModule = require('../../src/rss/feeds.js');
+        RSS_FEEDS = feedsModule.RSS_FEEDS || feedsModule.default?.RSS_FEEDS;
+        if (!RSS_FEEDS || !Array.isArray(RSS_FEEDS)) {
+          throw new Error('RSS_FEEDS is not an array');
+        }
+      } catch (error) {
+        moduleLoadError = new Error(`Failed to load RSS feeds: ${error.message}`);
+        console.error('[Ingest] Failed to load RSS feeds module:', error);
+        throw moduleLoadError;
+      }
+      
+      try {
+        const parserModule = require('../../src/rss/parser.js');
+        parseFeed = parserModule.parseFeed || parserModule.default?.parseFeed;
+        if (typeof parseFeed !== 'function') {
+          throw new Error('parseFeed is not a function');
+        }
+      } catch (error) {
+        moduleLoadError = new Error(`Failed to load RSS parser: ${error.message}`);
+        console.error('[Ingest] Failed to load RSS parser module:', error);
+        throw moduleLoadError;
+      }
+      
+      return { RSS_FEEDS, parseFeed };
+    }
+    
+    try {
+      loadModules();
+    } catch (error) {
+      // Log error clearly instead of silently returning empty array
+      console.error('[Ingest] RSS module loading failed - RSS ingestion disabled:', error.message);
+      console.error('[Ingest] This may be due to bundling configuration. Check netlify.toml included_files.');
+      return [];
     }
 
-    const feeds = JSON.parse(rssFeedsJson);
+    if (!RSS_FEEDS || !Array.isArray(RSS_FEEDS) || RSS_FEEDS.length === 0) {
+      console.warn('[Ingest] No RSS feeds configured');
+      return [];
+    }
+
+    if (!parseFeed || typeof parseFeed !== 'function') {
+      console.error('[Ingest] parseFeed is not a function');
+      return [];
+    }
+
     const events = [];
+    
+    // Process enabled feeds (limit to 20 feeds to avoid timeout)
+    const enabledFeeds = RSS_FEEDS.filter(feed => feed.enabledByDefault).slice(0, 20);
+    console.log(`[Ingest] Processing ${enabledFeeds.length} RSS feeds...`);
 
-    for (const feed of feeds) {
+    for (const feed of enabledFeeds) {
       try {
-        // Simple RSS parsing - in production, use a proper RSS parser
-        const response = await fetch(feed.url);
-        if (!response.ok) continue;
+        if (!feed.feedUrl || !feed.id) {
+          console.warn(`[Ingest] Skipping feed ${feed.name || 'unknown'}: missing feedUrl or id`);
+          continue;
+        }
 
-        const text = await response.text();
-        // Basic RSS parsing (simplified - use a library like rss-parser in production)
-        const items = parseRSSBasic(text);
+        // Use rss-parser to fetch and parse the feed
+        // parseFeed expects (feedUrl, feedConfig)
+        const parsed = await parseFeed(feed.feedUrl, feed);
+        
+        if (!parsed || !Array.isArray(parsed) || parsed.length === 0) {
+          console.warn(`[Ingest] No items found in feed ${feed.name || feed.id}`);
+          continue;
+        }
 
-        for (const item of items) {
-          if (!item.guid && !item.link) continue;
+        console.log(`[Ingest] Parsed ${parsed.length} items from ${feed.name || feed.id}`);
 
-          const identifier = item.guid || item.link;
-          const canonicalId = generateCanonicalId(feed.name || 'rss', identifier);
+        // Process each item (limit to 50 items per feed to avoid overwhelming the database)
+        const itemsToProcess = parsed.slice(0, 50);
+        
+        for (const item of itemsToProcess) {
+          if (!item.url) {
+            continue; // Skip items without URLs
+          }
+
+          const itemUrl = item.url;
+          const itemId = item.id || itemUrl;
+          const canonicalId = generateCanonicalId(feed.id || feed.name || 'rss', itemId);
+
+          // Extract published date (already normalized by parseFeed)
+          const publishedAt = item.publishedAt || new Date().toISOString();
+
+          // Build tags from feed regions and topics
+          const tags = [];
+          if (feed.regions && Array.isArray(feed.regions)) {
+            tags.push(...feed.regions.map(r => r.toLowerCase()));
+          }
+          if (feed.topics && Array.isArray(feed.topics)) {
+            tags.push(...feed.topics.map(t => t.toLowerCase()));
+          }
+          if (item.categories && Array.isArray(item.categories)) {
+            tags.push(...item.categories.map(c => c.toLowerCase()));
+          }
+          tags.push('rss', feed.id || 'rss-feed');
 
           const event = {
             canonical_id: canonicalId,
             title: item.title || 'Untitled',
-            summary: item.description || item.content || null,
+            summary: item.snippet || null,
             source_name: feed.name || 'RSS Feed',
-            source_url: item.link || null,
-            published_at: item.pubDate || new Date().toISOString(),
+            source_url: itemUrl,
+            published_at: publishedAt,
             fetched_at: new Date().toISOString(),
-            tags: feed.tags || [],
-            reliability: feed.reliability || 'unknown',
-            raw_json: item
+            tags: tags,
+            reliability: 'major_media', // RSS feeds are generally major media sources
+            raw_json: {
+              feed_id: feed.id,
+              feed_name: feed.name,
+              feed_homepage: feed.homepage,
+              item: item
+            }
           };
 
           events.push(event);
         }
       } catch (error) {
-        console.error(`[Ingest] Error ingesting RSS feed ${feed.url}:`, error);
+        console.error(`[Ingest] Error ingesting RSS feed ${feed.name || feed.id}:`, error.message);
+        // Continue with other feeds
       }
     }
 
+    console.log(`[Ingest] Processed ${events.length} RSS events from ${enabledFeeds.length} feeds`);
     return events;
   } catch (error) {
     console.error('[Ingest] Error ingesting RSS feeds:', error);
     return [];
   }
-}
-
-/**
- * Basic RSS parser (simplified - use rss-parser library in production)
- */
-function parseRSSBasic(xml) {
-  const items = [];
-  const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/gi;
-  let match;
-
-  while ((match = itemRegex.exec(xml)) !== null) {
-    const itemXml = match[1];
-    const item = {};
-
-    const titleMatch = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-    if (titleMatch) item.title = titleMatch[1].trim();
-
-    const linkMatch = itemXml.match(/<link[^>]*>([\s\S]*?)<\/link>/i);
-    if (linkMatch) item.link = linkMatch[1].trim();
-
-    const descMatch = itemXml.match(/<description[^>]*>([\s\S]*?)<\/description>/i);
-    if (descMatch) item.description = descMatch[1].trim();
-
-    const guidMatch = itemXml.match(/<guid[^>]*>([\s\S]*?)<\/guid>/i);
-    if (guidMatch) item.guid = guidMatch[1].trim();
-
-    const pubDateMatch = itemXml.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/i);
-    if (pubDateMatch) item.pubDate = pubDateMatch[1].trim();
-
-    if (item.title || item.link) {
-      items.push(item);
-    }
-  }
-
-  return items;
 }
 
 /**

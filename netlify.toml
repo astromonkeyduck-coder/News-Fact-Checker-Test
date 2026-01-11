@@ -41,19 +41,26 @@
   status = 200
   force = false
 
-# Route article.html requests through Edge Function for crawler detection
-# Edge Function routes crawlers to article-preview.js, regular users to static article.html
+# Route ALL article.html requests to article-preview.js (force=true to override static file)
+# article-preview.js serves pre-rendered HTML for crawlers, interactive page for regular users
 [[redirects]]
   from = "/article.html"
-  to = "/.netlify/edge-functions/article-router"
+  to = "/.netlify/functions/article-preview"
   status = 200
-  force = false
+  force = true
+
+# Also support /article (no extension) for cleaner sharing URLs
+[[redirects]]
+  from = "/article"
+  to = "/.netlify/functions/article-preview"
+  status = 200
+  force = true
 
 [functions]
   # Use esbuild to automatically compile TypeScript functions
   node_bundler = "esbuild"
-  # Include source files for TypeScript compilation
-  included_files = ["netlify/functions/**/*.ts", "src/**/*.ts", "netlify/functions/**/*.png", "netlify/functions/fonts-base64.js"]
+  # Include source files for TypeScript compilation and JavaScript RSS modules
+  included_files = ["netlify/functions/**/*.ts", "src/**/*.ts", "src/rss/**/*.js", "netlify/functions/**/*.png", "netlify/functions/fonts-base64.js"]
   # Also include JavaScript functions
   directory = "netlify/functions"
 
