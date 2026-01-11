@@ -438,9 +438,21 @@ exports.handler = async (event, context) => {
           }
           
           // Fetch and parse RSS feeds
+          // Support both optimized format (n/u) and full format (name/url) for backward compatibility
           for (const feed of feeds) {
             try {
-              const response = await fetch(feed.url, { 
+              // Handle optimized format: {n: "Name", u: "url"} or full format: {name: "Name", url: "url"}
+              const feedUrl = feed.u || feed.url;
+              const feedName = feed.n || feed.name || 'RSS Feed';
+              const feedTags = feed.tags || [];
+              const feedReliability = feed.reliability || 'high';
+              
+              if (!feedUrl) {
+                console.warn(`[ingest-all] Skipping feed without URL: ${feedName}`);
+                continue;
+              }
+              
+              const response = await fetch(feedUrl, { 
                 headers: { 'User-Agent': 'NoteworthyNewsRSSBot/1.0' },
                 signal: AbortSignal.timeout(8000) // 8 second timeout
               });
@@ -453,23 +465,24 @@ exports.handler = async (event, context) => {
                 if (!item.guid && !item.link) continue;
                 
                 const identifier = item.guid || item.link;
-                const canonicalId = generateCanonicalId(feed.name || 'rss', identifier);
+                const canonicalId = generateCanonicalId(feedName, identifier);
                 
                 events.push({
                   canonical_id: canonicalId,
                   title: item.title || 'Untitled',
                   summary: item.description || null,
-                  source_name: feed.name || 'RSS Feed',
+                  source_name: feedName,
                   source_url: item.link || null,
                   published_at: item.pubDate || new Date().toISOString(),
                   fetched_at: new Date().toISOString(),
-                  tags: feed.tags || [],
-                  reliability: feed.reliability || 'unknown',
+                  tags: feedTags,
+                  reliability: feedReliability,
                   raw_json: item
                 });
               }
             } catch (error) {
-              console.error(`[ingest-all] Error ingesting RSS feed ${feed.url}:`, error.message);
+              const feedUrl = feed.u || feed.url || 'unknown';
+              console.error(`[ingest-all] Error ingesting RSS feed ${feedUrl}:`, error.message);
             }
           }
           
