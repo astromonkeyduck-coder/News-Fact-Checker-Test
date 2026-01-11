@@ -136,11 +136,31 @@ exports.handler = async (event, context) => {
     };
   } catch (error) {
     console.error('[Markets Proxy] Handler error:', error);
+    
+    // CRITICAL: Always return 200 with data structure (even if empty) to prevent UI crashes
+    // Try to serve cached data
+    const cacheKey = 'crypto_simple_price';
+    const cached = cache.get(cacheKey);
+    
+    if (cached && cached.data) {
+      console.log('[Markets Proxy] Serving cached data due to error');
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(cached.data)
+      };
+    }
+    
+    // Return empty structure (never crash the UI)
     return {
-      statusCode: 500,
+      statusCode: 200,
       headers,
       body: JSON.stringify({
-        error: error.message || 'Internal server error'
+        bitcoin: null,
+        ethereum: null,
+        solana: null,
+        fetchedAt: new Date().toISOString(),
+        error: error.message || 'Markets unavailable'
       })
     };
   }

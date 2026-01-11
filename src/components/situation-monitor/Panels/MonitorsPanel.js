@@ -53,19 +53,71 @@ export class MonitorsPanel extends BasePanel {
   loadMonitors() {
     try {
       const stored = localStorage.getItem('sitmon_monitors');
-      if (!stored) {
+      if (!stored || stored.trim() === '') {
         return [];
       }
-      const parsed = JSON.parse(stored);
+      
+      // CRITICAL: Validate JSON before parsing
+      let parsed;
+      try {
+        parsed = JSON.parse(stored);
+      } catch (parseError) {
+        console.error('[MonitorsPanel] JSON parse error, clearing corrupt localStorage:', parseError);
+        // Clear corrupt data
+        try {
+          localStorage.removeItem('sitmon_monitors');
+        } catch (e) {
+          // Ignore removal errors
+        }
+        return [];
+      }
+      
       // CRITICAL: Always return an array, never undefined or null
+      if (!parsed || typeof parsed !== 'object') {
+        console.warn('[MonitorsPanel] Stored monitors is not an object, returning empty array');
+        return [];
+      }
+      
       if (!Array.isArray(parsed)) {
         console.warn('[MonitorsPanel] Stored monitors is not an array, returning empty array');
+        // Clear invalid data
+        try {
+          localStorage.removeItem('sitmon_monitors');
+        } catch (e) {
+          // Ignore removal errors
+        }
         return [];
       }
-      return parsed;
+      
+      // CRITICAL: Filter out any null/undefined/invalid items
+      const validMonitors = parsed.filter(m => {
+        if (!m || typeof m !== 'object') return false;
+        if (!m.id || typeof m.id !== 'string') return false;
+        if (!m.name || typeof m.name !== 'string') return false;
+        if (!Array.isArray(m.keywords)) return false;
+        return true;
+      });
+      
+      if (validMonitors.length !== parsed.length) {
+        console.warn(`[MonitorsPanel] Filtered out ${parsed.length - validMonitors.length} invalid monitors`);
+        // Save cleaned data
+        try {
+          localStorage.setItem('sitmon_monitors', JSON.stringify(validMonitors));
+        } catch (e) {
+          // Ignore save errors
+        }
+      }
+      
+      return validMonitors;
     } catch (e) {
       console.error('[MonitorsPanel] Error loading monitors:', e);
       // CRITICAL: Always return an array, even on error
+      // Clear potentially corrupt data
+      try {
+        localStorage.removeItem('sitmon_monitors');
+      } catch (e2) {
+        // Ignore removal errors
+      }
       return [];
     }
   }

@@ -199,15 +199,11 @@
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(34, 211, 238, 0.2);
   overflow: hidden;
+  border-radius: 4px;
 }
 
 .nn-il-subsystem-segment {
-  position: absolute;
-  top: 0;
-  width: 8%;
-  height: 100%;
-  border-right: 1px solid rgba(34, 211, 238, 0.1);
-  box-sizing: border-box;
+  display: none; /* Hide segments - they're not needed and could look like spinning */
 }
 
 .nn-il-subsystem-fill {
@@ -216,9 +212,10 @@
   left: 0;
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, var(--nn-il-cyan), var(--nn-il-blue));
+  background: var(--nn-il-cyan); /* Solid color instead of gradient to avoid spinning appearance */
   transition: width 0.3s ease;
-  box-shadow: 0 0 8px var(--nn-il-cyan-glow);
+  box-shadow: 0 0 4px var(--nn-il-cyan-glow);
+  border-radius: 4px;
 }
 
 .nn-il-subsystem-percent {

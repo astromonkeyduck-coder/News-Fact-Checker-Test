@@ -330,9 +330,19 @@
         // Check if video is available for Player Card
         const videoUrl = post.video_url || post.video || null;
         const hasVideo = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('.mp4') || videoUrl.includes('video') || videoUrl.includes('get-uploaded-image'));
+        const isGIF = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('get-uploaded-image'));
         
-        if (hasVideo) {
-            // Use Player Card for videos
+        // For GIFs, use the GIF URL directly as the image for social previews
+        let socialImage = image;
+        if (isGIF && videoUrl) {
+            socialImage = ensureAbsoluteImageUrl(videoUrl);
+        }
+        
+        // Update og:image to use GIF if available
+        getOrCreateMeta('og:image').setAttribute('content', socialImage);
+        
+        if (hasVideo && !isGIF) {
+            // Use Player Card for non-GIF videos (MP4, etc.)
             const playerUrl = `${SITE_URL}/video-player.html?url=${encodeURIComponent(ensureAbsoluteImageUrl(videoUrl))}`;
             
             // Open Graph Video
@@ -348,11 +358,11 @@
             getOrCreateMeta('twitter:player', 'name').setAttribute('content', playerUrl);
             getOrCreateMeta('twitter:player:width', 'name').setAttribute('content', '1280');
             getOrCreateMeta('twitter:player:height', 'name').setAttribute('content', '720');
-            getOrCreateMeta('twitter:image', 'name').setAttribute('content', image); // Fallback image
+            getOrCreateMeta('twitter:image', 'name').setAttribute('content', socialImage);
         } else {
-            // Use summary_large_image for images
+            // Use summary_large_image for images and GIFs
             getOrCreateMeta('twitter:card', 'name').setAttribute('content', 'summary_large_image');
-            getOrCreateMeta('twitter:image', 'name').setAttribute('content', image);
+            getOrCreateMeta('twitter:image', 'name').setAttribute('content', socialImage);
         }
         
         getOrCreateMeta('twitter:url', 'name').setAttribute('content', url);
@@ -549,7 +559,7 @@
                                  impactAssessment.severity === 'HIGH' ? '#f57c00' : 
                                  impactAssessment.severity === 'MODERATE' ? '#fbc02d' : '#388e3c';
             html += `
-                <div class="impact-assessment-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%); border-radius: 12px; border-left: 4px solid ${severityColor}; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                <div id="impact-assessment" class="impact-assessment-section" style="margin: 2rem 0; padding: 1.5rem; background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%); border-radius: 12px; border-left: 4px solid ${severityColor}; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
                     <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
                         <span style="display: inline-flex; align-items: center; color: ${severityColor};">${getIconSVG('chart', 24, severityColor)}</span>
                         AI Impact Assessment

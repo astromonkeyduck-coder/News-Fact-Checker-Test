@@ -9,11 +9,13 @@ const { Resend } = require('resend');
 
 /**
  * Get earthquake hashtags in Spanish, Japanese, and location-relevant language
+ * Enhanced with location-specific tags
  */
-function getEarthquakeHashtags(location) {
-  if (!location) return '#terremoto #地震';
+function getEarthquakeHashtags(location, locationDetails = null) {
+  if (!location) return '#terremoto #地震 #earthquake';
   
   const locationLower = location.toLowerCase();
+  const hashtags = [];
   
   // Language mapping based on location
   const languageMap = {
@@ -65,24 +67,114 @@ function getEarthquakeHashtags(location) {
     }
   }
   
-  // Default: Spanish, Japanese, and English
-  const hashtags = ['#terremoto', '#地震'];
+  // Always include universal tags
+  hashtags.push('#terremoto', '#地震');
+  
+  // Add location-specific tag if found
   if (relevantTag && !hashtags.includes(relevantTag)) {
     hashtags.push(relevantTag);
   } else if (!relevantTag) {
     hashtags.push('#earthquake');
   }
   
+  // Add location-specific hashtags (city, state, country)
+  if (locationDetails) {
+    // City hashtag (if available and not too long)
+    if (locationDetails.city && locationDetails.city.length < 20) {
+      const cityTag = `#${locationDetails.city.replace(/\s+/g, '')}`;
+      if (!hashtags.includes(cityTag)) {
+        hashtags.push(cityTag);
+      }
+    }
+    
+    // State/region hashtag
+    if (locationDetails.state && locationDetails.state.length < 25) {
+      const stateTag = `#${locationDetails.state.replace(/\s+/g, '')}`;
+      if (!hashtags.includes(stateTag)) {
+        hashtags.push(stateTag);
+      }
+    }
+    
+    // Country hashtag (if different from state)
+    if (locationDetails.country && locationDetails.country !== locationDetails.state) {
+      const countryTag = `#${locationDetails.country.replace(/\s+/g, '')}`;
+      if (!hashtags.includes(countryTag)) {
+        hashtags.push(countryTag);
+      }
+    }
+  }
+  
   return hashtags.join(' ');
 }
 
 /**
- * Get share text with hashtags for earthquakes
+ * Get urgency emoji based on magnitude
  */
-function getShareTextWithHashtags(magnitude, location) {
+function getUrgencyEmoji(magnitude) {
+  if (magnitude >= 8.0) return '🔴'; // Critical
+  if (magnitude >= 7.0) return '🟠'; // Major
+  if (magnitude >= 6.0) return '🟡'; // Strong
+  if (magnitude >= 5.0) return '🟢'; // Moderate
+  return '🔵'; // Light/Minor
+}
+
+/**
+ * Get depth warning indicator
+ */
+function getDepthWarning(depth) {
+  if (!depth) return '';
+  if (depth < 10) return '⚠️ Shallow';
+  if (depth < 30) return '⚡ Moderate depth';
+  return '';
+}
+
+/**
+ * Get relative time string
+ */
+function getRelativeTime(timestamp) {
+  if (!timestamp) return '';
+  const now = Date.now();
+  const eventTime = typeof timestamp === 'number' ? timestamp : new Date(timestamp).getTime();
+  const diffMs = now - eventTime;
+  const diffMins = Math.floor(diffMs / 60000);
+  
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return '';
+}
+
+/**
+ * Get enhanced share text with hashtags for earthquakes
+ * Clean format: just the breaking message and hashtags
+ * Optimized for Twitter's 280 character limit (URL takes ~23 chars)
+ */
+function getShareTextWithHashtags(magnitude, location, earthquake = {}) {
   const magnitudeFormatted = typeof magnitude === 'number' ? magnitude.toFixed(1) : magnitude;
-  const hashtags = getEarthquakeHashtags(location);
-  return `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}. ${hashtags}`;
+  const locationDetails = earthquake.locationDetails || null;
+  
+  // Build main message (clean, no emojis or extra info)
+  let message = `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}`;
+  
+  // Get hashtags (limit to most relevant to save space)
+  const hashtags = getEarthquakeHashtags(location, locationDetails);
+  
+  // Add hashtags on new line
+  message += `\n\n${hashtags}`;
+  
+  // Estimate character count (URL will be ~23 chars)
+  const estimatedLength = message.length + 23; // URL length
+  
+  // If too long, trim hashtags (keep most important ones)
+  if (estimatedLength > 250) {
+    // Keep only first 3-4 most relevant hashtags
+    const hashtagArray = hashtags.split(' ').slice(0, 4);
+    const trimmedHashtags = hashtagArray.join(' ');
+    message = message.replace(hashtags, trimmedHashtags);
+  }
+  
+  return message;
 }
 
 /**
@@ -1167,7 +1259,9 @@ exports.handler = async (event, context) => {
                       <tr>
                         <td align="center" style="padding-top: 12px;">
                           <p style="margin: 0; font-size: 12px; color: #6B7280; line-height: 1.5;">
-                            Interactive 3D visualization • Advanced AI assessments • Animations
+                            <a href="https://noteworthynews.co/article.html?id=${encodeURIComponent(`post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}`)}#earthquake-3d-viewer" style="color: #2563EB; text-decoration: none; border-bottom: 1px dotted #2563EB;">Interactive 3D visualization</a> • 
+                            <a href="https://noteworthynews.co/article.html?id=${encodeURIComponent(`post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}`)}#impact-assessment" style="color: #2563EB; text-decoration: none; border-bottom: 1px dotted #2563EB;">Advanced AI assessments</a> • 
+                            <a href="https://noteworthynews.co/article.html?id=${encodeURIComponent(`post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}`)}#earthquake-animation-section" style="color: #2563EB; text-decoration: none; border-bottom: 1px dotted #2563EB;">Animations</a>
                           </p>
                         </td>
                       </tr>
@@ -1188,7 +1282,7 @@ exports.handler = async (event, context) => {
                           <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto;">
                             <tr>
                               <td style="padding: 0 6px;">
-                                <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(getShareTextWithHashtags(safeMagnitudeFormatted, safeLocationDisplay))}&url=${encodeURIComponent(`https://noteworthynews.co/article.html?id=post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}`)}" style="display: inline-block; padding: 8px 16px; font-size: 13px; font-weight: 600; color: #ffffff; background-color: #1DA1F2; text-decoration: none; border-radius: 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                                <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(getShareTextWithHashtags(safeMagnitudeFormatted, safeLocationDisplay, { ...earthquake, locationDetails }))}&url=${encodeURIComponent(`https://noteworthynews.co/article.html?id=post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}&utm_source=email&utm_medium=share&utm_campaign=earthquake_alert`)}" style="display: inline-block; padding: 8px 16px; font-size: 13px; font-weight: 600; color: #ffffff; background-color: #1DA1F2; text-decoration: none; border-radius: 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
                                   𝕏 Share
                                 </a>
                               </td>
@@ -1341,16 +1435,31 @@ exports.handler = async (event, context) => {
             // IMPORTANT: CID in content_id must match what's used in HTML cid: reference
             // Use a simpler, more reliable CID format
             const cidIdentifier = `earthquake-${earthquake.event_id || Date.now()}`;
-            // Detect if this is actually a GIF by checking magic bytes
+            // Detect if this is actually a GIF by checking magic bytes (primary source of truth)
             const magicBytesCheck = imageData.buffer.slice(0, 6);
             // GIF magic bytes: 0x47 0x49 0x46 = "GIF" in ASCII
             // Bug fix: toString() without encoding returns decimal values, not ASCII string
             const detectedIsGIF = magicBytesCheck[0] === 0x47 && magicBytesCheck[1] === 0x49 && magicBytesCheck[2] === 0x46;
-            const isGIF = (videoUrl && inlineImageUrl === videoUrl) || detectedIsGIF;
+            // CRITICAL FIX: Always trust magic bytes over URL assumptions
+            // If videoUrl exists but the file is actually a PNG, treat it as PNG
+            const isGIF = detectedIsGIF;
             const fileExtension = isGIF ? 'gif' : 'png';
             const contentType = isGIF ? 'image/gif' : (imageData.contentType || 'image/png');
             
+            // Log warning if videoUrl was provided but file is not a GIF
+            if (videoUrl && inlineImageUrl === videoUrl && !isGIF) {
+              console.warn(`[send-earthquake-alert] ⚠️ videoUrl was provided but downloaded file is PNG, not GIF. Using PNG for inline display.`);
+            }
+            
             console.log(`[send-earthquake-alert] 📎 Creating ${isGIF ? 'GIF' : 'PNG'} inline attachment with CID: ${cidIdentifier}`);
+            console.log(`[send-earthquake-alert] 📎 Image type detection:`, {
+              hasVideoUrl: !!videoUrl,
+              hasImageUrl: !!imageUrl,
+              inlineImageUrl: inlineImageUrl?.substring(0, 100),
+              magicBytesDetected: detectedIsGIF ? 'GIF' : (magicBytesCheck[0] === 0x89 && magicBytesCheck[1] === 0x50 ? 'PNG' : 'UNKNOWN'),
+              finalType: isGIF ? 'GIF' : 'PNG',
+              contentType: imageData.contentType
+            });
             console.log(`[send-earthquake-alert] 📎 Base64 length: ${base64Content.length}, Buffer length: ${imageData.buffer.length}`);
             
         gifAttachment = {

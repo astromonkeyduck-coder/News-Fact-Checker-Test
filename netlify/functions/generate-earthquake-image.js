@@ -200,9 +200,10 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
   const locationY = scaledHeadlineBaselineY + (scaledLocationOffset * 2);
   
   // Position for line 4: "[TIMESTAMP]" (if available)
-  const timestampX = alignedX;
-  const timestampY = scaledHeadlineBaselineY + (scaledLocationOffset * 3);
-  const timestampFontSize = Math.round(24 * scaleFactor);
+  // Position timestamp at top left of image
+  const timestampX = Math.round(20 * scaleFactor); // 20px from left edge
+  const timestampY = Math.round(30 * scaleFactor); // 30px from top edge
+  const timestampFontSize = Math.round(20 * scaleFactor);
   
   // Use Roboto if fonts are loaded, otherwise fallback
   // Build @font-face declarations with base64 embedded fonts
@@ -282,7 +283,7 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
       </text>
       
       ${timestampText ? `
-      <!-- Timestamp: e.g. 2026-01-10 16:20:36.261 UTC (white, regular, smaller) - Line 4 -->
+      <!-- Timestamp: e.g. 2026-01-10 16:20:36.261 UTC (white, regular, smaller) - Top left corner -->
       <text 
         x="${timestampX}" 
         y="${timestampY}" 
@@ -290,7 +291,7 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
         font-size="${timestampFontSize}" 
         font-weight="normal"
         fill="${HEADLINE_COLOR}"
-        opacity="0.9"
+        opacity="0.85"
         text-rendering="optimizeLegibility"
         shape-rendering="geometricPrecision">
         ${escapedTimestamp}

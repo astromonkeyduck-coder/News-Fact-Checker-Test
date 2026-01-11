@@ -197,10 +197,19 @@ exports.handler = async (event) => {
     // Check for video URL for Player Cards
     const videoUrl = post.video_url || post.video || null;
     const hasVideo = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('.mp4') || videoUrl.includes('video') || videoUrl.includes('get-uploaded-image'));
+    const isGIF = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('get-uploaded-image'));
     let playerUrl = null;
-    if (hasVideo) {
+    if (hasVideo && !isGIF) {
+      // Only create player URL for non-GIF videos (MP4, etc.)
       const absoluteVideoUrl = videoUrl.startsWith('http') ? videoUrl : `https://noteworthynews.co${videoUrl.startsWith('/') ? videoUrl : '/' + videoUrl}`;
       playerUrl = `https://noteworthynews.co/video-player.html?url=${encodeURIComponent(absoluteVideoUrl)}`;
+    }
+    
+    // For GIFs, use the GIF URL directly as the image for social previews
+    let socialImageUrl = imageUrl;
+    if (isGIF && videoUrl) {
+      const absoluteGifUrl = videoUrl.startsWith('http') ? videoUrl : `https://noteworthynews.co${videoUrl.startsWith('/') ? videoUrl : '/' + videoUrl}`;
+      socialImageUrl = absoluteGifUrl;
     }
     
     // Helper function to get earthquake hashtags
@@ -309,7 +318,7 @@ exports.handler = async (event) => {
     <meta property="og:url" content="${escapeHtml(url)}">
     <meta property="og:title" content="${escapeHtml(formattedTitle)}">
     <meta property="og:description" content="${escapeHtml(description)}">
-    <meta property="og:image" content="${escapeHtml(imageUrl)}">
+    <meta property="og:image" content="${escapeHtml(socialImageUrl)}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:site_name" content="Noteworthy News">
@@ -332,10 +341,10 @@ exports.handler = async (event) => {
     <meta name="twitter:player" content="${escapeHtml(playerUrl)}">
     <meta name="twitter:player:width" content="1280">
     <meta name="twitter:player:height" content="720">
-    <meta name="twitter:image" content="${escapeHtml(imageUrl)}">
+    <meta name="twitter:image" content="${escapeHtml(socialImageUrl)}">
     ` : `
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="${escapeHtml(imageUrl)}">
+    <meta name="twitter:image" content="${escapeHtml(socialImageUrl)}">
     `}
     <meta name="twitter:url" content="${escapeHtml(url)}">
     <meta name="twitter:title" content="${escapeHtml(formattedTitle)}">

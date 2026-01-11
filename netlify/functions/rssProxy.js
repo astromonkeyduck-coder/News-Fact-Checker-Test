@@ -200,20 +200,32 @@ exports.handler = async (event, context) => {
     const { source } = event.queryStringParameters || {};
     
     if (!source) {
+      // CRITICAL: Return 200 with empty items array (never crash UI)
       return {
-        statusCode: 400,
+        statusCode: 200,
         headers,
-        body: JSON.stringify({ error: 'Missing source parameter (feedId)' })
+        body: JSON.stringify({
+          source: { id: 'unknown', name: 'Unknown', homepage: '', feedUrl: '' },
+          items: [],
+          fetchedAt: new Date().toISOString(),
+          error: 'Missing source parameter (feedId)'
+        })
       };
     }
     
     const feed = getFeedById(source);
     
     if (!feed) {
+      // CRITICAL: Return 200 with empty items array (never crash UI)
       return {
-        statusCode: 404,
+        statusCode: 200,
         headers,
-        body: JSON.stringify({ error: `Feed "${source}" not found in registry` })
+        body: JSON.stringify({
+          source: { id: source, name: 'Unknown Feed', homepage: '', feedUrl: '' },
+          items: [],
+          fetchedAt: new Date().toISOString(),
+          error: `Feed "${source}" not found in registry`
+        })
       };
     }
     
@@ -227,23 +239,64 @@ exports.handler = async (event, context) => {
   } catch (error) {
     console.error('[RSS Proxy] Handler error:', error);
     
-    // Handle module load errors gracefully
-    if (error.message && error.message.includes('Failed to load')) {
+    // CRITICAL: Always return 200 with items array to prevent UI crashes
+    // Return empty result structure so frontend can handle gracefully
+    const { source } = event.queryStringParameters || {};
+    let feed = null;
+    let cacheKey = null;
+    
+    // Only try to get feed if modules loaded successfully
+    try {
+      if (source && !moduleLoadError) {
+        try {
+          feed = getFeedById(source);
+          cacheKey = `feed_${source}`;
+        } catch (e) {
+          // Ignore errors in getting feed (feed not found or module error)
+        }
+      }
+    } catch (e) {
+      // Ignore errors in getting feed (already failed)
+    }
+    
+    // Try to get cached data even if fetch failed
+    let cached = null;
+    if (cacheKey) {
+      try {
+        cached = cache.get(cacheKey);
+      } catch (e) {
+        // Ignore cache errors
+      }
+    }
+    
+    if (cached && cached.data) {
+      console.log(`[RSS Proxy] Serving cached data for ${source} due to error`);
       return {
-        statusCode: 503,
+        statusCode: 200,
         headers,
-        body: JSON.stringify({
-          error: 'Service temporarily unavailable: RSS module loading failed',
-          details: error.message
-        })
+        body: JSON.stringify(cached.data)
       };
     }
     
+    // Return empty result structure (never crash the UI)
     return {
-      statusCode: 500,
+      statusCode: 200,
       headers,
       body: JSON.stringify({
-        error: error.message || 'Internal server error'
+        source: feed ? {
+          id: feed.id,
+          name: feed.name,
+          homepage: feed.homepage || '',
+          feedUrl: feed.feedUrl
+        } : {
+          id: source || 'unknown',
+          name: source || 'Unknown Feed',
+          homepage: '',
+          feedUrl: ''
+        },
+        items: [], // Empty array - UI can handle this
+        fetchedAt: new Date().toISOString(),
+        error: error.message || 'Feed fetch failed'
       })
     };
   }

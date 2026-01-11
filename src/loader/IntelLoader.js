@@ -280,8 +280,8 @@ function createLoaderDOM() {
   
   document.body.appendChild(loaderElement);
   
-  // Generate subsystem progress bar segments
-  generateSubsystemSegments();
+  // Segments are no longer needed - removed to prevent spinning appearance
+  // generateSubsystemSegments(); // Disabled
   
   // Start animations (only if not reduced motion)
   if (!reducedMotion) {
@@ -293,18 +293,20 @@ function createLoaderDOM() {
 }
 
 /**
- * Generate subsystem progress bar segments (10 segments per bar)
+ * Generate subsystem progress bar segments (DISABLED - no longer needed)
+ * Segments were removed to prevent spinning appearance
  */
 function generateSubsystemSegments() {
-  const subsystems = loaderElement.querySelectorAll('.nn-il-subsystem-bar');
-  subsystems.forEach(bar => {
-    for (let i = 0; i < 10; i++) {
-      const segment = document.createElement('div');
-      segment.className = 'nn-il-subsystem-segment';
-      segment.style.left = `${i * 10}%`;
-      bar.appendChild(segment);
-    }
-  });
+  // Disabled - segments are hidden via CSS and not needed
+  // const subsystems = loaderElement.querySelectorAll('.nn-il-subsystem-bar');
+  // subsystems.forEach(bar => {
+  //   for (let i = 0; i < 10; i++) {
+  //     const segment = document.createElement('div');
+  //     segment.className = 'nn-il-subsystem-segment';
+  //     segment.style.left = `${i * 10}%`;
+  //     bar.appendChild(segment);
+  //   }
+  // });
 }
 
 /**

@@ -37,6 +37,8 @@ export class SituationMonitorShell {
     this.bigBoardOverlay = null;
     this.diagnosticsPanel = null;
     this._refreshing = false; // Guard for single-flight refresh
+    this._refreshPromise = null; // Promise for single-flight refresh
+    this._shellCreated = false; // Guard for double initialization
     
     // Don't await - let it run asynchronously
     this.init().catch(err => {
@@ -45,6 +47,12 @@ export class SituationMonitorShell {
   }
 
   async init() {
+    // CRITICAL: Prevent double initialization
+    if (this._shellCreated) {
+      console.warn('[SituationMonitorShell] Shell already created, skipping init');
+      return;
+    }
+    
     // Show loader immediately
     showLoader({ phase: 'AUTH' });
     setLoaderProgress(0.05);
@@ -55,6 +63,9 @@ export class SituationMonitorShell {
       hideLoader();
       return;
     }
+    
+    // Mark shell as created
+    this._shellCreated = true;
 
     // Create layout - matches Noteworthy News container system
     container.innerHTML = `
@@ -376,6 +387,31 @@ export class SituationMonitorShell {
       }
     });
 
+    // CRITICAL: Verify all required panel body elements exist before creating panels
+    const requiredBodies = [
+      'sitmon-panel-news-body',
+      'sitmon-panel-earthquakes-body',
+      'sitmon-panel-weather-body',
+      'sitmon-panel-markets-body',
+      'sitmon-panel-intel-body',
+      'sitmon-panel-correlation-body',
+      'sitmon-panel-narrative-body',
+      'sitmon-panel-monitors-body',
+      'sitmon-panel-rss-body'
+    ];
+    
+    const missingBodies = requiredBodies.filter(id => {
+      const el = document.getElementById(id);
+      return !el || el.nodeType !== 1;
+    });
+    
+    if (missingBodies.length > 0) {
+      console.error('[SituationMonitorShell] CRITICAL: Missing panel body elements:', missingBodies);
+      console.error('[SituationMonitorShell] Cannot initialize panels - DOM structure incomplete');
+      // Don't throw - just log and skip panel initialization
+      return;
+    }
+
     // Data panels - using body containers
     this.panels.news = new NewsPanel('sitmon-panel-news-body');
     this.panels.markets = new MarketsPanel('sitmon-panel-markets-body');
@@ -681,11 +717,16 @@ export class SituationMonitorShell {
     // Single-flight: prevent multiple simultaneous refreshes
     if (this._refreshing) {
       console.log('[SituationMonitorShell] Refresh already in progress, skipping');
-      return;
+      return Promise.resolve(); // Return resolved promise to prevent hanging
     }
     
+    // CRITICAL: Set flag immediately after check to prevent race condition
+    // This must be set before creating the async function to ensure single-flight behavior
     this._refreshing = true;
-    console.log('[SituationMonitorShell] Refreshing all data...');
+    
+    // Create refresh promise and store it
+    const refreshPromise = (async () => {
+      console.log('[SituationMonitorShell] Refreshing all data...');
 
     // Update UI state
     const refreshBtn = document.getElementById('sitmon-refresh-btn');
@@ -812,6 +853,17 @@ export class SituationMonitorShell {
       // Always reset refreshing flag, even if error occurred
       this._refreshing = false;
     }
+    })();
+    
+    // Store promise for single-flight pattern
+    this._refreshPromise = refreshPromise;
+    
+    // Clear promise when done
+    refreshPromise.finally(() => {
+      this._refreshPromise = null;
+    });
+    
+    return refreshPromise;
   }
 
   destroy() {
