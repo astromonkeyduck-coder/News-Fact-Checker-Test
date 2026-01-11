@@ -6,8 +6,37 @@
  * Returns combined, deduplicated, sorted items.
  */
 
-const RSS_FEEDS = require('../../src/rss/feeds.js').RSS_FEEDS;
-const { parseFeed } = require('../../src/rss/parser.js');
+// Lazy load RSS feeds and parser to avoid bundling issues
+let RSS_FEEDS;
+let parseFeed;
+
+function loadModules() {
+  if (RSS_FEEDS && parseFeed) {
+    return; // Already loaded
+  }
+  
+  try {
+    const feedsModule = require('../../src/rss/feeds.js');
+    RSS_FEEDS = feedsModule.RSS_FEEDS;
+    if (!RSS_FEEDS || !Array.isArray(RSS_FEEDS)) {
+      throw new Error('RSS_FEEDS not found or invalid');
+    }
+  } catch (error) {
+    console.error('[RSS Aggregate] Failed to load feeds.js:', error);
+    throw new Error(`Failed to load RSS feeds: ${error.message}`);
+  }
+
+  try {
+    const parserModule = require('../../src/rss/parser.js');
+    parseFeed = parserModule.parseFeed;
+    if (typeof parseFeed !== 'function') {
+      throw new Error('parseFeed not found or not a function');
+    }
+  } catch (error) {
+    console.error('[RSS Aggregate] Failed to load parser.js:', error);
+    throw new Error(`Failed to load RSS parser: ${error.message}`);
+  }
+}
 
 // Concurrency limit for parallel fetches
 const CONCURRENCY_LIMIT = 4;
@@ -140,6 +169,10 @@ function filterItems(items, filters) {
  * Get enabled feeds (respects config)
  */
 function getEnabledFeeds() {
+  // Ensure modules are loaded
+  if (!RSS_FEEDS) {
+    loadModules();
+  }
   // In production, check localStorage config from request
   // For now, return all enabledByDefault feeds
   return RSS_FEEDS.filter(feed => feed.enabledByDefault);
@@ -175,6 +208,9 @@ exports.handler = async (event, context) => {
   }
   
   try {
+    // Load modules on first request (lazy loading to avoid bundling issues)
+    loadModules();
+    
     const params = event.queryStringParameters || {};
     const filters = {
       region: params.region,
