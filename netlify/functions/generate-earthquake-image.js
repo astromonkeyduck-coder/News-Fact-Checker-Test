@@ -105,92 +105,68 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
   const locationFormatted = locationText.toUpperCase();
   const escapedLocation = escapeSVGText(locationFormatted);
   
-  // Format timestamp with milliseconds - show local time and all US timezones
+  // Format timestamp - show time in EST or PST/PDT based on location
   let timestampText = '';
   if (earthquakeTimestamp) {
     const date = new Date(earthquakeTimestamp);
     
-    // Helper function to format time in a specific timezone
-    const formatTimeInTimezone = (date, timezone, includeDate = false) => {
-      const options = {
-        timeZone: timezone,
-        hour: 'numeric',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true,
-        timeZoneName: 'short'
-      };
-      if (includeDate) {
-        options.month = 'short';
-        options.day = 'numeric';
-        options.year = 'numeric';
-      }
-      
-      const formatter = new Intl.DateTimeFormat('en-US', options);
-      const parts = formatter.formatToParts(date);
-      
-      let hour = parts.find(p => p.type === 'hour').value;
-      const minute = parts.find(p => p.type === 'minute').value;
-      const second = parts.find(p => p.type === 'second').value;
-      const dayPeriod = parts.find(p => p.type === 'dayPeriod')?.value || '';
-      const tzName = parts.find(p => p.type === 'timeZoneName')?.value || '';
-      
-      // Get milliseconds (need to calculate from UTC)
-      const ms = String(date.getUTCMilliseconds()).padStart(3, '0');
-      
-      let result = `${hour}:${minute}:${second}.${ms} ${dayPeriod} ${tzName}`;
-      
-      if (includeDate) {
-        const month = parts.find(p => p.type === 'month').value;
-        const day = parts.find(p => p.type === 'day').value;
-        const year = parts.find(p => p.type === 'year').value;
-        result = `${month} ${day}, ${year} • ${result}`;
-      }
-      
-      return result;
-    };
+    // Determine timezone based on location (EST for Florida/eastern US, PST/PDT for California/western US)
+    let timezone = 'America/New_York'; // Default to EST
+    let timezoneAbbr = 'EST';
     
-    // Estimate local timezone from coordinates (rough approximation)
-    let localTimezone = 'UTC';
-    if (coordinates) {
+    // Check location string for Florida or California
+    const locationLower = locationText.toLowerCase();
+    if (locationLower.includes('california') || locationLower.includes('ca ')) {
+      timezone = 'America/Los_Angeles'; // PST/PDT
+      timezoneAbbr = 'PST'; // Will be PST or PDT based on date
+    } else if (locationLower.includes('florida') || locationLower.includes('fl ')) {
+      timezone = 'America/New_York'; // EST/EDT
+      timezoneAbbr = 'EST'; // Will be EST or EDT based on date
+    } else if (coordinates) {
+      // Fallback to coordinates if location string doesn't help
       const lat = coordinates[1] ?? coordinates?.lat ?? null;
       const lon = coordinates[0] ?? coordinates?.lon ?? null;
       
       if (lon != null) {
-        // Rough timezone estimation based on longitude
-        // Each 15 degrees of longitude ≈ 1 hour timezone difference
-        if (lon >= -67.5 && lon < -52.5) {
-          localTimezone = 'America/New_York'; // EST/EDT
-        } else if (lon >= -82.5 && lon < -67.5) {
-          localTimezone = 'America/New_York'; // EST/EDT (eastern US)
-        } else if (lon >= -97.5 && lon < -82.5) {
-          localTimezone = 'America/Chicago'; // CST/CDT (central US)
-        } else if (lon >= -112.5 && lon < -97.5) {
-          localTimezone = 'America/Denver'; // MST/MDT (mountain US)
-        } else if (lon >= -127.5 && lon < -112.5) {
-          localTimezone = 'America/Los_Angeles'; // PST/PDT (pacific US)
-        } else if (lon >= -142.5 && lon < -127.5) {
-          localTimezone = 'America/Anchorage'; // AKST/AKDT (Alaska)
-        } else if (lon >= -157.5 && lon < -142.5) {
-          localTimezone = 'Pacific/Honolulu'; // HST (Hawaii)
+        // Use longitude to determine EST vs PST
+        if (lon >= -127.5 && lon < -112.5) {
+          // Pacific timezone (California, Oregon, Washington, Nevada)
+          timezone = 'America/Los_Angeles';
+          timezoneAbbr = 'PST';
+        } else {
+          // Default to Eastern timezone (Florida and most of eastern US)
+          timezone = 'America/New_York';
+          timezoneAbbr = 'EST';
         }
       }
     }
     
-    // Format local time at earthquake location
-    const localTime = formatTimeInTimezone(date, localTimezone, true);
+    // Format time in the determined timezone
+    const timeOptions = {
+      timeZone: timezone,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    };
     
-    // Format all US timezones
-    const estTime = formatTimeInTimezone(date, 'America/New_York');
-    const cstTime = formatTimeInTimezone(date, 'America/Chicago');
-    const mstTime = formatTimeInTimezone(date, 'America/Denver');
-    const pstTime = formatTimeInTimezone(date, 'America/Los_Angeles');
-    const akstTime = formatTimeInTimezone(date, 'America/Anchorage');
-    const hstTime = formatTimeInTimezone(date, 'Pacific/Honolulu');
+    const formatter = new Intl.DateTimeFormat('en-US', timeOptions);
+    const parts = formatter.formatToParts(date);
     
-    // Build timestamp text: Local time first, then all US timezones
-    // Format: "Local: Jan 10, 2026 • 4:20:36.261 PM EST | EST: 4:20:36.261 PM EST | CST: 3:20:36.261 PM CST | ..."
-    timestampText = `Local: ${localTime} | EST: ${estTime} | CST: ${cstTime} | MST: ${mstTime} | PST: ${pstTime} | AKST: ${akstTime} | HST: ${hstTime}`;
+    const hour = parts.find(p => p.type === 'hour').value;
+    const minute = parts.find(p => p.type === 'minute').value;
+    const second = parts.find(p => p.type === 'second').value;
+    
+    // Get timezone abbreviation (EST/EDT or PST/PDT)
+    const tzFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      timeZoneName: 'short'
+    });
+    const tzParts = tzFormatter.formatToParts(date);
+    const tzAbbr = tzParts.find(p => p.type === 'timeZoneName')?.value || timezoneAbbr;
+    
+    // Format as "(11:00:00 EST)" or "(11:00:00 PST)"
+    timestampText = `(${hour}:${minute}:${second} ${tzAbbr})`;
   }
   const escapedTimestamp = escapeSVGText(timestampText);
   
