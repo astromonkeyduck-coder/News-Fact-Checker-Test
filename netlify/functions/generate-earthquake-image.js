@@ -1939,9 +1939,7 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
   const fontFamily = (FONT_DATA.regular && FONT_DATA.bold) ? 'Roboto' : 'Arial, sans-serif';
   
   // Create SVG overlay with embedded fonts (include timestamp)
-  // Extract coordinates for timestamp calculation
-  const lat = coordinates?.[1] ?? coordinates?.lat ?? null;
-  const lon = coordinates?.[0] ?? coordinates?.lon ?? null;
+  // Extract coordinates for timestamp calculation (lat and lon already declared at line 1750-1751)
   const coordArray = (lat != null && lon != null) ? [lon, lat] : null;
   
   const svgString = createDynamicTextSVG(magnitudeText, location, outputWidth, outputHeight, scaleFactor, earthquakeTimestamp, coordArray);

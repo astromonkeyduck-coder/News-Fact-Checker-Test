@@ -187,14 +187,16 @@ function isFeedUrlAllowed(feedUrl) {
   return RSS_FEEDS.some(feed => feed.feedUrl === feedUrl);
 }
 
-// CommonJS exports for server-side
-module.exports = {
-  RSS_FEEDS,
-  getFeedById,
-  getEnabledFeeds,
-  getFeedByUrl,
-  isFeedUrlAllowed
-};
+// CommonJS exports for server-side (only in Node.js environment)
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    RSS_FEEDS,
+    getFeedById,
+    getEnabledFeeds,
+    getFeedByUrl,
+    isFeedUrlAllowed
+  };
+}
 
 // ES6 exports for client-side (for ES6 import syntax)
 export {

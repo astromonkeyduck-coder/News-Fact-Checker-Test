@@ -1252,9 +1252,11 @@ async function storeEvent(event, logger) {
       return { isNew: false, hasNewImage, event: returnedEvent };
     } else {
       // Insert new event (video_url already moved to assets.video_url above)
+      // CRITICAL: Explicitly exclude video_url from insert to prevent schema errors
+      const { video_url, ...insertData } = eventToStore;
       const { data: inserted, error: insertError } = await supabase
         .from('verified_events')
-        .insert(eventToStore)
+        .insert(insertData)
         .select()
         .single();
       
