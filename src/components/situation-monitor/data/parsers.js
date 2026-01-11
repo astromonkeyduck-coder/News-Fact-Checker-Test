@@ -87,6 +87,7 @@ export function parseGeoJSON(geoJson) {
     
     return {
       id: feature.id || `${props.time || Date.now()}_${coords[0]}_${coords[1]}`,
+      canonical_id: props.canonical_id || null,
       magnitude: props.mag || 0,
       place: props.place || 'Unknown',
       time: props.time || Date.now(),
@@ -94,7 +95,18 @@ export function parseGeoJSON(geoJson) {
       url: props.url || '',
       lon: coords[0],
       lat: coords[1],
-      depth: coords[2] || 0
+      depth: coords[2] || 0,
+      // Include additional verified event data
+      severity: props.severity || 1,
+      image_url: props.image_url || null,
+      video_url: props.video_url || null,
+      assets: props.assets || {},
+      impact_assessment: props.impact_assessment || null,
+      tsunami_risk: props.tsunami_risk || null,
+      aftershock_forecast: props.aftershock_forecast || null,
+      anomaly_detection: props.anomaly_detection || null,
+      title: props.title || null,
+      summary: props.summary || null
     };
   });
 }

@@ -197,8 +197,8 @@ export class SituationMonitorShell {
     setLoaderPhase('SYNC');
     setLoaderProgress(0.35);
 
-    // Initialize panels
-    this.initPanels();
+    // Initialize panels (now async - waits for DOM and calls init() on all panels)
+    await this.initPanels();
     
     setLoaderProgress(0.50);
 
@@ -364,7 +364,18 @@ export class SituationMonitorShell {
     }
   }
 
-  initPanels() {
+  async initPanels() {
+    // CRITICAL: Wait for DOM to be ready before creating panels
+    // The container HTML was just injected, but we need to ensure all elements exist
+    await new Promise(resolve => {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', resolve);
+      } else {
+        // DOM already ready, but wait a tick for elements to be available
+        setTimeout(resolve, 0);
+      }
+    });
+
     // Data panels - using body containers
     this.panels.news = new NewsPanel('sitmon-panel-news-body');
     this.panels.markets = new MarketsPanel('sitmon-panel-markets-body');
@@ -379,6 +390,69 @@ export class SituationMonitorShell {
     
     // RSS Intelligence panel
     this.panels.rss = new RSSIntelligencePanel('sitmon-panel-rss-body');
+
+    // CRITICAL: Initialize all panels (none call init() in constructor anymore)
+    const initPromises = [];
+    
+    // Initialize NewsPanel (was missing - Bug 1 fix)
+    if (this.panels.news && typeof this.panels.news.init === 'function') {
+      initPromises.push(Promise.resolve(this.panels.news.init()).catch(err => {
+        console.error('[SituationMonitorShell] NewsPanel init error:', err);
+      }));
+    }
+    
+    // Initialize panels that don't auto-init
+    if (this.panels.markets && typeof this.panels.markets.init === 'function') {
+      initPromises.push(Promise.resolve(this.panels.markets.init()).catch(err => {
+        console.error('[SituationMonitorShell] MarketsPanel init error:', err);
+      }));
+    }
+    
+    if (this.panels.earthquakes && typeof this.panels.earthquakes.init === 'function') {
+      initPromises.push(Promise.resolve(this.panels.earthquakes.init()).catch(err => {
+        console.error('[SituationMonitorShell] EarthquakePanel init error:', err);
+      }));
+    }
+    
+    if (this.panels.weather && typeof this.panels.weather.init === 'function') {
+      initPromises.push(Promise.resolve(this.panels.weather.init()).catch(err => {
+        console.error('[SituationMonitorShell] WeatherAlertsPanel init error:', err);
+      }));
+    }
+    
+    // CRITICAL: MonitorsPanel MUST be initialized before updateMatches() is called
+    if (this.panels.monitors && typeof this.panels.monitors.init === 'function') {
+      initPromises.push(Promise.resolve(this.panels.monitors.init()).catch(err => {
+        console.error('[SituationMonitorShell] MonitorsPanel init error:', err);
+      }));
+    }
+    
+    if (this.panels.intel && typeof this.panels.intel.init === 'function') {
+      initPromises.push(Promise.resolve(this.panels.intel.init()).catch(err => {
+        console.error('[SituationMonitorShell] IntelFeedPanel init error:', err);
+      }));
+    }
+    
+    if (this.panels.correlation && typeof this.panels.correlation.init === 'function') {
+      initPromises.push(Promise.resolve(this.panels.correlation.init()).catch(err => {
+        console.error('[SituationMonitorShell] CorrelationPanel init error:', err);
+      }));
+    }
+    
+    if (this.panels.narrative && typeof this.panels.narrative.init === 'function') {
+      initPromises.push(Promise.resolve(this.panels.narrative.init()).catch(err => {
+        console.error('[SituationMonitorShell] NarrativePanel init error:', err);
+      }));
+    }
+    
+    if (this.panels.rss && typeof this.panels.rss.init === 'function') {
+      initPromises.push(Promise.resolve(this.panels.rss.init()).catch(err => {
+        console.error('[SituationMonitorShell] RSSIntelligencePanel init error:', err);
+      }));
+    }
+
+    // Wait for all panels to initialize
+    await Promise.all(initPromises);
 
     // Setup cross-panel updates
     this.panels.news.onRetry = () => this.panels.news.loadNews();
@@ -639,10 +713,25 @@ export class SituationMonitorShell {
       // Update analysis panels with news data
       const headlines = this.panels.news.getHeadlines();
       if (headlines && headlines.length > 0) {
-        this.panels.intel.update(headlines);
-        this.panels.correlation.update(headlines);
-        this.panels.narrative.update(headlines);
-        this.panels.monitors.updateMatches(headlines);
+        // Ensure panels are initialized before updating
+        if (this.panels.intel && typeof this.panels.intel.update === 'function') {
+          this.panels.intel.update(headlines);
+        }
+        if (this.panels.correlation && typeof this.panels.correlation.update === 'function') {
+          this.panels.correlation.update(headlines);
+        }
+        if (this.panels.narrative && typeof this.panels.narrative.update === 'function') {
+          this.panels.narrative.update(headlines);
+        }
+        // CRITICAL: Only call updateMatches if MonitorsPanel is initialized
+        if (this.panels.monitors && typeof this.panels.monitors.updateMatches === 'function') {
+          // Double-check that monitors array exists (init was called)
+          if (this.panels.monitors.monitors !== undefined) {
+            this.panels.monitors.updateMatches(headlines);
+          } else {
+            console.warn('[SituationMonitorShell] MonitorsPanel not initialized, skipping updateMatches');
+          }
+        }
         
         // Process headlines into map events
         try {

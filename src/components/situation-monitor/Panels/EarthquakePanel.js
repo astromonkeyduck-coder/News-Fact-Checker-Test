@@ -10,14 +10,17 @@ export class EarthquakePanel extends BasePanel {
   constructor(containerId) {
     super(containerId, 'Earthquakes', { collapsible: true });
     this.earthquakes = [];
-    // Initialize asynchronously - don't call init() here, it's called once in async init()
-    // Don't await - let it run asynchronously
-    this.init().catch(err => {
-      console.error('[EarthquakePanel] Init error:', err);
-    });
+    this._initCalled = false; // Flag to prevent duplicate initialization
+    // Don't call init() here - SituationMonitorShell.initPanels() will call it
   }
 
   async init() {
+    // Prevent duplicate initialization
+    if (this._initCalled) {
+      console.warn('[EarthquakePanel] init() already called, skipping duplicate');
+      return;
+    }
+    this._initCalled = true;
     super.init(); // Call BasePanel.init() to set up DOM structure (idempotent)
     // Set up retry callback to reload earthquakes data
     this.onRetry = () => {
@@ -60,18 +63,51 @@ export class EarthquakePanel extends BasePanel {
     const content = this.earthquakes.slice(0, 10).map(eq => {
       const magnitude = eq.magnitude.toFixed(1);
       const time = formatTime(eq.time);
+      const preciseTime = formatPreciseTime(eq.time); // Show precise timestamp with milliseconds
       const depth = eq.depth ? `${eq.depth.toFixed(1)} km` : 'Unknown';
+      
+      // Get severity indicator
+      const severity = eq.severity || 1;
+      const severityColor = severity >= 4 ? '#ff6b6b' : severity >= 3 ? '#ffa500' : '#4ecdc4';
+      
+      // Check for additional data
+      const hasImage = eq.image_url || eq.assets?.image_url;
+      const hasVideo = eq.video_url || eq.assets?.video_url;
+      const hasImpact = eq.impact_assessment || eq.assets?.impact_assessment;
+      const hasTsunami = eq.tsunami_risk || eq.assets?.tsunami_risk;
+      const hasAftershock = eq.aftershock_forecast || eq.assets?.aftershock_forecast;
+      
+      // Build image/video links
+      let mediaLinks = '';
+      if (hasImage) {
+        const imageUrl = eq.image_url || eq.assets?.image_url;
+        mediaLinks += `<a href="${escapeHtml(imageUrl)}" target="_blank" rel="noopener noreferrer" class="sitmon-earthquake-media-link" title="View image">📸</a> `;
+      }
+      if (hasVideo) {
+        const videoUrl = eq.video_url || eq.assets?.video_url;
+        mediaLinks += `<a href="${escapeHtml(videoUrl)}" target="_blank" rel="noopener noreferrer" class="sitmon-earthquake-media-link" title="View video">🎬</a> `;
+      }
 
       return `
-        <div class="sitmon-earthquake-item">
+        <div class="sitmon-earthquake-item" style="border-left-color: ${severityColor}">
           <div class="sitmon-earthquake-header">
-            <span class="sitmon-earthquake-magnitude">M${magnitude}</span>
+            <span class="sitmon-earthquake-magnitude" style="color: ${severityColor}">M${magnitude}</span>
             <span class="sitmon-earthquake-time">${time}</span>
           </div>
           <div class="sitmon-earthquake-place">${escapeHtml(eq.place)}</div>
+          <div class="sitmon-earthquake-precise-time" title="Precise earthquake time">
+            <small>${preciseTime}</small>
+          </div>
           <div class="sitmon-earthquake-details">
-            Depth: ${depth} | 
-            <a href="${escapeHtml(eq.url)}" target="_blank" rel="noopener noreferrer">USGS Details</a>
+            Depth: ${depth}
+            ${hasImpact ? ` | <span class="sitmon-earthquake-badge" title="Impact Assessment">⚡ Impact</span>` : ''}
+            ${hasTsunami ? ` | <span class="sitmon-earthquake-badge" title="Tsunami Risk">🌊 Tsunami</span>` : ''}
+            ${hasAftershock ? ` | <span class="sitmon-earthquake-badge" title="Aftershock Forecast">📊 Aftershocks</span>` : ''}
+          </div>
+          <div class="sitmon-earthquake-actions">
+            ${mediaLinks}
+            <a href="${escapeHtml(eq.url)}" target="_blank" rel="noopener noreferrer" class="sitmon-earthquake-link">USGS Details</a>
+            ${eq.canonical_id ? `<a href="/article.html?id=post-usgs-${eq.canonical_id.split(':')[1] || eq.canonical_id}" class="sitmon-earthquake-link">View Article</a>` : ''}
           </div>
         </div>
       `;
@@ -82,14 +118,20 @@ export class EarthquakePanel extends BasePanel {
         ${content}
       </div>
       <div class="sitmon-earthquake-note">
-        <small>Last 24 hours, M4.5+ (USGS)</small>
+        <small>Verified earthquakes from Noteworthy News system (M4.5+)</small>
       </div>
     `);
   }
 
   setupRefresh() {
+    // Clear any existing refresh interval to prevent memory leaks
+    if (this._refreshInterval) {
+      clearInterval(this._refreshInterval);
+      this._refreshInterval = null;
+    }
+    
     // Auto-refresh every minute
-    setInterval(() => {
+    this._refreshInterval = setInterval(() => {
       if (!this.collapsed && this.enabled) {
         this.loadEarthquakes();
       }
@@ -117,4 +159,20 @@ function formatTime(timestamp) {
   if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
   return date.toLocaleString();
+}
+
+function formatPreciseTime(timestamp) {
+  if (!timestamp) return 'Unknown';
+  const date = new Date(timestamp);
+  
+  // Format: YYYY-MM-DD HH:MM:SS.mmm UTC
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const hours = String(date.getUTCHours()).padStart(2, '0');
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+  const milliseconds = String(date.getUTCMilliseconds()).padStart(3, '0');
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds} UTC`;
 }

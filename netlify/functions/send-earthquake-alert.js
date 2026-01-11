@@ -769,7 +769,7 @@ exports.handler = async (event, context) => {
     }
     
     const body = JSON.parse(event.body || "{}");
-    const { earthquake, imageUrl } = body;
+    const { earthquake, imageUrl, videoUrl } = body;
     
     console.log('[send-earthquake-alert] 📧 Function called', {
       hasEarthquake: !!earthquake,
@@ -1252,14 +1252,20 @@ exports.handler = async (event, context) => {
     console.log(`[send-earthquake-alert] 📝 HTML contains magnitude: ${baseEmailContent.html.includes(safeMagnitudeFormatted)}`);
     console.log(`[send-earthquake-alert] 📝 HTML contains location: ${baseEmailContent.html.includes(safeLocationDisplay)}`);
     
-    // Download and attach image if available (as inline CID attachment)
-    let imageAttachment = null;
+    // Download and attach images: GIF as inline, PNG as attachment
+    let gifAttachment = null; // For inline display
+    let pngAttachment = null; // For download attachment
     let htmlWithImage = baseEmailContent.html;
     
-    if (imageUrl) {
-      console.log(`[send-earthquake-alert] 📸 Starting image download from: ${imageUrl}`);
+    // Priority: Use GIF (videoUrl) for inline if available, fallback to PNG (imageUrl)
+    const inlineImageUrl = videoUrl || imageUrl;
+    const attachmentImageUrl = imageUrl; // PNG always as attachment
+    
+    // Download GIF for inline display (if available)
+    if (inlineImageUrl) {
+      console.log(`[send-earthquake-alert] 📸 Starting ${videoUrl ? 'GIF' : 'PNG'} download for inline display from: ${inlineImageUrl}`);
       try {
-      const imageData = await downloadImageForEmail(imageUrl);
+      const imageData = await downloadImageForEmail(inlineImageUrl);
         console.log(`[send-earthquake-alert] 📸 Image download completed:`, {
           hasImageData: !!imageData,
           hasBuffer: !!(imageData && imageData.buffer),
@@ -1280,15 +1286,18 @@ exports.handler = async (event, context) => {
             console.log(`[send-earthquake-alert] ✅ Image downloaded successfully (${Math.round(imageData.buffer.length / 1024)}KB, ${imageData.contentType})`);
             
             // Validate it's actually a valid image by checking magic bytes
-            const magicBytes = imageData.buffer.slice(0, 4);
+            const magicBytes = imageData.buffer.slice(0, 6);
             const isPNG = magicBytes[0] === 0x89 && magicBytes[1] === 0x50 && magicBytes[2] === 0x4E && magicBytes[3] === 0x47;
             const isJPEG = magicBytes[0] === 0xFF && magicBytes[1] === 0xD8;
+            // GIF magic bytes: 0x47 0x49 0x46 = "GIF" in ASCII
+            // Bug fix: toString() without encoding returns decimal values, not ASCII string
+            const isGIF = magicBytes[0] === 0x47 && magicBytes[1] === 0x49 && magicBytes[2] === 0x46;
             
-            if (!isPNG && !isJPEG) {
-              console.warn('[send-earthquake-alert] ⚠️ Image magic bytes don\'t match PNG or JPEG - may be corrupted, but will try anyway');
-              console.warn('[send-earthquake-alert] ⚠️ Magic bytes:', Array.from(magicBytes).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
+            if (!isPNG && !isJPEG && !isGIF) {
+              console.warn('[send-earthquake-alert] ⚠️ Image magic bytes don\'t match PNG, JPEG, or GIF - may be corrupted, but will try anyway');
+              console.warn('[send-earthquake-alert] ⚠️ Magic bytes:', Array.from(magicBytes.slice(0, 4)).map(b => '0x' + b.toString(16).padStart(2, '0')).join(' '));
             } else {
-              console.log(`[send-earthquake-alert] ✅ Image format validated: ${isPNG ? 'PNG' : 'JPEG'}`);
+              console.log(`[send-earthquake-alert] ✅ Image format validated: ${isPNG ? 'PNG' : (isJPEG ? 'JPEG' : 'GIF')}`);
             }
           }
           
@@ -1323,7 +1332,7 @@ exports.handler = async (event, context) => {
             }
           } catch (encodeError) {
             console.error('[send-earthquake-alert] ❌ Failed to encode image to base64:', encodeError.message);
-            imageAttachment = null;
+            gifAttachment = null;
           }
           
           // Create attachment if we have valid base64 content
@@ -1332,25 +1341,33 @@ exports.handler = async (event, context) => {
             // IMPORTANT: CID in content_id must match what's used in HTML cid: reference
             // Use a simpler, more reliable CID format
             const cidIdentifier = `earthquake-${earthquake.event_id || Date.now()}`;
+            // Detect if this is actually a GIF by checking magic bytes
+            const magicBytesCheck = imageData.buffer.slice(0, 6);
+            // GIF magic bytes: 0x47 0x49 0x46 = "GIF" in ASCII
+            // Bug fix: toString() without encoding returns decimal values, not ASCII string
+            const detectedIsGIF = magicBytesCheck[0] === 0x47 && magicBytesCheck[1] === 0x49 && magicBytesCheck[2] === 0x46;
+            const isGIF = (videoUrl && inlineImageUrl === videoUrl) || detectedIsGIF;
+            const fileExtension = isGIF ? 'gif' : 'png';
+            const contentType = isGIF ? 'image/gif' : (imageData.contentType || 'image/png');
             
-            console.log(`[send-earthquake-alert] 📎 Creating attachment with CID: ${cidIdentifier}`);
+            console.log(`[send-earthquake-alert] 📎 Creating ${isGIF ? 'GIF' : 'PNG'} inline attachment with CID: ${cidIdentifier}`);
             console.log(`[send-earthquake-alert] 📎 Base64 length: ${base64Content.length}, Buffer length: ${imageData.buffer.length}`);
             
-        imageAttachment = {
-              filename: `earthquake-m${earthquake.magnitude.toFixed(1)}-${earthquake.event_id || 'unknown'}.png`,
+        gifAttachment = {
+              filename: `earthquake-m${earthquake.magnitude.toFixed(1)}-${earthquake.event_id || 'unknown'}.${fileExtension}`,
               content: base64Content, // Already base64 string
-              content_type: imageData.contentType || 'image/png',
+              content_type: contentType,
               // Resend expects content_id without cid: prefix - just the identifier
               content_id: cidIdentifier,
               // Explicitly set as inline attachment for email embedding
               content_disposition: 'inline',
             };
             
-            console.log(`[send-earthquake-alert] ✅ Attachment created:`, {
-              filename: imageAttachment.filename,
-              content_id: imageAttachment.content_id,
-              content_type: imageAttachment.content_type,
-              content_size: Math.round(imageAttachment.content.length / 1024) + 'KB'
+            console.log(`[send-earthquake-alert] ✅ ${isGIF ? 'GIF' : 'PNG'} inline attachment created:`, {
+              filename: gifAttachment.filename,
+              content_id: gifAttachment.content_id,
+              content_type: gifAttachment.content_type,
+              content_size: Math.round(gifAttachment.content.length / 1024) + 'KB'
             });
             
             // Add <img> tag in HTML that references the CID
@@ -1403,8 +1420,55 @@ exports.handler = async (event, context) => {
       console.log('[send-earthquake-alert] ℹ️ No imageUrl provided, email will be sent without image');
     }
     
-    // Final safety check: if we have an attachment but no CID in HTML, add it
-    if (imageAttachment && !htmlWithImage.includes(`cid:${imageAttachment.content_id}`)) {
+    // Download PNG for attachment (if different from inline image)
+    // CRITICAL: Download ONCE before the email loop to prevent redundant downloads (Bug 3 fix)
+    if (attachmentImageUrl && attachmentImageUrl !== inlineImageUrl) {
+      console.log(`[send-earthquake-alert] 📸 Downloading PNG for attachment from: ${attachmentImageUrl}`);
+      try {
+        const pngData = await downloadImageForEmail(attachmentImageUrl);
+        if (pngData && pngData.buffer) {
+          const pngBase64 = Buffer.isBuffer(pngData.buffer) 
+            ? pngData.buffer.toString('base64')
+            : Buffer.from(pngData.buffer).toString('base64');
+          
+          pngAttachment = {
+            filename: `earthquake-m${earthquake.magnitude.toFixed(1)}-${earthquake.event_id || 'unknown'}.png`,
+            content: pngBase64,
+            content_type: 'image/png',
+            content_disposition: 'attachment', // Regular downloadable attachment
+          };
+          console.log(`[send-earthquake-alert] ✅ PNG attachment prepared: ${Math.round(pngBase64.length / 1024)}KB`);
+        }
+      } catch (pngError) {
+        console.warn(`[send-earthquake-alert] ⚠️ Failed to download PNG for attachment: ${pngError.message}`);
+      }
+    }
+    
+    // Also download PNG if we have GIF inline but no PNG yet (Bug 3 fix - moved outside loop)
+    if (gifAttachment && !pngAttachment && attachmentImageUrl) {
+      console.log(`[send-earthquake-alert] 📸 Downloading PNG for attachment (GIF is inline, need PNG for download)`);
+      try {
+        const pngData = await downloadImageForEmail(attachmentImageUrl);
+        if (pngData && pngData.buffer) {
+          const pngBase64 = Buffer.isBuffer(pngData.buffer) 
+            ? pngData.buffer.toString('base64')
+            : Buffer.from(pngData.buffer).toString('base64');
+          
+          pngAttachment = {
+            filename: `earthquake-m${earthquake.magnitude.toFixed(1)}-${earthquake.event_id || 'unknown'}.png`,
+            content: pngBase64,
+            content_type: 'image/png',
+            content_disposition: 'attachment',
+          };
+          console.log(`[send-earthquake-alert] ✅ PNG attachment downloaded once before email loop: ${Math.round(pngBase64.length / 1024)}KB`);
+        }
+      } catch (pngError) {
+        console.warn(`[send-earthquake-alert] ⚠️ Failed to download PNG for attachment: ${pngError.message}`);
+      }
+    }
+    
+    // Final safety check: if we have an inline attachment but no CID in HTML, add it
+    if (gifAttachment && !htmlWithImage.includes(`cid:${gifAttachment.content_id}`)) {
       console.warn(`[send-earthquake-alert] ⚠️ CID not found in HTML, forcing insertion`);
       const imageHtml = `
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
@@ -1413,7 +1477,7 @@ exports.handler = async (event, context) => {
                     <p style="margin: 0 0 12px 0; font-size: 11px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">
                       Shareable graphic
                     </p>
-                    <img src="cid:${imageAttachment.content_id}" alt="Earthquake Visualization - Magnitude ${safeMagnitudeFormatted} near ${safeLocationDisplay}" style="display: block; width: 100%; max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #E6EAF2;" />
+                    <img src="cid:${gifAttachment.content_id}" alt="Earthquake Visualization - Magnitude ${safeMagnitudeFormatted} near ${safeLocationDisplay}" style="display: block; width: 100%; max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #E6EAF2;" />
                   </td>
                 </tr>
               </table>
@@ -1424,7 +1488,7 @@ exports.handler = async (event, context) => {
         `${imageHtml.trim()}$1`
       );
       console.log(`[send-earthquake-alert] ✅ Image HTML force-inserted`);
-    } else if (!imageAttachment) {
+    } else if (!gifAttachment) {
       // Remove CID references from HTML if we don't have an attachment
       // This prevents broken image icons
       htmlWithImage = htmlWithImage.replace(/<img[^>]+src=["']cid:[^"']+["'][^>]*>/gi, '');
@@ -1440,78 +1504,72 @@ exports.handler = async (event, context) => {
           to: email,
         };
         
-        if (imageAttachment) {
-          // Validate attachment before adding
-          if (!imageAttachment.content || imageAttachment.content.length === 0) {
-            console.error(`[send-earthquake-alert] ❌ Attachment has no content! Skipping attachment for ${email}`);
-            imageAttachment = null;
-          } else if (!imageAttachment.content_id) {
-            console.error(`[send-earthquake-alert] ❌ Attachment has no content_id! Skipping attachment for ${email}`);
-            imageAttachment = null;
+        // Build attachments: GIF inline, PNG as attachment
+        const attachments = [];
+        
+        // Add GIF as inline attachment (for email body display)
+        if (gifAttachment) {
+          // Validate GIF attachment
+          if (!gifAttachment.content || gifAttachment.content.length === 0) {
+            console.error(`[send-earthquake-alert] ❌ GIF attachment has no content! Skipping for ${email}`);
+          } else if (!gifAttachment.content_id) {
+            console.error(`[send-earthquake-alert] ❌ GIF attachment has no content_id! Skipping for ${email}`);
           } else {
-            // Create BOTH inline and regular attachment
-            // Inline: displays in email body via CID reference
-            // Regular: available as downloadable attachment
-            const inlineAttachment = {
-              filename: imageAttachment.filename,
-              content: imageAttachment.content, // base64 string
-              content_type: imageAttachment.content_type,
-              content_id: imageAttachment.content_id,
-              content_disposition: 'inline', // Required for inline images
-            };
-            
-            const regularAttachment = {
-              filename: imageAttachment.filename,
-              content: imageAttachment.content, // Same base64 string
-              content_type: imageAttachment.content_type,
-              // No content_id for regular attachment
-              content_disposition: 'attachment', // Regular downloadable attachment
-            };
-            
-            // Add both: inline first (for email body), then regular (for download)
-            emailContent.attachments = [inlineAttachment, regularAttachment];
-            console.log(`[send-earthquake-alert] 📎 Adding image as BOTH inline and regular attachment for ${email}`);
-            console.log(`[send-earthquake-alert] 📎 Inline attachment (for email body):`, {
-              filename: inlineAttachment.filename,
-              content_id: inlineAttachment.content_id,
-              content_type: inlineAttachment.content_type,
-              content_disposition: inlineAttachment.content_disposition,
-            });
-            console.log(`[send-earthquake-alert] 📎 Regular attachment (for download):`, {
-              filename: regularAttachment.filename,
-              content_type: regularAttachment.content_type,
-              content_disposition: regularAttachment.content_disposition,
-              content_length: regularAttachment.content.length,
+            attachments.push(gifAttachment);
+            console.log(`[send-earthquake-alert] 📎 Added GIF inline attachment for ${email}:`, {
+              filename: gifAttachment.filename,
+              content_id: gifAttachment.content_id,
+              content_type: gifAttachment.content_type,
+              content_size: Math.round(gifAttachment.content.length / 1024) + 'KB'
             });
             
             // Verify the CID format in HTML
-            const cidPattern = new RegExp(`cid:${inlineAttachment.content_id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
+            const cidPattern = new RegExp(`cid:${gifAttachment.content_id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
             const cidMatches = htmlWithImage.match(cidPattern);
             if (!cidMatches || cidMatches.length === 0) {
-              console.error(`[send-earthquake-alert] ❌ CRITICAL: CID "${inlineAttachment.content_id}" not found in HTML!`);
-              console.error(`[send-earthquake-alert] ❌ HTML snippet around image:`, htmlWithImage.substring(htmlWithImage.indexOf('See attached'), htmlWithImage.indexOf('See attached') + 200));
+              console.error(`[send-earthquake-alert] ❌ CRITICAL: CID "${gifAttachment.content_id}" not found in HTML!`);
             } else {
               console.log(`[send-earthquake-alert] ✅ CID verified in HTML (found ${cidMatches.length} time(s))`);
             }
           }
         }
         
-        if (!imageAttachment) {
-          console.log(`[send-earthquake-alert] ⚠️ No image attachment for ${email} - imageAttachment is null or invalid`);
-          console.log(`[send-earthquake-alert] ⚠️ Email will be sent WITHOUT image attachment for ${email}`);
-        } else {
-          console.log(`[send-earthquake-alert] ✅ Email prepared WITH image attachment for ${email}:`, {
-            attachmentCount: emailContent.attachments?.length || 0,
-            hasInline: emailContent.attachments?.some(a => a.content_disposition === 'inline') || false,
-            hasRegular: emailContent.attachments?.some(a => a.content_disposition === 'attachment') || false,
-            contentId: imageAttachment.content_id
+        // Add PNG as regular attachment (for download)
+        // PNG was already downloaded once before the loop (Bug 3 fix)
+        if (pngAttachment) {
+          // Validate PNG attachment
+          if (!pngAttachment.content || pngAttachment.content.length === 0) {
+            console.error(`[send-earthquake-alert] ❌ PNG attachment has no content! Skipping for ${email}`);
+          } else {
+            attachments.push(pngAttachment);
+            console.log(`[send-earthquake-alert] 📎 Added PNG attachment for ${email}:`, {
+              filename: pngAttachment.filename,
+              content_type: pngAttachment.content_type,
+              content_size: Math.round(pngAttachment.content.length / 1024) + 'KB'
+            });
+          }
+        }
+        
+        if (attachments.length > 0) {
+          emailContent.attachments = attachments;
+          console.log(`[send-earthquake-alert] ✅ Email prepared with ${attachments.length} attachment(s) for ${email}:`, {
+            attachments: attachments.map(a => ({
+              filename: a.filename,
+              type: a.content_type,
+              disposition: a.content_disposition,
+              hasCid: !!a.content_id
+            }))
           });
+        } else {
+          console.log(`[send-earthquake-alert] ⚠️ No attachments for ${email} - email will be sent without attachments`);
         }
         
         // CRITICAL: Log email content before sending
         console.log(`[send-earthquake-alert] 📧 FINAL EMAIL CONTENT for ${email}:`, {
           hasAttachments: !!emailContent.attachments,
           attachmentCount: emailContent.attachments?.length || 0,
+          hasGifInline: attachments.some(a => a.content_disposition === 'inline' && a.content_type === 'image/gif'),
+          hasPngAttachment: attachments.some(a => a.content_disposition === 'attachment' && a.content_type === 'image/png'),
           attachments: emailContent.attachments?.map(a => ({
             filename: a.filename,
             content_id: a.content_id,
@@ -1549,7 +1607,7 @@ exports.handler = async (event, context) => {
     
     const result = successful[0].value;
     
-    const hasImage = imageAttachment !== null;
+    const hasImage = gifAttachment !== null || pngAttachment !== null;
     console.log(`[send-earthquake-alert] ✅ Alert sent successfully for M${earthquake.magnitude} earthquake to ${successful.length} recipient(s)${hasImage ? ' with image' : ' (no image)'}`);
     
     return {

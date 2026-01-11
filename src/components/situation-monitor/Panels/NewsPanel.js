@@ -11,14 +11,17 @@ export class NewsPanel extends BasePanel {
     super(containerId, 'News Feed', { collapsible: true });
     this.headlines = [];
     this.currentFeed = 'all';
-    // Initialize asynchronously - don't call init() here, it's called once in async init()
-    // Don't await - let it run asynchronously
-    this.init().catch(err => {
-      console.error('[NewsPanel] Init error:', err);
-    });
+    this._initCalled = false; // Flag to prevent duplicate initialization
+    // Don't call init() here - SituationMonitorShell.initPanels() will call it
   }
 
   async init() {
+    // Prevent duplicate initialization
+    if (this._initCalled) {
+      console.warn('[NewsPanel] init() already called, skipping duplicate');
+      return;
+    }
+    this._initCalled = true;
     super.init(); // Call BasePanel.init() to set up DOM structure (idempotent)
     // Set up retry callback to reload news data
     this.onRetry = () => {
@@ -105,8 +108,14 @@ export class NewsPanel extends BasePanel {
   }
 
   setupRefresh() {
+    // Clear any existing refresh interval to prevent memory leaks
+    if (this._refreshInterval) {
+      clearInterval(this._refreshInterval);
+      this._refreshInterval = null;
+    }
+    
     // Auto-refresh every 5 minutes
-    setInterval(() => {
+    this._refreshInterval = setInterval(() => {
       if (!this.collapsed && this.enabled) {
         this.loadNews();
       }

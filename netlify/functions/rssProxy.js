@@ -6,18 +6,115 @@
  * Only allows feeds from the registry (SSRF protection).
  */
 
-const RSS_FEEDS = require('../../src/rss/feeds.js').RSS_FEEDS;
-const { parseFeed } = require('../../src/rss/parser.js');
+// Load RSS feeds and parser (lazy load in handler to prevent function crash)
+// Netlify Functions run from repo root, so relative paths work
+let RSS_FEEDS = null;
+let parseFeed = null;
+let moduleLoadError = null;
+
+/**
+ * Lazy load modules - only load when first request comes in
+ * This prevents function initialization failures from crashing the entire function
+ */
+function loadModules() {
+  if (RSS_FEEDS && parseFeed) {
+    return { RSS_FEEDS, parseFeed }; // Already loaded
+  }
+  
+  if (moduleLoadError) {
+    throw moduleLoadError; // Re-throw previous error
+  }
+  
+  try {
+    const feedsModule = require('../../src/rss/feeds.js');
+    RSS_FEEDS = feedsModule.RSS_FEEDS;
+    if (!RSS_FEEDS || !Array.isArray(RSS_FEEDS)) {
+      throw new Error('RSS_FEEDS is not an array');
+    }
+  } catch (error) {
+    moduleLoadError = new Error(`Failed to load RSS feeds: ${error.message}`);
+    console.error('[RSS Proxy] Error loading feeds.js:', error);
+    throw moduleLoadError;
+  }
+
+  try {
+    const parserModule = require('../../src/rss/parser.js');
+    parseFeed = parserModule.parseFeed;
+    if (typeof parseFeed !== 'function') {
+      throw new Error('parseFeed is not a function');
+    }
+  } catch (error) {
+    moduleLoadError = new Error(`Failed to load RSS parser: ${error.message}`);
+    console.error('[RSS Proxy] Error loading parser.js:', error);
+    throw moduleLoadError;
+  }
+  
+  return { RSS_FEEDS, parseFeed };
+}
 
 // In-memory cache (TTL: 10 minutes)
 const cache = new Map();
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 /**
+ * Validate feed URL for SSRF protection
+ */
+function validateFeedUrl(url) {
+  if (!url || typeof url !== 'string') {
+    return false;
+  }
+  
+  try {
+    const parsed = new URL(url);
+    
+    // Block internal/private network addresses
+    const hostname = parsed.hostname.toLowerCase();
+    
+    // Block localhost variants
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+      return false;
+    }
+    
+    // Block private IP ranges
+    if (hostname.startsWith('10.') || 
+        hostname.startsWith('172.16.') || hostname.startsWith('172.17.') || 
+        hostname.startsWith('172.18.') || hostname.startsWith('172.19.') ||
+        hostname.startsWith('172.20.') || hostname.startsWith('172.21.') ||
+        hostname.startsWith('172.22.') || hostname.startsWith('172.23.') ||
+        hostname.startsWith('172.24.') || hostname.startsWith('172.25.') ||
+        hostname.startsWith('172.26.') || hostname.startsWith('172.27.') ||
+        hostname.startsWith('172.28.') || hostname.startsWith('172.29.') ||
+        hostname.startsWith('172.30.') || hostname.startsWith('172.31.') ||
+        hostname.startsWith('192.168.') ||
+        hostname.startsWith('169.254.')) {
+      return false;
+    }
+    
+    // Only allow http/https
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return false;
+    }
+    
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
  * Get feed from registry by ID
  */
 function getFeedById(feedId) {
-  return RSS_FEEDS.find(f => f.id === feedId);
+  const { RSS_FEEDS: feeds } = loadModules();
+  const feed = feeds.find(f => f.id === feedId);
+  
+  // Validate feed URL for SSRF protection
+  if (feed && !validateFeedUrl(feed.feedUrl)) {
+    console.error(`[RSS Proxy] Invalid feed URL for ${feedId}: ${feed.feedUrl}`);
+    return null;
+  }
+  
+  return feed;
 }
 
 /**
@@ -32,7 +129,16 @@ async function fetchAndParseFeed(feed) {
   }
   
   try {
-    const items = await parseFeed(feed.feedUrl, feed);
+    const { parseFeed: parse } = loadModules();
+    
+    // Parse feed (rss-parser handles fetching internally)
+    const items = await parse(feed.feedUrl, feed);
+    
+    // Size check on parsed items (max 5MB)
+    const resultSize = JSON.stringify(items).length;
+    if (resultSize > 5 * 1024 * 1024) {
+      throw new Error('Parsed feed too large (max 5MB)');
+    }
     
     const result = {
       source: {
@@ -88,6 +194,9 @@ exports.handler = async (event, context) => {
   }
   
   try {
+    // Lazy load modules in handler (not at module level) to prevent function crash
+    loadModules();
+    
     const { source } = event.queryStringParameters || {};
     
     if (!source) {
@@ -117,6 +226,19 @@ exports.handler = async (event, context) => {
     };
   } catch (error) {
     console.error('[RSS Proxy] Handler error:', error);
+    
+    // Handle module load errors gracefully
+    if (error.message && error.message.includes('Failed to load')) {
+      return {
+        statusCode: 503,
+        headers,
+        body: JSON.stringify({
+          error: 'Service temporarily unavailable: RSS module loading failed',
+          details: error.message
+        })
+      };
+    }
+    
     return {
       statusCode: 500,
       headers,

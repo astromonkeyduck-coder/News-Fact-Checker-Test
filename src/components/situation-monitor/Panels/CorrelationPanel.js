@@ -12,6 +12,11 @@ export class CorrelationPanel extends BasePanel {
     this.headlines = [];
   }
 
+  init() {
+    super.init(); // Initialize DOM structure
+    this.render(); // Show initial empty state
+  }
+
   update(headlines) {
     this.headlines = headlines;
     this.correlations = detectCorrelations(headlines);

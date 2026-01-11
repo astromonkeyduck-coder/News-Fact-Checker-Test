@@ -9,14 +9,17 @@ export class MarketsPanel extends BasePanel {
   constructor(containerId) {
     super(containerId, 'Markets', { collapsible: true });
     this.marketData = null;
-    // Initialize asynchronously - don't call init() here, it's called once in async init()
-    // Don't await - let it run asynchronously
-    this.init().catch(err => {
-      console.error('[MarketsPanel] Init error:', err);
-    });
+    this._initCalled = false; // Flag to prevent duplicate initialization
+    // Don't call init() here - SituationMonitorShell.initPanels() will call it
   }
 
   async init() {
+    // Prevent duplicate initialization
+    if (this._initCalled) {
+      console.warn('[MarketsPanel] init() already called, skipping duplicate');
+      return;
+    }
+    this._initCalled = true;
     super.init(); // Call BasePanel.init() to set up DOM structure (idempotent)
     // Set up retry callback to reload markets data
     this.onRetry = () => {
@@ -95,8 +98,14 @@ export class MarketsPanel extends BasePanel {
   }
 
   setupRefresh() {
+    // Clear any existing refresh interval to prevent memory leaks
+    if (this._refreshInterval) {
+      clearInterval(this._refreshInterval);
+      this._refreshInterval = null;
+    }
+    
     // Auto-refresh every 30 seconds
-    setInterval(() => {
+    this._refreshInterval = setInterval(() => {
       if (!this.collapsed && this.enabled) {
         this.loadMarkets();
       }

@@ -1110,6 +1110,8 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
       depth: depth,
       // Add assets for all Tier features (impact assessment, tsunami risk, etc.)
       assets: earthquake.assets || {},
+      // Include video_url if available (for GIF inline display in emails)
+      video_url: earthquake.video_url || null
     };
     
     logger.info('Sending email alert with full earthquake data', { 
@@ -1127,7 +1129,8 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         earthquake: earthquakeData,
-        imageUrl,
+        imageUrl, // PNG image URL
+        videoUrl: earthquakeData.video_url || null, // GIF video URL (for inline display)
       }),
     });
     
@@ -1199,6 +1202,14 @@ async function storeEvent(event, logger) {
       // Update image_url if we have a new one
       if (event.image_url) {
         updateData.image_url = event.image_url;
+      }
+      
+      // Update video_url if we have a new one (store in assets for now)
+      if (event.video_url) {
+        if (!updateData.assets) {
+          updateData.assets = existing.assets || {};
+        }
+        updateData.assets.video_url = event.video_url;
       }
       
       // Preserve alert_sent status (always preserve, whether true or false)
@@ -1771,7 +1782,9 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       // Ensure source_url exists
       source_url: storedEvent.source_url || storedEvent.raw?.properties?.url || null,
       // Ensure usgs_event_url exists (alias for source_url)
-      usgs_event_url: storedEvent.source_url || storedEvent.raw?.properties?.url || null
+      usgs_event_url: storedEvent.source_url || storedEvent.raw?.properties?.url || null,
+      // Include video_url if available (for GIF inline display in emails)
+      video_url: storedEvent.video_url || event.video_url || null
     };
     
     logger.info('📦 Enriched event data for email', {
@@ -1808,22 +1821,74 @@ async function processEarthquake(feature, logger, forceEmail = false) {
       imageUrl = null;
     }
     
+    // CRITICAL: Atomic check-and-set to prevent duplicate emails (Bug 2 fix)
+    // Use alert_sent_at as a lock: set it to claim, keep it on success, clear on failure
+    // This prevents race conditions while ensuring we can rollback on failure
+    
+    // Phase 1: Atomically claim the right to send by setting alert_sent_at (only if it's NULL)
+    // This acts as a lock - only one process can claim it
+    const claimTimestamp = new Date().toISOString();
+    const { data: claimResult, error: claimError } = await supabase
+      .from('verified_events')
+      .update({
+        alert_sent: false, // Keep as false during sending
+        alert_sent_at: claimTimestamp, // Use alert_sent_at as a lock (claim timestamp)
+      })
+      .eq('canonical_id', canonicalId)
+      .eq('alert_sent', false) // Only claim if not already sent (atomic check)
+      .is('alert_sent_at', null) // Also check that no other process has claimed it
+      .select();
+    
+    if (claimError) {
+      logger.error('Failed to atomically claim alert send', claimError, { canonical_id: canonicalId });
+    }
+    
+    // If claimResult is empty, alert was already sent or being sent by another process
+    if (!claimResult || claimResult.length === 0) {
+      logger.warn('⚠️ Alert already sent or being sent (atomic check prevented duplicate)', { 
+        canonical_id: canonicalId,
+        reason: 'concurrent_process_already_sent'
+      });
+      // Don't send email - another process already sent it or is sending it
+      storedEvent.alert_sent = true;
+      return { isNew, event: storedEvent };
+    }
+    
+    // Phase 2: Send the email
     const alertSent = await sendEmailAlert(enrichedEvent, imageUrl, logger);
+    
+    // Phase 3: Mark as sent only if email succeeded, otherwise rollback the lock
     if (alertSent) {
-      // Update alert_sent status
-      await supabase
+      // Email succeeded - finalize by setting alert_sent = true (keep alert_sent_at as timestamp)
+      const { error: finalizeError } = await supabase
         .from('verified_events')
         .update({
           alert_sent: true,
-          alert_sent_at: new Date().toISOString(),
+          // alert_sent_at already set to claimTimestamp, keep it as the sent timestamp
         })
         .eq('canonical_id', canonicalId);
       
-      storedEvent.alert_sent = true;
-      storedEvent.alert_sent_at = new Date().toISOString();
-    } else if (forceEmail && originalAlertSent) {
-      // Restore original status if email failed
-      storedEvent.alert_sent = originalAlertSent;
+      if (finalizeError) {
+        logger.error('Failed to finalize alert_sent after successful send', finalizeError, { canonical_id: canonicalId });
+      } else {
+        storedEvent.alert_sent = true;
+        storedEvent.alert_sent_at = claimTimestamp;
+      }
+    } else {
+      // Email failed - rollback the lock by clearing alert_sent_at so it can be retried
+      const { error: rollbackError } = await supabase
+        .from('verified_events')
+        .update({
+          alert_sent: false,
+          alert_sent_at: null, // Clear lock to allow retry
+        })
+        .eq('canonical_id', canonicalId);
+      
+      if (rollbackError) {
+        logger.error('Failed to rollback alert_sent_at after email failure', rollbackError, { canonical_id: canonicalId });
+      }
+      
+      logger.error('Email send failed - alert_sent and alert_sent_at cleared to allow retry', { canonical_id: canonicalId });
     }
   } else {
     let reason = 'unknown';

@@ -245,22 +245,50 @@ export async function fetchWeather(lat, lon) {
 }
 
 /**
- * Fetch weather alerts (US only)
+ * Fetch weather alerts (US only) via Netlify Function proxy
  */
 export async function fetchWeatherAlerts() {
   const cacheKey = 'weather_alerts_us';
-  
-  try {
-    const url = 'https://api.weather.gov/alerts/active';
-    return await fetchJSON(url, cacheKey, 'weather', {
-      headers: {
-        'User-Agent': 'Noteworthy-News-Situation-Monitor/1.0 (contact@noteworthynews.co)'
-      }
-    });
-  } catch (error) {
-    console.warn('[Fetcher] Weather alerts fetch failed:', error);
-    return null;
+  const cached = getCached(cacheKey, 'weather');
+  if (cached) {
+    return cached;
   }
+
+  // Single-flight: if request already in progress, return same promise
+  if (inFlightRequests.has(cacheKey)) {
+    return inFlightRequests.get(cacheKey);
+  }
+
+  const fetchPromise = (async () => {
+    try {
+      // Use Netlify Function proxy to avoid CORS
+      const response = await fetchWithRetry(`/.netlify/functions/weatherProxy?type=alerts`);
+      
+      if (!response.ok) {
+        throw new Error(`Weather Proxy HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setCached(cacheKey, data, 'weather');
+      return data;
+    } catch (error) {
+      console.warn('[Fetcher] Weather alerts fetch failed:', error);
+      
+      // Return expired cache if available
+      const expired = getExpiredCache(cacheKey);
+      if (expired) {
+        console.log(`[Fetcher] Using expired cache for weather alerts`);
+        return expired;
+      }
+      
+      return null;
+    } finally {
+      inFlightRequests.delete(cacheKey);
+    }
+  })();
+
+  inFlightRequests.set(cacheKey, fetchPromise);
+  return fetchPromise;
 }
 
 /**
@@ -270,6 +298,57 @@ export async function fetchEarthquakes(minMagnitude = 4.5) {
   const cacheKey = `earthquakes_${minMagnitude}`;
   
   try {
+    // Try to fetch from our verified events API first (has more data)
+    const baseUrl = window.location.origin || 'https://noteworthynews.co';
+    const verifiedUrl = `${baseUrl}/.netlify/functions/get-verified-earthquakes?minMagnitude=${minMagnitude}&limit=50`;
+    
+    try {
+      const verifiedResponse = await fetch(verifiedUrl);
+      if (verifiedResponse.ok) {
+        const verifiedData = await verifiedResponse.json();
+        if (verifiedData.success && verifiedData.earthquakes && verifiedData.earthquakes.length > 0) {
+          // Transform to GeoJSON format for compatibility
+          const geoJson = {
+            type: 'FeatureCollection',
+            features: verifiedData.earthquakes.map(eq => ({
+              type: 'Feature',
+              id: eq.id,
+              properties: {
+                mag: eq.magnitude,
+                place: eq.place,
+                time: eq.time_ms || new Date(eq.time).getTime(),
+                updated: eq.updated ? new Date(eq.updated).getTime() : eq.time_ms,
+                url: eq.url,
+                // Include additional data
+                severity: eq.severity,
+                image_url: eq.image_url,
+                video_url: eq.video_url,
+                assets: eq.assets,
+                impact_assessment: eq.impact_assessment,
+                tsunami_risk: eq.tsunami_risk,
+                aftershock_forecast: eq.aftershock_forecast,
+                anomaly_detection: eq.anomaly_detection,
+                title: eq.title,
+                summary: eq.summary,
+                canonical_id: eq.canonical_id
+              },
+              geometry: {
+                type: 'Point',
+                coordinates: [eq.lon || 0, eq.lat || 0, eq.depth || 0]
+              }
+            }))
+          };
+          
+          // Cache the result
+          setCached(cacheKey, geoJson, 'earthquakes');
+          return geoJson;
+        }
+      }
+    } catch (verifiedError) {
+      console.warn('[Fetcher] Verified earthquakes fetch failed, falling back to USGS:', verifiedError);
+    }
+    
+    // Fallback to USGS feed
     const url = `https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/${minMagnitude}_day.geojson`;
     return await fetchJSON(url, cacheKey, 'earthquakes');
   } catch (error) {

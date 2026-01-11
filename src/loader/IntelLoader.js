@@ -571,11 +571,18 @@ export function setLoaderProgress(progress) {
     }
   });
   
-  // Dispatch event for audio hooks
-  window.dispatchEvent(new CustomEvent('nn:loader:progress', {
-    detail: { progress }
-  }));
+  // Dispatch event for audio hooks (throttled to avoid spam - max once per 100ms)
+  const now = Date.now();
+  if (!lastProgressEventTime || (now - lastProgressEventTime) >= 100) {
+    window.dispatchEvent(new CustomEvent('nn:loader:progress', {
+      detail: { progress }
+    }));
+    lastProgressEventTime = now;
+  }
 }
+
+// Track last progress event time for throttling
+let lastProgressEventTime = 0;
 
 /**
  * Set loader phase (idempotent)
@@ -590,6 +597,11 @@ export function setLoaderPhase(phase) {
   }
   
   currentPhase = phase;
+  
+  // Dispatch phase change event
+  window.dispatchEvent(new CustomEvent('nn:loader:phase', {
+    detail: { phase }
+  }));
   
   const phaseData = PHASE_MESSAGES[phase] || PHASE_MESSAGES.AUTH;
   

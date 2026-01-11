@@ -772,6 +772,7 @@ body.situation-monitor-page .main-nav ol li::before {
 .sitmon-earthquake-details {
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.7);
+  margin-top: 0.5rem;
 }
 
 .sitmon-earthquake-details a {
@@ -781,6 +782,55 @@ body.situation-monitor-page .main-nav ol li::before {
 
 .sitmon-earthquake-details a:hover {
   text-decoration: underline;
+}
+
+.sitmon-earthquake-precise-time {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: 'Courier New', monospace;
+  margin: 0.25rem 0;
+}
+
+.sitmon-earthquake-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sitmon-earthquake-media-link {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  font-size: 1rem;
+  transition: color 0.2s ease;
+}
+
+.sitmon-earthquake-media-link:hover {
+  color: #4A90E2;
+}
+
+.sitmon-earthquake-link {
+  color: #4A90E2;
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: color 0.2s ease;
+}
+
+.sitmon-earthquake-link:hover {
+  color: #6BA3E8;
+  text-decoration: underline;
+}
+
+.sitmon-earthquake-badge {
+  display: inline-block;
+  background: rgba(74, 158, 255, 0.2);
+  color: #4A90E2;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin: 0 2px;
 }
 
 /* Weather Alerts Panel */
@@ -1799,5 +1849,18 @@ body.situation-monitor-page ol,
     left: 10px;
     right: 10px;
     max-width: none;
+  }
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .sitmon-spinner,
+  .sitmon-pulse,
+  .sitmon-panel-card,
+  .sitmon-toast,
+  .sitmon-event-marker-ring,
+  * {
+    animation: none !important;
+    transition: none !important;
   }
 }

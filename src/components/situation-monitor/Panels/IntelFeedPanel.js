@@ -12,6 +12,11 @@ export class IntelFeedPanel extends BasePanel {
     this.headlines = [];
   }
 
+  init() {
+    super.init(); // Initialize DOM structure
+    this.render(); // Show initial empty state
+  }
+
   update(headlines) {
     this.headlines = headlines;
     this.characters = extractMainCharacters(headlines, 10);

@@ -114,7 +114,13 @@
         
         // Get return path from URL params
         const urlParams = new URLSearchParams(window.location.search);
-        const returnPath = urlParams.get('return') || '/';
+        let returnPath = urlParams.get('return') || '/';
+        
+        // Prevent redirect loops - if return path is security-check, default to home
+        if (returnPath.includes('security-check')) {
+            console.warn('[Security Check] Detected redirect loop, defaulting to home');
+            returnPath = '/';
+        }
         
         // Initialize component
         function initSecurityCheck() {
@@ -134,8 +140,9 @@
                 sessionStorage.setItem('security-check-verified', 'true');
                 sessionStorage.setItem('security-check-timestamp', Date.now().toString());
                 
-                // Redirect to original path
-                window.location.href = returnPath;
+                // Use replace to prevent back button loops, and ensure returnPath is safe
+                const safeReturnPath = returnPath.includes('security-check') ? '/' : returnPath;
+                window.location.replace(safeReturnPath);
             };
             
             root.render(
@@ -146,35 +153,53 @@
         }
         
         // Wait for React and component to load with error handling
+        let reactRetryCount = 0;
+        let securityCheckRetryCount = 0;
+        const MAX_RETRIES = 10; // Maximum 2 seconds of retries (10 * 200ms)
+        
         function tryInitSecurityCheck() {
             try {
-                // Check if React is loaded
+                // Check if React is loaded (separate counter)
                 if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
-                    // Retry after a delay if React isn't loaded yet
-                    setTimeout(tryInitSecurityCheck, 200);
-                    return;
+                    reactRetryCount++;
+                    if (reactRetryCount < MAX_RETRIES) {
+                        // Retry after a delay if React isn't loaded yet
+                        setTimeout(tryInitSecurityCheck, 200);
+                        return;
+                    }
+                    // Max retries reached, use fallback
+                    throw new Error('React not loaded after max retries');
                 }
                 
-                // Check if SecurityCheck component is available (might be loaded via Babel)
+                // Check if SecurityCheck component is available (separate counter)
                 if (typeof SecurityCheck === 'undefined') {
-                    // Retry after a delay if component isn't loaded yet
-                    setTimeout(tryInitSecurityCheck, 200);
-                    return;
+                    securityCheckRetryCount++;
+                    if (securityCheckRetryCount < MAX_RETRIES) {
+                        // Retry after a delay if component isn't loaded yet
+                        setTimeout(tryInitSecurityCheck, 200);
+                        return;
+                    }
+                    // Max retries reached, use fallback
+                    throw new Error('SecurityCheck component not loaded after max retries');
                 }
                 
                 initSecurityCheck();
             } catch (error) {
                 console.error('Error initializing security check:', error);
-                // Fallback: show a simple message and auto-redirect after 3 seconds
+                // Fallback: show a simple message and auto-redirect after 2 seconds
                 const rootElement = document.getElementById('security-check-root');
                 if (rootElement) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const returnPath = urlParams.get('return') || '/';
+                    
                     rootElement.innerHTML = `
-                        <div style="text-align: center; color: white; padding: 2rem;">
-                            <h1>Checking your browser...</h1>
-                            <p>Please wait while we verify your request.</p>
+                        <div style="text-align: center; color: white; padding: 2rem; max-width: 500px; margin: 0 auto;">
+                            <h1 style="font-size: 1.5rem; margin-bottom: 1rem;">Checking your browser...</h1>
+                            <p style="margin-bottom: 2rem; opacity: 0.8;">Please wait while we verify your request.</p>
                             <div style="margin: 2rem 0;">
                                 <div style="width: 48px; height: 48px; border: 4px solid rgba(74, 144, 226, 0.2); border-top: 4px solid #4A90E2; border-radius: 50%; margin: 0 auto; animation: spin 1s linear infinite;"></div>
                             </div>
+                            <p style="font-size: 0.875rem; opacity: 0.6; margin-top: 2rem;">Redirecting in a moment...</p>
                         </div>
                         <style>
                             @keyframes spin {
@@ -183,17 +208,36 @@
                             }
                         </style>
                     `;
-                    // Auto-redirect after 3 seconds as fallback
+                    
+                    // Auto-redirect after 2 seconds as fallback (faster than before)
                     setTimeout(() => {
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const returnPath = urlParams.get('return') || '/';
                         sessionStorage.setItem('security-check-verified', 'true');
                         sessionStorage.setItem('security-check-timestamp', Date.now().toString());
-                        window.location.href = returnPath;
-                    }, 3000);
+                        // Use replace instead of href to prevent back button issues
+                        // Ensure returnPath is safe
+                        const safeReturnPath = returnPath.includes('security-check') ? '/' : returnPath;
+                        window.location.replace(safeReturnPath);
+                    }, 2000);
                 }
             }
         }
+        
+        // Also add a global timeout fallback (5 seconds max)
+        setTimeout(() => {
+            const verified = sessionStorage.getItem('security-check-verified');
+            if (verified !== 'true') {
+                console.warn('[Security Check] Timeout fallback triggered');
+                const urlParams = new URLSearchParams(window.location.search);
+                let fallbackPath = urlParams.get('return') || '/';
+                // Prevent redirect loops
+                if (fallbackPath.includes('security-check')) {
+                    fallbackPath = '/';
+                }
+                sessionStorage.setItem('security-check-verified', 'true');
+                sessionStorage.setItem('security-check-timestamp', Date.now().toString());
+                window.location.replace(fallbackPath);
+            }
+        }, 5000);
         
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
@@ -205,4 +249,6 @@
     </script>
 </body>
 </html>
+
+
 

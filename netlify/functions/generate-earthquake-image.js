@@ -96,14 +96,30 @@ function estimateTextWidth(text, fontSize) {
 /**
  * Create SVG overlay with embedded fonts
  */
-function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templateHeight, scaleFactor = 1.0) {
-  // Format: "Breaking News:" (line 1), "M#.# EARTHQUAKE NEAR" (line 2), "[LOCATION]" (line 3, all caps)
+function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templateHeight, scaleFactor = 1.0, earthquakeTimestamp = null) {
+  // Format: "Breaking News:" (line 1), "M#.# EARTHQUAKE NEAR" (line 2), "[LOCATION]" (line 3, all caps), "[TIMESTAMP]" (line 4)
   const escapedBreaking = escapeSVGText(BREAKING_TEXT);
   const escapedMag = escapeSVGText(magnitudeText);
   const escapedEarthquakeNear = escapeSVGText(EARTHQUAKE_NEAR_TEXT);
   // Location in all caps (no period)
   const locationFormatted = locationText.toUpperCase();
   const escapedLocation = escapeSVGText(locationFormatted);
+  
+  // Format timestamp with milliseconds
+  let timestampText = '';
+  if (earthquakeTimestamp) {
+    const date = new Date(earthquakeTimestamp);
+    // Format: "YYYY-MM-DD HH:MM:SS.mmm UTC"
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    const hours = String(date.getUTCHours()).padStart(2, '0');
+    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+    const milliseconds = String(date.getUTCMilliseconds()).padStart(3, '0');
+    timestampText = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds} UTC`;
+  }
+  const escapedTimestamp = escapeSVGText(timestampText);
   
   // Scale all constants
   const scaledAnchorX = Math.round(ANCHOR_X * scaleFactor);
@@ -183,6 +199,11 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
   const locationX = alignedX;
   const locationY = scaledHeadlineBaselineY + (scaledLocationOffset * 2);
   
+  // Position for line 4: "[TIMESTAMP]" (if available)
+  const timestampX = alignedX;
+  const timestampY = scaledHeadlineBaselineY + (scaledLocationOffset * 3);
+  const timestampFontSize = Math.round(24 * scaleFactor);
+  
   // Use Roboto if fonts are loaded, otherwise fallback
   // Build @font-face declarations with base64 embedded fonts
   const fontFaceCSS = [];
@@ -259,6 +280,22 @@ function createDynamicTextSVG(magnitudeText, locationText, templateWidth, templa
         shape-rendering="geometricPrecision">
         ${escapedLocation}
       </text>
+      
+      ${timestampText ? `
+      <!-- Timestamp: e.g. 2026-01-10 16:20:36.261 UTC (white, regular, smaller) - Line 4 -->
+      <text 
+        x="${timestampX}" 
+        y="${timestampY}" 
+        font-family="${fontFamily}" 
+        font-size="${timestampFontSize}" 
+        font-weight="normal"
+        fill="${HEADLINE_COLOR}"
+        opacity="0.9"
+        text-rendering="optimizeLegibility"
+        shape-rendering="geometricPrecision">
+        ${escapedTimestamp}
+      </text>
+      ` : ''}
     </svg>
   `;
 }
@@ -272,6 +309,26 @@ function createVisualEffectsSVG(width, height, magnitude, scaleFactor = 1.0) {
   const centerY = height * 0.6; // Slightly below center
   const roundaboutRadius = 40 * scaleFactor; // Small roundabout animation
   const flashIntensity = Math.min(0.3, magnitude / 25); // Flash intensity based on magnitude
+  
+  // Fading ripple rings - progressively fainter
+  const ringCount = 5; // Number of rings
+  const maxRingRadius = Math.min(width, height) * 0.4; // Maximum ring radius
+  const ringSpacing = maxRingRadius / ringCount; // Space between rings
+  
+  // Magnitude-based color (red for high, yellow for medium, white for low)
+  const magnitudeColor = magnitude >= 6.0 ? 'rgba(255, 30, 30, 0.9)' : 
+                         magnitude >= 4.0 ? 'rgba(255, 180, 40, 0.8)' : 
+                         'rgba(255, 255, 255, 0.7)';
+  
+  // Generate ripple rings with fading opacity
+  const rippleRings = [];
+  for (let i = 0; i < ringCount; i++) {
+    const ringRadius = ringSpacing * (i + 1);
+    // Opacity decreases from 0.6 to 0.05 (fainter and fainter)
+    const ringOpacity = 0.6 - (i * 0.11); // 0.6, 0.49, 0.38, 0.27, 0.16
+    const ringThickness = (3 - i * 0.4) * scaleFactor; // Thinner rings as they get fainter
+    rippleRings.push({ radius: ringRadius, opacity: ringOpacity, thickness: ringThickness });
+  }
   
   return `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
@@ -300,10 +357,33 @@ function createVisualEffectsSVG(width, height, magnitude, scaleFactor = 1.0) {
           <stop offset="50%" stop-color="rgba(74, 158, 255, 0.2)"/>
           <stop offset="100%" stop-color="rgba(74, 158, 255, 0)"/>
         </linearGradient>
+        
+        <!-- Ripple ring gradients (fading outward) -->
+        ${rippleRings.map((ring, i) => `
+        <radialGradient id="rippleGradient${i}" cx="50%" cy="50%">
+          <stop offset="0%" stop-color="${magnitudeColor}" stop-opacity="${ring.opacity}"/>
+          <stop offset="50%" stop-color="${magnitudeColor}" stop-opacity="${ring.opacity * 0.6}"/>
+          <stop offset="100%" stop-color="${magnitudeColor}" stop-opacity="0"/>
+        </radialGradient>
+        `).join('')}
       </defs>
       
       <!-- 4K Enhancement overlay (subtle sharpening effect) -->
       <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(255, 255, 255, 0.02)" filter="url(#4kEnhance)" opacity="0.3"/>
+      
+      <!-- Fading ripple rings (progressively fainter) -->
+      ${rippleRings.map((ring, i) => `
+      <circle 
+        cx="${centerX}" 
+        cy="${centerY}" 
+        r="${ring.radius}" 
+        fill="none" 
+        stroke="${magnitudeColor}" 
+        stroke-width="${ring.thickness}" 
+        opacity="${ring.opacity}"
+        stroke-dasharray="${i % 2 === 0 ? '5,5' : 'none'}"
+      />
+      `).join('')}
       
       <!-- Flash effect (subtle white flash that pulses) -->
       <circle cx="${centerX}" cy="${centerY}" r="${Math.min(width, height) * 0.3}" fill="url(#flashGradient)" opacity="0.4">
@@ -1626,6 +1706,25 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
   // This prevents geographic mismatches by locking selection to eventId's GeoJSON products
   // OLD CODE REMOVED: No longer fetch GeoJSON separately - buildTwoImageSources does it internally
   
+  // Fetch earthquake timestamp from event detail
+  let earthquakeTimestamp = null;
+  if (detailUrl || eventId) {
+    try {
+      const detailUrlToFetch = detailUrl || `https://earthquake.usgs.gov/earthquakes/feed/v1.0/detail/${eventId}.geojson`;
+      const detailResponse = await fetch(detailUrlToFetch);
+      if (detailResponse.ok) {
+        const detailJson = await detailResponse.json();
+        // Extract timestamp from properties.time (milliseconds since epoch)
+        if (detailJson.properties?.time) {
+          earthquakeTimestamp = detailJson.properties.time;
+          console.log(`[generate-earthquake-image] ✅ Fetched earthquake timestamp: ${new Date(earthquakeTimestamp).toISOString()}`);
+        }
+      }
+    } catch (error) {
+      console.warn(`[generate-earthquake-image] ⚠️ Could not fetch earthquake timestamp: ${error.message}`);
+    }
+  }
+  
   // Format magnitude text
   const magnitudeText = `M${magnitude.toFixed(1)}`;
   
@@ -1764,8 +1863,8 @@ async function generateImage(magnitude, location, eventId, templateType = 'stand
   // Define fontFamily in this scope (used for logging)
   const fontFamily = (FONT_DATA.regular && FONT_DATA.bold) ? 'Roboto' : 'Arial, sans-serif';
   
-  // Create SVG overlay with embedded fonts
-  const svgString = createDynamicTextSVG(magnitudeText, location, outputWidth, outputHeight, scaleFactor);
+  // Create SVG overlay with embedded fonts (include timestamp)
+  const svgString = createDynamicTextSVG(magnitudeText, location, outputWidth, outputHeight, scaleFactor, earthquakeTimestamp);
   
   // CRITICAL: Log SVG content to verify text is included
   console.log(`[generate-earthquake-image] 📝 SVG Text Overlay Content:`, {
