@@ -179,7 +179,30 @@ exports.handler = async (event) => {
     // Extract post metadata
     const title = post.title || post.story || post.text || 'Breaking News Story';
     const story = post.story || post.text || post.title || '';
-    const description = story.length > 200 ? story.substring(0, 200) + '...' : story;
+    
+    // Format relative time for description (e.g., "2 minutes ago")
+    const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
+    const postedDate = new Date(datePosted);
+    const now = new Date();
+    const diffMs = now - postedDate;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    let relativeTime = '';
+    if (diffDays > 0) {
+      relativeTime = `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+    } else if (diffHours > 0) {
+      relativeTime = `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+    } else if (diffMins > 0) {
+      relativeTime = `${diffMins} ${diffMins === 1 ? 'minute' : 'minutes'} ago`;
+    } else {
+      relativeTime = 'just now';
+    }
+    
+    // Build description with relative time
+    const baseDescription = story.length > 150 ? story.substring(0, 150) + '...' : story;
+    const description = baseDescription ? `${baseDescription} • Updated ${relativeTime}` : `Updated ${relativeTime}`;
     
     // CRITICAL: Prioritize GIF (video_url) first, then PNG (primary_image_url) for social media previews
     // This ensures the generated branded earthquake images (especially animated GIFs) appear in social media cards
@@ -256,7 +279,6 @@ exports.handler = async (event) => {
     });
     
     const url = `https://noteworthynews.co/article.html?id=${encodeURIComponent(articleId)}`;
-    const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
     
     // Ensure image URL is absolute
     let imageUrl = image.startsWith('http') ? image : `https://noteworthynews.co${image.startsWith('/') ? image : '/' + image}`;
@@ -426,13 +448,27 @@ exports.handler = async (event) => {
 </body>
 </html>`;
 
+    // Add cache-busting query parameter to image URLs to force refresh
+    // This ensures social media platforms see updated images even if they cache the HTML
+    const imageUrlWithCacheBust = socialImageUrl.includes('?') 
+      ? `${socialImageUrl}&_v=${Date.now()}`
+      : `${socialImageUrl}?_v=${Date.now()}`;
+    
+    // Replace image URLs in HTML with cache-busted versions (escape both for regex)
+    const escapedOriginal = escapeHtml(socialImageUrl);
+    const escapedCacheBust = escapeHtml(imageUrlWithCacheBust);
+    const htmlWithCacheBust = html.replace(
+      new RegExp(escapedOriginal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), 
+      escapedCacheBust
+    );
+    
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+        'Cache-Control': 'public, max-age=300', // Cache for 5 minutes (reduced from 1 hour)
       },
-      body: html
+      body: htmlWithCacheBust
     };
   } catch (error) {
     console.error('[article-preview] Error:', error);
