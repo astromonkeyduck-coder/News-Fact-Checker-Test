@@ -381,6 +381,182 @@ exports.handler = async (event, context) => {
       }
     }
     
+    // Ingest RSS feeds and store in live_events table
+    try {
+      const remaining = getRemainingTime();
+      if (remaining > 10000) { // Only if we have at least 10 seconds left
+        console.log('[ingest-all] Ingesting RSS feeds to live_events...');
+        const rssStartTime = Date.now();
+        
+        // Import RSS ingestion functions from ingest-live-events
+        const { createClient } = require('@supabase/supabase-js');
+        const crypto = require('crypto');
+        
+        // Use the same Supabase client
+        const rssSupabase = createClient(
+          process.env.SUPABASE_URL,
+          process.env.SUPABASE_SERVICE_ROLE_KEY
+        );
+        
+        // RSS ingestion logic (extracted from ingest-live-events.js)
+        const rssFeedsJson = process.env.RSS_FEEDS_JSON;
+        if (rssFeedsJson) {
+          const feeds = JSON.parse(rssFeedsJson);
+          const events = [];
+          
+          // Simple RSS parser function
+          function parseRSSBasic(xml) {
+            const items = [];
+            const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/gi;
+            let match;
+            
+            while ((match = itemRegex.exec(xml)) !== null) {
+              const itemXml = match[1];
+              const titleMatch = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+              const linkMatch = itemXml.match(/<link[^>]*>([\s\S]*?)<\/link>/i);
+              const guidMatch = itemXml.match(/<guid[^>]*>([\s\S]*?)<\/guid>/i);
+              const descMatch = itemXml.match(/<description[^>]*>([\s\S]*?)<\/description>/i);
+              const pubDateMatch = itemXml.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/i);
+              
+              if (titleMatch || linkMatch) {
+                items.push({
+                  title: titleMatch ? titleMatch[1].replace(/<[^>]*>/g, '').trim() : 'Untitled',
+                  link: linkMatch ? linkMatch[1].trim() : null,
+                  guid: guidMatch ? guidMatch[1].trim() : null,
+                  description: descMatch ? descMatch[1].replace(/<[^>]*>/g, '').trim() : null,
+                  pubDate: pubDateMatch ? pubDateMatch[1].trim() : null
+                });
+              }
+            }
+            return items;
+          }
+          
+          function generateCanonicalId(sourceName, identifier) {
+            const hash = crypto.createHash('sha256');
+            hash.update(`${sourceName}:${identifier}`);
+            return hash.digest('hex').substring(0, 32);
+          }
+          
+          // Fetch and parse RSS feeds
+          for (const feed of feeds) {
+            try {
+              const response = await fetch(feed.url, { 
+                headers: { 'User-Agent': 'NoteworthyNewsRSSBot/1.0' },
+                signal: AbortSignal.timeout(8000) // 8 second timeout
+              });
+              if (!response.ok) continue;
+              
+              const text = await response.text();
+              const items = parseRSSBasic(text);
+              
+              for (const item of items) {
+                if (!item.guid && !item.link) continue;
+                
+                const identifier = item.guid || item.link;
+                const canonicalId = generateCanonicalId(feed.name || 'rss', identifier);
+                
+                events.push({
+                  canonical_id: canonicalId,
+                  title: item.title || 'Untitled',
+                  summary: item.description || null,
+                  source_name: feed.name || 'RSS Feed',
+                  source_url: item.link || null,
+                  published_at: item.pubDate || new Date().toISOString(),
+                  fetched_at: new Date().toISOString(),
+                  tags: feed.tags || [],
+                  reliability: feed.reliability || 'unknown',
+                  raw_json: item
+                });
+              }
+            } catch (error) {
+              console.error(`[ingest-all] Error ingesting RSS feed ${feed.url}:`, error.message);
+            }
+          }
+          
+          // Store events in live_events table
+          if (events.length > 0) {
+            let inserted = 0;
+            let updated = 0;
+            let skipped = 0;
+            
+            for (const event of events) {
+              try {
+                const { data: existing } = await rssSupabase
+                  .from('live_events')
+                  .select('canonical_id')
+                  .eq('canonical_id', event.canonical_id)
+                  .single();
+                
+                if (existing) {
+                  const { error } = await rssSupabase
+                    .from('live_events')
+                    .update({
+                      fetched_at: event.fetched_at,
+                      updated_at: new Date().toISOString(),
+                      title: event.title,
+                      summary: event.summary,
+                      raw_json: event.raw_json
+                    })
+                    .eq('canonical_id', event.canonical_id);
+                  
+                  if (error) {
+                    skipped++;
+                  } else {
+                    updated++;
+                  }
+                } else {
+                  const { error } = await rssSupabase
+                    .from('live_events')
+                    .insert(event);
+                  
+                  if (error) {
+                    skipped++;
+                  } else {
+                    inserted++;
+                  }
+                }
+              } catch (error) {
+                skipped++;
+              }
+            }
+            
+            const rssDuration = Date.now() - rssStartTime;
+            console.log(`[ingest-all] RSS ingestion: ${inserted} inserted, ${updated} updated, ${skipped} skipped in ${rssDuration}ms`);
+            
+            results.rss_ingestion = {
+              success: true,
+              duration_ms: rssDuration,
+              inserted,
+              updated,
+              skipped,
+              total: events.length
+            };
+          } else {
+            results.rss_ingestion = {
+              success: true,
+              skipped: true,
+              reason: 'no_events_fetched'
+            };
+          }
+        } else {
+          console.log('[ingest-all] RSS_FEEDS_JSON not configured, skipping RSS ingestion');
+          results.rss_ingestion = {
+            skipped: true,
+            reason: 'not_configured'
+          };
+        }
+      } else {
+        console.log('[ingest-all] Skipping RSS ingestion (low time remaining)');
+        results.rss_ingestion = { skipped: true, reason: 'low_time_remaining' };
+      }
+    } catch (rssError) {
+      console.error('[ingest-all] RSS ingestion error:', rssError);
+      results.rss_ingestion = {
+        success: false,
+        error: rssError.message
+      };
+    }
+    
     results.finished_at = new Date().toISOString();
     results.duration_ms = Date.now() - startTime;
     console.log(`[ingest-all] Completed in ${results.duration_ms}ms: ${results.summary.successful} successful, ${results.summary.failed} failed`);

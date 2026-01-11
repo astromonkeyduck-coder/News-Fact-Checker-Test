@@ -6,8 +6,37 @@
  * Only allows feeds from the registry (SSRF protection).
  */
 
-const RSS_FEEDS = require('../../src/rss/feeds.js').RSS_FEEDS;
-const { parseFeed } = require('../../src/rss/parser.js');
+// Lazy load RSS feeds and parser to avoid bundling issues
+let RSS_FEEDS;
+let parseFeed;
+
+function loadModules() {
+  if (RSS_FEEDS && parseFeed) {
+    return; // Already loaded
+  }
+  
+  try {
+    const feedsModule = require('../../src/rss/feeds.js');
+    RSS_FEEDS = feedsModule.RSS_FEEDS;
+    if (!RSS_FEEDS || !Array.isArray(RSS_FEEDS)) {
+      throw new Error('RSS_FEEDS not found or invalid');
+    }
+  } catch (error) {
+    console.error('[RSS Feed] Failed to load feeds.js:', error);
+    throw new Error(`Failed to load RSS feeds: ${error.message}`);
+  }
+
+  try {
+    const parserModule = require('../../src/rss/parser.js');
+    parseFeed = parserModule.parseFeed;
+    if (typeof parseFeed !== 'function') {
+      throw new Error('parseFeed not found or not a function');
+    }
+  } catch (error) {
+    console.error('[RSS Feed] Failed to load parser.js:', error);
+    throw new Error(`Failed to load RSS parser: ${error.message}`);
+  }
+}
 
 // In-memory cache (TTL: 10 minutes)
 const cache = new Map();
@@ -17,6 +46,10 @@ const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
  * Get feed from registry
  */
 function getFeed(feedId, feedUrl) {
+  // Ensure modules are loaded
+  if (!RSS_FEEDS) {
+    loadModules();
+  }
   if (feedId) {
     return RSS_FEEDS.find(f => f.id === feedId);
   }
@@ -94,7 +127,10 @@ exports.handler = async (event, context) => {
     };
   }
   
-        try {
+  try {
+    // Load modules on first request (lazy loading to avoid bundling issues)
+    loadModules();
+    
     const { feedId, feedUrl } = event.queryStringParameters || {};
     
     if (!feedId && !feedUrl) {

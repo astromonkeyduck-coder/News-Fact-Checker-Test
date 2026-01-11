@@ -1338,91 +1338,58 @@ exports.handler = async (event, context) => {
                                   const computedHashtags = getEarthquakeHashtags(safeLocationDisplay, locationDetails);
                                   // Escape HTML for data attributes (escape & first, then quotes)
                                   const escapeHtmlAttr = (str) => String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                                  return `<a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(getShareTextWithHashtags(safeMagnitudeFormatted, safeLocationDisplay, { ...earthquake, locationDetails }))}&url=${encodeURIComponent(`https://noteworthynews.co/article.html?id=post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}&utm_source=email&utm_medium=share&utm_campaign=earthquake_alert`)}" 
-                                   data-earthquake-time="${earthquake.time_ms || (earthquake.time ? new Date(earthquake.time).getTime() : Date.now())}" 
-                                   data-magnitude="${escapeHtmlAttr(safeMagnitudeFormatted)}" 
-                                   data-location="${escapeHtmlAttr(safeLocationDisplay)}" 
-                                   data-hashtags="${escapeHtmlAttr(computedHashtags)}"
-                                   data-event-id="${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}"
-                                   onclick="
-                                     (function(e) {
-                                       e.preventDefault();
-                                       const timeValue = e.currentTarget.getAttribute('data-earthquake-time');
-                                       // Parse timestamp (should always be milliseconds, but handle edge cases)
-                                       let timeMs;
-                                       if (timeValue) {
-                                         const parsed = parseInt(timeValue, 10);
-                                         // Validate: milliseconds timestamp should be > 1000000000000 (year 2001) and < reasonable future
-                                         if (!isNaN(parsed) && parsed > 1000000000000 && parsed < Date.now() + 86400000) {
-                                           timeMs = parsed;
-                                         } else {
-                                           // Try parsing as ISO string if number parsing failed
-                                           const dateParsed = new Date(timeValue).getTime();
-                                           if (!isNaN(dateParsed) && dateParsed > 1000000000000) {
-                                             timeMs = dateParsed;
-                                           } else {
-                                             // Fallback to current time if invalid
-                                             timeMs = Date.now();
-                                           }
-                                         }
-                                       } else {
-                                         // Fallback to current time if missing
-                                         timeMs = Date.now();
-                                       }
-                                       
-                                       const magnitude = e.currentTarget.getAttribute('data-magnitude');
-                                       const location = e.currentTarget.getAttribute('data-location');
-                                       const eventId = e.currentTarget.getAttribute('data-event-id');
-                                       
-                                       // Calculate relative time
-                                       const now = Date.now();
-                                       let diffMs = now - timeMs;
-                                       
-                                       // Validate: if diffMs is negative or too large (> 30 days), something's wrong
-                                       if (diffMs < 0 || diffMs > 86400000 * 30) {
-                                         // If time is in future or more than 30 days old, use "just now" as fallback
-                                         timeMs = now - 1000; // 1 second ago as safe fallback
-                                         diffMs = 1000; // Recalculate with corrected time
-                                       }
-                                       const diffSeconds = Math.floor(diffMs / 1000);
-                                       const diffMinutes = Math.floor(diffSeconds / 60);
-                                       const diffHours = Math.floor(diffMinutes / 60);
-                                       const diffDays = Math.floor(diffHours / 24);
-                                       
-                                       let relativeTime = '';
-                                       if (diffDays > 0) {
-                                         relativeTime = diffDays + ' day' + (diffDays > 1 ? 's' : '') + ' ago';
-                                       } else if (diffHours > 0) {
-                                         const remainingMinutes = diffMinutes % 60;
-                                         if (remainingMinutes > 0) {
-                                           relativeTime = diffHours + ' hour' + (diffHours > 1 ? 's' : '') + ' and ' + remainingMinutes + ' minute' + (remainingMinutes > 1 ? 's' : '') + ' ago';
-                                         } else {
-                                           relativeTime = diffHours + ' hour' + (diffHours > 1 ? 's' : '') + ' ago';
-                                         }
-                                       } else if (diffMinutes > 0) {
-                                         const remainingSeconds = diffSeconds % 60;
-                                         if (remainingSeconds > 0) {
-                                           relativeTime = diffMinutes + ' minute' + (diffMinutes > 1 ? 's' : '') + ' and ' + remainingSeconds + ' second' + (remainingSeconds > 1 ? 's' : '') + ' ago';
-                                         } else {
-                                           relativeTime = diffMinutes + ' minute' + (diffMinutes > 1 ? 's' : '') + ' ago';
-                                         }
-                                       } else {
-                                         relativeTime = diffSeconds + ' second' + (diffSeconds > 1 ? 's' : '') + ' ago';
-                                       }
-                                       
-                                      // Build share text with relative time (grammatically correct: comma after location, period after "ago")
-                                      // Use hashtags from data attribute (computed server-side for consistency)
-                                      const hashtags = e.currentTarget.getAttribute('data-hashtags') || '#terremoto #地震 #earthquake';
-                                      const shareText = 'BREAKING: M' + magnitude + ' Earthquake Near ' + location + ', ' + relativeTime + '.\n\n' + hashtags;
-                                       const shareUrl = 'https://noteworthynews.co/article.html?id=post-usgs-' + eventId + '&utm_source=email&utm_medium=share&utm_campaign=earthquake_alert';
-                                       const twitterUrl = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareText) + '&url=' + encodeURIComponent(shareUrl);
-                                       
-                                       window.open(twitterUrl, '_blank');
-                                     })(event);
-                                   "
-                                   style="display: inline-block; padding: 8px 16px; font-size: 13px; font-weight: 600; color: #ffffff; background-color: #1DA1F2; text-decoration: none; border-radius: 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-                                  𝕏 Share
-                                </a>`;
+                                  // For email: Calculate relative time server-side (email clients don't support JavaScript)
+                                  const earthquakeTime = earthquake.time_ms || (earthquake.time ? new Date(earthquake.time).getTime() : Date.now());
+                                  const now = Date.now();
+                                  let diffMs = now - earthquakeTime;
+                                  
+                                  // Validate: if diffMs is negative or too large (> 30 days), use "just now"
+                                  if (diffMs < 0 || diffMs > 86400000 * 30) {
+                                    diffMs = 1000; // 1 second ago as safe fallback
+                                  }
+                                  
+                                  const diffSeconds = Math.floor(diffMs / 1000);
+                                  const diffMinutes = Math.floor(diffSeconds / 60);
+                                  const diffHours = Math.floor(diffMinutes / 60);
+                                  const diffDays = Math.floor(diffHours / 24);
+                                  
+                                  let relativeTime = '';
+                                  if (diffDays > 0) {
+                                    relativeTime = diffDays + ' day' + (diffDays > 1 ? 's' : '') + ' ago';
+                                  } else if (diffHours > 0) {
+                                    const remainingMinutes = diffMinutes % 60;
+                                    if (remainingMinutes > 0) {
+                                      relativeTime = diffHours + ' hour' + (diffHours > 1 ? 's' : '') + ' and ' + remainingMinutes + ' minute' + (remainingMinutes > 1 ? 's' : '') + ' ago';
+                                    } else {
+                                      relativeTime = diffHours + ' hour' + (diffHours > 1 ? 's' : '') + ' ago';
+                                    }
+                                  } else if (diffMinutes > 0) {
+                                    const remainingSeconds = diffSeconds % 60;
+                                    if (remainingSeconds > 0) {
+                                      relativeTime = diffMinutes + ' minute' + (diffMinutes > 1 ? 's' : '') + ' and ' + remainingSeconds + ' second' + (remainingSeconds > 1 ? 's' : '') + ' ago';
+                                    } else {
+                                      relativeTime = diffMinutes + ' minute' + (diffMinutes > 1 ? 's' : '') + ' ago';
+                                    }
+                                  } else {
+                                    relativeTime = diffSeconds + ' second' + (diffSeconds > 1 ? 's' : '') + ' ago';
+                                  }
+                                  
+                                  // Build share text with relative time (server-side calculation for email compatibility)
+                                  const shareTextWithTime = getShareTextWithHashtags(safeMagnitudeFormatted, safeLocationDisplay, { ...earthquake, locationDetails }, relativeTime);
+                                  const shareUrl = `https://noteworthynews.co/article.html?id=post-usgs-${earthquake.event_id || earthquake.canonical_id?.split(':')[1] || 'unknown'}&utm_source=email&utm_medium=share&utm_campaign=earthquake_alert`;
+                                  const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareTextWithTime)}&url=${encodeURIComponent(shareUrl)}`;
+                                  
+                                  // Use table-based button for better email client compatibility
+                                  return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0;">
+                                    <tr>
+                                      <td align="center" style="background-color: #1DA1F2; border-radius: 6px; padding: 10px 20px;">
+                                        <a href="${twitterShareUrl}" 
+                                         style="display: inline-block; font-size: 14px; font-weight: 600; color: #ffffff !important; text-decoration: none !important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                                          𝕏 Share
+                                        </a>
+                                      </td>
+                                    </tr>
+                                  </table>`;
                                 })()}
                               </td>
                               <td style="padding: 0 6px;">

@@ -48,6 +48,25 @@ COMMENT ON TABLE live_events IS 'Stores fresh news/events from authoritative sou
 COMMENT ON COLUMN live_events.canonical_id IS 'Unique identifier: hash of source_name + source_url or source_name + event_id';
 COMMENT ON COLUMN live_events.reliability IS 'Source reliability: official, major_media, or unknown';
 
+-- Enable Row Level Security (RLS) for security best practices
+ALTER TABLE live_events ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy
+-- This table is backend-only (accessed via service role key)
+-- Service role bypasses RLS automatically, so it will still have full access
+-- This policy blocks anonymous/public access for security
+
+-- Drop existing policy if it exists (for idempotency)
+DROP POLICY IF EXISTS "No anonymous access to live_events" ON live_events;
+
+-- Policy: Block all anonymous/public access
+-- Service role will still work because it bypasses RLS entirely
+CREATE POLICY "No anonymous access to live_events"
+    ON live_events
+    FOR ALL
+    USING (false)
+    WITH CHECK (false);
+
 
 
 
