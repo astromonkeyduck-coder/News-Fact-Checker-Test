@@ -1294,12 +1294,9 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   
   const magnitude = props.mag || 0;
   
-  // Process earthquakes >= 0.5
-  // Images will only be generated if magnitude >= 0.5 (see below)
-  if (magnitude < 0.5) {
-    logger.debug('Skipping earthquake below magnitude 0.5', { magnitude, eventId });
-    return null;
-  }
+  // TESTING MODE: Process all earthquakes regardless of magnitude
+  // No magnitude threshold - all earthquakes will be processed and sent
+  // (Previously filtered at 0.5 for production)
   
   const place = props.place || 'Unknown Location';
   const time = props.time || Date.now();
@@ -1425,14 +1422,15 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     .eq('canonical_id', canonicalId)
     .single();
   
-  // Generate branded image ONLY if magnitude meets requirements (>= 0.5)
-  // Lower magnitude earthquakes are processed but won't get images
+  // TESTING MODE: Generate images for all earthquakes regardless of magnitude
+  // No magnitude threshold - images will be generated for all earthquakes
+  // (Previously filtered at 0.5 for production)
   let imageUrl = null;
   let videoUrl = null; // Store video_url (GIF) in variable before event object is created
   // Coordinates already extracted above for geocoding
   
-  // Threshold set to 0.5
-  const IMAGE_GENERATION_THRESHOLD = 0.5;
+  // TESTING: Threshold set to 0.0 to allow all earthquakes
+  const IMAGE_GENERATION_THRESHOLD = 0.0;
   
   if (magnitude >= IMAGE_GENERATION_THRESHOLD) {
     // Only generate new image if:

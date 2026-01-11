@@ -826,6 +826,70 @@ async function downloadImageForEmail(imageUrl) {
 }
 
 /**
+ * Get sender emails from webhook triggers (stored in Netlify Blobs)
+ * Returns array of unique email addresses from active webhook triggers (within 6 minutes)
+ * These emails only receive notifications from the specific ingest-all run they triggered
+ */
+async function getSenderEmailsFromWebhooks() {
+  try {
+    if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_BLOB_READ_WRITE_TOKEN) {
+      console.log('[send-earthquake-alert] Netlify Blobs not configured, skipping sender email lookup');
+      return [];
+    }
+
+    const { getStore } = require("@netlify/blobs");
+    const store = getStore({
+      name: "earthquake-notifications",
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+    });
+
+    // List all sender entries
+    const now = Date.now();
+    const senderEmails = new Set();
+    
+    try {
+      // List all blobs with prefix "sender-"
+      const { blobs } = await store.list({ prefix: "sender-" });
+      
+      for (const blob of blobs) {
+        try {
+          const data = await store.get(blob.key, { type: 'json' });
+          if (data && data.email && data.expiresAt) {
+            // Only include emails that haven't expired (within 6 minutes of their trigger)
+            // This ensures they only get notifications from the specific ingest-all they triggered
+            if (data.expiresAt > now) {
+              senderEmails.add(data.email);
+            } else {
+              // Clean up expired entries (they've received their notifications from their ingest-all run)
+              await store.delete(blob.key).catch(() => {
+                // Ignore delete errors
+              });
+            }
+          }
+        } catch (error) {
+          console.warn(`[send-earthquake-alert] Failed to read blob ${blob.key}:`, error.message);
+          // Try to clean up invalid entries
+          await store.delete(blob.key).catch(() => {
+            // Ignore delete errors
+          });
+        }
+      }
+    } catch (listError) {
+      console.warn('[send-earthquake-alert] Failed to list sender emails:', listError.message);
+      return [];
+    }
+
+    const emailArray = Array.from(senderEmails);
+    console.log(`[send-earthquake-alert] Found ${emailArray.length} active sender email(s) from recent webhook triggers (6min window)`);
+    return emailArray;
+  } catch (error) {
+    console.error('[send-earthquake-alert] Error getting sender emails:', error.message);
+    return [];
+  }
+}
+
+/**
  * Main handler
  */
 exports.handler = async (event, context) => {
@@ -885,6 +949,23 @@ exports.handler = async (event, context) => {
       email.toLowerCase() !== 'mr.pangolinman@example.com' && 
       email.toLowerCase() !== 'pangolinman@example.com'
     );
+    
+    // Get sender emails from webhook triggers (stored in Netlify Blobs)
+    try {
+      const senderEmails = await getSenderEmailsFromWebhooks();
+      if (senderEmails.length > 0) {
+        console.log('[send-earthquake-alert] 📧 Found sender emails from webhooks:', senderEmails.length);
+        // Add sender emails to notification list (avoid duplicates)
+        for (const senderEmail of senderEmails) {
+          if (!notificationEmails.includes(senderEmail)) {
+            notificationEmails.push(senderEmail);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('[send-earthquake-alert] ⚠️ Failed to get sender emails from webhooks (non-blocking):', error.message);
+      // Continue without sender emails - don't fail the alert
+    }
     
     if (notificationEmails.length === 0) {
       return {

@@ -1,6 +1,7 @@
 /**
  * Inbound Email Handler
  * Receives inbound emails via Resend webhook and triggers ingest-all when email contains "ingest"
+ * Automatically sends a reply email to the sender confirming receipt and action
  * 
  * Setup Instructions:
  * 1. Go to Resend Dashboard → Domains → Your Domain → Inbound Routes
@@ -10,7 +11,12 @@
  * 
  * Usage:
  * Send an email to richard@noteworthynews.co with subject or body containing "ingest"
- * The ingest-all function will be triggered automatically
+ * The ingest-all function will be triggered automatically and an auto-reply will be sent
+ * 
+ * Auto-Reply:
+ * - Sends confirmation email to sender automatically
+ * - Confirms if earthquake image generation was triggered
+ * - Non-blocking - errors don't fail the webhook
  */
 
 // Load environment variables
@@ -23,6 +29,7 @@ if (process.env.NETLIFY_DEV || !process.env.RESEND_API_KEY) {
 }
 
 const crypto = require('crypto');
+const { Resend } = require('resend');
 
 /**
  * Call ingest-all function via HTTP
@@ -170,6 +177,175 @@ function containsIngestCommand(subject, textBody, htmlBody) {
   });
   
   return shouldTrigger;
+}
+
+/**
+ * Store sender email for earthquake notifications
+ * Stores in Netlify Blobs with timestamp so send-earthquake-alert can include them
+ */
+async function storeSenderEmailForNotifications(senderEmail) {
+  // Clean sender email - handle formats like "Name <email@example.com>" or just "email@example.com"
+  let cleanSenderEmail = senderEmail;
+  const emailMatch = senderEmail.match(/<([^>]+)>/);
+  if (emailMatch) {
+    cleanSenderEmail = emailMatch[1];
+  }
+  
+  // Basic email validation
+  if (!cleanSenderEmail || !cleanSenderEmail.includes('@')) {
+    console.warn('[Inbound Email] Invalid sender email format, skipping storage:', senderEmail);
+    return null;
+  }
+
+  try {
+    // Use Netlify Blobs to store sender email with timestamp
+    if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_BLOB_READ_WRITE_TOKEN) {
+      console.warn('[Inbound Email] Netlify Blobs not configured, cannot store sender email');
+      return null;
+    }
+
+    const { getStore } = require("@netlify/blobs");
+    const store = getStore({
+      name: "earthquake-notifications",
+      siteID: process.env.NETLIFY_SITE_ID,
+      token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
+    });
+
+    const timestamp = Date.now();
+    const key = `sender-${timestamp}-${cleanSenderEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    
+    // Store email with timestamp (expires after 6 minutes - only for this ingest-all run)
+    // This ensures they only get notifications from the specific ingest-all they triggered
+    const expirationMinutes = 6;
+    await store.set(key, JSON.stringify({
+      email: cleanSenderEmail,
+      timestamp: timestamp,
+      expiresAt: timestamp + (expirationMinutes * 60 * 1000) // 6 minutes from now
+    }), {
+      metadata: {
+        email: cleanSenderEmail,
+        timestamp: timestamp.toString()
+      }
+    });
+
+    console.log('[Inbound Email] ✅ Stored sender email for notifications (expires in 6 minutes):', {
+      email: cleanSenderEmail,
+      key: key,
+      expiresAt: new Date(timestamp + (6 * 60 * 1000)).toISOString()
+    });
+
+    return { success: true, key };
+  } catch (error) {
+    // Log error but don't fail the webhook
+    console.error('[Inbound Email] ⚠️ Failed to store sender email (non-blocking):', {
+      email: cleanSenderEmail,
+      error: error.message,
+      name: error.name
+    });
+    return null;
+  }
+}
+
+/**
+ * Send auto-reply email to the sender
+ * Non-blocking - errors are logged but don't fail the webhook
+ */
+async function sendAutoReply(senderEmail, originalSubject, wasTriggered) {
+  // Skip if no sender email or Resend API key not configured
+  if (!senderEmail || !process.env.RESEND_API_KEY) {
+    console.log('[Inbound Email] Skipping auto-reply:', {
+      hasSender: !!senderEmail,
+      hasApiKey: !!process.env.RESEND_API_KEY
+    });
+    return null;
+  }
+
+  // Clean sender email - handle formats like "Name <email@example.com>" or just "email@example.com"
+  let cleanSenderEmail = senderEmail;
+  const emailMatch = senderEmail.match(/<([^>]+)>/);
+  if (emailMatch) {
+    cleanSenderEmail = emailMatch[1];
+  }
+  
+  // Basic email validation
+  if (!cleanSenderEmail.includes('@')) {
+    console.warn('[Inbound Email] Invalid sender email format, skipping auto-reply:', senderEmail);
+    return null;
+  }
+
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Noteworthy News <richard@noteworthynews.co>';
+    
+    // Determine message based on whether ingest was triggered
+    const magnitudeThreshold = process.env.EARTHQUAKE_MAGNITUDE_THRESHOLD || '4.5';
+    const message = wasTriggered
+      ? `<p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Hey! I'll check for any earthquakes above M${magnitudeThreshold} and send them to you. Give me a minute or two please. Thanks.</p>`
+      : `<p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Hey! I've received your email.</p>
+         <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Note: To trigger the earthquake image generation process, please include the word "ingest" in your email subject or body.</p>`;
+    
+    const subject = wasTriggered 
+      ? `Re: Checking for earthquakes above M${magnitudeThreshold}`
+      : 'Re: Email Received';
+
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: cleanSenderEmail,
+      replyTo: 'richard@noteworthynews.co',
+      subject: subject,
+      html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f5f5f5;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="padding: 40px 30px; text-align: center; background: linear-gradient(135deg, rgba(74, 144, 226, 0.1) 0%, rgba(46, 204, 113, 0.1) 100%); border-radius: 10px 10px 0 0;">
+              <h2 style="color: #4a90e2; margin: 0; font-size: 24px; font-weight: bold;">${wasTriggered ? `Checking for Earthquakes Above M${magnitudeThreshold}` : 'Email Received'}</h2>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 30px; background-color: #ffffff;">
+              ${message}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 25px 30px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-top: 2px solid #4a90e2; border-radius: 0 0 10px 10px;">
+              <p style="color: #666666; font-size: 12px; margin: 0; line-height: 1.5;">This is an automated reply. If you need to reach me directly, please reply to this email.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+      text: wasTriggered
+        ? `Hey! I'll check for any earthquakes above M${magnitudeThreshold} and send them to you. Give me a minute or two please. Thanks.\n\n---\nThis is an automated reply. If you need to reach me directly, please reply to this email.`
+        : `Hey! I've received your email.\n\nNote: To trigger the earthquake image generation process, please include the word "ingest" in your email subject or body.\n\n---\nThis is an automated reply. If you need to reach me directly, please reply to this email.`,
+    });
+
+    console.log('[Inbound Email] ✅ Auto-reply sent successfully:', {
+      to: cleanSenderEmail,
+      emailId: result.data?.id,
+      wasTriggered
+    });
+
+    return result;
+  } catch (error) {
+    // Log error but don't fail the webhook
+    console.error('[Inbound Email] ⚠️ Failed to send auto-reply (non-blocking):', {
+      to: cleanSenderEmail,
+      error: error.message,
+      name: error.name
+    });
+    return null;
+  }
 }
 
 /**
@@ -417,6 +593,12 @@ exports.handler = async (event, context) => {
     
     if (!shouldTrigger) {
       console.log('[Inbound Email] Email does not contain "ingest" command, ignoring');
+      
+      // Send auto-reply even if ingest wasn't triggered
+      sendAutoReply(fromEmail, subject, false).catch(err => {
+        console.error('[Inbound Email] Auto-reply error (non-blocking):', err);
+      });
+      
       return {
         statusCode: 200,
         headers,
@@ -437,12 +619,22 @@ exports.handler = async (event, context) => {
       hasHtml: !!htmlBody
     });
     
+    // Store sender email for earthquake notifications (non-blocking)
+    storeSenderEmailForNotifications(fromEmail).catch(err => {
+      console.error('[Inbound Email] Failed to store sender email (non-blocking):', err);
+    });
+    
     try {
       const result = await triggerIngestAll();
       
       console.log('[Inbound Email] ✅ ingest-all triggered successfully:', {
         statusCode: result.statusCode,
         success: result.success
+      });
+      
+      // Send auto-reply confirming the trigger (non-blocking)
+      sendAutoReply(fromEmail, subject, true).catch(err => {
+        console.error('[Inbound Email] Auto-reply error (non-blocking):', err);
       });
       
       return {
@@ -464,6 +656,15 @@ exports.handler = async (event, context) => {
         message: triggerError.message,
         name: triggerError.name,
         stack: triggerError.stack?.substring(0, 1000)
+      });
+      
+      // Still store sender email and send auto-reply even if ingest-all failed (non-blocking)
+      storeSenderEmailForNotifications(fromEmail).catch(err => {
+        console.error('[Inbound Email] Failed to store sender email (non-blocking):', err);
+      });
+      
+      sendAutoReply(fromEmail, subject, false).catch(err => {
+        console.error('[Inbound Email] Auto-reply error (non-blocking):', err);
       });
       
       // CRITICAL: Return 200 to Resend (acknowledge receipt) even if ingest-all fails
