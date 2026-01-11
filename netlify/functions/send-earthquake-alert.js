@@ -869,6 +869,9 @@ exports.handler = async (event, context) => {
       imageUrl: imageUrl?.substring(0, 100),
       imageUrlLength: imageUrl?.length || 0,
       imageUrlIsEmpty: !imageUrl || imageUrl.trim() === '',
+      hasVideoUrl: !!videoUrl,
+      videoUrl: videoUrl?.substring(0, 100),
+      videoUrlLength: videoUrl?.length || 0,
       eventId: earthquake?.event_id,
       magnitude: earthquake?.magnitude,
       location_display: earthquake?.location_display,
@@ -877,7 +880,8 @@ exports.handler = async (event, context) => {
       hasDepth: !!earthquake?.depth,
       hasAssets: !!earthquake?.assets,
       assetKeys: earthquake?.assets ? Object.keys(earthquake.assets) : [],
-      fullImageUrl: imageUrl // Log full URL for debugging
+      fullImageUrl: imageUrl, // Log full URL for debugging
+      fullVideoUrl: videoUrl // Log full URL for debugging
     });
     
     // CRITICAL: Log if imageUrl is missing or invalid
@@ -1509,7 +1513,7 @@ exports.handler = async (event, context) => {
             
             console.log(`[send-earthquake-alert] ✅ Image prepared for inline email embedding`);
             console.log(`[send-earthquake-alert] 📎 CID: content_id="${cidIdentifier}", HTML uses "cid:${cidIdentifier}"`);
-            console.log(`[send-earthquake-alert] 📎 Attachment: filename="${imageAttachment.filename}", size=${Math.round(imageData.buffer.length / 1024)}KB, type=${imageAttachment.content_type}, base64_length=${imageAttachment.content.length}`);
+            console.log(`[send-earthquake-alert] 📎 Attachment: filename="${gifAttachment.filename}", size=${Math.round(imageData.buffer.length / 1024)}KB, type=${gifAttachment.content_type}, base64_length=${gifAttachment.content.length}`);
           } else {
             console.warn('[send-earthquake-alert] ⚠️ Image data is invalid, email will be sent without image');
             if (imageData === null) {

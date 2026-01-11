@@ -284,7 +284,8 @@
         const description = truncateDescription(story);
         // CRITICAL: Prioritize GIF (video_url) first, then PNG (primary_image_url) for social media previews
         // This ensures the generated branded earthquake images (especially animated GIFs) appear in social media cards
-        const videoUrl = post.video_url || post.video || null;
+        // Check both top-level video_url and assets.video_url (stored in JSONB column)
+        const videoUrl = post.video_url || post.video || post.assets?.video_url || null;
         const isGIF = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('get-uploaded-image'));
         
         // Priority order: GIF > PNG > Other images > Default

@@ -183,7 +183,8 @@ exports.handler = async (event) => {
     
     // CRITICAL: Prioritize GIF (video_url) first, then PNG (primary_image_url) for social media previews
     // This ensures the generated branded earthquake images (especially animated GIFs) appear in social media cards
-    const videoUrl = post.video_url || post.video || null;
+    // Check both top-level video_url and assets.video_url (stored in JSONB column)
+    const videoUrl = post.video_url || post.video || post.assets?.video_url || null;
     const isGIF = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('get-uploaded-image'));
     
     // Priority order: GIF > PNG > Other images > Default
@@ -303,7 +304,8 @@ exports.handler = async (event) => {
     // Log image selection for debugging social media previews
     console.log('[article-preview] Image selected for social preview:', {
       articleId,
-      source: post.primary_image_url ? 'primary_image_url' : 
+      source: isGIF && videoUrl ? 'video_url (GIF)' :
+              post.primary_image_url ? 'primary_image_url' : 
               post.image_url ? 'image_url' : 
               post.image ? 'image' : 
               post.images?.[0] ? 'images[0]' : 'default',
@@ -311,7 +313,10 @@ exports.handler = async (event) => {
       isGenerated: imageUrl.includes('get-uploaded-image') && imageUrl.includes('earthquake'),
       hasPrimary: !!post.primary_image_url,
       hasVideo: !!hasVideo,
+      hasVideoUrl: !!videoUrl,
       videoUrl: videoUrl ? videoUrl.substring(0, 100) : null,
+      videoUrlSource: post.video_url ? 'top_level' : post.video ? 'video_field' : post.assets?.video_url ? 'assets.video_url' : 'none',
+      isGIF: isGIF,
       formattedTitle
     });
 
