@@ -1170,11 +1170,25 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
  */
 async function storeEvent(event, logger) {
   try {
-    // Check if event already exists - need image_url and video_url to detect new images/videos
+    // CRITICAL: Move video_url from top level to assets.video_url before any DB operation
+    // The database doesn't have a video_url column - it's stored in assets JSONB
+    let eventToStore = { ...event };
+    if (eventToStore.video_url) {
+      // Ensure assets object exists
+      if (!eventToStore.assets) {
+        eventToStore.assets = {};
+      }
+      // Move video_url to assets
+      eventToStore.assets.video_url = eventToStore.video_url;
+      // Remove video_url from top level to prevent insert/update errors
+      delete eventToStore.video_url;
+    }
+    
+    // Check if event already exists - need image_url and assets (which contains video_url) to detect new images/videos
     const { data: existing, error: checkError } = await supabase
       .from('verified_events')
-      .select('id, alert_sent, alert_sent_at, image_url, video_url, assets')
-      .eq('canonical_id', event.canonical_id)
+      .select('id, alert_sent, alert_sent_at, image_url, assets')
+      .eq('canonical_id', eventToStore.canonical_id)
       .single();
     
     if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = not found
@@ -1183,36 +1197,34 @@ async function storeEvent(event, logger) {
     
     if (existing) {
       // Check if image is new BEFORE updating
-      const hasNewImage = event.image_url && event.image_url !== existing.image_url;
+      const hasNewImage = eventToStore.image_url && eventToStore.image_url !== existing.image_url;
       
       // Update existing event
+      // CRITICAL: Merge assets to preserve existing fields (like video_url, magnitude, etc.)
+      const mergedAssets = {
+        ...(existing.assets || {}), // Preserve existing assets
+        ...(eventToStore.assets || {}), // Override with new assets
+      };
+      
       const updateData = {
-        title: event.title,
-        summary: event.summary,
-        severity: event.severity,
-        location_display: event.location_display,
-        lat: event.lat,
-        lon: event.lon,
-        geobox: event.geobox,
-        updated_at_source: event.updated_at_source,
-        fetched_at: event.fetched_at,
-        status: event.status,
-        tags: event.tags,
-        assets: event.assets, // Includes magnitude
-        raw: event.raw,
+        title: eventToStore.title,
+        summary: eventToStore.summary,
+        severity: eventToStore.severity,
+        location_display: eventToStore.location_display,
+        lat: eventToStore.lat,
+        lon: eventToStore.lon,
+        geobox: eventToStore.geobox,
+        updated_at_source: eventToStore.updated_at_source,
+        fetched_at: eventToStore.fetched_at,
+        status: eventToStore.status,
+        tags: eventToStore.tags,
+        assets: mergedAssets, // Merged assets (preserves existing video_url if new one not provided)
+        raw: eventToStore.raw,
       };
       
       // Update image_url if we have a new one
-      if (event.image_url) {
-        updateData.image_url = event.image_url;
-      }
-      
-      // Update video_url if we have a new one (store in assets JSONB - database doesn't have video_url column)
-      if (event.video_url) {
-        if (!updateData.assets) {
-          updateData.assets = existing.assets || {};
-        }
-        updateData.assets.video_url = event.video_url; // Store in assets JSONB
+      if (eventToStore.image_url) {
+        updateData.image_url = eventToStore.image_url;
       }
       
       // Preserve alert_sent status (always preserve, whether true or false)
@@ -1224,7 +1236,7 @@ async function storeEvent(event, logger) {
       const { error: updateError } = await supabase
         .from('verified_events')
         .update(updateData)
-        .eq('canonical_id', event.canonical_id);
+        .eq('canonical_id', eventToStore.canonical_id);
       
       if (updateError) {
         throw updateError;
@@ -1232,12 +1244,17 @@ async function storeEvent(event, logger) {
       
       // Merge all fields: existing (from DB) + updateData + original event fields (for completeness)
       // Include hasNewImage flag for use in email logic
-      return { isNew: false, hasNewImage, event: { ...event, ...existing, ...updateData } };
+      // Restore video_url at top level for backward compatibility in returned object
+      const returnedEvent = { ...eventToStore, ...existing, ...updateData };
+      if (returnedEvent.assets?.video_url) {
+        returnedEvent.video_url = returnedEvent.assets.video_url;
+      }
+      return { isNew: false, hasNewImage, event: returnedEvent };
     } else {
-      // Insert new event
+      // Insert new event (video_url already moved to assets.video_url above)
       const { data: inserted, error: insertError } = await supabase
         .from('verified_events')
-        .insert(event)
+        .insert(eventToStore)
         .select()
         .single();
       
@@ -1245,7 +1262,12 @@ async function storeEvent(event, logger) {
         throw insertError;
       }
       
-      return { isNew: true, event: inserted };
+      // Restore video_url at top level for backward compatibility in returned object
+      const returnedEvent = { ...inserted };
+      if (returnedEvent.assets?.video_url) {
+        returnedEvent.video_url = returnedEvent.assets.video_url;
+      }
+      return { isNew: true, event: returnedEvent };
     }
   } catch (error) {
     logger.error('Failed to store event', error, { canonical_id: event.canonical_id });
@@ -1509,14 +1531,14 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     } else {
       // Reuse existing image and video
       imageUrl = existingEvent.image_url;
-      // CRITICAL: Also reuse video_url (GIF) if it exists (check both top level and assets)
-      const existingVideoUrl = existingEvent.video_url || existingEvent.assets?.video_url;
+      // CRITICAL: Also reuse video_url (GIF) if it exists (stored in assets JSONB)
+      const existingVideoUrl = existingEvent.assets?.video_url;
       if (existingVideoUrl) {
         event.video_url = existingVideoUrl;
         logger.info('Reusing existing video (GIF)', { 
           eventId, 
           videoUrl: existingVideoUrl?.substring(0, 100),
-          source: existingEvent.video_url ? 'top_level' : 'assets'
+          source: 'assets'
         });
       }
       logger.info('Reusing existing image', { 
