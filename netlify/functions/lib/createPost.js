@@ -36,8 +36,12 @@ async function createPostFromEvent(event, category, source) {
   try {
     existingPost = await store.get(postKey, { type: 'json' });
     if (existingPost) {
-      // Always update post if we have an image_url (especially for earthquakes that get images generated later)
-      // This ensures posts get images even if they were created before the image was generated
+      // Always update post if we have an image_url or video_url (especially for earthquakes that get images/videos generated later)
+      // This ensures posts get images/videos even if they were created before they were generated
+      const eventVideoUrl = event.video_url || event.assets?.video_url || null;
+      const existingVideoUrl = existingPost.video_url || existingPost.video || existingPost.assets?.video_url || null;
+      const hasNewVideoUrl = eventVideoUrl && eventVideoUrl !== existingVideoUrl;
+      
       if (event.image_url) {
         // Normalize image URL
         let imageUrl = event.image_url;
@@ -48,7 +52,7 @@ async function createPostFromEvent(event, category, source) {
         
         // Check if update is needed (compare normalized URLs)
         const existingImage = existingPost.image || '';
-        const needsUpdate = existingImage !== imageUrl;
+        const needsUpdate = existingImage !== imageUrl || hasNewVideoUrl;
         
         if (needsUpdate) {
           // Rebuild secondary images list (same logic as new posts)
@@ -93,16 +97,46 @@ async function createPostFromEvent(event, category, source) {
           existingPost.image_url = imageUrl; // Legacy compatibility
           existingPost.images = secondaryImages;
           existingPost.secondary_images = secondaryImages;
+          
+          // CRITICAL: Update video_url if available (for GIF previews)
+          if (eventVideoUrl) {
+            existingPost.video_url = eventVideoUrl;
+            existingPost.video = eventVideoUrl; // Legacy compatibility
+            console.log(`[createPost] Updated post ${postId} with video_url: ${eventVideoUrl.substring(0, 100)}`);
+          }
+          
+          // Merge assets to preserve existing fields and add new ones
           if (event.assets) {
-            existingPost.assets = event.assets;
+            existingPost.assets = {
+              ...(existingPost.assets || {}),
+              ...event.assets
+            };
           }
           
           await store.set(postKey, JSON.stringify(existingPost), {
             contentType: 'application/json',
           });
-          console.log(`[createPost] Updated post ${postId} with image: ${imageUrl}, secondary: ${secondaryImages.length}`);
+          console.log(`[createPost] Updated post ${postId} with image: ${imageUrl}, video: ${eventVideoUrl ? 'yes' : 'no'}, secondary: ${secondaryImages.length}`);
           return { exists: true, postId, updated: true };
         }
+      } else if (hasNewVideoUrl) {
+        // Update post even if image_url hasn't changed, but video_url is new
+        existingPost.video_url = eventVideoUrl;
+        existingPost.video = eventVideoUrl; // Legacy compatibility
+        
+        // Merge assets to preserve existing fields and add new ones
+        if (event.assets) {
+          existingPost.assets = {
+            ...(existingPost.assets || {}),
+            ...event.assets
+          };
+        }
+        
+        await store.set(postKey, JSON.stringify(existingPost), {
+          contentType: 'application/json',
+        });
+        console.log(`[createPost] Updated post ${postId} with video_url: ${eventVideoUrl.substring(0, 100)}`);
+        return { exists: true, postId, updated: true };
       }
       return { exists: true, postId, updated: false };
     }

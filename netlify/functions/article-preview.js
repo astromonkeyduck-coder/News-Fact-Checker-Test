@@ -192,17 +192,33 @@ exports.handler = async (event) => {
     if (isGIF && videoUrl) {
       // Use GIF first if available
       image = videoUrl;
+      console.log('[article-preview] ✅ Using GIF for preview:', videoUrl.substring(0, 100));
+    } else if (post.primary_image_url) {
+      // Use PNG (primary_image_url) if available
+      image = post.primary_image_url;
+      console.log('[article-preview] ✅ Using PNG (primary_image_url) for preview:', image.substring(0, 100));
     } else {
-      // Fall back to PNG or other images
-      image = post.primary_image_url || 
-              post.image_url || 
+      // Fall back to other image fields
+      image = post.image_url || 
               post.image || 
               post.images?.[0] || 
               null;
+      if (image) {
+        console.log('[article-preview] ✅ Using fallback image for preview:', image.substring(0, 100));
+      }
     }
     
     // Only use default if no image found at all
     if (!image) {
+      console.warn('[article-preview] ⚠️ No image found in post, using default PREVIEWIMAGEBRUH.jpg', {
+        hasVideoUrl: !!videoUrl,
+        hasPrimaryImageUrl: !!post.primary_image_url,
+        hasImageUrl: !!post.image_url,
+        hasImage: !!post.image,
+        hasImages: !!post.images,
+        imageCount: post.images?.length || 0,
+        postKeys: Object.keys(post).filter(k => k.includes('image') || k.includes('video'))
+      });
       image = 'https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg';
     }
     
