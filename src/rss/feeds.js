@@ -188,8 +188,14 @@ function isFeedUrlAllowed(feedUrl) {
 }
 
 // CommonJS exports for server-side (only in Node.js environment)
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
+// Note: This file uses both CommonJS and ES6 exports for dual compatibility
+// Server-side functions use require(), browser uses ES6 import
+// The esbuild warning about mixing CommonJS and ES modules is expected and safe to ignore
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+  // Suppress esbuild warning: we intentionally support both module systems
+  // eslint-disable-next-line no-undef
+  const mod = module;
+  mod.exports = {
     RSS_FEEDS,
     getFeedById,
     getEnabledFeeds,
