@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<!-- 
+    Clemens Converter - Hidden Transcription Tool
+    Internal tool for Noteworthy News - NOT for public access
+    Built with care by Richard, Co-Founder & Lead Developer
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow, noarchive">
+    <title>Clemens Converter - Noteworthy News</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../IMG_5794.PNG" sizes="32x32">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="../assets/css/clemensconverter.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">Clemens Converter</h1>
+                <div class="subtitle">Audio Transcription Tool</div>
+                <div class="brand-mark">Noteworthy News</div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Settings Panel (Collapsible) -->
+            <div class="settings-panel">
+                <button class="settings-toggle" id="settingsToggle">
+                    <span>⚙️</span> Advanced Settings
+                </button>
+                <div class="settings-content" id="settingsContent" style="display: none;">
+                    <div class="setting-group">
+                        <label for="languageSelect">Language:</label>
+                        <select id="languageSelect">
+                            <option value="">Auto-detect</option>
+                            <option value="en">English</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                            <option value="de">German</option>
+                            <option value="it">Italian</option>
+                            <option value="pt">Portuguese</option>
+                            <option value="ja">Japanese</option>
+                            <option value="ko">Korean</option>
+                            <option value="zh">Chinese</option>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="includeTimestamps">
+                            Include timestamps
+                        </label>
+                    </div>
+                    <div class="setting-group">
+                        <label>
+                            <input type="checkbox" id="concurrentMode">
+                            Process up to 2 files concurrently (default: sequential)
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dropzone -->
+            <div class="dropzone" id="dropzone">
+                <div class="dropzone-content">
+                    <div class="dropzone-icon">🎤</div>
+                    <div class="dropzone-text">
+                        <strong>Drop MP3 files here</strong>
+                        <span>or</span>
+                        <button class="btn-select" id="selectFilesBtn">Select Files</button>
+                    </div>
+                    <div class="dropzone-hint">
+                        Supports multiple files. Maximum 25MB per file.
+                    </div>
+                </div>
+                <input type="file" id="fileInput" multiple accept="audio/mpeg,audio/mp3" style="display: none;">
+            </div>
+
+            <!-- File Queue -->
+            <div class="queue-container" id="queueContainer" style="display: none;">
+                <h2 class="queue-title">File Queue</h2>
+                <div class="queue-list" id="queueList"></div>
+            </div>
+
+            <!-- Results -->
+            <div class="results-container" id="resultsContainer"></div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="../assets/js/clemensconverter.js"></script>
+</body>
+</html>

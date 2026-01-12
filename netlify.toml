@@ -56,6 +56,31 @@
   status = 200
   force = true
 
+# Clemens Converter API routes
+[[redirects]]
+  from = "/api/get-upload-url"
+  to = "/.netlify/functions/get-upload-url"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/api/upload-blob"
+  to = "/.netlify/functions/upload-blob"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/api/transcribe-from-url"
+  to = "/.netlify/functions/transcribe-from-url"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/api/transcribe-direct"
+  to = "/.netlify/functions/transcribe-direct"
+  status = 200
+  force = false
+
 [functions]
   # Use esbuild to automatically compile TypeScript functions
   node_bundler = "esbuild"
@@ -129,3 +154,8 @@
     X-Frame-Options = "DENY"
     Content-Security-Policy = "frame-ancestors 'self'"
 
+# Hide Clemens Converter from search engines
+[[headers]]
+  for = "/clemensconverter/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
