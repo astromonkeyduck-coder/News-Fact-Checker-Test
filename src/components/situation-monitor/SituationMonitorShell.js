@@ -80,11 +80,17 @@ export class SituationMonitorShell {
     // Mark shell as created
     this._shellCreated = true;
 
+    // CRITICAL: Ensure container is visible before injecting HTML
+    container.style.display = 'block';
+    container.style.visibility = 'visible';
+    container.style.opacity = '1';
+    container.style.zIndex = '1';
+    
     // Create layout - matches Noteworthy News container system
     container.innerHTML = `
-      <div class="sitmon-page-wrapper">
+      <div class="sitmon-page-wrapper" style="display: block !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 1 !important;">
         <!-- Page Header -->
-        <div class="sitmon-page-header">
+        <div class="sitmon-page-header" style="display: flex !important; visibility: visible !important; opacity: 1 !important;">
           <div class="sitmon-header-left">
             <h1 class="sitmon-page-title">Situation Monitor</h1>
             <p class="sitmon-page-subtitle">Global Intelligence Dashboard</p>
@@ -129,7 +135,7 @@ export class SituationMonitorShell {
         </div>
 
         <!-- Main Dashboard Grid -->
-        <div class="sitmon-dashboard-grid">
+        <div class="sitmon-dashboard-grid" style="display: grid !important; visibility: visible !important; opacity: 1 !important;">
           <!-- Left Column: Map Card -->
           <div class="sitmon-map-card">
             <div class="sitmon-card-header">
@@ -173,7 +179,7 @@ export class SituationMonitorShell {
         </div>
 
         <!-- Secondary Panels Grid -->
-        <div class="sitmon-secondary-grid">
+        <div class="sitmon-secondary-grid" style="display: grid !important; visibility: visible !important; opacity: 1 !important;">
           <div class="sitmon-panel-card" id="sitmon-panel-news">
             <div class="sitmon-card-header">
               <h2 class="sitmon-card-title">News Feed</h2>
