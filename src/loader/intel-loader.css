@@ -36,7 +36,11 @@
 }
 
 #nn-intel-loader.nn-il-hidden {
-  display: none;
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -999999 !important;
 }
 
 /* Stop all animations when loader is hidden, stopping, exiting, or fading out */

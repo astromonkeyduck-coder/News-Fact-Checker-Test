@@ -96,7 +96,41 @@
                 <p>Loading Situation Monitor...</p>
             </div>
         </div>
-        <div id="situation-monitor-container" style="position: relative; z-index: 1;"></div>
+        <div id="situation-monitor-container" style="position: relative; z-index: 1; display: block !important; visibility: visible !important; opacity: 1 !important;"></div>
+        
+        <!-- CRITICAL: Fallback to ensure container is visible after 10 seconds -->
+        <script>
+            (function() {
+                setTimeout(function() {
+                    // Force hide loader if it's still visible
+                    const loader = document.getElementById('nn-intel-loader');
+                    if (loader) {
+                        loader.style.display = 'none';
+                        loader.style.visibility = 'hidden';
+                        loader.style.opacity = '0';
+                        loader.style.zIndex = '-999999';
+                        loader.style.pointerEvents = 'none';
+                        if (loader.parentNode) {
+                            loader.parentNode.removeChild(loader);
+                        }
+                    }
+                    
+                    // Force show container
+                    const container = document.getElementById('situation-monitor-container');
+                    if (container) {
+                        container.style.display = 'block';
+                        container.style.visibility = 'visible';
+                        container.style.opacity = '1';
+                        container.style.zIndex = '1';
+                    }
+                    
+                    // Restore body overflow
+                    document.body.style.overflow = '';
+                    
+                    console.log('[SituationMonitor] Fallback: Forced container visibility after 10s');
+                }, 10000); // 10 second fallback
+            })();
+        </script>
     </main>
 
     <!-- Background Music for Situation Monitor -->

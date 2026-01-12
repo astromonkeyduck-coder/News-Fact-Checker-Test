@@ -727,6 +727,17 @@ export function hideLoader() {
       // Add fade-out class for final fade
       loaderElement.classList.add('nn-il-fade-out');
       
+      // CRITICAL: Force hide immediately (don't wait for animation)
+      if (loaderElement) {
+        loaderElement.style.display = 'none';
+        loaderElement.style.visibility = 'hidden';
+        loaderElement.style.pointerEvents = 'none';
+        loaderElement.style.opacity = '0';
+        loaderElement.style.zIndex = '-999999';
+        loaderElement.classList.add('nn-il-hidden');
+        loaderElement.classList.remove('nn-il-visible', 'nn-il-fade-out');
+      }
+      
       // Remove from DOM after fade completes (prevent memory leaks)
       setTimeout(() => {
         if (loaderElement && loaderElement.parentNode) {
@@ -734,7 +745,8 @@ export function hideLoader() {
           loaderElement.style.display = 'none';
           loaderElement.style.visibility = 'hidden';
           loaderElement.style.pointerEvents = 'none';
-          loaderElement.style.zIndex = '-1';
+          loaderElement.style.zIndex = '-999999';
+          loaderElement.style.opacity = '0';
           
           loaderElement.parentNode.removeChild(loaderElement);
           loaderElement = null;
@@ -746,6 +758,15 @@ export function hideLoader() {
         
         // CRITICAL: Ensure body overflow is restored
         document.body.style.overflow = '';
+        
+        // CRITICAL: Force show container after loader is gone
+        const container = document.getElementById('situation-monitor-container');
+        if (container) {
+          container.style.display = 'block';
+          container.style.visibility = 'visible';
+          container.style.opacity = '1';
+          container.style.zIndex = '1';
+        }
         
         // Dispatch event for audio hooks
         window.dispatchEvent(new CustomEvent('nn:loader:hide'));
