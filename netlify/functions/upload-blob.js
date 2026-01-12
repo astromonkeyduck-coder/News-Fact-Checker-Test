@@ -83,25 +83,46 @@ exports.handler = async (event, context) => {
     const contentType = event.headers['content-type'] || event.headers['Content-Type'] || '';
     let fileBuffer;
 
+    console.log("[upload-blob] Content-Type:", contentType);
+    console.log("[upload-blob] isBase64Encoded:", event.isBase64Encoded);
+    console.log("[upload-blob] Body length:", event.body ? event.body.length : 0);
+
     if (contentType.includes('multipart/form-data')) {
       // Parse multipart form data
       const boundaryMatch = contentType.match(/boundary=([^;\s]+)/);
       if (!boundaryMatch) {
+        console.error("[upload-blob] No boundary found in Content-Type");
         return {
           statusCode: 400,
           headers,
-          body: JSON.stringify({ error: "Invalid multipart form data" }),
+          body: JSON.stringify({ error: "Invalid multipart form data: no boundary" }),
         };
       }
 
       const boundary = boundaryMatch[1].trim();
-      let bodyText = event.body;
+      let bodyBuffer;
 
-      // Decode if base64 encoded
-      if (event.isBase64Encoded && bodyText) {
-        bodyText = Buffer.from(bodyText, 'base64').toString('binary');
+      // Get body as buffer
+      if (event.isBase64Encoded && event.body) {
+        bodyBuffer = Buffer.from(event.body, 'base64');
+      } else if (event.body) {
+        // If body is a string, convert to buffer
+        if (typeof event.body === 'string') {
+          bodyBuffer = Buffer.from(event.body, 'binary');
+        } else {
+          bodyBuffer = Buffer.from(event.body);
+        }
+      } else {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: "No body data provided" }),
+        };
       }
 
+      // Convert buffer to string for parsing (multipart uses text boundaries)
+      const bodyText = bodyBuffer.toString('binary');
+      
       // Split by boundary and find file part
       const parts = bodyText.split(`--${boundary}`);
       let foundFile = false;
@@ -115,14 +136,17 @@ exports.handler = async (event, context) => {
             const fileContent = contentMatch[1];
             // Remove trailing boundary markers if present
             const cleanContent = fileContent.replace(/--\s*$/, '').trim();
+            // Convert back to buffer from binary string
             fileBuffer = Buffer.from(cleanContent, 'binary');
             foundFile = true;
+            console.log("[upload-blob] Found file in multipart, size:", fileBuffer.length);
             break;
           }
         }
       }
 
       if (!foundFile) {
+        console.error("[upload-blob] File not found in multipart data");
         return {
           statusCode: 400,
           headers,
@@ -143,9 +167,13 @@ exports.handler = async (event, context) => {
       // Convert base64 to buffer if needed, or use raw body
       if (event.isBase64Encoded) {
         fileBuffer = Buffer.from(fileData, "base64");
-      } else {
+      } else if (typeof fileData === 'string') {
         fileBuffer = Buffer.from(fileData, "binary");
+      } else {
+        fileBuffer = Buffer.from(fileData);
       }
+      
+      console.log("[upload-blob] File buffer size:", fileBuffer.length);
     }
 
     // Validate file size
@@ -180,13 +208,21 @@ exports.handler = async (event, context) => {
       }),
     };
   } catch (error) {
-    console.error("[upload-blob] Error:", error.message);
+    console.error("[upload-blob] Error:", error);
+    console.error("[upload-blob] Stack:", error.stack);
+    
+    // Return detailed error in development, generic in production
+    const errorMessage = process.env.NODE_ENV === "development" 
+      ? error.message 
+      : "Failed to upload file";
+    
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({ 
         error: "Failed to upload file",
-        message: error.message,
+        message: errorMessage,
+        details: process.env.NODE_ENV === "development" ? error.stack : undefined,
       }),
     };
   }

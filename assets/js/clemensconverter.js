@@ -76,11 +76,21 @@ function setupEventListeners() {
     });
 
     // Settings changes
-    elements.concurrentMode.addEventListener('change', (e) => {
-        state.concurrentMode = e.target.checked;
-        saveSettings();
-        processQueue();
-    });
+    if (elements.concurrentMode) {
+        elements.concurrentMode.addEventListener('change', (e) => {
+            state.concurrentMode = e.target.checked;
+            saveSettings();
+            processQueue();
+        });
+    }
+
+    // Save settings on change
+    if (elements.languageSelect) {
+        elements.languageSelect.addEventListener('change', saveSettings);
+    }
+    if (elements.includeTimestamps) {
+        elements.includeTimestamps.addEventListener('change', saveSettings);
+    }
 }
 
 function handleDragOver(e) {
@@ -316,7 +326,13 @@ async function processFile(fileId) {
     } catch (error) {
         console.error(`[processFile] Error for ${fileData.fileName}:`, error);
         fileData.status = 'error';
-        fileData.error = error.message || 'Processing failed';
+        // Extract meaningful error message
+        let errorMessage = error.message || 'Processing failed';
+        // If it's a JSON parse error, try to get the actual response
+        if (error.message && error.message.includes('JSON')) {
+            errorMessage = 'Server error: Received invalid response. Check function logs.';
+        }
+        fileData.error = errorMessage;
         fileData.progress = 0;
         updateQueueDisplay();
     }
@@ -331,7 +347,19 @@ async function getUploadUrl(fileName, fileSize) {
     });
 
     if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+        
+        // Provide helpful message for 401 errors
+        if (response.status === 401) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            if (!token) {
+                throw new Error('Authentication required. Please access this page with ?token=YOUR_TOKEN in the URL, or remove CLEMS_TOKEN from environment variables if you want open access.');
+            } else {
+                throw new Error('Invalid token. Please check that your token matches the CLEMS_TOKEN environment variable.');
+            }
+        }
+        
         throw new Error(error.error || 'Failed to get upload URL');
     }
 
@@ -357,8 +385,15 @@ async function uploadFile(file, uploadInfo) {
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Upload failed');
+            let error;
+            try {
+                error = await response.json();
+            } catch (e) {
+                // If response isn't JSON, get text
+                const text = await response.text();
+                throw new Error(`Upload failed: ${response.status} ${response.statusText} - ${text}`);
+            }
+            throw new Error(error.error || error.message || 'Upload failed');
         }
 
         return await response.json();
@@ -399,7 +434,19 @@ async function transcribeFromUrl(objectKey, storageType, language, includeTimest
     });
 
     if (!response.ok) {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+        
+        // Provide helpful message for 401 errors
+        if (response.status === 401) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            if (!token) {
+                throw new Error('Authentication required. Please access this page with ?token=YOUR_TOKEN in the URL.');
+            } else {
+                throw new Error('Invalid token. Please check that your token matches the CLEMS_TOKEN environment variable.');
+            }
+        }
+        
         throw new Error(error.error || 'Transcription failed');
     }
 
@@ -407,13 +454,14 @@ async function transcribeFromUrl(objectKey, storageType, language, includeTimest
 }
 
 function getAuthHeaders() {
-    // Get token from URL or localStorage (if implemented)
+    // Get token from URL or localStorage
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token') || localStorage.getItem('clems_token');
     
     if (token) {
         return { 'X-Clems-Token': token };
     }
+    // Return empty object - backend will handle if token is required
     return {};
 }
 
@@ -679,7 +727,3 @@ function loadSettings() {
         }
     }
 }
-
-// Save settings on change
-elements.languageSelect.addEventListener('change', saveSettings);
-elements.includeTimestamps.addEventListener('change', saveSettings);
