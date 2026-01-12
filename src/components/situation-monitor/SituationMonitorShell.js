@@ -285,8 +285,24 @@ export class SituationMonitorShell {
             wrapper.style.display = 'block';
             wrapper.style.visibility = 'visible';
             wrapper.style.opacity = '1';
+            wrapper.style.position = 'relative';
+            wrapper.style.zIndex = '1';
+            // Force all child elements to be visible
+            const allChildren = wrapper.querySelectorAll('*');
+            allChildren.forEach(child => {
+              const computed = window.getComputedStyle(child);
+              if (computed.display === 'none') {
+                child.style.display = '';
+              }
+              if (computed.visibility === 'hidden') {
+                child.style.visibility = '';
+              }
+              if (computed.opacity === '0') {
+                child.style.opacity = '';
+              }
+            });
           }
-          console.log('[SituationMonitorShell] ✅ Container visibility forced after loader hide');
+          console.log('[SituationMonitorShell] ✅ Container and wrapper visibility forced after loader hide');
         } else {
           console.error('[SituationMonitorShell] ❌ Container not found after loader hide!');
         }
