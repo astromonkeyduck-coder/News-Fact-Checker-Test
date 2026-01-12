@@ -262,6 +262,9 @@ export class SituationMonitorShell {
     // Show keyboard hint only after successful initialization
     this.initKeyboardHint();
     
+    // CRITICAL: Start continuous visibility monitor to prevent content from being hidden
+    this.startVisibilityMonitor();
+    
     // All systems ready - hide loader
     setLoaderPhase('READY');
     setLoaderProgress(1.0);
@@ -913,6 +916,20 @@ export class SituationMonitorShell {
     } catch (error) {
       console.error('[SituationMonitorShell] Refresh error:', error);
       
+      // CRITICAL: Ensure content stays visible even on error
+      const container = document.getElementById(this.containerId);
+      if (container) {
+        container.style.display = 'block';
+        container.style.visibility = 'visible';
+        container.style.opacity = '1';
+        const wrapper = container.querySelector('.sitmon-page-wrapper');
+        if (wrapper) {
+          wrapper.style.display = 'block';
+          wrapper.style.visibility = 'visible';
+          wrapper.style.opacity = '1';
+        }
+      }
+      
       // Update status on error
       if (statusChip) {
         statusChip.textContent = 'Error';
@@ -943,7 +960,54 @@ export class SituationMonitorShell {
     return refreshPromise;
   }
 
+  startVisibilityMonitor() {
+    // Continuously monitor and force visibility to prevent content from being hidden
+    this._visibilityMonitor = setInterval(() => {
+      const container = document.getElementById(this.containerId);
+      if (container) {
+        const computed = window.getComputedStyle(container);
+        if (computed.display === 'none' || computed.visibility === 'hidden' || computed.opacity === '0') {
+          console.warn('[SituationMonitorShell] Container was hidden! Forcing visibility...');
+          container.style.display = 'block';
+          container.style.visibility = 'visible';
+          container.style.opacity = '1';
+          container.style.zIndex = '1';
+        }
+        
+        const wrapper = container.querySelector('.sitmon-page-wrapper');
+        if (wrapper) {
+          const wrapperComputed = window.getComputedStyle(wrapper);
+          if (wrapperComputed.display === 'none' || wrapperComputed.visibility === 'hidden' || wrapperComputed.opacity === '0') {
+            console.warn('[SituationMonitorShell] Wrapper was hidden! Forcing visibility...');
+            wrapper.style.display = 'block';
+            wrapper.style.visibility = 'visible';
+            wrapper.style.opacity = '1';
+          }
+        }
+      }
+      
+      // Also check if loader is visible and hide it
+      const loader = document.getElementById('nn-intel-loader');
+      if (loader) {
+        const loaderComputed = window.getComputedStyle(loader);
+        if (loaderComputed.display !== 'none' && loaderComputed.visibility !== 'hidden') {
+          console.warn('[SituationMonitorShell] Loader is still visible! Hiding it...');
+          loader.style.display = 'none';
+          loader.style.visibility = 'hidden';
+          loader.style.opacity = '0';
+          loader.style.zIndex = '-999999';
+        }
+      }
+    }, 1000); // Check every second
+  }
+
   destroy() {
+    // Stop visibility monitor
+    if (this._visibilityMonitor) {
+      clearInterval(this._visibilityMonitor);
+      this._visibilityMonitor = null;
+    }
+    
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
     }

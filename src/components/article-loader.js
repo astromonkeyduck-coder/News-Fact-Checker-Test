@@ -1705,9 +1705,8 @@
             // Add post text - preserve line breaks as paragraphs
             bodyHTML += formatPostText(story);
             
-            // Check if this is an earthquake post and add enhanced content
-            const isEarthquake = post.event_type === 'earthquake' || post.category === 'Earthquake' || post.category === 'EARTHQUAKE' || post.source === 'USGS';
             // Check for coordinates in multiple places (lat/lon at top level, or in raw geometry, or in assets)
+            // Note: isEarthquake is already declared above (line 1577), so reuse it
             const hasCoordinates = (post.lat && post.lon) || 
                                    (post.raw?.geometry?.coordinates?.[1] && post.raw?.geometry?.coordinates?.[0]) ||
                                    (post.assets?.lat && post.assets?.lon);

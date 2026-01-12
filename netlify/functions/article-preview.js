@@ -13,115 +13,43 @@
 const { getStore } = require("@netlify/blobs");
 
 // Embedded article page shell template (for regular users)
-// This avoids fragile fs.readFileSync and ensures the interactive page always works
-const ARTICLE_PAGE_SHELL = `<!DOCTYPE html>
+// This is the full AP-style article.html template embedded to avoid fragile fs.readFileSync
+// NOTE: The full template is 2600+ lines. We use fs.readFileSync at module load time
+// (not in handler) which should work since article.html is in the published folder.
+const fs = require('fs');
+const path = require('path');
+
+let ARTICLE_PAGE_SHELL = null;
+
+function getArticlePageShell() {
+  if (ARTICLE_PAGE_SHELL) return ARTICLE_PAGE_SHELL;
+  
+  try {
+    // Try to read from published folder (works in Netlify Functions)
+    const articlePath = path.join(__dirname, '../../article.html');
+    ARTICLE_PAGE_SHELL = fs.readFileSync(articlePath, 'utf8');
+    return ARTICLE_PAGE_SHELL;
+  } catch (error) {
+    // Fallback to minimal template if file not found
+    console.warn('[article-preview] Could not load article.html, using minimal template:', error.message);
+    ARTICLE_PAGE_SHELL = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="app-version" content="December 18, 2025">
-    
-    <!-- Dynamic Meta Tags - Updated by article-loader.js -->
-    <title id="article-title">Article Title - Noteworthy News</title>
-    <meta name="description" id="article-description" content="Article description for SEO">
-    <meta name="keywords" content="breaking news, fact-checked journalism, media literacy, news analysis">
-    <meta name="author" content="Noteworthy News">
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-    
-    <!-- Canonical URL -->
-    <link rel="canonical" id="article-canonical" href="https://noteworthynews.co/article.html">
-    
-    <!-- Open Graph -->
-    <meta property="og:type" content="article">
-    <meta property="og:url" id="og-url" content="https://noteworthynews.co/article.html">
-    <meta property="og:title" id="og-title" content="Article Title - Noteworthy News">
-    <meta property="og:description" id="og-description" content="Article description">
-    <meta property="og:image" id="og-image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:site_name" content="Noteworthy News">
-    <meta property="og:locale" content="en_US">
-    <meta property="article:published_time" id="article-published" content="">
-    <meta property="article:author" content="Noteworthy News">
-    
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" id="twitter-url" content="https://noteworthynews.co/article.html">
-    <meta name="twitter:title" id="twitter-title" content="Article Title - Noteworthy News">
-    <meta name="twitter:description" id="twitter-description" content="Article description">
-    <meta name="twitter:image" id="twitter-image" content="https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg">
-    <meta name="twitter:site" content="@NoteworthyNews">
-    <meta name="twitter:creator" content="@NoteworthyNews">
-    
-    <!-- Favicon and Theme -->
-    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="32x32">
-    <link rel="icon" type="image/png" href="IMG_5794.PNG" sizes="192x192">
-    <link rel="shortcut icon" type="image/png" href="IMG_5794.PNG">
-    <link rel="apple-touch-icon" href="IMG_5794.PNG" sizes="180x180">
-    <link rel="mask-icon" href="IMG_5794.PNG" color="#0f234a">
-    <meta name="theme-color" content="#07152a">
-    
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Georgia:wght@400;700&family=Charter:wght@400;700&display=swap" rel="stylesheet">
-    
-    <!-- Styles -->
+    <title>Article - Noteworthy News</title>
     <link rel="stylesheet" href="styles.css">
-    
-    <!-- Christmas Theme -->
-    <script src="christmas-config.js"></script>
-    <script>
-        if (typeof CHRISTMAS_CONFIG !== 'undefined') {
-            window.CHRISTMAS_CONFIG = CHRISTMAS_CONFIG;
-        }
-    </script>
-    <script src="christmas-theme-loader.js"></script>
-    
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5427142458403577"
-            crossorigin="anonymous"></script>
-    
-    <!-- Structured Data -->
-    <script type="application/ld+json" id="article-structured-data">
-    {
-      "@context": "https://schema.org",
-      "@type": "NewsArticle",
-      "headline": "Article Title",
-      "description": "Article description",
-      "image": "https://noteworthynews.co/PREVIEWIMAGEBRUH.jpg",
-      "datePublished": "",
-      "dateModified": "",
-      "author": {
-        "@type": "Organization",
-        "name": "Noteworthy News"
-      },
-      "publisher": {
-        "@type": "Organization",
-        "name": "Noteworthy News",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "https://noteworthynews.co/IMG_5794.PNG"
-        }
-      }
-    }
-    </script>
-    
-    <style>
-        html.article-page-active, html.article-page-active body, body.article-page {
-            background: #ffffff !important;
-            color: #1a1a1a !important;
-        }
-        .article-container { max-width: 800px; margin: 0 auto; padding: 2rem; }
-    </style>
 </head>
 <body class="article-page">
     <div id="article-content" class="article-container">
         <div id="article-loader">Loading article...</div>
     </div>
-    
-    <!-- Article Loader Script -->
     <script src="https://noteworthynews.co/src/components/article-loader.js"></script>
 </body>
 </html>`;
+    return ARTICLE_PAGE_SHELL;
+  }
+}
 
 /**
  * Detect if request is from a crawler/bot
@@ -165,7 +93,16 @@ function escapeHtml(text) {
 function selectImageForPreview(post, userAgent, cardType = 'summary') {
   const isTwitter = userAgent && userAgent.toLowerCase().includes('twitterbot');
   const videoUrl = post.video_url || post.video || post.assets?.video_url || null;
-  const isGIF = videoUrl && (videoUrl.includes('.gif') || videoUrl.includes('get-uploaded-image'));
+  // Check if videoUrl is a GIF: ends with .gif extension, or is from get-uploaded-image with gif format parameter
+  const isGIF = videoUrl && (
+    videoUrl.toLowerCase().endsWith('.gif') || 
+    videoUrl.toLowerCase().includes('.gif?') ||
+    (videoUrl.includes('get-uploaded-image') && (
+      videoUrl.includes('format=gif') || 
+      videoUrl.toLowerCase().includes('&format=gif') ||
+      videoUrl.toLowerCase().includes('?format=gif')
+    ))
+  );
   const isMP4 = videoUrl && (videoUrl.includes('.mp4') || videoUrl.includes('video'));
   
   // For Twitter summary cards, prefer PNG (GIFs don't animate and can be large)
@@ -238,11 +175,11 @@ function getCacheKey(post) {
  * Generate prerendered HTML for crawlers
  */
 function generatePrerenderedHTML(post, articleId, userAgent, cardType = 'summary') {
-  const title = post.title || post.story || post.text || 'Breaking News Story';
-  const story = post.story || post.text || post.title || '';
+    const title = post.title || post.story || post.text || 'Breaking News Story';
+    const story = post.story || post.text || post.title || '';
   
   // Format relative time
-  const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
+    const datePosted = post.datePosted || post.createdAt || post.created_at || new Date().toISOString();
   const postedDate = new Date(datePosted);
   const now = new Date();
   const diffMs = now - postedDate;
@@ -288,11 +225,11 @@ function generatePrerenderedHTML(post, articleId, userAgent, cardType = 'summary
   const articleUrl = `https://noteworthynews.co/article.html?id=${encodeURIComponent(articleId)}`;
   
   // Format title for earthquakes
-  let formattedTitle = title;
-  const isEarthquake = post.category === 'Earthquake' || post.event_type === 'earthquake' || post.source === 'USGS';
-  if (isEarthquake && post.magnitude && (post.location_display || post.location)) {
-    const magnitudeFormatted = typeof post.magnitude === 'number' ? post.magnitude.toFixed(1) : post.magnitude;
-    const location = post.location_display || post.location;
+    let formattedTitle = title;
+    const isEarthquake = post.category === 'Earthquake' || post.event_type === 'earthquake' || post.source === 'USGS';
+    if (isEarthquake && post.magnitude && (post.location_display || post.location)) {
+      const magnitudeFormatted = typeof post.magnitude === 'number' ? post.magnitude.toFixed(1) : post.magnitude;
+      const location = post.location_display || post.location;
     formattedTitle = `BREAKING: M${magnitudeFormatted} Earthquake Near ${location}`;
   }
   
@@ -307,7 +244,7 @@ function generatePrerenderedHTML(post, articleId, userAgent, cardType = 'summary
   
   // Log image selection
   console.log('[article-preview] 📸 Image selection:', {
-    articleId,
+      articleId,
     userAgent: userAgent?.substring(0, 50),
     isTwitter: userAgent?.toLowerCase().includes('twitterbot'),
     cardType,
@@ -424,7 +361,7 @@ exports.handler = async (event) => {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'public, max-age=0, must-revalidate'
       },
-      body: ARTICLE_PAGE_SHELL
+            body: getArticlePageShell()
     };
   }
   

@@ -1034,8 +1034,15 @@ async function sendEmailAlert(earthquake, imageUrl, logger) {
     return false;
   }
   
-  // Send email for ALL earthquakes (user requested)
-  // Removed magnitude >= 7.0 check - now sends for all
+  // Send email only for magnitude 6.0+ earthquakes
+  if (magnitude < 6.0) {
+    logger.info('Skipping email: magnitude below 6.0 threshold', {
+      magnitude,
+      canonical_id: earthquake.canonical_id,
+      location: earthquake.location_display
+    });
+    return false;
+  }
   
   // Check if alert already sent
   // CRITICAL: Always check alert_sent to prevent duplicates
@@ -1724,41 +1731,59 @@ async function processEarthquake(feature, logger, forceEmail = false) {
   // Store event
   const { isNew, hasNewImage: imageWasNew, event: storedEvent } = await storeEvent(event, logger);
   
-  // Create website post for earthquakes with images
-  // Always create/update post if we have an image (for most recent earthquake or new earthquakes)
-  if (imageUrl || isNew || forceEmail) {
+  // Create website post for earthquakes
+  // CRITICAL: Always create/update post for new earthquakes, even if image generation failed
+  // This ensures posts exist, and they'll be updated later if images are generated
+  // Also update existing posts if we have a new image
+  if (isNew || forceEmail || imageUrl) {
     try {
       const postResult = await createPostFromEvent(storedEvent, 'Earthquake', 'USGS');
       if (postResult.exists) {
         if (postResult.updated) {
-          logger.info('Website post updated with image', { canonical_id: canonicalId, image_url: storedEvent.image_url });
+          logger.info('Website post updated', { 
+            canonical_id: canonicalId, 
+            image_url: storedEvent.image_url,
+            has_image: !!storedEvent.image_url,
+            video_url: storedEvent.video_url || storedEvent.assets?.video_url || null
+          });
         } else {
-          logger.info('Website post already exists', { canonical_id: canonicalId, has_image: !!storedEvent.image_url });
+          logger.info('Website post already exists', { 
+            canonical_id: canonicalId, 
+            has_image: !!storedEvent.image_url,
+            existing_has_image: postResult.existingHasImage !== undefined ? !!postResult.existingHasImage : null
+          });
         }
       } else {
-        logger.info('Website post created', { canonical_id: canonicalId, image_url: storedEvent.image_url });
+        logger.info('Website post created', { 
+          canonical_id: canonicalId, 
+          image_url: storedEvent.image_url,
+          has_image: !!storedEvent.image_url,
+          video_url: storedEvent.video_url || storedEvent.assets?.video_url || null
+        });
       }
     } catch (postError) {
       logger.warn('Failed to create website post', postError);
     }
   }
   
-  // Send email alert for ALL earthquakes (user requested)
-  // Removed magnitude >= 7.0 check - now sends for all
-  // Send if: it's new, OR alert hasn't been sent yet, OR if we just generated a new image
+  // Send email alert only for earthquakes with magnitude 6.0 or higher
+  // Send if: magnitude >= 6.0 AND (it's new, OR alert hasn't been sent yet, OR if we just generated a new image)
   // CRITICAL: forceEmail should ONLY send if it's a NEW earthquake, not re-send for existing ones
   // Use the hasNewImage flag from storeEvent which compares BEFORE updating
   const hasNewImage = imageWasNew || (imageUrl && !storedEvent.image_url);
   
   // Only send email if:
-  // 1. It's a new earthquake (isNew)
-  // 2. Alert hasn't been sent yet (!storedEvent.alert_sent) - forceEmail ensures we check this
-  // 3. There's a new image (hasNewImage)
+  // 1. Magnitude is 6.0 or higher
+  // 2. It's a new earthquake (isNew)
+  // 3. Alert hasn't been sent yet (!storedEvent.alert_sent) - forceEmail ensures we check this
+  // 4. There's a new image (hasNewImage)
   // CRITICAL: Never send if alert_sent is true UNLESS there's a new image
-  const shouldSendEmail = isNew || !storedEvent.alert_sent || hasNewImage;
+  const shouldSendEmail = magnitude >= 6.0 && (isNew || !storedEvent.alert_sent || hasNewImage);
   
   logger.info('Checking email alert conditions', {
     canonical_id: canonicalId,
+    magnitude,
+    meets_magnitude_threshold: magnitude >= 6.0,
     alert_sent: storedEvent.alert_sent,
     isNew,
     forceEmail,
@@ -1766,7 +1791,7 @@ async function processEarthquake(feature, logger, forceEmail = false) {
     hasImageUrl: !!imageUrl,
     storedImageUrl: storedEvent.image_url,
     will_send: shouldSendEmail,
-    reason: isNew ? 'new_earthquake' : (!storedEvent.alert_sent ? 'not_sent_yet' : (hasNewImage ? 'new_image' : 'duplicate_prevented'))
+    reason: magnitude < 6.0 ? 'magnitude_below_threshold' : (isNew ? 'new_earthquake' : (!storedEvent.alert_sent ? 'not_sent_yet' : (hasNewImage ? 'new_image' : 'duplicate_prevented')))
   });
   
   if (shouldSendEmail) {

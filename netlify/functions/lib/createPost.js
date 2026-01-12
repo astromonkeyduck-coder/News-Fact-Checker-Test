@@ -117,7 +117,7 @@ async function createPostFromEvent(event, category, source) {
             contentType: 'application/json',
           });
           console.log(`[createPost] Updated post ${postId} with image: ${imageUrl}, video: ${eventVideoUrl ? 'yes' : 'no'}, secondary: ${secondaryImages.length}`);
-          return { exists: true, postId, updated: true };
+          return { exists: true, postId, updated: true, existingHasImage: !!existingPost.primary_image_url };
         }
       } else if (hasNewVideoUrl) {
         // Update post even if image_url hasn't changed, but video_url is new
@@ -136,9 +136,9 @@ async function createPostFromEvent(event, category, source) {
           contentType: 'application/json',
         });
         console.log(`[createPost] Updated post ${postId} with video_url: ${eventVideoUrl.substring(0, 100)}`);
-        return { exists: true, postId, updated: true };
+        return { exists: true, postId, updated: true, existingHasImage: !!existingPost.primary_image_url };
       }
-      return { exists: true, postId, updated: false };
+      return { exists: true, postId, updated: false, existingHasImage: !!existingPost.primary_image_url };
     }
   } catch (err) {
     // Post doesn't exist, continue

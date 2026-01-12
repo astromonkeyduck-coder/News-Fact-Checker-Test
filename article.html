@@ -281,11 +281,11 @@
         .article-header h1 {
             font-size: 2.5rem;
             font-weight: 700;
-            margin: 0 0 20px 0;
-            line-height: 1.15;
-            letter-spacing: -0.01em;
+            margin: 0 0 24px 0;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
             color: #1a1a1a;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
             max-width: 800px;
         }
         
@@ -337,7 +337,7 @@
             display: inline-block;
         }
         
-        /* Professional Byline & Metadata - News Style */
+        /* Professional Byline & Metadata - AP News Style */
         .article-header-meta {
             display: flex;
             flex-wrap: wrap;
@@ -345,11 +345,12 @@
             gap: 16px;
             margin-top: 0;
             margin-bottom: 0;
-            padding: 16px 0;
+            padding: 20px 0;
             border-bottom: 1px solid #e5e5e5;
             font-size: 0.875rem;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
             color: #666;
+            line-height: 1.5;
         }
         
         .article-header-meta-item {
@@ -443,30 +444,34 @@
         }
         
         .article-body {
-            line-height: 1.7;
+            line-height: 1.75;
             font-size: 1.125rem;
             color: #1a1a1a;
-            max-width: 700px;
+            max-width: 650px; /* AP News standard column width */
             margin: 0 auto;
             font-family: 'Georgia', 'Charter', 'Times New Roman', serif;
+            font-weight: 400;
+            letter-spacing: 0.01em;
         }
         
         @media (min-width: 1024px) {
             .article-body {
                 font-size: 1.1875rem;
-                line-height: 1.75;
+                line-height: 1.8;
             }
         }
         
         @media (max-width: 640px) {
         .article-body {
             font-size: 1rem;
-                line-height: 1.65;
+                line-height: 1.7;
             }
         }
         
         .article-body p {
             margin-bottom: 1.5em;
+            text-align: left;
+            word-spacing: normal;
         }
         
         /* Ensure full content is displayed - no truncation */
@@ -477,15 +482,17 @@
             display: block;
         }
         
-        /* Update blocks for multi-paragraph posts - Professional style */
+        /* Update blocks for multi-paragraph posts - AP News style */
         .article-body p.update-block {
             padding-left: 20px;
-            border-left: 2px solid #1a1a1a;
+            border-left: 3px solid #1a1a1a;
             margin-left: 0;
-            padding-top: 0.75em;
-            padding-bottom: 0.75em;
+            margin-bottom: 1.5em;
+            padding-top: 0.5em;
+            padding-bottom: 0.5em;
             position: relative;
-            font-style: italic;
+            font-style: normal;
+            font-weight: 400;
         }
         
         /* Hide broken images gracefully */
