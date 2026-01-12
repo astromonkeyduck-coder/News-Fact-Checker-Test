@@ -208,13 +208,16 @@ exports.handler = async (event, context) => {
       }),
     };
   } catch (error) {
+    // Log full error details
     console.error("[upload-blob] Error:", error);
+    console.error("[upload-blob] Error name:", error.name);
+    console.error("[upload-blob] Error message:", error.message);
     console.error("[upload-blob] Stack:", error.stack);
+    console.error("[upload-blob] Event body type:", typeof event.body);
+    console.error("[upload-blob] Event body length:", event.body ? event.body.length : 0);
     
-    // Return detailed error in development, generic in production
-    const errorMessage = process.env.NODE_ENV === "development" 
-      ? error.message 
-      : "Failed to upload file";
+    // Always return JSON, never HTML
+    const errorMessage = error.message || "Failed to upload file";
     
     return {
       statusCode: 500,
@@ -222,7 +225,12 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({ 
         error: "Failed to upload file",
         message: errorMessage,
-        details: process.env.NODE_ENV === "development" ? error.stack : undefined,
+        // Include helpful details for debugging
+        hint: error.message?.includes("not configured") 
+          ? "Check NETLIFY_SITE_ID and NETLIFY_BLOB_READ_WRITE_TOKEN environment variables"
+          : error.message?.includes("getStore")
+          ? "Blob store may not exist. Create 'clemens-uploads' store in Netlify Dashboard"
+          : "Check function logs for detailed error information",
       }),
     };
   }

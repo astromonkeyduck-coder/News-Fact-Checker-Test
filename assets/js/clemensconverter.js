@@ -54,26 +54,39 @@ function initializeElements() {
     elements.languageSelect = document.getElementById('languageSelect');
     elements.includeTimestamps = document.getElementById('includeTimestamps');
     elements.concurrentMode = document.getElementById('concurrentMode');
+    
+    // Log missing elements for debugging
+    const requiredElements = ['dropzone', 'fileInput', 'selectFilesBtn', 'queueContainer', 'queueList', 'resultsContainer', 'settingsToggle', 'settingsContent'];
+    const missing = requiredElements.filter(id => !document.getElementById(id));
+    if (missing.length > 0) {
+        console.warn('[Clemens Converter] Missing required elements:', missing);
+    }
 }
 
 function setupEventListeners() {
     // File selection
-    elements.selectFilesBtn.addEventListener('click', () => {
-        elements.fileInput.click();
-    });
-    elements.fileInput.addEventListener('change', handleFileSelect);
+    if (elements.selectFilesBtn && elements.fileInput) {
+        elements.selectFilesBtn.addEventListener('click', () => {
+            elements.fileInput.click();
+        });
+        elements.fileInput.addEventListener('change', handleFileSelect);
+    }
 
     // Drag and drop
-    elements.dropzone.addEventListener('dragover', handleDragOver);
-    elements.dropzone.addEventListener('dragleave', handleDragLeave);
-    elements.dropzone.addEventListener('drop', handleDrop);
-    elements.dropzone.addEventListener('click', () => elements.fileInput.click());
+    if (elements.dropzone && elements.fileInput) {
+        elements.dropzone.addEventListener('dragover', handleDragOver);
+        elements.dropzone.addEventListener('dragleave', handleDragLeave);
+        elements.dropzone.addEventListener('drop', handleDrop);
+        elements.dropzone.addEventListener('click', () => elements.fileInput.click());
+    }
 
     // Settings toggle
-    elements.settingsToggle.addEventListener('click', () => {
-        const isVisible = elements.settingsContent.style.display !== 'none';
-        elements.settingsContent.style.display = isVisible ? 'none' : 'block';
-    });
+    if (elements.settingsToggle && elements.settingsContent) {
+        elements.settingsToggle.addEventListener('click', () => {
+            const isVisible = elements.settingsContent.style.display !== 'none';
+            elements.settingsContent.style.display = isVisible ? 'none' : 'block';
+        });
+    }
 
     // Settings changes
     if (elements.concurrentMode) {
@@ -328,10 +341,23 @@ async function processFile(fileId) {
         fileData.status = 'error';
         // Extract meaningful error message
         let errorMessage = error.message || 'Processing failed';
-        // If it's a JSON parse error, try to get the actual response
-        if (error.message && error.message.includes('JSON')) {
-            errorMessage = 'Server error: Received invalid response. Check function logs.';
+        
+        // Clean up JSON parse errors to show actual server error
+        if (error.message && (error.message.includes('JSON') || error.message.includes('Unexpected token'))) {
+            // Try to extract the actual error from the message
+            const match = error.message.match(/Internal E[^"]*/);
+            if (match) {
+                errorMessage = `Server error: ${match[0]}. Check Netlify function logs for details.`;
+            } else {
+                errorMessage = 'Server error: Received invalid response. Check Netlify function logs.';
+            }
         }
+        
+        // If it's a 500 error, provide helpful context
+        if (errorMessage.includes('500') || errorMessage.includes('Internal Server Error')) {
+            errorMessage += ' This usually means: (1) Missing environment variables (NETLIFY_SITE_ID, NETLIFY_BLOB_READ_WRITE_TOKEN), (2) Blob store not created, or (3) Function error. Check Netlify Dashboard → Functions → Logs.';
+        }
+        
         fileData.error = errorMessage;
         fileData.progress = 0;
         updateQueueDisplay();
@@ -385,18 +411,37 @@ async function uploadFile(file, uploadInfo) {
         });
 
         if (!response.ok) {
-            let error;
+            let errorText = '';
+            let errorJson = null;
+            
+            // Try to get response as text first
             try {
-                error = await response.json();
+                errorText = await response.text();
+                // Try to parse as JSON
+                try {
+                    errorJson = JSON.parse(errorText);
+                } catch (e) {
+                    // Not JSON, use text as-is
+                }
             } catch (e) {
-                // If response isn't JSON, get text
-                const text = await response.text();
-                throw new Error(`Upload failed: ${response.status} ${response.statusText} - ${text}`);
+                errorText = `Failed to read response: ${e.message}`;
             }
-            throw new Error(error.error || error.message || 'Upload failed');
+            
+            // Use JSON error if available, otherwise use text
+            const errorMessage = errorJson 
+                ? (errorJson.error || errorJson.message || 'Upload failed')
+                : (errorText || `Upload failed: ${response.status} ${response.statusText}`);
+            
+            throw new Error(errorMessage);
         }
 
-        return await response.json();
+        // Parse successful response
+        try {
+            return await response.json();
+        } catch (e) {
+            const text = await response.text();
+            throw new Error(`Invalid JSON response: ${text.substring(0, 100)}`);
+        }
     } else {
         // Direct upload to R2 (if implemented)
         const response = await fetch(uploadInfo.uploadUrl, {
