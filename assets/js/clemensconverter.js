@@ -411,26 +411,36 @@ async function uploadFile(file, uploadInfo) {
         });
 
         if (!response.ok) {
-            let errorText = '';
-            let errorJson = null;
+            // Check content type to determine how to read response
+            const contentType = response.headers.get('content-type') || '';
+            let errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
             
-            // Try to get response as text first
             try {
-                errorText = await response.text();
-                // Try to parse as JSON
-                try {
-                    errorJson = JSON.parse(errorText);
-                } catch (e) {
-                    // Not JSON, use text as-is
+                if (contentType.includes('application/json')) {
+                    // It's JSON, parse it
+                    const errorJson = await response.json();
+                    errorMessage = errorJson.error || errorJson.message || errorJson.hint || errorMessage;
+                } else {
+                    // Not JSON, read as text (but only once!)
+                    const errorText = await response.text();
+                    // Try to extract meaningful error from HTML if it's an error page
+                    if (errorText.includes('<title>')) {
+                        const titleMatch = errorText.match(/<title[^>]*>([^<]+)<\/title>/i);
+                        if (titleMatch) {
+                            errorMessage = `${errorMessage}: ${titleMatch[1]}`;
+                        } else {
+                            errorMessage = `${errorMessage}: Server returned HTML error page`;
+                        }
+                    } else {
+                        // Use first 200 chars of text response
+                        errorMessage = `${errorMessage}: ${errorText.substring(0, 200)}`;
+                    }
                 }
             } catch (e) {
-                errorText = `Failed to read response: ${e.message}`;
+                // If reading fails, use status code
+                console.error('[uploadFile] Failed to read error response:', e);
+                errorMessage = `Upload failed: ${response.status} ${response.statusText}. Check function logs.`;
             }
-            
-            // Use JSON error if available, otherwise use text
-            const errorMessage = errorJson 
-                ? (errorJson.error || errorJson.message || 'Upload failed')
-                : (errorText || `Upload failed: ${response.status} ${response.statusText}`);
             
             throw new Error(errorMessage);
         }
