@@ -82,6 +82,42 @@
   status = 200
   force = false
 
+[[redirects]]
+  from = "/api/create-job"
+  to = "/.netlify/functions/create-job"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/api/job-status"
+  to = "/.netlify/functions/job-status"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/api/cams/search"
+  to = "/.netlify/functions/cams-search"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/api/cams/proxy-image"
+  to = "/.netlify/functions/cams-proxy-image"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/api/cams/health"
+  to = "/.netlify/functions/cams-health"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/api/cams-token"
+  to = "/.netlify/functions/cams-token"
+  status = 200
+  force = false
+
 [functions]
   # Use esbuild to automatically compile TypeScript functions
   node_bundler = "esbuild"
@@ -89,6 +125,11 @@
   included_files = ["netlify/functions/**/*.ts", "src/**/*.ts", "src/rss/**/*.js", "netlify/functions/**/*.png", "netlify/functions/fonts-base64.js"]
   # Also include JavaScript functions
   directory = "netlify/functions"
+
+# Configure process-job as background function (longer timeout for ffmpeg processing)
+[functions."process-job"]
+  node_bundler = "zisi"  # Use zisi to handle native ffmpeg-static binary
+  included_files = ["node_modules/ffmpeg-static/**"]
 
 # Configure functions that use native modules (@resvg/resvg-js)
 # These functions need native .node binaries which esbuild can't bundle

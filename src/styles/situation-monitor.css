@@ -520,6 +520,33 @@ body.situation-monitor-page main {
   transform: translateY(-1px);
 }
 
+.sitmon-tab-btn {
+  padding: 0.5rem 1rem;
+  background: rgba(34, 211, 238, 0.2);
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  border-radius: 8px;
+  color: #22d3ee;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sitmon-tab-btn:hover {
+  background: rgba(34, 211, 238, 0.3);
+  border-color: rgba(34, 211, 238, 0.6);
+  transform: translateY(-1px);
+}
+
+.sitmon-tab-btn.active {
+  background: rgba(34, 211, 238, 0.4);
+  border-color: #22d3ee;
+  color: #fff;
+}
+
 .sitmon-auto-refresh-toggle {
   display: flex;
   align-items: center;

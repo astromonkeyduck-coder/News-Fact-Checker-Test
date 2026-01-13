@@ -1,0 +1,167 @@
+/**
+ * Live Cams API Client
+ * 
+ * SECURITY NOTE: All requests include X-CAMS-TOKEN header
+ * Token is fetched from /api/cams-token endpoint (server-side only)
+ * Never log or expose the token in console or source code
+ */
+
+let abortController = null;
+let camsToken = null;
+
+/**
+ * Get CAMS_TOKEN from server (cached)
+ * Token is never logged or exposed
+ */
+async function getCamsToken() {
+  if (camsToken) {
+    return camsToken;
+  }
+  
+  try {
+    const response = await fetch('/api/cams-token', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      camsToken = data.token;
+      return camsToken;
+    }
+  } catch (error) {
+    console.error('[LiveCams API] Failed to fetch CAMS_TOKEN:', error);
+  }
+  
+  return null;
+}
+
+/**
+ * Search cameras
+ */
+export async function searchCameras(filters, signal = null) {
+  const params = new URLSearchParams();
+  
+  if (filters.q) params.set('q', filters.q);
+  if (filters.country) params.set('country', filters.country);
+  if (filters.state) params.set('state', filters.state);
+  if (filters.city) params.set('city', filters.city);
+  if (filters.bbox) params.set('bbox', filters.bbox);
+  if (filters.type && filters.type !== 'any') params.set('type', filters.type);
+  if (filters.media && filters.media !== 'any') params.set('media', filters.media);
+  params.set('limit', '200');
+  
+  const url = `/api/cams/search?${params.toString()}`;
+  
+  // Get token (never log it)
+  const token = await getCamsToken();
+  
+  try {
+    const headers = {
+      'Accept': 'application/json'
+    };
+    
+    // Add token header if available
+    if (token) {
+      headers['X-CAMS-TOKEN'] = token;
+    }
+    
+    const response = await fetch(url, {
+      signal: signal || abortController?.signal,
+      headers
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Search failed: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    return data.results || [];
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('Search cancelled');
+    }
+    throw error;
+  }
+}
+
+/**
+ * Get image proxy URL
+ * Note: Actual token is added by the proxy endpoint or via fetch headers
+ */
+export function getImageProxyUrl(imageUrl) {
+  if (!imageUrl) return null;
+  return `/api/cams/proxy-image?url=${encodeURIComponent(imageUrl)}`;
+}
+
+/**
+ * Fetch image with CAMS_TOKEN header
+ * Used for images that require authentication
+ */
+export async function fetchImageWithAuth(imageUrl) {
+  const token = await getCamsToken();
+  const headers = {};
+  
+  if (token) {
+    headers['X-CAMS-TOKEN'] = token;
+  }
+  
+  return fetch(imageUrl, { headers });
+}
+
+/**
+ * Geocode a location (city/address) to bbox
+ */
+export async function geocodeLocation(query) {
+  try {
+    // Use Nominatim (OpenStreetMap) for geocoding
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&addressdetails=1`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'NoteworthyNews/1.0',
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Geocoding failed');
+    }
+    
+    const data = await response.json();
+    if (data.length === 0) {
+      return null;
+    }
+    
+    const result = data[0];
+    const lat = parseFloat(result.lat);
+    const lon = parseFloat(result.lon);
+    
+    // Create bbox (0.1 degree ~= 11km)
+    const padding = 0.05;
+    return `${lon - padding},${lat - padding},${lon + padding},${lat + padding}`;
+  } catch (error) {
+    console.error('[geocodeLocation] Error:', error);
+    return null;
+  }
+}
+
+/**
+ * Cancel current search
+ */
+export function cancelSearch() {
+  if (abortController) {
+    abortController.abort();
+  }
+  abortController = new AbortController();
+}
+
+/**
+ * Create new abort controller for search
+ */
+export function createSearchSignal() {
+  cancelSearch();
+  return abortController.signal;
+}

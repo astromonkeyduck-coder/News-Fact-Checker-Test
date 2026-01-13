@@ -36,6 +36,7 @@ export class SituationMonitorShell {
     this.clusterDrawer = null;
     this.bigBoardOverlay = null;
     this.diagnosticsPanel = null;
+    this.liveCams = null;
     this._refreshing = false; // Guard for single-flight refresh
     this._refreshPromise = null; // Promise for single-flight refresh
     this._shellCreated = false; // Guard for double initialization
@@ -131,6 +132,9 @@ export class SituationMonitorShell {
               <input type="checkbox" id="sitmon-auto-refresh" checked>
               <span>Auto-refresh (5min)</span>
             </label>
+            <button class="sitmon-tab-btn" id="sitmon-tab-livecams" aria-label="Live Cams">
+              📹 LIVE CAMS
+            </button>
           </div>
         </div>
 
@@ -213,6 +217,13 @@ export class SituationMonitorShell {
               <h2 class="sitmon-card-title">RSS Intelligence</h2>
             </div>
             <div class="sitmon-card-body" id="sitmon-panel-rss-body"></div>
+          </div>
+          
+          <div class="sitmon-panel-card" id="sitmon-panel-livecams" style="display: none; grid-column: 1 / -1; height: calc(100vh - 200px);">
+            <div class="sitmon-card-header">
+              <h2 class="sitmon-card-title">LIVE CAMS</h2>
+            </div>
+            <div class="sitmon-card-body" id="sitmon-panel-livecams-body" style="padding: 0; height: 100%; overflow: hidden;"></div>
           </div>
         </div>
       </div>
@@ -599,6 +610,60 @@ export class SituationMonitorShell {
     
     // Store status chip reference
     this.statusChip = statusChip;
+    
+    // Live Cams tab button
+    const liveCamsTab = document.getElementById('sitmon-tab-livecams');
+    if (liveCamsTab) {
+      liveCamsTab.addEventListener('click', () => {
+        this.toggleLiveCams();
+      });
+    }
+  }
+  
+  async toggleLiveCams() {
+    const liveCamsPanel = document.getElementById('sitmon-panel-livecams');
+    const liveCamsTab = document.getElementById('sitmon-tab-livecams');
+    
+    if (!liveCamsPanel) return;
+    
+    const isVisible = liveCamsPanel.style.display !== 'none';
+    
+    if (!isVisible) {
+      // Show Live Cams panel
+      liveCamsPanel.style.display = 'block';
+      if (liveCamsTab) {
+        liveCamsTab.classList.add('active');
+      }
+      
+      // Initialize Live Cams if not already initialized
+      if (!this.liveCams) {
+        await this.initLiveCams();
+      }
+    } else {
+      // Hide Live Cams panel
+      liveCamsPanel.style.display = 'none';
+      if (liveCamsTab) {
+        liveCamsTab.classList.remove('active');
+      }
+    }
+  }
+  
+  async initLiveCams() {
+    const container = document.getElementById('sitmon-panel-livecams-body');
+    if (!container) return;
+    
+    try {
+      // Dynamically import Live Cams module
+      const { LiveCams } = await import('../../../js/liveCams/index.js');
+      this.liveCams = new LiveCams(container, this.mapView);
+      
+      // Await initialization to ensure UI is fully loaded before showing panel
+      // This prevents blank/partially-loaded UI when panel is first displayed
+      await this.liveCams.init();
+    } catch (error) {
+      console.error('[SituationMonitorShell] Error initializing Live Cams:', error);
+      this.showToast('Failed to load Live Cams', 'error');
+    }
   }
   
   initToastSystem() {

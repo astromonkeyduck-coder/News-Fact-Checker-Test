@@ -29,13 +29,17 @@ CREATE INDEX IF NOT EXISTS idx_live_events_search ON live_events USING GIN(to_ts
 CREATE INDEX IF NOT EXISTS idx_live_events_reliability ON live_events(reliability);
 
 -- Function to update updated_at timestamp
+-- Set search_path to prevent search path injection attacks
 CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SET search_path = public, pg_catalog
+AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$;
 
 -- Trigger to auto-update updated_at
 CREATE TRIGGER update_live_events_updated_at

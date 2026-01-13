@@ -5,12 +5,13 @@
 
 // Configuration
 const CONFIG = {
-    maxFileSize: 25 * 1024 * 1024, // 25MB (OpenAI Whisper limit)
+    maxFileSize: 25 * 1024 * 1024, // 25MB (OpenAI Whisper limit per request - larger files use chunking)
     maxUploadSize: 5 * 1024 * 1024, // 5MB (Netlify Function body limit - files larger need chunking or R2)
     maxConcurrent: 2,
     apiBase: '/api',
     retryAttempts: 3,
     retryDelay: 1000, // ms
+    jobPollInterval: 2000, // Poll job status every 2 seconds
 };
 
 // State
@@ -19,6 +20,7 @@ const state = {
     processingQueue: [],
     activeProcessing: 0,
     concurrentMode: false,
+    activeJobs: new Map(), // jobId -> { fileId, pollInterval }
 };
 
 // DOM Elements
@@ -41,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeElements();
     setupEventListeners();
     loadSettings();
+    resumeJobs(); // Check for jobs in localStorage and resume polling
 });
 
 function initializeElements() {
@@ -152,11 +155,8 @@ function addFiles(files) {
             continue;
         }
 
-        // Validate file size (OpenAI limit)
-        if (file.size > CONFIG.maxFileSize) {
-            showError(`Skipped ${file.name}: File too large (max ${CONFIG.maxFileSize / 1024 / 1024}MB for OpenAI Whisper)`);
-            continue;
-        }
+        // Note: We allow >25MB files if R2 is configured (they'll be chunked during processing)
+        // The 25MB limit is only enforced for Blobs upload path (fallback)
 
         // Warn about Netlify Function upload limit
         if (file.size > CONFIG.maxUploadSize) {
@@ -175,6 +175,8 @@ function addFiles(files) {
             error: null,
             transcript: null,
             objectKey: null,
+            jobId: null, // For large files using job-based workflow
+            isLargeFile: file.size > CONFIG.maxFileSize, // >25MB requires job-based processing
         });
 
         validFiles.push(fileId);
@@ -206,7 +208,12 @@ function createFileItem(fileId, fileData) {
     div.id = `file-${fileId}`;
 
     const statusClass = `status-${fileData.status}`;
-    const statusText = fileData.status.charAt(0).toUpperCase() + fileData.status.slice(1);
+    let statusText = fileData.status.charAt(0).toUpperCase() + fileData.status.slice(1);
+    
+    // Show detailed status message for job-based processing
+    if (fileData.statusMessage) {
+        statusText = fileData.statusMessage;
+    }
 
     div.innerHTML = `
         <div class="file-header">
@@ -215,7 +222,7 @@ function createFileItem(fileId, fileData) {
                 <div class="file-meta">
                     <span>${formatFileSize(fileData.fileSize)}</span>
                     <span class="file-status ${statusClass}">
-                        ${fileData.status === 'transcribing' ? '<span class="spinner"></span> ' : ''}
+                        ${(fileData.status === 'transcribing' || fileData.status === 'processing' || fileData.status === 'finalizing') ? '<span class="spinner"></span> ' : ''}
                         ${statusText}
                     </span>
                 </div>
@@ -288,13 +295,23 @@ async function processQueue() {
     }
 
     // Determine how many to process
+    // Include active jobs in concurrency calculation to respect limits
     const maxActive = state.concurrentMode ? CONFIG.maxConcurrent : 1;
-    const toProcess = queuedFiles.slice(0, maxActive - state.activeProcessing);
+    const totalActive = state.activeProcessing + state.activeJobs.size;
+    const toProcess = queuedFiles.slice(0, Math.max(0, maxActive - totalActive));
 
     for (const fileId of toProcess) {
         state.activeProcessing++;
         processFile(fileId).finally(() => {
-            state.activeProcessing--;
+            // Only decrement if this wasn't a job-based file
+            // Job-based files will decrement when the job completes
+            const fileData = state.files.get(fileId);
+            if (!fileData || !fileData.jobId) {
+                // Not a job-based file, safe to decrement
+                state.activeProcessing--;
+            }
+            // If it's a job-based file, activeProcessing will be decremented
+            // when the job completes in pollJobStatus()
             processQueue(); // Process next in queue
         });
     }
@@ -319,29 +336,63 @@ async function processFile(fileId) {
         const uploadResult = await uploadFile(fileData.file, uploadInfo);
         fileData.objectKey = uploadResult.objectKey;
         
-        // Step 3: Transcribe
-        fileData.status = 'transcribing';
-        fileData.progress = 50;
-        updateQueueDisplay();
-
+        // Step 3: Transcribe (or create job for large files)
         const language = elements.languageSelect.value || null;
         const includeTimestamps = elements.includeTimestamps.checked;
 
-        const transcript = await transcribeFromUrl(
-            uploadResult.objectKey,
-            uploadInfo.storageType || 'blobs',
-            language,
-            includeTimestamps
-        );
+        // Check if this is a large file (>25MB) that needs job-based processing
+        if (fileData.isLargeFile && uploadInfo.storageType === 'r2') {
+            // Use job-based workflow for large files
+            // Keep progress at 30% (upload complete) - don't regress
+            fileData.status = 'processing';
+            fileData.progress = 30; // Maintain progress from upload step
+            updateQueueDisplay();
 
-        // Step 4: Complete
-        fileData.status = 'done';
-        fileData.progress = 100;
-        fileData.transcript = transcript;
-        updateQueueDisplay();
+            const jobResult = await createJob(
+                uploadResult.objectKey,
+                fileData.fileName,
+                language,
+                includeTimestamps
+            );
 
-        // Show result
-        showResult(fileId, fileData);
+            fileData.jobId = jobResult.jobId;
+            
+            // Store jobId in localStorage for resume capability
+            const jobData = {
+                jobId: jobResult.jobId,
+                fileId: fileId,
+                fileName: fileData.fileName,
+            };
+            localStorage.setItem(`clemens-job-${jobResult.jobId}`, JSON.stringify(jobData));
+
+            // Decrement activeProcessing since this file is now tracked in activeJobs
+            // This prevents double-counting in concurrency calculation
+            state.activeProcessing--;
+
+            // Start polling job status (this will add to activeJobs)
+            pollJobStatus(jobResult.jobId, fileId);
+        } else {
+            // Use direct transcription for small files
+            fileData.status = 'transcribing';
+            fileData.progress = 50;
+            updateQueueDisplay();
+
+            const transcript = await transcribeFromUrl(
+                uploadResult.objectKey,
+                uploadInfo.storageType || 'blobs',
+                language,
+                includeTimestamps
+            );
+
+            // Step 4: Complete
+            fileData.status = 'done';
+            fileData.progress = 100;
+            fileData.transcript = transcript;
+            updateQueueDisplay();
+
+            // Show result
+            showResult(fileId, fileData);
+        }
 
     } catch (error) {
         console.error(`[processFile] Error for ${fileData.fileName}:`, error);
@@ -523,6 +574,254 @@ async function transcribeFromUrl(objectKey, storageType, language, includeTimest
     }
 
     return await response.json();
+}
+
+/**
+ * Create a transcription job for large files
+ */
+async function createJob(r2Key, filename, language, includeTimestamps) {
+    const url = `${CONFIG.apiBase}/create-job`;
+    
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+            r2Key,
+            filename,
+            language,
+            includeTimestamps,
+        }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(error.error || 'Failed to create job');
+    }
+
+    return await response.json();
+}
+
+/**
+ * Poll job status and update UI
+ */
+function pollJobStatus(jobId, fileId) {
+    // Check if this job is already being tracked
+    const wasAlreadyTracking = state.activeJobs.has(jobId);
+    
+    // Stop any existing polling for this job
+    if (wasAlreadyTracking) {
+        clearInterval(state.activeJobs.get(jobId).pollInterval);
+    }
+
+    // Define intervalId variable before creating poll() to avoid closure issues
+    let intervalId = null;
+
+    const poll = async () => {
+        try {
+            const url = `${CONFIG.apiBase}/job-status?jobId=${encodeURIComponent(jobId)}`;
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: getAuthHeaders(),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Job status check failed: ${response.status}`);
+            }
+
+            const jobStatus = await response.json();
+            const fileData = state.files.get(fileId);
+            if (!fileData) {
+                // File removed, stop polling
+                if (intervalId) {
+                    clearInterval(intervalId);
+                }
+                state.activeJobs.delete(jobId);
+                
+                // Note: Do NOT decrement activeProcessing here
+                // If this job was created via processFile(), activeProcessing was already
+                // decremented when the job was created. If it was resumed via resumeJobs(),
+                // activeProcessing was never incremented. Either way, we don't need to
+                // decrement it here.
+                
+                // Continue processing queue now that this job slot is freed
+                processQueue();
+                
+                return;
+            }
+
+            // Update file data with job status
+            fileData.status = jobStatus.status === 'done' ? 'done' : 
+                            jobStatus.status === 'error' ? 'error' : 
+                            jobStatus.status === 'transcribing' ? 'transcribing' : 
+                            jobStatus.status === 'finalizing' ? 'finalizing' : 'processing';
+            fileData.progress = jobStatus.progress || 0;
+            
+            // Update status message
+            if (jobStatus.status === 'transcribing' && jobStatus.chunksTotal) {
+                fileData.statusMessage = `Transcribing chunk ${jobStatus.chunksDone || 0} / ${jobStatus.chunksTotal}`;
+            } else if (jobStatus.status === 'processing') {
+                fileData.statusMessage = 'Processing...';
+            } else if (jobStatus.status === 'finalizing') {
+                fileData.statusMessage = 'Finalizing transcript...';
+            } else if (jobStatus.status === 'done' || jobStatus.status === 'error') {
+                // Clear status message when job completes
+                fileData.statusMessage = null;
+            }
+
+            if (jobStatus.errorMessage) {
+                fileData.error = jobStatus.errorMessage;
+            }
+
+            updateQueueDisplay();
+
+            // Stop polling if job is done or error (regardless of transcriptUrl)
+            if (jobStatus.status === 'done') {
+                if (intervalId) {
+                    clearInterval(intervalId);
+                }
+                state.activeJobs.delete(jobId);
+                
+                // Note: Do NOT decrement activeProcessing here
+                // It was already decremented when the job was created (line 370)
+                // to transfer the count from activeProcessing to activeJobs.
+                // Now that the job is done and removed from activeJobs,
+                // the concurrency slot is automatically freed.
+                
+                // Remove from localStorage
+                localStorage.removeItem(`clemens-job-${jobId}`);
+
+                // Fetch transcript if URL is available
+                if (jobStatus.transcriptUrl) {
+                    try {
+                        const transcriptResponse = await fetch(jobStatus.transcriptUrl);
+                        const transcriptText = await transcriptResponse.text();
+                        
+                        fileData.transcript = {
+                            transcriptText: transcriptText,
+                            fileName: jobStatus.filename,
+                            modelUsed: 'whisper-1',
+                            language: jobStatus.language || 'auto',
+                        };
+                    } catch (fetchError) {
+                        console.error(`[pollJobStatus] Error fetching transcript:`, fetchError);
+                        // Continue even if transcript fetch fails - job is still done
+                    }
+                }
+
+                fileData.status = 'done';
+                fileData.progress = 100;
+                fileData.statusMessage = null; // Ensure status message is cleared
+                updateQueueDisplay();
+                
+                // Show result if transcript is available
+                if (fileData.transcript) {
+                    showResult(fileId, fileData);
+                }
+                
+                // Continue processing queue now that this job slot is freed
+                processQueue();
+            } else if (jobStatus.status === 'error') {
+                if (intervalId) {
+                    clearInterval(intervalId);
+                }
+                state.activeJobs.delete(jobId);
+                
+                // Note: Do NOT decrement activeProcessing here
+                // It was already decremented when the job was created (line 370)
+                // to transfer the count from activeProcessing to activeJobs.
+                // Now that the job is done (with error) and removed from activeJobs,
+                // the concurrency slot is automatically freed.
+                
+                localStorage.removeItem(`clemens-job-${jobId}`);
+                fileData.status = 'error';
+                fileData.statusMessage = null; // Ensure status message is cleared
+                fileData.error = jobStatus.errorMessage || 'Job failed';
+                updateQueueDisplay();
+                
+                // Continue processing queue now that this job slot is freed
+                processQueue();
+            }
+        } catch (error) {
+            console.error(`[pollJobStatus] Error polling job ${jobId}:`, error);
+            // Continue polling on error (might be temporary network issue)
+        }
+    };
+
+    // Set interval first to avoid race condition
+    intervalId = setInterval(poll, CONFIG.jobPollInterval);
+    state.activeJobs.set(jobId, { fileId, pollInterval: intervalId });
+    
+    // Note: We do NOT increment activeProcessing here
+    // Jobs are tracked in activeJobs, and activeProcessing is managed separately:
+    // - For jobs created via processFile(): activeProcessing was decremented when job was created (line 370)
+    //   to transfer the count from activeProcessing to activeJobs
+    // - For jobs resumed via resumeJobs(): activeProcessing is not incremented (job is only in activeJobs)
+    // - When job completes: activeProcessing is NOT decremented (it was already decremented when job was created)
+    // The concurrency calculation uses: totalActive = activeProcessing + activeJobs.size
+    // This ensures jobs are only counted once, not double-counted
+    
+    // Poll immediately after interval is set
+    poll();
+}
+
+/**
+ * Resume jobs from localStorage (for page refresh)
+ */
+function resumeJobs() {
+    const jobKeys = Object.keys(localStorage).filter(key => key.startsWith('clemens-job-'));
+    
+    for (const key of jobKeys) {
+        try {
+            const jobData = JSON.parse(localStorage.getItem(key));
+            const { jobId, fileId, fileName } = jobData;
+            
+            // Note: Do NOT increment activeProcessing here
+            // Resumed jobs are tracked in activeJobs, and will decrement activeProcessing
+            // when they complete. We don't want to double-count them.
+            
+            // Check if file still exists in state
+            if (state.files.has(fileId)) {
+                const fileData = state.files.get(fileId);
+                fileData.jobId = jobId;
+                fileData.status = 'processing';
+                fileData.isLargeFile = true;
+                
+                // Resume polling
+                pollJobStatus(jobId, fileId);
+                console.log(`[resumeJobs] Resumed job ${jobId} for file ${fileName}`);
+            } else {
+                // File not in state, create a placeholder entry
+                // Use the original fileId from jobData to maintain consistency
+                state.files.set(fileId, {
+                    id: fileId,
+                    fileName: fileName,
+                    fileSize: 0,
+                    status: 'processing',
+                    progress: 0,
+                    error: null,
+                    transcript: null,
+                    objectKey: null,
+                    jobId: jobId,
+                    isLargeFile: true,
+                });
+                
+                // Resume polling
+                pollJobStatus(jobId, fileId);
+                console.log(`[resumeJobs] Resumed job ${jobId} for file ${fileName} (placeholder)`);
+            }
+        } catch (error) {
+            console.error(`[resumeJobs] Error resuming job from ${key}:`, error);
+            localStorage.removeItem(key); // Remove invalid entry
+        }
+    }
+    
+    if (jobKeys.length > 0) {
+        updateQueueDisplay();
+        elements.queueContainer.style.display = 'block';
+    }
 }
 
 function getAuthHeaders() {

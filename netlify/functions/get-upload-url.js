@@ -189,19 +189,9 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Validate file size (OpenAI Whisper max is 25MB)
-    const maxSize = 25 * 1024 * 1024; // 25MB
-    if (fileSize > maxSize) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ 
-          error: `File too large. Maximum size is ${maxSize / 1024 / 1024}MB` 
-        }),
-      };
-    }
-
     // Try R2 first (supports large files), fallback to Blobs (has size limits)
+    // Note: For R2 path, we allow >25MB files (they'll be chunked in process-job)
+    // For Blobs path, we still enforce 25MB limit (OpenAI Whisper max per request)
     console.log('[get-upload-url] Checking R2 configuration...');
     console.log('[get-upload-url] R2_ACCESS_KEY_ID:', process.env.R2_ACCESS_KEY_ID ? 'SET' : 'MISSING');
     console.log('[get-upload-url] R2_SECRET_ACCESS_KEY:', process.env.R2_SECRET_ACCESS_KEY ? 'SET' : 'MISSING');
@@ -212,7 +202,18 @@ exports.handler = async (event, context) => {
     let uploadInfo = await getR2UploadUrl(fileName, fileSize);
     
     if (!uploadInfo) {
-      // Use Blobs fallback (warn if file is large)
+      // Use Blobs fallback - enforce 25MB limit for Blobs (OpenAI Whisper max per request)
+      const maxSize = 25 * 1024 * 1024; // 25MB
+      if (fileSize > maxSize) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: `File too large. Maximum size is ${maxSize / 1024 / 1024}MB for Blobs upload. Configure R2 for larger files.` 
+          }),
+        };
+      }
+      
       const fileSizeMB = fileSize / 1024 / 1024;
       if (fileSizeMB > 5) {
         console.error('[get-upload-url] ⚠️⚠️⚠️ CRITICAL: Large file (' + fileSizeMB.toFixed(2) + 'MB) using Blobs fallback');
@@ -221,7 +222,13 @@ exports.handler = async (event, context) => {
       }
       uploadInfo = await getBlobUploadUrl(fileName, fileSize);
     } else {
-      console.log('[get-upload-url] ✅ Using R2 for upload (no size limits)');
+      // R2 path: Allow >25MB files (they'll be chunked in process-job)
+      const fileSizeMB = fileSize / 1024 / 1024;
+      if (fileSizeMB > 25) {
+        console.log(`[get-upload-url] ✅ Using R2 for large file (${fileSizeMB.toFixed(2)}MB) - will be chunked during processing`);
+      } else {
+        console.log('[get-upload-url] ✅ Using R2 for upload');
+      }
     }
 
     return {

@@ -1,0 +1,732 @@
+/**
+ * Live Cams Styles
+ * Dark intelligence workstation aesthetic
+ */
+
+.livecams-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0a0a0a;
+  color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+/* Top Live Strip */
+.livecams-top-strip-container {
+  flex-shrink: 0;
+  margin-bottom: 1rem;
+}
+
+.livecams-top-strip {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.livecams-top-strip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.livecams-top-strip-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #22d3ee;
+  font-weight: 600;
+}
+
+.livecams-top-strip-count {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.livecams-top-strip-scroll {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: #333 #111;
+}
+
+.livecams-top-strip-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.livecams-top-strip-scroll::-webkit-scrollbar-track {
+  background: #111;
+}
+
+.livecams-top-strip-scroll::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+
+.livecams-top-strip-scroll::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+
+.livecams-top-strip-item {
+  flex-shrink: 0;
+  width: 140px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.livecams-top-strip-item:hover {
+  border-color: #22d3ee;
+  transform: translateY(-2px);
+}
+
+.livecams-top-strip-item.selected {
+  border-color: #22d3ee;
+  box-shadow: 0 0 0 2px #22d3ee40;
+}
+
+.livecams-top-strip-thumb {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 */
+  background: #0a0a0a;
+  overflow: hidden;
+}
+
+.livecams-top-strip-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.livecams-top-strip-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #444;
+}
+
+.livecams-top-strip-watchlist-badge {
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  font-size: 0.9rem;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));
+}
+
+.livecams-top-strip-info {
+  padding: 0.5rem;
+}
+
+.livecams-top-strip-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.livecams-top-strip-location {
+  font-size: 0.7rem;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.livecams-top-strip-empty {
+  padding: 1rem;
+  text-align: center;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+/* Hotspot Presets */
+.livecams-hotspots {
+  padding: 1rem;
+  border-bottom: 1px solid #222;
+  background: #111;
+}
+
+.livecams-hotspots label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.livecams-hotspot-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.livecams-hotspot-btn {
+  padding: 0.4rem 0.8rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.livecams-hotspot-btn:hover {
+  background: #222;
+  border-color: #22d3ee;
+  color: #22d3ee;
+}
+
+/* Layout */
+.livecams-layout {
+  display: grid;
+  grid-template-columns: 350px 1fr 400px;
+  gap: 1rem;
+  padding: 1rem;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Left Panel: Browser */
+.livecams-left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.livecams-watchlist-container,
+.livecams-search-container,
+.livecams-filters-container,
+.livecams-grid-container {
+  flex-shrink: 0;
+}
+
+.livecams-grid-container {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Watchlist */
+.livecams-watchlist {
+  background: #0a0a0a;
+  border: 1px solid #22d3ee40;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.livecams-watchlist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.livecams-watchlist-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #22d3ee;
+}
+
+.livecams-btn-clear {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #888;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.livecams-btn-clear:hover {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.livecams-watchlist-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.livecams-watchlist-empty {
+  padding: 1rem;
+  text-align: center;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+/* Search Bar */
+.livecams-search-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.livecams-search-input {
+  flex: 1;
+  padding: 0.6rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+.livecams-search-input:focus {
+  outline: none;
+  border-color: #22d3ee;
+}
+
+.livecams-search-btn {
+  padding: 0.6rem 1rem;
+  background: #22d3ee20;
+  border: 1px solid #22d3ee40;
+  border-radius: 4px;
+  color: #22d3ee;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.livecams-search-btn:hover {
+  background: #22d3ee30;
+}
+
+.livecams-search-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Filters */
+.livecams-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #222;
+}
+
+.livecams-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.livecams-filter-group label {
+  font-size: 0.8rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.livecams-select,
+.livecams-input {
+  padding: 0.5rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 0.85rem;
+}
+
+.livecams-select:focus,
+.livecams-input:focus {
+  outline: none;
+  border-color: #22d3ee;
+}
+
+.livecams-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.livecams-chip {
+  padding: 0.4rem 0.8rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #888;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.livecams-chip:hover {
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+.livecams-chip.active {
+  background: #22d3ee20;
+  border-color: #22d3ee;
+  color: #22d3ee;
+}
+
+/* Camera Grid */
+.livecams-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+}
+
+.livecams-card {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.livecams-card:hover {
+  border-color: #22d3ee;
+  transform: translateY(-2px);
+}
+
+.livecams-card.selected {
+  border-color: #22d3ee;
+  box-shadow: 0 0 0 2px #22d3ee40;
+}
+
+.livecams-card-thumbnail {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 aspect ratio */
+  background: #0a0a0a;
+  overflow: hidden;
+}
+
+.livecams-card-thumbnail img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.livecams-card-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: #444;
+}
+
+.livecams-status-dot {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #1a1a1a;
+}
+
+.livecams-status-dot.online {
+  background: #4ade80;
+}
+
+.livecams-status-dot.offline {
+  background: #ef4444;
+}
+
+.livecams-status-dot.unknown {
+  background: #888;
+}
+
+.livecams-card-content {
+  padding: 0.75rem;
+}
+
+.livecams-card-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin-bottom: 0.25rem;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.livecams-card-location {
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 0.25rem;
+}
+
+.livecams-card-road {
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.livecams-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.livecams-provider-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  border: 1px solid;
+}
+
+.livecams-card-actions {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.livecams-btn-icon {
+  padding: 0.25rem 0.5rem;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #888;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.livecams-btn-icon:hover {
+  background: rgba(0, 0, 0, 0.9);
+  color: #22d3ee;
+}
+
+.livecams-btn-icon.active {
+  color: #ffd700;
+}
+
+/* Right Panel: Player */
+.livecams-right-panel {
+  display: flex;
+  flex-direction: column;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.livecams-player-container {
+  flex: 1;
+  min-height: 0;
+}
+
+.livecams-player-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.livecams-player {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.livecams-player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.livecams-player-title {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #e0e0e0;
+  font-weight: 600;
+}
+
+.livecams-player-display {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 */
+  background: #0a0a0a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.livecams-player-iframe,
+.livecams-player-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.livecams-player-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 3rem;
+}
+
+.livecams-player-placeholder p {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.9rem;
+}
+
+.livecams-player-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.livecams-player-meta strong {
+  color: #e0e0e0;
+}
+
+.livecams-player-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.livecams-tag {
+  padding: 0.2rem 0.5rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.livecams-player-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.livecams-btn {
+  padding: 0.5rem 1rem;
+  background: #22d3ee20;
+  border: 1px solid #22d3ee40;
+  border-radius: 4px;
+  color: #22d3ee;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.2s;
+}
+
+.livecams-btn:hover {
+  background: #22d3ee30;
+  border-color: #22d3ee;
+}
+
+/* Loading & Error States */
+.livecams-loading,
+.livecams-error,
+.livecams-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+}
+
+.livecams-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #333;
+  border-top-color: #22d3ee;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Disclaimer */
+.livecams-disclaimer {
+  padding: 0.75rem 1rem;
+  background: #111;
+  border-top: 1px solid #222;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+  .livecams-layout {
+    grid-template-columns: 300px 1fr 350px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .livecams-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+  
+  .livecams-right-panel {
+    max-height: 500px;
+  }
+}
