@@ -6,7 +6,7 @@ export class LiveCamsState {
   constructor() {
     this.filters = {
       q: '',
-      country: 'US',
+      country: 'US', // Start with US to get DOT feeds (FL511, Caltrans, etc.)
       state: '',
       city: '',
       type: 'any',

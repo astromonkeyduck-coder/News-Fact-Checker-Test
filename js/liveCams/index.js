@@ -73,7 +73,8 @@ export class LiveCams {
     this.setupComponents();
     this.attachEvents();
     
-    // Load initial results (US cameras)
+    // Load initial results (global cameras - no filters)
+    // Start with empty filters to get a broad set of results
     await this.performSearch();
   }
   

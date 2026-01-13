@@ -781,11 +781,15 @@ export class SituationMonitorShell {
       iconSvg = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
     }
     
+    // Escape HTML in message to prevent injection, but allow line breaks
+    const safeMessage = String(message).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const safeTitle = title ? String(title).replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+    
     toast.innerHTML = `
       <div class="sitmon-toast-icon" style="color: ${type === 'success' ? '#4ecdc4' : type === 'error' ? '#ff6b6b' : '#4A90E2'}">${iconSvg}</div>
       <div class="sitmon-toast-content">
-        ${title ? `<div class="sitmon-toast-title">${title}</div>` : ''}
-        <div class="sitmon-toast-message">${message}</div>
+        ${safeTitle ? `<div class="sitmon-toast-title">${safeTitle}</div>` : ''}
+        <div class="sitmon-toast-message">${safeMessage}</div>
       </div>
       <button class="sitmon-toast-close" aria-label="Close">×</button>
     `;

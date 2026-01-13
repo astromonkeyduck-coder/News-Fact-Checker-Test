@@ -28,6 +28,7 @@ export class EventDrawer {
       transition: right 0.3s ease;
       padding: 24px;
       color: #fff;
+      pointer-events: none;
     `;
     
     document.body.appendChild(this.drawer);
@@ -80,6 +81,8 @@ export class EventDrawer {
   
   show(event) {
     this.currentEvent = event;
+    // Enable pointer events when drawer is open
+    this.drawer.style.pointerEvents = 'auto';
     const content = this.drawer.querySelector('.sitmon-drawer-content');
     
     const age = event.getAgeHours();
@@ -223,6 +226,7 @@ export class EventDrawer {
   
   hide() {
     this.drawer.style.right = '-400px';
+    this.drawer.style.pointerEvents = 'none'; // Disable interactions when hidden
     this.currentEvent = null;
   }
   

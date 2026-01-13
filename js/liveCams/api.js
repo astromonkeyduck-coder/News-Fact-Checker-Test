@@ -73,16 +73,33 @@ export async function searchCameras(filters, signal = null) {
       headers['X-CAMS-TOKEN'] = token;
     }
     
+    console.log('[LiveCams API] Searching cameras with URL:', url);
+    console.log('[LiveCams API] Filters:', filters);
+    
     const response = await fetch(url, {
       signal: signal || abortController?.signal,
       headers
     });
     
+    console.log('[LiveCams API] Response status:', response.status, response.statusText);
+    
     if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error('[LiveCams API] Search failed:', response.status, errorText);
       throw new Error(`Search failed: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
+    console.log('[LiveCams API] Response data:', { 
+      resultCount: data.results?.length || 0,
+      hasResults: !!data.results,
+      error: data.error 
+    });
+    
+    if (data.error) {
+      console.error('[LiveCams API] API returned error:', data.error);
+    }
+    
     return data.results || [];
   } catch (error) {
     if (error.name === 'AbortError') {

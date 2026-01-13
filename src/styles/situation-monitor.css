@@ -612,8 +612,9 @@ body.situation-monitor-page main {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-height: clamp(420px, 55vh, 640px);
-  overflow-y: auto;
+  /* Don't constrain the stack itself - let individual panels handle scrolling */
+  max-height: none;
+  overflow: visible;
 }
 
 /* Panel Card Base */
@@ -627,13 +628,16 @@ body.situation-monitor-page main {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  max-height: 400px; /* Default max height for panels */
+  /* Default max height for panels */
+  max-height: 400px;
+  min-height: 200px;
 }
 
-/* Panels in the stack should be smaller */
+/* Panels in the stack should be smaller and scroll independently */
 .sitmon-panels-stack > .sitmon-panel-card {
-  max-height: 200px;
+  max-height: 180px;
   min-height: 150px;
+  flex-shrink: 0; /* Prevent panels from shrinking */
 }
 
 /* Secondary grid panels can be taller */
@@ -665,10 +669,10 @@ body.situation-monitor-page main {
 
 .sitmon-card-body {
   padding: 1.25rem;
-  flex: 1;
+  flex: 1 1 auto; /* Allow body to grow and shrink */
   overflow-y: auto;
   overflow-x: hidden;
-  min-height: 120px;
+  min-height: 0; /* Critical: allows flex child to shrink below content size */
   max-height: 100%;
   /* Smooth scrolling */
   scroll-behavior: smooth;
@@ -1657,8 +1661,11 @@ body.situation-monitor-page ol,
   pointer-events: auto;
   animation: toastSlideIn 0.3s ease-out;
   display: flex;
-  align-items: center;
+  flex-direction: row; /* Explicitly set horizontal layout */
+  align-items: flex-start; /* Align to top instead of center for multi-line text */
   gap: 0.75rem;
+  writing-mode: horizontal-tb; /* Ensure horizontal text */
+  text-orientation: mixed; /* Normal text orientation */
 }
 
 .sitmon-toast.success {
@@ -1681,6 +1688,11 @@ body.situation-monitor-page ol,
 
 .sitmon-toast-content {
   flex: 1;
+  min-width: 0; /* Critical: allows flex child to shrink */
+  display: flex;
+  flex-direction: column;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .sitmon-toast-title {
@@ -1688,6 +1700,9 @@ body.situation-monitor-page ol,
   color: #fff;
   margin: 0 0 0.25rem 0;
   font-size: 0.9rem;
+  white-space: normal;
+  word-break: normal;
+  line-height: 1.3;
 }
 
 .sitmon-toast-message {
@@ -1695,6 +1710,10 @@ body.situation-monitor-page ol,
   color: rgba(255, 255, 255, 0.8);
   margin: 0;
   line-height: 1.4;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 .sitmon-toast-close {
