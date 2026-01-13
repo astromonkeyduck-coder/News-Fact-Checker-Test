@@ -370,10 +370,22 @@ async function processJob(jobId) {
       throw new Error(`Job not found: ${jobId}`);
     }
 
-    console.log(`[process-job] Processing job: ${jobId}, file: ${job.filename}`);
+    console.log(`[process-job] Processing job: ${jobId}, file: ${job.filename}, current status: ${job.status}`);
 
-    // Update status to processing
-    await updateJobProgress(jobId, { status: 'processing' });
+    // If job is already done or in error state, don't process again
+    if (job.status === 'done' || job.status === 'error') {
+      console.log(`[process-job] Job ${jobId} already ${job.status}, skipping`);
+      return;
+    }
+
+    // Update status to processing (only if it's queued)
+    if (job.status === 'queued') {
+      await updateJobProgress(jobId, { status: 'processing' });
+    } else if (job.status !== 'processing' && job.status !== 'transcribing' && job.status !== 'finalizing') {
+      // If status is unexpected, log warning but continue
+      console.warn(`[process-job] Job ${jobId} has unexpected status: ${job.status}, continuing anyway`);
+      await updateJobProgress(jobId, { status: 'processing' });
+    }
 
     // Create temp directory
     await fs.mkdir(tmpDir, { recursive: true });
@@ -504,8 +516,11 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    console.log('[process-job] 🚀 Function invoked');
+    
     // Check token if configured
     if (!checkToken(event)) {
+      console.error('[process-job] ❌ Unauthorized - token check failed');
       return {
         statusCode: 401,
         headers,
@@ -518,12 +533,15 @@ exports.handler = async (event, context) => {
     const { jobId } = body;
 
     if (!jobId) {
+      console.error('[process-job] ❌ Missing jobId');
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ error: "Missing jobId parameter" }),
       };
     }
+
+    console.log(`[process-job] ✅ Starting processing for job: ${jobId}`);
 
     // Process job (this may take a long time for large files)
     // Note: Netlify Functions have timeout limits, but we'll process as much as possible

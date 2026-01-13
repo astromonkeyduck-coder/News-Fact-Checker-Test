@@ -43,8 +43,15 @@ async function triggerProcessJob(jobId) {
     const { URL } = require('url');
     
     // Get the function URL (works in both local and production)
-    const baseUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || 'http://localhost:8888';
+    // Try multiple environment variables that Netlify provides
+    const baseUrl = process.env.URL || 
+                   process.env.DEPLOY_PRIME_URL || 
+                   process.env.NETLIFY_URL || 
+                   (process.env.CONTEXT === 'production' ? 'https://noteworthynews.co' : 'http://localhost:8888');
     const functionUrl = `${baseUrl}/.netlify/functions/process-job`;
+    
+    console.log(`[create-job] Triggering process-job at: ${functionUrl}`);
+    console.log(`[create-job] Environment: URL=${process.env.URL || 'NOT SET'}, DEPLOY_PRIME_URL=${process.env.DEPLOY_PRIME_URL || 'NOT SET'}, CONTEXT=${process.env.CONTEXT || 'NOT SET'}`);
     
     const url = new URL(functionUrl);
     const client = url.protocol === 'https:' ? https : http;
@@ -69,33 +76,38 @@ async function triggerProcessJob(jobId) {
       timeout: 5000, // 5 second timeout for trigger
     };
     
-    // Make async HTTP call (don't wait for response)
+    // Make async HTTP call (don't wait for response, but log result)
     const req = client.request(options, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          console.log(`[create-job] ✅ Successfully triggered process-job for: ${jobId}`);
+          console.log(`[create-job] ✅ Successfully triggered process-job for: ${jobId} (status: ${res.statusCode})`);
         } else {
-          console.error(`[create-job] ⚠️ process-job returned status ${res.statusCode} for ${jobId}: ${data.substring(0, 200)}`);
+          console.error(`[create-job] ⚠️ process-job returned status ${res.statusCode} for ${jobId}`);
+          console.error(`[create-job] Response: ${data.substring(0, 500)}`);
         }
       });
     });
     
     req.on('error', (error) => {
       console.error(`[create-job] ❌ Failed to trigger process-job for ${jobId}:`, error.message);
+      console.error(`[create-job] URL attempted: ${functionUrl}`);
+      console.error(`[create-job] Error details:`, error);
       // Don't fail - job is created, can be processed manually if needed
     });
     
     req.on('timeout', () => {
       req.destroy();
-      console.error(`[create-job] ⚠️ Timeout triggering process-job for ${jobId} (this is OK, job will be processed)`);
+      console.error(`[create-job] ⚠️ Timeout triggering process-job for ${jobId} after 5s`);
+      console.error(`[create-job] URL attempted: ${functionUrl}`);
+      // Timeout is OK - the function might still process, or can be triggered manually
     });
     
     req.write(postData);
     req.end();
     
-    console.log(`[create-job] 📤 Triggering process-job for: ${jobId}`);
+    console.log(`[create-job] 📤 Triggering process-job for: ${jobId} at ${functionUrl}`);
   } catch (error) {
     console.error('[create-job] Error triggering process-job:', error.message);
     // Don't throw - job is created, can be processed manually if needed
@@ -179,7 +191,11 @@ exports.handler = async (event, context) => {
     console.log('[create-job] ✅ Created job:', job.job_id);
 
     // Trigger background processor asynchronously (fire-and-forget)
-    await triggerProcessJob(job.job_id);
+    // Don't await - let it run in background, but log the attempt
+    triggerProcessJob(job.job_id).catch(error => {
+      console.error(`[create-job] ⚠️ Failed to trigger process-job for ${job.job_id}:`, error.message);
+      // Job is still created, can be triggered manually via /api/trigger-job
+    });
 
     return {
       statusCode: 200,

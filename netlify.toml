@@ -101,6 +101,12 @@
   force = false
 
 [[redirects]]
+  from = "/api/trigger-all-queued-jobs"
+  to = "/.netlify/functions/trigger-all-queued-jobs"
+  status = 200
+  force = false
+
+[[redirects]]
   from = "/api/cams/search"
   to = "/.netlify/functions/cams-search"
   status = 200
