@@ -401,13 +401,37 @@ async function getUploadUrl(fileName, fileSize) {
         uploadUrl: data.uploadUrl,
         objectKey: data.objectKey,
         method: data.method || 'POST',
-        storageType: data.uploadUrl.includes('r2') ? 'r2' : 'blobs',
+        headers: data.headers || {},
+        storageType: data.storageType || (data.uploadUrl.startsWith('http') ? 'r2' : 'blobs'),
     };
 }
 
 async function uploadFile(file, uploadInfo) {
-    if (uploadInfo.method === 'POST' && uploadInfo.uploadUrl.startsWith('/api/')) {
-        // Upload via our API (Blobs)
+    // Check if this is a direct R2 upload (presigned URL)
+    if (uploadInfo.method === 'PUT' && uploadInfo.uploadUrl.startsWith('http')) {
+        // Direct upload to R2 using presigned URL (bypasses Netlify Function limits)
+        console.log('[uploadFile] Uploading directly to R2:', uploadInfo.uploadUrl.substring(0, 50) + '...');
+        
+        const response = await fetch(uploadInfo.uploadUrl, {
+            method: 'PUT',
+            body: file,
+            headers: {
+                'Content-Type': uploadInfo.headers['Content-Type'] || 'audio/mpeg',
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text().catch(() => 'Unknown error');
+            throw new Error(`R2 upload failed (${response.status}): ${errorText.substring(0, 200)}`);
+        }
+
+        // R2 PUT requests return empty body (204) or minimal response on success
+        console.log('[uploadFile] ✅ Successfully uploaded to R2');
+        return { objectKey: uploadInfo.objectKey };
+        
+    } else if (uploadInfo.method === 'POST' && uploadInfo.uploadUrl.startsWith('/api/')) {
+        // Upload via our API (Blobs - has 6MB size limits)
+        console.log('[uploadFile] Uploading via Netlify Function (Blobs):', uploadInfo.uploadUrl);
         const formData = new FormData();
         formData.append('file', file);
 
@@ -460,21 +484,7 @@ async function uploadFile(file, uploadInfo) {
             throw new Error(`Invalid JSON response: ${text.substring(0, 100)}`);
         }
     } else {
-        // Direct upload to R2 (if implemented)
-        const response = await fetch(uploadInfo.uploadUrl, {
-            method: uploadInfo.method || 'PUT',
-            body: file,
-            headers: {
-                'Content-Type': 'audio/mpeg',
-                ...uploadInfo.headers,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error('Direct upload failed');
-        }
-
-        return { objectKey: uploadInfo.objectKey };
+        throw new Error(`Unsupported upload method: ${uploadInfo.method} for URL: ${uploadInfo.uploadUrl}`);
     }
 }
 

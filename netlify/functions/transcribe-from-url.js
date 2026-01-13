@@ -55,7 +55,7 @@ async function downloadFromBlobs(objectKey) {
 }
 
 /**
- * Download file from Cloudflare R2 (if configured)
+ * Download file from Cloudflare R2
  */
 async function downloadFromR2(objectKey) {
   // Check if R2 is configured
@@ -64,11 +64,40 @@ async function downloadFromR2(objectKey) {
     return null;
   }
 
-  // TODO: Implement R2 download using @aws-sdk/client-s3
-  // const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
-  // ... download from R2
-  
-  return null;
+  try {
+    const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
+
+    // Create S3 client configured for R2
+    const s3Client = new S3Client({
+      region: "auto",
+      endpoint: process.env.R2_ENDPOINT,
+      credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+      },
+    });
+
+    // Download file from R2
+    const command = new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: objectKey,
+    });
+
+    const response = await s3Client.send(command);
+    
+    // Convert stream to buffer
+    const chunks = [];
+    for await (const chunk of response.Body) {
+      chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+
+    console.log(`[transcribe-from-url] ✅ Downloaded ${buffer.length} bytes from R2: ${objectKey}`);
+    return buffer;
+  } catch (error) {
+    console.error('[transcribe-from-url] R2 download error:', error.message);
+    return null;
+  }
 }
 
 /**
@@ -83,8 +112,32 @@ async function cleanupStorage(objectKey, storageType = "blobs") {
         token: process.env.NETLIFY_BLOB_READ_WRITE_TOKEN,
       });
       await store.delete(objectKey);
+      console.log(`[transcribe-from-url] ✅ Deleted from Blobs: ${objectKey}`);
     } else if (storageType === "r2") {
-      // TODO: Implement R2 deletion
+      // Delete from R2
+      if (!process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY || 
+          !process.env.R2_BUCKET || !process.env.R2_ENDPOINT) {
+        return;
+      }
+
+      const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+
+      const s3Client = new S3Client({
+        region: "auto",
+        endpoint: process.env.R2_ENDPOINT,
+        credentials: {
+          accessKeyId: process.env.R2_ACCESS_KEY_ID,
+          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+        },
+      });
+
+      const command = new DeleteObjectCommand({
+        Bucket: process.env.R2_BUCKET,
+        Key: objectKey,
+      });
+
+      await s3Client.send(command);
+      console.log(`[transcribe-from-url] ✅ Deleted from R2: ${objectKey}`);
     }
   } catch (error) {
     console.error("[transcribe-from-url] Cleanup error (non-fatal):", error.message);

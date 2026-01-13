@@ -27,17 +27,26 @@ Configure the following environment variables in Netlify Dashboard → Site Sett
   - Generate in: Site Settings → Functions → Blobs → Create store
   - Store name: `clemens-uploads`
 
-### Optional (For Cloudflare R2 - Advanced)
+### Required for Large Files (Cloudflare R2) ⚠️ RECOMMENDED
 
-If you want to use Cloudflare R2 instead of Netlify Blobs for better large file handling:
+**For files over 5MB, R2 is REQUIRED** to bypass Netlify Function body size limits (6MB).
 
 - **`R2_ACCESS_KEY_ID`**: R2 access key ID
-- **`R2_SECRET_ACCESS_KEY`**: R2 secret access key
+  - Create in: Cloudflare Dashboard → R2 → Manage R2 API Tokens
+- **`R2_SECRET_ACCESS_KEY`**: R2 secret access key (from same token creation)
 - **`R2_BUCKET`**: R2 bucket name (e.g., `clemens-uploads`)
-- **`R2_ENDPOINT`**: R2 endpoint URL (e.g., `https://[account-id].r2.cloudflarestorage.com`)
-- **`R2_ACCOUNT_ID`**: Your Cloudflare account ID
+  - Create bucket in: Cloudflare Dashboard → R2 → Create bucket
+- **`R2_ENDPOINT`**: R2 endpoint URL
+  - Format: `https://[account-id].r2.cloudflarestorage.com`
+  - Find account ID in: Cloudflare Dashboard → Right sidebar
 
-**Note:** R2 support requires adding `@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner` to `package.json` and implementing the R2 functions in the code. Currently, the code uses Netlify Blobs as the default.
+**How R2 Works:**
+1. Function generates presigned PUT URL for R2
+2. Client uploads directly to R2 (bypasses Netlify, no size limits)
+3. Function downloads from R2 for transcription
+4. File automatically deleted after transcription
+
+**If R2 is not configured:** Files over 5MB will fail with 500 errors due to Netlify Function limits.
 
 ## Deployment Steps
 

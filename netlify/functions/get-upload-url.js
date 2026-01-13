@@ -87,19 +87,62 @@ async function getR2UploadUrl(fileName, fileSize) {
   // Check if R2 is configured
   if (!process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY || 
       !process.env.R2_BUCKET || !process.env.R2_ENDPOINT) {
+    console.log('[get-upload-url] R2 not configured, using Blobs fallback');
     return null; // R2 not configured, fallback to Blobs
   }
 
-  // For R2, we'd use @aws-sdk/client-s3 to generate presigned URLs
-  // This is a placeholder - implement if R2 credentials are available
-  // For now, return null to use Blobs fallback
-  
-  // TODO: Implement R2 presigned URL generation
-  // const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
-  // const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-  // ... generate presigned URL
-  
-  return null;
+  try {
+    const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+    const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+
+    // Create S3 client configured for R2
+    const s3Client = new S3Client({
+      region: "auto", // R2 uses "auto" region
+      endpoint: process.env.R2_ENDPOINT,
+      credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+      },
+    });
+
+    // Generate unique object key
+    const timestamp = Date.now();
+    const randomSuffix = require("crypto").randomBytes(8).toString("hex");
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const objectKey = `clemens-uploads/${timestamp}_${randomSuffix}_${sanitizedFileName}`;
+
+    // Create PutObject command
+    const command = new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: objectKey,
+      ContentType: "audio/mpeg",
+      // Optional: Add metadata
+      Metadata: {
+        fileName: fileName,
+        fileSize: fileSize.toString(),
+        uploadedAt: new Date().toISOString(),
+      },
+    });
+
+    // Generate presigned URL (valid for 1 hour)
+    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+
+    console.log('[get-upload-url] ✅ Generated R2 presigned URL for:', objectKey);
+
+    return {
+      uploadUrl: uploadUrl, // Full R2 URL for direct upload
+      objectKey: objectKey,
+      method: "PUT",
+      headers: {
+        "Content-Type": "audio/mpeg",
+      },
+      storageType: "r2",
+    };
+  } catch (error) {
+    console.error('[get-upload-url] R2 error:', error.message);
+    // Fallback to Blobs if R2 fails
+    return null;
+  }
 }
 
 exports.handler = async (event, context) => {
@@ -158,11 +201,14 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Try R2 first, fallback to Blobs
+    // Try R2 first (supports large files), fallback to Blobs (has size limits)
     let uploadInfo = await getR2UploadUrl(fileName, fileSize);
     
     if (!uploadInfo) {
-      // Use Blobs fallback
+      // Use Blobs fallback (warn if file is large)
+      if (fileSize > 5 * 1024 * 1024) {
+        console.warn('[get-upload-url] ⚠️ Large file using Blobs fallback - may hit function limits');
+      }
       uploadInfo = await getBlobUploadUrl(fileName, fileSize);
     }
 
@@ -174,6 +220,7 @@ exports.handler = async (event, context) => {
         objectKey: uploadInfo.objectKey,
         method: uploadInfo.method || "POST",
         headers: uploadInfo.headers || {},
+        storageType: uploadInfo.storageType || "blobs",
       }),
     };
   } catch (error) {
