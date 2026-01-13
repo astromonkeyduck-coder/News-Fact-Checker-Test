@@ -126,12 +126,39 @@
                         }
                     }
                     
+                    // Remove loading placeholder if still visible
+                    const placeholder = document.getElementById('sitmon-loading-placeholder');
+                    if (placeholder) {
+                        placeholder.style.display = 'none';
+                        placeholder.style.visibility = 'hidden';
+                        placeholder.style.opacity = '0';
+                    }
+                    
+                    // Remove ANY div that's blocking the screen (aggressive cleanup)
+                    const allDivs = document.querySelectorAll('body > div');
+                    allDivs.forEach((div, index) => {
+                        const rect = div.getBoundingClientRect();
+                        const isFullScreen = rect.width >= window.innerWidth * 0.9 && rect.height >= window.innerHeight * 0.9;
+                        const hasHighZIndex = window.getComputedStyle(div).zIndex > 1000 || div.style.zIndex > 1000;
+                        const isFixed = window.getComputedStyle(div).position === 'fixed';
+                        
+                        // If it's a full-screen fixed overlay with high z-index, remove it
+                        if (isFullScreen && isFixed && hasHighZIndex && div.id !== 'situation-monitor-container') {
+                            console.warn('[SituationMonitor] Removing blocking div[', index, ']:', div.id || div.className || 'unnamed');
+                            div.style.display = 'none';
+                            div.style.visibility = 'hidden';
+                            div.style.opacity = '0';
+                            div.style.pointerEvents = 'none';
+                            div.style.zIndex = '-999999';
+                        }
+                    });
+                    
                     // Remove any other blocking overlays with high z-index
-                    const blockingElements = document.querySelectorAll('[style*="z-index: 99999"], [style*="z-index: 999999"], [class*="overlay"][style*="position: fixed"]');
+                    const blockingElements = document.querySelectorAll('[style*="z-index: 99999"], [style*="z-index: 999999"], [class*="overlay"][style*="position: fixed"], [class*="nn-il"]');
                     blockingElements.forEach(el => {
                         const rect = el.getBoundingClientRect();
                         if (rect.width >= window.innerWidth * 0.9 && rect.height >= window.innerHeight * 0.9) {
-                            console.warn('[SituationMonitor] Removing blocking overlay:', el);
+                            console.warn('[SituationMonitor] Removing blocking overlay:', el.id || el.className);
                             el.style.display = 'none';
                             el.style.pointerEvents = 'none';
                             el.style.zIndex = '-999999';
@@ -153,7 +180,10 @@
                 }
                 
                 // Try immediately (in case loader is already stuck)
-                setTimeout(forceRemoveLoader, 100);
+                setTimeout(forceRemoveLoader, 50);
+                
+                // Also try after 1 second
+                setTimeout(forceRemoveLoader, 1000);
                 
                 // Also try after 3 seconds
                 setTimeout(forceRemoveLoader, 3000);

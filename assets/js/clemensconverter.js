@@ -43,7 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeElements();
     setupEventListeners();
     loadSettings();
-    resumeJobs(); // Check for jobs in localStorage and resume polling
+    // Resume jobs asynchronously - don't await to avoid blocking initialization
+    resumeJobs().catch(error => {
+        console.error('[DOMContentLoaded] Error resuming jobs:', error);
+    });
 });
 
 function initializeElements() {
@@ -194,6 +197,11 @@ function generateFileId() {
 }
 
 function updateQueueDisplay() {
+    if (!elements.queueList) {
+        console.warn('[updateQueueDisplay] queueList element not found');
+        return;
+    }
+    
     elements.queueList.innerHTML = '';
     
     for (const [fileId, fileData] of state.files) {
@@ -818,9 +826,10 @@ function pollJobStatus(jobId, fileId) {
 /**
  * Resume jobs from localStorage (for page refresh)
  */
-function resumeJobs() {
+async function resumeJobs() {
     const jobKeys = Object.keys(localStorage).filter(key => key.startsWith('clemens-job-'));
     
+    // Process jobs sequentially to avoid race conditions
     for (const key of jobKeys) {
         try {
             const jobData = JSON.parse(localStorage.getItem(key));
@@ -931,7 +940,9 @@ function resumeJobs() {
     
     if (jobKeys.length > 0) {
         updateQueueDisplay();
-        elements.queueContainer.style.display = 'block';
+        if (elements.queueContainer) {
+            elements.queueContainer.style.display = 'block';
+        }
     }
 }
 
@@ -980,6 +991,11 @@ function showResult(fileId, fileData) {
         ` : ''}
     `;
 
+    if (!elements.resultsContainer) {
+        console.warn('[showResult] resultsContainer element not found');
+        return;
+    }
+    
     elements.resultsContainer.appendChild(resultDiv);
 }
 

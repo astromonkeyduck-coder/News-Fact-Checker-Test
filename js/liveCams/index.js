@@ -235,5 +235,6 @@ export class LiveCams {
 }
 
 // Export for use in Situation Monitor
-export { LiveCams };
+// Note: LiveCams is already exported as a named export above (export class LiveCams on line 53)
+// We also export as default for convenience
 export default LiveCams;

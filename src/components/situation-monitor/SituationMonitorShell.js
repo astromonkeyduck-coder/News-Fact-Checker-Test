@@ -316,6 +316,24 @@ export class SituationMonitorShell {
               }
             });
           }
+          
+          // Also aggressively remove any stuck loaders/overlays and placeholder
+          const stuckLoader = document.getElementById('nn-intel-loader');
+          if (stuckLoader) {
+            stuckLoader.style.display = 'none';
+            stuckLoader.style.visibility = 'hidden';
+            stuckLoader.style.opacity = '0';
+            stuckLoader.style.pointerEvents = 'none';
+            stuckLoader.style.zIndex = '-999999';
+          }
+          
+          const placeholder = document.getElementById('sitmon-loading-placeholder');
+          if (placeholder) {
+            placeholder.style.display = 'none';
+            placeholder.style.visibility = 'hidden';
+            placeholder.style.opacity = '0';
+          }
+          
           console.log('[SituationMonitorShell] ✅ Container and wrapper visibility forced after loader hide');
         } else {
           console.error('[SituationMonitorShell] ❌ Container not found after loader hide!');
@@ -679,42 +697,29 @@ export class SituationMonitorShell {
     try {
       // Dynamically import Live Cams module
       console.log('[SituationMonitorShell] Starting dynamic import...');
-      console.log('[SituationMonitorShell] Import path relative to:', window.location.href);
       
-      // Try multiple import paths in case one fails
+      // Use absolute path from site root (works regardless of current page location)
+      // The path /js/liveCams/index.js should work from any page
+      const importPath = '/js/liveCams/index.js';
+      console.log('[SituationMonitorShell] Using absolute import path:', importPath);
+      
       let module;
-      const importPaths = [
-        '../../../js/liveCams/index.js',
-        '/js/liveCams/index.js',
-        './js/liveCams/index.js'
-      ];
-      
-      let lastError;
-      for (const path of importPaths) {
-        try {
-          console.log('[SituationMonitorShell] Trying import path:', path);
-          module = await import(path);
-          console.log('[SituationMonitorShell] ✅ Import successful with path:', path);
-          break;
-        } catch (err) {
-          console.warn('[SituationMonitorShell] ❌ Import failed with path:', path, err.message);
-          lastError = err;
-          continue;
-        }
-      }
-      
-      if (!module) {
-        throw lastError || new Error('All import paths failed');
+      try {
+        module = await import(importPath);
+        console.log('[SituationMonitorShell] ✅ Import successful');
+      } catch (err) {
+        console.error('[SituationMonitorShell] ❌ Import failed:', err);
+        throw new Error(`Failed to import Live Cams module from ${importPath}: ${err.message}`);
       }
       
       console.log('[SituationMonitorShell] Module imported successfully:', Object.keys(module));
       
-      // Try named export first, then default export
-      let LiveCams = module.LiveCams || module.default;
+      // Try default export first (since we export default), then named export
+      let LiveCams = module.default || module.LiveCams;
       if (!LiveCams) {
         throw new Error('LiveCams class not found in module. Exported: ' + Object.keys(module).join(', '));
       }
-      console.log('[SituationMonitorShell] LiveCams class found:', typeof LiveCams);
+      console.log('[SituationMonitorShell] LiveCams class found:', typeof LiveCams, 'from', module.default ? 'default' : 'named export');
       
       console.log('[SituationMonitorShell] Creating LiveCams instance...');
       this.liveCams = new LiveCams(container, this.mapView);
