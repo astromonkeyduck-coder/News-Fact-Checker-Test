@@ -7,9 +7,29 @@
  * Security: Uses token-based authentication from get-upload-url.
  */
 
-const { getStore } = require("@netlify/blobs");
+// CRITICAL: Log immediately to verify function is loading
+console.log('[upload-blob] 🔄 Function module loading...');
+
+let getStore;
+try {
+  const blobs = require("@netlify/blobs");
+  getStore = blobs.getStore;
+  console.log('[upload-blob] ✅ @netlify/blobs loaded successfully');
+} catch (error) {
+  console.error('[upload-blob] ❌ Failed to load @netlify/blobs:', error);
+  // Continue anyway - will fail later with better error
+}
 
 exports.handler = async (event, context) => {
+  // CRITICAL: Log function invocation immediately
+  console.log('[upload-blob] 🚀 FUNCTION INVOKED', {
+    httpMethod: event.httpMethod,
+    hasBody: !!event.body,
+    bodyLength: event.body?.length || 0,
+    hasToken: !!event.queryStringParameters?.token,
+    timestamp: new Date().toISOString()
+  });
+
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Clems-Token",
@@ -19,6 +39,7 @@ exports.handler = async (event, context) => {
 
   // Handle CORS preflight
   if (event.httpMethod === "OPTIONS") {
+    console.log('[upload-blob] ⚙️ OPTIONS request - returning 204');
     return { statusCode: 204, headers };
   }
 
@@ -32,11 +53,31 @@ exports.handler = async (event, context) => {
   }
 
   try {
+    console.log('[upload-blob] 📋 Checking environment variables...');
+    console.log('[upload-blob] NETLIFY_SITE_ID:', process.env.NETLIFY_SITE_ID ? 'SET' : 'MISSING');
+    console.log('[upload-blob] NETLIFY_BLOB_READ_WRITE_TOKEN:', process.env.NETLIFY_BLOB_READ_WRITE_TOKEN ? 'SET' : 'MISSING');
+    
     if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_BLOB_READ_WRITE_TOKEN) {
+      console.error('[upload-blob] ❌ Blob storage not configured');
       return {
         statusCode: 500,
         headers,
-        body: JSON.stringify({ error: "Blob storage not configured" }),
+        body: JSON.stringify({ 
+          error: "Blob storage not configured",
+          hint: "Set NETLIFY_SITE_ID and NETLIFY_BLOB_READ_WRITE_TOKEN environment variables"
+        }),
+      };
+    }
+    
+    if (!getStore) {
+      console.error('[upload-blob] ❌ getStore function not available');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ 
+          error: "Blob storage module not loaded",
+          hint: "Check that @netlify/blobs is installed"
+        }),
       };
     }
 
