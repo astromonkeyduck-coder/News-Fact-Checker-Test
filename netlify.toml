@@ -8,8 +8,9 @@
 
 # Configure secrets scanning to allow Auth0 credentials in client-side code
 # Auth0 Client ID and Domain are meant to be public in SPA applications
+# R2_BUCKET is not a secret - it's just a bucket name (public configuration)
 [build.environment]
-  SECRETS_SCAN_OMIT_KEYS = "AUTH0_DOMAIN,AUTH0_CLIENT_ID"
+  SECRETS_SCAN_OMIT_KEYS = "AUTH0_DOMAIN,AUTH0_CLIENT_ID,R2_BUCKET"
   NODE_VERSION = "20"
   BUGSNAG_DISABLE_AUTOMATIC_REPORTING = "true"
 
