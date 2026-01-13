@@ -36,6 +36,8 @@ async function fetchFL511Cameras(params = {}) {
     
     const url = `${FL511_FEATURESERVER}/query?${queryParams.toString()}`;
     
+    console.log('[FL511] Fetching cameras from:', url);
+    
     const response = await fetch(url, {
       headers: {
         'Accept': 'application/json'
@@ -43,10 +45,14 @@ async function fetchFL511Cameras(params = {}) {
     });
     
     if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error('[FL511] API error:', response.status, response.statusText, errorText.substring(0, 200));
       throw new Error(`FL511 API error: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
+    
+    console.log('[FL511] Response features count:', data.features?.length || 0);
     
     if (!data.features || !Array.isArray(data.features)) {
       return [];

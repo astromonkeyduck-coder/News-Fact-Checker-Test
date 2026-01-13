@@ -93,11 +93,18 @@ export async function searchCameras(filters, signal = null) {
     console.log('[LiveCams API] Response data:', { 
       resultCount: data.results?.length || 0,
       hasResults: !!data.results,
-      error: data.error 
+      error: data.error,
+      fullResponse: data // Log full response for debugging
     });
     
     if (data.error) {
       console.error('[LiveCams API] API returned error:', data.error);
+    }
+    
+    // Check if results is actually an array
+    if (!Array.isArray(data.results)) {
+      console.error('[LiveCams API] Results is not an array:', typeof data.results, data.results);
+      return [];
     }
     
     return data.results || [];

@@ -577,6 +577,10 @@ body.situation-monitor-page main {
   grid-template-columns: 1fr 380px;
   gap: 1.5rem;
   margin-bottom: 2rem;
+  align-items: start; /* Align items to top, not stretch */
+  /* Ensure grid doesn't overflow */
+  min-height: 0;
+  max-height: clamp(420px, 55vh, 640px);
 }
 
 /* Map Card */
@@ -589,6 +593,9 @@ body.situation-monitor-page main {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  height: clamp(420px, 55vh, 640px); /* Match panels stack height */
+  min-height: 0;
+  max-height: clamp(420px, 55vh, 640px);
 }
 
 .sitmon-map-card .sitmon-card-body {
@@ -612,9 +619,11 @@ body.situation-monitor-page main {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  /* Don't constrain the stack itself - let individual panels handle scrolling */
-  max-height: none;
-  overflow: visible;
+  /* Match the map card height so panels stack properly */
+  height: clamp(420px, 55vh, 640px);
+  max-height: clamp(420px, 55vh, 640px);
+  min-height: 0;
+  overflow: visible; /* Don't scroll the container, let panels scroll */
 }
 
 /* Panel Card Base */
@@ -630,20 +639,21 @@ body.situation-monitor-page main {
   overflow: hidden;
   /* Default max height for panels */
   max-height: 400px;
-  min-height: 200px;
+  min-height: 0; /* Critical: allow flex children to shrink */
 }
 
 /* Panels in the stack should be smaller and scroll independently */
 .sitmon-panels-stack > .sitmon-panel-card {
-  max-height: 180px;
-  min-height: 150px;
-  flex-shrink: 0; /* Prevent panels from shrinking */
+  flex: 1 1 0; /* Equal distribution of space */
+  min-height: 0; /* Critical for flex shrinking */
+  max-height: none; /* Remove max-height constraint, let flex handle it */
 }
 
 /* Secondary grid panels can be taller */
 .sitmon-secondary-grid > .sitmon-panel-card {
   max-height: 500px;
   min-height: 300px;
+  flex-shrink: 0; /* Prevent secondary panels from shrinking */
 }
 
 .sitmon-panel-card:hover {
@@ -669,7 +679,7 @@ body.situation-monitor-page main {
 
 .sitmon-card-body {
   padding: 1.25rem;
-  flex: 1 1 auto; /* Allow body to grow and shrink */
+  flex: 1 1 0; /* Take available space, can shrink to 0 */
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0; /* Critical: allows flex child to shrink below content size */
@@ -679,6 +689,8 @@ body.situation-monitor-page main {
   /* Custom scrollbar styling */
   scrollbar-width: thin;
   scrollbar-color: rgba(74, 158, 255, 0.3) rgba(5, 15, 35, 0.5);
+  /* Prevent content from overflowing */
+  box-sizing: border-box;
 }
 
 /* Secondary Panels Grid */
@@ -686,8 +698,10 @@ body.situation-monitor-page main {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
+  align-items: start; /* Align items to top */
   /* Prevent grid from making page too tall */
-  max-height: none; /* Let individual panels handle scrolling */
+  min-height: 0;
+  /* Let individual panels handle scrolling, not the grid */
 }
 
 /* Panel Content Styles */

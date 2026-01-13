@@ -196,19 +196,28 @@ exports.handler = async (event, context) => {
     // Fetch from all providers in parallel (with timeout)
     const providerPromises = providers.map(async ({ name, fn }) => {
       try {
+        console.log(`[cams-search] Fetching from provider: ${name}`, providerParams);
         const timeout = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), 10000)
+          setTimeout(() => reject(new Error('Timeout')), 15000) // Increased timeout to 15s
         );
         const fetchPromise = fn(providerParams);
         const cameras = await Promise.race([fetchPromise, timeout]);
+        console.log(`[cams-search] Provider ${name} returned ${cameras.length} cameras`);
         return { name, cameras, error: null };
       } catch (error) {
-        console.error(`[cams-search] Provider ${name} error:`, error);
+        console.error(`[cams-search] Provider ${name} error:`, error.message, error.stack);
         return { name, cameras: [], error: error.message };
       }
     });
     
     const providerResults = await Promise.all(providerPromises);
+    
+    // Log provider results for debugging
+    console.log('[cams-search] Provider results:', providerResults.map(r => ({
+      name: r.name,
+      count: r.cameras.length,
+      error: r.error
+    })));
     
     // Merge and dedupe results
     let allCameras = [];
@@ -216,11 +225,18 @@ exports.handler = async (event, context) => {
     
     for (const result of providerResults) {
       stats[result.name] = result.cameras.length;
+      if (result.error) {
+        console.warn(`[cams-search] Provider ${result.name} had error: ${result.error}`);
+      }
       allCameras.push(...result.cameras);
     }
     
+    console.log('[cams-search] Total cameras before dedupe:', allCameras.length);
+    
     // Deduplicate
     const deduped = dedupeCameras(allCameras);
+    
+    console.log('[cams-search] Total cameras after dedupe:', deduped.length);
     
     // Apply filters
     let filtered = deduped;
@@ -255,6 +271,9 @@ exports.handler = async (event, context) => {
     const finalLimit = parseInt(limit, 10) || 200;
     const limited = filtered.slice(0, finalLimit);
     
+    console.log('[cams-search] Final filtered count:', limited.length);
+    console.log('[cams-search] Stats:', stats);
+    
     // Cache result
     const result = {
       results: limited,
@@ -264,6 +283,8 @@ exports.handler = async (event, context) => {
     };
     
     setCache(cacheKey, result, 'search');
+    
+    console.log('[cams-search] Returning result with', limited.length, 'cameras');
     
     return {
       statusCode: 200,

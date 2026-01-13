@@ -38,6 +38,8 @@ async function fetchWindyCameras(params = {}) {
     
     const url = `${WINDY_API_BASE}/list?${queryParams.toString()}`;
     
+    console.log('[Windy] Fetching cameras from:', url.replace(WINDY_API_KEY || '', '[KEY]'));
+    
     const response = await fetch(url, {
       headers: {
         'Accept': 'application/json'
@@ -45,14 +47,19 @@ async function fetchWindyCameras(params = {}) {
     });
     
     if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error('[Windy] API error:', response.status, response.statusText, errorText.substring(0, 200));
       throw new Error(`Windy API error: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
     
     if (!data.result || !data.result.webcams) {
+      console.warn('[Windy] No webcams in response:', data);
       return [];
     }
+    
+    console.log('[Windy] Found', data.result.webcams.length, 'webcams');
     
     // Transform Windy format to our schema
     const rawCameras = data.result.webcams.map(webcam => {
