@@ -202,14 +202,26 @@ exports.handler = async (event, context) => {
     }
 
     // Try R2 first (supports large files), fallback to Blobs (has size limits)
+    console.log('[get-upload-url] Checking R2 configuration...');
+    console.log('[get-upload-url] R2_ACCESS_KEY_ID:', process.env.R2_ACCESS_KEY_ID ? 'SET' : 'MISSING');
+    console.log('[get-upload-url] R2_SECRET_ACCESS_KEY:', process.env.R2_SECRET_ACCESS_KEY ? 'SET' : 'MISSING');
+    console.log('[get-upload-url] R2_BUCKET:', process.env.R2_BUCKET || 'MISSING');
+    console.log('[get-upload-url] R2_ENDPOINT:', process.env.R2_ENDPOINT || 'MISSING');
+    console.log('[get-upload-url] File size:', fileSize, 'bytes (', (fileSize / 1024 / 1024).toFixed(2), 'MB)');
+    
     let uploadInfo = await getR2UploadUrl(fileName, fileSize);
     
     if (!uploadInfo) {
       // Use Blobs fallback (warn if file is large)
-      if (fileSize > 5 * 1024 * 1024) {
-        console.warn('[get-upload-url] ⚠️ Large file using Blobs fallback - may hit function limits');
+      const fileSizeMB = fileSize / 1024 / 1024;
+      if (fileSizeMB > 5) {
+        console.error('[get-upload-url] ⚠️⚠️⚠️ CRITICAL: Large file (' + fileSizeMB.toFixed(2) + 'MB) using Blobs fallback');
+        console.error('[get-upload-url] ⚠️⚠️⚠️ This file will FAIL with 500 error due to Netlify 6MB function limit!');
+        console.error('[get-upload-url] ⚠️⚠️⚠️ SOLUTION: Configure R2 environment variables to enable direct uploads');
       }
       uploadInfo = await getBlobUploadUrl(fileName, fileSize);
+    } else {
+      console.log('[get-upload-url] ✅ Using R2 for upload (no size limits)');
     }
 
     return {
