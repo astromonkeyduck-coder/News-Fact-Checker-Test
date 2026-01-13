@@ -210,6 +210,17 @@ function createLoaderDOM() {
       <div class="nn-il-text-stream" id="nn-il-text-stream" aria-live="polite" role="log"></div>
     </div>
     
+    <!-- Close Button (Top Right) -->
+    <button 
+      id="nn-il-close-btn" 
+      class="nn-il-close-btn" 
+      aria-label="Skip loading animation"
+      title="Skip loading animation"
+      style="position: absolute; top: 1rem; right: 1rem; width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(34, 211, 238, 0.4); background: rgba(0, 0, 0, 0.5); color: #22d3ee; font-size: 24px; line-height: 1; cursor: pointer; z-index: 10001; display: flex; align-items: center; justify-content: center; transition: all 0.2s; backdrop-filter: blur(4px);"
+    >
+      ×
+    </button>
+    
     <!-- Central Orb (Off-Center, 4+ Layers) -->
     <div class="nn-il-core">
       <!-- Layer 1: Outer Segmented Ring (12 segments, slowest) -->
@@ -279,6 +290,23 @@ function createLoaderDOM() {
   `;
   
   document.body.appendChild(loaderElement);
+  
+  // Add close button handler
+  const closeBtn = loaderElement.querySelector('#nn-il-close-btn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      console.log('[IntelLoader] Close button clicked - forcing hide');
+      hideLoader();
+    });
+    closeBtn.addEventListener('mouseenter', () => {
+      closeBtn.style.background = 'rgba(34, 211, 238, 0.2)';
+      closeBtn.style.borderColor = 'rgba(34, 211, 238, 0.8)';
+    });
+    closeBtn.addEventListener('mouseleave', () => {
+      closeBtn.style.background = 'rgba(0, 0, 0, 0.5)';
+      closeBtn.style.borderColor = 'rgba(34, 211, 238, 0.4)';
+    });
+  }
   
   // Segments are no longer needed - removed to prevent spinning appearance
   // generateSubsystemSegments(); // Disabled

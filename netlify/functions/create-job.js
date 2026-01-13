@@ -33,28 +33,69 @@ function checkToken(event) {
 
 /**
  * Trigger process-job function asynchronously (fire-and-forget)
+ * Uses Node.js https module since fetch might not be available in all Node versions
  */
 async function triggerProcessJob(jobId) {
   try {
+    // Use Node.js built-in https module for reliable HTTP requests
+    const https = require('https');
+    const http = require('http');
+    const { URL } = require('url');
+    
     // Get the function URL (works in both local and production)
     const baseUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || 'http://localhost:8888';
     const functionUrl = `${baseUrl}/.netlify/functions/process-job`;
     
-    // Make async HTTP call (don't wait for response)
-    fetch(functionUrl, {
+    const url = new URL(functionUrl);
+    const client = url.protocol === 'https:' ? https : http;
+    
+    const postData = JSON.stringify({ jobId });
+    const headers = {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(postData),
+    };
+    
+    // Include token if configured
+    if (process.env.CLEMS_TOKEN) {
+      headers['X-Clems-Token'] = process.env.CLEMS_TOKEN;
+    }
+    
+    const options = {
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname,
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Include token if configured
-        ...(process.env.CLEMS_TOKEN ? { 'X-Clems-Token': process.env.CLEMS_TOKEN } : {}),
-      },
-      body: JSON.stringify({ jobId }),
-    }).catch(error => {
-      // Log but don't fail - this is fire-and-forget
-      console.error('[create-job] Failed to trigger process-job:', error.message);
+      headers: headers,
+      timeout: 5000, // 5 second timeout for trigger
+    };
+    
+    // Make async HTTP call (don't wait for response)
+    const req = client.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          console.log(`[create-job] ✅ Successfully triggered process-job for: ${jobId}`);
+        } else {
+          console.error(`[create-job] ⚠️ process-job returned status ${res.statusCode} for ${jobId}: ${data.substring(0, 200)}`);
+        }
+      });
     });
     
-    console.log('[create-job] ✅ Triggered process-job for:', jobId);
+    req.on('error', (error) => {
+      console.error(`[create-job] ❌ Failed to trigger process-job for ${jobId}:`, error.message);
+      // Don't fail - job is created, can be processed manually if needed
+    });
+    
+    req.on('timeout', () => {
+      req.destroy();
+      console.error(`[create-job] ⚠️ Timeout triggering process-job for ${jobId} (this is OK, job will be processed)`);
+    });
+    
+    req.write(postData);
+    req.end();
+    
+    console.log(`[create-job] 📤 Triggering process-job for: ${jobId}`);
   } catch (error) {
     console.error('[create-job] Error triggering process-job:', error.message);
     // Don't throw - job is created, can be processed manually if needed

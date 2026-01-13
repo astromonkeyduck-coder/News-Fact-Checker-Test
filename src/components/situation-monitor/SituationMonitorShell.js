@@ -614,22 +614,34 @@ export class SituationMonitorShell {
     // Live Cams tab button
     const liveCamsTab = document.getElementById('sitmon-tab-livecams');
     if (liveCamsTab) {
-      liveCamsTab.addEventListener('click', () => {
+      console.log('[SituationMonitorShell] Live Cams button found, attaching click handler');
+      liveCamsTab.addEventListener('click', (e) => {
+        console.log('[SituationMonitorShell] Live Cams button clicked');
+        e.preventDefault();
+        e.stopPropagation();
         this.toggleLiveCams();
       });
+    } else {
+      console.warn('[SituationMonitorShell] Live Cams button NOT FOUND - button may not be in DOM');
     }
   }
   
   async toggleLiveCams() {
+    console.log('[SituationMonitorShell] toggleLiveCams() called');
     const liveCamsPanel = document.getElementById('sitmon-panel-livecams');
     const liveCamsTab = document.getElementById('sitmon-tab-livecams');
     
-    if (!liveCamsPanel) return;
+    if (!liveCamsPanel) {
+      console.error('[SituationMonitorShell] Live Cams panel NOT FOUND in DOM');
+      return;
+    }
     
     const isVisible = liveCamsPanel.style.display !== 'none';
+    console.log('[SituationMonitorShell] Live Cams panel visible:', isVisible);
     
     if (!isVisible) {
       // Show Live Cams panel
+      console.log('[SituationMonitorShell] Showing Live Cams panel...');
       liveCamsPanel.style.display = 'block';
       if (liveCamsTab) {
         liveCamsTab.classList.add('active');
@@ -637,10 +649,14 @@ export class SituationMonitorShell {
       
       // Initialize Live Cams if not already initialized
       if (!this.liveCams) {
+        console.log('[SituationMonitorShell] Initializing Live Cams...');
         await this.initLiveCams();
+      } else {
+        console.log('[SituationMonitorShell] Live Cams already initialized');
       }
     } else {
       // Hide Live Cams panel
+      console.log('[SituationMonitorShell] Hiding Live Cams panel');
       liveCamsPanel.style.display = 'none';
       if (liveCamsTab) {
         liveCamsTab.classList.remove('active');
@@ -649,20 +665,87 @@ export class SituationMonitorShell {
   }
   
   async initLiveCams() {
+    console.log('[SituationMonitorShell] initLiveCams() called');
     const container = document.getElementById('sitmon-panel-livecams-body');
-    if (!container) return;
+    if (!container) {
+      console.error('[SituationMonitorShell] Live Cams container not found');
+      return;
+    }
+    
+    console.log('[SituationMonitorShell] Container found, attempting to import Live Cams module...');
+    console.log('[SituationMonitorShell] Import path: ../../../js/liveCams/index.js');
+    console.log('[SituationMonitorShell] Current file location: src/components/situation-monitor/SituationMonitorShell.js');
     
     try {
       // Dynamically import Live Cams module
-      const { LiveCams } = await import('../../../js/liveCams/index.js');
+      console.log('[SituationMonitorShell] Starting dynamic import...');
+      console.log('[SituationMonitorShell] Import path relative to:', window.location.href);
+      
+      // Try multiple import paths in case one fails
+      let module;
+      const importPaths = [
+        '../../../js/liveCams/index.js',
+        '/js/liveCams/index.js',
+        './js/liveCams/index.js'
+      ];
+      
+      let lastError;
+      for (const path of importPaths) {
+        try {
+          console.log('[SituationMonitorShell] Trying import path:', path);
+          module = await import(path);
+          console.log('[SituationMonitorShell] ✅ Import successful with path:', path);
+          break;
+        } catch (err) {
+          console.warn('[SituationMonitorShell] ❌ Import failed with path:', path, err.message);
+          lastError = err;
+          continue;
+        }
+      }
+      
+      if (!module) {
+        throw lastError || new Error('All import paths failed');
+      }
+      
+      console.log('[SituationMonitorShell] Module imported successfully:', Object.keys(module));
+      
+      // Try named export first, then default export
+      let LiveCams = module.LiveCams || module.default;
+      if (!LiveCams) {
+        throw new Error('LiveCams class not found in module. Exported: ' + Object.keys(module).join(', '));
+      }
+      console.log('[SituationMonitorShell] LiveCams class found:', typeof LiveCams);
+      
+      console.log('[SituationMonitorShell] Creating LiveCams instance...');
       this.liveCams = new LiveCams(container, this.mapView);
+      console.log('[SituationMonitorShell] LiveCams instance created, calling init()...');
       
       // Await initialization to ensure UI is fully loaded before showing panel
       // This prevents blank/partially-loaded UI when panel is first displayed
       await this.liveCams.init();
+      console.log('[SituationMonitorShell] ✅ Live Cams initialized successfully');
     } catch (error) {
-      console.error('[SituationMonitorShell] Error initializing Live Cams:', error);
-      this.showToast('Failed to load Live Cams', 'error');
+      console.error('[SituationMonitorShell] ❌ Error initializing Live Cams:', error);
+      console.error('[SituationMonitorShell] Error name:', error.name);
+      console.error('[SituationMonitorShell] Error message:', error.message);
+      console.error('[SituationMonitorShell] Error stack:', error.stack);
+      
+      // Try to get more details about the error
+      if (error.message && error.message.includes('Failed to fetch')) {
+        console.error('[SituationMonitorShell] This looks like a module loading error - check import path');
+      }
+      
+      this.showToast('Failed to load Live Cams: ' + (error.message || 'Unknown error'), 'error');
+      
+      // Show error in container
+      container.innerHTML = `
+        <div style="padding: 2rem; text-align: center; color: #ff6b6b;">
+          <h3>Live Cams Failed to Load</h3>
+          <p>${error.message || 'Unknown error'}</p>
+          <p style="font-size: 0.85rem; color: #888; margin-top: 1rem;">Check browser console for details</p>
+          <p style="font-size: 0.75rem; color: #666; margin-top: 0.5rem;">Error: ${error.name || 'Error'}</p>
+        </div>
+      `;
     }
   }
   

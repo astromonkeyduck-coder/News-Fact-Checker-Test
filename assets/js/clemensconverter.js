@@ -220,7 +220,7 @@ function createFileItem(fileId, fileData) {
             <div class="file-info">
                 <div class="file-name">${escapeHtml(fileData.fileName)}</div>
                 <div class="file-meta">
-                    <span>${formatFileSize(fileData.fileSize)}</span>
+                    <span>${fileData.fileSize > 0 ? formatFileSize(fileData.fileSize) : 'Large file'}</span>
                     <span class="file-status ${statusClass}">
                         ${(fileData.status === 'transcribing' || fileData.status === 'processing' || fileData.status === 'finalizing') ? '<span class="spinner"></span> ' : ''}
                         ${statusText}
@@ -264,9 +264,29 @@ function escapeHtml(text) {
 
 // Global functions for inline event handlers
 window.removeFile = (fileId) => {
-    if (state.files.get(fileId)?.status === 'queued') {
+    const fileData = state.files.get(fileId);
+    if (!fileData) return;
+    
+    // Allow removal of queued or error files
+    // Don't allow removal of files that are actively processing
+    if (fileData.status === 'queued' || fileData.status === 'error') {
+        // If it's a job-based file, stop polling
+        if (fileData.jobId && state.activeJobs.has(fileData.jobId)) {
+            const jobInfo = state.activeJobs.get(fileData.jobId);
+            if (jobInfo?.pollInterval) {
+                clearInterval(jobInfo.pollInterval);
+            }
+            state.activeJobs.delete(fileData.jobId);
+            // Decrement activeProcessing if it was a job-based file
+            // (jobs don't increment activeProcessing, but we need to ensure queue continues)
+        }
+        
         state.files.delete(fileId);
         updateQueueDisplay();
+        
+        // Continue processing queue if there are files waiting
+        processQueue();
+        
         if (state.files.size === 0) {
             elements.queueContainer.style.display = 'none';
         }
@@ -302,7 +322,10 @@ async function processQueue() {
 
     for (const fileId of toProcess) {
         state.activeProcessing++;
-        processFile(fileId).finally(() => {
+        processFile(fileId).catch(error => {
+            // Log error but don't re-throw - error handling is in processFile()
+            console.error(`[processQueue] Error processing file ${fileId}:`, error);
+        }).finally(() => {
             // Only decrement if this wasn't a job-based file
             // Job-based files will decrement when the job completes
             const fileData = state.files.get(fileId);
@@ -312,7 +335,12 @@ async function processQueue() {
             }
             // If it's a job-based file, activeProcessing will be decremented
             // when the job completes in pollJobStatus()
-            processQueue(); // Process next in queue
+            
+            // Always continue queue processing, even on errors
+            // Use setTimeout to ensure this happens after state updates
+            setTimeout(() => {
+                processQueue();
+            }, 50);
         });
     }
 }
@@ -419,6 +447,13 @@ async function processFile(fileId) {
         fileData.error = errorMessage;
         fileData.progress = 0;
         updateQueueDisplay();
+        
+        // Ensure queue continues processing after error
+        // The finally block will also call processQueue(), but this ensures it happens
+        // even if there's an issue with the finally block
+        setTimeout(() => {
+            processQueue();
+        }, 100);
     }
 }
 
@@ -463,17 +498,25 @@ async function uploadFile(file, uploadInfo) {
         // Direct upload to R2 using presigned URL (bypasses Netlify Function limits)
         console.log('[uploadFile] Uploading directly to R2:', uploadInfo.uploadUrl.substring(0, 50) + '...');
         
-        const response = await fetch(uploadInfo.uploadUrl, {
-            method: 'PUT',
-            body: file,
-            headers: {
-                'Content-Type': uploadInfo.headers['Content-Type'] || 'audio/mpeg',
-            },
-        });
+        try {
+            const response = await fetch(uploadInfo.uploadUrl, {
+                method: 'PUT',
+                body: file,
+                headers: {
+                    'Content-Type': uploadInfo.headers['Content-Type'] || 'audio/mpeg',
+                },
+            });
 
-        if (!response.ok) {
-            const errorText = await response.text().catch(() => 'Unknown error');
-            throw new Error(`R2 upload failed (${response.status}): ${errorText.substring(0, 200)}`);
+            if (!response.ok) {
+                const errorText = await response.text().catch(() => 'Unknown error');
+                throw new Error(`R2 upload failed (${response.status}): ${errorText.substring(0, 200)}`);
+            }
+        } catch (error) {
+            // CORS errors throw TypeError: Failed to fetch before we get a response
+            if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                throw new Error(`CORS error: R2 bucket needs CORS configuration. Origin: ${window.location.origin}. See R2_CORS_FIX_NOW.md for setup instructions.`);
+            }
+            throw error; // Re-throw other errors
         }
 
         // R2 PUT requests return empty body (204) or minimal response on success
@@ -557,6 +600,11 @@ async function transcribeFromUrl(objectKey, storageType, language, includeTimest
     });
 
     if (!response.ok) {
+        // Handle 504 Gateway Timeout specifically
+        if (response.status === 504) {
+            throw new Error('Transcription timed out. The file may be too large for direct processing. Try using a smaller file or contact support if this persists.');
+        }
+        
         const error = await response.json().catch(() => ({ error: 'Unknown error' }));
         
         // Provide helpful message for 401 errors
@@ -570,7 +618,7 @@ async function transcribeFromUrl(objectKey, storageType, language, includeTimest
             }
         }
         
-        throw new Error(error.error || 'Transcription failed');
+        throw new Error(error.error || `Transcription failed (${response.status})`);
     }
 
     return await response.json();
@@ -795,18 +843,81 @@ function resumeJobs() {
             } else {
                 // File not in state, create a placeholder entry
                 // Use the original fileId from jobData to maintain consistency
-                state.files.set(fileId, {
-                    id: fileId,
-                    fileName: fileName,
-                    fileSize: 0,
-                    status: 'processing',
-                    progress: 0,
-                    error: null,
-                    transcript: null,
-                    objectKey: null,
-                    jobId: jobId,
-                    isLargeFile: true,
-                });
+                // Fetch job status to get file size and other details
+                try {
+                    const statusUrl = `${CONFIG.apiBase}/job-status?jobId=${encodeURIComponent(jobId)}`;
+                    const statusResponse = await fetch(statusUrl, {
+                        method: 'GET',
+                        headers: getAuthHeaders(),
+                    });
+                    
+                    if (statusResponse.ok) {
+                        const jobStatus = await statusResponse.json();
+                        state.files.set(fileId, {
+                            id: fileId,
+                            fileName: fileName,
+                            fileSize: 0, // File size not available from job status, but we'll show the filename
+                            status: jobStatus.status === 'queued' ? 'processing' : jobStatus.status,
+                            progress: jobStatus.progress || 0,
+                            error: jobStatus.errorMessage || null,
+                            transcript: null,
+                            objectKey: null,
+                            jobId: jobId,
+                            isLargeFile: true,
+                        });
+                        
+                        // If job is still queued, try to trigger it
+                        if (jobStatus.status === 'queued') {
+                            console.log(`[resumeJobs] Job ${jobId} is still queued, attempting to trigger...`);
+                            // Try to trigger the job manually (fire-and-forget)
+                            fetch(`${CONFIG.apiBase}/trigger-job`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    ...getAuthHeaders(),
+                                },
+                                body: JSON.stringify({ jobId }),
+                            }).then(response => {
+                                if (response.ok) {
+                                    console.log(`[resumeJobs] ✅ Successfully triggered job ${jobId}`);
+                                } else {
+                                    console.error(`[resumeJobs] ⚠️ Failed to trigger job ${jobId}: ${response.status}`);
+                                }
+                            }).catch(err => {
+                                console.error(`[resumeJobs] ❌ Error triggering job ${jobId}:`, err);
+                            });
+                        }
+                    } else {
+                        // Fallback: create placeholder without job status
+                        state.files.set(fileId, {
+                            id: fileId,
+                            fileName: fileName,
+                            fileSize: 0,
+                            status: 'processing',
+                            progress: 0,
+                            error: null,
+                            transcript: null,
+                            objectKey: null,
+                            jobId: jobId,
+                            isLargeFile: true,
+                        });
+                    }
+                } catch (error) {
+                    console.error(`[resumeJobs] Error fetching job status for ${jobId}:`, error);
+                    // Fallback: create placeholder
+                    state.files.set(fileId, {
+                        id: fileId,
+                        fileName: fileName,
+                        fileSize: 0,
+                        status: 'processing',
+                        progress: 0,
+                        error: null,
+                        transcript: null,
+                        objectKey: null,
+                        jobId: jobId,
+                        isLargeFile: true,
+                    });
+                }
                 
                 // Resume polling
                 pollJobStatus(jobId, fileId);
@@ -929,7 +1040,7 @@ window.downloadPdf = async (fileId) => {
         const { PDFDocument, rgb, StandardFonts } = PDFLib;
         
         const pdfDoc = await PDFDocument.create();
-        const page = pdfDoc.addPage([612, 792]); // US Letter size
+        let page = pdfDoc.addPage([612, 792]); // US Letter size (let, not const, for page reassignment)
         const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
         const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 

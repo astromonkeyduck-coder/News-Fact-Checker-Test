@@ -168,6 +168,39 @@
   font-weight: 600;
 }
 
+/* Close Button */
+.nn-il-close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid rgba(34, 211, 238, 0.4);
+  background: rgba(0, 0, 0, 0.5);
+  color: #22d3ee;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  backdrop-filter: blur(4px);
+  font-family: Arial, sans-serif;
+}
+
+.nn-il-close-btn:hover {
+  background: rgba(34, 211, 238, 0.2);
+  border-color: rgba(34, 211, 238, 0.8);
+  transform: scale(1.1);
+}
+
+.nn-il-close-btn:active {
+  transform: scale(0.95);
+}
+
 /* ============================================
    LEFT COLUMN (Subsystems + Text)
    ============================================ */

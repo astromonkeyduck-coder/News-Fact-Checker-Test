@@ -205,16 +205,27 @@ export class LiveCams {
       
       // If city is provided but no bbox, try to geocode
       if (filters.city && !filters.bbox) {
-        const bbox = await geocodeLocation(filters.city);
-        if (bbox) {
-          filters.bbox = bbox;
+        try {
+          const bbox = await geocodeLocation(filters.city);
+          if (bbox) {
+            filters.bbox = bbox;
+          }
+        } catch (geocodeError) {
+          console.warn('[LiveCams] Geocoding failed, continuing without bbox:', geocodeError);
+          // Continue search without bbox
         }
       }
       
       const results = await searchCameras(filters, signal);
       this.state.setResults(results);
+      console.log(`[LiveCams] Search completed: ${results.length} cameras found`);
     } catch (error) {
       console.error('[LiveCams] Search error:', error);
+      console.error('[LiveCams] Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       this.state.setError(error.message || 'Failed to search cameras');
       this.state.setResults([]);
     } finally {
@@ -224,4 +235,5 @@ export class LiveCams {
 }
 
 // Export for use in Situation Monitor
+export { LiveCams };
 export default LiveCams;

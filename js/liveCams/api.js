@@ -30,9 +30,14 @@ async function getCamsToken() {
       const data = await response.json();
       camsToken = data.token;
       return camsToken;
+    } else {
+      // If token endpoint returns error, log it but continue (development mode allows requests without token)
+      console.warn('[LiveCams API] CAMS_TOKEN endpoint returned:', response.status, response.statusText);
+      console.warn('[LiveCams API] Continuing without token (development mode)');
     }
   } catch (error) {
-    console.error('[LiveCams API] Failed to fetch CAMS_TOKEN:', error);
+    console.warn('[LiveCams API] Failed to fetch CAMS_TOKEN (continuing without token):', error.message);
+    // Don't throw - allow requests to proceed without token (development mode)
   }
   
   return null;

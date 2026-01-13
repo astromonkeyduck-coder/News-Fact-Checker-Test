@@ -100,22 +100,43 @@
         </div>
         <div id="situation-monitor-container" style="position: relative; z-index: 1; display: block !important; visibility: visible !important; opacity: 1 !important;"></div>
         
-        <!-- CRITICAL: Fallback to ensure container is visible after 10 seconds -->
+        <!-- CRITICAL: Aggressive fallback to remove stuck loader/overlays -->
         <script>
             (function() {
-                setTimeout(function() {
+                function forceRemoveLoader() {
                     // Force hide loader if it's still visible
                     const loader = document.getElementById('nn-intel-loader');
                     if (loader) {
+                        console.warn('[SituationMonitor] Force-removing stuck loader');
                         loader.style.display = 'none';
                         loader.style.visibility = 'hidden';
                         loader.style.opacity = '0';
                         loader.style.zIndex = '-999999';
                         loader.style.pointerEvents = 'none';
+                        // Try to call hideLoader if available
+                        if (window.hideLoader && typeof window.hideLoader === 'function') {
+                            try {
+                                window.hideLoader();
+                            } catch (e) {
+                                // Ignore
+                            }
+                        }
                         if (loader.parentNode) {
                             loader.parentNode.removeChild(loader);
                         }
                     }
+                    
+                    // Remove any other blocking overlays with high z-index
+                    const blockingElements = document.querySelectorAll('[style*="z-index: 99999"], [style*="z-index: 999999"], [class*="overlay"][style*="position: fixed"]');
+                    blockingElements.forEach(el => {
+                        const rect = el.getBoundingClientRect();
+                        if (rect.width >= window.innerWidth * 0.9 && rect.height >= window.innerHeight * 0.9) {
+                            console.warn('[SituationMonitor] Removing blocking overlay:', el);
+                            el.style.display = 'none';
+                            el.style.pointerEvents = 'none';
+                            el.style.zIndex = '-999999';
+                        }
+                    });
                     
                     // Force show container
                     const container = document.getElementById('situation-monitor-container');
@@ -126,11 +147,22 @@
                         container.style.zIndex = '1';
                     }
                     
-                    // Restore body overflow
+                    // Restore body
                     document.body.style.overflow = '';
-                    
+                    document.body.style.pointerEvents = 'auto';
+                }
+                
+                // Try immediately (in case loader is already stuck)
+                setTimeout(forceRemoveLoader, 100);
+                
+                // Also try after 3 seconds
+                setTimeout(forceRemoveLoader, 3000);
+                
+                // Final fallback after 10 seconds
+                setTimeout(function() {
+                    forceRemoveLoader();
                     console.log('[SituationMonitor] Fallback: Forced container visibility after 10s');
-                }, 10000); // 10 second fallback
+                }, 10000);
             })();
         </script>
     </main>

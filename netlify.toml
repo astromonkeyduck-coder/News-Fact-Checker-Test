@@ -95,6 +95,12 @@
   force = false
 
 [[redirects]]
+  from = "/api/trigger-job"
+  to = "/.netlify/functions/trigger-job"
+  status = 200
+  force = false
+
+[[redirects]]
   from = "/api/cams/search"
   to = "/.netlify/functions/cams-search"
   status = 200
@@ -130,6 +136,10 @@
 [functions."process-job"]
   node_bundler = "zisi"  # Use zisi to handle native ffmpeg-static binary
   included_files = ["node_modules/ffmpeg-static/**"]
+
+# Configure transcribe-from-url with longer timeout for large files
+[functions."transcribe-from-url"]
+  timeout = 26  # Maximum timeout for Netlify Functions (26 seconds for Pro, 10 for free)
 
 # Configure functions that use native modules (@resvg/resvg-js)
 # These functions need native .node binaries which esbuild can't bundle
