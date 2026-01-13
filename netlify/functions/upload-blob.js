@@ -45,12 +45,15 @@ exports.handler = async (event, context) => {
 
   // Only allow POST
   if (event.httpMethod !== "POST") {
+    console.log('[upload-blob] ⚠️ Wrong method:', event.httpMethod, '- expected POST');
     return {
       statusCode: 405,
       headers,
       body: JSON.stringify({ error: "Method not allowed" }),
     };
   }
+  
+  console.log('[upload-blob] ✅ POST request received');
 
   try {
     console.log('[upload-blob] 📋 Checking environment variables...');

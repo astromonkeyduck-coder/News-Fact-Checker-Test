@@ -6,6 +6,7 @@
 // Configuration
 const CONFIG = {
     maxFileSize: 25 * 1024 * 1024, // 25MB (OpenAI Whisper limit)
+    maxUploadSize: 5 * 1024 * 1024, // 5MB (Netlify Function body limit - files larger need chunking or R2)
     maxConcurrent: 2,
     apiBase: '/api',
     retryAttempts: 3,
@@ -151,10 +152,16 @@ function addFiles(files) {
             continue;
         }
 
-        // Validate file size
+        // Validate file size (OpenAI limit)
         if (file.size > CONFIG.maxFileSize) {
-            showError(`Skipped ${file.name}: File too large (max ${CONFIG.maxFileSize / 1024 / 1024}MB)`);
+            showError(`Skipped ${file.name}: File too large (max ${CONFIG.maxFileSize / 1024 / 1024}MB for OpenAI Whisper)`);
             continue;
+        }
+
+        // Warn about Netlify Function upload limit
+        if (file.size > CONFIG.maxUploadSize) {
+            showError(`Warning: ${file.name} is ${(file.size / 1024 / 1024).toFixed(1)}MB. Files over ${CONFIG.maxUploadSize / 1024 / 1024}MB may fail due to Netlify Function limits. Consider using R2 storage or chunking.`);
+            // Continue anyway - let it try, but user is warned
         }
 
         const fileId = generateFileId();
