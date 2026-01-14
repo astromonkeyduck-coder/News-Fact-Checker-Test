@@ -17,7 +17,8 @@ const supabase = require('./lib/supabaseClient');
 const OpenAI = require("openai");
 const { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { spawn } = require('child_process');
-const fs = require('fs').promises;
+const fs = require('fs');
+const fsPromises = require('fs').promises;
 const path = require('path');
 const os = require('os');
 
@@ -198,7 +199,7 @@ async function normalizeAudio(inputPath, outputPath) {
  */
 async function segmentAudio(inputPath, chunksDir, chunkDuration = 600) {
   // Create chunks directory
-  await fs.mkdir(chunksDir, { recursive: true });
+  await fsPromises.mkdir(chunksDir, { recursive: true });
 
   // Segment with overlap: 10 min chunks, 2 second overlap
   // We'll create overlapping segments manually to ensure proper boundaries
@@ -228,7 +229,7 @@ async function segmentAudio(inputPath, chunksDir, chunkDuration = 600) {
   ]);
 
   // List chunk files
-  const files = await fs.readdir(chunksDir);
+  const files = await fsPromises.readdir(chunksDir);
   const chunkFiles = files
     .filter(f => f.startsWith('chunk') && f.endsWith('.mp3'))
     .sort()
@@ -240,8 +241,9 @@ async function segmentAudio(inputPath, chunksDir, chunkDuration = 600) {
 
 /**
  * Transcribe audio chunk with OpenAI Whisper
+ * Uses fs.createReadStream for reliable file handling in Node.js
  */
-async function transcribeChunk(chunkBuffer, language = null, includeTimestamps = false, retries = 2) {
+async function transcribeChunk(chunkPath, language = null, includeTimestamps = false, retries = 2) {
   const openaiApiKey = process.env.OPENAI_API_KEY;
   if (!openaiApiKey) {
     throw new Error("OpenAI API key not configured");
@@ -249,22 +251,14 @@ async function transcribeChunk(chunkBuffer, language = null, includeTimestamps =
 
   const openai = new OpenAI({ apiKey: openaiApiKey });
 
-  // Create File object for OpenAI
-  let audioFile;
-  if (typeof File !== "undefined") {
-    audioFile = new File([chunkBuffer], "chunk.mp3", { type: "audio/mpeg" });
-  } else {
-    const { Readable } = require("stream");
-    const stream = Readable.from([chunkBuffer]);
-    audioFile = Object.assign(stream, {
-      name: "chunk.mp3",
-      type: "audio/mpeg",
-      size: chunkBuffer.length,
-      [Symbol.toStringTag]: "File",
-    });
-  }
+  // Get file stats for logging
+  const stats = await fsPromises.stat(chunkPath);
+  console.log(`[process-job] Transcribing chunk: ${chunkPath} (${(stats.size / 1024 / 1024).toFixed(2)} MB)`);
 
   for (let attempt = 0; attempt <= retries; attempt++) {
+    // Create a fresh stream for each attempt (streams can only be read once)
+    const audioFile = fs.createReadStream(chunkPath);
+    
     try {
       const transcription = await openai.audio.transcriptions.create({
         file: audioFile,
@@ -274,14 +268,20 @@ async function transcribeChunk(chunkBuffer, language = null, includeTimestamps =
         timestamp_granularities: includeTimestamps ? ["segment"] : undefined,
       });
 
+      console.log(`[process-job] ✅ Chunk transcribed successfully (attempt ${attempt + 1})`);
       return transcription;
     } catch (error) {
+      console.error(`[process-job] ❌ Chunk transcription attempt ${attempt + 1}/${retries + 1} failed:`, error.message);
+      if (error.response) {
+        console.error(`[process-job] OpenAI API error details:`, JSON.stringify(error.response.data || error.response.status, null, 2));
+      }
+      
       if (attempt === retries) {
-        throw error;
+        throw new Error(`Failed to transcribe chunk after ${retries + 1} attempts: ${error.message}`);
       }
       // Exponential backoff
       const delay = Math.pow(2, attempt) * 1000;
-      console.log(`[process-job] Chunk transcription failed, retrying in ${delay}ms...`);
+      console.log(`[process-job] Retrying in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
@@ -388,7 +388,7 @@ async function processJob(jobId) {
     }
 
     // Create temp directory
-    await fs.mkdir(tmpDir, { recursive: true });
+    await fsPromises.mkdir(tmpDir, { recursive: true });
     const inputPath = path.join(tmpDir, 'input.mp3');
     const normalizedPath = path.join(tmpDir, 'normalized.mp3');
     const chunksDir = path.join(tmpDir, 'chunks');
@@ -396,7 +396,7 @@ async function processJob(jobId) {
     // Step 1: Download audio from R2
     console.log(`[process-job] Downloading from R2: ${job.r2_key}`);
     const audioBuffer = await downloadFromR2(job.r2_key);
-    await fs.writeFile(inputPath, audioBuffer);
+    await fsPromises.writeFile(inputPath, audioBuffer);
 
     // Step 2: Normalize audio
     console.log(`[process-job] Normalizing audio...`);
@@ -418,24 +418,33 @@ async function processJob(jobId) {
     
     for (let i = 0; i < chunkFiles.length; i++) {
       const chunkPath = chunkFiles[i];
-      console.log(`[process-job] Transcribing chunk ${i + 1}/${chunksTotal}...`);
+      const chunkIndex = i + 1;
+      console.log(`[process-job] 📝 Transcribing chunk ${chunkIndex}/${chunksTotal}: ${chunkPath}`);
       
-      const chunkBuffer = await fs.readFile(chunkPath);
-      const transcription = await transcribeChunk(
-        chunkBuffer,
-        job.language,
-        job.include_timestamps
-      );
-      
-      chunkResults.push(transcription);
-      
-      // Update progress
-      const chunksDone = i + 1;
-      const progress = Math.round((chunksDone / chunksTotal) * 100);
-      await updateJobProgress(jobId, {
-        chunks_done: chunksDone,
-        progress: progress,
-      });
+      try {
+        const transcription = await transcribeChunk(
+          chunkPath,
+          job.language,
+          job.include_timestamps
+        );
+        
+        chunkResults.push(transcription);
+        console.log(`[process-job] ✅ Chunk ${chunkIndex}/${chunksTotal} completed`);
+        
+        // Update progress
+        const chunksDone = chunkIndex;
+        const progress = Math.round((chunksDone / chunksTotal) * 100);
+        await updateJobProgress(jobId, {
+          chunks_done: chunksDone,
+          progress: progress,
+        });
+        console.log(`[process-job] 📊 Progress updated: ${chunksDone}/${chunksTotal} (${progress}%)`);
+      } catch (error) {
+        console.error(`[process-job] ❌ Failed to transcribe chunk ${chunkIndex}/${chunksTotal}:`, error);
+        // Update job with error but continue to next chunk (or fail fast - your choice)
+        // For now, we'll fail the whole job if any chunk fails
+        throw new Error(`Chunk ${chunkIndex} transcription failed: ${error.message}`);
+      }
     }
 
     // Step 5: Merge transcripts
@@ -475,23 +484,34 @@ async function processJob(jobId) {
 
   } catch (error) {
     console.error(`[process-job] ❌ Job failed: ${jobId}`, error);
+    console.error(`[process-job] Error stack:`, error.stack);
     
-    // Update job with error
-    await updateJobProgress(jobId, {
-      status: 'error',
-      error_message: error.message,
-    });
+    // Update job with error (try-catch to ensure we don't fail on update)
+    try {
+      await updateJobProgress(jobId, {
+        status: 'error',
+        error_message: error.message || 'Unknown error occurred',
+      });
+      console.log(`[process-job] ✅ Updated job status to 'error' in Supabase`);
+    } catch (updateError) {
+      console.error(`[process-job] ⚠️ Failed to update job status in Supabase:`, updateError.message);
+    }
     
     throw error;
   } finally {
     // Cleanup temp files
     try {
-      await fs.rm(tmpDir, { recursive: true, force: true });
+      await fsPromises.rm(tmpDir, { recursive: true, force: true });
     } catch (cleanupError) {
       console.error(`[process-job] Cleanup error (non-fatal):`, cleanupError.message);
     }
   }
 }
+
+// Configure as background function for longer execution time (up to 15 minutes)
+exports.config = {
+  background: true,
+};
 
 exports.handler = async (event, context) => {
   const headers = {
@@ -546,18 +566,38 @@ exports.handler = async (event, context) => {
     // Process job (this may take a long time for large files)
     // Note: Netlify Functions have timeout limits, but we'll process as much as possible
     // If timeout occurs, job will remain in "processing" state and can be retried
-    await processJob(jobId);
-
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        message: "Job processing completed",
-        jobId: jobId,
-      }),
-    };
+    try {
+      await processJob(jobId);
+      
+      console.log(`[process-job] ✅ Job ${jobId} completed successfully`);
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          message: "Job processing completed",
+          jobId: jobId,
+        }),
+      };
+    } catch (processError) {
+      // processJob already updates the job status, but log here too
+      console.error(`[process-job] ❌ Job ${jobId} processing failed:`, processError.message);
+      console.error(`[process-job] Error stack:`, processError.stack);
+      
+      // Return 200 to acknowledge the function was invoked (job status is updated in DB)
+      // This prevents Netlify from retrying the function call
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ 
+          message: "Job processing failed",
+          jobId: jobId,
+          error: processError.message,
+        }),
+      };
+    }
   } catch (error) {
-    console.error("[process-job] Error:", error.message);
+    console.error("[process-job] Handler error:", error.message);
+    console.error("[process-job] Error stack:", error.stack);
     return {
       statusCode: 500,
       headers,

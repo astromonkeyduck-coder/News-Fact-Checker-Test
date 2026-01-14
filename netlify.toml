@@ -139,9 +139,11 @@
   directory = "netlify/functions"
 
 # Configure process-job as background function (longer timeout for ffmpeg processing)
+# Background functions can run up to 15 minutes (vs 26 seconds for regular functions)
 [functions."process-job"]
   node_bundler = "zisi"  # Use zisi to handle native ffmpeg-static binary
   included_files = ["node_modules/ffmpeg-static/**"]
+  # Note: Background function configuration is also in the function file itself (exports.config)
 
 # Configure transcribe-from-url with longer timeout for large files
 [functions."transcribe-from-url"]
