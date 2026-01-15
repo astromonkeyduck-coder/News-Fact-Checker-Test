@@ -202,6 +202,12 @@ function addFiles(files) {
         }
 
         const fileId = generateFileId();
+        // Create blob URL for audio playback (if it's an audio file)
+        let audioUrl = null;
+        if (file.type.startsWith('audio/') || file.name.match(/\.(mp3|webm|wav|ogg|m4a)$/i)) {
+            audioUrl = URL.createObjectURL(file);
+        }
+        
         state.files.set(fileId, {
             id: fileId,
             file: file,
@@ -214,6 +220,7 @@ function addFiles(files) {
             objectKey: null,
             jobId: null, // For large files using job-based workflow
             isLargeFile: file.size > CONFIG.maxFileSize, // >25MB requires job-based processing
+            audioUrl: audioUrl, // Store blob URL for playback
         });
 
         validFiles.push(fileId);
@@ -789,11 +796,25 @@ function pollJobStatus(jobId, fileId) {
                         const transcriptResponse = await fetch(jobStatus.transcriptUrl);
                         const transcriptText = await transcriptResponse.text();
                         
+                        // Try to fetch JSON transcript with segments if available
+                        let segments = null;
+                        if (jobStatus.transcriptJsonUrl) {
+                            try {
+                                const jsonResponse = await fetch(jobStatus.transcriptJsonUrl);
+                                const jsonData = await jsonResponse.json();
+                                segments = jsonData.segments || null;
+                            } catch (jsonError) {
+                                console.warn(`[pollJobStatus] Could not fetch JSON transcript:`, jsonError);
+                                // Continue without segments
+                            }
+                        }
+                        
                         fileData.transcript = {
                             transcriptText: transcriptText,
                             fileName: jobStatus.filename,
                             modelUsed: 'whisper-1',
                             language: jobStatus.language || 'auto',
+                            segments: segments,
                         };
                     } catch (fetchError) {
                         console.error(`[pollJobStatus] Error fetching transcript:`, fetchError);
@@ -1000,6 +1021,16 @@ function showResult(fileId, fileData) {
     const transcript = fileData.transcript;
     const transcriptText = transcript.transcriptText || '';
     const isCollapsed = transcriptText.length > 500;
+    const hasSegments = transcript.segments && Array.isArray(transcript.segments) && transcript.segments.length > 0;
+    const hasAudio = fileData.audioUrl !== null;
+
+    // Build transcript HTML with word-level highlighting if segments available
+    let transcriptHTML = '';
+    if (hasSegments) {
+        transcriptHTML = buildHighlightedTranscript(transcript.segments, transcriptText);
+    } else {
+        transcriptHTML = escapeHtml(transcriptText);
+    }
 
     resultDiv.innerHTML = `
         <div class="result-header">
@@ -1010,8 +1041,29 @@ function showResult(fileId, fileData) {
                 <button class="btn btn-download-pdf" onclick="downloadPdf('${fileId}')">Download PDF</button>
             </div>
         </div>
+        ${hasAudio ? `
+            <div class="audio-player-container" id="audioPlayer-${fileId}">
+                <audio id="audio-${fileId}" preload="metadata">
+                    <source src="${fileData.audioUrl}" type="${fileData.file?.type || 'audio/webm'}">
+                </audio>
+                <div class="audio-controls">
+                    <button class="btn-audio-play" id="playBtn-${fileId}" onclick="toggleAudioPlayback('${fileId}')">
+                        <span class="play-icon">▶</span>
+                        <span class="pause-icon" style="display: none;">⏸</span>
+                    </button>
+                    <div class="audio-progress-container">
+                        <div class="audio-progress-bar" id="progressBar-${fileId}" onclick="seekAudio('${fileId}', event)">
+                            <div class="audio-progress-fill" id="progressFill-${fileId}"></div>
+                        </div>
+                        <div class="audio-time">
+                            <span id="currentTime-${fileId}">0:00</span> / <span id="duration-${fileId}">0:00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        ` : ''}
         <div class="transcript-preview ${isCollapsed ? 'collapsed' : ''}" id="preview-${fileId}">
-            ${escapeHtml(transcriptText)}
+            ${transcriptHTML}
         </div>
         ${isCollapsed ? `
             <button class="toggle-preview" onclick="togglePreview('${fileId}')">Show more</button>
@@ -1031,7 +1083,181 @@ function showResult(fileId, fileData) {
     }
     
     elements.resultsContainer.appendChild(resultDiv);
+
+    // Set up audio player if audio is available
+    if (hasAudio) {
+        setupAudioPlayer(fileId, fileData, hasSegments);
+    }
 }
+
+/**
+ * Build highlighted transcript HTML with segment-level timestamps
+ * Each segment gets wrapped with timing data for synchronized highlighting
+ */
+function buildHighlightedTranscript(segments, transcriptText) {
+    // Build transcript by mapping segments to their text
+    let result = '';
+    let textIndex = 0;
+    
+    segments.forEach((segment, segIndex) => {
+        const segmentText = segment.text.trim();
+        const segmentStart = segment.start;
+        const segmentEnd = segment.end;
+        
+        // Split segment into words for word-level highlighting
+        const words = segmentText.split(/(\s+)/);
+        const wordCount = words.filter(w => w.trim()).length;
+        const wordDuration = wordCount > 0 ? (segmentEnd - segmentStart) / wordCount : 0;
+        
+        let wordIndex = 0;
+        words.forEach((word, wordPos) => {
+            if (!word.trim()) {
+                // Preserve whitespace
+                result += word;
+            } else {
+                // Calculate word timing within segment
+                const wordStart = segmentStart + (wordIndex * wordDuration);
+                const wordEnd = segmentStart + ((wordIndex + 1) * wordDuration);
+                
+                result += `<span class="transcript-word" data-start="${wordStart.toFixed(2)}" data-end="${wordEnd.toFixed(2)}">${escapeHtml(word)}</span>`;
+                wordIndex++;
+            }
+        });
+        
+        // Add space between segments (except last)
+        if (segIndex < segments.length - 1) {
+            result += ' ';
+        }
+    });
+    
+    return result;
+}
+
+/**
+ * Set up audio player with synchronized highlighting
+ */
+function setupAudioPlayer(fileId, fileData, hasSegments) {
+    const audio = document.getElementById(`audio-${fileId}`);
+    if (!audio) return;
+
+    const playBtn = document.getElementById(`playBtn-${fileId}`);
+    const progressFill = document.getElementById(`progressFill-${fileId}`);
+    const currentTimeEl = document.getElementById(`currentTime-${fileId}`);
+    const durationEl = document.getElementById(`duration-${fileId}`);
+    const preview = document.getElementById(`preview-${fileId}`);
+
+    // Update duration when metadata loads
+    audio.addEventListener('loadedmetadata', () => {
+        if (durationEl) {
+            durationEl.textContent = formatTime(audio.duration);
+        }
+    });
+
+    // Update progress bar
+    audio.addEventListener('timeupdate', () => {
+        if (audio.duration) {
+            const progress = (audio.currentTime / audio.duration) * 100;
+            if (progressFill) {
+                progressFill.style.width = `${progress}%`;
+            }
+            if (currentTimeEl) {
+                currentTimeEl.textContent = formatTime(audio.currentTime);
+            }
+
+            // Highlight words if segments are available
+            if (hasSegments && preview) {
+                highlightWordsAtTime(preview, audio.currentTime);
+            }
+        }
+    });
+
+    // Update play/pause button
+    audio.addEventListener('play', () => {
+        if (playBtn) {
+            playBtn.querySelector('.play-icon').style.display = 'none';
+            playBtn.querySelector('.pause-icon').style.display = 'inline';
+        }
+    });
+
+    audio.addEventListener('pause', () => {
+        if (playBtn) {
+            playBtn.querySelector('.play-icon').style.display = 'inline';
+            playBtn.querySelector('.pause-icon').style.display = 'none';
+        }
+    });
+
+    // Scroll highlighted word into view
+    audio.addEventListener('timeupdate', () => {
+        if (hasSegments && preview) {
+            const highlightedWord = preview.querySelector('.transcript-word.highlighted');
+            if (highlightedWord) {
+                highlightedWord.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    });
+}
+
+/**
+ * Highlight words at current playback time
+ */
+function highlightWordsAtTime(container, currentTime) {
+    const words = container.querySelectorAll('.transcript-word');
+    
+    words.forEach(word => {
+        const start = parseFloat(word.dataset.start);
+        const end = parseFloat(word.dataset.end);
+        
+        // Remove previous highlight
+        word.classList.remove('highlighted', 'highlighted-past');
+        
+        // Highlight current word
+        if (currentTime >= start && currentTime <= end) {
+            word.classList.add('highlighted');
+        } else if (currentTime > end) {
+            word.classList.add('highlighted-past');
+        }
+    });
+}
+
+/**
+ * Format time in MM:SS format
+ */
+function formatTime(seconds) {
+    if (isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Toggle audio playback
+ */
+window.toggleAudioPlayback = (fileId) => {
+    const audio = document.getElementById(`audio-${fileId}`);
+    if (!audio) return;
+
+    if (audio.paused) {
+        audio.play();
+    } else {
+        audio.pause();
+    }
+};
+
+/**
+ * Seek audio to clicked position
+ */
+window.seekAudio = (fileId, event) => {
+    const audio = document.getElementById(`audio-${fileId}`);
+    const progressBar = document.getElementById(`progressBar-${fileId}`);
+    if (!audio || !progressBar) return;
+
+    const rect = progressBar.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const percentage = x / rect.width;
+    const newTime = percentage * audio.duration;
+
+    audio.currentTime = newTime;
+};
 
 window.togglePreview = (fileId) => {
     const preview = document.getElementById(`preview-${fileId}`);
@@ -1292,6 +1518,9 @@ async function startRecording() {
                 lastModified: Date.now(),
             });
 
+            // Create blob URL for playback
+            const audioUrl = URL.createObjectURL(audioBlob);
+
             // Stop all tracks
             state.recording.stream.getTracks().forEach(track => track.stop());
 
@@ -1311,8 +1540,21 @@ async function startRecording() {
             // Update UI
             updateRecordingUI(false);
 
-            // Add to file queue
-            addFiles([audioFile]);
+            // Add to file queue with audio URL
+            const fileId = generateFileId();
+            const fileData = {
+                fileId: fileId,
+                file: audioFile,
+                fileName: fileName,
+                fileSize: audioBlob.size,
+                status: 'queued',
+                progress: 0,
+                transcript: null,
+                audioUrl: audioUrl, // Store blob URL for playback
+            };
+            state.files.set(fileId, fileData);
+            updateQueueDisplay();
+            processQueue();
             showNotification('Recording saved! Added to queue.');
         };
 
