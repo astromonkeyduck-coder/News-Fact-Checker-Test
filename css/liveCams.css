@@ -22,6 +22,7 @@
   flex-direction: column;
   width: 100vw;
   height: 100vh;
+  overflow: hidden; /* Prevent body scroll */
 }
 
 .livecams-container:fullscreen .livecams-layout {
@@ -29,6 +30,28 @@
   height: calc(100vh - 140px);
   max-height: calc(100vh - 140px);
   min-height: 0;
+  overflow: hidden; /* Prevent layout scroll */
+}
+
+.livecams-container:fullscreen .livecams-left-panel {
+  overflow-y: auto !important; /* Enable scrolling in left panel */
+  overflow-x: hidden;
+  height: 100%;
+  max-height: 100%;
+}
+
+.livecams-container:fullscreen .livecams-grid-container {
+  overflow-y: auto !important; /* Enable scrolling in grid container */
+  overflow-x: hidden;
+  flex: 1;
+  min-height: 0;
+  max-height: 100%;
+}
+
+.livecams-container:fullscreen .livecams-grid {
+  overflow: visible; /* Let parent handle scrolling */
+  max-height: none; /* Remove height constraint */
+  padding-bottom: 2rem; /* Extra bottom padding for last row visibility */
 }
 
 .livecams-container:fullscreen .livecams-view-panel {
@@ -36,6 +59,7 @@
   max-height: 100%;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
 .livecams-container:fullscreen .livecams-grid-view {
@@ -561,12 +585,13 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  overflow-y: auto;
+  overflow: hidden; /* Let children handle scrolling */
   background: linear-gradient(135deg, rgba(5, 15, 35, 0.85) 0%, rgba(7, 21, 42, 0.85) 100%);
   border: 1px solid rgba(34, 211, 238, 0.2);
   border-radius: 16px;
   padding: 1rem;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  min-height: 0; /* Critical for flex scrolling */
 }
 
 .livecams-watchlist-container,
@@ -579,7 +604,10 @@
 .livecams-grid-container {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
+  max-height: 100%;
+  position: relative;
 }
 
 /* Watchlist */
@@ -745,8 +773,12 @@
 /* Camera Grid */
 .livecams-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr); /* 3 cameras per row - scrollable grid */
   gap: 0.75rem;
+  padding: 0.5rem;
+  padding-bottom: 1rem; /* Extra padding at bottom for last row */
+  overflow: visible; /* Let parent container handle scrolling */
+  min-height: min-content; /* Allow grid to grow with content */
 }
 
 .livecams-card {

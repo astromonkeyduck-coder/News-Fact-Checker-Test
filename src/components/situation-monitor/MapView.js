@@ -145,7 +145,7 @@ export class MapView {
       
       if (window.topojson && window.topojson.feature) {
         if (topojson.objects && topojson.objects.countries) {
-          this.worldData = window.topojson.feature(topojson, topojson.objects.countries);
+        this.worldData = window.topojson.feature(topojson, topojson.objects.countries);
           console.log('[MapView] World map data loaded successfully, features:', this.worldData.features?.length || 0);
         } else {
           const objectKeys = Object.keys(topojson.objects || {});
@@ -267,7 +267,7 @@ export class MapView {
 
     const g = this.svg.append('g').attr('class', 'countries');
 
-    g.selectAll('path')
+      g.selectAll('path')
       .data(this.worldData.features)
       .enter()
       .append('path')
@@ -329,7 +329,7 @@ export class MapView {
   updateEvents(events) {
     this.events = events || [];
     if (this.svg && this.projection) {
-      this.renderEvents();
+    this.renderEvents();
     }
   }
   
@@ -558,7 +558,7 @@ export class MapView {
       this.moveTooltip(event);
     }, 100);
   }
-
+  
   moveTooltip(event) {
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
@@ -658,7 +658,7 @@ export class MapView {
     }
     this.earthquakeTimeouts.clear();
   }
-
+  
   destroy() {
     this.clearEarthquakeTimeouts();
     

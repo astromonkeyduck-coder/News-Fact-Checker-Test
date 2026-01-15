@@ -431,9 +431,10 @@ async function processFile(fileId) {
         const language = elements.languageSelect.value || null;
         const includeTimestamps = elements.includeTimestamps.checked;
 
-        // Check if this is a large file (>25MB) that needs job-based processing
-        if (fileData.isLargeFile && uploadInfo.storageType === 'r2') {
-            // Use job-based workflow for large files
+        // Use job-based workflow for R2 uploads (R2 is for files that need chunking/processing)
+        // OR for files >25MB (even if using blobs fallback)
+        if (uploadInfo.storageType === 'r2' || fileData.isLargeFile) {
+            // Use job-based workflow for R2 files or large files
             // Keep progress at 30% (upload complete) - don't regress
             fileData.status = 'processing';
             fileData.progress = 30; // Maintain progress from upload step
@@ -463,26 +464,60 @@ async function processFile(fileId) {
             // Start polling job status (this will add to activeJobs)
             pollJobStatus(jobResult.jobId, fileId);
         } else {
-            // Use direct transcription for small files
+            // Use direct transcription for small files (only for blob uploads, not R2)
             fileData.status = 'transcribing';
             fileData.progress = 50;
             updateQueueDisplay();
 
-            const transcript = await transcribeFromUrl(
-                uploadResult.objectKey,
-                uploadInfo.storageType || 'blobs',
-                language,
-                includeTimestamps
-            );
+            try {
+                const transcript = await transcribeFromUrl(
+                    uploadResult.objectKey,
+                    uploadInfo.storageType || 'blobs',
+                    language,
+                    includeTimestamps
+                );
 
-            // Step 4: Complete
-            fileData.status = 'done';
-            fileData.progress = 100;
-            fileData.transcript = transcript;
-            updateQueueDisplay();
+                // Step 4: Complete
+                fileData.status = 'done';
+                fileData.progress = 100;
+                fileData.transcript = transcript;
+                updateQueueDisplay();
 
-            // Show result
-            showResult(fileId, fileData);
+                // Show result
+                showResult(fileId, fileData);
+            } catch (transcribeError) {
+                // If direct transcription times out, fall back to job-based workflow
+                if (transcribeError.message.includes('timed out') || transcribeError.message.includes('504')) {
+                    console.log(`[processFile] Direct transcription timed out for ${fileData.fileName}, falling back to job-based workflow`);
+                    
+                    // Switch to job-based workflow
+                    fileData.status = 'processing';
+                    fileData.progress = 30;
+                    updateQueueDisplay();
+
+                    const jobResult = await createJob(
+                        uploadResult.objectKey,
+                        fileData.fileName,
+                        language,
+                        includeTimestamps
+                    );
+
+                    fileData.jobId = jobResult.jobId;
+                    
+                    const jobData = {
+                        jobId: jobResult.jobId,
+                        fileId: fileId,
+                        fileName: fileData.fileName,
+                    };
+                    localStorage.setItem(`clemens-job-${jobResult.jobId}`, JSON.stringify(jobData));
+
+                    state.activeProcessing--;
+                    pollJobStatus(jobResult.jobId, fileId);
+                } else {
+                    // Re-throw other errors
+                    throw transcribeError;
+                }
+            }
         }
 
     } catch (error) {
@@ -665,7 +700,7 @@ async function transcribeFromUrl(objectKey, storageType, language, includeTimest
     if (!response.ok) {
         // Handle 504 Gateway Timeout specifically
         if (response.status === 504) {
-            throw new Error('Transcription timed out. The file may be too large for direct processing. Try using a smaller file or contact support if this persists.');
+            throw new Error('Transcription timed out. The file is being processed using the job-based workflow instead.');
         }
         
         const error = await response.json().catch(() => ({ error: 'Unknown error' }));

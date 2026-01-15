@@ -860,8 +860,8 @@ export class SituationMonitorShell {
         const deltaY = currentY - startY;
         
         // Calculate new height with min/max constraints
-        // Minimum: 200px, Maximum: 90vh or 2500px (whichever is smaller)
-        const minHeight = 200;
+        // Minimum: 320px, Maximum: 90vh or 2500px (whichever is smaller)
+        const minHeight = 320;
         const maxHeight = Math.min(window.innerHeight * 0.9, 2500);
         const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
         
@@ -871,6 +871,10 @@ export class SituationMonitorShell {
         panel.style.flexShrink = '0';
         panel.style.flexGrow = '0';
         panel.style.flexBasis = 'auto';
+        
+        // Prevent default to avoid scrolling
+        e.preventDefault();
+        e.stopPropagation();
         
         // Update handle position indicator
         const percent = ((newHeight - minHeight) / (maxHeight - minHeight)) * 100;
@@ -899,20 +903,21 @@ export class SituationMonitorShell {
         }
       };
       
-      // Mouse events
-      handle.addEventListener('mousedown', startResize);
-      document.addEventListener('mousemove', doResize);
-      document.addEventListener('mouseup', stopResize);
+      // Mouse events - use capture phase to ensure we catch events
+      handle.addEventListener('mousedown', startResize, true);
+      document.addEventListener('mousemove', doResize, true);
+      document.addEventListener('mouseup', stopResize, true);
       
       // Touch events
-      handle.addEventListener('touchstart', startResize, { passive: false });
+      handle.addEventListener('touchstart', startResize, { passive: false, capture: true });
       document.addEventListener('touchmove', (e) => {
         if (isResizing) {
           e.preventDefault();
+          e.stopPropagation();
           doResize(e);
         }
-      }, { passive: false });
-      document.addEventListener('touchend', stopResize);
+      }, { passive: false, capture: true });
+      document.addEventListener('touchend', stopResize, true);
     });
   }
   

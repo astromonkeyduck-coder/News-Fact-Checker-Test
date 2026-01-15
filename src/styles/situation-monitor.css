@@ -706,6 +706,8 @@ body.situation-monitor-page main {
   top: 16px;
   right: 16px;
   width: 320px;
+  max-height: calc(100% - 32px); /* Ensure it doesn't overflow map container */
+  overflow: visible; /* Allow internal scrolling */
 }
 
 .sitmon-hud-card {
@@ -717,6 +719,9 @@ body.situation-monitor-page main {
   overflow: hidden;
   transition: all 0.3s ease;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
 }
 
 .sitmon-hud-card::before {
@@ -786,6 +791,15 @@ body.situation-monitor-page main {
   padding: 1rem;
   max-height: 400px;
   overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Ensure live feed body is properly contained */
+.sitmon-hud-body.sitmon-feed-list {
+  max-height: 300px;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 }
 
 /* Stats */
@@ -889,6 +903,9 @@ body.situation-monitor-page main {
 .sitmon-feed-list {
   max-height: 300px;
   padding: 0;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  position: relative;
 }
 
 .sitmon-feed-item {
@@ -1176,12 +1193,9 @@ body.situation-monitor-page main {
   display: flex !important;
   flex-direction: column !important;
   position: relative; /* Required for absolute positioned resize handle */
-  min-height: 200px; /* Minimum height for panels */
   overflow: hidden !important;
-  position: relative;
   z-index: 1;
   max-height: 800px;
-  min-height: 0;
   isolation: isolate;
   contain: layout style paint;
   width: 100%;
@@ -1257,8 +1271,8 @@ body.situation-monitor-page main {
 
 /* Secondary grid panels can be taller - DOUBLED */
 .sitmon-secondary-grid > .sitmon-panel-card {
-  max-height: 2000px !important; /* Increased max height for resizing - allows up to 2000px */
-  min-height: 200px !important; /* Minimum height for resizing */
+  max-height: 1000px !important; /* Set max height so scrolling works - DOUBLED */
+  min-height: 640px !important; /* DOUBLED from 320px - RESTORED ORIGINAL SIZE */
   height: auto !important;
   flex-shrink: 0 !important; /* Prevent secondary panels from shrinking */
   position: relative;
@@ -1273,7 +1287,7 @@ body.situation-monitor-page main {
 /* Override constraints when panel is manually resized */
 .sitmon-secondary-grid > .sitmon-panel-card[style*="height"] {
   max-height: none !important; /* Allow resizing beyond default max */
-  min-height: 200px !important; /* Keep minimum */
+  min-height: 320px !important; /* Keep reasonable minimum */
 }
 
 /* Ensure card body in secondary grid can scroll */
