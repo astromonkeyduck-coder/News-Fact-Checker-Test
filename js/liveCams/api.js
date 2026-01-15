@@ -154,6 +154,7 @@ export async function loadImageWithAuth(imgEl, proxyUrl, fallbackUrl = null, { c
   if (!imgEl || !proxyUrl) return;
   
   const requestUrl = cacheBust ? addCacheBust(proxyUrl) : proxyUrl;
+  const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Crect fill='%23111' width='200' height='150'/%3E%3Ctext fill='%23555' x='50%25' y='50%25' text-anchor='middle' dy='.3em' font-size='14'%3ENo Image%3C/text%3E%3C/svg%3E";
   
   // Revoke previous object URL to avoid leaks
   if (imgEl.dataset.objectUrl) {
@@ -173,7 +174,13 @@ export async function loadImageWithAuth(imgEl, proxyUrl, fallbackUrl = null, { c
     imgEl.dataset.loaded = 'true';
   } catch (error) {
     if (fallbackUrl) {
+      imgEl.onerror = () => {
+        imgEl.src = placeholder;
+        imgEl.onerror = null;
+      };
       imgEl.src = cacheBust ? addCacheBust(fallbackUrl) : fallbackUrl;
+    } else {
+      imgEl.src = placeholder;
     }
   }
 }

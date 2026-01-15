@@ -83,6 +83,7 @@ function initializeElements() {
     elements.stopBtn = document.getElementById('stopBtn');
     elements.recordingStatus = document.getElementById('recordingStatus');
     elements.recordingTimer = document.getElementById('recordingTimer');
+    elements.recordingSize = document.getElementById('recordingSize');
     elements.waveformContainer = document.getElementById('waveformContainer');
     elements.waveformCanvas = document.getElementById('waveformCanvas');
     elements.levelBar = document.getElementById('levelBar');
@@ -1685,6 +1686,8 @@ async function startRecording() {
         mediaRecorder.ondataavailable = (event) => {
             if (event.data.size > 0) {
                 state.recording.audioChunks.push(event.data);
+                // Update file size display
+                updateRecordingSize();
             }
         };
 
@@ -1777,7 +1780,26 @@ function startRecordingTimer() {
             const seconds = (elapsed % 60).toString().padStart(2, '0');
             elements.recordingTimer.textContent = `${minutes}:${seconds}`;
         }
+        // Update file size periodically
+        updateRecordingSize();
     }, 100);
+}
+
+/**
+ * Update recording file size display
+ */
+function updateRecordingSize() {
+    if (!elements.recordingSize || !state.recording.isRecording) return;
+
+    // Calculate total size from all chunks
+    let totalSize = 0;
+    if (state.recording.audioChunks && state.recording.audioChunks.length > 0) {
+        totalSize = state.recording.audioChunks.reduce((sum, chunk) => sum + chunk.size, 0);
+    }
+
+    // Format as MB
+    const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+    elements.recordingSize.textContent = `${sizeMB} MB`;
 }
 
 function updateRecordingUI(isRecording) {
@@ -1797,6 +1819,9 @@ function updateRecordingUI(isRecording) {
         }
         if (elements.recordingTimer) {
             elements.recordingTimer.textContent = '00:00';
+        }
+        if (elements.recordingSize) {
+            elements.recordingSize.textContent = '0 MB';
         }
         // Clear canvas
         if (elements.waveformCanvas) {

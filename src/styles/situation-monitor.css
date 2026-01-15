@@ -668,6 +668,8 @@ body.situation-monitor-page main {
   min-height: 0;
   overflow: visible; /* Don't scroll the container, let panels scroll */
   isolation: isolate; /* Create new stacking context */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Panel Card Base */
@@ -678,36 +680,68 @@ body.situation-monitor-page main {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
   position: relative;
   z-index: 1;
   /* Default max height for panels */
   max-height: 400px;
   min-height: 0; /* Critical: allow flex children to shrink */
   isolation: isolate; /* Create new stacking context */
+  /* Ensure panels don't overlap */
+  contain: layout style paint;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Panels in the stack should be smaller and scroll independently */
 .sitmon-panels-stack > .sitmon-panel-card {
-  flex: 1 1 0; /* Equal distribution of space */
-  min-height: 0; /* Critical for flex shrinking */
-  max-height: none; /* Remove max-height constraint, let flex handle it */
+  flex: 1 1 0 !important; /* Equal distribution of space */
+  min-height: 0 !important; /* Critical for flex shrinking */
+  max-height: none !important; /* Remove max-height constraint, let flex handle it */
+  height: 100% !important; /* Fill available space in stack */
   position: relative;
   z-index: 1;
   isolation: isolate; /* Create new stacking context */
+  overflow: hidden !important;
+  contain: layout style paint;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Ensure card body in stacked panels can scroll */
+.sitmon-panels-stack > .sitmon-panel-card > .sitmon-card-body {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 }
 
 /* Secondary grid panels can be taller */
 .sitmon-secondary-grid > .sitmon-panel-card {
-  max-height: none;
-  min-height: 320px;
-  height: auto;
-  flex-shrink: 0; /* Prevent secondary panels from shrinking */
+  max-height: 500px !important; /* Set max height so scrolling works */
+  min-height: 320px !important;
+  height: auto !important;
+  flex-shrink: 0 !important; /* Prevent secondary panels from shrinking */
   position: relative;
   z-index: 1;
   isolation: isolate; /* Create new stacking context */
+  overflow: hidden !important;
+  contain: layout style paint;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Ensure card body in secondary grid can scroll */
+.sitmon-secondary-grid > .sitmon-panel-card > .sitmon-card-body {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: 100% !important;
 }
 
 .sitmon-panel-card:hover {
@@ -719,9 +753,11 @@ body.situation-monitor-page main {
   padding: 1rem 1.25rem;
   background: rgba(7, 21, 42, 0.5);
   border-bottom: 1px solid rgba(74, 158, 255, 0.2);
-  flex-shrink: 0;
+  flex-shrink: 0 !important;
   position: relative;
   z-index: 2; /* Above the ::before hover effect */
+  min-height: auto !important;
+  height: auto !important;
 }
 
 .sitmon-card-title {
@@ -735,15 +771,16 @@ body.situation-monitor-page main {
 
 .sitmon-card-body {
   padding: 1.25rem;
-  flex: 1 1 0; /* Take available space, can shrink to 0 */
-  overflow-y: auto;
-  overflow-x: hidden;
-  min-height: 0; /* Critical: allows flex child to shrink below content size */
-  max-height: 100%;
-  min-width: 0;
+  flex: 1 1 0 !important; /* Take available space, can shrink to 0 */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 0 !important; /* Critical: allows flex child to shrink below content size */
+  max-height: none !important; /* Remove max-height constraint */
+  height: auto !important; /* Let content determine height, but constrained by parent */
+  min-width: 0 !important;
   line-height: 1.5;
   word-break: break-word;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   position: relative;
   z-index: 1;
   /* Smooth scrolling */
@@ -754,6 +791,9 @@ body.situation-monitor-page main {
   /* Prevent content from overflowing */
   box-sizing: border-box;
   isolation: isolate; /* Create new stacking context */
+  /* Ensure content is contained */
+  contain: layout style paint;
+  width: 100%;
 }
 
 /* Secondary Panels Grid */
@@ -761,7 +801,7 @@ body.situation-monitor-page main {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
-  align-items: stretch; /* Keep cards aligned and prevent overlap */
+  align-items: start !important; /* Align to top, not stretch */
   align-content: start;
   grid-auto-rows: minmax(320px, auto);
   position: relative;
@@ -770,6 +810,8 @@ body.situation-monitor-page main {
   min-height: 0;
   /* Let individual panels handle scrolling, not the grid */
   isolation: isolate; /* Create new stacking context */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Panel Content Styles */
@@ -876,6 +918,9 @@ body.situation-monitor-page main {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .sitmon-news-item {
@@ -884,6 +929,12 @@ body.situation-monitor-page main {
   border-radius: 8px;
   border-left: 3px solid rgba(74, 158, 255, 0.5);
   transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  overflow: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .sitmon-news-item:hover {
@@ -978,6 +1029,18 @@ body.situation-monitor-page main {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.sitmon-alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .sitmon-earthquake-item {
@@ -985,6 +1048,12 @@ body.situation-monitor-page main {
   background: rgba(7, 21, 42, 0.3);
   border-radius: 8px;
   border-left: 3px solid #ff6b6b;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  flex-shrink: 0;
 }
 
 .sitmon-earthquake-header {
@@ -1083,6 +1152,12 @@ body.situation-monitor-page main {
   background: rgba(7, 21, 42, 0.3);
   border-radius: 8px;
   border-left: 3px solid;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  flex-shrink: 0;
 }
 
 .sitmon-alert-extreme {
@@ -1901,7 +1976,12 @@ body.situation-monitor-page ol,
   z-index: 1;
   isolation: isolate; /* Create new stacking context */
   contain: layout style paint; /* Improve performance and prevent overflow */
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .sitmon-news-item:hover,
@@ -1912,7 +1992,7 @@ body.situation-monitor-page ol,
 .sitmon-correlation-item:hover,
 .sitmon-narrative-item:hover,
 .sitmon-monitor-item:hover {
-  transform: translateX(4px);
+  transform: translateX(2px); /* Reduced to prevent overflow */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 

@@ -267,11 +267,31 @@ exports.handler = async (event, context) => {
       );
     }
     
-    // Prioritize live streams over snapshots
+    // Prioritize live streams and working snapshots
     const prioritized = filtered.slice().sort((a, b) => {
       const aLive = a.media?.mode === 'stream' ? 1 : 0;
       const bLive = b.media?.mode === 'stream' ? 1 : 0;
       if (aLive !== bLive) return bLive - aLive; // live first
+      
+      const aSnap = a.media?.snapshotUrl ? 1 : 0;
+      const bSnap = b.media?.snapshotUrl ? 1 : 0;
+      if (aSnap !== bSnap) return bSnap - aSnap; // snapshots next
+      
+      const isLikelyDead = (cam) => {
+        try {
+          const url = cam.media?.snapshotUrl;
+          if (!url) return true;
+          const host = new URL(url).hostname;
+          return host === 'images-dim.divas.cloud' || host.endsWith('.divas.cloud');
+        } catch {
+          return false;
+        }
+      };
+      
+      const aDead = isLikelyDead(a) ? 1 : 0;
+      const bDead = isLikelyDead(b) ? 1 : 0;
+      if (aDead !== bDead) return aDead - bDead; // dead images last
+      
       return 0;
     });
     

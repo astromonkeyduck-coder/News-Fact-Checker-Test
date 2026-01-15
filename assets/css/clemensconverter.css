@@ -173,6 +173,18 @@ body {
     text-align: center;
 }
 
+.recording-size {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #a0aec0;
+    font-family: 'Courier New', monospace;
+    margin-left: 15px;
+    padding: 4px 10px;
+    background: rgba(15, 35, 74, 0.4);
+    border-radius: 6px;
+    border: 1px solid rgba(29, 161, 242, 0.2);
+}
+
 .btn-stop {
     background: rgba(239, 68, 68, 0.2);
     border: 2px solid #ef4444;
