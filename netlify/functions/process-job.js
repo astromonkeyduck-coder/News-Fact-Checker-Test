@@ -251,13 +251,35 @@ async function transcribeChunk(chunkPath, language = null, includeTimestamps = f
 
   const openai = new OpenAI({ apiKey: openaiApiKey });
 
-  // Get file stats for logging
+  // Get file stats for logging and validation
   const stats = await fsPromises.stat(chunkPath);
-  console.log(`[process-job] Transcribing chunk: ${chunkPath} (${(stats.size / 1024 / 1024).toFixed(2)} MB)`);
+  const sizeMB = (stats.size / 1024 / 1024).toFixed(2);
+  console.log(`[process-job] Transcribing chunk: ${chunkPath} (${sizeMB} MB)`);
+  
+  // Validate file size (OpenAI has a 25MB limit per request)
+  if (stats.size > 25 * 1024 * 1024) {
+    throw new Error(`Chunk file is too large: ${sizeMB} MB (max 25MB)`);
+  }
+  
+  // Warn if file is suspiciously small (might be corrupted or empty)
+  if (stats.size < 1000) {
+    console.warn(`[process-job] ⚠️ Chunk file is very small (${stats.size} bytes), may be corrupted or empty`);
+  }
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     // Create a fresh stream for each attempt (streams can only be read once)
-    const audioFile = fs.createReadStream(chunkPath);
+    let audioFile;
+    try {
+      audioFile = fs.createReadStream(chunkPath);
+    } catch (streamError) {
+      console.error(`[process-job] Failed to create read stream:`, streamError.message);
+      if (attempt === retries) {
+        throw new Error(`Cannot read chunk file: ${streamError.message}`);
+      }
+      // Wait before retrying stream creation
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      continue;
+    }
     
     try {
       const transcription = await openai.audio.transcriptions.create({
@@ -268,12 +290,30 @@ async function transcribeChunk(chunkPath, language = null, includeTimestamps = f
         timestamp_granularities: includeTimestamps ? ["segment"] : undefined,
       });
 
+      // Validate transcription response
+      if (!transcription) {
+        throw new Error('OpenAI returned empty transcription');
+      }
+      
       console.log(`[process-job] ✅ Chunk transcribed successfully (attempt ${attempt + 1})`);
+      if (transcription.text) {
+        const preview = transcription.text.substring(0, 100);
+        console.log(`[process-job] Transcription preview: ${preview}${transcription.text.length > 100 ? '...' : ''}`);
+      }
+      
       return transcription;
     } catch (error) {
+      // Close the stream if it's still open
+      if (audioFile && !audioFile.destroyed) {
+        audioFile.destroy();
+      }
+      
       console.error(`[process-job] ❌ Chunk transcription attempt ${attempt + 1}/${retries + 1} failed:`, error.message);
       if (error.response) {
         console.error(`[process-job] OpenAI API error details:`, JSON.stringify(error.response.data || error.response.status, null, 2));
+      }
+      if (error.code) {
+        console.error(`[process-job] Error code: ${error.code}`);
       }
       
       if (attempt === retries) {
@@ -401,6 +441,13 @@ async function processJob(jobId) {
     // Step 2: Normalize audio
     console.log(`[process-job] Normalizing audio...`);
     await normalizeAudio(inputPath, normalizedPath);
+    
+    // Verify normalized file exists and has content
+    const normalizedStats = await fsPromises.stat(normalizedPath);
+    if (normalizedStats.size === 0) {
+      throw new Error('Normalized audio file is empty');
+    }
+    console.log(`[process-job] ✅ Normalized audio: ${(normalizedStats.size / 1024 / 1024).toFixed(2)} MB`);
 
     // Step 3: Segment into chunks
     console.log(`[process-job] Segmenting audio...`);
@@ -421,12 +468,34 @@ async function processJob(jobId) {
       const chunkIndex = i + 1;
       console.log(`[process-job] 📝 Transcribing chunk ${chunkIndex}/${chunksTotal}: ${chunkPath}`);
       
+      // Validate chunk file before transcription
+      try {
+        const chunkStats = await fsPromises.stat(chunkPath);
+        if (chunkStats.size === 0) {
+          throw new Error(`Chunk ${chunkIndex} file is empty (0 bytes)`);
+        }
+        if (chunkStats.size < 1000) {
+          console.warn(`[process-job] ⚠️ Chunk ${chunkIndex} is very small (${chunkStats.size} bytes), may fail transcription`);
+        }
+        console.log(`[process-job] Chunk ${chunkIndex} size: ${(chunkStats.size / 1024 / 1024).toFixed(2)} MB`);
+      } catch (statError) {
+        throw new Error(`Chunk ${chunkIndex} file validation failed: ${statError.message}`);
+      }
+      
       try {
         const transcription = await transcribeChunk(
           chunkPath,
           job.language,
           job.include_timestamps
         );
+        
+        // Validate transcription result
+        if (!transcription) {
+          throw new Error('Transcription returned empty result');
+        }
+        if (transcription.text && transcription.text.trim().length === 0) {
+          console.warn(`[process-job] ⚠️ Chunk ${chunkIndex} transcribed but text is empty`);
+        }
         
         chunkResults.push(transcription);
         console.log(`[process-job] ✅ Chunk ${chunkIndex}/${chunksTotal} completed`);
@@ -441,6 +510,30 @@ async function processJob(jobId) {
         console.log(`[process-job] 📊 Progress updated: ${chunksDone}/${chunksTotal} (${progress}%)`);
       } catch (error) {
         console.error(`[process-job] ❌ Failed to transcribe chunk ${chunkIndex}/${chunksTotal}:`, error);
+        console.error(`[process-job] Error details:`, {
+          message: error.message,
+          stack: error.stack,
+          chunkPath: chunkPath,
+          chunkIndex: chunkIndex,
+        });
+        
+        // For the first chunk, provide more detailed error info
+        if (chunkIndex === 1) {
+          console.error(`[process-job] 🚨 FIRST CHUNK FAILED - This is critical!`);
+          console.error(`[process-job] First chunk path: ${chunkPath}`);
+          try {
+            const firstChunkStats = await fsPromises.stat(chunkPath);
+            console.error(`[process-job] First chunk stats:`, {
+              size: firstChunkStats.size,
+              sizeMB: (firstChunkStats.size / 1024 / 1024).toFixed(2),
+              created: firstChunkStats.birthtime,
+              modified: firstChunkStats.mtime,
+            });
+          } catch (statErr) {
+            console.error(`[process-job] Could not stat first chunk:`, statErr.message);
+          }
+        }
+        
         // Update job with error but continue to next chunk (or fail fast - your choice)
         // For now, we'll fail the whole job if any chunk fails
         throw new Error(`Chunk ${chunkIndex} transcription failed: ${error.message}`);
