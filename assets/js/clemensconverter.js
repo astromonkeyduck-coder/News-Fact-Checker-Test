@@ -1039,6 +1039,10 @@ function showResult(fileId, fileData) {
                 <button class="btn btn-copy" onclick="copyTranscript('${fileId}')">Copy</button>
                 <button class="btn btn-download-txt" onclick="downloadTxt('${fileId}')">Download TXT</button>
                 <button class="btn btn-download-pdf" onclick="downloadPdf('${fileId}')">Download PDF</button>
+                <button class="btn btn-analyze" id="analyzeBtn-${fileId}" onclick="analyzeTranscript('${fileId}')">
+                    <span class="analyze-icon">🎓</span>
+                    <span class="analyze-text">AI Analysis</span>
+                </button>
             </div>
         </div>
         ${hasAudio ? `
@@ -1087,6 +1091,14 @@ function showResult(fileId, fileData) {
     // Set up audio player if audio is available
     if (hasAudio) {
         setupAudioPlayer(fileId, fileData, hasSegments);
+    }
+
+    // Store analysis state
+    if (!fileData.analysisState) {
+        fileData.analysisState = {
+            isAnalyzing: false,
+            analysis: null,
+        };
     }
 }
 
@@ -1257,6 +1269,178 @@ window.seekAudio = (fileId, event) => {
     const newTime = percentage * audio.duration;
 
     audio.currentTime = newTime;
+};
+
+/**
+ * Analyze transcript with AI (AP Euro Teacher)
+ */
+window.analyzeTranscript = async (fileId) => {
+    const fileData = state.files.get(fileId);
+    if (!fileData || !fileData.transcript) {
+        showError('No transcript available for analysis');
+        return;
+    }
+
+    const analyzeBtn = document.getElementById(`analyzeBtn-${fileId}`);
+    if (!analyzeBtn) return;
+
+    // Check if already analyzing
+    if (fileData.analysisState?.isAnalyzing) {
+        showNotification('Analysis already in progress...');
+        return;
+    }
+
+    // Check if analysis already exists
+    if (fileData.analysisState?.analysis) {
+        showAnalysisResults(fileId, fileData);
+        return;
+    }
+
+    // Start analysis
+    if (!fileData.analysisState) {
+        fileData.analysisState = {};
+    }
+    fileData.analysisState.isAnalyzing = true;
+    analyzeBtn.disabled = true;
+    analyzeBtn.innerHTML = '<span class="spinner"></span> Analyzing...';
+
+    try {
+        const transcriptText = fileData.transcript.transcriptText || '';
+        
+        if (!transcriptText.trim()) {
+            throw new Error('Transcript is empty');
+        }
+
+        const response = await fetch(`${CONFIG.apiBase}/analyze-transcript`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders(),
+            },
+            body: JSON.stringify({
+                lecture_transcript: transcriptText,
+            }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(error.error || `Analysis failed (${response.status})`);
+        }
+
+        const result = await response.json();
+        
+        fileData.analysisState.isAnalyzing = false;
+        fileData.analysisState.analysis = result.analysis;
+        
+        analyzeBtn.disabled = false;
+        analyzeBtn.innerHTML = '<span class="analyze-icon">🎓</span><span class="analyze-text">AI Analysis</span>';
+        
+        showAnalysisResults(fileId, fileData);
+        showNotification('Analysis complete!');
+    } catch (error) {
+        console.error('[analyzeTranscript] Error:', error);
+        fileData.analysisState.isAnalyzing = false;
+        analyzeBtn.disabled = false;
+        analyzeBtn.innerHTML = '<span class="analyze-icon">🎓</span><span class="analyze-text">AI Analysis</span>';
+        showError('Failed to analyze transcript: ' + (error.message || 'Unknown error'));
+    }
+};
+
+/**
+ * Display analysis results
+ */
+function showAnalysisResults(fileId, fileData) {
+    const resultDiv = document.getElementById(`result-${fileId}`);
+    if (!resultDiv || !fileData.analysisState?.analysis) return;
+
+    // Check if analysis section already exists
+    let analysisSection = resultDiv.querySelector('.analysis-section');
+    
+    if (!analysisSection) {
+        // Create analysis section
+        analysisSection = document.createElement('div');
+        analysisSection.className = 'analysis-section';
+        analysisSection.innerHTML = `
+            <div class="analysis-header">
+                <h3 class="analysis-title">🎓 AP Euro AI Analysis</h3>
+                <button class="btn-close-analysis" onclick="closeAnalysis('${fileId}')">×</button>
+            </div>
+            <div class="analysis-content" id="analysisContent-${fileId}"></div>
+        `;
+        
+        // Insert after transcript preview
+        const preview = resultDiv.querySelector('.transcript-preview');
+        if (preview && preview.nextSibling) {
+            resultDiv.insertBefore(analysisSection, preview.nextSibling);
+        } else {
+            resultDiv.appendChild(analysisSection);
+        }
+    }
+
+    // Format and display analysis
+    const analysisContent = document.getElementById(`analysisContent-${fileId}`);
+    if (analysisContent) {
+        // Convert markdown-style formatting to HTML
+        const formattedAnalysis = formatAnalysisText(fileData.analysisState.analysis);
+        analysisContent.innerHTML = formattedAnalysis;
+    }
+}
+
+/**
+ * Format analysis text (convert markdown-style to HTML)
+ */
+function formatAnalysisText(text) {
+    if (!text) return '';
+    
+    // Escape HTML first
+    let html = escapeHtml(text);
+    
+    // Convert headings (## Heading -> <h3>Heading</h3>)
+    html = html.replace(/^### (.*$)/gim, '<h4>$1</h4>');
+    html = html.replace(/^## (.*$)/gim, '<h3>$1</h3>');
+    html = html.replace(/^# (.*$)/gim, '<h2>$1</h2>');
+    
+    // Convert numbered sections (1️⃣ -> <h3>)
+    html = html.replace(/1️⃣/g, '<h3>1️⃣');
+    html = html.replace(/2️⃣/g, '</h3><h3>2️⃣');
+    html = html.replace(/3️⃣/g, '</h3><h3>3️⃣');
+    html = html.replace(/4️⃣/g, '</h3><h3>4️⃣');
+    html = html.replace(/5️⃣/g, '</h3><h3>5️⃣');
+    html = html.replace(/6️⃣/g, '</h3><h3>6️⃣');
+    html = html.replace(/7️⃣/g, '</h3><h3>7️⃣');
+    html = html.replace(/8️⃣/g, '</h3><h3>8️⃣');
+    html = html.replace(/✍️/g, '</h3><h3>✍️');
+    
+    // Convert bold (**text** -> <strong>text</strong>)
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Convert bullet points (- -> <li>)
+    html = html.replace(/^[-•]\s+(.*$)/gim, '<li>$1</li>');
+    
+    // Wrap consecutive <li> in <ul>
+    html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+    
+    // Convert line breaks
+    html = html.replace(/\n\n/g, '</p><p>');
+    html = html.replace(/\n/g, '<br>');
+    
+    // Wrap in paragraphs
+    html = '<p>' + html + '</p>';
+    
+    return html;
+}
+
+/**
+ * Close analysis section
+ */
+window.closeAnalysis = (fileId) => {
+    const resultDiv = document.getElementById(`result-${fileId}`);
+    if (!resultDiv) return;
+    
+    const analysisSection = resultDiv.querySelector('.analysis-section');
+    if (analysisSection) {
+        analysisSection.remove();
+    }
 };
 
 window.togglePreview = (fileId) => {

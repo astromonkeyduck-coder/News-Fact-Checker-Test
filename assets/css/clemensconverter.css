@@ -726,6 +726,145 @@ body {
     font-family: 'Courier New', monospace;
 }
 
+/* AI Analysis Button */
+.btn-analyze {
+    background: linear-gradient(135deg, #8a2be2 0%, #ff1493 100%);
+    color: #ffffff;
+    border: 1px solid rgba(138, 43, 226, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-analyze:hover {
+    background: linear-gradient(135deg, #9d3ce8 0%, #ff2da3 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(138, 43, 226, 0.4);
+}
+
+.btn-analyze:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.analyze-icon {
+    font-size: 1rem;
+}
+
+/* Analysis Section */
+.analysis-section {
+    margin-top: 25px;
+    padding: 25px;
+    background: rgba(15, 35, 74, 0.5);
+    border-radius: 12px;
+    border: 2px solid rgba(138, 43, 226, 0.3);
+    box-shadow: 0 4px 20px rgba(138, 43, 226, 0.2);
+}
+
+.analysis-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid rgba(138, 43, 226, 0.2);
+}
+
+.analysis-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #8a2be2 0%, #ff1493 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+}
+
+.btn-close-analysis {
+    background: transparent;
+    border: none;
+    color: #a0aec0;
+    font-size: 2rem;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+    line-height: 1;
+}
+
+.btn-close-analysis:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    transform: rotate(90deg);
+}
+
+.analysis-content {
+    color: #e2e8f0;
+    line-height: 1.8;
+    font-size: 1rem;
+}
+
+.analysis-content h2 {
+    font-size: 1.4rem;
+    color: #ffffff;
+    margin-top: 25px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(138, 43, 226, 0.3);
+}
+
+.analysis-content h3 {
+    font-size: 1.2rem;
+    color: #93c5fd;
+    margin-top: 20px;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.analysis-content h4 {
+    font-size: 1.1rem;
+    color: #c084fc;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.analysis-content p {
+    margin-bottom: 12px;
+    color: #e2e8f0;
+}
+
+.analysis-content ul {
+    margin: 15px 0;
+    padding-left: 25px;
+    list-style-type: disc;
+}
+
+.analysis-content li {
+    margin-bottom: 8px;
+    color: #e2e8f0;
+}
+
+.analysis-content strong {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.analysis-content a {
+    color: #93c5fd;
+    text-decoration: underline;
+}
+
+.analysis-content a:hover {
+    color: #c084fc;
+}
+
 .transcript-preview.collapsed {
     max-height: 150px;
     overflow: hidden;

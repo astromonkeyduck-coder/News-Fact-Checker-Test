@@ -107,6 +107,12 @@
   force = false
 
 [[redirects]]
+  from = "/api/analyze-transcript"
+  to = "/.netlify/functions/analyze-transcript"
+  status = 200
+  force = false
+
+[[redirects]]
   from = "/api/cams/search"
   to = "/.netlify/functions/cams-search"
   status = 200
