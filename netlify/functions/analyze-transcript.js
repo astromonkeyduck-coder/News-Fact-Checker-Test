@@ -260,9 +260,34 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Parse request body
-    const body = JSON.parse(event.body || "{}");
-    const { lecture_transcript } = body;
+    // Handle FormData (multipart/form-data) or JSON
+    let lecture_transcript;
+    let contextFiles = [];
+    
+    // Single JSON parsing attempt with proper error handling
+    // The previous code had duplicate parsing logic that would fail the same way
+    try {
+      const body = JSON.parse(event.body || "{}");
+      lecture_transcript = body.lecture_transcript;
+      
+      // Extract context files if provided
+      if (body.context_files && Array.isArray(body.context_files)) {
+        contextFiles = body.context_files;
+      }
+    } catch (parseError) {
+      // JSON parsing failed - return error response
+      return {
+        statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({
+          error: 'Invalid request body: unable to parse JSON',
+          details: parseError.message
+        }),
+      };
+    }
 
     if (!lecture_transcript || typeof lecture_transcript !== 'string' || lecture_transcript.trim().length === 0) {
       return {
@@ -286,6 +311,89 @@ exports.handler = async (event, context) => {
     const openai = new OpenAI({ apiKey: openaiApiKey });
 
     console.log(`[analyze-transcript] Analyzing transcript (${lecture_transcript.length} characters)`);
+    
+    // Process context files: decode base64 and extract text content
+    let contextTexts = [];
+    if (contextFiles.length > 0) {
+      console.log(`[analyze-transcript] Processing ${contextFiles.length} context file(s)`);
+      
+      for (const file of contextFiles) {
+        try {
+          if (!file.data || !file.type) {
+            console.warn(`[analyze-transcript] Skipping file ${file.name || 'unknown'}: missing data or type`);
+            continue;
+          }
+          
+          // Decode base64 data
+          const fileBuffer = Buffer.from(file.data, 'base64');
+          const fileType = file.type.toLowerCase();
+          const fileName = file.name || 'unknown';
+          
+          // Extract text based on file type
+          if (fileType.includes('text/') || 
+              fileName.endsWith('.txt') || 
+              fileName.endsWith('.md') || 
+              fileName.endsWith('.json') ||
+              fileName.endsWith('.csv')) {
+            // Text-based files: decode as UTF-8
+            const textContent = fileBuffer.toString('utf-8');
+            contextTexts.push({
+              name: fileName,
+              type: fileType,
+              content: textContent
+            });
+            console.log(`[analyze-transcript] Extracted text from ${fileName} (${textContent.length} characters)`);
+          } else if (fileType.includes('application/pdf') || fileName.endsWith('.pdf')) {
+            // PDF files: For now, we'll note that PDF content extraction requires additional libraries
+            // In a production environment, you would use a library like pdf-parse or pdfjs-dist
+            // For now, we'll include a note that the PDF was provided but content extraction is not yet implemented
+            console.warn(`[analyze-transcript] PDF file ${fileName} provided but text extraction not yet implemented. Consider converting to text first.`);
+            contextTexts.push({
+              name: fileName,
+              type: 'application/pdf',
+              content: `[PDF file "${fileName}" was provided but text extraction is not yet implemented. The file contains ${file.size || 'unknown'} bytes. Please note that the actual PDF content is not included in this analysis.]`
+            });
+          } else {
+            // Other file types: try to decode as text, but log a warning
+            console.warn(`[analyze-transcript] Unsupported file type ${fileType} for ${fileName}, attempting text extraction`);
+            try {
+              const textContent = fileBuffer.toString('utf-8');
+              contextTexts.push({
+                name: fileName,
+                type: fileType,
+                content: textContent
+              });
+            } catch (err) {
+              console.error(`[analyze-transcript] Failed to extract text from ${fileName}:`, err.message);
+            }
+          }
+        } catch (error) {
+          console.error(`[analyze-transcript] Error processing context file ${file.name || 'unknown'}:`, error.message);
+        }
+      }
+      
+      console.log(`[analyze-transcript] Successfully processed ${contextTexts.length} context file(s) out of ${contextFiles.length}`);
+    }
+
+    // Build user message with actual context file content
+    let userContent = `Analyze this AP European History lecture transcript:\n\n${lecture_transcript}`;
+    
+    if (contextTexts.length > 0) {
+      userContent += `\n\n=== REFERENCE DOCUMENTS PROVIDED ===\n\n`;
+      userContent += `The user has provided ${contextTexts.length} reference document(s) to help with analysis. Use these documents to verify facts, provide historical context, and align with AP Euro curriculum standards.\n\n`;
+      
+      for (const contextFile of contextTexts) {
+        userContent += `--- Document: ${contextFile.name} (${contextFile.type}) ---\n`;
+        userContent += `${contextFile.content}\n\n`;
+      }
+      
+      userContent += `=== END OF REFERENCE DOCUMENTS ===\n\n`;
+      userContent += `When analyzing the transcript above, cross-reference it with the reference documents provided. Use the documents to:\n`;
+      userContent += `- Verify facts, dates, and definitions mentioned in the transcript\n`;
+      userContent += `- Supply missing historical context\n`;
+      userContent += `- Align explanations with AP Euro skills and themes\n`;
+      userContent += `- Correct any inaccuracies in the transcript using the reference documents as authoritative sources\n`;
+    }
 
     // Call OpenAI API
     const completion = await openai.chat.completions.create({
@@ -297,7 +405,7 @@ exports.handler = async (event, context) => {
         },
         {
           role: 'user',
-          content: `Analyze this AP European History lecture transcript:\n\n${lecture_transcript}`,
+          content: userContent,
         },
       ],
       temperature: 0.7,

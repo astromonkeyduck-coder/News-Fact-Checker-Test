@@ -64,6 +64,10 @@ export class LiveCams {
     this.topLiveStrip = null;
     this.mapLayer = null;
     
+    // OSINT Grid View Modes: 1, 4, 9, 16 cameras
+    this.gridMode = 'single'; // 'single', 'grid4', 'grid9', 'grid16'
+    this.gridCameras = []; // Selected cameras for grid view
+    
     // Don't call init() here - it's async and should be awaited by caller
     // This prevents the constructor from returning before initialization completes
   }
@@ -80,16 +84,43 @@ export class LiveCams {
   
   render() {
     this.container.innerHTML = `
-      <div class="livecams-container">
+      <div class="livecams-container osint-surveillance-mode">
+        <!-- OSINT Header -->
+        <div class="livecams-osint-header">
+          <div class="livecams-osint-title">
+            <span class="livecams-osint-icon">📡</span>
+            <h2>LIVE SURVEILLANCE NETWORK</h2>
+            <span class="livecams-osint-status online">● ONLINE</span>
+          </div>
+          <div class="livecams-osint-controls">
+            <button class="livecams-osint-btn" data-mode="single" title="Single View (1)">
+              <span>1</span>
+            </button>
+            <button class="livecams-osint-btn" data-mode="grid4" title="Grid 2x2 (4)">
+              <span>2×2</span>
+            </button>
+            <button class="livecams-osint-btn" data-mode="grid9" title="Grid 3x3 (9)">
+              <span>3×3</span>
+            </button>
+            <button class="livecams-osint-btn" data-mode="grid16" title="Grid 4x4 (16)">
+              <span>4×4</span>
+            </button>
+            <button class="livecams-osint-btn" data-action="fullscreen" title="Fullscreen (F)">
+              <span>⛶</span>
+            </button>
+          </div>
+        </div>
+        
         <!-- Top Live Strip -->
         <div class="livecams-top-strip-container" id="livecams-top-strip-container"></div>
         
         <!-- Hotspot Presets -->
         <div class="livecams-hotspots">
-          <label>Quick Locations:</label>
+          <label class="livecams-osint-label">QUICK ACCESS // HOTSPOTS</label>
           <div class="livecams-hotspot-buttons">
             ${Object.entries(HOTSPOT_PRESETS).map(([key, preset]) => `
               <button class="livecams-hotspot-btn" data-preset="${key}">
+                <span class="livecams-hotspot-icon">📍</span>
                 ${preset.name}
               </button>
             `).join('')}
@@ -105,15 +136,38 @@ export class LiveCams {
             <div class="livecams-grid-container" id="livecams-grid-container"></div>
           </div>
           
-          <!-- Right Panel: Player -->
-          <div class="livecams-right-panel">
-            <div class="livecams-player-container" id="livecams-player-container"></div>
+          <!-- Center/Right Panel: Player or Grid View -->
+          <div class="livecams-view-panel" id="livecams-view-panel">
+            <!-- Single View -->
+            <div class="livecams-player-container livecams-view-single" id="livecams-player-container"></div>
+            
+            <!-- Multi-Grid Views -->
+            <div class="livecams-grid-view livecams-view-grid4" id="livecams-grid-view-4" style="display: none;">
+              <div class="livecams-grid-view-container" data-grid="4"></div>
+            </div>
+            <div class="livecams-grid-view livecams-view-grid9" id="livecams-grid-view-9" style="display: none;">
+              <div class="livecams-grid-view-container" data-grid="9"></div>
+            </div>
+            <div class="livecams-grid-view livecams-view-grid16" id="livecams-grid-view-16" style="display: none;">
+              <div class="livecams-grid-view-container" data-grid="16"></div>
+            </div>
           </div>
         </div>
         
-        <!-- Disclaimer -->
-        <div class="livecams-disclaimer">
-          <p>Camera content provided by respective DOT/511/webcam providers.</p>
+        <!-- OSINT Status Footer -->
+        <div class="livecams-osint-footer">
+          <div class="livecams-osint-footer-item">
+            <span class="livecams-osint-footer-label">CAMERAS ONLINE:</span>
+            <span class="livecams-osint-footer-value" id="livecams-online-count">0</span>
+          </div>
+          <div class="livecams-osint-footer-item">
+            <span class="livecams-osint-footer-label">ACTIVE FEEDS:</span>
+            <span class="livecams-osint-footer-value" id="livecams-active-feeds">0</span>
+          </div>
+          <div class="livecams-osint-footer-item">
+            <span class="livecams-osint-footer-label">LAST UPDATE:</span>
+            <span class="livecams-osint-footer-value" id="livecams-last-update">--:--:--</span>
+          </div>
         </div>
       </div>
     `;
@@ -194,6 +248,221 @@ export class LiveCams {
         }
       });
     });
+    
+    // Grid mode buttons
+    const modeButtons = this.container.querySelectorAll('[data-mode]');
+    modeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.dataset.mode;
+        this.setGridMode(mode);
+      });
+    });
+    
+    // Fullscreen button
+    const fullscreenBtn = this.container.querySelector('[data-action="fullscreen"]');
+    if (fullscreenBtn) {
+      fullscreenBtn.addEventListener('click', () => {
+        this.toggleFullscreen();
+      });
+    }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      
+      // F for fullscreen
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        this.toggleFullscreen();
+      }
+      // 1-4 for grid modes
+      if (e.key === '1') {
+        e.preventDefault();
+        this.setGridMode('single');
+      } else if (e.key === '2') {
+        e.preventDefault();
+        this.setGridMode('grid4');
+      } else if (e.key === '3') {
+        e.preventDefault();
+        this.setGridMode('grid9');
+      } else if (e.key === '4') {
+        e.preventDefault();
+        this.setGridMode('grid16');
+      }
+      // Arrow keys for navigation
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        this.navigateCameras(e.key === 'ArrowRight' ? 1 : -1);
+      }
+    });
+    
+    // Update status footer
+    this.updateStatusFooter();
+    setInterval(() => this.updateStatusFooter(), 1000);
+  }
+  
+  setGridMode(mode) {
+    this.gridMode = mode;
+    
+    // Update button states
+    const modeButtons = this.container.querySelectorAll('[data-mode]');
+    modeButtons.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+    
+    // Show/hide views
+    const singleView = this.container.querySelector('.livecams-view-single');
+    const grid4View = this.container.querySelector('#livecams-grid-view-4');
+    const grid9View = this.container.querySelector('#livecams-grid-view-9');
+    const grid16View = this.container.querySelector('#livecams-grid-view-16');
+    
+    if (mode === 'single') {
+      singleView.style.display = 'block';
+      grid4View.style.display = 'none';
+      grid9View.style.display = 'none';
+      grid16View.style.display = 'none';
+    } else {
+      singleView.style.display = 'none';
+      const targetView = mode === 'grid4' ? grid4View : mode === 'grid9' ? grid9View : grid16View;
+      targetView.style.display = 'grid';
+      [grid4View, grid9View, grid16View].forEach(v => {
+        if (v !== targetView) v.style.display = 'none';
+      });
+      
+      // Populate grid with selected cameras or watchlist
+      this.populateGridView(mode);
+    }
+  }
+  
+  populateGridView(mode) {
+    const gridSize = mode === 'grid4' ? 4 : mode === 'grid9' ? 9 : 16;
+    const container = this.container.querySelector(`[data-grid="${gridSize}"]`);
+    if (!container) return;
+    
+    // Use watchlist first, then selected camera + results
+    const cameras = this.state.watchlist.length > 0 
+      ? [...this.state.watchlist]
+      : this.state.selectedCamera 
+        ? [this.state.selectedCamera, ...this.state.results.slice(0, gridSize - 1)]
+        : this.state.results.slice(0, gridSize);
+    
+    this.gridCameras = cameras.slice(0, gridSize);
+    
+    // Helper function to escape HTML entities
+    const escapeHtml = (text) => {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    };
+    
+    // Helper function to escape for HTML attributes
+    const escapeAttr = (text) => {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+    };
+    
+    container.innerHTML = this.gridCameras.map((camera, index) => {
+      const snapshotUrl = camera.media?.snapshotUrl;
+      const proxyUrl = snapshotUrl ? `/api/cams/proxy-image?url=${encodeURIComponent(snapshotUrl)}` : null;
+      
+      // Escape all user-provided data
+      const safeId = escapeAttr(camera.id || '');
+      const safeTitle = escapeHtml(camera.title || `Camera ${index + 1}`);
+      const safeTitleAttr = escapeAttr(camera.title || `Camera ${index + 1}`);
+      const safeCity = escapeHtml(camera.city || 'Unknown');
+      
+      return `
+        <div class="livecams-grid-cell" data-camera-id="${safeId}">
+          <div class="livecams-grid-cell-header">
+            <span class="livecams-grid-cell-title">${safeTitle}</span>
+            <span class="livecams-grid-cell-status online">●</span>
+          </div>
+          <div class="livecams-grid-cell-display">
+            ${proxyUrl ? `
+              <img 
+                src="${escapeAttr(proxyUrl)}" 
+                alt="${safeTitleAttr}"
+                class="livecams-grid-cell-image"
+                loading="lazy"
+                onerror="this.parentElement.innerHTML='<div class=\\'livecams-grid-cell-placeholder\\'>📹</div>'"
+              />
+            ` : `
+              <div class="livecams-grid-cell-placeholder">📹</div>
+            `}
+          </div>
+          <div class="livecams-grid-cell-footer">
+            <span class="livecams-grid-cell-location">${safeCity}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    // Auto-refresh grid images
+    this.startGridRefresh();
+  }
+  
+  startGridRefresh() {
+    if (this.gridRefreshInterval) clearInterval(this.gridRefreshInterval);
+    
+    this.gridRefreshInterval = setInterval(() => {
+      const images = this.container.querySelectorAll('.livecams-grid-cell-image');
+      images.forEach(img => {
+        if (img.src) {
+          const url = new URL(img.src);
+          url.searchParams.set('_t', Date.now());
+          img.src = url.toString();
+        }
+      });
+    }, 30000); // Refresh every 30 seconds
+  }
+  
+  navigateCameras(direction) {
+    if (this.gridMode !== 'single') return;
+    
+    const cameras = this.state.results;
+    if (cameras.length === 0) return;
+    
+    const currentIndex = cameras.findIndex(c => c.id === this.state.selectedCamera?.id);
+    let newIndex = currentIndex + direction;
+    
+    if (newIndex < 0) newIndex = cameras.length - 1;
+    if (newIndex >= cameras.length) newIndex = 0;
+    
+    this.state.selectCamera(cameras[newIndex]);
+  }
+  
+  toggleFullscreen() {
+    const viewPanel = this.container.querySelector('#livecams-view-panel');
+    if (!viewPanel) return;
+    
+    if (!document.fullscreenElement) {
+      viewPanel.requestFullscreen().catch(err => {
+        console.error('Error entering fullscreen:', err);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  }
+  
+  updateStatusFooter() {
+    const onlineCount = this.state.results.filter(c => c.status === 'online').length;
+    const activeFeeds = this.gridMode === 'single' ? (this.state.selectedCamera ? 1 : 0) : 
+                        this.gridMode === 'grid4' ? 4 : 
+                        this.gridMode === 'grid9' ? 9 : 16;
+    const lastUpdate = new Date().toLocaleTimeString();
+    
+    const onlineEl = this.container.querySelector('#livecams-online-count');
+    const feedsEl = this.container.querySelector('#livecams-active-feeds');
+    const updateEl = this.container.querySelector('#livecams-last-update');
+    
+    if (onlineEl) onlineEl.textContent = onlineCount;
+    if (feedsEl) feedsEl.textContent = activeFeeds;
+    if (updateEl) updateEl.textContent = lastUpdate;
   }
   
   async performSearch() {

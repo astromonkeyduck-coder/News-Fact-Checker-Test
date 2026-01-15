@@ -1,15 +1,121 @@
 /**
- * Live Cams Styles
- * Dark intelligence workstation aesthetic
+ * Live Cams Styles - OSINT Surveillance Mode
+ * Mission control / intelligence gathering aesthetic
  */
 
 .livecams-container {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: transparent;
+  background: rgba(3, 8, 18, 0.95);
   color: rgba(230, 240, 255, 0.9);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+/* OSINT Scanline Effect */
+.livecams-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(34, 211, 238, 0.03) 2px,
+    rgba(34, 211, 238, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* OSINT Header */
+.livecams-osint-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(5, 12, 28, 0.95);
+  border-bottom: 1px solid rgba(34, 211, 238, 0.25);
+  z-index: 10;
+  position: relative;
+  backdrop-filter: blur(8px);
+}
+
+.livecams-osint-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #22d3ee;
+}
+
+.livecams-osint-icon {
+  font-size: 1.2rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.livecams-osint-status {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(74, 222, 128, 0.15);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.livecams-osint-status.online {
+  color: #4ade80;
+}
+
+.livecams-osint-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.livecams-osint-btn {
+  padding: 4px 10px;
+  background: rgba(5, 12, 28, 0.8);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.livecams-osint-btn:hover {
+  background: rgba(34, 211, 238, 0.15);
+  border-color: rgba(34, 211, 238, 0.4);
+  color: #22d3ee;
+  transform: translateY(-1px);
+}
+
+.livecams-osint-btn.active {
+  background: rgba(34, 211, 238, 0.25);
+  border-color: #22d3ee;
+  color: #22d3ee;
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.3);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
 }
 
 /* Top Live Strip */
@@ -160,12 +266,56 @@
   font-size: 0.85rem;
 }
 
+/* OSINT Footer */
+.livecams-osint-footer {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 6px 16px;
+  background: rgba(5, 12, 28, 0.95);
+  border-top: 1px solid rgba(34, 211, 238, 0.25);
+  font-size: 0.7rem;
+  z-index: 10;
+  position: relative;
+  backdrop-filter: blur(8px);
+}
+
+.livecams-osint-footer-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.livecams-osint-footer-label {
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.65rem;
+}
+
+.livecams-osint-footer-value {
+  color: #22d3ee;
+  font-weight: 600;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
 /* Hotspot Presets */
 .livecams-hotspots {
-  padding: 1rem;
+  padding: 8px 12px;
   border: 1px solid rgba(34, 211, 238, 0.2);
-  background: rgba(7, 21, 42, 0.5);
-  border-radius: 12px;
+  background: rgba(7, 21, 42, 0.6);
+  border-radius: 6px;
+  margin: 0 12px 12px 12px;
+}
+
+.livecams-osint-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
 }
 
 .livecams-hotspots label {
@@ -184,30 +334,178 @@
 }
 
 .livecams-hotspot-btn {
-  padding: 0.4rem 0.8rem;
-  background: rgba(5, 15, 35, 0.7);
-  border: 1px solid rgba(74, 158, 255, 0.2);
-  border-radius: 6px;
-  color: rgba(230, 240, 255, 0.9);
-  font-size: 0.85rem;
+  padding: 4px 10px;
+  background: rgba(5, 12, 28, 0.8);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: 4px;
+  color: rgba(230, 240, 255, 0.8);
+  font-size: 0.75rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
 }
 
 .livecams-hotspot-btn:hover {
-  background: rgba(7, 21, 42, 0.9);
-  border-color: #22d3ee;
+  background: rgba(34, 211, 238, 0.15);
+  border-color: rgba(34, 211, 238, 0.4);
   color: #22d3ee;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(34, 211, 238, 0.2);
+}
+
+.livecams-hotspot-icon {
+  font-size: 0.8rem;
 }
 
 /* Layout */
 .livecams-layout {
   display: grid;
-  grid-template-columns: 350px 1fr 400px;
-  gap: 1rem;
-  padding: 1rem;
+  grid-template-columns: 350px 1fr;
+  gap: 12px;
+  padding: 12px;
   flex: 1;
   overflow: hidden;
+  position: relative;
+  z-index: 2;
+}
+
+/* View Panel (replaces right panel) */
+.livecams-view-panel {
+  display: flex;
+  flex-direction: column;
+  background: rgba(5, 12, 28, 0.85);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: 6px;
+  padding: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 0 40px rgba(34, 211, 238, 0.02);
+  position: relative;
+}
+
+.livecams-view-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.3), transparent);
+  pointer-events: none;
+}
+
+/* Grid View Modes */
+.livecams-grid-view {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.livecams-view-grid4 {
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+
+.livecams-view-grid9 {
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+}
+
+.livecams-view-grid16 {
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+}
+
+.livecams-grid-cell {
+  background: rgba(7, 21, 42, 0.6);
+  border: 1px solid rgba(34, 211, 238, 0.15);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.livecams-grid-cell:hover {
+  border-color: rgba(34, 211, 238, 0.4);
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.2);
+  transform: scale(1.02);
+  z-index: 10;
+}
+
+.livecams-grid-cell-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background: rgba(5, 12, 28, 0.8);
+  border-bottom: 1px solid rgba(34, 211, 238, 0.1);
+  font-size: 0.65rem;
+}
+
+.livecams-grid-cell-title {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.livecams-grid-cell-status {
+  font-size: 0.8rem;
+  margin-left: 6px;
+}
+
+.livecams-grid-cell-status.online {
+  color: #4ade80;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.livecams-grid-cell-display {
+  flex: 1;
+  position: relative;
+  background: rgba(3, 8, 18, 0.8);
+  min-height: 120px;
+  overflow: hidden;
+}
+
+.livecams-grid-cell-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.livecams-grid-cell-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.livecams-grid-cell-footer {
+  padding: 4px 8px;
+  background: rgba(5, 12, 28, 0.8);
+  border-top: 1px solid rgba(34, 211, 238, 0.1);
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Left Panel: Browser */
@@ -549,16 +847,12 @@
   color: #ffd700;
 }
 
-/* Right Panel: Player */
-.livecams-right-panel {
+/* Single View Player (now in view panel) */
+.livecams-view-single {
   display: flex;
   flex-direction: column;
-  background: linear-gradient(135deg, rgba(5, 15, 35, 0.85) 0%, rgba(7, 21, 42, 0.85) 100%);
-  border: 1px solid rgba(34, 211, 238, 0.2);
-  border-radius: 16px;
-  padding: 1rem;
+  height: 100%;
   overflow-y: auto;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 .livecams-player-container {
@@ -598,10 +892,29 @@
   position: relative;
   width: 100%;
   padding-top: 56.25%; /* 16:9 */
-  background: rgba(5, 15, 35, 0.7);
-  border: 1px solid rgba(74, 158, 255, 0.2);
-  border-radius: 10px;
+  background: rgba(3, 8, 18, 0.9);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: 6px;
   overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 0 60px rgba(34, 211, 238, 0.03);
+}
+
+.livecams-player-display::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 1px,
+    rgba(34, 211, 238, 0.02) 1px,
+    rgba(34, 211, 238, 0.02) 2px
+  );
+  pointer-events: none;
+  z-index: 1;
 }
 
 .livecams-player-iframe,

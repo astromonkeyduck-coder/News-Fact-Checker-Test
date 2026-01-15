@@ -22,12 +22,51 @@
         <header class="header">
             <div class="header-content">
                 <h1 class="title">Clemens Converter</h1>
-                <div class="subtitle">Audio Transcription Tool</div>
+                <div class="subtitle">AI-Powered Audio Transcription & Analysis</div>
                 <div class="brand-mark">Noteworthy News</div>
+                <div class="header-stats" id="headerStats">
+                    <div class="stat-item">
+                        <span class="stat-value" id="totalProcessed">0</span>
+                        <span class="stat-label">Files Processed</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="totalTime">0</span>
+                        <span class="stat-label">Minutes Transcribed</span>
+                    </div>
+                </div>
             </div>
         </header>
 
         <main class="main-content">
+            <!-- Quick Actions Bar -->
+            <div class="quick-actions">
+                <button class="quick-action-btn" onclick="clearQueue()" title="Clear Queue (Ctrl+K)">
+                    <span>🗑️</span> Clear Queue
+                </button>
+                <button class="quick-action-btn" onclick="clearResults()" title="Clear Results">
+                    <span>📋</span> Clear Results
+                </button>
+                <button class="quick-action-btn" onclick="showHistory()" title="View History">
+                    <span>📚</span> History
+                </button>
+                <button class="quick-action-btn" onclick="toggleBatchMode()" title="Batch Operations">
+                    <span>☑️</span> Batch Mode
+                </button>
+                <button class="quick-action-btn" onclick="exportAllTranscripts()" title="Export All Transcripts">
+                    <span>💾</span> Export All
+                </button>
+                <div class="quick-actions-spacer"></div>
+                <div class="global-search-container">
+                    <input type="text" class="global-search-input" id="globalSearchInput" 
+                           placeholder="Search across all transcripts..." 
+                           oninput="searchAcrossResults(this.value)">
+                    <button class="btn-search-clear" onclick="clearGlobalSearch()" style="display: none;" id="clearGlobalSearch">×</button>
+                </div>
+                <div class="keyboard-hint" title="Keyboard Shortcuts">
+                    <span>⌨️</span> Press <kbd>?</kbd> for shortcuts
+                </div>
+            </div>
+
             <!-- Settings Panel (Collapsible) -->
             <div class="settings-panel">
                 <button class="settings-toggle" id="settingsToggle">
@@ -111,8 +150,7 @@
                         <button class="btn-select" id="selectFilesBtn">Select Files</button>
                     </div>
                     <div class="dropzone-hint">
-                        Supports multiple files. Maximum 25MB per file (OpenAI limit).<br>
-                        <small style="color: #a0aec0;">Note: Files over 5MB may require R2 storage setup for reliable uploads.</small>
+                        Supports multiple files. All file sizes supported.
                     </div>
                 </div>
                 <input type="file" id="fileInput" multiple accept="audio/mpeg,audio/mp3,audio/webm,audio/ogg,audio/wav" style="display: none;">
@@ -124,9 +162,66 @@
                 <div class="queue-list" id="queueList"></div>
             </div>
 
+            <!-- Batch Actions Bar -->
+            <div class="batch-actions" id="batchActions" style="display: none;">
+                <div class="batch-info">
+                    <span id="batchCount">0 selected</span>
+                </div>
+                <div class="batch-buttons">
+                    <button class="btn-batch" onclick="exportSelectedTranscripts()">Export Selected</button>
+                    <button class="btn-batch btn-batch-delete" onclick="deleteSelectedTranscripts()">Delete Selected</button>
+                    <button class="btn-batch" onclick="toggleBatchMode()">Cancel</button>
+                </div>
+            </div>
+
             <!-- Results -->
             <div class="results-container" id="resultsContainer"></div>
         </main>
+
+        <!-- History Modal -->
+        <div class="modal-overlay" id="historyModal" style="display: none;">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h2>Transcript History</h2>
+                    <button class="modal-close" onclick="closeHistoryModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="history-list" id="historyList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Keyboard Shortcuts Modal -->
+        <div class="modal-overlay" id="shortcutsModal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Keyboard Shortcuts</h2>
+                    <button class="modal-close" onclick="closeShortcutsModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="shortcut-item">
+                        <kbd>Ctrl</kbd> + <kbd>K</kbd>
+                        <span>Clear queue</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Ctrl</kbd> + <kbd>O</kbd>
+                        <span>Select files</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Space</kbd>
+                        <span>Start/Stop recording (when focused)</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>?</kbd>
+                        <span>Show shortcuts</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <kbd>Esc</kbd>
+                        <span>Close modals</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts -->

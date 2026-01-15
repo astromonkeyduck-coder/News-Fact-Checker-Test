@@ -45,6 +45,7 @@ export class SituationMonitorShell {
     this.pinnedEventId = null; // Currently pinned event
     this.lastIngestTime = null; // Last successful data fetch
     this.updateInterval = null; // Live update interval
+    this.ingestTimer = null; // Timer for updating ingest time display
     
     // Don't await - let it run asynchronously
     // Add timeout to ensure loader hides even if initialization hangs
@@ -92,9 +93,16 @@ export class SituationMonitorShell {
     container.style.opacity = '1';
     container.style.zIndex = '1';
     
-    // Create layout - matches Noteworthy News container system
+    // Create layout - OSINT Control Room
     container.innerHTML = `
-      <div class="sitmon-page-wrapper" style="display: block !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 1 !important;">
+      <!-- OSINT Ticker (Top) -->
+      <div class="sitmon-osint-ticker" id="sitmon-osint-ticker">
+        <div class="sitmon-osint-ticker-content" id="sitmon-ticker-content">
+          <span>LIVE: Monitoring global intelligence feeds...</span>
+        </div>
+      </div>
+      
+      <div class="sitmon-page-wrapper" style="display: block !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 1 !important; padding-top: 44px;">
         <!-- Page Header -->
         <div class="sitmon-page-header" style="display: flex !important; visibility: visible !important; opacity: 1 !important;">
           <div class="sitmon-header-left">
@@ -143,8 +151,10 @@ export class SituationMonitorShell {
           </div>
         </div>
 
-        <!-- Intel Wall: Map as Main Canvas with HUD Overlays -->
-        <div class="sitmon-intel-wall">
+        <!-- OSINT Grid Layout -->
+        <div class="sitmon-osint-grid">
+          <!-- Map: Columns 1-7 (Tactical Node, not hero) -->
+          <div class="sitmon-intel-wall" style="grid-column: 1 / 8;">
           <!-- Map Container (Full Canvas) -->
           <div class="sitmon-map-container">
             <div id="sitmon-map" class="sitmon-map"></div>
@@ -222,29 +232,67 @@ export class SituationMonitorShell {
               </div>
             </div>
             
-            <!-- Bottom Status Bar -->
-            <div class="sitmon-status-bar">
-              <div class="sitmon-status-item">
-                <span class="sitmon-status-label">Last ingest:</span>
-                <span class="sitmon-status-value" id="sitmon-status-last-ingest">--</span>
+            <!-- Bottom Status Bar (OSINT Status Strip) -->
+            <div class="sitmon-osint-status-strip">
+              <div class="sitmon-osint-status-item">
+                <span class="sitmon-osint-status-label">INGEST:</span>
+                <span class="sitmon-osint-status-value sitmon-telemetry" id="sitmon-status-last-ingest">--</span>
               </div>
-              <div class="sitmon-status-item">
-                <span class="sitmon-status-label">Sources:</span>
-                <span class="sitmon-status-value sitmon-status-online" id="sitmon-status-sources">Online</span>
+              <div class="sitmon-osint-status-item">
+                <span class="sitmon-osint-status-label">SOURCES:</span>
+                <span class="sitmon-osint-status-value sitmon-telemetry online" id="sitmon-status-sources">ONLINE</span>
               </div>
-              <div class="sitmon-status-item">
-                <label class="sitmon-status-toggle">
+              <div class="sitmon-osint-status-item">
+                <span class="sitmon-osint-status-label">EVENTS/MIN:</span>
+                <span class="sitmon-osint-status-value sitmon-telemetry sitmon-count" id="sitmon-status-events-min">0</span>
+              </div>
+              <div class="sitmon-osint-status-item">
+                <label class="sitmon-status-toggle" style="font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; font-size: 0.7rem;">
                   <input type="checkbox" id="sitmon-auto-refresh-hud" checked>
-                  <span>Auto-refresh</span>
+                  <span>AUTO</span>
                 </label>
               </div>
             </div>
           </div>
+          </div>
+          
+          <!-- Right Stack: Columns 8-12 (Micro-panels) -->
+          <div class="sitmon-panels-stack" style="grid-column: 8 / 13;">
+            <div class="sitmon-panel-card" id="sitmon-panel-intel">
+              <div class="sitmon-card-header">
+                <h2 class="sitmon-card-title">Main Characters</h2>
+              </div>
+              <div class="sitmon-card-body" id="sitmon-panel-intel-body"></div>
+              <div class="sitmon-panel-resize-handle" data-panel-id="sitmon-panel-intel"></div>
+            </div>
+
+            <div class="sitmon-panel-card" id="sitmon-panel-correlation">
+              <div class="sitmon-card-header">
+                <h2 class="sitmon-card-title">Correlations</h2>
+              </div>
+              <div class="sitmon-card-body" id="sitmon-panel-correlation-body"></div>
+              <div class="sitmon-panel-resize-handle" data-panel-id="sitmon-panel-correlation"></div>
+            </div>
+
+            <div class="sitmon-panel-card" id="sitmon-panel-narrative">
+              <div class="sitmon-card-header">
+                <h2 class="sitmon-card-title">Narrative Signals</h2>
+              </div>
+              <div class="sitmon-card-body" id="sitmon-panel-narrative-body"></div>
+              <div class="sitmon-panel-resize-handle" data-panel-id="sitmon-panel-narrative"></div>
+            </div>
+
+            <div class="sitmon-panel-card" id="sitmon-panel-monitors">
+              <div class="sitmon-card-header">
+                <h2 class="sitmon-card-title">Custom Monitors</h2>
+              </div>
+              <div class="sitmon-card-body" id="sitmon-panel-monitors-body"></div>
+              <div class="sitmon-panel-resize-handle" data-panel-id="sitmon-panel-monitors"></div>
+            </div>
+          </div>
         </div>
         
-        <!-- Secondary Panels Grid (Below Map) -->
-
-        <!-- Secondary Panels Grid -->
+        <!-- Secondary Panels Grid (Below) - 12-Column OSINT Layout -->
         <div class="sitmon-secondary-grid" style="display: grid !important; visibility: visible !important; opacity: 1 !important;">
           <div class="sitmon-panel-card" id="sitmon-panel-news">
             <div class="sitmon-card-header">
@@ -339,7 +387,8 @@ export class SituationMonitorShell {
     
     // Initialize drawers and overlays
     this.initDrawers();
-    this.initBigBoardOverlay();
+    // BigBoardOverlay removed - stats are now in left HUD
+    // this.initBigBoardOverlay();
     this.initDiagnostics();
     
     setLoaderPhase('RENDER');
@@ -564,45 +613,70 @@ export class SituationMonitorShell {
       }
     });
 
-    // CRITICAL: Verify all required panel body elements exist before creating panels
-    const requiredBodies = [
-      'sitmon-panel-news-body',
-      'sitmon-panel-earthquakes-body',
-      'sitmon-panel-weather-body',
-      'sitmon-panel-markets-body',
-      'sitmon-panel-intel-body',
-      'sitmon-panel-correlation-body',
-      'sitmon-panel-narrative-body',
-      'sitmon-panel-monitors-body',
-      'sitmon-panel-rss-body'
-    ];
+    // Check which panel body elements exist (some may be optional in new layout)
+    const panelBodies = {
+      news: 'sitmon-panel-news-body',
+      earthquakes: 'sitmon-panel-earthquakes-body',
+      weather: 'sitmon-panel-weather-body',
+      markets: 'sitmon-panel-markets-body',
+      intel: 'sitmon-panel-intel-body',
+      correlation: 'sitmon-panel-correlation-body',
+      narrative: 'sitmon-panel-narrative-body',
+      monitors: 'sitmon-panel-monitors-body',
+      rss: 'sitmon-panel-rss-body'
+    };
     
-    const missingBodies = requiredBodies.filter(id => {
+    // Check which panels are available
+    const availablePanels = {};
+    const missingBodies = [];
+    
+    for (const [key, id] of Object.entries(panelBodies)) {
       const el = document.getElementById(id);
-      return !el || el.nodeType !== 1;
-    });
+      if (el && el.nodeType === 1) {
+        availablePanels[key] = id;
+      } else {
+        missingBodies.push(id);
+      }
+    }
     
     if (missingBodies.length > 0) {
-      console.error('[SituationMonitorShell] CRITICAL: Missing panel body elements:', missingBodies);
-      console.error('[SituationMonitorShell] Cannot initialize panels - DOM structure incomplete');
-      // Don't throw - just log and skip panel initialization
-      return;
+      console.warn('[SituationMonitorShell] Some panel body elements are missing (may be expected in new layout):', missingBodies);
+    }
+    
+    // Only initialize panels that have their containers available
+
+    // Data panels - only initialize if containers exist
+    if (availablePanels.news) {
+      this.panels.news = new NewsPanel('sitmon-panel-news-body');
+    }
+    if (availablePanels.markets) {
+      this.panels.markets = new MarketsPanel('sitmon-panel-markets-body');
+    }
+    if (availablePanels.earthquakes) {
+      this.panels.earthquakes = new EarthquakePanel('sitmon-panel-earthquakes-body');
+    }
+    if (availablePanels.weather) {
+      this.panels.weather = new WeatherAlertsPanel('sitmon-panel-weather-body');
     }
 
-    // Data panels - using body containers
-    this.panels.news = new NewsPanel('sitmon-panel-news-body');
-    this.panels.markets = new MarketsPanel('sitmon-panel-markets-body');
-    this.panels.earthquakes = new EarthquakePanel('sitmon-panel-earthquakes-body');
-    this.panels.weather = new WeatherAlertsPanel('sitmon-panel-weather-body');
-
-    // Analysis panels - using body containers
-    this.panels.intel = new IntelFeedPanel('sitmon-panel-intel-body');
-    this.panels.correlation = new CorrelationPanel('sitmon-panel-correlation-body');
-    this.panels.narrative = new NarrativePanel('sitmon-panel-narrative-body');
-    this.panels.monitors = new MonitorsPanel('sitmon-panel-monitors-body', this.mapView);
+    // Analysis panels - only initialize if containers exist
+    if (availablePanels.intel) {
+      this.panels.intel = new IntelFeedPanel('sitmon-panel-intel-body');
+    }
+    if (availablePanels.correlation) {
+      this.panels.correlation = new CorrelationPanel('sitmon-panel-correlation-body');
+    }
+    if (availablePanels.narrative) {
+      this.panels.narrative = new NarrativePanel('sitmon-panel-narrative-body');
+    }
+    if (availablePanels.monitors) {
+      this.panels.monitors = new MonitorsPanel('sitmon-panel-monitors-body', this.mapView);
+    }
     
     // RSS Intelligence panel
-    this.panels.rss = new RSSIntelligencePanel('sitmon-panel-rss-body');
+    if (availablePanels.rss) {
+      this.panels.rss = new RSSIntelligencePanel('sitmon-panel-rss-body');
+    }
 
     // CRITICAL: Initialize all panels (none call init() in constructor anymore)
     const initPromises = [];
@@ -864,9 +938,107 @@ export class SituationMonitorShell {
     const criticalEl = document.getElementById('sitmon-stat-critical');
     const highEl = document.getElementById('sitmon-stat-high');
     
-    if (totalEl) totalEl.textContent = total;
-    if (criticalEl) criticalEl.textContent = critical;
-    if (highEl) highEl.textContent = high;
+    // Animate value changes
+    const animateValueChange = (el, newValue, oldValue) => {
+      if (el && newValue !== oldValue) {
+        el.classList.add('updated');
+        setTimeout(() => el.classList.remove('updated'), 600);
+      }
+    };
+    
+    const oldTotal = totalEl ? parseInt(totalEl.textContent) || 0 : 0;
+    const oldCritical = criticalEl ? parseInt(criticalEl.textContent) || 0 : 0;
+    const oldHigh = highEl ? parseInt(highEl.textContent) || 0 : 0;
+    
+    if (totalEl) {
+      totalEl.textContent = total;
+      animateValueChange(totalEl, total, oldTotal);
+    }
+    if (criticalEl) {
+      criticalEl.textContent = critical;
+      animateValueChange(criticalEl, critical, oldCritical);
+    }
+    if (highEl) {
+      highEl.textContent = high;
+      animateValueChange(highEl, high, oldHigh);
+    }
+    
+    // Mark panels with critical events
+    const panels = document.querySelectorAll('.sitmon-panel-card');
+    panels.forEach(panel => {
+      const hasCritical = panel.querySelector('[data-severity="5"]');
+      if (hasCritical) {
+        panel.classList.add('has-critical');
+      } else {
+        panel.classList.remove('has-critical');
+      }
+    });
+    
+    // Update OSINT status strip
+    const eventsMinEl = document.getElementById('sitmon-status-events-min');
+    if (eventsMinEl && this.lastIngestTime) {
+      // Calculate events per minute (simplified - could track over time window)
+      const timeSinceLastIngest = (Date.now() - this.lastIngestTime.getTime()) / 1000 / 60;
+      const eventsPerMin = timeSinceLastIngest > 0 ? Math.round(total / timeSinceLastIngest) : 0;
+      eventsMinEl.textContent = eventsPerMin;
+    }
+    
+    // Update ticker with latest critical events
+    this.updateOsintTicker(events);
+  }
+  
+  updateOsintTicker(events) {
+    const tickerContent = document.getElementById('sitmon-ticker-content');
+    if (!tickerContent) return;
+    
+    // Get top 5 critical/high events
+    const criticalEvents = events
+      .filter(e => e.severity >= 4)
+      .sort((a, b) => b.severity - a.severity || new Date(b.publishedAt) - new Date(a.publishedAt))
+      .slice(0, 5);
+    
+    if (criticalEvents.length === 0) {
+      tickerContent.innerHTML = '<span>LIVE: Monitoring global intelligence feeds...</span>';
+      return;
+    }
+    
+    const tickerItems = criticalEvents.map(event => {
+      const age = event.getAgeHours ? event.getAgeHours() : 0;
+      const ageText = age < 1 ? `${Math.floor(age * 60)}m` : 
+                      age < 24 ? `${Math.floor(age)}h` : 
+                      `${Math.floor(age / 24)}d`;
+      return `<span style="color: ${event.severity >= 5 ? '#ff6b6b' : '#ffaa00'}">[${event.severity}/5]</span> ${this.escapeHtml(event.title)} <span style="color: rgba(255,255,255,0.5);">• ${ageText} ago</span>`;
+    });
+    
+    // Duplicate for seamless scroll
+    tickerContent.innerHTML = tickerItems.join(' • ') + ' • ' + tickerItems.join(' • ');
+  }
+  
+  updateOsintTicker(events) {
+    const tickerContent = document.getElementById('sitmon-ticker-content');
+    if (!tickerContent) return;
+    
+    // Get top 5 critical/high events
+    const criticalEvents = events
+      .filter(e => e.severity >= 4)
+      .sort((a, b) => b.severity - a.severity || new Date(b.publishedAt) - new Date(a.publishedAt))
+      .slice(0, 5);
+    
+    if (criticalEvents.length === 0) {
+      tickerContent.innerHTML = '<span>LIVE: Monitoring global intelligence feeds...</span>';
+      return;
+    }
+    
+    const tickerItems = criticalEvents.map(event => {
+      const age = event.getAgeHours ? event.getAgeHours() : 0;
+      const ageText = age < 1 ? `${Math.floor(age * 60)}m` : 
+                      age < 24 ? `${Math.floor(age)}h` : 
+                      `${Math.floor(age / 24)}d`;
+      return `<span style="color: ${event.severity >= 5 ? '#ff6b6b' : '#ffaa00'}">[${event.severity}/5]</span> ${this.escapeHtml(event.title)} <span style="color: rgba(255,255,255,0.5);">• ${ageText} ago</span>`;
+    });
+    
+    // Duplicate for seamless scroll
+    tickerContent.innerHTML = tickerItems.join(' • ') + ' • ' + tickerItems.join(' • ');
   }
   
   updateLiveFeed(events) {
@@ -898,20 +1070,30 @@ export class SituationMonitorShell {
       const severityColor = event.severity >= 5 ? '#ff6b6b' : 
                            event.severity >= 4 ? '#ffaa00' : 
                            event.severity >= 3 ? '#4ade80' : '#22d3ee';
+      const isCritical = event.severity >= 5;
       
       return `
-        <div class="sitmon-feed-item" data-event-id="${event.id}">
+        <div class="sitmon-feed-item ${isCritical ? 'critical' : ''}" data-event-id="${event.id}">
           <div class="sitmon-feed-item-title">
             <span class="sitmon-feed-item-severity" style="background: ${severityColor}"></span>
-            ${this.escapeHtml(event.title)}
+            <span style="${isCritical ? 'font-weight: 600;' : ''}">${this.escapeHtml(event.title)}</span>
           </div>
           <div class="sitmon-feed-item-meta">
-            <span>${this.escapeHtml(event.source)}</span>
-            <span>${ageText}</span>
+            <span style="font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; font-size: 0.7rem;">${this.escapeHtml(event.source)}</span>
+            <span style="font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; font-size: 0.7rem; color: rgba(255,255,255,0.5);">${ageText}</span>
           </div>
         </div>
       `;
     }).join('');
+    
+    if (countEl) {
+      const oldCount = parseInt(countEl.textContent) || 0;
+      countEl.textContent = events.length;
+      if (events.length > oldCount) {
+        countEl.style.animation = 'statPulse 0.6s ease-out';
+        setTimeout(() => countEl.style.animation = '', 600);
+      }
+    }
     
     // Add click handlers
     feedEl.querySelectorAll('.sitmon-feed-item').forEach(item => {
@@ -994,7 +1176,7 @@ export class SituationMonitorShell {
       const events = [];
       
       // Fetch earthquakes
-      if (this.panels.earthquakes) {
+      if (this.panels.earthquakes && typeof this.panels.earthquakes.getEarthquakes === 'function') {
         try {
           const eqs = this.panels.earthquakes.getEarthquakes() || [];
           for (const eq of eqs) {
@@ -1006,7 +1188,7 @@ export class SituationMonitorShell {
       }
       
       // Fetch weather alerts
-      if (this.panels.weather) {
+      if (this.panels.weather && this.panels.weather.alerts) {
         try {
           const alerts = this.panels.weather.alerts || [];
           for (const alert of alerts) {
@@ -1018,7 +1200,7 @@ export class SituationMonitorShell {
       }
       
       // Fetch news headlines and process through pipeline
-      if (this.panels.news) {
+      if (this.panels.news && typeof this.panels.news.getHeadlines === 'function') {
         try {
           const headlines = this.panels.news.getHeadlines() || [];
           const processed = await this.eventPipeline.processHeadlines(headlines);
@@ -1037,22 +1219,30 @@ export class SituationMonitorShell {
       this.lastIngestTime = new Date();
       const ingestEl = document.getElementById('sitmon-status-last-ingest');
       if (ingestEl) {
-        ingestEl.textContent = '0s ago';
+        ingestEl.textContent = '0s';
+        // Update every second
+        if (this.ingestTimer) clearInterval(this.ingestTimer);
+        this.ingestTimer = setInterval(() => {
+          if (this.lastIngestTime && ingestEl) {
+            const seconds = Math.floor((Date.now() - this.lastIngestTime.getTime()) / 1000);
+            ingestEl.textContent = `${seconds}s`;
+          }
+        }, 1000);
       }
       
       // Update status
       const sourcesEl = document.getElementById('sitmon-status-sources');
       if (sourcesEl) {
-        sourcesEl.textContent = 'Online';
-        sourcesEl.className = 'sitmon-status-value sitmon-status-online';
+        sourcesEl.textContent = 'ONLINE';
+        sourcesEl.className = 'sitmon-osint-status-value sitmon-telemetry online';
       }
       
     } catch (error) {
       console.error('[SituationMonitorShell] Error fetching events:', error);
       const sourcesEl = document.getElementById('sitmon-status-sources');
       if (sourcesEl) {
-        sourcesEl.textContent = 'Offline';
-        sourcesEl.className = 'sitmon-status-value';
+        sourcesEl.textContent = 'OFFLINE';
+        sourcesEl.className = 'sitmon-osint-status-value sitmon-telemetry offline';
       }
     }
   }
@@ -1198,7 +1388,7 @@ export class SituationMonitorShell {
     
     const toast = document.createElement('div');
     toast.className = `sitmon-toast ${type}`;
-    toast.style.cssText = 'display: flex !important; position: relative !important; z-index: 10001 !important; color: #fff !important;';
+    toast.style.cssText = 'display: flex !important; flex-direction: row !important; position: relative !important; z-index: 10001 !important; color: #fff !important; writing-mode: horizontal-tb !important; text-orientation: mixed !important; transform: none !important;';
     
     // Icon based on type
     let iconSvg = '';
@@ -1347,13 +1537,9 @@ export class SituationMonitorShell {
   }
   
   initBigBoardOverlay() {
-    // Wait for map to be initialized
-    setTimeout(() => {
-      this.bigBoardOverlay = new BigBoardOverlay();
-      if (this.mapEvents.length > 0) {
-        this.bigBoardOverlay.update(this.mapEvents);
-      }
-    }, 1000);
+    // BigBoardOverlay removed - stats are now displayed in the left HUD panel
+    // This overlay was covering too much space and is better integrated into the HUD
+    return;
   }
   
   initDiagnostics() {
@@ -1409,16 +1595,39 @@ export class SituationMonitorShell {
     }
 
     try {
-      // Refresh data panels
-      await Promise.all([
-        this.panels.news.loadNews(),
-        this.panels.markets.loadMarkets(),
-        this.panels.earthquakes.loadEarthquakes(),
-        this.panels.weather.loadAlerts()
-      ]);
+      // Refresh data panels (only if they exist)
+      const refreshPromises = [];
+      
+      if (this.panels.news && typeof this.panels.news.loadNews === 'function') {
+        refreshPromises.push(this.panels.news.loadNews().catch(err => {
+          console.warn('[SituationMonitorShell] Error refreshing news:', err);
+        }));
+      }
+      
+      if (this.panels.markets && typeof this.panels.markets.loadMarkets === 'function') {
+        refreshPromises.push(this.panels.markets.loadMarkets().catch(err => {
+          console.warn('[SituationMonitorShell] Error refreshing markets:', err);
+        }));
+      }
+      
+      if (this.panels.earthquakes && typeof this.panels.earthquakes.loadEarthquakes === 'function') {
+        refreshPromises.push(this.panels.earthquakes.loadEarthquakes().catch(err => {
+          console.warn('[SituationMonitorShell] Error refreshing earthquakes:', err);
+        }));
+      }
+      
+      if (this.panels.weather && typeof this.panels.weather.loadAlerts === 'function') {
+        refreshPromises.push(this.panels.weather.loadAlerts().catch(err => {
+          console.warn('[SituationMonitorShell] Error refreshing weather:', err);
+        }));
+      }
+      
+      await Promise.all(refreshPromises);
 
       // Update analysis panels with news data
-      const headlines = this.panels.news.getHeadlines();
+      const headlines = this.panels.news && typeof this.panels.news.getHeadlines === 'function' 
+        ? this.panels.news.getHeadlines() 
+        : [];
       if (headlines && headlines.length > 0) {
         // Ensure panels are initialized before updating
         if (this.panels.intel && typeof this.panels.intel.update === 'function') {
@@ -1451,9 +1660,10 @@ export class SituationMonitorShell {
           }
           
           // Update big board overlay
-          if (this.bigBoardOverlay) {
-            this.bigBoardOverlay.update(this.mapEvents);
-          }
+          // BigBoardOverlay removed - stats are now in left HUD
+          // if (this.bigBoardOverlay) {
+          //   this.bigBoardOverlay.update(this.mapEvents);
+          // }
           
           // Update diagnostics panel
           if (this.diagnosticsPanel && this.diagnosticsPanel.isEnabled) {
@@ -1597,14 +1807,21 @@ export class SituationMonitorShell {
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
     }
+    
+    // Clear ingest timer to prevent memory leak
+    if (this.ingestTimer) {
+      clearInterval(this.ingestTimer);
+      this.ingestTimer = null;
+    }
 
     if (this.mapView) {
       this.mapView.destroy();
     }
     
-    if (this.bigBoardOverlay) {
-      this.bigBoardOverlay.destroy();
-    }
+    // BigBoardOverlay removed
+    // if (this.bigBoardOverlay) {
+    //   this.bigBoardOverlay.destroy();
+    // }
     
     if (this.diagnosticsPanel) {
       this.diagnosticsPanel.destroy();

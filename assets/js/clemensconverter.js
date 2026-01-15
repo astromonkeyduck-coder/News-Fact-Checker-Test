@@ -21,6 +21,8 @@ const state = {
     activeProcessing: 0,
     concurrentMode: false,
     activeJobs: new Map(), // jobId -> { fileId, pollInterval }
+    batchMode: false,
+    batchSelected: new Set(),
     recording: {
         isRecording: false,
         mediaRecorder: null,
@@ -60,6 +62,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeElements();
     setupEventListeners();
     loadSettings();
+    setupKeyboardShortcuts();
+    loadStats();
     // Resume jobs asynchronously - don't await to avoid blocking initialization
     resumeJobs().catch(error => {
         console.error('[DOMContentLoaded] Error resuming jobs:', error);
@@ -151,19 +155,19 @@ function setupEventListeners() {
 function handleDragOver(e) {
     e.preventDefault();
     e.stopPropagation();
-    elements.dropzone.classList.add('dragover');
+    elements.dropzone.classList.add('dragover', 'drag-active');
 }
 
 function handleDragLeave(e) {
     e.preventDefault();
     e.stopPropagation();
-    elements.dropzone.classList.remove('dragover');
+    elements.dropzone.classList.remove('dragover', 'drag-active');
 }
 
 function handleDrop(e) {
     e.preventDefault();
     e.stopPropagation();
-    elements.dropzone.classList.remove('dragover');
+    elements.dropzone.classList.remove('dragover', 'drag-active');
     
     const files = Array.from(e.dataTransfer.files).filter(f => 
         f.type.startsWith('audio/') || f.name.endsWith('.mp3')
@@ -195,12 +199,7 @@ function addFiles(files) {
 
         // Note: We allow >25MB files if R2 is configured (they'll be chunked during processing)
         // The 25MB limit is only enforced for Blobs upload path (fallback)
-
-        // Warn about Netlify Function upload limit
-        if (file.size > CONFIG.maxUploadSize) {
-            showError(`Warning: ${file.name} is ${(file.size / 1024 / 1024).toFixed(1)}MB. Files over ${CONFIG.maxUploadSize / 1024 / 1024}MB may fail due to Netlify Function limits. Consider using R2 storage or chunking.`);
-            // Continue anyway - let it try, but user is warned
-        }
+        // No warnings - just process the file
 
         const fileId = generateFileId();
         // Create blob URL for audio playback (if it's an audio file)
@@ -264,11 +263,25 @@ function createFileItem(fileId, fileData) {
     if (fileData.statusMessage) {
         statusText = fileData.statusMessage;
     }
+    
+    // Get file type icon
+    const fileExtension = fileData.fileName.split('.').pop()?.toLowerCase() || '';
+    const fileIcons = {
+        'mp3': '🎵',
+        'webm': '🎤',
+        'wav': '🔊',
+        'ogg': '🎧',
+        'm4a': '📻',
+    };
+    const fileIcon = fileIcons[fileExtension] || '📄';
 
     div.innerHTML = `
         <div class="file-header">
             <div class="file-info">
-                <div class="file-name">${escapeHtml(fileData.fileName)}</div>
+                <div class="file-name">
+                    <span class="file-type-icon">${fileIcon}</span>
+                    ${escapeHtml(fileData.fileName)}
+                </div>
                 <div class="file-meta">
                     <span>${fileData.fileSize > 0 ? formatFileSize(fileData.fileSize) : 'Large file'}</span>
                     <span class="file-status ${statusClass}">
@@ -726,6 +739,26 @@ function pollJobStatus(jobId, fileId) {
             });
 
             if (!response.ok) {
+                // If job doesn't exist (404), stop polling and clean up
+                if (response.status === 404) {
+                    console.warn(`[pollJobStatus] Job ${jobId} not found (404), stopping polling and cleaning up`);
+                    if (intervalId) {
+                        clearInterval(intervalId);
+                    }
+                    state.activeJobs.delete(jobId);
+                    localStorage.removeItem(`clemens-job-${jobId}`);
+                    
+                    // Update file status if it exists
+                    const fileData = state.files.get(fileId);
+                    if (fileData) {
+                        fileData.status = 'error';
+                        fileData.error = 'Job not found in database. It may have been deleted.';
+                        updateQueueDisplay();
+                    }
+                    
+                    processQueue();
+                    return;
+                }
                 throw new Error(`Job status check failed: ${response.status}`);
             }
 
@@ -858,7 +891,54 @@ function pollJobStatus(jobId, fileId) {
             }
         } catch (error) {
             console.error(`[pollJobStatus] Error polling job ${jobId}:`, error);
-            // Continue polling on error (might be temporary network issue)
+            
+            // If error message indicates 404, stop polling
+            if (error.message && error.message.includes('404')) {
+                console.warn(`[pollJobStatus] Job ${jobId} not found, stopping polling`);
+                if (intervalId) {
+                    clearInterval(intervalId);
+                }
+                state.activeJobs.delete(jobId);
+                localStorage.removeItem(`clemens-job-${jobId}`);
+                
+                // Update file status if it exists
+                const fileData = state.files.get(fileId);
+                if (fileData) {
+                    fileData.status = 'error';
+                    fileData.error = 'Job not found in database. It may have been deleted.';
+                    updateQueueDisplay();
+                }
+                
+                processQueue();
+                return;
+            }
+            
+            // For other errors, continue polling (might be temporary network issue)
+            // But limit retries to avoid infinite polling
+            const errorCount = state.activeJobs.get(jobId)?.errorCount || 0;
+            if (errorCount > 10) {
+                console.error(`[pollJobStatus] Too many errors for job ${jobId}, stopping polling`);
+                if (intervalId) {
+                    clearInterval(intervalId);
+                }
+                state.activeJobs.delete(jobId);
+                
+                const fileData = state.files.get(fileId);
+                if (fileData) {
+                    fileData.status = 'error';
+                    fileData.error = 'Too many polling errors. Please try again.';
+                    updateQueueDisplay();
+                }
+                
+                processQueue();
+                return;
+            }
+            
+            // Increment error count
+            const jobInfo = state.activeJobs.get(jobId);
+            if (jobInfo) {
+                jobInfo.errorCount = errorCount + 1;
+            }
         }
     };
 
@@ -895,6 +975,39 @@ async function resumeJobs() {
             // Resumed jobs are tracked in activeJobs, and will decrement activeProcessing
             // when they complete. We don't want to double-count them.
             
+            // First, verify job exists in database before resuming
+            try {
+                const statusUrl = `${CONFIG.apiBase}/job-status?jobId=${encodeURIComponent(jobId)}`;
+                const statusResponse = await fetch(statusUrl, {
+                    method: 'GET',
+                    headers: getAuthHeaders(),
+                });
+                
+                if (statusResponse.status === 404) {
+                    // Job doesn't exist, clean up localStorage
+                    console.log(`[resumeJobs] Job ${jobId} not found in database (404), removing from localStorage`);
+                    localStorage.removeItem(key);
+                    continue;
+                }
+                
+                if (!statusResponse.ok) {
+                    console.warn(`[resumeJobs] Could not verify job ${jobId} status (${statusResponse.status}), skipping`);
+                    continue;
+                }
+                
+                const jobStatus = await statusResponse.json();
+                
+                // If job is already done or error, clean up
+                if (jobStatus.status === 'done' || jobStatus.status === 'error') {
+                    console.log(`[resumeJobs] Job ${jobId} is already ${jobStatus.status}, removing from localStorage`);
+                    localStorage.removeItem(key);
+                    continue;
+                }
+            } catch (verifyError) {
+                console.error(`[resumeJobs] Error verifying job ${jobId}:`, verifyError);
+                // Continue anyway - might be temporary network issue
+            }
+            
             // Check if file still exists in state
             if (state.files.has(fileId)) {
                 const fileData = state.files.get(fileId);
@@ -906,9 +1019,8 @@ async function resumeJobs() {
                 pollJobStatus(jobId, fileId);
                 console.log(`[resumeJobs] Resumed job ${jobId} for file ${fileName}`);
             } else {
-                // File not in state, create a placeholder entry
-                // Use the original fileId from jobData to maintain consistency
-                // Fetch job status to get file size and other details
+                // File not in state, fetch job status to create placeholder
+                // (Job existence was already verified above, so we can proceed)
                 try {
                     const statusUrl = `${CONFIG.apiBase}/job-status?jobId=${encodeURIComponent(jobId)}`;
                     const statusResponse = await fetch(statusUrl, {
@@ -942,51 +1054,54 @@ async function resumeJobs() {
                                     ...getAuthHeaders(),
                                 },
                                 body: JSON.stringify({ jobId }),
-                            }).then(response => {
-                                if (response.ok) {
-                                    console.log(`[resumeJobs] ✅ Successfully triggered job ${jobId}`);
-                                } else {
-                                    console.error(`[resumeJobs] ⚠️ Failed to trigger job ${jobId}: ${response.status}`);
+                            }).then(async response => {
+                                try {
+                                    if (response.ok) {
+                                        console.log(`[resumeJobs] ✅ Successfully triggered job ${jobId}`);
+                                        return;
+                                    }
+                                    
+                                    // Parse error response with proper error handling
+                                    let errorData = {};
+                                    try {
+                                        errorData = await response.json();
+                                    } catch (parseError) {
+                                        console.warn(`[resumeJobs] Could not parse error response for job ${jobId}:`, parseError);
+                                    }
+                                    
+                                    // If job doesn't exist (404) or is not queued (400), clean up
+                                    if (response.status === 404 || response.status === 400) {
+                                        console.log(`[resumeJobs] Job ${jobId} cannot be triggered (${response.status}), removing from localStorage`);
+                                        localStorage.removeItem(key);
+                                        // Remove from state if it exists
+                                        if (state.files.has(fileId)) {
+                                            state.files.delete(fileId);
+                                            updateQueueDisplay();
+                                        }
+                                        return;
+                                    }
+                                    console.error(`[resumeJobs] ⚠️ Failed to trigger job ${jobId}: ${response.status}`, errorData);
+                                } catch (error) {
+                                    // Handle any errors in the async handler
+                                    console.error(`[resumeJobs] ❌ Error processing response for job ${jobId}:`, error);
                                 }
                             }).catch(err => {
                                 console.error(`[resumeJobs] ❌ Error triggering job ${jobId}:`, err);
                             });
                         }
+                        
+                        // Start polling for this job
+                        pollJobStatus(jobId, fileId);
+                        console.log(`[resumeJobs] Resumed job ${jobId} for file ${fileName} (placeholder)`);
                     } else {
-                        // Fallback: create placeholder without job status
-                        state.files.set(fileId, {
-                            id: fileId,
-                            fileName: fileName,
-                            fileSize: 0,
-                            status: 'processing',
-                            progress: 0,
-                            error: null,
-                            transcript: null,
-                            objectKey: null,
-                            jobId: jobId,
-                            isLargeFile: true,
-                        });
+                        // Job status fetch failed (shouldn't happen since we verified above, but handle it)
+                        console.warn(`[resumeJobs] Could not fetch job status for ${jobId} (${statusResponse.status}), skipping`);
+                        continue;
                     }
-                } catch (error) {
-                    console.error(`[resumeJobs] Error fetching job status for ${jobId}:`, error);
-                    // Fallback: create placeholder
-                    state.files.set(fileId, {
-                        id: fileId,
-                        fileName: fileName,
-                        fileSize: 0,
-                        status: 'processing',
-                        progress: 0,
-                        error: null,
-                        transcript: null,
-                        objectKey: null,
-                        jobId: jobId,
-                        isLargeFile: true,
-                    });
+                } catch (fetchError) {
+                    console.error(`[resumeJobs] Error fetching job status for ${jobId}:`, fetchError);
+                    continue;
                 }
-                
-                // Resume polling
-                pollJobStatus(jobId, fileId);
-                console.log(`[resumeJobs] Resumed job ${jobId} for file ${fileName} (placeholder)`);
             }
         } catch (error) {
             console.error(`[resumeJobs] Error resuming job from ${key}:`, error);
@@ -1033,17 +1148,64 @@ function showResult(fileId, fileData) {
         transcriptHTML = escapeHtml(transcriptText);
     }
 
+    // Helper function to escape for JavaScript string literals (handles single quotes and special chars)
+    const escapeJsString = (str) => {
+        return String(str)
+            .replace(/\\/g, '\\\\')  // Escape backslashes first
+            .replace(/'/g, "\\'")    // Escape single quotes
+            .replace(/"/g, '\\"')    // Escape double quotes
+            .replace(/\n/g, '\\n')   // Escape newlines
+            .replace(/\r/g, '\\r')   // Escape carriage returns
+            .replace(/\t/g, '\\t')    // Escape tabs
+            .replace(/</g, '\\x3C')   // Escape < to prevent HTML injection
+            .replace(/>/g, '\\x3E');  // Escape > to prevent HTML injection
+    };
+    
+    const escapedFileId = escapeJsString(fileId);
+    
     resultDiv.innerHTML = `
         <div class="result-header">
-            <div class="result-title">${escapeHtml(transcript.fileName)}</div>
+            <div class="result-title-container">
+                <input type="checkbox" class="batch-checkbox" id="batchCheck-${escapeHtml(fileId)}" 
+                       onclick="toggleBatchSelect('${escapedFileId}')" 
+                       style="display: ${state.batchMode ? 'block' : 'none'};">
+                <div class="result-title">${escapeHtml(transcript.fileName)}</div>
+                <div class="result-tags" id="tags-${escapeHtml(fileId)}"></div>
+            </div>
             <div class="result-actions">
-                <button class="btn btn-copy" onclick="copyTranscript('${fileId}')">Copy</button>
-                <button class="btn btn-download-txt" onclick="downloadTxt('${fileId}')">Download TXT</button>
-                <button class="btn btn-download-pdf" onclick="downloadPdf('${fileId}')">Download PDF</button>
-                <button class="btn btn-analyze" id="analyzeBtn-${fileId}" onclick="analyzeTranscript('${fileId}')">
+                <button class="btn btn-copy" onclick="copyTranscript('${escapedFileId}')">Copy</button>
+                <div class="btn-dropdown">
+                    <button class="btn btn-download" onclick="toggleDownloadMenu('${escapedFileId}')">
+                        Download ▼
+                    </button>
+                    <div class="dropdown-menu" id="downloadMenu-${escapeHtml(fileId)}" style="display: none;">
+                        <a href="#" onclick="downloadTxt('${escapedFileId}'); return false;">TXT</a>
+                        <a href="#" onclick="downloadPdf('${escapedFileId}'); return false;">PDF</a>
+                        ${hasSegments ? `<a href="#" onclick="downloadSrt('${escapedFileId}'); return false;">SRT</a>` : ''}
+                        <a href="#" onclick="downloadJson('${escapedFileId}'); return false;">JSON</a>
+                        ${hasAudio ? `<a href="#" onclick="downloadOriginalAudio('${escapedFileId}'); return false;">Original Audio</a>` : ''}
+                    </div>
+                </div>
+                <button class="btn btn-edit" id="editBtn-${escapeHtml(fileId)}" onclick="toggleEditTranscript('${escapedFileId}')">
+                    <span class="edit-icon">✏️</span>
+                    <span class="edit-text">Edit</span>
+                </button>
+                <button class="btn btn-analyze" id="analyzeBtn-${escapeHtml(fileId)}" onclick="analyzeTranscript('${escapedFileId}')">
                     <span class="analyze-icon">🎓</span>
                     <span class="analyze-text">AI Analysis</span>
                 </button>
+            </div>
+        </div>
+        <div class="transcript-search-container" id="searchContainer-${fileId}">
+            <input type="text" class="transcript-search-input" id="searchInput-${fileId}" 
+                   placeholder="Search in transcript..." 
+                   oninput="searchInTranscript('${fileId}', this.value)"
+                   onkeydown="handleSearchKeydown(event, '${fileId}')">
+            <div class="search-results-info" id="searchResults-${fileId}" style="display: none;">
+                <span id="searchCount-${fileId}">0</span> matches
+                <button class="btn-search-nav" onclick="navigateSearch('${fileId}', -1)" title="Previous (↑)">↑</button>
+                <button class="btn-search-nav" onclick="navigateSearch('${fileId}', 1)" title="Next (↓)">↓</button>
+                <button class="btn-search-close" onclick="clearSearch('${fileId}')" title="Clear (Esc)">×</button>
             </div>
         </div>
         ${hasAudio ? `
@@ -1056,6 +1218,12 @@ function showResult(fileId, fileData) {
                         <span class="play-icon">▶</span>
                         <span class="pause-icon" style="display: none;">⏸</span>
                     </button>
+                    <button class="btn-audio-skip" onclick="skipAudio('${fileId}', -10)" title="Skip back 10s (←)">
+                        ⏪ 10s
+                    </button>
+                    <button class="btn-audio-skip" onclick="skipAudio('${fileId}', 10)" title="Skip forward 10s (→)">
+                        10s ⏩
+                    </button>
                     <div class="audio-progress-container">
                         <div class="audio-progress-bar" id="progressBar-${fileId}" onclick="seekAudio('${fileId}', event)">
                             <div class="audio-progress-fill" id="progressFill-${fileId}"></div>
@@ -1064,22 +1232,47 @@ function showResult(fileId, fileData) {
                             <span id="currentTime-${fileId}">0:00</span> / <span id="duration-${fileId}">0:00</span>
                         </div>
                     </div>
+                    <div class="audio-speed-control">
+                        <label>Speed:</label>
+                        <select class="audio-speed-select" id="speedSelect-${fileId}" onchange="setPlaybackSpeed('${fileId}', this.value)">
+                            <option value="0.5">0.5x</option>
+                            <option value="0.75">0.75x</option>
+                            <option value="1" selected>1x</option>
+                            <option value="1.25">1.25x</option>
+                            <option value="1.5">1.5x</option>
+                            <option value="2">2x</option>
+                        </select>
+                    </div>
+                    <div class="audio-volume-control">
+                        <label>Volume:</label>
+                        <input type="range" class="audio-volume-slider" id="volumeSlider-${fileId}" 
+                               min="0" max="100" value="100" 
+                               oninput="setVolume('${fileId}', this.value)">
+                        <span class="volume-value" id="volumeValue-${fileId}">100%</span>
+                    </div>
                 </div>
             </div>
         ` : ''}
         <div class="transcript-preview ${isCollapsed ? 'collapsed' : ''}" id="preview-${fileId}">
             ${transcriptHTML}
         </div>
+        <textarea class="transcript-editor" id="editor-${fileId}" style="display: none;">${escapeHtml(transcriptText)}</textarea>
+        <div class="edit-actions" id="editActions-${fileId}" style="display: none;">
+            <button class="btn btn-save" onclick="saveEditedTranscript('${fileId}')">Save Changes</button>
+            <button class="btn btn-cancel" onclick="cancelEditTranscript('${fileId}')">Cancel</button>
+        </div>
         ${isCollapsed ? `
             <button class="toggle-preview" onclick="togglePreview('${fileId}')">Show more</button>
         ` : ''}
-        ${transcript.segments ? `
-            <div style="margin-top: 10px; color: #a0aec0; font-size: 0.9rem;">
+        <div class="transcript-metadata" style="margin-top: 10px; color: #a0aec0; font-size: 0.9rem;">
+            ${transcript.segments ? `
                 Language: ${transcript.language || 'auto'} | 
-                Model: ${transcript.modelUsed} | 
-                Duration: ${(transcript.elapsedMs / 1000).toFixed(1)}s
-            </div>
-        ` : ''}
+                Model: ${transcript.modelUsed || 'whisper-1'} | 
+                Duration: ${(transcript.elapsedMs / 1000).toFixed(1)}s |
+            ` : ''}
+            <span id="wordCount-${fileId}">${calculateWordCount(transcriptText)} words</span> | 
+            <span id="readingTime-${fileId}">~${calculateReadingTime(transcriptText)} min read</span>
+        </div>
     `;
 
     if (!elements.resultsContainer) {
@@ -1088,6 +1281,12 @@ function showResult(fileId, fileData) {
     }
     
     elements.resultsContainer.appendChild(resultDiv);
+    
+    // Add animation class for new results
+    resultDiv.classList.add('new-result');
+    setTimeout(() => {
+        resultDiv.classList.remove('new-result');
+    }, 500);
 
     // Set up audio player if audio is available
     if (hasAudio) {
@@ -1101,6 +1300,15 @@ function showResult(fileId, fileData) {
             analysis: null,
         };
     }
+    
+    // Update stats
+    updateStats(fileData);
+    
+    // Save transcript to history
+    saveTranscriptToHistory(fileId, fileData);
+    
+    // Initialize tags display
+    updateTagsDisplay(fileId);
 }
 
 /**
@@ -1158,6 +1366,13 @@ function setupAudioPlayer(fileId, fileData, hasSegments) {
     const currentTimeEl = document.getElementById(`currentTime-${fileId}`);
     const durationEl = document.getElementById(`duration-${fileId}`);
     const preview = document.getElementById(`preview-${fileId}`);
+    const volumeSlider = document.getElementById(`volumeSlider-${fileId}`);
+    const volumeValue = document.getElementById(`volumeValue-${fileId}`);
+
+    // Initialize volume
+    if (volumeSlider) {
+        audio.volume = volumeSlider.value / 100;
+    }
 
     // Update duration when metadata loads
     audio.addEventListener('loadedmetadata', () => {
@@ -1209,6 +1424,40 @@ function setupAudioPlayer(fileId, fileData, hasSegments) {
         }
     });
 }
+
+/**
+ * Set playback speed
+ */
+window.setPlaybackSpeed = (fileId, speed) => {
+    const audio = document.getElementById(`audio-${fileId}`);
+    if (audio) {
+        audio.playbackRate = parseFloat(speed);
+    }
+};
+
+/**
+ * Set volume
+ */
+window.setVolume = (fileId, volume) => {
+    const audio = document.getElementById(`audio-${fileId}`);
+    const volumeValue = document.getElementById(`volumeValue-${fileId}`);
+    if (audio) {
+        audio.volume = volume / 100;
+    }
+    if (volumeValue) {
+        volumeValue.textContent = `${volume}%`;
+    }
+};
+
+/**
+ * Skip audio forward/backward
+ */
+window.skipAudio = (fileId, seconds) => {
+    const audio = document.getElementById(`audio-${fileId}`);
+    if (audio) {
+        audio.currentTime = Math.max(0, Math.min(audio.duration, audio.currentTime + seconds));
+    }
+};
 
 /**
  * Highlight words at current playback time
@@ -1312,6 +1561,27 @@ window.analyzeTranscript = async (fileId) => {
             throw new Error('Transcript is empty');
         }
 
+        // Check for uploaded files for context
+        const contextFiles = fileData.analysisState.contextFiles || [];
+        
+        // Convert files to base64 for JSON transmission
+        const contextFilesBase64 = [];
+        if (contextFiles.length > 0) {
+            for (const file of contextFiles) {
+                try {
+                    const base64 = await fileToBase64(file);
+                    contextFilesBase64.push({
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                        data: base64,
+                    });
+                } catch (error) {
+                    console.error('[analyzeTranscript] Error converting file to base64:', error);
+                }
+            }
+        }
+        
         const response = await fetch(`${CONFIG.apiBase}/analyze-transcript`, {
             method: 'POST',
             headers: {
@@ -1320,6 +1590,7 @@ window.analyzeTranscript = async (fileId) => {
             },
             body: JSON.stringify({
                 lecture_transcript: transcriptText,
+                context_files: contextFilesBase64,
             }),
         });
 
@@ -1364,7 +1635,12 @@ function showAnalysisResults(fileId, fileData) {
         analysisSection.innerHTML = `
             <div class="analysis-header">
                 <h3 class="analysis-title">🎓 AP Euro AI Analysis</h3>
-                <button class="btn-close-analysis" onclick="closeAnalysis('${fileId}')">×</button>
+                <div class="analysis-actions">
+                    <button class="btn-upload-context" onclick="uploadContextFiles('${fileId}')" title="Upload reference documents">
+                        📎 Add Context Files
+                    </button>
+                    <button class="btn-close-analysis" onclick="closeAnalysis('${fileId}')">×</button>
+                </div>
             </div>
             <div class="analysis-content" id="analysisContent-${fileId}"></div>
         `;
@@ -1491,6 +1767,81 @@ window.downloadTxt = (fileId) => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+};
+
+/**
+ * Download SRT subtitle file
+ */
+window.downloadSrt = (fileId) => {
+    const fileData = state.files.get(fileId);
+    if (!fileData?.transcript) return;
+    
+    const segments = fileData.transcript.segments;
+    if (!segments || !Array.isArray(segments) || segments.length === 0) {
+        showError('SRT export requires timestamped segments. This transcript does not have timestamps.');
+        return;
+    }
+    
+    let srtContent = '';
+    segments.forEach((segment, index) => {
+        const start = formatSrtTime(segment.start);
+        const end = formatSrtTime(segment.end);
+        srtContent += `${index + 1}\n${start} --> ${end}\n${segment.text.trim()}\n\n`;
+    });
+    
+    const blob = new Blob([srtContent], { type: 'text/srt' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${fileData.fileName.replace(/\.[^/.]+$/, '')}_transcript.srt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showNotification('SRT file downloaded');
+};
+
+/**
+ * Format time for SRT (HH:MM:SS,mmm)
+ */
+function formatSrtTime(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    const milliseconds = Math.floor((seconds % 1) * 1000);
+    
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')},${String(milliseconds).padStart(3, '0')}`;
+}
+
+/**
+ * Download JSON transcript
+ * NOTE: This function is defined later in the file (line ~3226) with tags support.
+ * This duplicate definition is removed to prevent inconsistency.
+ */
+
+/**
+ * Download original audio file
+ */
+window.downloadOriginalAudio = (fileId) => {
+    const fileData = state.files.get(fileId);
+    if (!fileData) return;
+    
+    if (fileData.audioUrl) {
+        // Download from blob URL
+        const a = document.createElement('a');
+        a.href = fileData.audioUrl;
+        a.download = fileData.fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showNotification('Audio file downloaded');
+    } else if (fileData.objectKey) {
+        // Try to get download URL from server
+        showError('Audio file not available for download. It may have been processed and removed.');
+    } else {
+        showError('Audio file not found');
+    }
 };
 
 window.downloadPdf = async (fileId) => {
@@ -2066,4 +2417,1154 @@ function loadSettings() {
             console.error('[loadSettings] Error:', e);
         }
     }
+}
+
+/**
+ * Setup keyboard shortcuts
+ */
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        // Don't trigger shortcuts when typing in inputs
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+            return;
+        }
+
+        // Ctrl+K or Cmd+K: Clear queue
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            clearQueue();
+        }
+
+        // Ctrl+O or Cmd+O: Select files
+        if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
+            e.preventDefault();
+            if (elements.fileInput) {
+                elements.fileInput.click();
+            }
+        }
+
+        // ?: Show shortcuts
+        if (e.key === '?' && !e.shiftKey) {
+            e.preventDefault();
+            showShortcutsModal();
+        }
+
+        // Esc: Close modals
+        if (e.key === 'Escape') {
+            closeShortcutsModal();
+        }
+
+        // Space: Start/Stop recording (when not in input)
+        if (e.key === ' ' && !e.target.tagName.match(/INPUT|TEXTAREA|BUTTON/)) {
+            e.preventDefault();
+            if (state.recording.isRecording) {
+                stopRecording();
+            } else if (elements.recordBtn && elements.recordBtn.style.display !== 'none') {
+                startRecording();
+            }
+        }
+    });
+}
+
+/**
+ * Show keyboard shortcuts modal
+ */
+function showShortcutsModal() {
+    const modal = document.getElementById('shortcutsModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+/**
+ * Close keyboard shortcuts modal
+ */
+window.closeShortcutsModal = () => {
+    const modal = document.getElementById('shortcutsModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+};
+
+/**
+ * Clear queue
+ */
+window.clearQueue = () => {
+    if (confirm('Are you sure you want to clear the queue? This will remove all queued files.')) {
+        // Remove all queued files
+        for (const [fileId, fileData] of state.files) {
+            if (fileData.status === 'queued') {
+                // Stop any polling
+                if (fileData.jobId && state.activeJobs.has(fileData.jobId)) {
+                    const jobInfo = state.activeJobs.get(fileData.jobId);
+                    if (jobInfo.pollInterval) {
+                        clearInterval(jobInfo.pollInterval);
+                    }
+                    state.activeJobs.delete(fileData.jobId);
+                }
+                state.files.delete(fileId);
+            }
+        }
+        updateQueueDisplay();
+        showNotification('Queue cleared');
+    }
+};
+
+/**
+ * Clear results
+ */
+window.clearResults = () => {
+    if (confirm('Are you sure you want to clear all results?')) {
+        if (elements.resultsContainer) {
+            elements.resultsContainer.innerHTML = '';
+        }
+        showNotification('Results cleared');
+    }
+};
+
+/**
+ * Export all transcripts
+ */
+window.exportAllTranscripts = async () => {
+    const transcripts = [];
+    for (const [fileId, fileData] of state.files) {
+        if (fileData.transcript && fileData.transcript.transcriptText) {
+            transcripts.push({
+                fileName: fileData.fileName,
+                text: fileData.transcript.transcriptText,
+            });
+        }
+    }
+
+    if (transcripts.length === 0) {
+        showError('No transcripts to export');
+        return;
+    }
+
+    try {
+        const { PDFDocument, rgb, StandardFonts } = PDFLib;
+        const pdfDoc = await PDFDocument.create();
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+        let page = pdfDoc.addPage([612, 792]);
+        const margin = 50;
+        const maxWidth = page.getWidth() - 2 * margin;
+        let y = page.getHeight() - margin;
+
+        // Title
+        page.drawText('All Transcripts Export', {
+            x: margin,
+            y: y,
+            size: 20,
+            font: boldFont,
+            color: rgb(0, 0, 0),
+        });
+        y -= 30;
+
+        for (const transcript of transcripts) {
+            // Check if we need a new page
+            if (y < margin + 100) {
+                page = pdfDoc.addPage([612, 792]);
+                y = page.getHeight() - margin;
+            }
+
+            // File name
+            page.drawText(transcript.fileName, {
+                x: margin,
+                y: y,
+                size: 14,
+                font: boldFont,
+                color: rgb(0, 0, 0),
+            });
+            y -= 20;
+
+            // Transcript text
+            const lines = wrapText(transcript.text, maxWidth, font, 11);
+            for (const line of lines) {
+                if (y < margin + 20) {
+                    page = pdfDoc.addPage([612, 792]);
+                    y = page.getHeight() - margin;
+                }
+                page.drawText(line, {
+                    x: margin,
+                    y: y,
+                    size: 11,
+                    font: font,
+                    color: rgb(0, 0, 0),
+                });
+                y -= 14;
+            }
+
+            y -= 20; // Space between transcripts
+        }
+
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `all_transcripts_${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showNotification(`Exported ${transcripts.length} transcript(s)`);
+    } catch (error) {
+        console.error('[exportAllTranscripts] Error:', error);
+        showError('Failed to export transcripts');
+    }
+};
+
+/**
+ * Load and display stats
+ */
+function loadStats() {
+    const stats = JSON.parse(localStorage.getItem('clemens_stats') || '{}');
+    
+    const totalProcessed = stats.totalProcessed || 0;
+    const totalMinutes = stats.totalMinutes || 0;
+    
+    const totalProcessedEl = document.getElementById('totalProcessed');
+    const totalTimeEl = document.getElementById('totalTime');
+    
+    if (totalProcessedEl) {
+        animateValue(totalProcessedEl, 0, totalProcessed, 1000);
+    }
+    if (totalTimeEl) {
+        animateValue(totalTimeEl, 0, totalMinutes, 1000);
+    }
+}
+
+/**
+ * Animate number value
+ */
+function animateValue(element, start, end, duration) {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        const current = Math.floor(progress * (end - start) + start);
+        element.textContent = current.toLocaleString();
+        if (progress < 1) {
+            window.requestAnimationFrame(step);
+        }
+    };
+    window.requestAnimationFrame(step);
+}
+
+/**
+ * Update stats
+ */
+function updateStats(fileData) {
+    const stats = JSON.parse(localStorage.getItem('clemens_stats') || '{}');
+    
+    if (fileData.status === 'done' && fileData.transcript) {
+        stats.totalProcessed = (stats.totalProcessed || 0) + 1;
+        
+        // Estimate minutes from file size (rough estimate: 1MB ≈ 1 minute)
+        const estimatedMinutes = Math.max(1, Math.round((fileData.fileSize || 0) / (1024 * 1024)));
+        stats.totalMinutes = (stats.totalMinutes || 0) + estimatedMinutes;
+        
+        localStorage.setItem('clemens_stats', JSON.stringify(stats));
+        
+        // Update display
+        const totalProcessedEl = document.getElementById('totalProcessed');
+        const totalTimeEl = document.getElementById('totalTime');
+        
+        if (totalProcessedEl) {
+            animateValue(totalProcessedEl, parseInt(totalProcessedEl.textContent) || 0, stats.totalProcessed, 500);
+        }
+        if (totalTimeEl) {
+            animateValue(totalTimeEl, parseInt(totalTimeEl.textContent) || 0, stats.totalMinutes, 500);
+        }
+    }
+}
+
+/**
+ * Search within transcript
+ */
+window.searchInTranscript = (fileId, searchTerm) => {
+    const preview = document.getElementById(`preview-${fileId}`);
+    const searchResults = document.getElementById(`searchResults-${fileId}`);
+    const searchCount = document.getElementById(`searchCount-${fileId}`);
+    
+    if (!preview || !searchTerm.trim()) {
+        clearSearch(fileId);
+        return;
+    }
+    
+    // Remove previous highlights
+    const words = preview.querySelectorAll('.transcript-word, span');
+    words.forEach(word => {
+        word.classList.remove('search-match', 'search-active');
+        const originalText = word.getAttribute('data-original') || word.textContent;
+        if (word.getAttribute('data-original')) {
+            word.textContent = originalText;
+            word.removeAttribute('data-original');
+        }
+    });
+    
+    // Search in text content
+    const text = preview.textContent || preview.innerText;
+    const regex = new RegExp(`(${escapeRegex(searchTerm)})`, 'gi');
+    const matches = text.match(regex);
+    
+    if (!matches || matches.length === 0) {
+        if (searchResults) {
+            searchResults.style.display = 'none';
+        }
+        return;
+    }
+    
+    // Highlight matches
+    let matchIndex = 0;
+    const walker = document.createTreeWalker(
+        preview,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+    );
+    
+    const textNodes = [];
+    let node;
+    while (node = walker.nextNode()) {
+        if (node.textContent.trim()) {
+            textNodes.push(node);
+        }
+    }
+    
+    textNodes.forEach(textNode => {
+        const parent = textNode.parentElement;
+        if (parent.classList.contains('search-match')) return;
+        
+        const nodeText = textNode.textContent;
+        if (regex.test(nodeText)) {
+            const highlighted = nodeText.replace(regex, (match) => {
+                const span = document.createElement('span');
+                span.className = 'search-match';
+                span.setAttribute('data-match-index', matchIndex++);
+                span.textContent = match;
+                return span.outerHTML;
+            });
+            
+            const wrapper = document.createElement('span');
+            wrapper.innerHTML = highlighted;
+            textNode.parentNode.replaceChild(wrapper, textNode);
+        }
+    });
+    
+    // Update search results info
+    if (searchResults) {
+        searchResults.style.display = 'flex';
+        searchCount.textContent = matches.length;
+    }
+    
+    // Highlight first match
+    navigateSearch(fileId, 0);
+};
+
+/**
+ * Navigate search results
+ */
+window.navigateSearch = (fileId, direction) => {
+    const preview = document.getElementById(`preview-${fileId}`);
+    if (!preview) return;
+    
+    const matches = Array.from(preview.querySelectorAll('.search-match'));
+    if (matches.length === 0) return;
+    
+    const currentActive = preview.querySelector('.search-active');
+    let currentIndex = currentActive ? matches.indexOf(currentActive) : -1;
+    
+    if (direction === 0) {
+        currentIndex = 0;
+    } else {
+        currentIndex += direction;
+        if (currentIndex < 0) currentIndex = matches.length - 1;
+        if (currentIndex >= matches.length) currentIndex = 0;
+    }
+    
+    // Remove previous active
+    matches.forEach(m => m.classList.remove('search-active'));
+    
+    // Set new active
+    const activeMatch = matches[currentIndex];
+    if (activeMatch) {
+        activeMatch.classList.add('search-active');
+        activeMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+};
+
+/**
+ * Clear search
+ */
+window.clearSearch = (fileId) => {
+    const preview = document.getElementById(`preview-${fileId}`);
+    const searchInput = document.getElementById(`searchInput-${fileId}`);
+    const searchResults = document.getElementById(`searchResults-${fileId}`);
+    
+    if (searchInput) searchInput.value = '';
+    if (searchResults) searchResults.style.display = 'none';
+    
+    if (preview) {
+        const matches = preview.querySelectorAll('.search-match');
+        matches.forEach(match => {
+            match.classList.remove('search-match', 'search-active');
+            const parent = match.parentNode;
+            if (parent && parent.nodeType === Node.TEXT_NODE) {
+                parent.textContent = match.textContent;
+            } else {
+                const text = match.textContent;
+                match.replaceWith(document.createTextNode(text));
+            }
+        });
+    }
+};
+
+/**
+ * Handle search keyboard shortcuts
+ */
+window.handleSearchKeydown = (e, fileId) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        navigateSearch(fileId, 1);
+    } else if (e.key === 'ArrowUp' || (e.key === 'Enter' && e.shiftKey)) {
+        e.preventDefault();
+        navigateSearch(fileId, -1);
+    } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        navigateSearch(fileId, 1);
+    } else if (e.key === 'Escape') {
+        e.preventDefault();
+        clearSearch(fileId);
+    }
+};
+
+/**
+ * Toggle edit mode for transcript
+ */
+window.toggleEditTranscript = (fileId) => {
+    const fileData = state.files.get(fileId);
+    if (!fileData || !fileData.transcript) return;
+    
+    const preview = document.getElementById(`preview-${fileId}`);
+    const editor = document.getElementById(`editor-${fileId}`);
+    const editActions = document.getElementById(`editActions-${fileId}`);
+    const editBtn = document.getElementById(`editBtn-${fileId}`);
+    
+    if (!preview || !editor || !editActions) return;
+    
+    const isEditing = editor.style.display !== 'none';
+    
+    if (isEditing) {
+        // Cancel edit
+        cancelEditTranscript(fileId);
+    } else {
+        // Start editing
+        preview.style.display = 'none';
+        editor.style.display = 'block';
+        editActions.style.display = 'flex';
+        editor.value = fileData.transcript.transcriptText || '';
+        editor.focus();
+        
+        if (editBtn) {
+            editBtn.innerHTML = '<span class="edit-icon">✏️</span><span class="edit-text">Cancel Edit</span>';
+        }
+    }
+};
+
+/**
+ * Save edited transcript
+ */
+window.saveEditedTranscript = (fileId) => {
+    const fileData = state.files.get(fileId);
+    const editor = document.getElementById(`editor-${fileId}`);
+    
+    if (!fileData || !editor) return;
+    
+    const newText = editor.value.trim();
+    if (!newText) {
+        showError('Transcript cannot be empty');
+        return;
+    }
+    
+    // Update transcript
+    fileData.transcript.transcriptText = newText;
+    fileData.transcript.edited = true;
+    fileData.transcript.editedAt = new Date().toISOString();
+    
+    // Update preview
+    const preview = document.getElementById(`preview-${fileId}`);
+    if (preview) {
+        // Rebuild preview HTML (simplified, without segments if edited)
+        preview.innerHTML = escapeHtml(newText).replace(/\n/g, '<br>');
+        preview.style.display = 'block';
+    }
+    
+    // Hide editor
+    editor.style.display = 'none';
+    document.getElementById(`editActions-${fileId}`).style.display = 'none';
+    
+    const editBtn = document.getElementById(`editBtn-${fileId}`);
+    if (editBtn) {
+        editBtn.innerHTML = '<span class="edit-icon">✏️</span><span class="edit-text">Edit</span>';
+    }
+    
+    showNotification('Transcript saved successfully!');
+};
+
+/**
+ * Cancel edit transcript
+ */
+window.cancelEditTranscript = (fileId) => {
+    const editor = document.getElementById(`editor-${fileId}`);
+    const preview = document.getElementById(`preview-${fileId}`);
+    const editActions = document.getElementById(`editActions-${fileId}`);
+    const editBtn = document.getElementById(`editBtn-${fileId}`);
+    
+    if (editor) editor.style.display = 'none';
+    if (preview) preview.style.display = 'block';
+    if (editActions) editActions.style.display = 'none';
+    
+    if (editBtn) {
+        editBtn.innerHTML = '<span class="edit-icon">✏️</span><span class="edit-text">Edit</span>';
+    }
+};
+
+/**
+ * Escape regex special characters
+ */
+function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Save transcript to history
+ */
+function saveTranscriptToHistory(fileId, fileData) {
+    if (!fileData.transcript || fileData.status !== 'done') return;
+    
+    const history = JSON.parse(localStorage.getItem('clemens_history') || '[]');
+    
+    // Remove if already exists
+    const existingIndex = history.findIndex(h => h.fileId === fileId);
+    if (existingIndex >= 0) {
+        history.splice(existingIndex, 1);
+    }
+    
+    // Add to beginning
+    history.unshift({
+        fileId: fileId,
+        fileName: fileData.fileName,
+        transcriptText: fileData.transcript.transcriptText,
+        createdAt: new Date().toISOString(),
+        fileSize: fileData.fileSize,
+        language: fileData.transcript.language,
+        edited: fileData.transcript.edited || false,
+        tags: fileData.tags || [],
+    });
+    
+    // Keep only last 100 transcripts
+    if (history.length > 100) {
+        history.splice(100);
+    }
+    
+    localStorage.setItem('clemens_history', JSON.stringify(history));
+}
+
+/**
+ * Show history modal
+ */
+window.showHistory = () => {
+    const modal = document.getElementById('historyModal');
+    const historyList = document.getElementById('historyList');
+    if (!modal || !historyList) return;
+    
+    const history = JSON.parse(localStorage.getItem('clemens_history') || '[]');
+    
+    if (history.length === 0) {
+        historyList.innerHTML = '<div class="empty-state">No transcript history yet.</div>';
+        modal.style.display = 'flex';
+        return;
+    }
+    
+    historyList.innerHTML = history.map((item, index) => `
+        <div class="history-item" onclick="loadFromHistory('${item.fileId}')">
+            <div class="history-item-header">
+                <div class="history-item-name">${escapeHtml(item.fileName)}</div>
+                <div class="history-item-date">${new Date(item.createdAt).toLocaleString()}</div>
+            </div>
+            <div class="history-item-preview">${escapeHtml(item.transcriptText.substring(0, 150))}...</div>
+            <div class="history-item-meta">
+                ${item.edited ? '<span class="badge-edited">Edited</span>' : ''}
+                ${item.tags && item.tags.length > 0 ? item.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('') : ''}
+                <span class="history-item-size">${formatFileSize(item.fileSize || 0)}</span>
+            </div>
+        </div>
+    `).join('');
+    
+    modal.style.display = 'flex';
+};
+
+/**
+ * Close history modal
+ */
+window.closeHistoryModal = () => {
+    const modal = document.getElementById('historyModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+};
+
+/**
+ * Load transcript from history
+ */
+window.loadFromHistory = (fileId) => {
+    const history = JSON.parse(localStorage.getItem('clemens_history') || '[]');
+    const item = history.find(h => h.fileId === fileId);
+    
+    if (!item) {
+        showError('Transcript not found in history');
+        return;
+    }
+    
+    // Check if already loaded
+    if (state.files.has(fileId)) {
+        // Scroll to existing result
+        const resultDiv = document.getElementById(`result-${fileId}`);
+        if (resultDiv) {
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            closeHistoryModal();
+            return;
+        }
+    }
+    
+    // Create fileData from history
+    const fileData = {
+        id: fileId,
+        fileName: item.fileName,
+        fileSize: item.fileSize,
+        status: 'done',
+        progress: 100,
+        transcript: {
+            transcriptText: item.transcriptText,
+            fileName: item.fileName,
+            language: item.language,
+            edited: item.edited,
+        },
+        tags: item.tags || [],
+    };
+    
+    state.files.set(fileId, fileData);
+    showResult(fileId, fileData);
+    closeHistoryModal();
+    
+    // Scroll to result
+    setTimeout(() => {
+        const resultDiv = document.getElementById(`result-${fileId}`);
+        if (resultDiv) {
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 100);
+};
+
+/**
+ * Search across all results
+ */
+window.searchAcrossResults = (searchTerm) => {
+    const clearBtn = document.getElementById('clearGlobalSearch');
+    if (!searchTerm.trim()) {
+        if (clearBtn) clearBtn.style.display = 'none';
+        // Remove highlights
+        document.querySelectorAll('.global-search-match').forEach(el => {
+            el.classList.remove('global-search-match');
+        });
+        // Show all results
+        document.querySelectorAll('.result-item').forEach(item => {
+            item.style.display = 'block';
+            item.classList.remove('has-search-match');
+        });
+        return;
+    }
+    
+    if (clearBtn) clearBtn.style.display = 'inline-block';
+    
+    const regex = new RegExp(`(${escapeRegex(searchTerm)})`, 'gi');
+    let totalMatches = 0;
+    
+    // Search in all result items
+    const resultItems = document.querySelectorAll('.result-item');
+    resultItems.forEach(resultItem => {
+        const preview = resultItem.querySelector('.transcript-preview');
+        if (!preview) return;
+        
+        const text = preview.textContent || preview.innerText;
+        const matches = text.match(regex);
+        
+        if (matches && matches.length > 0) {
+            totalMatches += matches.length;
+            resultItem.classList.add('has-search-match');
+        } else {
+            resultItem.classList.remove('has-search-match');
+            resultItem.style.display = 'none';
+        }
+    });
+};
+
+/**
+ * Clear global search
+ */
+window.clearGlobalSearch = () => {
+    const searchInput = document.getElementById('globalSearchInput');
+    const clearBtn = document.getElementById('clearGlobalSearch');
+    
+    if (searchInput) searchInput.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
+    
+    // Show all results
+    document.querySelectorAll('.result-item').forEach(item => {
+        item.style.display = 'block';
+        item.classList.remove('has-search-match');
+    });
+    
+    // Remove highlights
+    document.querySelectorAll('.global-search-match').forEach(el => {
+        el.classList.remove('global-search-match');
+    });
+};
+
+/**
+ * Calculate word count
+ */
+function calculateWordCount(text) {
+    if (!text) return 0;
+    return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+}
+
+/**
+ * Calculate reading time (average 200 words per minute)
+ */
+function calculateReadingTime(text) {
+    const words = calculateWordCount(text);
+    const minutes = Math.ceil(words / 200);
+    return minutes;
+}
+
+/**
+ * Toggle download menu
+ */
+window.toggleDownloadMenu = (fileId) => {
+    const menu = document.getElementById(`downloadMenu-${fileId}`);
+    if (!menu) return;
+    
+    // Close all other menus
+    document.querySelectorAll('.dropdown-menu').forEach(m => {
+        if (m !== menu) m.style.display = 'none';
+    });
+    
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+};
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.btn-dropdown')) {
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            menu.style.display = 'none';
+        });
+    }
+});
+
+/**
+ * Download SRT subtitle file
+ */
+window.downloadSrt = (fileId) => {
+    const fileData = state.files.get(fileId);
+    if (!fileData?.transcript) return;
+    
+    const segments = fileData.transcript.segments;
+    if (!segments || !Array.isArray(segments) || segments.length === 0) {
+        showError('SRT export requires timestamped segments. This transcript does not have timestamps.');
+        return;
+    }
+    
+    let srtContent = '';
+    segments.forEach((segment, index) => {
+        const start = formatSrtTime(segment.start);
+        const end = formatSrtTime(segment.end);
+        srtContent += `${index + 1}\n${start} --> ${end}\n${segment.text.trim()}\n\n`;
+    });
+    
+    const blob = new Blob([srtContent], { type: 'text/srt' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${fileData.fileName.replace(/\.[^/.]+$/, '')}_transcript.srt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showNotification('SRT file downloaded');
+};
+
+/**
+ * Format time for SRT (HH:MM:SS,mmm)
+ */
+function formatSrtTime(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    const milliseconds = Math.floor((seconds % 1) * 1000);
+    
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')},${String(milliseconds).padStart(3, '0')}`;
+}
+
+/**
+ * Download JSON transcript
+ */
+window.downloadJson = (fileId) => {
+    const fileData = state.files.get(fileId);
+    if (!fileData?.transcript) return;
+    
+    const jsonData = {
+        fileName: fileData.fileName,
+        transcript: fileData.transcript.transcriptText,
+        language: fileData.transcript.language || 'auto',
+        segments: fileData.transcript.segments || null,
+        metadata: {
+            fileSize: fileData.fileSize,
+            createdAt: new Date().toISOString(),
+            edited: fileData.transcript.edited || false,
+            tags: fileData.tags || [],
+        },
+    };
+    
+    const jsonContent = JSON.stringify(jsonData, null, 2);
+    const blob = new Blob([jsonContent], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${fileData.fileName.replace(/\.[^/.]+$/, '')}_transcript.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showNotification('JSON file downloaded');
+};
+
+/**
+ * Download original audio file
+ */
+window.downloadOriginalAudio = (fileId) => {
+    const fileData = state.files.get(fileId);
+    if (!fileData) return;
+    
+    if (fileData.audioUrl) {
+        // Download from blob URL
+        const a = document.createElement('a');
+        a.href = fileData.audioUrl;
+        a.download = fileData.fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showNotification('Audio file downloaded');
+    } else if (fileData.objectKey) {
+        // Try to get download URL from server
+        showError('Audio file not available for download. It may have been processed and removed.');
+    } else {
+        showError('Audio file not found');
+    }
+};
+
+/**
+ * Toggle batch selection mode
+ */
+window.toggleBatchMode = () => {
+    state.batchMode = !state.batchMode;
+    const resultItems = document.querySelectorAll('.result-item');
+    resultItems.forEach(item => {
+        const checkbox = item.querySelector('.batch-checkbox');
+        if (checkbox) {
+            checkbox.style.display = state.batchMode ? 'block' : 'none';
+        }
+    });
+    
+    const batchActions = document.getElementById('batchActions');
+    if (batchActions) {
+        batchActions.style.display = state.batchMode ? 'flex' : 'none';
+    }
+    
+    if (!state.batchMode) {
+        state.batchSelected.clear();
+        updateBatchActions();
+    }
+    
+    showNotification(state.batchMode ? 'Batch mode enabled' : 'Batch mode disabled');
+};
+
+/**
+ * Toggle batch selection for a file
+ */
+window.toggleBatchSelect = (fileId) => {
+    if (!state.batchSelected) {
+        state.batchSelected = new Set();
+    }
+    
+    if (state.batchSelected.has(fileId)) {
+        state.batchSelected.delete(fileId);
+    } else {
+        state.batchSelected.add(fileId);
+    }
+    
+    updateBatchActions();
+};
+
+/**
+ * Update batch actions display
+ */
+function updateBatchActions() {
+    const count = state.batchSelected ? state.batchSelected.size : 0;
+    const batchCount = document.getElementById('batchCount');
+    if (batchCount) {
+        batchCount.textContent = `${count} selected`;
+    }
+}
+
+/**
+ * Export selected transcripts
+ */
+window.exportSelectedTranscripts = async () => {
+    if (!state.batchSelected || state.batchSelected.size === 0) {
+        showError('No transcripts selected');
+        return;
+    }
+    
+    const transcripts = [];
+    for (const fileId of state.batchSelected) {
+        const fileData = state.files.get(fileId);
+        if (fileData?.transcript) {
+            transcripts.push({
+                fileName: fileData.fileName,
+                text: fileData.transcript.transcriptText,
+            });
+        }
+    }
+    
+    if (transcripts.length === 0) {
+        showError('No valid transcripts to export');
+        return;
+    }
+    
+    try {
+        const { PDFDocument, rgb, StandardFonts } = PDFLib;
+        const pdfDoc = await PDFDocument.create();
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+        
+        let page = pdfDoc.addPage([612, 792]);
+        const margin = 50;
+        const maxWidth = page.getWidth() - 2 * margin;
+        let y = page.getHeight() - margin;
+        
+        page.drawText(`Selected Transcripts Export (${transcripts.length} files)`, {
+            x: margin,
+            y: y,
+            size: 20,
+            font: boldFont,
+            color: rgb(0, 0, 0),
+        });
+        y -= 30;
+        
+        for (const transcript of transcripts) {
+            if (y < margin + 100) {
+                page = pdfDoc.addPage([612, 792]);
+                y = page.getHeight() - margin;
+            }
+            
+            page.drawText(transcript.fileName, {
+                x: margin,
+                y: y,
+                size: 14,
+                font: boldFont,
+                color: rgb(0, 0, 0),
+            });
+            y -= 20;
+            
+            const lines = wrapText(transcript.text, maxWidth, font, 11);
+            for (const line of lines) {
+                if (y < margin + 20) {
+                    page = pdfDoc.addPage([612, 792]);
+                    y = page.getHeight() - margin;
+                }
+                page.drawText(line, {
+                    x: margin,
+                    y: y,
+                    size: 11,
+                    font: font,
+                    color: rgb(0, 0, 0),
+                });
+                y -= 14;
+            }
+            y -= 20;
+        }
+        
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `selected_transcripts_${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showNotification(`Exported ${transcripts.length} transcript(s)`);
+        toggleBatchMode(); // Exit batch mode
+    } catch (error) {
+        console.error('[exportSelectedTranscripts] Error:', error);
+        showError('Failed to export transcripts');
+    }
+};
+
+/**
+ * Delete selected transcripts
+ */
+window.deleteSelectedTranscripts = () => {
+    if (!state.batchSelected || state.batchSelected.size === 0) {
+        showError('No transcripts selected');
+        return;
+    }
+    
+    if (!confirm(`Delete ${state.batchSelected.size} transcript(s)?`)) {
+        return;
+    }
+    
+    for (const fileId of state.batchSelected) {
+        const resultDiv = document.getElementById(`result-${fileId}`);
+        if (resultDiv) {
+            resultDiv.remove();
+        }
+        state.files.delete(fileId);
+    }
+    
+    state.batchSelected.clear();
+    toggleBatchMode();
+    showNotification('Transcripts deleted');
+};
+
+/**
+ * Convert file to base64
+ */
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const base64 = reader.result.split(',')[1]; // Remove data:type;base64, prefix
+            resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+/**
+ * Upload context files for AI analysis
+ */
+window.uploadContextFiles = (fileId) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = '.pdf,.txt,.doc,.docx';
+    
+    input.onchange = async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+        
+        const fileData = state.files.get(fileId);
+        if (!fileData) return;
+        
+        if (!fileData.analysisState) {
+            fileData.analysisState = {};
+        }
+        if (!fileData.analysisState.contextFiles) {
+            fileData.analysisState.contextFiles = [];
+        }
+        
+        // Store files
+        fileData.analysisState.contextFiles.push(...files);
+        
+        showNotification(`Added ${files.length} context file(s). Re-run analysis to use them.`);
+    };
+    
+    input.click();
+};
+
+/**
+ * Add tag to transcript
+ */
+window.addTag = (fileId) => {
+    const tag = prompt('Enter a tag:');
+    if (!tag || !tag.trim()) return;
+    
+    const fileData = state.files.get(fileId);
+    if (!fileData) return;
+    
+    if (!fileData.tags) {
+        fileData.tags = [];
+    }
+    
+    if (!fileData.tags.includes(tag.trim())) {
+        fileData.tags.push(tag.trim());
+        updateTagsDisplay(fileId);
+        saveTranscriptToHistory(fileId, fileData);
+    }
+};
+
+/**
+ * Remove tag from transcript
+ */
+window.removeTag = (fileId, tag) => {
+    const fileData = state.files.get(fileId);
+    if (!fileData || !fileData.tags) return;
+    
+    fileData.tags = fileData.tags.filter(t => t !== tag);
+    updateTagsDisplay(fileId);
+    saveTranscriptToHistory(fileId, fileData);
+};
+
+/**
+ * Update tags display
+ */
+function updateTagsDisplay(fileId) {
+    const fileData = state.files.get(fileId);
+    const tagsContainer = document.getElementById(`tags-${fileId}`);
+    
+    if (!tagsContainer || !fileData) return;
+    
+    // Helper function to escape for JavaScript string literals (handles single quotes)
+    const escapeJsString = (str) => {
+        return String(str)
+            .replace(/\\/g, '\\\\')  // Escape backslashes first
+            .replace(/'/g, "\\'")    // Escape single quotes
+            .replace(/"/g, '\\"')    // Escape double quotes
+            .replace(/\n/g, '\\n')   // Escape newlines
+            .replace(/\r/g, '\\r')   // Escape carriage returns
+            .replace(/\t/g, '\\t');   // Escape tabs
+    };
+    
+    const escapedFileId = escapeJsString(fileId);
+    
+    if (!fileData.tags || fileData.tags.length === 0) {
+        tagsContainer.innerHTML = '<button class="btn-add-tag" onclick="addTag(\'' + escapedFileId + '\')">+ Tag</button>';
+        return;
+    }
+    
+    tagsContainer.innerHTML = fileData.tags.map(tag => {
+        const escapedTag = escapeJsString(tag);
+        return `<span class="tag"><span class="tag-text">${escapeHtml(tag)}</span><button class="tag-remove" onclick="removeTag('${escapedFileId}', '${escapedTag}')">×</button></span>`;
+    }).join('') + '<button class="btn-add-tag" onclick="addTag(\'' + escapedFileId + '\')">+</button>';
 }

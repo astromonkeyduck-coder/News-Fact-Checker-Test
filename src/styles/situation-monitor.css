@@ -271,10 +271,11 @@ body.situation-monitor-page main {
   padding-top: 80px !important; /* Space for fixed header */
 }
 
+/* OSINT Control Room Layout - High Density, 12-Column Grid */
 .sitmon-page-wrapper {
-  max-width: 1200px;
+  max-width: 1920px; /* Expanded for OSINT wall */
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 12px 16px; /* Tightened spacing */
   width: 100%;
   box-sizing: border-box;
   display: block !important;
@@ -282,22 +283,23 @@ body.situation-monitor-page main {
   opacity: 1 !important;
   position: relative !important;
   z-index: 1 !important;
-  isolation: isolate; /* Create new stacking context */
-  /* Panels scroll independently, page can grow naturally */
+  isolation: isolate;
+  background: rgba(3, 8, 18, 0.95); /* Darker base for operational feel */
 }
 
 /* Page Header */
+/* OSINT Header - Compact, Operational */
 .sitmon-page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, rgba(5, 15, 35, 0.95) 0%, rgba(7, 21, 42, 0.95) 100%);
-  border-radius: 16px;
-  border: 1px solid rgba(34, 211, 238, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
+  margin-bottom: 12px; /* Tighter spacing */
+  padding: 8px 12px; /* Compact padding */
+  background: rgba(5, 12, 28, 0.85);
+  border-radius: 6px; /* Tighter radius */
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
   min-height: auto;
 }
 
@@ -306,38 +308,41 @@ body.situation-monitor-page main {
 }
 
 .sitmon-page-title {
-  font-size: 2rem;
+  font-size: 1.25rem; /* Smaller, more operational */
   font-weight: 700;
   color: #22d3ee;
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 2px 0; /* Tighter margin */
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: linear-gradient(135deg, #22d3ee 0%, #4A90E2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  letter-spacing: 0.1em;
+  font-family: 'Inter', -apple-system, sans-serif; /* Keep sans-serif for titles */
 }
 
 .sitmon-page-subtitle {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.7);
-  margin: 0 0 1rem 0;
+  font-size: 0.75rem; /* Smaller, more operational */
+  color: rgba(255, 255, 255, 0.6); /* Dimmer */
+  margin: 0 0 4px 0; /* Tighter */
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
 }
 
 .sitmon-status-chip {
   display: inline-block;
-  padding: 0.375rem 0.75rem;
-  background: rgba(34, 211, 238, 0.2);
-  border: 1px solid rgba(34, 211, 238, 0.4);
-  border-radius: 8px;
-  font-size: 0.85rem;
+  padding: 2px 6px; /* Tighter */
+  background: rgba(34, 211, 238, 0.15);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: 4px; /* Tighter */
+  font-size: 0.7rem; /* Smaller */
   font-weight: 600;
   color: #22d3ee;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .sitmon-header-right {
   display: flex;
-  gap: 1rem;
+  gap: 8px; /* Tighter gap */
   align-items: center;
   flex-shrink: 0;
   flex-wrap: wrap;
@@ -504,7 +509,8 @@ body.situation-monitor-page main {
 }
 
 .sitmon-refresh-btn {
-  padding: 0.5rem 1rem;
+  padding: 4px 8px; /* Tighter padding */
+  font-size: 0.75rem; /* Smaller */
   background: rgba(74, 158, 255, 0.2);
   border: 1px solid rgba(74, 158, 255, 0.4);
   border-radius: 8px;
@@ -544,14 +550,16 @@ body.situation-monitor-page main {
 }
 
 .sitmon-tab-btn {
-  padding: 0.5rem 1rem;
-  background: rgba(34, 211, 238, 0.2);
-  border: 1px solid rgba(34, 211, 238, 0.4);
-  border-radius: 8px;
+  padding: 4px 8px; /* Tighter */
+  background: rgba(34, 211, 238, 0.15);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: 4px; /* Tighter */
   color: #22d3ee;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.7rem; /* Smaller */
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
@@ -573,15 +581,16 @@ body.situation-monitor-page main {
 .sitmon-auto-refresh-toggle {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.8);
+  gap: 4px; /* Tighter */
+  font-size: 0.7rem; /* Smaller */
+  color: rgba(255, 255, 255, 0.7); /* Dimmer */
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
   height: auto;
   line-height: 1;
-  min-height: 36px;
+  min-height: auto;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
 }
 
 .sitmon-auto-refresh-toggle input[type="checkbox"] {
@@ -593,25 +602,76 @@ body.situation-monitor-page main {
   padding: 0;
 }
 
-/* Intel Wall Layout - Map as Main Canvas */
+/* OSINT 12-Column Grid System */
+.sitmon-osint-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 8px 12px; /* Tight vertical, moderate horizontal */
+  margin-bottom: 12px;
+  align-items: start;
+}
+
+/* Intel Wall Layout - Map as Tactical Node (not hero) */
 .sitmon-intel-wall {
   position: relative;
   width: 100%;
-  margin-bottom: 2rem;
+  margin-bottom: 12px;
   isolation: isolate;
+  grid-column: 1 / -1; /* Full width for now, will be refined */
 }
 
 .sitmon-map-container {
   position: relative;
   width: 100%;
-  height: clamp(520px, 62vh, 820px);
-  min-height: clamp(520px, 62vh, 820px);
-  border-radius: 12px;
+  height: clamp(480px, 55vh, 720px); /* Slightly reduced - tactical node, not hero */
+  min-height: clamp(480px, 55vh, 720px);
+  border-radius: 6px; /* Tighter radius */
   overflow: hidden;
   background: linear-gradient(135deg, rgba(5, 15, 35, 0.95) 0%, rgba(7, 21, 42, 0.95) 100%);
-  border: 1px solid rgba(34, 211, 238, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(34, 211, 238, 0.25); /* Thinner border */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), inset 0 0 60px rgba(34, 211, 238, 0.03);
   isolation: isolate;
+  /* Subtle scanline texture */
+  background-image: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 1px,
+      rgba(34, 211, 238, 0.02) 1px,
+      rgba(34, 211, 238, 0.02) 2px
+    );
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.sitmon-map-container:hover {
+  border-color: rgba(34, 211, 238, 0.35);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 0 80px rgba(34, 211, 238, 0.05);
+}
+
+/* Corner indicators for operational feel */
+.sitmon-map-container::before,
+.sitmon-map-container::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.sitmon-map-container::before {
+  top: 0;
+  left: 0;
+  border-right: none;
+  border-bottom: none;
+}
+
+.sitmon-map-container::after {
+  bottom: 0;
+  right: 0;
+  border-left: none;
+  border-top: none;
 }
 
 /* HUD Overlays - Positioned absolutely over map */
@@ -640,12 +700,30 @@ body.situation-monitor-page main {
 }
 
 .sitmon-hud-card {
-  background: rgba(5, 12, 28, 0.85);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(70, 180, 255, 0.18);
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  background: rgba(5, 12, 28, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(70, 180, 255, 0.2);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.sitmon-hud-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.3), transparent);
+  pointer-events: none;
+}
+
+.sitmon-hud-card:hover {
+  border-color: rgba(70, 180, 255, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .sitmon-hud-header {
@@ -805,14 +883,41 @@ body.situation-monitor-page main {
 }
 
 .sitmon-feed-item {
-  padding: 0.75rem 1rem;
+  padding: 0.5rem;
   border-bottom: 1px solid rgba(70, 180, 255, 0.1);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.sitmon-feed-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(34, 211, 238, 0);
+  transition: background 0.2s ease;
 }
 
 .sitmon-feed-item:hover {
-  background: rgba(7, 21, 42, 0.5);
+  background: rgba(70, 180, 255, 0.12);
+  padding-left: 0.75rem;
+}
+
+.sitmon-feed-item:hover::before {
+  background: rgba(34, 211, 238, 0.6);
+}
+
+.sitmon-feed-item.critical {
+  border-left: 2px solid #ff6b6b;
+  background: rgba(255, 107, 107, 0.05);
+}
+
+.sitmon-feed-item.critical:hover {
+  background: rgba(255, 107, 107, 0.12);
 }
 
 .sitmon-feed-item:last-child {
@@ -915,21 +1020,24 @@ body.situation-monitor-page main {
   }
 }
 
-/* Status Bar */
-.sitmon-status-bar {
+/* OSINT Status Strip - Replaces old status bar */
+.sitmon-osint-status-strip {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(5, 12, 28, 0.85);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(70, 180, 255, 0.18);
-  padding: 0.5rem 1rem;
+  height: 24px;
+  background: rgba(3, 8, 18, 0.95);
+  border-top: 1px solid rgba(34, 211, 238, 0.15);
   display: flex;
-  gap: 2rem;
   align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
   z-index: 10;
   pointer-events: auto;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .sitmon-status-item {
@@ -1030,45 +1138,80 @@ body.situation-monitor-page main {
   z-index: 1 !important;
 }
 
-/* Panels Stack */
+/* Panels Stack - Right Side of OSINT Grid */
 .sitmon-panels-stack {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 8px; /* Tighter gap */
   position: relative;
   z-index: 1;
-  /* Match the map card height so panels stack properly */
-  height: clamp(420px, 55vh, 640px);
-  max-height: clamp(420px, 55vh, 640px);
+  /* Match map height for alignment */
+  height: clamp(480px, 55vh, 720px);
+  max-height: clamp(480px, 55vh, 720px);
   min-height: 0;
-  overflow: visible; /* Don't scroll the container, let panels scroll */
-  isolation: isolate; /* Create new stacking context */
+  overflow: visible;
+  isolation: isolate;
   width: 100%;
   box-sizing: border-box;
 }
 
 /* Panel Card Base */
+/* Panel Surface - OSINT Data Surface (not card) */
 .sitmon-panel-card {
-  background: linear-gradient(135deg, rgba(5, 15, 35, 0.95) 0%, rgba(7, 21, 42, 0.95) 100%);
-  border-radius: 16px;
-  border: 1px solid rgba(34, 211, 238, 0.2);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
+  background: rgba(5, 12, 28, 0.85); /* Less gradient, more surface */
+  border-radius: 6px; /* Tighter radius */
+  border: 1px solid rgba(34, 211, 238, 0.15); /* Thinner border */
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); /* Minimal shadow */
+  backdrop-filter: blur(4px); /* Reduced blur */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
   position: relative;
   z-index: 1;
-  /* Default max height for panels - DOUBLED */
   max-height: 800px;
-  min-height: 0; /* Critical: allow flex children to shrink */
-  isolation: isolate; /* Create new stacking context */
-  /* Ensure panels don't overlap */
+  min-height: 0;
+  isolation: isolate;
   contain: layout style paint;
   width: 100%;
   box-sizing: border-box;
-  position: relative; /* For resize handle positioning */
+  position: relative;
+  /* Subtle grid texture */
+  background-image: 
+    linear-gradient(rgba(34, 211, 238, 0.01) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.01) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Enhanced hover effect for panels */
+.sitmon-panel-card:hover {
+  border-color: rgba(34, 211, 238, 0.3);
+  box-shadow: 0 2px 8px rgba(34, 211, 238, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Critical panel indicator */
+.sitmon-panel-card.has-critical::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #ff6b6b, transparent);
+  animation: criticalPulse 2s ease-in-out infinite;
+  z-index: 2;
+}
+
+@keyframes criticalPulse {
+  0%, 100% {
+    opacity: 0.6;
+    box-shadow: 0 0 4px rgba(255, 107, 107, 0.5);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(255, 107, 107, 0.8);
+  }
 }
 
 /* Panels in the stack should be smaller and scroll independently */
@@ -1126,17 +1269,27 @@ body.situation-monitor-page main {
 }
 
 .sitmon-card-header {
-  padding: 1rem 1.25rem;
-  background: rgba(7, 21, 42, 0.5);
-  border-bottom: 1px solid rgba(74, 158, 255, 0.2);
+  padding: 8px 12px; /* Tighter padding */
+  background: linear-gradient(180deg, rgba(7, 21, 42, 0.5) 0%, rgba(5, 12, 28, 0.4) 100%);
+  border-bottom: 1px solid rgba(74, 158, 255, 0.15);
   flex-shrink: 0 !important;
   position: relative;
-  z-index: 2; /* Above the ::before hover effect */
+  z-index: 2;
   min-height: auto !important;
   height: auto !important;
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.sitmon-card-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(74, 158, 255, 0.2), transparent);
 }
 
 /* Resize handle for panels */
@@ -1182,57 +1335,73 @@ body.situation-monitor-page main {
 }
 
 .sitmon-card-title {
-  font-size: 1rem;
+  font-size: 0.75rem; /* Smaller, more operational */
   font-weight: 700;
   color: #22d3ee;
   margin: 0;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
+  font-family: 'Inter', -apple-system, sans-serif;
 }
 
 .sitmon-card-body {
-  padding: 1.25rem;
-  flex: 1 1 0 !important; /* Take available space, can shrink to 0 */
+  padding: 8px 12px; /* Tighter padding */
+  flex: 1 1 0 !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
-  min-height: 0 !important; /* Critical: allows flex child to shrink below content size */
-  max-height: none !important; /* Remove max-height constraint */
-  height: auto !important; /* Let content determine height, but constrained by parent */
+  min-height: 0 !important;
+  max-height: none !important;
+  height: auto !important;
   min-width: 0 !important;
-  line-height: 1.5;
+  line-height: 1.4; /* Tighter line height */
   word-break: break-word;
   overflow-wrap: break-word;
   position: relative;
   z-index: 1;
-  /* Smooth scrolling */
   scroll-behavior: smooth;
-  /* Custom scrollbar styling */
   scrollbar-width: thin;
-  scrollbar-color: rgba(74, 158, 255, 0.3) rgba(5, 15, 35, 0.5);
-  /* Prevent content from overflowing */
+  scrollbar-color: rgba(74, 158, 255, 0.2) rgba(5, 15, 35, 0.5);
   box-sizing: border-box;
-  isolation: isolate; /* Create new stacking context */
-  /* Ensure content is contained */
+  isolation: isolate;
   contain: layout style paint;
   width: 100%;
+  font-size: 0.875rem; /* Slightly smaller base font */
 }
 
-/* Secondary Panels Grid */
+/* Secondary Panels Grid - OSINT 12-Column Layout */
 .sitmon-secondary-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-  align-items: start !important; /* Align to top, not stretch */
+  grid-template-columns: repeat(12, 1fr);
+  gap: 8px 12px; /* Tight spacing */
+  align-items: start !important;
   align-content: start;
-  grid-auto-rows: minmax(320px, auto);
+  grid-auto-rows: minmax(280px, auto); /* Slightly reduced min height */
   position: relative;
   z-index: 1;
-  /* Prevent grid from making page too tall */
   min-height: 0;
-  /* Let individual panels handle scrolling, not the grid */
-  isolation: isolate; /* Create new stacking context */
+  isolation: isolate;
   width: 100%;
   box-sizing: border-box;
+}
+
+/* Panel column spans - asymmetric OSINT layout */
+.sitmon-secondary-grid > .sitmon-panel-card:nth-child(1) {
+  grid-column: span 3; /* News: 3 columns */
+}
+.sitmon-secondary-grid > .sitmon-panel-card:nth-child(2) {
+  grid-column: span 3; /* Markets: 3 columns */
+}
+.sitmon-secondary-grid > .sitmon-panel-card:nth-child(3) {
+  grid-column: span 3; /* Earthquakes: 3 columns */
+}
+.sitmon-secondary-grid > .sitmon-panel-card:nth-child(4) {
+  grid-column: span 3; /* Weather: 3 columns */
+}
+.sitmon-secondary-grid > .sitmon-panel-card:nth-child(5) {
+  grid-column: span 4; /* RSS: 4 columns (wider) */
+}
+.sitmon-secondary-grid > .sitmon-panel-card:nth-child(6) {
+  grid-column: span 8; /* Live Cams: 8 columns if shown */
 }
 
 /* Panel Content Styles */
@@ -1338,49 +1507,92 @@ body.situation-monitor-page main {
 .sitmon-news-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 4px; /* Tighter gap */
   width: 100%;
   box-sizing: border-box;
   overflow: visible;
 }
 
 .sitmon-news-item {
-  padding: 1rem;
-  background: rgba(7, 21, 42, 0.3);
-  border-radius: 8px;
-  border-left: 3px solid rgba(74, 158, 255, 0.5);
-  transition: all 0.2s ease;
+  padding: 6px 10px; /* Tighter padding */
+  background: rgba(7, 21, 42, 0.25); /* More subdued */
+  border-radius: 4px; /* Tighter radius */
+  border-left: 2px solid rgba(74, 158, 255, 0.4); /* Thinner border */
+  transition: border-color 0.15s ease;
   width: 100%;
   box-sizing: border-box;
   flex-shrink: 0;
   overflow: hidden;
   word-wrap: break-word;
   overflow-wrap: break-word;
+  margin-bottom: 4px; /* Tighter gap */
 }
 
 .sitmon-news-item:hover {
-  background: rgba(7, 21, 42, 0.5);
+  background: rgba(7, 21, 42, 0.4);
   border-left-color: #4A90E2;
 }
 
 .sitmon-news-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 4px; /* Tighter */
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6); /* Dimmer for normal items */
 }
 
 .sitmon-news-source {
   font-weight: 600;
-  color: #4A90E2;
+  color: rgba(74, 158, 255, 0.8); /* Slightly dimmer */
+  font-size: 0.7rem;
+}
+
+.sitmon-news-time {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .sitmon-news-title {
-  margin: 0.5rem 0;
-  font-size: 1rem;
-  line-height: 1.4;
+  margin: 4px 0; /* Tighter */
+  font-size: 0.875rem; /* Smaller */
+  line-height: 1.3;
   overflow-wrap: anywhere;
+  color: rgba(255, 255, 255, 0.9); /* Slightly dimmer for normal */
+}
+
+/* Critical/High severity items are brighter */
+.sitmon-news-item[data-severity="5"] .sitmon-news-title,
+.sitmon-news-item[data-severity="4"] .sitmon-news-title {
+  color: #fff;
+  font-weight: 600;
+}
+
+.sitmon-news-item[data-severity="5"] .sitmon-news-header,
+.sitmon-news-item[data-severity="4"] .sitmon-news-header {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Critical event visual enhancement */
+.sitmon-news-item[data-severity="5"] {
+  border-left-color: #ff6b6b !important;
+  background: rgba(255, 107, 107, 0.08) !important;
+  box-shadow: 0 0 8px rgba(255, 107, 107, 0.2);
+  animation: criticalGlow 3s ease-in-out infinite;
+}
+
+.sitmon-news-item[data-severity="4"] {
+  border-left-color: #ffaa00 !important;
+  background: rgba(255, 170, 0, 0.06) !important;
+}
+
+@keyframes criticalGlow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(255, 107, 107, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(255, 107, 107, 0.4);
+  }
 }
 
 .sitmon-news-title a {
@@ -1394,10 +1606,10 @@ body.situation-monitor-page main {
 }
 
 .sitmon-news-description {
-  margin: 0.5rem 0 0 0;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1.5;
+  margin: 4px 0 0 0; /* Tighter */
+  font-size: 0.8rem; /* Smaller */
+  color: rgba(255, 255, 255, 0.7); /* Dimmer */
+  line-height: 1.4;
   overflow-wrap: anywhere;
 }
 
@@ -1405,13 +1617,14 @@ body.situation-monitor-page main {
 .sitmon-markets-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 4px; /* Tighter gap */
 }
 
 .sitmon-market-item {
-  padding: 1rem;
-  background: rgba(7, 21, 42, 0.3);
-  border-radius: 8px;
+  padding: 6px 10px; /* Tighter padding */
+  background: rgba(7, 21, 42, 0.25);
+  border-radius: 4px;
+  margin-bottom: 4px;
 }
 
 .sitmon-market-header {
@@ -1449,7 +1662,7 @@ body.situation-monitor-page main {
 .sitmon-earthquakes-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 4px; /* Tighter gap */
   width: 100%;
   box-sizing: border-box;
   overflow: visible;
@@ -1458,49 +1671,60 @@ body.situation-monitor-page main {
 .sitmon-alerts-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 4px; /* Tighter gap */
   width: 100%;
   box-sizing: border-box;
   overflow: visible;
 }
 
 .sitmon-earthquake-item {
-  padding: 1rem;
-  background: rgba(7, 21, 42, 0.3);
-  border-radius: 8px;
-  border-left: 3px solid #ff6b6b;
+  padding: 6px 10px; /* Tighter padding */
+  background: rgba(7, 21, 42, 0.25);
+  border-radius: 4px;
+  border-left: 2px solid #ff6b6b;
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
   word-wrap: break-word;
   overflow-wrap: break-word;
   flex-shrink: 0;
+  margin-bottom: 4px;
 }
 
 .sitmon-earthquake-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
+  margin-bottom: 4px; /* Tighter */
+  align-items: center;
 }
 
 .sitmon-earthquake-magnitude {
-  font-size: 1.2rem;
+  font-size: 1rem; /* Slightly smaller */
   font-weight: 700;
   color: #ff6b6b;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+.sitmon-earthquake-time {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .sitmon-earthquake-place {
   font-weight: 600;
-  color: #fff;
-  margin: 0.5rem 0;
+  color: rgba(255, 255, 255, 0.9); /* Slightly dimmer */
+  margin: 4px 0; /* Tighter */
   overflow-wrap: anywhere;
+  font-size: 0.85rem;
 }
 
 .sitmon-earthquake-details {
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.7);
-  margin-top: 0.5rem;
+  font-size: 0.75rem; /* Smaller */
+  color: rgba(255, 255, 255, 0.6); /* Dimmer */
+  margin-top: 4px; /* Tighter */
   overflow-wrap: anywhere;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
 }
 
 .sitmon-earthquake-details a {
@@ -1569,16 +1793,17 @@ body.situation-monitor-page main {
 }
 
 .sitmon-alert-item {
-  padding: 1rem;
-  background: rgba(7, 21, 42, 0.3);
-  border-radius: 8px;
-  border-left: 3px solid;
+  padding: 6px 10px; /* Tighter padding */
+  background: rgba(7, 21, 42, 0.25);
+  border-radius: 4px;
+  border-left: 2px solid;
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
   word-wrap: break-word;
   overflow-wrap: break-word;
   flex-shrink: 0;
+  margin-bottom: 4px;
 }
 
 .sitmon-alert-extreme {
@@ -1600,38 +1825,50 @@ body.situation-monitor-page main {
 .sitmon-alert-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
+  margin-bottom: 4px; /* Tighter */
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 4px; /* Tighter */
   align-items: flex-start;
 }
 
 .sitmon-alert-event {
   font-weight: 600;
-  color: #fff;
+  color: rgba(255, 255, 255, 0.9); /* Slightly dimmer for normal */
   overflow-wrap: anywhere;
+  font-size: 0.85rem;
+}
+
+/* Critical alerts are brighter */
+.sitmon-alert-extreme .sitmon-alert-event,
+.sitmon-alert-severe .sitmon-alert-event {
+  color: #fff;
+  font-weight: 700;
 }
 
 .sitmon-alert-severity {
-  font-size: 0.85rem;
+  font-size: 0.7rem; /* Smaller */
   font-weight: 600;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px; /* Tighter */
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .sitmon-alert-headline {
-  margin: 0.5rem 0;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.9);
+  margin: 4px 0; /* Tighter */
+  font-size: 0.8rem; /* Smaller */
+  color: rgba(255, 255, 255, 0.8); /* Dimmer */
   overflow-wrap: anywhere;
 }
 
 .sitmon-alert-areas {
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.7);
-  margin-top: 0.5rem;
+  font-size: 0.75rem; /* Smaller */
+  color: rgba(255, 255, 255, 0.6); /* Dimmer */
+  margin-top: 4px; /* Tighter */
   overflow-wrap: anywhere;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
 }
 
 /* Character/Intel Panel */
@@ -1642,9 +1879,10 @@ body.situation-monitor-page main {
 }
 
 .sitmon-character-item {
-  padding: 1rem;
-  background: rgba(7, 21, 42, 0.3);
-  border-radius: 8px;
+  padding: 6px 10px; /* Tighter padding */
+  background: rgba(7, 21, 42, 0.25);
+  border-radius: 4px;
+  margin-bottom: 4px;
 }
 
 .sitmon-character-header {
@@ -1681,10 +1919,11 @@ body.situation-monitor-page main {
 }
 
 .sitmon-correlation-item {
-  padding: 1rem;
-  background: rgba(7, 21, 42, 0.3);
-  border-radius: 8px;
-  border-left: 3px solid #22d3ee;
+  padding: 6px 10px; /* Tighter padding */
+  background: rgba(7, 21, 42, 0.25);
+  border-radius: 4px;
+  border-left: 2px solid #22d3ee; /* Thinner */
+  margin-bottom: 4px;
 }
 
 .sitmon-correlation-header {
@@ -2267,14 +2506,16 @@ body.situation-monitor-page ol,
   pointer-events: auto;
   animation: toastSlideIn 0.3s ease-out;
   display: flex !important;
-  flex-direction: row; /* Explicitly set horizontal layout */
-  align-items: flex-start; /* Align to top instead of center for multi-line text */
+  flex-direction: row !important; /* Explicitly set horizontal layout */
+  align-items: flex-start !important; /* Align to top instead of center for multi-line text */
   gap: 0.75rem;
-  writing-mode: horizontal-tb; /* Ensure horizontal text */
-  text-orientation: mixed; /* Normal text orientation */
+  writing-mode: horizontal-tb !important; /* Ensure horizontal text */
+  text-orientation: mixed !important; /* Normal text orientation */
+  transform: none !important; /* Prevent any rotation */
   position: relative !important;
   z-index: 10001 !important;
   color: #fff !important;
+  direction: ltr !important; /* Left-to-right text direction */
 }
 
 .sitmon-toast.success {
@@ -2627,6 +2868,10 @@ body.situation-monitor-page ol,
   .sitmon-toast {
     min-width: auto;
     max-width: 100%;
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    transform: none !important;
+    direction: ltr !important;
   }
   
   .sitmon-keyboard-hint {
@@ -2637,6 +2882,118 @@ body.situation-monitor-page ol,
   }
 }
 
+/* OSINT Signal Surfaces - Ticker, Status Strip, Telemetry */
+.sitmon-osint-ticker {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  background: linear-gradient(180deg, rgba(3, 8, 18, 0.98) 0%, rgba(5, 12, 28, 0.95) 100%);
+  border-bottom: 1px solid rgba(34, 211, 238, 0.25);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  z-index: 1000;
+  overflow: hidden;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+}
+
+.sitmon-osint-ticker::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.4), transparent);
+}
+
+.sitmon-osint-ticker-content {
+  display: flex;
+  gap: 24px;
+  white-space: nowrap;
+  animation: tickerScroll 60s linear infinite;
+}
+
+.sitmon-osint-status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sitmon-osint-status-label {
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sitmon-osint-status-value {
+  color: #22d3ee;
+  font-weight: 600;
+}
+
+.sitmon-osint-status-value.online {
+  color: #4ade80;
+  text-shadow: 0 0 6px rgba(74, 222, 128, 0.5);
+  position: relative;
+}
+
+.sitmon-osint-status-value.online::before {
+  content: '●';
+  display: inline-block;
+  margin-right: 4px;
+  animation: onlinePulse 2s ease-in-out infinite;
+}
+
+.sitmon-osint-status-value.offline {
+  color: #ff6b6b;
+  text-shadow: 0 0 6px rgba(255, 107, 107, 0.5);
+}
+
+@keyframes onlinePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.9);
+  }
+}
+
+/* Monospace for telemetry */
+.sitmon-telemetry {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.02em;
+}
+
+.sitmon-timestamp {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.sitmon-count {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-weight: 600;
+}
+
+@keyframes tickerScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
 /* Respect prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   .sitmon-spinner,
@@ -2644,6 +3001,7 @@ body.situation-monitor-page ol,
   .sitmon-panel-card,
   .sitmon-toast,
   .sitmon-event-marker-ring,
+  .sitmon-osint-ticker-content,
   * {
     animation: none !important;
     transition: none !important;
