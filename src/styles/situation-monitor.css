@@ -701,8 +701,9 @@ body.situation-monitor-page main {
 
 /* Secondary grid panels can be taller */
 .sitmon-secondary-grid > .sitmon-panel-card {
-  max-height: 500px;
-  min-height: 300px;
+  max-height: none;
+  min-height: 320px;
+  height: auto;
   flex-shrink: 0; /* Prevent secondary panels from shrinking */
   position: relative;
   z-index: 1;
@@ -756,7 +757,9 @@ body.situation-monitor-page main {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
-  align-items: start; /* Align items to top */
+  align-items: stretch; /* Keep cards aligned and prevent overlap */
+  align-content: start;
+  grid-auto-rows: minmax(320px, auto);
   position: relative;
   z-index: 1;
   /* Prevent grid from making page too tall */

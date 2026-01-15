@@ -31,7 +31,10 @@ export class ClusterDrawer {
       padding: 24px;
       color: #fff;
       pointer-events: none;
+      display: none;
+      visibility: hidden;
     `;
+    this.drawer.setAttribute('aria-hidden', 'true');
     
     document.body.appendChild(this.drawer);
     
@@ -79,10 +82,19 @@ export class ClusterDrawer {
         this.hide();
       }
     });
+    
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.isOpen()) {
+        this.hide();
+      }
+    });
   }
   
   show(cluster) {
     this.currentCluster = cluster;
+    this.drawer.style.display = 'block';
+    this.drawer.style.visibility = 'visible';
+    this.drawer.setAttribute('aria-hidden', 'false');
     // Enable pointer events when drawer is open
     this.drawer.style.pointerEvents = 'auto';
     const content = this.drawer.querySelector('.sitmon-drawer-content');
@@ -264,13 +276,23 @@ export class ClusterDrawer {
       });
     });
     
-    this.drawer.style.right = '0';
+    requestAnimationFrame(() => {
+      this.drawer.style.right = '0';
+    });
   }
   
   hide() {
     this.drawer.style.right = '-400px';
     this.drawer.style.pointerEvents = 'none'; // Disable interactions when hidden
+    this.drawer.setAttribute('aria-hidden', 'true');
     this.currentCluster = null;
+    
+    setTimeout(() => {
+      if (!this.isOpen()) {
+        this.drawer.style.display = 'none';
+        this.drawer.style.visibility = 'hidden';
+      }
+    }, 320);
   }
   
   isOpen() {

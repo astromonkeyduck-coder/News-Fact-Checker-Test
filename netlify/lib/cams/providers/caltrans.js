@@ -93,7 +93,6 @@ async function fetchCaltransCameras(params = {}) {
     }
     
     // Limit results
-    const limit = params.limit || 500;
     const limited = filtered.slice(0, limit);
     
     return normalizeCameras(limited, 'caltrans');

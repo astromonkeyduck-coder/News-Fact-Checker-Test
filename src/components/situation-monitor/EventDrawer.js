@@ -29,7 +29,10 @@ export class EventDrawer {
       padding: 24px;
       color: #fff;
       pointer-events: none;
+      display: none;
+      visibility: hidden;
     `;
+    this.drawer.setAttribute('aria-hidden', 'true');
     
     document.body.appendChild(this.drawer);
     
@@ -77,10 +80,19 @@ export class EventDrawer {
         this.hide();
       }
     });
+    
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.isOpen()) {
+        this.hide();
+      }
+    });
   }
   
   show(event) {
     this.currentEvent = event;
+    this.drawer.style.display = 'block';
+    this.drawer.style.visibility = 'visible';
+    this.drawer.setAttribute('aria-hidden', 'false');
     // Enable pointer events when drawer is open
     this.drawer.style.pointerEvents = 'auto';
     const content = this.drawer.querySelector('.sitmon-drawer-content');
@@ -221,13 +233,23 @@ export class EventDrawer {
       </div>
     `;
     
-    this.drawer.style.right = '0';
+    requestAnimationFrame(() => {
+      this.drawer.style.right = '0';
+    });
   }
   
   hide() {
     this.drawer.style.right = '-400px';
     this.drawer.style.pointerEvents = 'none'; // Disable interactions when hidden
+    this.drawer.setAttribute('aria-hidden', 'true');
     this.currentEvent = null;
+    
+    setTimeout(() => {
+      if (!this.isOpen()) {
+        this.drawer.style.display = 'none';
+        this.drawer.style.visibility = 'hidden';
+      }
+    }, 320);
   }
   
   isOpen() {
