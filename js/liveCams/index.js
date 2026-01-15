@@ -64,8 +64,8 @@ export class LiveCams {
     this.topLiveStrip = null;
     this.mapLayer = null;
     
-    // OSINT Grid View Modes: 1, 4, 9, 16 cameras
-    this.gridMode = 'single'; // 'single', 'grid4', 'grid9', 'grid16'
+    // OSINT Grid View Modes: 1, 4, 9, 16, 36 cameras
+    this.gridMode = 'single'; // 'single', 'grid4', 'grid9', 'grid16', 'grid36'
     this.gridCameras = []; // Selected cameras for grid view
     
     // Don't call init() here - it's async and should be awaited by caller
@@ -104,6 +104,9 @@ export class LiveCams {
             </button>
             <button class="livecams-osint-btn" data-mode="grid16" title="Grid 4x4 (16)">
               <span>4×4</span>
+            </button>
+            <button class="livecams-osint-btn" data-mode="grid36" title="Grid 6x6 (36)">
+              <span>6×6</span>
             </button>
             <button class="livecams-osint-btn" data-action="fullscreen" title="Fullscreen (F)">
               <span>⛶</span>
@@ -150,6 +153,9 @@ export class LiveCams {
             </div>
             <div class="livecams-grid-view livecams-view-grid16" id="livecams-grid-view-16" style="display: none;">
               <div class="livecams-grid-view-container" data-grid="16"></div>
+            </div>
+            <div class="livecams-grid-view livecams-view-grid36" id="livecams-grid-view-36" style="display: none;">
+              <div class="livecams-grid-view-container" data-grid="36"></div>
             </div>
           </div>
         </div>
@@ -275,7 +281,7 @@ export class LiveCams {
         e.preventDefault();
         this.toggleFullscreen();
       }
-      // 1-4 for grid modes
+      // 1-6 for grid modes
       if (e.key === '1') {
         e.preventDefault();
         this.setGridMode('single');
@@ -288,6 +294,9 @@ export class LiveCams {
       } else if (e.key === '4') {
         e.preventDefault();
         this.setGridMode('grid16');
+      } else if (e.key === '5' || e.key === '6') {
+        e.preventDefault();
+        this.setGridMode('grid36');
       }
       // Arrow keys for navigation
       if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
@@ -298,6 +307,17 @@ export class LiveCams {
     // Update status footer
     this.updateStatusFooter();
     setInterval(() => this.updateStatusFooter(), 1000);
+    
+    // Listen for fullscreen changes
+    document.addEventListener('fullscreenchange', () => {
+      const container = this.container.querySelector('.livecams-container');
+      if (document.fullscreenElement === container) {
+        // Entered fullscreen - optionally switch to 6x6 if enough cameras
+        if (this.state.results.length >= 36 && this.gridMode !== 'grid36') {
+          this.setGridMode('grid36');
+        }
+      }
+    });
   }
   
   setGridMode(mode) {
@@ -314,17 +334,22 @@ export class LiveCams {
     const grid4View = this.container.querySelector('#livecams-grid-view-4');
     const grid9View = this.container.querySelector('#livecams-grid-view-9');
     const grid16View = this.container.querySelector('#livecams-grid-view-16');
+    const grid36View = this.container.querySelector('#livecams-grid-view-36');
     
     if (mode === 'single') {
       singleView.style.display = 'block';
       grid4View.style.display = 'none';
       grid9View.style.display = 'none';
       grid16View.style.display = 'none';
+      grid36View.style.display = 'none';
     } else {
       singleView.style.display = 'none';
-      const targetView = mode === 'grid4' ? grid4View : mode === 'grid9' ? grid9View : grid16View;
+      const targetView = mode === 'grid4' ? grid4View : 
+                        mode === 'grid9' ? grid9View : 
+                        mode === 'grid16' ? grid16View : 
+                        grid36View;
       targetView.style.display = 'grid';
-      [grid4View, grid9View, grid16View].forEach(v => {
+      [grid4View, grid9View, grid16View, grid36View].forEach(v => {
         if (v !== targetView) v.style.display = 'none';
       });
       
@@ -334,7 +359,7 @@ export class LiveCams {
   }
   
   populateGridView(mode) {
-    const gridSize = mode === 'grid4' ? 4 : mode === 'grid9' ? 9 : 16;
+    const gridSize = mode === 'grid4' ? 4 : mode === 'grid9' ? 9 : mode === 'grid16' ? 16 : 36;
     const container = this.container.querySelector(`[data-grid="${gridSize}"]`);
     if (!container) return;
     
@@ -437,13 +462,21 @@ export class LiveCams {
   }
   
   toggleFullscreen() {
-    const viewPanel = this.container.querySelector('#livecams-view-panel');
-    if (!viewPanel) return;
+    const container = this.container.querySelector('.livecams-container');
+    if (!container) return;
     
     if (!document.fullscreenElement) {
-      viewPanel.requestFullscreen().catch(err => {
+      // Enter fullscreen on the entire container
+      container.requestFullscreen().catch(err => {
         console.error('Error entering fullscreen:', err);
       });
+      
+      // When entering fullscreen, optionally switch to 6x6 grid if not already
+      if (this.gridMode !== 'grid36' && this.state.results.length >= 36) {
+        setTimeout(() => {
+          this.setGridMode('grid36');
+        }, 100);
+      }
     } else {
       document.exitFullscreen();
     }
@@ -453,7 +486,8 @@ export class LiveCams {
     const onlineCount = this.state.results.filter(c => c.status === 'online').length;
     const activeFeeds = this.gridMode === 'single' ? (this.state.selectedCamera ? 1 : 0) : 
                         this.gridMode === 'grid4' ? 4 : 
-                        this.gridMode === 'grid9' ? 9 : 16;
+                        this.gridMode === 'grid9' ? 9 : 
+                        this.gridMode === 'grid16' ? 16 : 36;
     const lastUpdate = new Date().toLocaleTimeString();
     
     const onlineEl = this.container.querySelector('#livecams-online-count');

@@ -155,6 +155,12 @@
 [functions."transcribe-from-url"]
   timeout = 26  # Maximum timeout for Netlify Functions (26 seconds for Pro, 10 for free)
 
+# Configure analyze-transcript with maximum timeout
+# AI analysis with context files can take time, so we use the maximum allowed timeout
+[functions."analyze-transcript"]
+  timeout = 26  # Maximum timeout for Netlify Functions (26 seconds for Pro, 10 for free)
+  node_bundler = "esbuild"
+
 # Configure functions that use native modules (@resvg/resvg-js)
 # These functions need native .node binaries which esbuild can't bundle
 # Use zisi (zip-it-and-ship-it) bundler which properly handles native .node modules

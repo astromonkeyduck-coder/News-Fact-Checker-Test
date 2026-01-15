@@ -14,6 +14,49 @@
   overflow: hidden;
 }
 
+/* Fullscreen mode styling - OSINT Security Guard Mode */
+.livecams-container:fullscreen {
+  background: rgba(3, 8, 18, 1);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+}
+
+.livecams-container:fullscreen .livecams-layout {
+  flex: 1;
+  height: calc(100vh - 140px);
+  max-height: calc(100vh - 140px);
+  min-height: 0;
+}
+
+.livecams-container:fullscreen .livecams-view-panel {
+  height: 100%;
+  max-height: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.livecams-container:fullscreen .livecams-grid-view {
+  height: 100%;
+  max-height: 100%;
+  overflow: auto;
+}
+
+/* Optimize 6x6 grid for fullscreen */
+.livecams-container:fullscreen .livecams-view-grid36 {
+  gap: 4px; /* Tighter gap in fullscreen for more cameras */
+}
+
+.livecams-container:fullscreen .livecams-grid-cell {
+  min-height: 0;
+}
+
+.livecams-container:fullscreen .livecams-grid-cell-display {
+  min-height: 80px; /* Minimum height for visibility */
+}
+
 /* OSINT Scanline Effect */
 .livecams-container::before {
   content: '';
@@ -418,6 +461,11 @@
 .livecams-view-grid16 {
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(4, 1fr);
+}
+
+.livecams-view-grid36 {
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(6, 1fr);
 }
 
 .livecams-grid-cell {

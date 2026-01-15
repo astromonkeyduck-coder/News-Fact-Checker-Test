@@ -1056,8 +1056,8 @@ async function resumeJobs() {
                                 body: JSON.stringify({ jobId }),
                             }).then(async response => {
                                 try {
-                                    if (response.ok) {
-                                        console.log(`[resumeJobs] ✅ Successfully triggered job ${jobId}`);
+                                if (response.ok) {
+                                    console.log(`[resumeJobs] ✅ Successfully triggered job ${jobId}`);
                                         return;
                                     }
                                     
@@ -1162,7 +1162,7 @@ function showResult(fileId, fileData) {
     };
     
     const escapedFileId = escapeJsString(fileId);
-    
+
     resultDiv.innerHTML = `
         <div class="result-header">
             <div class="result-title-container">
@@ -1594,6 +1594,11 @@ window.analyzeTranscript = async (fileId) => {
             }),
         });
 
+        // Handle 504 Gateway Timeout specifically
+        if (response.status === 504) {
+            throw new Error('Analysis timed out. The function may be processing large context files. Please try again or reduce the size/number of context files.');
+        }
+
         if (!response.ok) {
             const error = await response.json().catch(() => ({ error: 'Unknown error' }));
             throw new Error(error.error || `Analysis failed (${response.status})`);
@@ -1617,6 +1622,94 @@ window.analyzeTranscript = async (fileId) => {
         showError('Failed to analyze transcript: ' + (error.message || 'Unknown error'));
     }
 };
+
+/**
+ * Poll for analysis status (for background functions)
+ */
+async function pollAnalysisStatus(statusUrl, fileId, analyzeBtn) {
+    const maxAttempts = 60; // Poll for up to 5 minutes (5 second intervals)
+    let attempts = 0;
+    
+    const poll = async () => {
+        try {
+            const response = await fetch(statusUrl, {
+                method: 'GET',
+                headers: getAuthHeaders(),
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                
+                if (result.status === 'completed') {
+                    const fileData = state.files.get(fileId);
+                    if (fileData) {
+                        fileData.analysisState.isAnalyzing = false;
+                        fileData.analysisState.analysis = result.analysis;
+                        analyzeBtn.disabled = false;
+                        analyzeBtn.innerHTML = '<span class="analyze-icon">🎓</span><span class="analyze-text">AI Analysis</span>';
+                        showAnalysisResults(fileId, fileData);
+                        showNotification('Analysis complete!');
+                    }
+                    return;
+                } else if (result.status === 'error') {
+                    const fileData = state.files.get(fileId);
+                    if (fileData) {
+                        fileData.analysisState.isAnalyzing = false;
+                        analyzeBtn.disabled = false;
+                        analyzeBtn.innerHTML = '<span class="analyze-icon">🎓</span><span class="analyze-text">AI Analysis</span>';
+                        showError('Analysis failed: ' + (result.error || 'Unknown error'));
+                    }
+                    return;
+                } else if (result.status === 'processing') {
+                    // Still processing, continue polling
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, 5000); // Poll every 5 seconds
+                    } else {
+                        const fileData = state.files.get(fileId);
+                        if (fileData) {
+                            fileData.analysisState.isAnalyzing = false;
+                            analyzeBtn.disabled = false;
+                            analyzeBtn.innerHTML = '<span class="analyze-icon">🎓</span><span class="analyze-text">AI Analysis</span>';
+                            showError('Analysis timed out. Please try again.');
+                        }
+                    }
+                }
+            } else {
+                // Error fetching status
+                attempts++;
+                if (attempts < maxAttempts) {
+                    setTimeout(poll, 5000);
+                } else {
+                    const fileData = state.files.get(fileId);
+                    if (fileData) {
+                        fileData.analysisState.isAnalyzing = false;
+                        analyzeBtn.disabled = false;
+                        analyzeBtn.innerHTML = '<span class="analyze-icon">🎓</span><span class="analyze-text">AI Analysis</span>';
+                        showError('Failed to get analysis status. Please try again.');
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('[pollAnalysisStatus] Error:', error);
+            attempts++;
+            if (attempts < maxAttempts) {
+                setTimeout(poll, 5000);
+            } else {
+                const fileData = state.files.get(fileId);
+                if (fileData) {
+                    fileData.analysisState.isAnalyzing = false;
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.innerHTML = '<span class="analyze-icon">🎓</span><span class="analyze-text">AI Analysis</span>';
+                    showError('Analysis polling failed. Please try again.');
+                }
+            }
+        }
+    };
+    
+    // Start polling after 2 seconds
+    setTimeout(poll, 2000);
+}
 
 /**
  * Display analysis results

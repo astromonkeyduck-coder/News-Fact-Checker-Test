@@ -228,6 +228,10 @@ Write a strong thesis immediately
 
 Score highly on DBQs, SAQs, and LEQs`;
 
+// Note: Background functions are configured in netlify.toml
+// However, for now we'll keep it as a regular function with increased timeout
+// If it consistently times out, we can convert to a true background function with job polling
+
 exports.handler = async (event, context) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -375,6 +379,22 @@ exports.handler = async (event, context) => {
       console.log(`[analyze-transcript] Successfully processed ${contextTexts.length} context file(s) out of ${contextFiles.length}`);
     }
 
+    // Limit context file content size to prevent timeout
+    // Truncate very large context files to keep total content manageable
+    const MAX_CONTEXT_LENGTH = 50000; // ~50k characters per file
+    if (contextTexts.length > 0) {
+      contextTexts = contextTexts.map(file => {
+        if (file.content.length > MAX_CONTEXT_LENGTH) {
+          console.warn(`[analyze-transcript] Truncating large context file ${file.name} from ${file.content.length} to ${MAX_CONTEXT_LENGTH} characters`);
+          return {
+            ...file,
+            content: file.content.substring(0, MAX_CONTEXT_LENGTH) + '\n\n[... content truncated due to size ...]'
+          };
+        }
+        return file;
+      });
+    }
+
     // Build user message with actual context file content
     let userContent = `Analyze this AP European History lecture transcript:\n\n${lecture_transcript}`;
     
@@ -395,8 +415,11 @@ exports.handler = async (event, context) => {
       userContent += `- Correct any inaccuracies in the transcript using the reference documents as authoritative sources\n`;
     }
 
-    // Call OpenAI API
-    const completion = await openai.chat.completions.create({
+    // Call OpenAI API with timeout protection
+    // Use a timeout to ensure we respond before Netlify's function timeout
+    const openaiTimeout = 20000; // 20 seconds max for OpenAI call (leaves 6 seconds for processing)
+    
+    const completionPromise = openai.chat.completions.create({
       model: 'gpt-4o', // Use GPT-4o for high-quality educational analysis
       messages: [
         {
@@ -411,6 +434,13 @@ exports.handler = async (event, context) => {
       temperature: 0.7,
       max_tokens: 4000, // Allow for comprehensive analysis
     });
+    
+    // Add timeout wrapper to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('OpenAI API call timed out after 20 seconds')), openaiTimeout);
+    });
+    
+    const completion = await Promise.race([completionPromise, timeoutPromise]);
 
     const analysis = completion.choices[0]?.message?.content || 'No analysis generated';
     const usage = completion.usage;

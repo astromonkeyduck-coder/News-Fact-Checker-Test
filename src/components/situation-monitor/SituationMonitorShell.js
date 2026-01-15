@@ -794,12 +794,19 @@ export class SituationMonitorShell {
       let startY = 0;
       let startHeight = 0;
       let panel = null;
+      let originalHeight = null;
       
       const panelId = handle.getAttribute('data-panel-id');
       if (!panelId) return;
       
       panel = document.getElementById(panelId);
       if (!panel) return;
+      
+      // Add tooltip data attribute
+      handle.setAttribute('data-tooltip', 'Drag to resize • Double-click to reset');
+      
+      // Store original height for reset
+      originalHeight = panel.offsetHeight;
       
       // Load saved height from localStorage
       const savedHeight = localStorage.getItem(`sitmon-panel-height-${panelId}`);
@@ -808,16 +815,42 @@ export class SituationMonitorShell {
         if (height > 0) {
           panel.style.height = `${height}px`;
           panel.style.maxHeight = 'none';
+          panel.style.flexShrink = '0';
         }
       }
+      
+      // Double-click to reset to original/default height
+      handle.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Remove saved height
+        localStorage.removeItem(`sitmon-panel-height-${panelId}`);
+        
+        // Reset to default (remove inline height)
+        panel.style.height = '';
+        panel.style.maxHeight = '';
+        panel.style.flexShrink = '';
+        
+        // Show brief feedback
+        handle.style.background = 'rgba(34, 211, 238, 0.4)';
+        setTimeout(() => {
+          handle.style.background = '';
+        }, 300);
+      });
       
       const startResize = (e) => {
         isResizing = true;
         startY = e.clientY || e.touches[0].clientY;
         startHeight = panel.offsetHeight;
-        document.body.style.cursor = 'ns-resize';
-        document.body.style.userSelect = 'none';
+        
+        // Add visual feedback class
+        document.body.classList.add('resizing-panel');
+        panel.classList.add('sitmon-panel-resizing');
+        handle.classList.add('sitmon-resize-active');
+        
         e.preventDefault();
+        e.stopPropagation();
       };
       
       const doResize = (e) => {
@@ -825,40 +858,61 @@ export class SituationMonitorShell {
         
         const currentY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : startY);
         const deltaY = currentY - startY;
-        const newHeight = Math.max(320, startHeight + deltaY); // Minimum 320px
         
+        // Calculate new height with min/max constraints
+        // Minimum: 200px, Maximum: 90vh or 2500px (whichever is smaller)
+        const minHeight = 200;
+        const maxHeight = Math.min(window.innerHeight * 0.9, 2500);
+        const newHeight = Math.max(minHeight, Math.min(maxHeight, startHeight + deltaY));
+        
+        // Apply height and override flex constraints
         panel.style.height = `${newHeight}px`;
         panel.style.maxHeight = 'none';
         panel.style.flexShrink = '0';
+        panel.style.flexGrow = '0';
+        panel.style.flexBasis = 'auto';
+        
+        // Update handle position indicator
+        const percent = ((newHeight - minHeight) / (maxHeight - minHeight)) * 100;
+        handle.setAttribute('data-resize-percent', Math.round(percent));
       };
       
       const stopResize = () => {
         if (!isResizing) return;
         isResizing = false;
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
+        
+        // Remove visual feedback classes
+        document.body.classList.remove('resizing-panel');
+        panel.classList.remove('sitmon-panel-resizing');
+        handle.classList.remove('sitmon-resize-active');
         
         // Save height to localStorage
         if (panel) {
           const height = panel.offsetHeight;
           localStorage.setItem(`sitmon-panel-height-${panelId}`, height.toString());
+          
+          // Show save confirmation briefly
+          handle.style.background = 'rgba(74, 222, 128, 0.3)';
+          setTimeout(() => {
+            handle.style.background = '';
+          }, 200);
         }
       };
       
       // Mouse events
       handle.addEventListener('mousedown', startResize);
-      window.addEventListener('mousemove', doResize);
-      window.addEventListener('mouseup', stopResize);
+      document.addEventListener('mousemove', doResize);
+      document.addEventListener('mouseup', stopResize);
       
       // Touch events
       handle.addEventListener('touchstart', startResize, { passive: false });
-      window.addEventListener('touchmove', (e) => {
+      document.addEventListener('touchmove', (e) => {
         if (isResizing) {
           e.preventDefault();
           doResize(e);
         }
       }, { passive: false });
-      window.addEventListener('touchend', stopResize);
+      document.addEventListener('touchend', stopResize);
     });
   }
   
