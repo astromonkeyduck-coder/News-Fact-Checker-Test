@@ -1,9 +1,39 @@
 /**
- * D3 + TopoJSON Map Component
+ * ============================================================================
+ * SITUATION MONITOR - MAP VIEW COMPONENT
+ * ============================================================================
+ * 
+ * ARCHITECTURE:
+ * ------------
+ * This component renders a D3.js world map with event markers. It uses:
+ * 
+ * 1. ResizeObserver: Monitors container size changes and re-renders map
+ * 2. fitSize projection: Automatically fits world data to container dimensions
+ * 3. SVG viewBox: Ensures map scales cleanly at any size
+ * 4. D3 joins: Efficiently updates markers without full re-render
+ * 
+ * DATA FLOW:
+ * ---------
+ * fetch → normalize → store → render
+ * 
+ * - Events are normalized into unified format (see EventStore)
+ * - MapView receives events via updateEvents(events)
+ * - Markers are rendered using D3 data joins for performance
+ * 
+ * ADDING NEW EVENT SOURCES:
+ * -----------------------
+ * 1. Add fetcher in data/fetchers.js
+ * 2. Add normalizer in data/eventStore.js (normalizeEvent function)
+ * 3. Add to EventPipeline in data/eventPipeline.js
+ * 4. MapView will automatically render markers
+ * 
+ * PROJECTION SIZING:
+ * -----------------
+ * Uses d3.geoNaturalEarth1().fitSize([width, height], worldGeoJSON)
+ * This ensures the map always fits the container correctly, regardless of
+ * viewport size or layout changes.
  */
 
-// D3 is loaded from CDN in HTML
-// TopoJSON is loaded from CDN in HTML
 import { HOTSPOTS, CONFLICT_ZONES, CHOKEPOINTS, CABLE_POINTS, MILITARY_BASES, NUCLEAR_FACILITIES } from './data/sources.js';
 import { clusterEvents, getCategoryColor, getSeverityColor } from './data/clustering.js';
 
@@ -11,9 +41,7 @@ export class MapView {
   constructor(containerId, options = {}) {
     this.containerId = containerId;
     this.options = {
-      width: options.width || 1200,
-      height: options.height || 600,
-      projection: options.projection || 'geoMercator',
+      projection: options.projection || 'geoNaturalEarth1',
       ...options
     };
     
@@ -24,91 +52,86 @@ export class MapView {
     this.tooltip = null;
     this.markers = new Map();
     this.debounceTimer = null;
-    this.events = []; // MapEvent array
-    this.eventMarkers = new Map(); // Track event markers
-    this.clusterMarkers = new Map(); // Track cluster markers
-    this.currentZoom = 1.0; // Track zoom level for clustering
-    this.earthquakeTimeouts = new Map(); // Track earthquake fade-out timeouts
+    this.events = [];
+    this.eventMarkers = new Map();
+    this.clusterMarkers = new Map();
+    this.currentZoom = 1.0;
+    this.earthquakeTimeouts = new Map();
+    this.resizeObserver = null;
+    this.renderPending = false;
+    this.container = null;
+    
+    // Bind methods
+    this.handleResize = this.handleResize.bind(this);
+    this.renderMap = this.renderMap.bind(this);
     
     this.init();
   }
 
   async init() {
-    const container = document.getElementById(this.containerId);
-    if (!container) {
+    this.container = document.getElementById(this.containerId);
+    if (!this.container) {
       console.error(`[MapView] Container #${this.containerId} not found`);
       return;
     }
 
     console.log('[MapView] Initializing map in container:', this.containerId);
 
-    // Check if D3 is available
     if (!window.d3) {
       console.error('[MapView] D3.js not available!');
-      container.innerHTML = '<div style="padding: 2rem; color: #ff6b6b; text-align: center;">D3.js library not loaded</div>';
+      this.container.innerHTML = '<div style="padding: 2rem; color: #ff6b6b; text-align: center;">D3.js library not loaded</div>';
       return;
     }
 
-    // Create SVG (d3 loaded from CDN)
-    this.svg = window.d3.select(container)
+    // Create SVG with 100% dimensions and viewBox
+    this.svg = window.d3.select(this.container)
       .append('svg')
-      .attr('width', this.options.width)
-      .attr('height', this.options.height)
-      .attr('viewBox', `0 0 ${this.options.width} ${this.options.height}`)
+      .attr('width', '100%')
+      .attr('height', '100%')
+      .attr('viewBox', '0 0 1200 600') // Initial viewBox, will be updated
       .style('background', 'linear-gradient(135deg, rgba(5, 15, 35, 0.95) 0%, rgba(7, 21, 42, 0.95) 100%)')
       .style('display', 'block')
       .style('visibility', 'visible')
-      .style('opacity', '1');
+      .style('opacity', '1')
+      .style('position', 'absolute')
+      .style('top', '0')
+      .style('left', '0');
 
-    console.log('[MapView] SVG created, dimensions:', this.options.width, 'x', this.options.height);
-
-    // Create tooltip - only visible within map container
-    const mapContainer = document.getElementById(this.containerId);
-    this.tooltip = window.d3.select(mapContainer || 'body')
+    // Create tooltip
+    this.tooltip = window.d3.select(this.container)
       .append('div')
       .attr('class', 'sitmon-tooltip')
       .style('opacity', 0)
       .style('position', 'absolute')
-      .style('background', 'rgba(5, 15, 35, 0.95)')
+      .style('background', 'rgba(5, 15, 35, 0.98)')
       .style('border', '1px solid rgba(74, 158, 255, 0.3)')
       .style('border-radius', '8px')
       .style('padding', '12px')
       .style('color', '#fff')
       .style('font-size', '12px')
       .style('pointer-events', 'none')
-      .style('z-index', '10') // Lower z-index, only above map
+      .style('z-index', '100')
       .style('max-width', '300px')
       .style('box-shadow', '0 4px 12px rgba(0, 0, 0, 0.5)')
-      .style('display', 'none'); // Hidden by default
-
-    // Set up projection - minimize Antarctica visibility
-    // Use a larger scale and shift center significantly up to focus on populated areas
-    const scale = this.options.width / 5.8; // Larger scale to zoom in more
-    const centerY = this.options.height / 2.3; // Shift center further up to reduce Antarctica
-    
-    this.projection = window.d3.geoMercator()
-      .scale(scale)
-      .translate([this.options.width / 2, centerY])
-      .center([0, 30]); // Center on 30°N to focus on populated regions (moves viewport up)
-
-    this.path = window.d3.geoPath().projection(this.projection);
-    console.log('[MapView] Projection configured');
+      .style('display', 'none');
 
     // Load world map data
     await this.loadWorldMap();
     
-    // Render base map (will render fallback if worldData is null)
-    this.renderBaseMap();
+    // Wait for fonts and initial layout
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
     
-    // Render overlays
-    this.renderOverlays();
-    
-    console.log('[MapView] Map initialization complete');
+    // Initial render after layout
+    requestAnimationFrame(() => {
+      this.setupResizeObserver();
+      this.renderMap();
+    });
   }
 
   async loadWorldMap() {
     try {
-      // Use Natural Earth 110m countries (free, public domain)
       const url = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
       console.log('[MapView] Loading world map from:', url);
       
@@ -120,14 +143,11 @@ export class MapView {
       const topojson = await response.json();
       console.log('[MapView] TopoJSON loaded, converting to GeoJSON...');
       
-      // Convert to GeoJSON using topojson library (loaded from CDN)
       if (window.topojson && window.topojson.feature) {
         if (topojson.objects && topojson.objects.countries) {
           this.worldData = window.topojson.feature(topojson, topojson.objects.countries);
           console.log('[MapView] World map data loaded successfully, features:', this.worldData.features?.length || 0);
         } else {
-          console.warn('[MapView] TopoJSON missing countries object, trying alternative...');
-          // Try alternative structure
           const objectKeys = Object.keys(topojson.objects || {});
           if (objectKeys.length > 0) {
             this.worldData = window.topojson.feature(topojson, topojson.objects[objectKeys[0]]);
@@ -144,64 +164,107 @@ export class MapView {
       }
     } catch (error) {
       console.error('[MapView] Failed to load world map:', error);
-      // Create a fallback simple map
       this.worldData = null;
       this.createFallbackMap();
     }
   }
   
-  /**
-   * Create a simple fallback map if world data fails to load
-   */
   createFallbackMap() {
     console.log('[MapView] Creating fallback map...');
-    // Create a simple grid/outline as fallback
     const g = this.svg.append('g').attr('class', 'fallback-map');
+    const rect = this.container.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
     
-    // Draw a simple world outline using basic shapes
-    // This is a very basic representation
-    const centerX = this.options.width / 2;
-    const centerY = this.options.height / 2;
-    
-    // Draw continents as simple shapes (very basic representation)
-    // North America
+    // Simple continent outlines
     g.append('path')
       .attr('d', `M ${centerX - 200} ${centerY - 50} L ${centerX - 100} ${centerY - 80} L ${centerX - 50} ${centerY - 40} L ${centerX - 80} ${centerY + 20} L ${centerX - 150} ${centerY + 10} Z`)
       .attr('fill', 'rgba(34, 211, 238, 0.08)')
       .attr('stroke', 'rgba(34, 211, 238, 0.25)')
       .attr('stroke-width', 0.4);
-    
-    // South America
-    g.append('path')
-      .attr('d', `M ${centerX - 150} ${centerY + 20} L ${centerX - 100} ${centerY + 10} L ${centerX - 80} ${centerY + 60} L ${centerX - 120} ${centerY + 80} L ${centerX - 160} ${centerY + 70} Z`)
-      .attr('fill', 'rgba(34, 211, 238, 0.08)')
-      .attr('stroke', 'rgba(34, 211, 238, 0.25)')
-      .attr('stroke-width', 0.4);
-    
-    // Europe/Africa
-    g.append('path')
-      .attr('d', `M ${centerX - 50} ${centerY - 60} L ${centerX + 50} ${centerY - 70} L ${centerX + 80} ${centerY - 20} L ${centerX + 60} ${centerY + 40} L ${centerX - 20} ${centerY + 50} L ${centerX - 40} ${centerY - 10} Z`)
-      .attr('fill', 'rgba(34, 211, 238, 0.08)')
-      .attr('stroke', 'rgba(34, 211, 238, 0.25)')
-      .attr('stroke-width', 0.4);
-    
-    // Asia
-    g.append('path')
-      .attr('d', `M ${centerX + 60} ${centerY - 70} L ${centerX + 200} ${centerY - 80} L ${centerX + 220} ${centerY - 20} L ${centerX + 180} ${centerY + 30} L ${centerX + 100} ${centerY + 20} L ${centerX + 80} ${centerY - 10} Z`)
-      .attr('fill', 'rgba(34, 211, 238, 0.08)')
-      .attr('stroke', 'rgba(34, 211, 238, 0.25)')
-      .attr('stroke-width', 0.4);
-    
-    console.log('[MapView] Fallback map created');
   }
 
-  renderBaseMap() {
-    if (!this.worldData || !this.worldData.features) {
-      console.warn('[MapView] No world data available, skipping base map render');
+  setupResizeObserver() {
+    if (!this.container || !window.ResizeObserver) {
+      // Fallback to window resize if ResizeObserver not available
+      window.addEventListener('resize', this.handleResize);
       return;
     }
 
-    console.log('[MapView] Rendering base map with', this.worldData.features.length, 'features');
+    this.resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target === this.container) {
+          this.handleResize();
+        }
+      }
+    });
+
+    this.resizeObserver.observe(this.container);
+  }
+
+  handleResize() {
+    if (this.renderPending) return;
+    
+    this.renderPending = true;
+    requestAnimationFrame(() => {
+      this.renderMap();
+      this.renderPending = false;
+    });
+  }
+
+  renderMap() {
+    if (!this.svg || !this.container) return;
+
+    const rect = this.container.getBoundingClientRect();
+    const width = rect.width || 1200;
+    const height = rect.height || 600;
+
+    if (width <= 0 || height <= 0) {
+      console.warn('[MapView] Container has invalid dimensions:', width, height);
+      return;
+    }
+
+    // Update SVG viewBox
+    this.svg.attr('viewBox', `0 0 ${width} ${height}`);
+
+    // Set up projection with fitSize
+    if (this.worldData && this.worldData.features) {
+      this.projection = window.d3.geoNaturalEarth1()
+        .fitSize([width, height], this.worldData);
+    } else {
+      // Fallback projection if no world data
+      const scale = width / 6.3;
+      this.projection = window.d3.geoNaturalEarth1()
+        .scale(scale)
+        .translate([width / 2, height / 2]);
+    }
+
+    this.path = window.d3.geoPath().projection(this.projection);
+
+    // Clear existing map elements (but keep tooltip)
+    this.svg.selectAll('g.countries').remove();
+    this.svg.selectAll('g.overlays').remove();
+    this.svg.selectAll('g.event-markers').remove();
+    this.svg.selectAll('g.event-clusters').remove();
+    this.svg.selectAll('g.fallback-map').remove();
+
+    // Render base map
+    this.renderBaseMap();
+    
+    // Render overlays
+    this.renderOverlays();
+    
+    // Re-render events (markers will be repositioned)
+    if (this.events.length > 0) {
+      this.renderEvents();
+    }
+  }
+
+  renderBaseMap() {
+    if (!this.worldData || !this.worldData.features || !this.path) {
+      return;
+    }
+
     const g = this.svg.append('g').attr('class', 'countries');
 
     g.selectAll('path')
@@ -212,7 +275,7 @@ export class MapView {
       .attr('fill', 'rgba(34, 211, 238, 0.08)')
       .attr('stroke', 'rgba(34, 211, 238, 0.25)')
       .attr('stroke-width', 0.4)
-      .on('mouseover', function(event, d) {
+      .on('mouseover', function(event) {
         window.d3.select(this)
           .attr('fill', 'rgba(34, 211, 238, 0.18)')
           .attr('stroke', 'rgba(34, 211, 238, 0.5)')
@@ -224,30 +287,20 @@ export class MapView {
           .attr('stroke', 'rgba(34, 211, 238, 0.25)')
           .attr('stroke-width', 0.4);
       });
-    
-    console.log('[MapView] Base map rendered successfully');
   }
 
   renderOverlays() {
-    // Only render overlays if we have actual data to display
-    // For now, we'll skip these until real data is available
-    // This prevents showing empty/floating markers
+    // Render static overlays (conflict zones, hotspots, etc.)
+    // These are rendered once and don't need frequent updates
+    const overlaysG = this.svg.append('g').attr('class', 'overlays');
     
-    // Uncomment these when you have actual data:
-    // this.renderConflictZones();
-    // this.renderHotspots();
-    // this.renderChokepoints();
-    // this.renderCablePoints();
-    // this.renderMilitaryBases();
-    // this.renderNuclearFacilities();
+    // Only render if we have data
+    if (CONFLICT_ZONES && CONFLICT_ZONES.length > 0) {
+      this.renderConflictZones(overlaysG);
+    }
   }
 
-  renderConflictZones() {
-    // Only render if we have actual conflict zone data
-    if (!CONFLICT_ZONES || CONFLICT_ZONES.length === 0) return;
-    
-    const g = this.svg.append('g').attr('class', 'conflict-zones');
-
+  renderConflictZones(container) {
     CONFLICT_ZONES.forEach(zone => {
       const [[minLat, minLon], [maxLat, maxLon]] = zone.bounds;
       const corners = [
@@ -263,7 +316,7 @@ export class MapView {
         coordinates: [corners]
       };
 
-      g.append('path')
+      container.append('path')
         .datum(polygon)
         .attr('d', this.path)
         .attr('fill', zone.threatLevel === 'high' ? 'rgba(255, 107, 107, 0.12)' : 'rgba(255, 170, 0, 0.12)')
@@ -273,418 +326,19 @@ export class MapView {
     });
   }
 
-  renderHotspots() {
-    // Only render if we have actual hotspot data
-    if (!HOTSPOTS || HOTSPOTS.length === 0) return;
-    
-    const g = this.svg.append('g').attr('class', 'hotspots');
-
-    HOTSPOTS.forEach(hotspot => {
-      const [x, y] = this.projection([hotspot.lon, hotspot.lat]);
-      if (!x || !y) return;
-
-      const color = hotspot.threatLevel === 'high' ? '#ff6b6b' : '#ffaa00';
-      
-      const circle = g.append('circle')
-        .attr('cx', x)
-        .attr('cy', y)
-        .attr('r', 5)
-        .attr('fill', color)
-        .attr('stroke', 'rgba(255, 255, 255, 0.9)')
-        .attr('stroke-width', 1.5)
-        .style('cursor', 'pointer')
-        .style('opacity', 0.85)
-        .on('mouseover', (event) => {
-          this.showTooltip(event, {
-            title: hotspot.name,
-            threatLevel: hotspot.threatLevel,
-            category: hotspot.category
-          });
-          window.d3.select(event.currentTarget)
-            .attr('r', 7)
-            .style('opacity', 1);
-        })
-        .on('mousemove', (event) => {
-          this.moveTooltip(event);
-        })
-        .on('mouseout', (event) => {
-          this.hideTooltip();
-          window.d3.select(event.currentTarget)
-            .attr('r', 5)
-            .style('opacity', 0.85);
-        });
-    });
-  }
-
-  renderChokepoints() {
-    // Only render if we have actual chokepoint data
-    if (!CHOKEPOINTS || CHOKEPOINTS.length === 0) return;
-    
-    const g = this.svg.append('g').attr('class', 'chokepoints');
-
-    CHOKEPOINTS.forEach(point => {
-      const [x, y] = this.projection([point.lon, point.lat]);
-      if (!x || !y) return;
-
-      g.append('circle')
-        .attr('cx', x)
-        .attr('cy', y)
-        .attr('r', 4)
-        .attr('fill', '#4A90E2')
-        .attr('stroke', 'rgba(255, 255, 255, 0.9)')
-        .attr('stroke-width', 1.5)
-        .style('cursor', 'pointer')
-        .on('mouseover', (event) => {
-          this.showTooltip(event, {
-            title: point.name,
-            type: 'Shipping Chokepoint'
-          });
-        })
-        .on('mousemove', (event) => {
-          this.moveTooltip(event);
-        })
-        .on('mouseout', () => {
-          this.hideTooltip();
-        });
-    });
-  }
-
-  renderCablePoints() {
-    // Only render if we have actual cable point data
-    if (!CABLE_POINTS || CABLE_POINTS.length === 0) return;
-    
-    const g = this.svg.append('g').attr('class', 'cable-points');
-
-    CABLE_POINTS.forEach(point => {
-      const [x, y] = this.projection([point.lon, point.lat]);
-      if (!x || !y) return;
-
-      g.append('circle')
-        .attr('cx', x)
-        .attr('cy', y)
-        .attr('r', 3)
-        .attr('fill', '#22d3ee')
-        .attr('stroke', 'rgba(255, 255, 255, 0.9)')
-        .attr('stroke-width', 1)
-        .style('cursor', 'pointer')
-        .on('mouseover', (event) => {
-          this.showTooltip(event, {
-            title: point.name,
-            type: 'Cable Landing Point'
-          });
-        })
-        .on('mousemove', (event) => {
-          this.moveTooltip(event);
-        })
-        .on('mouseout', () => {
-          this.hideTooltip();
-        });
-    });
-  }
-
-  renderMilitaryBases() {
-    // Only render if we have actual military base data
-    if (!MILITARY_BASES || MILITARY_BASES.length === 0) return;
-    
-    const g = this.svg.append('g').attr('class', 'military-bases');
-
-    MILITARY_BASES.forEach(base => {
-      const [x, y] = this.projection([base.lon, base.lat]);
-      if (!x || !y) return;
-
-      g.append('polygon')
-        .attr('points', `${x},${y-5} ${x+4},${y+3} ${x-4},${y+3}`)
-        .attr('fill', '#ff6b6b')
-        .attr('stroke', 'rgba(255, 255, 255, 0.9)')
-        .attr('stroke-width', 1)
-        .style('cursor', 'pointer')
-        .on('mouseover', (event) => {
-          this.showTooltip(event, {
-            title: base.name,
-            type: `Military Base (${base.type})`
-          });
-        })
-        .on('mousemove', (event) => {
-          this.moveTooltip(event);
-        })
-        .on('mouseout', () => {
-          this.hideTooltip();
-        });
-    });
-  }
-
-  renderNuclearFacilities() {
-    // Only render if we have actual nuclear facility data
-    if (!NUCLEAR_FACILITIES || NUCLEAR_FACILITIES.length === 0) return;
-    
-    const g = this.svg.append('g').attr('class', 'nuclear-facilities');
-
-    NUCLEAR_FACILITIES.forEach(facility => {
-      const [x, y] = this.projection([facility.lon, facility.lat]);
-      if (!x || !y) return;
-
-      g.append('circle')
-        .attr('cx', x)
-        .attr('cy', y)
-        .attr('r', 5)
-        .attr('fill', '#ffaa00')
-        .attr('stroke', 'rgba(255, 255, 255, 0.9)')
-        .attr('stroke-width', 2)
-        .style('cursor', 'pointer')
-        .on('mouseover', (event) => {
-          this.showTooltip(event, {
-            title: facility.name,
-            type: 'Nuclear Facility'
-          });
-        })
-        .on('mousemove', (event) => {
-          this.moveTooltip(event);
-        })
-        .on('mouseout', () => {
-          this.hideTooltip();
-        });
-    });
-  }
-
-  addEarthquake(lat, lon, magnitude) {
-    const [x, y] = this.projection([lon, lat]);
-    if (!x || !y) return;
-
-    // Only show earthquakes if magnitude is significant (M4.5+)
-    if (magnitude < 4.5) return;
-
-    const g = this.svg.append('g').attr('class', 'earthquakes');
-    const radius = Math.min(magnitude * 2.5, 18);
-    const earthquakeId = `eq_${lat}_${lon}_${magnitude}_${Date.now()}`;
-
-    const circle = g.append('circle')
-      .attr('cx', x)
-      .attr('cy', y)
-      .attr('r', radius)
-      .attr('fill', 'rgba(255, 107, 107, 0.25)')
-      .attr('stroke', '#ff6b6b')
-      .attr('stroke-width', 1.5)
-      .style('cursor', 'pointer')
-      .style('opacity', 0)
-      .on('mouseover', (event) => {
-        this.showTooltip(event, {
-          title: `Earthquake M${magnitude.toFixed(1)}`,
-          type: 'Seismic Event'
-        });
-        window.d3.select(event.currentTarget)
-          .attr('r', radius + 2)
-          .style('opacity', 1);
-      })
-      .on('mousemove', (event) => {
-        this.moveTooltip(event);
-      })
-      .on('mouseout', (event) => {
-        this.hideTooltip();
-        window.d3.select(event.currentTarget)
-          .attr('r', radius)
-          .style('opacity', 0.8);
-      })
-      .transition()
-      .duration(300)
-      .style('opacity', 0.8);
-
-    // Fade out after 15 seconds
-    const timeoutId = setTimeout(() => {
-      // Verify circle and its parent still exist, and MapView is still valid
-      const node = circle.node();
-      if (node && node.parentNode && this.svg && this.svg.node() && this.svg.node().contains(node)) {
-        // Re-select to ensure valid D3 selection
-        const circleSelection = window.d3.select(node);
-        if (!circleSelection.empty()) {
-          try {
-            circleSelection
-              .transition()
-              .duration(2000)
-              .style('opacity', 0)
-              .on('end', function() {
-                // Remove after transition completes
-                const parent = this.parentNode;
-                if (parent) {
-                  parent.removeChild(this);
-                }
-              });
-          } catch (e) {
-            // If transition fails, just remove directly
-            if (node.parentNode) {
-              node.parentNode.removeChild(node);
-            }
-          }
-        }
-      }
-      this.earthquakeTimeouts.delete(earthquakeId);
-    }, 15000);
-    
-    this.earthquakeTimeouts.set(earthquakeId, timeoutId);
-  }
-  
-  /**
-   * Clear all earthquake timeouts (on cleanup/refresh)
-   */
-  clearEarthquakeTimeouts() {
-    for (const timeoutId of this.earthquakeTimeouts.values()) {
-      clearTimeout(timeoutId);
-    }
-    this.earthquakeTimeouts.clear();
-  }
-
-  addMonitorMarker(monitor) {
-    if (!monitor.lat || !monitor.lon) return;
-
-    const [x, y] = this.projection([monitor.lon, monitor.lat]);
-    if (!x || !y) return;
-
-    const g = this.svg.append('g').attr('class', 'monitor-markers');
-    const color = monitor.color || '#4A90E2';
-
-    const marker = g.append('circle')
-      .attr('cx', x)
-      .attr('cy', y)
-      .attr('r', 8)
-      .attr('fill', color)
-      .attr('stroke', '#fff')
-      .attr('stroke-width', 2)
-      .style('cursor', 'pointer')
-      .datum(monitor)
-      .on('mouseover', (event, d) => {
-        this.showTooltip(event, {
-          title: d.name,
-          type: 'Custom Monitor',
-          matches: d.matchCount || 0
-        });
-      })
-      .on('mousemove', (event) => {
-        this.moveTooltip(event);
-      })
-      .on('mouseout', () => {
-        this.hideTooltip();
-      });
-
-    // Add badge for match count
-    if (monitor.matchCount > 0) {
-      g.append('text')
-        .attr('x', x)
-        .attr('y', y - 12)
-        .attr('text-anchor', 'middle')
-        .attr('fill', '#fff')
-        .attr('font-size', '10px')
-        .attr('font-weight', 'bold')
-        .text(monitor.matchCount);
-    }
-
-    this.markers.set(monitor.id, marker);
-  }
-
-  showTooltip(event, data) {
-    if (this.debounceTimer) {
-      clearTimeout(this.debounceTimer);
-    }
-
-    // Only show tooltip if mouse is actually over the map
-    const mapContainer = document.getElementById(this.containerId);
-    if (!mapContainer || !mapContainer.contains(event.target)) {
-      return;
-    }
-
-    this.debounceTimer = setTimeout(() => {
-      let html = `<div style="font-weight: bold; margin-bottom: 4px;">${data.title}</div>`;
-      if (data.type) {
-        html += `<div style="color: rgba(255,255,255,0.7); font-size: 11px;">${data.type}</div>`;
-      }
-      if (data.threatLevel) {
-        html += `<div style="color: ${data.threatLevel === 'high' ? '#ff3333' : '#ffaa00'}; font-size: 11px; margin-top: 4px;">Threat: ${data.threatLevel}</div>`;
-      }
-      if (data.matches !== undefined) {
-        html += `<div style="color: #4A90E2; font-size: 11px; margin-top: 4px;">Matches: ${data.matches}</div>`;
-      }
-
-      this.tooltip
-        .html(html)
-        .style('display', 'block')
-        .style('opacity', 1);
-
-      this.moveTooltip(event);
-    }, 300); // Increased delay to prevent accidental hovers
-  }
-
-  moveTooltip(event) {
-    if (this.debounceTimer) {
-      clearTimeout(this.debounceTimer);
-    }
-
-    // Only move tooltip if it's visible and mouse is over map
-    const mapContainer = document.getElementById(this.containerId);
-    if (!mapContainer || !mapContainer.contains(event.target)) {
-      this.hideTooltip();
-      return;
-    }
-
-    this.debounceTimer = setTimeout(() => {
-      // Position relative to map container, not page
-      const rect = mapContainer.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      
-      this.tooltip
-        .style('left', (x + 10) + 'px')
-        .style('top', (y - 10) + 'px');
-    }, 10);
-  }
-
-  hideTooltip() {
-    if (this.debounceTimer) {
-      clearTimeout(this.debounceTimer);
-    }
-    if (this.tooltip) {
-      this.tooltip
-        .style('opacity', 0)
-        .style('display', 'none');
-    }
-  }
-
-  resize(width, height) {
-    this.options.width = width;
-    this.options.height = height;
-    
-    if (this.svg) {
-      this.svg.attr('width', width).attr('height', height);
-      
-      // Use same projection settings as init - minimize Antarctica
-      const scale = width / 5.8;
-      const centerY = height / 2.3;
-      this.projection
-        .scale(scale)
-        .translate([width / 2, centerY])
-        .center([0, 30]);
-      
-      // Re-render
-      this.svg.selectAll('*').remove();
-      this.renderBaseMap();
-      this.renderOverlays();
-    }
-  }
-
-  /**
-   * Update events on map
-   */
   updateEvents(events) {
     this.events = events || [];
-    this.renderEvents();
+    if (this.svg && this.projection) {
+      this.renderEvents();
+    }
   }
   
-  /**
-   * Render events with clustering
-   */
   renderEvents() {
-    if (!this.svg || !this.projection) return;
+    if (!this.svg || !this.projection || !this.path) return;
     
     // Remove existing event markers and clusters
-    this.svg.selectAll('.event-marker').remove();
-    this.svg.selectAll('.event-cluster').remove();
+    this.svg.selectAll('g.event-markers').remove();
+    this.svg.selectAll('g.event-clusters').remove();
     this.eventMarkers.clear();
     this.clusterMarkers.clear();
     
@@ -710,9 +364,6 @@ export class MapView {
     }
   }
   
-  /**
-   * Render a single event marker
-   */
   renderEventMarker(container, event) {
     if (!event.location || !event.location.lat || !event.location.lon) return;
     
@@ -720,7 +371,7 @@ export class MapView {
     if (!x || !y || !isFinite(x) || !isFinite(y)) return;
     
     const color = getCategoryColor(event.category);
-    const severity = event.severity;
+    const severity = event.severity || 1;
     const radius = severity >= 5 ? 8 : severity >= 4 ? 6 : 5;
     
     const marker = container.append('g')
@@ -754,7 +405,7 @@ export class MapView {
       .style('opacity', 0.9)
       .datum(event);
     
-    // Hover effects - target the main circle specifically, not the ring
+    // Hover effects
     marker.on('mouseover', (event, d) => {
       this.showEventTooltip(event, d);
       window.d3.select(event.currentTarget).select('.event-marker-main')
@@ -777,9 +428,6 @@ export class MapView {
     this.eventMarkers.set(event.id, marker);
   }
   
-  /**
-   * Render a cluster
-   */
   renderCluster(container, cluster) {
     const count = cluster.getCount();
     const maxSeverity = cluster.getMaxSeverity();
@@ -850,32 +498,28 @@ export class MapView {
     this.clusterMarkers.set(cluster.id, clusterG);
   }
   
-  /**
-   * Show event tooltip
-   */
   showEventTooltip(event, mapEvent) {
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
     }
     
-    // Only show if mouse is over map
     const mapContainer = document.getElementById(this.containerId);
     if (!mapContainer || !mapContainer.contains(event.target)) {
       return;
     }
     
     this.debounceTimer = setTimeout(() => {
-      const age = mapEvent.getAgeHours();
+      const age = mapEvent.getAgeHours ? mapEvent.getAgeHours() : 0;
       const ageText = age < 1 ? `${Math.floor(age * 60)}m ago` : 
                       age < 24 ? `${Math.floor(age)}h ago` : 
                       `${Math.floor(age / 24)}d ago`;
       
-      let html = `<div style="font-weight: bold; margin-bottom: 4px;">${escapeHtml(mapEvent.title)}</div>`;
-      html += `<div style="color: rgba(255,255,255,0.7); font-size: 11px;">${escapeHtml(mapEvent.source)} • ${ageText}</div>`;
+      let html = `<div style="font-weight: bold; margin-bottom: 4px;">${escapeHtml(mapEvent.title || 'Event')}</div>`;
+      html += `<div style="color: rgba(255,255,255,0.7); font-size: 11px;">${escapeHtml(mapEvent.source || 'Unknown')} • ${ageText}</div>`;
       if (mapEvent.location && mapEvent.location.label) {
         html += `<div style="color: rgba(255,255,255,0.7); font-size: 11px; margin-top: 4px;">📍 ${escapeHtml(mapEvent.location.label)}</div>`;
       }
-      html += `<div style="color: ${getSeverityColor(mapEvent.severity)}; font-size: 11px; margin-top: 4px;">Severity: ${mapEvent.severity}/5 • ${mapEvent.category}</div>`;
+      html += `<div style="color: ${getSeverityColor(mapEvent.severity || 1)}; font-size: 11px; margin-top: 4px;">Severity: ${mapEvent.severity || 1}/5 • ${mapEvent.category || 'other'}</div>`;
       
       this.tooltip
         .html(html)
@@ -883,18 +527,14 @@ export class MapView {
         .style('opacity', 1);
       
       this.moveTooltip(event);
-    }, 300); // Increased delay
+    }, 100);
   }
   
-  /**
-   * Show cluster tooltip
-   */
   showClusterTooltip(event, cluster) {
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
     }
     
-    // Only show if mouse is over map
     const mapContainer = document.getElementById(this.containerId);
     if (!mapContainer || !mapContainer.contains(event.target)) {
       return;
@@ -916,34 +556,115 @@ export class MapView {
         .style('opacity', 1);
       
       this.moveTooltip(event);
-    }, 300); // Increased delay
+    }, 100);
+  }
+
+  moveTooltip(event) {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+
+    const mapContainer = document.getElementById(this.containerId);
+    if (!mapContainer || !mapContainer.contains(event.target)) {
+      this.hideTooltip();
+      return;
+    }
+
+    this.debounceTimer = setTimeout(() => {
+      const rect = mapContainer.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
+      this.tooltip
+        .style('left', (x + 10) + 'px')
+        .style('top', (y - 10) + 'px');
+    }, 10);
+  }
+
+  hideTooltip() {
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+    if (this.tooltip) {
+      this.tooltip
+        .style('opacity', 0)
+        .style('display', 'none');
+    }
   }
   
-  /**
-   * Handle event click
-   */
   onEventClick(event) {
-    // Dispatch custom event for event drawer
     const customEvent = new CustomEvent('sitmon:event-click', {
       detail: { event }
     });
     document.dispatchEvent(customEvent);
   }
   
-  /**
-   * Handle cluster click
-   */
   onClusterClick(cluster) {
-    // Dispatch custom event for cluster drawer
     const customEvent = new CustomEvent('sitmon:cluster-click', {
       detail: { cluster }
     });
     document.dispatchEvent(customEvent);
   }
+
+  // Legacy methods for backward compatibility
+  resize(width, height) {
+    // This method is kept for backward compatibility but ResizeObserver handles it now
+    this.renderMap();
+  }
+
+  addEarthquake(lat, lon, magnitude) {
+    const [x, y] = this.projection([lon, lat]);
+    if (!x || !y || magnitude < 4.5) return;
+
+    const g = this.svg.append('g').attr('class', 'earthquakes');
+    const radius = Math.min(magnitude * 2.5, 18);
+    const earthquakeId = `eq_${lat}_${lon}_${magnitude}_${Date.now()}`;
+
+    const circle = g.append('circle')
+      .attr('cx', x)
+      .attr('cy', y)
+      .attr('r', radius)
+      .attr('fill', 'rgba(255, 107, 107, 0.25)')
+      .attr('stroke', '#ff6b6b')
+      .attr('stroke-width', 1.5)
+      .style('cursor', 'pointer')
+      .style('opacity', 0)
+      .transition()
+      .duration(300)
+      .style('opacity', 0.8);
+
+    const timeoutId = setTimeout(() => {
+      const node = circle.node();
+      if (node && node.parentNode) {
+        window.d3.select(node)
+          .transition()
+          .duration(2000)
+          .style('opacity', 0)
+          .on('end', function() {
+            if (this.parentNode) {
+              this.parentNode.removeChild(this);
+            }
+          });
+      }
+      this.earthquakeTimeouts.delete(earthquakeId);
+    }, 15000);
+    
+    this.earthquakeTimeouts.set(earthquakeId, timeoutId);
+  }
   
+  clearEarthquakeTimeouts() {
+    for (const timeoutId of this.earthquakeTimeouts.values()) {
+      clearTimeout(timeoutId);
+    }
+    this.earthquakeTimeouts.clear();
+  }
+
   destroy() {
-    // Clear all earthquake timeouts
     this.clearEarthquakeTimeouts();
+    
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+    }
     
     if (this.tooltip) {
       this.tooltip.remove();
@@ -955,6 +676,7 @@ export class MapView {
 }
 
 function escapeHtml(text) {
+  if (!text) return '';
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;

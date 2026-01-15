@@ -17,6 +17,7 @@ import { EventDrawer } from './EventDrawer.js';
 import { ClusterDrawer } from './ClusterDrawer.js';
 import { BigBoardOverlay } from './BigBoardOverlay.js';
 import { DiagnosticsPanel } from './DiagnosticsPanel.js';
+import { globalEventStore, normalizeEarthquake, normalizeWeatherAlert, normalizeNewsHeadline } from './data/eventStore.js';
 import { showLoader, setLoaderProgress, setLoaderPhase, hideLoader } from '../../loader/IntelLoader.js';
 
 export class SituationMonitorShell {
@@ -40,6 +41,10 @@ export class SituationMonitorShell {
     this._refreshing = false; // Guard for single-flight refresh
     this._refreshPromise = null; // Promise for single-flight refresh
     this._shellCreated = false; // Guard for double initialization
+    this.eventStore = globalEventStore; // Use global event store
+    this.pinnedEventId = null; // Currently pinned event
+    this.lastIngestTime = null; // Last successful data fetch
+    this.updateInterval = null; // Live update interval
     
     // Don't await - let it run asynchronously
     // Add timeout to ensure loader hides even if initialization hangs
@@ -138,49 +143,106 @@ export class SituationMonitorShell {
           </div>
         </div>
 
-        <!-- Main Dashboard Grid -->
-        <div class="sitmon-dashboard-grid" style="display: grid !important; visibility: visible !important; opacity: 1 !important;">
-          <!-- Left Column: Map Card -->
-          <div class="sitmon-map-card">
-            <div class="sitmon-card-header">
-              <h2 class="sitmon-card-title">World Map</h2>
-            </div>
-            <div class="sitmon-card-body">
+        <!-- Intel Wall: Map as Main Canvas with HUD Overlays -->
+        <div class="sitmon-intel-wall">
+          <!-- Map Container (Full Canvas) -->
+          <div class="sitmon-map-container">
             <div id="sitmon-map" class="sitmon-map"></div>
-            </div>
-          </div>
-
-          <!-- Right Column: Analysis Panels Stack -->
-          <div class="sitmon-panels-stack">
-            <div class="sitmon-panel-card" id="sitmon-panel-intel">
-              <div class="sitmon-card-header">
-                <h2 class="sitmon-card-title">Main Characters</h2>
+            
+            <!-- Left HUD: Stats + Filters -->
+            <div class="sitmon-hud sitmon-hud-left">
+              <div class="sitmon-hud-card">
+                <div class="sitmon-hud-header">
+                  <h3 class="sitmon-hud-title">STATS</h3>
+                </div>
+                <div class="sitmon-hud-body" id="sitmon-hud-stats">
+                  <div class="sitmon-stat-item">
+                    <span class="sitmon-stat-label">Active Events</span>
+                    <span class="sitmon-stat-value" id="sitmon-stat-events">0</span>
+                  </div>
+                  <div class="sitmon-stat-item">
+                    <span class="sitmon-stat-label">Critical</span>
+                    <span class="sitmon-stat-value sitmon-stat-critical" id="sitmon-stat-critical">0</span>
+                  </div>
+                  <div class="sitmon-stat-item">
+                    <span class="sitmon-stat-label">High</span>
+                    <span class="sitmon-stat-value sitmon-stat-high" id="sitmon-stat-high">0</span>
+                  </div>
+                </div>
               </div>
-              <div class="sitmon-card-body" id="sitmon-panel-intel-body"></div>
-            </div>
-
-            <div class="sitmon-panel-card" id="sitmon-panel-correlation">
-              <div class="sitmon-card-header">
-                <h2 class="sitmon-card-title">Correlations</h2>
+              
+              <div class="sitmon-hud-card">
+                <div class="sitmon-hud-header">
+                  <h3 class="sitmon-hud-title">FILTERS</h3>
+                </div>
+                <div class="sitmon-hud-body" id="sitmon-hud-filters">
+                  <div class="sitmon-filter-group">
+                    <label class="sitmon-filter-label">Severity</label>
+                    <div class="sitmon-filter-buttons">
+                      <button class="sitmon-filter-btn active" data-severity="all">All</button>
+                      <button class="sitmon-filter-btn" data-severity="4">4+</button>
+                      <button class="sitmon-filter-btn" data-severity="5">5</button>
+                    </div>
+                  </div>
+                  <div class="sitmon-filter-group">
+                    <label class="sitmon-filter-label">Category</label>
+                    <div class="sitmon-filter-checkboxes">
+                      <label><input type="checkbox" checked data-category="conflict"> Conflict</label>
+                      <label><input type="checkbox" checked data-category="disaster"> Disaster</label>
+                      <label><input type="checkbox" checked data-category="weather"> Weather</label>
+                      <label><input type="checkbox" checked data-category="other"> Other</label>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="sitmon-card-body" id="sitmon-panel-correlation-body"></div>
             </div>
-
-            <div class="sitmon-panel-card" id="sitmon-panel-narrative">
-              <div class="sitmon-card-header">
-                <h2 class="sitmon-card-title">Narrative Signals</h2>
+            
+            <!-- Right HUD: Live Feed + Pinned Event -->
+            <div class="sitmon-hud sitmon-hud-right">
+              <!-- Live Feed -->
+              <div class="sitmon-hud-card">
+                <div class="sitmon-hud-header">
+                  <h3 class="sitmon-hud-title">LIVE FEED</h3>
+                  <span class="sitmon-hud-badge" id="sitmon-feed-count">0</span>
+                </div>
+                <div class="sitmon-hud-body sitmon-feed-list" id="sitmon-hud-feed">
+                  <div class="sitmon-feed-empty">No events yet</div>
+                </div>
               </div>
-              <div class="sitmon-card-body" id="sitmon-panel-narrative-body"></div>
+              
+              <!-- Pinned Event Detail -->
+              <div class="sitmon-hud-card" id="sitmon-pinned-event" style="display: none;">
+                <div class="sitmon-hud-header">
+                  <h3 class="sitmon-hud-title">EVENT DETAIL</h3>
+                  <button class="sitmon-hud-close" id="sitmon-pinned-close">×</button>
+                </div>
+                <div class="sitmon-hud-body" id="sitmon-pinned-content">
+                  <!-- Populated by JS -->
+                </div>
+              </div>
             </div>
-
-            <div class="sitmon-panel-card" id="sitmon-panel-monitors">
-              <div class="sitmon-card-header">
-                <h2 class="sitmon-card-title">Custom Monitors</h2>
+            
+            <!-- Bottom Status Bar -->
+            <div class="sitmon-status-bar">
+              <div class="sitmon-status-item">
+                <span class="sitmon-status-label">Last ingest:</span>
+                <span class="sitmon-status-value" id="sitmon-status-last-ingest">--</span>
               </div>
-              <div class="sitmon-card-body" id="sitmon-panel-monitors-body"></div>
+              <div class="sitmon-status-item">
+                <span class="sitmon-status-label">Sources:</span>
+                <span class="sitmon-status-value sitmon-status-online" id="sitmon-status-sources">Online</span>
+              </div>
+              <div class="sitmon-status-item">
+                <label class="sitmon-status-toggle">
+                  <input type="checkbox" id="sitmon-auto-refresh-hud" checked>
+                  <span>Auto-refresh</span>
+                </label>
+              </div>
             </div>
           </div>
         </div>
+        
+        <!-- Secondary Panels Grid (Below Map) -->
 
         <!-- Secondary Panels Grid -->
         <div class="sitmon-secondary-grid" style="display: grid !important; visibility: visible !important; opacity: 1 !important;">
@@ -189,6 +251,7 @@ export class SituationMonitorShell {
               <h2 class="sitmon-card-title">News Feed</h2>
             </div>
             <div class="sitmon-card-body" id="sitmon-panel-news-body"></div>
+            <div class="sitmon-panel-resize-handle" data-panel-id="sitmon-panel-news"></div>
           </div>
 
           <div class="sitmon-panel-card" id="sitmon-panel-markets">
@@ -196,6 +259,7 @@ export class SituationMonitorShell {
               <h2 class="sitmon-card-title">Markets</h2>
             </div>
             <div class="sitmon-card-body" id="sitmon-panel-markets-body"></div>
+            <div class="sitmon-panel-resize-handle" data-panel-id="sitmon-panel-markets"></div>
           </div>
 
           <div class="sitmon-panel-card" id="sitmon-panel-earthquakes">
@@ -203,6 +267,7 @@ export class SituationMonitorShell {
               <h2 class="sitmon-card-title">Earthquakes</h2>
             </div>
             <div class="sitmon-card-body" id="sitmon-panel-earthquakes-body"></div>
+            <div class="sitmon-panel-resize-handle" data-panel-id="sitmon-panel-earthquakes"></div>
           </div>
 
           <div class="sitmon-panel-card" id="sitmon-panel-weather">
@@ -210,6 +275,7 @@ export class SituationMonitorShell {
               <h2 class="sitmon-card-title">Weather Alerts</h2>
             </div>
             <div class="sitmon-card-body" id="sitmon-panel-weather-body"></div>
+            <div class="sitmon-panel-resize-handle" data-panel-id="sitmon-panel-weather"></div>
           </div>
 
           <div class="sitmon-panel-card" id="sitmon-panel-rss">
@@ -217,6 +283,7 @@ export class SituationMonitorShell {
               <h2 class="sitmon-card-title">RSS Intelligence</h2>
             </div>
             <div class="sitmon-card-body" id="sitmon-panel-rss-body"></div>
+            <div class="sitmon-panel-resize-handle" data-panel-id="sitmon-panel-rss"></div>
           </div>
           
           <div class="sitmon-panel-card" id="sitmon-panel-livecams" style="display: none; grid-column: 1 / -1; height: calc(100vh - 200px);">
@@ -248,9 +315,25 @@ export class SituationMonitorShell {
     
     setLoaderProgress(0.60);
     
+    // Initialize panel resize functionality
+    this.initPanelResize();
+    
+    // Setup HUD components
+    this.setupHUD();
+    
+    // Subscribe to event store updates
+    this.eventStore.onUpdate((events) => {
+      this.updateMapEvents(events);
+      this.updateHUDStats(events);
+      this.updateLiveFeed(events);
+    });
+    
     // Initialize enhancement features
     this.initToastSystem();
     this.initKeyboardShortcuts();
+    
+    // Start live updates
+    this.startLiveUpdates();
     
     setLoaderProgress(0.70);
     
@@ -437,42 +520,12 @@ export class SituationMonitorShell {
       console.warn('[SituationMonitorShell] TopoJSON not available, map will use fallback rendering');
     }
 
-    // Get actual container dimensions
-    const rect = mapContainer.getBoundingClientRect();
-    const width = rect.width || 800;
-    const height = rect.height || 500;
-
     try {
       // Clear placeholder before initializing map
       mapContainer.innerHTML = '';
 
-    this.mapView = new MapView('sitmon-map', {
-        width: Math.max(width, 400),
-        height: Math.max(height, 300)
-    });
-
-      // Handle resize with debounce
-      let resizeTimeout;
-      const handleResize = () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-      if (this.mapView && mapContainer) {
-            const newRect = mapContainer.getBoundingClientRect();
-            const newWidth = newRect.width || width;
-            const newHeight = newRect.height || height;
-            if (newWidth > 0 && newHeight > 0) {
-        this.mapView.resize(newWidth, newHeight);
-      }
-          }
-        }, 250);
-      };
-
-      window.addEventListener('resize', handleResize);
-      
-      // Also handle orientation change on mobile
-      window.addEventListener('orientationchange', () => {
-        setTimeout(handleResize, 500);
-      });
+      // MapView now uses ResizeObserver internally, no need to pass dimensions
+      this.mapView = new MapView('sitmon-map');
     } catch (error) {
       console.error('[SituationMonitorShell] Map initialization error:', error);
       mapContainer.innerHTML = `
@@ -657,6 +710,358 @@ export class SituationMonitorShell {
     } else {
       console.warn('[SituationMonitorShell] Live Cams button NOT FOUND - button may not be in DOM');
     }
+  }
+  
+  initPanelResize() {
+    const resizeHandles = document.querySelectorAll('.sitmon-panel-resize-handle');
+    
+    resizeHandles.forEach(handle => {
+      let isResizing = false;
+      let startY = 0;
+      let startHeight = 0;
+      let panel = null;
+      
+      const panelId = handle.getAttribute('data-panel-id');
+      if (!panelId) return;
+      
+      panel = document.getElementById(panelId);
+      if (!panel) return;
+      
+      // Load saved height from localStorage
+      const savedHeight = localStorage.getItem(`sitmon-panel-height-${panelId}`);
+      if (savedHeight) {
+        const height = parseInt(savedHeight, 10);
+        if (height > 0) {
+          panel.style.height = `${height}px`;
+          panel.style.maxHeight = 'none';
+        }
+      }
+      
+      const startResize = (e) => {
+        isResizing = true;
+        startY = e.clientY || e.touches[0].clientY;
+        startHeight = panel.offsetHeight;
+        document.body.style.cursor = 'ns-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+      };
+      
+      const doResize = (e) => {
+        if (!isResizing) return;
+        
+        const currentY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : startY);
+        const deltaY = currentY - startY;
+        const newHeight = Math.max(320, startHeight + deltaY); // Minimum 320px
+        
+        panel.style.height = `${newHeight}px`;
+        panel.style.maxHeight = 'none';
+        panel.style.flexShrink = '0';
+      };
+      
+      const stopResize = () => {
+        if (!isResizing) return;
+        isResizing = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        
+        // Save height to localStorage
+        if (panel) {
+          const height = panel.offsetHeight;
+          localStorage.setItem(`sitmon-panel-height-${panelId}`, height.toString());
+        }
+      };
+      
+      // Mouse events
+      handle.addEventListener('mousedown', startResize);
+      window.addEventListener('mousemove', doResize);
+      window.addEventListener('mouseup', stopResize);
+      
+      // Touch events
+      handle.addEventListener('touchstart', startResize, { passive: false });
+      window.addEventListener('touchmove', (e) => {
+        if (isResizing) {
+          e.preventDefault();
+          doResize(e);
+        }
+      }, { passive: false });
+      window.addEventListener('touchend', stopResize);
+    });
+  }
+  
+  setupHUD() {
+    // Setup filters
+    const filterButtons = document.querySelectorAll('.sitmon-filter-btn');
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.applyFilters();
+      });
+    });
+    
+    const filterCheckboxes = document.querySelectorAll('.sitmon-filter-checkboxes input[type="checkbox"]');
+    filterCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        this.applyFilters();
+      });
+    });
+    
+    // Setup pinned event close
+    const pinnedClose = document.getElementById('sitmon-pinned-close');
+    if (pinnedClose) {
+      pinnedClose.addEventListener('click', () => {
+        this.unpinEvent();
+      });
+    }
+    
+    // Setup auto-refresh toggle
+    const autoRefreshToggle = document.getElementById('sitmon-auto-refresh-hud');
+    if (autoRefreshToggle) {
+      autoRefreshToggle.addEventListener('change', (e) => {
+        this.autoRefresh = e.target.checked;
+        if (this.autoRefresh) {
+          this.startLiveUpdates();
+        } else {
+          this.stopLiveUpdates();
+        }
+      });
+    }
+    
+    // Listen for event clicks
+    document.addEventListener('sitmon:event-click', (e) => {
+      this.pinEvent(e.detail.event);
+    });
+  }
+  
+  applyFilters() {
+    const activeSeverity = document.querySelector('.sitmon-filter-btn.active')?.getAttribute('data-severity');
+    const activeCategories = Array.from(document.querySelectorAll('.sitmon-filter-checkboxes input[type="checkbox"]:checked'))
+      .map(cb => cb.getAttribute('data-category'));
+    
+    const filters = {
+      minSeverity: activeSeverity === 'all' ? undefined : parseInt(activeSeverity) || undefined,
+      categories: activeCategories.length > 0 ? activeCategories : undefined
+    };
+    
+    const filtered = this.eventStore.getFilteredEvents(filters);
+    this.updateMapEvents(filtered);
+  }
+  
+  updateMapEvents(events) {
+    if (!this.mapView) return;
+    
+    // Filter events that have location
+    const mappableEvents = events.filter(e => e.location && e.location.lat && e.location.lon);
+    this.mapView.updateEvents(mappableEvents);
+  }
+  
+  updateHUDStats(events) {
+    const total = events.length;
+    const critical = events.filter(e => e.severity >= 5).length;
+    const high = events.filter(e => e.severity >= 4 && e.severity < 5).length;
+    
+    const totalEl = document.getElementById('sitmon-stat-events');
+    const criticalEl = document.getElementById('sitmon-stat-critical');
+    const highEl = document.getElementById('sitmon-stat-high');
+    
+    if (totalEl) totalEl.textContent = total;
+    if (criticalEl) criticalEl.textContent = critical;
+    if (highEl) highEl.textContent = high;
+  }
+  
+  updateLiveFeed(events) {
+    const feedEl = document.getElementById('sitmon-hud-feed');
+    const countEl = document.getElementById('sitmon-feed-count');
+    
+    if (!feedEl) return;
+    
+    // Sort by recency and severity
+    const sorted = [...events].sort((a, b) => {
+      if (b.severity !== a.severity) {
+        return b.severity - a.severity;
+      }
+      return new Date(b.publishedAt) - new Date(a.publishedAt);
+    }).slice(0, 20); // Top 20
+    
+    if (countEl) countEl.textContent = events.length;
+    
+    if (sorted.length === 0) {
+      feedEl.innerHTML = '<div class="sitmon-feed-empty">No events yet</div>';
+      return;
+    }
+    
+    feedEl.innerHTML = sorted.map(event => {
+      const age = event.getAgeHours ? event.getAgeHours() : 0;
+      const ageText = age < 1 ? `${Math.floor(age * 60)}m` : 
+                      age < 24 ? `${Math.floor(age)}h` : 
+                      `${Math.floor(age / 24)}d`;
+      const severityColor = event.severity >= 5 ? '#ff6b6b' : 
+                           event.severity >= 4 ? '#ffaa00' : 
+                           event.severity >= 3 ? '#4ade80' : '#22d3ee';
+      
+      return `
+        <div class="sitmon-feed-item" data-event-id="${event.id}">
+          <div class="sitmon-feed-item-title">
+            <span class="sitmon-feed-item-severity" style="background: ${severityColor}"></span>
+            ${this.escapeHtml(event.title)}
+          </div>
+          <div class="sitmon-feed-item-meta">
+            <span>${this.escapeHtml(event.source)}</span>
+            <span>${ageText}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+    // Add click handlers
+    feedEl.querySelectorAll('.sitmon-feed-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const eventId = item.getAttribute('data-event-id');
+        const event = this.eventStore.getEvent(eventId);
+        if (event) {
+          this.pinEvent(event);
+        }
+      });
+    });
+  }
+  
+  pinEvent(event) {
+    this.pinnedEventId = event.id;
+    const pinnedEl = document.getElementById('sitmon-pinned-event');
+    const contentEl = document.getElementById('sitmon-pinned-content');
+    
+    if (!pinnedEl || !contentEl) return;
+    
+    const age = event.getAgeHours ? event.getAgeHours() : 0;
+    const ageText = age < 1 ? `${Math.floor(age * 60)}m ago` : 
+                    age < 24 ? `${Math.floor(age)}h ago` : 
+                    `${Math.floor(age / 24)}d ago`;
+    
+    contentEl.innerHTML = `
+      <div class="sitmon-pinned-title">${this.escapeHtml(event.title)}</div>
+      <div class="sitmon-pinned-meta">
+        ${this.escapeHtml(event.source)} • ${ageText} • Severity ${event.severity}/5
+      </div>
+      ${event.location ? `
+        <div class="sitmon-pinned-location">
+          📍 ${this.escapeHtml(event.location.label || 'Unknown location')}
+        </div>
+      ` : ''}
+      ${event.summary ? `
+        <div class="sitmon-pinned-summary">${this.escapeHtml(event.summary)}</div>
+      ` : ''}
+      <div class="sitmon-pinned-actions">
+        ${event.url ? `<a href="${this.escapeHtml(event.url)}" target="_blank" class="sitmon-pinned-btn">Open Source</a>` : ''}
+        <button class="sitmon-pinned-btn" onclick="navigator.clipboard.writeText('${this.escapeHtml(event.url || '')}')">Copy Link</button>
+      </div>
+    `;
+    
+    pinnedEl.style.display = 'block';
+  }
+  
+  unpinEvent() {
+    this.pinnedEventId = null;
+    const pinnedEl = document.getElementById('sitmon-pinned-event');
+    if (pinnedEl) {
+      pinnedEl.style.display = 'none';
+    }
+  }
+  
+  startLiveUpdates() {
+    this.stopLiveUpdates(); // Clear any existing interval
+    
+    // Initial load
+    this.fetchAndUpdateEvents();
+    
+    // Set up polling every 15 seconds
+    this.updateInterval = setInterval(() => {
+      if (this.autoRefresh) {
+        this.fetchAndUpdateEvents();
+      }
+    }, 15000);
+  }
+  
+  stopLiveUpdates() {
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
+      this.updateInterval = null;
+    }
+  }
+  
+  async fetchAndUpdateEvents() {
+    try {
+      // Fetch from all sources and normalize
+      const events = [];
+      
+      // Fetch earthquakes
+      if (this.panels.earthquakes) {
+        try {
+          const eqs = this.panels.earthquakes.getEarthquakes() || [];
+          for (const eq of eqs) {
+            events.push(normalizeEarthquake(eq));
+          }
+        } catch (e) {
+          console.warn('[SituationMonitorShell] Error fetching earthquakes:', e);
+        }
+      }
+      
+      // Fetch weather alerts
+      if (this.panels.weather) {
+        try {
+          const alerts = this.panels.weather.alerts || [];
+          for (const alert of alerts) {
+            events.push(normalizeWeatherAlert(alert));
+          }
+        } catch (e) {
+          console.warn('[SituationMonitorShell] Error fetching weather alerts:', e);
+        }
+      }
+      
+      // Fetch news headlines and process through pipeline
+      if (this.panels.news) {
+        try {
+          const headlines = this.panels.news.getHeadlines() || [];
+          const processed = await this.eventPipeline.processHeadlines(headlines);
+          for (const event of processed) {
+            events.push(event);
+          }
+        } catch (e) {
+          console.warn('[SituationMonitorShell] Error processing news:', e);
+        }
+      }
+      
+      // Add all events to store
+      this.eventStore.addEvents(events);
+      
+      // Update last ingest time
+      this.lastIngestTime = new Date();
+      const ingestEl = document.getElementById('sitmon-status-last-ingest');
+      if (ingestEl) {
+        ingestEl.textContent = '0s ago';
+      }
+      
+      // Update status
+      const sourcesEl = document.getElementById('sitmon-status-sources');
+      if (sourcesEl) {
+        sourcesEl.textContent = 'Online';
+        sourcesEl.className = 'sitmon-status-value sitmon-status-online';
+      }
+      
+    } catch (error) {
+      console.error('[SituationMonitorShell] Error fetching events:', error);
+      const sourcesEl = document.getElementById('sitmon-status-sources');
+      if (sourcesEl) {
+        sourcesEl.textContent = 'Offline';
+        sourcesEl.className = 'sitmon-status-value';
+      }
+    }
+  }
+  
+  escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
   
   async toggleLiveCams() {

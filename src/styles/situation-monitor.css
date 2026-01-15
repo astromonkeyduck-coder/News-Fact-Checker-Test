@@ -593,19 +593,389 @@ body.situation-monitor-page main {
   padding: 0;
 }
 
-/* Main Dashboard Grid */
+/* Intel Wall Layout - Map as Main Canvas */
+.sitmon-intel-wall {
+  position: relative;
+  width: 100%;
+  margin-bottom: 2rem;
+  isolation: isolate;
+}
+
+.sitmon-map-container {
+  position: relative;
+  width: 100%;
+  height: clamp(520px, 62vh, 820px);
+  min-height: clamp(520px, 62vh, 820px);
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(5, 15, 35, 0.95) 0%, rgba(7, 21, 42, 0.95) 100%);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  isolation: isolate;
+}
+
+/* HUD Overlays - Positioned absolutely over map */
+.sitmon-hud {
+  position: absolute;
+  z-index: 10;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: calc(100% - 2rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sitmon-hud-left {
+  top: 16px;
+  left: 16px;
+  width: 280px;
+}
+
+.sitmon-hud-right {
+  top: 16px;
+  right: 16px;
+  width: 320px;
+}
+
+.sitmon-hud-card {
+  background: rgba(5, 12, 28, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(70, 180, 255, 0.18);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.sitmon-hud-header {
+  padding: 0.75rem 1rem;
+  background: rgba(7, 21, 42, 0.6);
+  border-bottom: 1px solid rgba(70, 180, 255, 0.15);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sitmon-hud-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #22d3ee;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+
+.sitmon-hud-badge {
+  background: rgba(34, 211, 238, 0.2);
+  color: #22d3ee;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.sitmon-hud-close {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.sitmon-hud-close:hover {
+  color: #fff;
+}
+
+.sitmon-hud-body {
+  padding: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Stats */
+.sitmon-stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(70, 180, 255, 0.1);
+}
+
+.sitmon-stat-item:last-child {
+  border-bottom: none;
+}
+
+.sitmon-stat-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.sitmon-stat-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #22d3ee;
+}
+
+.sitmon-stat-critical {
+  color: #ff6b6b;
+}
+
+.sitmon-stat-high {
+  color: #ffaa00;
+}
+
+/* Filters */
+.sitmon-filter-group {
+  margin-bottom: 1rem;
+}
+
+.sitmon-filter-group:last-child {
+  margin-bottom: 0;
+}
+
+.sitmon-filter-label {
+  display: block;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.sitmon-filter-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sitmon-filter-btn {
+  flex: 1;
+  padding: 0.5rem;
+  background: rgba(7, 21, 42, 0.5);
+  border: 1px solid rgba(70, 180, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sitmon-filter-btn:hover {
+  background: rgba(7, 21, 42, 0.7);
+  border-color: rgba(70, 180, 255, 0.4);
+}
+
+.sitmon-filter-btn.active {
+  background: rgba(34, 211, 238, 0.2);
+  border-color: #22d3ee;
+  color: #22d3ee;
+}
+
+.sitmon-filter-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sitmon-filter-checkboxes label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+.sitmon-filter-checkboxes input[type="checkbox"] {
+  cursor: pointer;
+}
+
+/* Live Feed */
+.sitmon-feed-list {
+  max-height: 300px;
+  padding: 0;
+}
+
+.sitmon-feed-item {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(70, 180, 255, 0.1);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sitmon-feed-item:hover {
+  background: rgba(7, 21, 42, 0.5);
+}
+
+.sitmon-feed-item:last-child {
+  border-bottom: none;
+}
+
+.sitmon-feed-item-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 0.25rem;
+  line-height: 1.3;
+}
+
+.sitmon-feed-item-meta {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sitmon-feed-item-severity {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+}
+
+.sitmon-feed-empty {
+  padding: 2rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+}
+
+/* Pinned Event */
+.sitmon-pinned-content {
+  font-size: 0.85rem;
+}
+
+.sitmon-pinned-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.sitmon-pinned-meta {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 1rem;
+}
+
+.sitmon-pinned-location {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 1rem;
+}
+
+.sitmon-pinned-summary {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.sitmon-pinned-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sitmon-pinned-btn {
+  padding: 0.5rem 1rem;
+  background: rgba(7, 21, 42, 0.5);
+  border: 1px solid rgba(70, 180, 255, 0.3);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sitmon-pinned-btn:hover {
+  background: rgba(7, 21, 42, 0.7);
+  border-color: #22d3ee;
+}
+
+/* Pulse animation for critical events */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+/* Status Bar */
+.sitmon-status-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(5, 12, 28, 0.85);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(70, 180, 255, 0.18);
+  padding: 0.5rem 1rem;
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.sitmon-status-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.sitmon-status-label {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.sitmon-status-value {
+  color: #22d3ee;
+  font-weight: 600;
+}
+
+.sitmon-status-online {
+  color: #4ade80;
+}
+
+.sitmon-status-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.sitmon-status-toggle input[type="checkbox"] {
+  cursor: pointer;
+}
+
+/* Legacy Dashboard Grid (kept for backward compatibility) */
 .sitmon-dashboard-grid {
   display: grid;
   grid-template-columns: 1fr 380px;
   gap: 1.5rem;
   margin-bottom: 2rem;
-  align-items: start; /* Align items to top, not stretch */
+  align-items: start;
   position: relative;
   z-index: 1;
-  /* Ensure grid doesn't overflow */
   min-height: 0;
   max-height: clamp(420px, 55vh, 640px);
-  isolation: isolate; /* Create new stacking context */
+  isolation: isolate;
 }
 
 /* Map Card */
@@ -618,31 +988,34 @@ body.situation-monitor-page main {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  height: clamp(420px, 55vh, 640px); /* Match panels stack height */
-  min-height: 0;
-  max-height: clamp(420px, 55vh, 640px);
+  height: clamp(520px, 62vh, 820px);
+  min-height: clamp(520px, 62vh, 820px);
+  max-height: clamp(520px, 62vh, 820px);
   position: relative;
   z-index: 1;
-  isolation: isolate; /* Create new stacking context */
+  isolation: isolate;
 }
 
 .sitmon-map-card .sitmon-card-body {
   flex: 1;
   padding: 0;
   position: relative;
-  min-height: clamp(420px, 55vh, 640px);
+  min-height: clamp(520px, 62vh, 820px);
+  height: 100%;
+  overflow: hidden;
 }
 
 .sitmon-map {
   width: 100% !important;
   height: 100% !important;
-  min-height: clamp(420px, 55vh, 640px) !important;
+  min-height: clamp(520px, 62vh, 820px) !important;
   position: relative !important;
   background: linear-gradient(135deg, rgba(5, 15, 35, 0.95) 0%, rgba(7, 21, 42, 0.95) 100%) !important;
-  overflow: visible !important;
+  overflow: hidden !important;
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
+  border-radius: 12px;
 }
 
 .sitmon-map svg {
@@ -651,7 +1024,9 @@ body.situation-monitor-page main {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
-  position: relative !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
   z-index: 1 !important;
 }
 
@@ -685,14 +1060,15 @@ body.situation-monitor-page main {
   overflow: hidden !important;
   position: relative;
   z-index: 1;
-  /* Default max height for panels */
-  max-height: 400px;
+  /* Default max height for panels - DOUBLED */
+  max-height: 800px;
   min-height: 0; /* Critical: allow flex children to shrink */
   isolation: isolate; /* Create new stacking context */
   /* Ensure panels don't overlap */
   contain: layout style paint;
   width: 100%;
   box-sizing: border-box;
+  position: relative; /* For resize handle positioning */
 }
 
 /* Panels in the stack should be smaller and scroll independently */
@@ -719,10 +1095,10 @@ body.situation-monitor-page main {
   overflow-x: hidden !important;
 }
 
-/* Secondary grid panels can be taller */
+/* Secondary grid panels can be taller - DOUBLED */
 .sitmon-secondary-grid > .sitmon-panel-card {
-  max-height: 500px !important; /* Set max height so scrolling works */
-  min-height: 320px !important;
+  max-height: 1000px !important; /* Set max height so scrolling works - DOUBLED */
+  min-height: 640px !important; /* DOUBLED from 320px */
   height: auto !important;
   flex-shrink: 0 !important; /* Prevent secondary panels from shrinking */
   position: relative;
@@ -758,6 +1134,51 @@ body.situation-monitor-page main {
   z-index: 2; /* Above the ::before hover effect */
   min-height: auto !important;
   height: auto !important;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Resize handle for panels */
+.sitmon-panel-resize-handle {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+  background: transparent;
+  z-index: 10;
+  transition: background 0.2s ease;
+}
+
+.sitmon-panel-resize-handle:hover {
+  background: rgba(34, 211, 238, 0.3);
+}
+
+.sitmon-panel-resize-handle::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 4px;
+  background: rgba(34, 211, 238, 0.5);
+  border-radius: 2px;
+  transition: background 0.2s ease;
+}
+
+.sitmon-panel-resize-handle:hover::before {
+  background: rgba(34, 211, 238, 0.8);
+}
+
+.sitmon-panel-resize-handle:active {
+  background: rgba(34, 211, 238, 0.5);
+}
+
+.sitmon-panel-resize-handle:active::before {
+  background: #22d3ee;
 }
 
 .sitmon-card-title {
