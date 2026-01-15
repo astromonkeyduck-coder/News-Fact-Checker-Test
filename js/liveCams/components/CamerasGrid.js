@@ -3,6 +3,7 @@
  */
 
 import { CameraCard } from './CameraCard.js';
+import { loadImageWithAuth } from '../api.js';
 
 export class CamerasGrid {
   constructor(container, state, onSelect, onAddToWatchlist) {
@@ -24,10 +25,16 @@ export class CamerasGrid {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             const img = entry.target;
-            if (img.dataset.src) {
-              img.src = img.dataset.src;
-              img.removeAttribute('data-src');
+            if (img.dataset.loaded === 'true') {
               this.observer.unobserve(img);
+              return;
+            }
+            const proxyUrl = img.dataset.proxyUrl;
+            const fallbackUrl = img.dataset.fallbackUrl || null;
+            if (proxyUrl) {
+              loadImageWithAuth(img, proxyUrl, fallbackUrl).finally(() => {
+                this.observer.unobserve(img);
+              });
             }
           }
         });
@@ -86,5 +93,11 @@ export class CamerasGrid {
         card.attachEvents(this.container);
       }
     });
+    
+    // Lazy-load thumbnails via proxy with auth
+    if (this.observer) {
+      const images = this.container.querySelectorAll('.livecams-card-thumbnail img[data-proxy-url]');
+      images.forEach(img => this.observer.observe(img));
+    }
   }
 }

@@ -3,7 +3,7 @@
  */
 
 import { getProviderBadge, getTypeIcon, getStatusIndicator } from '../providers-ui.js';
-import { getImageProxyUrl } from '../api.js';
+import { getImageProxyUrl, loadImageWithAuth } from '../api.js';
 
 export class PlayerPanel {
   constructor(container, state) {
@@ -54,7 +54,9 @@ export class PlayerPanel {
       displayHtml = `
         <img 
           id="livecams-player-image"
-          src="${snapshotUrl}" 
+          src="data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 200 150\\'%3E%3Crect fill=\\'%23111\\' width=\\'200\\' height=\\'150\\'/%3E%3Ctext fill=\\'%23555\\' x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\' font-size=\\'14\\'%3ELoading...%3C/text%3E%3C/svg%3E"
+          data-proxy-url="${snapshotUrl}"
+          data-fallback-url="${camera.media.snapshotUrl || ''}"
           alt="${camera.title}"
           class="livecams-player-image"
         />
@@ -126,6 +128,10 @@ export class PlayerPanel {
     `;
     
     this.attachEvents();
+    
+    if (camera.media.snapshotUrl) {
+      this.loadPlayerImage(camera);
+    }
   }
   
   attachEvents() {
@@ -168,20 +174,23 @@ export class PlayerPanel {
   refreshSnapshot() {
     const camera = this.state.selectedCamera;
     if (!camera || !camera.media.snapshotUrl) return;
-    
-    const img = this.container.querySelector('#livecams-player-image');
-    if (img) {
-      const snapshotUrl = getImageProxyUrl(camera.media.snapshotUrl) || camera.media.snapshotUrl;
-      // Add timestamp to bust cache
-      const separator = snapshotUrl.includes('?') ? '&' : '?';
-      img.src = `${snapshotUrl}${separator}_t=${Date.now()}`;
-    }
+    this.loadPlayerImage(camera, { cacheBust: true });
   }
   
   clearRefreshInterval() {
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
       this.refreshInterval = null;
+    }
+  }
+
+  loadPlayerImage(camera, { cacheBust = false } = {}) {
+    const img = this.container.querySelector('#livecams-player-image');
+    if (!img) return;
+    const proxyUrl = img.dataset.proxyUrl;
+    const fallbackUrl = img.dataset.fallbackUrl || null;
+    if (proxyUrl) {
+      loadImageWithAuth(img, proxyUrl, fallbackUrl, { cacheBust });
     }
   }
 }

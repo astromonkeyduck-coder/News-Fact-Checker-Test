@@ -267,9 +267,17 @@ exports.handler = async (event, context) => {
       );
     }
     
+    // Prioritize live streams over snapshots
+    const prioritized = filtered.slice().sort((a, b) => {
+      const aLive = a.media?.mode === 'stream' ? 1 : 0;
+      const bLive = b.media?.mode === 'stream' ? 1 : 0;
+      if (aLive !== bLive) return bLive - aLive; // live first
+      return 0;
+    });
+    
     // Limit results
     const finalLimit = parseInt(limit, 10) || 200;
-    const limited = filtered.slice(0, finalLimit);
+    const limited = prioritized.slice(0, finalLimit);
     
     console.log('[cams-search] Final filtered count:', limited.length);
     console.log('[cams-search] Stats:', stats);

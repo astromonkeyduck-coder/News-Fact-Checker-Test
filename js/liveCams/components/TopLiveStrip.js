@@ -4,7 +4,7 @@
  */
 
 import { getProviderBadge, getTypeIcon, getStatusIndicator } from '../providers-ui.js';
-import { getImageProxyUrl } from '../api.js';
+import { getImageProxyUrl, loadImageWithAuth } from '../api.js';
 
 export class TopLiveStrip {
   constructor(container, state, onSelect) {
@@ -26,10 +26,16 @@ export class TopLiveStrip {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             const img = entry.target;
-            if (img.dataset.src) {
-              img.src = img.dataset.src;
-              img.removeAttribute('data-src');
+            if (img.dataset.loaded === 'true') {
               this.observer.unobserve(img);
+              return;
+            }
+            const proxyUrl = img.dataset.proxyUrl;
+            const fallbackUrl = img.dataset.fallbackUrl || null;
+            if (proxyUrl) {
+              loadImageWithAuth(img, proxyUrl, fallbackUrl).finally(() => {
+                this.observer.unobserve(img);
+              });
             }
           }
         });
@@ -108,10 +114,11 @@ export class TopLiveStrip {
         <div class="livecams-top-strip-thumb">
           ${thumbnailUrl ? `
             <img 
-              data-src="${thumbnailUrl}"
+              src="data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 100 75\\'%3E%3Crect fill=\\'%23111\\' width=\\'100\\' height=\\'75\\'/%3E%3Ctext fill=\\'%23555\\' x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\' font-size=\\'10\\'%3ELoading...%3C/text%3E%3C/svg%3E"
+              data-proxy-url="${thumbnailUrl}"
+              data-fallback-url="${camera.media.snapshotUrl || ''}"
               alt="${camera.title}"
               class="livecams-top-strip-img"
-              onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 100 75\\'%3E%3Crect fill=\\'%23333\\' width=\\'100\\' height=\\'75\\'/%3E%3Ctext fill=\\'%23666\\' x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\' font-size=\\'10\\'%3ENo Image%3C/text%3E%3C/svg%3E'"
             />
           ` : `
             <div class="livecams-top-strip-placeholder">
@@ -132,7 +139,7 @@ export class TopLiveStrip {
   setupLazyLoading() {
     if (!this.observer) return;
     
-    const images = this.container.querySelectorAll('.livecams-top-strip-img[data-src]');
+    const images = this.container.querySelectorAll('.livecams-top-strip-img[data-proxy-url]');
     images.forEach(img => {
       this.observer.observe(img);
     });
@@ -161,9 +168,11 @@ export class TopLiveStrip {
     // Add timestamp to image URLs to bust cache
     const images = this.container.querySelectorAll('.livecams-top-strip-img');
     images.forEach(img => {
-      if (img.src && !img.src.includes('data:image')) {
-        const separator = img.src.includes('?') ? '&' : '?';
-        img.src = `${img.src}${separator}_refresh=${Date.now()}`;
+      const proxyUrl = img.dataset.proxyUrl;
+      const fallbackUrl = img.dataset.fallbackUrl || null;
+      if (proxyUrl) {
+        img.dataset.loaded = 'false';
+        loadImageWithAuth(img, proxyUrl, fallbackUrl, { cacheBust: true });
       }
     });
   }

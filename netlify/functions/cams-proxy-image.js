@@ -15,6 +15,8 @@ const ALLOWED_DOMAINS = [
   'windy.com',
   'www.fl511.com',
   'fl511.com',
+  'images-dim.divas.cloud',
+  'images.divas.cloud',
   '511ny.org',
   'cwwp2.dot.ca.gov',
   'dot.ca.gov',
@@ -35,7 +37,7 @@ function isAllowedDomain(url) {
 exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, X-CAMS-TOKEN',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Cache-Control': 'public, max-age=300' // Cache for 5 minutes
   };

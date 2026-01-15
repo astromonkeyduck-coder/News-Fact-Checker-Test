@@ -740,6 +740,10 @@ body.situation-monitor-page main {
   overflow-x: hidden;
   min-height: 0; /* Critical: allows flex child to shrink below content size */
   max-height: 100%;
+  min-width: 0;
+  line-height: 1.5;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   position: relative;
   z-index: 1;
   /* Smooth scrolling */
@@ -904,6 +908,7 @@ body.situation-monitor-page main {
   margin: 0.5rem 0;
   font-size: 1rem;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .sitmon-news-title a {
@@ -921,6 +926,7 @@ body.situation-monitor-page main {
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.8);
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 /* Markets Panel */
@@ -997,12 +1003,14 @@ body.situation-monitor-page main {
   font-weight: 600;
   color: #fff;
   margin: 0.5rem 0;
+  overflow-wrap: anywhere;
 }
 
 .sitmon-earthquake-details {
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.7);
   margin-top: 0.5rem;
+  overflow-wrap: anywhere;
 }
 
 .sitmon-earthquake-details a {
@@ -1097,11 +1105,15 @@ body.situation-monitor-page main {
   display: flex;
   justify-content: space-between;
   margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-start;
 }
 
 .sitmon-alert-event {
   font-weight: 600;
   color: #fff;
+  overflow-wrap: anywhere;
 }
 
 .sitmon-alert-severity {
@@ -1116,12 +1128,14 @@ body.situation-monitor-page main {
   margin: 0.5rem 0;
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.9);
+  overflow-wrap: anywhere;
 }
 
 .sitmon-alert-areas {
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.7);
   margin-top: 0.5rem;
+  overflow-wrap: anywhere;
 }
 
 /* Character/Intel Panel */
@@ -1209,6 +1223,7 @@ body.situation-monitor-page main {
 .sitmon-correlation-item-link {
   margin: 0.25rem 0;
   font-size: 0.85rem;
+  overflow-wrap: anywhere;
 }
 
 .sitmon-correlation-item-link a {
@@ -1886,6 +1901,7 @@ body.situation-monitor-page ol,
   z-index: 1;
   isolation: isolate; /* Create new stacking context */
   contain: layout style paint; /* Improve performance and prevent overflow */
+  overflow-wrap: anywhere;
 }
 
 .sitmon-news-item:hover,

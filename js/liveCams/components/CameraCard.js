@@ -3,7 +3,7 @@
  */
 
 import { getProviderBadge, getTypeIcon, getStatusIndicator } from '../providers-ui.js';
-import { getImageProxyUrl, fetchImageWithAuth } from '../api.js';
+import { getImageProxyUrl } from '../api.js';
 
 export class CameraCard {
   constructor(camera, state, onSelect, onAddToWatchlist) {
@@ -20,8 +20,9 @@ export class CameraCard {
     
     // Get thumbnail URL (use proxy if needed)
     const thumbnailUrl = camera.media.snapshotUrl 
-      ? getImageProxyUrl(camera.media.snapshotUrl) || camera.media.snapshotUrl
+      ? getImageProxyUrl(camera.media.snapshotUrl)
       : null;
+    const fallbackUrl = camera.media.snapshotUrl || null;
     
     const locationParts = [
       camera.city,
@@ -35,10 +36,11 @@ export class CameraCard {
         <div class="livecams-card-thumbnail">
           ${thumbnailUrl ? `
             <img 
-              src="${thumbnailUrl}" 
+              src="data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 200 150\\'%3E%3Crect fill=\\'%23111\\' width=\\'200\\' height=\\'150\\'/%3E%3Ctext fill=\\'%23555\\' x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\' font-size=\\'14\\'%3ELoading...%3C/text%3E%3C/svg%3E"
+              data-proxy-url="${thumbnailUrl}"
+              data-fallback-url="${fallbackUrl || ''}"
               alt="${camera.title}"
               loading="lazy"
-              onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 200 150\\'%3E%3Crect fill=\\'%23333\\' width=\\'200\\' height=\\'150\\'/%3E%3Ctext fill=\\'%23666\\' x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\' font-size=\\'14\\'%3ENo Image%3C/text%3E%3C/svg%3E'"
             />
           ` : `
             <div class="livecams-card-placeholder">

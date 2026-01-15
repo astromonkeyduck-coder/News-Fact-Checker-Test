@@ -125,6 +125,12 @@ export function getImageProxyUrl(imageUrl) {
   return `/api/cams/proxy-image?url=${encodeURIComponent(imageUrl)}`;
 }
 
+function addCacheBust(url) {
+  if (!url) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}_t=${Date.now()}`;
+}
+
 /**
  * Fetch image with CAMS_TOKEN header
  * Used for images that require authentication
@@ -138,6 +144,38 @@ export async function fetchImageWithAuth(imageUrl) {
   }
   
   return fetch(imageUrl, { headers });
+}
+
+/**
+ * Load an image into an <img> element using the proxy with auth headers.
+ * Uses a Blob URL to avoid CORS issues and allows header-based auth.
+ */
+export async function loadImageWithAuth(imgEl, proxyUrl, fallbackUrl = null, { cacheBust = false } = {}) {
+  if (!imgEl || !proxyUrl) return;
+  
+  const requestUrl = cacheBust ? addCacheBust(proxyUrl) : proxyUrl;
+  
+  // Revoke previous object URL to avoid leaks
+  if (imgEl.dataset.objectUrl) {
+    URL.revokeObjectURL(imgEl.dataset.objectUrl);
+    delete imgEl.dataset.objectUrl;
+  }
+  
+  try {
+    const response = await fetchImageWithAuth(requestUrl);
+    if (!response.ok) {
+      throw new Error(`Image fetch failed: ${response.status}`);
+    }
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    imgEl.dataset.objectUrl = objectUrl;
+    imgEl.src = objectUrl;
+    imgEl.dataset.loaded = 'true';
+  } catch (error) {
+    if (fallbackUrl) {
+      imgEl.src = cacheBust ? addCacheBust(fallbackUrl) : fallbackUrl;
+    }
+  }
 }
 
 /**
