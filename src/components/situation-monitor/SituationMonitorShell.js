@@ -95,14 +95,14 @@ export class SituationMonitorShell {
     
     // Create layout - OSINT Control Room
     container.innerHTML = `
-      <!-- OSINT Ticker (Top) -->
+      <!-- OSINT Ticker (Top) - Horizontal Feed Lines -->
       <div class="sitmon-osint-ticker" id="sitmon-osint-ticker">
-        <div class="sitmon-osint-ticker-content" id="sitmon-ticker-content">
-          <span>LIVE: Monitoring global intelligence feeds...</span>
+        <div class="sitmon-ticker-feed" id="sitmon-ticker-content">
+          <div class="sitmon-ticker-line">LIVE: Monitoring global intelligence feeds...</div>
         </div>
       </div>
       
-      <div class="sitmon-page-wrapper" style="display: block !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 1 !important; padding-top: 44px;">
+      <div class="sitmon-page-wrapper" style="display: block !important; visibility: visible !important; opacity: 1 !important; position: relative !important; z-index: 1 !important; padding-top: 130px;">
         <!-- Page Header -->
         <div class="sitmon-page-header" style="display: flex !important; visibility: visible !important; opacity: 1 !important;">
           <div class="sitmon-header-left">
@@ -334,11 +334,11 @@ export class SituationMonitorShell {
             <div class="sitmon-panel-resize-handle" data-panel-id="sitmon-panel-rss"></div>
           </div>
           
-          <div class="sitmon-panel-card" id="sitmon-panel-livecams" style="display: none; grid-column: 1 / -1; height: calc(100vh - 200px);">
+          <div class="sitmon-panel-card" id="sitmon-panel-livecams" style="display: none; grid-column: 1 / -1; min-height: calc(100vh - 200px); height: auto; max-height: none;">
             <div class="sitmon-card-header">
               <h2 class="sitmon-card-title">LIVE CAMS</h2>
             </div>
-            <div class="sitmon-card-body" id="sitmon-panel-livecams-body" style="padding: 0; height: 100%; overflow: hidden;"></div>
+            <div class="sitmon-card-body" id="sitmon-panel-livecams-body" style="padding: 0; height: auto; min-height: calc(100vh - 250px); overflow: visible;"></div>
           </div>
         </div>
       </div>
@@ -1050,54 +1050,59 @@ export class SituationMonitorShell {
     const tickerContent = document.getElementById('sitmon-ticker-content');
     if (!tickerContent) return;
     
-    // Get top 5 critical/high events
+    // Get latest 8-10 events (mix of critical/high and recent)
     const criticalEvents = events
       .filter(e => e.severity >= 4)
       .sort((a, b) => b.severity - a.severity || new Date(b.publishedAt) - new Date(a.publishedAt))
       .slice(0, 5);
     
-    if (criticalEvents.length === 0) {
-      tickerContent.innerHTML = '<span>LIVE: Monitoring global intelligence feeds...</span>';
-      return;
-    }
-    
-    const tickerItems = criticalEvents.map(event => {
-      const age = event.getAgeHours ? event.getAgeHours() : 0;
-      const ageText = age < 1 ? `${Math.floor(age * 60)}m` : 
-                      age < 24 ? `${Math.floor(age)}h` : 
-                      `${Math.floor(age / 24)}d`;
-      return `<span style="color: ${event.severity >= 5 ? '#ff6b6b' : '#ffaa00'}">[${event.severity}/5]</span> ${this.escapeHtml(event.title)} <span style="color: rgba(255,255,255,0.5);">• ${ageText} ago</span>`;
-    });
-    
-    // Duplicate for seamless scroll
-    tickerContent.innerHTML = tickerItems.join(' • ') + ' • ' + tickerItems.join(' • ');
-  }
-  
-  updateOsintTicker(events) {
-    const tickerContent = document.getElementById('sitmon-ticker-content');
-    if (!tickerContent) return;
-    
-    // Get top 5 critical/high events
-    const criticalEvents = events
-      .filter(e => e.severity >= 4)
-      .sort((a, b) => b.severity - a.severity || new Date(b.publishedAt) - new Date(a.publishedAt))
+    const recentEvents = events
+      .filter(e => e.severity < 4)
+      .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
       .slice(0, 5);
     
-    if (criticalEvents.length === 0) {
-      tickerContent.innerHTML = '<span>LIVE: Monitoring global intelligence feeds...</span>';
+    // Combine and deduplicate
+    const allEvents = [...criticalEvents, ...recentEvents]
+      .filter((event, index, self) => index === self.findIndex(e => e.id === event.id))
+      .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
+      .slice(0, 8);
+    
+    if (allEvents.length === 0) {
+      tickerContent.innerHTML = '<div class="sitmon-ticker-line">LIVE: Monitoring global intelligence feeds...</div>';
       return;
     }
     
-    const tickerItems = criticalEvents.map(event => {
+    // Create horizontal lines for each event
+    const tickerLines = allEvents.map(event => {
       const age = event.getAgeHours ? event.getAgeHours() : 0;
       const ageText = age < 1 ? `${Math.floor(age * 60)}m` : 
                       age < 24 ? `${Math.floor(age)}h` : 
                       `${Math.floor(age / 24)}d`;
-      return `<span style="color: ${event.severity >= 5 ? '#ff6b6b' : '#ffaa00'}">[${event.severity}/5]</span> ${this.escapeHtml(event.title)} <span style="color: rgba(255,255,255,0.5);">• ${ageText} ago</span>`;
-    });
+      
+      const severityColor = event.severity >= 5 ? '#ff6b6b' : 
+                            event.severity >= 4 ? '#ffaa00' : 
+                            event.severity >= 3 ? '#ffd93d' : 
+                            '#22d3ee';
+      
+      const category = event.category || event.kind || event.type || 'UPDATE';
+      const time = new Date(event.publishedAt || event.timestamp).toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      });
+      
+      return `
+        <div class="sitmon-ticker-line" data-severity="${event.severity || 1}">
+          <span class="sitmon-ticker-time">${time}</span>
+          <span class="sitmon-ticker-category">[${category.toUpperCase()}]</span>
+          <span class="sitmon-ticker-severity" style="color: ${severityColor}">[${event.severity || 1}/5]</span>
+          <span class="sitmon-ticker-title">${this.escapeHtml(event.title || event.headline || 'Update')}</span>
+          <span class="sitmon-ticker-age">${ageText} ago</span>
+        </div>
+      `;
+    }).join('');
     
-    // Duplicate for seamless scroll
-    tickerContent.innerHTML = tickerItems.join(' • ') + ' • ' + tickerItems.join(' • ');
+    tickerContent.innerHTML = tickerLines;
   }
   
   updateLiveFeed(events) {

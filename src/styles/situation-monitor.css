@@ -1284,6 +1284,24 @@ body.situation-monitor-page main {
   box-sizing: border-box;
 }
 
+/* Live Cams panel - no height restrictions, can be as big as needed */
+.sitmon-secondary-grid > #sitmon-panel-livecams {
+  max-height: none !important; /* Remove max-height restriction */
+  min-height: calc(100vh - 200px) !important; /* Minimum to fill viewport */
+  height: auto !important; /* Allow it to grow as needed */
+  overflow: visible !important; /* Allow content to expand */
+  flex-shrink: 0 !important; /* Don't shrink */
+  grid-row: span 10 !important; /* Allow it to span multiple rows if needed */
+  align-self: stretch !important; /* Stretch to fill available space */
+}
+
+.sitmon-secondary-grid > #sitmon-panel-livecams .sitmon-card-body {
+  overflow: visible !important; /* Allow live cams content to expand */
+  height: auto !important; /* Let content determine height */
+  min-height: calc(100vh - 250px) !important; /* Minimum height */
+  max-height: none !important; /* No max height restriction */
+}
+
 /* Override constraints when panel is manually resized */
 .sitmon-secondary-grid > .sitmon-panel-card[style*="height"] {
   max-height: none !important; /* Allow resizing beyond default max */
@@ -3000,19 +3018,38 @@ body.situation-monitor-page ol,
   top: 0;
   left: 0;
   right: 0;
-  height: 32px;
+  min-height: 32px;
+  max-height: 120px;
   background: linear-gradient(180deg, rgba(3, 8, 18, 0.98) 0%, rgba(5, 12, 28, 0.95) 100%);
   border-bottom: 1px solid rgba(34, 211, 238, 0.25);
-  display: flex;
-  align-items: center;
-  padding: 0 16px;
+  padding: 4px 16px;
   z-index: 1000;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.7);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(8px);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 211, 238, 0.3) rgba(5, 12, 28, 0.5);
+}
+
+.sitmon-osint-ticker::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sitmon-osint-ticker::-webkit-scrollbar-track {
+  background: rgba(5, 12, 28, 0.5);
+}
+
+.sitmon-osint-ticker::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.3);
+  border-radius: 2px;
+}
+
+.sitmon-osint-ticker::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.5);
 }
 
 .sitmon-osint-ticker::before {
@@ -3025,11 +3062,77 @@ body.situation-monitor-page ol,
   background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.4), transparent);
 }
 
-.sitmon-osint-ticker-content {
+.sitmon-ticker-feed {
   display: flex;
-  gap: 24px;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+
+.sitmon-ticker-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 0;
   white-space: nowrap;
-  animation: tickerScroll 60s linear infinite;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+  border-bottom: 1px solid rgba(34, 211, 238, 0.08);
+  transition: background-color 0.2s ease;
+}
+
+.sitmon-ticker-line:hover {
+  background-color: rgba(34, 211, 238, 0.05);
+}
+
+.sitmon-ticker-line:last-child {
+  border-bottom: none;
+}
+
+.sitmon-ticker-time {
+  color: rgba(34, 211, 238, 0.8);
+  font-weight: 600;
+  min-width: 50px;
+  flex-shrink: 0;
+}
+
+.sitmon-ticker-category {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.65rem;
+  min-width: 60px;
+  flex-shrink: 0;
+}
+
+.sitmon-ticker-severity {
+  font-weight: 600;
+  min-width: 40px;
+  flex-shrink: 0;
+}
+
+.sitmon-ticker-title {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sitmon-ticker-line[data-severity="5"] .sitmon-ticker-title {
+  color: rgba(255, 107, 107, 0.95);
+  font-weight: 600;
+}
+
+.sitmon-ticker-line[data-severity="4"] .sitmon-ticker-title {
+  color: rgba(255, 170, 0, 0.9);
+}
+
+.sitmon-ticker-age {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.65rem;
+  min-width: 50px;
+  text-align: right;
+  flex-shrink: 0;
 }
 
 .sitmon-osint-status-item {
@@ -3097,14 +3200,7 @@ body.situation-monitor-page ol,
   font-weight: 600;
 }
 
-@keyframes tickerScroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
+/* Ticker scroll animation removed - now using static horizontal lines */
 
 /* Respect prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
@@ -3113,8 +3209,8 @@ body.situation-monitor-page ol,
   .sitmon-panel-card,
   .sitmon-toast,
   .sitmon-event-marker-ring,
-  .sitmon-osint-ticker-content,
-  * {
+  .sitmon-ticker-feed,
+  .sitmon-ticker-line {
     animation: none !important;
     transition: none !important;
   }

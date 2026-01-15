@@ -6,12 +6,13 @@
 .livecams-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 100%; /* Minimum to fill parent, but can grow */
+  height: auto; /* Allow it to expand as needed */
   background: rgba(3, 8, 18, 0.95);
   color: rgba(230, 240, 255, 0.9);
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
   position: relative;
-  overflow: hidden;
+  overflow: visible; /* Allow content to expand */
 }
 
 /* Fullscreen mode styling - OSINT Security Guard Mode */
@@ -26,26 +27,54 @@
 }
 
 .livecams-container:fullscreen .livecams-layout {
-  flex: 1;
+  flex: 1 1 auto;
   height: calc(100vh - 140px);
   max-height: calc(100vh - 140px);
   min-height: 0;
   overflow: hidden; /* Prevent layout scroll */
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 12px;
 }
 
 .livecams-container:fullscreen .livecams-left-panel {
-  overflow-y: auto !important; /* Enable scrolling in left panel */
-  overflow-x: hidden;
-  height: 100%;
-  max-height: 100%;
+  overflow: hidden !important; /* Let grid-container handle scrolling */
+  overflow-x: hidden !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  flex: 0 0 350px !important; /* Fixed width, don't grow/shrink */
 }
 
 .livecams-container:fullscreen .livecams-grid-container {
   overflow-y: auto !important; /* Enable scrolling in grid container */
-  overflow-x: hidden;
-  flex: 1;
-  min-height: 0;
-  max-height: 100%;
+  overflow-x: hidden !important;
+  flex: 1 1 0% !important; /* Take available space, allow shrinking to 0 */
+  min-height: 0 !important; /* Critical for flex scrolling */
+  max-height: 100% !important; /* Constrain to available height */
+  position: relative;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 211, 238, 0.3) rgba(5, 12, 28, 0.5);
+}
+
+.livecams-container:fullscreen .livecams-grid-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.livecams-container:fullscreen .livecams-grid-container::-webkit-scrollbar-track {
+  background: rgba(5, 12, 28, 0.5);
+}
+
+.livecams-container:fullscreen .livecams-grid-container::-webkit-scrollbar-thumb {
+  background: rgba(34, 211, 238, 0.3);
+  border-radius: 4px;
+}
+
+.livecams-container:fullscreen .livecams-grid-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.5);
 }
 
 .livecams-container:fullscreen .livecams-grid {
@@ -434,7 +463,8 @@
   gap: 12px;
   padding: 12px;
   flex: 1;
-  overflow: hidden;
+  min-height: 0; /* Allow shrinking */
+  overflow: visible; /* Allow content to expand */
   position: relative;
   z-index: 2;
 }
@@ -596,18 +626,18 @@
 
 .livecams-watchlist-container,
 .livecams-search-container,
-.livecams-filters-container,
-.livecams-grid-container {
+.livecams-filters-container {
   flex-shrink: 0;
 }
 
 .livecams-grid-container {
-  flex: 1;
+  flex: 1 1 auto; /* Allow growth and shrinking */
   overflow-y: auto;
   overflow-x: hidden;
-  min-height: 0;
-  max-height: 100%;
+  min-height: 0; /* Critical for flex scrolling */
+  max-height: none; /* Remove max-height restriction - allow expansion */
   position: relative;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 /* Watchlist */
@@ -776,9 +806,11 @@
   grid-template-columns: repeat(3, 1fr); /* 3 cameras per row - scrollable grid */
   gap: 0.75rem;
   padding: 0.5rem;
-  padding-bottom: 1rem; /* Extra padding at bottom for last row */
+  padding-bottom: 2rem; /* Extra padding at bottom for last row visibility */
   overflow: visible; /* Let parent container handle scrolling */
   min-height: min-content; /* Allow grid to grow with content */
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .livecams-card {
