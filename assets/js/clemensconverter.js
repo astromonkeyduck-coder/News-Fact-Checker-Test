@@ -28,6 +28,10 @@ const state = {
         stream: null,
         timerInterval: null,
         startTime: null,
+        audioContext: null,
+        analyser: null,
+        dataArray: null,
+        animationFrame: null,
     },
 };
 
@@ -79,6 +83,10 @@ function initializeElements() {
     elements.stopBtn = document.getElementById('stopBtn');
     elements.recordingStatus = document.getElementById('recordingStatus');
     elements.recordingTimer = document.getElementById('recordingTimer');
+    elements.waveformContainer = document.getElementById('waveformContainer');
+    elements.waveformCanvas = document.getElementById('waveformCanvas');
+    elements.levelBar = document.getElementById('levelBar');
+    elements.levelValue = document.getElementById('levelValue');
     
     // Log missing elements for debugging
     const requiredElements = ['dropzone', 'fileInput', 'selectFilesBtn', 'queueContainer', 'queueList', 'resultsContainer', 'settingsToggle', 'settingsContent'];
@@ -1248,6 +1256,9 @@ async function startRecording() {
         state.recording.audioChunks = [];
         state.recording.startTime = Date.now();
 
+        // Set up Web Audio API for visualization
+        setupAudioVisualization(stream);
+
         // Determine best MIME type (prefer webm, fallback to default)
         let mimeType = 'audio/webm;codecs=opus';
         if (!MediaRecorder.isTypeSupported(mimeType)) {
@@ -1283,6 +1294,9 @@ async function startRecording() {
 
             // Stop all tracks
             state.recording.stream.getTracks().forEach(track => track.stop());
+
+            // Stop audio visualization
+            stopAudioVisualization();
 
             // Reset recording state
             state.recording.isRecording = false;
@@ -1346,13 +1360,237 @@ function updateRecordingUI(isRecording) {
     if (isRecording) {
         elements.recordBtn.style.display = 'none';
         elements.recordingStatus.style.display = 'flex';
+        if (elements.waveformContainer) {
+            elements.waveformContainer.style.display = 'block';
+        }
     } else {
         elements.recordBtn.style.display = 'flex';
         elements.recordingStatus.style.display = 'none';
+        if (elements.waveformContainer) {
+            elements.waveformContainer.style.display = 'none';
+        }
         if (elements.recordingTimer) {
             elements.recordingTimer.textContent = '00:00';
         }
+        // Clear canvas
+        if (elements.waveformCanvas) {
+            const ctx = elements.waveformCanvas.getContext('2d');
+            ctx.clearRect(0, 0, elements.waveformCanvas.width, elements.waveformCanvas.height);
+        }
     }
+}
+
+/**
+ * Audio Visualization Functions
+ */
+
+function setupAudioVisualization(stream) {
+    try {
+        // Create AudioContext
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioContext = new AudioContext();
+        state.recording.audioContext = audioContext;
+
+        // Create analyser node
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 2048; // Higher = more detail, lower = better performance
+        analyser.smoothingTimeConstant = 0.8;
+        state.recording.analyser = analyser;
+
+        // Create data array for frequency data
+        const bufferLength = analyser.frequencyBinCount;
+        state.recording.dataArray = new Uint8Array(bufferLength);
+
+        // Connect stream to analyser
+        const source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+
+        // Set up canvas
+        if (elements.waveformCanvas) {
+            const canvas = elements.waveformCanvas;
+            resizeCanvas();
+            // Handle window resize
+            window.addEventListener('resize', resizeCanvas);
+        }
+
+        // Start visualization loop
+        visualize();
+    } catch (error) {
+        console.error('[setupAudioVisualization] Error:', error);
+    }
+}
+
+function visualize() {
+    if (!state.recording.isRecording || !state.recording.analyser || !elements.waveformCanvas) {
+        return;
+    }
+
+    const canvas = elements.waveformCanvas;
+    const ctx = canvas.getContext('2d');
+    const analyser = state.recording.analyser;
+    const dataArray = state.recording.dataArray;
+
+    // Get frequency data
+    analyser.getByteFrequencyData(dataArray);
+
+    // Clear canvas
+    ctx.fillStyle = 'rgba(7, 21, 42, 0.9)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw waveform
+    drawWaveform(ctx, canvas, dataArray);
+
+    // Draw frequency bars
+    drawFrequencyBars(ctx, canvas, dataArray);
+
+    // Update audio level
+    updateAudioLevel(dataArray);
+
+    // Continue animation
+    state.recording.animationFrame = requestAnimationFrame(visualize);
+}
+
+function drawWaveform(ctx, canvas, dataArray) {
+    const centerY = canvas.height / 2;
+    const sliceWidth = canvas.width / dataArray.length;
+    let x = 0;
+
+    ctx.strokeStyle = '#1da1f2';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    for (let i = 0; i < dataArray.length; i++) {
+        const v = dataArray[i] / 255.0;
+        const y = centerY - (v * centerY * 0.8);
+
+        if (i === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+
+        x += sliceWidth;
+    }
+
+    ctx.stroke();
+
+    // Draw mirrored waveform
+    ctx.beginPath();
+    x = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+        const v = dataArray[i] / 255.0;
+        const y = centerY + (v * centerY * 0.8);
+
+        if (i === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+
+        x += sliceWidth;
+    }
+    ctx.stroke();
+}
+
+function drawFrequencyBars(ctx, canvas, dataArray) {
+    const barCount = 64; // Number of bars to display
+    const barWidth = canvas.width / barCount;
+    const barGap = 2;
+
+    for (let i = 0; i < barCount; i++) {
+        const dataIndex = Math.floor((i / barCount) * dataArray.length);
+        const barHeight = (dataArray[dataIndex] / 255) * canvas.height * 0.9;
+
+        // Create gradient for bars
+        const gradient = ctx.createLinearGradient(
+            i * barWidth, canvas.height - barHeight,
+            i * barWidth, canvas.height
+        );
+        
+        // Color based on frequency (low = blue, mid = purple, high = pink)
+        const hue = (i / barCount) * 360;
+        gradient.addColorStop(0, `hsl(${hue}, 70%, 60%)`);
+        gradient.addColorStop(1, `hsl(${hue}, 100%, 40%)`);
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(
+            i * barWidth + barGap,
+            canvas.height - barHeight,
+            barWidth - barGap * 2,
+            barHeight
+        );
+
+        // Add glow effect
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = `hsl(${hue}, 70%, 60%)`;
+        ctx.fillRect(
+            i * barWidth + barGap,
+            canvas.height - barHeight,
+            barWidth - barGap * 2,
+            barHeight
+        );
+        ctx.shadowBlur = 0;
+    }
+}
+
+function updateAudioLevel(dataArray) {
+    if (!elements.levelBar || !elements.levelValue) return;
+
+    // Calculate average level
+    let sum = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i];
+    }
+    const average = sum / dataArray.length;
+    const percentage = Math.round((average / 255) * 100);
+
+    // Update level bar
+    elements.levelBar.style.width = `${percentage}%`;
+    elements.levelValue.textContent = `${percentage}%`;
+
+    // Color based on level
+    if (percentage < 30) {
+        elements.levelBar.style.background = '#22c55e'; // Green
+    } else if (percentage < 70) {
+        elements.levelBar.style.background = '#f59e0b'; // Orange
+    } else {
+        elements.levelBar.style.background = '#ef4444'; // Red
+    }
+}
+
+function resizeCanvas() {
+    if (!elements.waveformCanvas) return;
+    const canvas = elements.waveformCanvas;
+    const rect = canvas.getBoundingClientRect();
+    // Use device pixel ratio for crisp rendering on high-DPI displays
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = (rect.width || 800) * dpr;
+    canvas.height = 200 * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    // Set CSS size to maintain visual size
+    canvas.style.width = (rect.width || 800) + 'px';
+    canvas.style.height = '200px';
+}
+
+function stopAudioVisualization() {
+    if (state.recording.animationFrame) {
+        cancelAnimationFrame(state.recording.animationFrame);
+        state.recording.animationFrame = null;
+    }
+
+    if (state.recording.audioContext) {
+        state.recording.audioContext.close().catch(err => {
+            console.error('[stopAudioVisualization] Error closing audio context:', err);
+        });
+        state.recording.audioContext = null;
+    }
+
+    state.recording.analyser = null;
+    state.recording.dataArray = null;
+
+    // Remove resize listener
+    window.removeEventListener('resize', resizeCanvas);
 }
 
 // Settings persistence

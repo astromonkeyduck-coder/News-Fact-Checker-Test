@@ -81,6 +81,19 @@
                             <button class="btn-stop" id="stopBtn">Stop & Save</button>
                         </div>
                     </div>
+                    <!-- Waveform Visualization -->
+                    <div class="waveform-container" id="waveformContainer" style="display: none;">
+                        <canvas id="waveformCanvas" class="waveform-canvas"></canvas>
+                        <div class="waveform-info">
+                            <div class="audio-level">
+                                <span class="level-label">Level:</span>
+                                <div class="level-bar-container">
+                                    <div class="level-bar" id="levelBar"></div>
+                                </div>
+                                <span class="level-value" id="levelValue">0%</span>
+                            </div>
+                        </div>
+                    </div>
                     <div class="recording-hint">
                         Click to start recording. Your browser will ask for microphone permission.
                     </div>
