@@ -169,12 +169,33 @@ body.situation-monitor-page .main-nav ol li::before {
 /* CRITICAL: Ensure loader doesn't block content */
 #nn-intel-loader.nn-il-hidden,
 #nn-intel-loader[style*="display: none"],
-#nn-intel-loader[style*="display:none"] {
+#nn-intel-loader[style*="display:none"],
+#nn-intel-loader.nn-il-fade-out {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
   z-index: -999999 !important;
+}
+
+/* CRITICAL: Force hide loader after 30 seconds (safety fallback) */
+#nn-intel-loader {
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* Ensure loader never blocks content after page load */
+body.situation-monitor-page #nn-intel-loader.nn-il-hidden,
+body.situation-monitor-page #nn-intel-loader[style*="display: none"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -999999 !important;
+  position: fixed !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* Ensure dark theme background on situation monitor page */
@@ -261,6 +282,7 @@ body.situation-monitor-page main {
   opacity: 1 !important;
   position: relative !important;
   z-index: 1 !important;
+  isolation: isolate; /* Create new stacking context */
   /* Panels scroll independently, page can grow naturally */
 }
 
@@ -578,9 +600,12 @@ body.situation-monitor-page main {
   gap: 1.5rem;
   margin-bottom: 2rem;
   align-items: start; /* Align items to top, not stretch */
+  position: relative;
+  z-index: 1;
   /* Ensure grid doesn't overflow */
   min-height: 0;
   max-height: clamp(420px, 55vh, 640px);
+  isolation: isolate; /* Create new stacking context */
 }
 
 /* Map Card */
@@ -596,6 +621,9 @@ body.situation-monitor-page main {
   height: clamp(420px, 55vh, 640px); /* Match panels stack height */
   min-height: 0;
   max-height: clamp(420px, 55vh, 640px);
+  position: relative;
+  z-index: 1;
+  isolation: isolate; /* Create new stacking context */
 }
 
 .sitmon-map-card .sitmon-card-body {
@@ -606,12 +634,25 @@ body.situation-monitor-page main {
 }
 
 .sitmon-map {
-  width: 100%;
-  height: 100%;
-  min-height: clamp(420px, 55vh, 640px);
-  position: relative;
-  background: linear-gradient(135deg, rgba(5, 15, 35, 0.95) 0%, rgba(7, 21, 42, 0.95) 100%);
-  overflow: hidden;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: clamp(420px, 55vh, 640px) !important;
+  position: relative !important;
+  background: linear-gradient(135deg, rgba(5, 15, 35, 0.95) 0%, rgba(7, 21, 42, 0.95) 100%) !important;
+  overflow: visible !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.sitmon-map svg {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 1 !important;
 }
 
 /* Panels Stack */
@@ -619,11 +660,14 @@ body.situation-monitor-page main {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  position: relative;
+  z-index: 1;
   /* Match the map card height so panels stack properly */
   height: clamp(420px, 55vh, 640px);
   max-height: clamp(420px, 55vh, 640px);
   min-height: 0;
   overflow: visible; /* Don't scroll the container, let panels scroll */
+  isolation: isolate; /* Create new stacking context */
 }
 
 /* Panel Card Base */
@@ -637,9 +681,12 @@ body.situation-monitor-page main {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+  z-index: 1;
   /* Default max height for panels */
   max-height: 400px;
   min-height: 0; /* Critical: allow flex children to shrink */
+  isolation: isolate; /* Create new stacking context */
 }
 
 /* Panels in the stack should be smaller and scroll independently */
@@ -647,6 +694,9 @@ body.situation-monitor-page main {
   flex: 1 1 0; /* Equal distribution of space */
   min-height: 0; /* Critical for flex shrinking */
   max-height: none; /* Remove max-height constraint, let flex handle it */
+  position: relative;
+  z-index: 1;
+  isolation: isolate; /* Create new stacking context */
 }
 
 /* Secondary grid panels can be taller */
@@ -654,6 +704,9 @@ body.situation-monitor-page main {
   max-height: 500px;
   min-height: 300px;
   flex-shrink: 0; /* Prevent secondary panels from shrinking */
+  position: relative;
+  z-index: 1;
+  isolation: isolate; /* Create new stacking context */
 }
 
 .sitmon-panel-card:hover {
@@ -666,6 +719,8 @@ body.situation-monitor-page main {
   background: rgba(7, 21, 42, 0.5);
   border-bottom: 1px solid rgba(74, 158, 255, 0.2);
   flex-shrink: 0;
+  position: relative;
+  z-index: 2; /* Above the ::before hover effect */
 }
 
 .sitmon-card-title {
@@ -684,6 +739,8 @@ body.situation-monitor-page main {
   overflow-x: hidden;
   min-height: 0; /* Critical: allows flex child to shrink below content size */
   max-height: 100%;
+  position: relative;
+  z-index: 1;
   /* Smooth scrolling */
   scroll-behavior: smooth;
   /* Custom scrollbar styling */
@@ -691,6 +748,7 @@ body.situation-monitor-page main {
   scrollbar-color: rgba(74, 158, 255, 0.3) rgba(5, 15, 35, 0.5);
   /* Prevent content from overflowing */
   box-sizing: border-box;
+  isolation: isolate; /* Create new stacking context */
 }
 
 /* Secondary Panels Grid */
@@ -699,9 +757,12 @@ body.situation-monitor-page main {
   grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
   align-items: start; /* Align items to top */
+  position: relative;
+  z-index: 1;
   /* Prevent grid from making page too tall */
   min-height: 0;
   /* Let individual panels handle scrolling, not the grid */
+  isolation: isolate; /* Create new stacking context */
 }
 
 /* Panel Content Styles */
@@ -1386,6 +1447,22 @@ body.situation-monitor-page main {
 /* Tooltip */
 .sitmon-tooltip {
   font-family: system-ui, -apple-system, sans-serif;
+  position: absolute !important;
+  z-index: 10 !important; /* Only above map, not other content */
+  pointer-events: none !important;
+  max-width: 300px;
+  word-wrap: break-word;
+}
+
+/* Ensure tooltip only appears within map container */
+.sitmon-map-card .sitmon-tooltip {
+  position: absolute !important;
+  z-index: 10 !important;
+}
+
+/* Hide tooltips outside map area */
+body > .sitmon-tooltip {
+  display: none !important;
 }
 
 /* Scrollbar Styling */
@@ -1613,7 +1690,7 @@ body.situation-monitor-page ol,
   background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.1), transparent);
   transition: left 0.5s ease;
   pointer-events: none;
-  z-index: 1;
+  z-index: 0; /* Behind content */
 }
 
 .sitmon-panel-card:hover::before {
@@ -1656,15 +1733,16 @@ body.situation-monitor-page ol,
   position: fixed;
   top: 100px;
   right: 20px;
-  z-index: 10000;
+  z-index: 10000 !important;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   pointer-events: none;
+  max-width: calc(100vw - 40px);
 }
 
 .sitmon-toast {
-  background: linear-gradient(135deg, rgba(5, 15, 35, 0.98) 0%, rgba(7, 21, 42, 0.98) 100%);
+  background: linear-gradient(135deg, rgba(5, 15, 35, 0.98) 0%, rgba(7, 21, 42, 0.98) 100%) !important;
   border: 1px solid rgba(34, 211, 238, 0.4);
   border-radius: 12px;
   padding: 1rem 1.25rem;
@@ -1674,12 +1752,15 @@ body.situation-monitor-page ol,
   backdrop-filter: blur(10px);
   pointer-events: auto;
   animation: toastSlideIn 0.3s ease-out;
-  display: flex;
+  display: flex !important;
   flex-direction: row; /* Explicitly set horizontal layout */
   align-items: flex-start; /* Align to top instead of center for multi-line text */
   gap: 0.75rem;
   writing-mode: horizontal-tb; /* Ensure horizontal text */
   text-orientation: mixed; /* Normal text orientation */
+  position: relative !important;
+  z-index: 10001 !important;
+  color: #fff !important;
 }
 
 .sitmon-toast.success {
@@ -1799,6 +1880,9 @@ body.situation-monitor-page ol,
 .sitmon-monitor-item {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  z-index: 1;
+  isolation: isolate; /* Create new stacking context */
+  contain: layout style paint; /* Improve performance and prevent overflow */
 }
 
 .sitmon-news-item:hover,

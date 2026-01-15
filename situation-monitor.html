@@ -104,26 +104,45 @@
         <script>
             (function() {
                 function forceRemoveLoader() {
+                    let didCleanup = false;
                     // Force hide loader if it's still visible
                     const loader = document.getElementById('nn-intel-loader');
                     if (loader) {
-                        console.warn('[SituationMonitor] Force-removing stuck loader');
-                        loader.style.display = 'none';
-                        loader.style.visibility = 'hidden';
-                        loader.style.opacity = '0';
-                        loader.style.zIndex = '-999999';
-                        loader.style.pointerEvents = 'none';
-                        // Try to call hideLoader if available
-                        if (window.hideLoader && typeof window.hideLoader === 'function') {
-                            try {
-                                window.hideLoader();
-                            } catch (e) {
-                                // Ignore
+                        const computed = window.getComputedStyle(loader);
+                        const isVisible = computed.display !== 'none' && computed.visibility !== 'hidden' && computed.opacity !== '0';
+                        if (isVisible) {
+                            console.warn('[SituationMonitor] Force-removing stuck loader');
+                            loader.style.display = 'none';
+                            loader.style.visibility = 'hidden';
+                            loader.style.opacity = '0';
+                            loader.style.zIndex = '-999999';
+                            loader.style.pointerEvents = 'none';
+                            loader.style.position = 'fixed';
+                            loader.style.top = '-9999px';
+                            loader.style.left = '-9999px';
+                            loader.style.width = '0';
+                            loader.style.height = '0';
+                            didCleanup = true;
+                            // Try to call hideLoader if available
+                            if (window.hideLoader && typeof window.hideLoader === 'function') {
+                                try {
+                                    window.hideLoader();
+                                } catch (e) {
+                                    // Ignore
+                                }
                             }
+                            if (loader.parentNode) {
+                                try {
+                                    loader.parentNode.removeChild(loader);
+                                } catch (e) {
+                                    console.warn('[SituationMonitor] Could not remove loader:', e);
+                                }
+                            }
+                        } else {
+                            didCleanup = true;
                         }
-                        if (loader.parentNode) {
-                            loader.parentNode.removeChild(loader);
-                        }
+                    } else {
+                        didCleanup = true;
                     }
                     
                     // Remove loading placeholder if still visible
@@ -132,6 +151,7 @@
                         placeholder.style.display = 'none';
                         placeholder.style.visibility = 'hidden';
                         placeholder.style.opacity = '0';
+                        didCleanup = true;
                     }
                     
                     // Remove ANY div that's blocking the screen (aggressive cleanup)
@@ -150,6 +170,7 @@
                             div.style.opacity = '0';
                             div.style.pointerEvents = 'none';
                             div.style.zIndex = '-999999';
+                            didCleanup = true;
                         }
                     });
                     
@@ -162,6 +183,7 @@
                             el.style.display = 'none';
                             el.style.pointerEvents = 'none';
                             el.style.zIndex = '-999999';
+                            didCleanup = true;
                         }
                     });
                     
@@ -177,13 +199,30 @@
                     // Restore body
                     document.body.style.overflow = '';
                     document.body.style.pointerEvents = 'auto';
+                    
+                    return didCleanup;
                 }
                 
                 // Try immediately (in case loader is already stuck)
                 setTimeout(forceRemoveLoader, 50);
                 
-                // Also try after 1 second
+                // Also try after 1 second, 5 seconds, 10 seconds
                 setTimeout(forceRemoveLoader, 1000);
+                setTimeout(forceRemoveLoader, 5000);
+                setTimeout(forceRemoveLoader, 10000);
+                
+                // Continuous monitoring every 2 seconds to catch any stuck loaders
+                let loaderIntervalId = null;
+                loaderIntervalId = setInterval(() => {
+                    const didCleanup = forceRemoveLoader();
+                    if (didCleanup && loaderIntervalId) {
+                        clearInterval(loaderIntervalId);
+                        loaderIntervalId = null;
+                        console.log('[SituationMonitor] Loader removed - stopping monitor');
+                    }
+                }, 2000);
+                
+                console.log('[SituationMonitor] Aggressive loader removal active - monitoring every 2s');
                 
                 // Also try after 3 seconds
                 setTimeout(forceRemoveLoader, 3000);

@@ -393,11 +393,20 @@ export class SituationMonitorShell {
     `;
 
     // Wait for container to be sized and D3/TopoJSON to be available
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Retry up to 10 times (2 seconds total) for libraries to load
+    let retries = 0;
+    const maxRetries = 10;
+    while ((typeof window.d3 === 'undefined' || typeof window.topojson === 'undefined') && retries < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      retries++;
+      if (retries < maxRetries) {
+        console.log(`[SituationMonitorShell] Waiting for D3/TopoJSON... (attempt ${retries}/${maxRetries})`);
+      }
+    }
 
     // Check if D3 and TopoJSON are available
-    if (typeof window.d3 === 'undefined' || typeof window.topojson === 'undefined') {
-      console.error('[SituationMonitorShell] D3 or TopoJSON not available');
+    if (typeof window.d3 === 'undefined') {
+      console.error('[SituationMonitorShell] D3.js not available after', maxRetries, 'retries');
       mapContainer.innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: rgba(255, 255, 255, 0.6);">
           <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width: 80px; height: 80px; margin-bottom: 1rem; opacity: 0.5;">
@@ -416,10 +425,16 @@ export class SituationMonitorShell {
             <path d="M 15 50 Q 50 50, 85 50" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
             <path d="M 15 50 Q 50 80, 85 50" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
           </svg>
-          <p style="font-size: 0.9rem;">Map libraries not loaded</p>
+          <p style="font-size: 0.9rem;">D3.js library not loaded</p>
+          <p style="font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-top: 0.5rem;">Please refresh the page</p>
         </div>
       `;
       return;
+    }
+    
+    // TopoJSON is optional - map will use fallback if not available
+    if (typeof window.topojson === 'undefined') {
+      console.warn('[SituationMonitorShell] TopoJSON not available, map will use fallback rendering');
     }
 
     // Get actual container dimensions
@@ -760,16 +775,25 @@ export class SituationMonitorShell {
     if (!container) {
       container = document.createElement('div');
       container.className = 'sitmon-toast-container';
+      container.style.cssText = 'position: fixed; top: 100px; right: 20px; z-index: 10000 !important; display: flex; flex-direction: column; gap: 0.75rem; pointer-events: none; max-width: calc(100vw - 40px);';
       document.body.appendChild(container);
     }
     this.toastContainer = container;
   }
   
   showToast(message, type = 'info', title = null) {
-    if (!this.toastContainer) return;
+    // Ensure toast system is initialized
+    if (!this.toastContainer) {
+      this.initToastSystem();
+    }
+    if (!this.toastContainer) {
+      console.warn('[SituationMonitorShell] Toast container not available');
+      return;
+    }
     
     const toast = document.createElement('div');
     toast.className = `sitmon-toast ${type}`;
+    toast.style.cssText = 'display: flex !important; position: relative !important; z-index: 10001 !important; color: #fff !important;';
     
     // Icon based on type
     let iconSvg = '';

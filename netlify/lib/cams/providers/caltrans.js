@@ -5,9 +5,8 @@
 
 const { normalizeCameras } = require('../normalize.js');
 
-// Caltrans typically provides data via ArcGIS or JSON endpoints
-// This is a placeholder - actual endpoint may vary
-const CALTRANS_API_BASE = 'https://cwwp2.dot.ca.gov/data/d4/cctv/cctv.json';
+// Caltrans CCTV ArcGIS FeatureServer (public)
+const CALTRANS_FEATURESERVER = 'https://gisdata.dot.ca.gov/arcgis/rest/services/CHhighway/CCTV/FeatureServer/0';
 
 /**
  * Fetch cameras from Caltrans
@@ -16,9 +15,18 @@ const CALTRANS_API_BASE = 'https://cwwp2.dot.ca.gov/data/d4/cctv/cctv.json';
  */
 async function fetchCaltransCameras(params = {}) {
   try {
-    // Caltrans may have different endpoints per district
-    // This is a generic implementation - may need adjustment based on actual API
-    const url = CALTRANS_API_BASE;
+    const queryParams = new URLSearchParams();
+    queryParams.set('f', 'json');
+    queryParams.set('outFields', '*');
+    queryParams.set('where', '1=1');
+    queryParams.set('returnGeometry', 'true');
+    queryParams.set('outSR', '4326');
+    
+    const limit = params.limit || 500;
+    queryParams.set('resultRecordCount', String(limit));
+    queryParams.set('resultOffset', '0');
+    
+    const url = `${CALTRANS_FEATURESERVER}/query?${queryParams.toString()}`;
     
     const response = await fetch(url, {
       headers: {
@@ -37,38 +45,38 @@ async function fetchCaltransCameras(params = {}) {
     
     const data = await response.json();
     
-    // Caltrans format may vary - adapt based on actual response
-    const cameras = Array.isArray(data) ? data : (data.cameras || data.features || []);
+    const cameras = data.features || [];
     
     if (!Array.isArray(cameras)) {
       return [];
     }
     
-    // Transform Caltrans format to our schema
+    // Transform ArcGIS format to our schema
     const rawCameras = cameras
-      .filter(cam => cam.latitude && cam.longitude)
-      .map(cam => {
-        const cameraId = cam.id || cam.camera_id || cam.CameraID;
-        const snapshotUrl = cameraId 
-          ? `https://cwwp2.dot.ca.gov/data/d4/cctv/${cameraId}.jpg`
-          : cam.image_url || cam.url || null;
+      .filter(feature => feature.attributes)
+      .map(feature => {
+        const attrs = feature.attributes;
+        const geom = feature.geometry || {};
+        const cameraId = attrs.OBJECTID ?? attrs.index_ ?? Math.random();
+        const snapshotUrl = attrs.currentImageURL || null;
+        const route = attrs.route ? `${attrs.route}${attrs.routeSuffix || ''}` : null;
         
         return {
-          providerId: String(cameraId || Math.random()),
+          providerId: String(cameraId),
           country: 'US',
           region1: 'CA',
-          city: cam.city || cam.location?.city || null,
-          road: cam.route || cam.highway || cam.road || null,
-          title: cam.name || cam.title || cam.description || 'Caltrans Camera',
-          description: cam.description || null,
-          lat: parseFloat(cam.latitude || cam.lat || 0),
-          lon: parseFloat(cam.longitude || cam.lon || 0),
+          city: attrs.nearbyPlace || attrs.county || null,
+          road: route || null,
+          title: attrs.locationName || 'Caltrans CCTV',
+          description: attrs.imageDescription || null,
+          lat: attrs.latitude || geom.y || 0,
+          lon: attrs.longitude || geom.x || 0,
           type: 'dot_traffic',
           snapshotUrl,
-          streamUrl: cam.stream_url || null,
-          providerPageUrl: cam.url || `https://dot.ca.gov/`,
-          refreshSec: 60,
-          status: cam.status === 'active' ? 'online' : 'unknown',
+          streamUrl: attrs.streamingVideoURL || null,
+          providerPageUrl: `https://dot.ca.gov/`,
+          refreshSec: parseInt(attrs.currentImageUpdateFrequency, 10) || 60,
+          status: String(attrs.inService || '').toLowerCase() === 'true' ? 'online' : 'unknown',
           tags: ['ca', 'caltrans', 'traffic', 'dot'],
           updatedAt: new Date().toISOString()
         };

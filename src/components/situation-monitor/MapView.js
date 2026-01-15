@@ -40,16 +40,31 @@ export class MapView {
       return;
     }
 
+    console.log('[MapView] Initializing map in container:', this.containerId);
+
+    // Check if D3 is available
+    if (!window.d3) {
+      console.error('[MapView] D3.js not available!');
+      container.innerHTML = '<div style="padding: 2rem; color: #ff6b6b; text-align: center;">D3.js library not loaded</div>';
+      return;
+    }
+
     // Create SVG (d3 loaded from CDN)
     this.svg = window.d3.select(container)
       .append('svg')
       .attr('width', this.options.width)
       .attr('height', this.options.height)
       .attr('viewBox', `0 0 ${this.options.width} ${this.options.height}`)
-      .style('background', 'linear-gradient(135deg, rgba(5, 15, 35, 0.95) 0%, rgba(7, 21, 42, 0.95) 100%)');
+      .style('background', 'linear-gradient(135deg, rgba(5, 15, 35, 0.95) 0%, rgba(7, 21, 42, 0.95) 100%)')
+      .style('display', 'block')
+      .style('visibility', 'visible')
+      .style('opacity', '1');
 
-    // Create tooltip
-    this.tooltip = window.d3.select('body')
+    console.log('[MapView] SVG created, dimensions:', this.options.width, 'x', this.options.height);
+
+    // Create tooltip - only visible within map container
+    const mapContainer = document.getElementById(this.containerId);
+    this.tooltip = window.d3.select(mapContainer || 'body')
       .append('div')
       .attr('class', 'sitmon-tooltip')
       .style('opacity', 0)
@@ -61,9 +76,10 @@ export class MapView {
       .style('color', '#fff')
       .style('font-size', '12px')
       .style('pointer-events', 'none')
-      .style('z-index', '1000')
+      .style('z-index', '10') // Lower z-index, only above map
       .style('max-width', '300px')
-      .style('box-shadow', '0 4px 12px rgba(0, 0, 0, 0.5)');
+      .style('box-shadow', '0 4px 12px rgba(0, 0, 0, 0.5)')
+      .style('display', 'none'); // Hidden by default
 
     // Set up projection - minimize Antarctica visibility
     // Use a larger scale and shift center significantly up to focus on populated areas
@@ -76,44 +92,119 @@ export class MapView {
       .center([0, 30]); // Center on 30°N to focus on populated regions (moves viewport up)
 
     this.path = window.d3.geoPath().projection(this.projection);
+    console.log('[MapView] Projection configured');
 
     // Load world map data
     await this.loadWorldMap();
     
-    // Render base map
+    // Render base map (will render fallback if worldData is null)
     this.renderBaseMap();
     
     // Render overlays
     this.renderOverlays();
+    
+    console.log('[MapView] Map initialization complete');
   }
 
   async loadWorldMap() {
     try {
       // Use Natural Earth 110m countries (free, public domain)
       const url = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+      console.log('[MapView] Loading world map from:', url);
+      
       const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const topojson = await response.json();
+      console.log('[MapView] TopoJSON loaded, converting to GeoJSON...');
       
       // Convert to GeoJSON using topojson library (loaded from CDN)
-      if (window.topojson) {
-        this.worldData = window.topojson.feature(topojson, topojson.objects.countries);
+      if (window.topojson && window.topojson.feature) {
+        if (topojson.objects && topojson.objects.countries) {
+          this.worldData = window.topojson.feature(topojson, topojson.objects.countries);
+          console.log('[MapView] World map data loaded successfully, features:', this.worldData.features?.length || 0);
+        } else {
+          console.warn('[MapView] TopoJSON missing countries object, trying alternative...');
+          // Try alternative structure
+          const objectKeys = Object.keys(topojson.objects || {});
+          if (objectKeys.length > 0) {
+            this.worldData = window.topojson.feature(topojson, topojson.objects[objectKeys[0]]);
+            console.log('[MapView] Using alternative object:', objectKeys[0]);
+          } else {
+            throw new Error('No valid TopoJSON objects found');
+          }
+        }
       } else {
-        // Fallback: try direct access
-        this.worldData = topojson;
+        console.warn('[MapView] TopoJSON library not available, creating fallback map');
+        this.worldData = null;
+        this.createFallbackMap();
+        return;
       }
     } catch (error) {
       console.error('[MapView] Failed to load world map:', error);
-      // Fallback: create a simple outline
+      // Create a fallback simple map
       this.worldData = null;
+      this.createFallbackMap();
     }
+  }
+  
+  /**
+   * Create a simple fallback map if world data fails to load
+   */
+  createFallbackMap() {
+    console.log('[MapView] Creating fallback map...');
+    // Create a simple grid/outline as fallback
+    const g = this.svg.append('g').attr('class', 'fallback-map');
+    
+    // Draw a simple world outline using basic shapes
+    // This is a very basic representation
+    const centerX = this.options.width / 2;
+    const centerY = this.options.height / 2;
+    
+    // Draw continents as simple shapes (very basic representation)
+    // North America
+    g.append('path')
+      .attr('d', `M ${centerX - 200} ${centerY - 50} L ${centerX - 100} ${centerY - 80} L ${centerX - 50} ${centerY - 40} L ${centerX - 80} ${centerY + 20} L ${centerX - 150} ${centerY + 10} Z`)
+      .attr('fill', 'rgba(34, 211, 238, 0.08)')
+      .attr('stroke', 'rgba(34, 211, 238, 0.25)')
+      .attr('stroke-width', 0.4);
+    
+    // South America
+    g.append('path')
+      .attr('d', `M ${centerX - 150} ${centerY + 20} L ${centerX - 100} ${centerY + 10} L ${centerX - 80} ${centerY + 60} L ${centerX - 120} ${centerY + 80} L ${centerX - 160} ${centerY + 70} Z`)
+      .attr('fill', 'rgba(34, 211, 238, 0.08)')
+      .attr('stroke', 'rgba(34, 211, 238, 0.25)')
+      .attr('stroke-width', 0.4);
+    
+    // Europe/Africa
+    g.append('path')
+      .attr('d', `M ${centerX - 50} ${centerY - 60} L ${centerX + 50} ${centerY - 70} L ${centerX + 80} ${centerY - 20} L ${centerX + 60} ${centerY + 40} L ${centerX - 20} ${centerY + 50} L ${centerX - 40} ${centerY - 10} Z`)
+      .attr('fill', 'rgba(34, 211, 238, 0.08)')
+      .attr('stroke', 'rgba(34, 211, 238, 0.25)')
+      .attr('stroke-width', 0.4);
+    
+    // Asia
+    g.append('path')
+      .attr('d', `M ${centerX + 60} ${centerY - 70} L ${centerX + 200} ${centerY - 80} L ${centerX + 220} ${centerY - 20} L ${centerX + 180} ${centerY + 30} L ${centerX + 100} ${centerY + 20} L ${centerX + 80} ${centerY - 10} Z`)
+      .attr('fill', 'rgba(34, 211, 238, 0.08)')
+      .attr('stroke', 'rgba(34, 211, 238, 0.25)')
+      .attr('stroke-width', 0.4);
+    
+    console.log('[MapView] Fallback map created');
   }
 
   renderBaseMap() {
-    if (!this.worldData) return;
+    if (!this.worldData || !this.worldData.features) {
+      console.warn('[MapView] No world data available, skipping base map render');
+      return;
+    }
 
+    console.log('[MapView] Rendering base map with', this.worldData.features.length, 'features');
     const g = this.svg.append('g').attr('class', 'countries');
 
-      g.selectAll('path')
+    g.selectAll('path')
       .data(this.worldData.features)
       .enter()
       .append('path')
@@ -133,6 +224,8 @@ export class MapView {
           .attr('stroke', 'rgba(34, 211, 238, 0.25)')
           .attr('stroke-width', 0.4);
       });
+    
+    console.log('[MapView] Base map rendered successfully');
   }
 
   renderOverlays() {
@@ -491,6 +584,12 @@ export class MapView {
       clearTimeout(this.debounceTimer);
     }
 
+    // Only show tooltip if mouse is actually over the map
+    const mapContainer = document.getElementById(this.containerId);
+    if (!mapContainer || !mapContainer.contains(event.target)) {
+      return;
+    }
+
     this.debounceTimer = setTimeout(() => {
       let html = `<div style="font-weight: bold; margin-bottom: 4px;">${data.title}</div>`;
       if (data.type) {
@@ -505,10 +604,11 @@ export class MapView {
 
       this.tooltip
         .html(html)
+        .style('display', 'block')
         .style('opacity', 1);
 
       this.moveTooltip(event);
-    }, 50);
+    }, 300); // Increased delay to prevent accidental hovers
   }
 
   moveTooltip(event) {
@@ -516,10 +616,22 @@ export class MapView {
       clearTimeout(this.debounceTimer);
     }
 
+    // Only move tooltip if it's visible and mouse is over map
+    const mapContainer = document.getElementById(this.containerId);
+    if (!mapContainer || !mapContainer.contains(event.target)) {
+      this.hideTooltip();
+      return;
+    }
+
     this.debounceTimer = setTimeout(() => {
+      // Position relative to map container, not page
+      const rect = mapContainer.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
       this.tooltip
-        .style('left', (event.pageX + 10) + 'px')
-        .style('top', (event.pageY - 10) + 'px');
+        .style('left', (x + 10) + 'px')
+        .style('top', (y - 10) + 'px');
     }, 10);
   }
 
@@ -527,7 +639,11 @@ export class MapView {
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
     }
-    this.tooltip.style('opacity', 0);
+    if (this.tooltip) {
+      this.tooltip
+        .style('opacity', 0)
+        .style('display', 'none');
+    }
   }
 
   resize(width, height) {
@@ -742,6 +858,12 @@ export class MapView {
       clearTimeout(this.debounceTimer);
     }
     
+    // Only show if mouse is over map
+    const mapContainer = document.getElementById(this.containerId);
+    if (!mapContainer || !mapContainer.contains(event.target)) {
+      return;
+    }
+    
     this.debounceTimer = setTimeout(() => {
       const age = mapEvent.getAgeHours();
       const ageText = age < 1 ? `${Math.floor(age * 60)}m ago` : 
@@ -757,10 +879,11 @@ export class MapView {
       
       this.tooltip
         .html(html)
+        .style('display', 'block')
         .style('opacity', 1);
       
       this.moveTooltip(event);
-    }, 50);
+    }, 300); // Increased delay
   }
   
   /**
@@ -769,6 +892,12 @@ export class MapView {
   showClusterTooltip(event, cluster) {
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer);
+    }
+    
+    // Only show if mouse is over map
+    const mapContainer = document.getElementById(this.containerId);
+    if (!mapContainer || !mapContainer.contains(event.target)) {
+      return;
     }
     
     this.debounceTimer = setTimeout(() => {
@@ -783,10 +912,11 @@ export class MapView {
       
       this.tooltip
         .html(html)
+        .style('display', 'block')
         .style('opacity', 1);
       
       this.moveTooltip(event);
-    }, 50);
+    }, 300); // Increased delay
   }
   
   /**
