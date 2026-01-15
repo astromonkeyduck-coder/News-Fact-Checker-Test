@@ -21,6 +21,14 @@ const state = {
     activeProcessing: 0,
     concurrentMode: false,
     activeJobs: new Map(), // jobId -> { fileId, pollInterval }
+    recording: {
+        isRecording: false,
+        mediaRecorder: null,
+        audioChunks: [],
+        stream: null,
+        timerInterval: null,
+        startTime: null,
+    },
 };
 
 // DOM Elements
@@ -36,6 +44,11 @@ const elements = {
     languageSelect: null,
     includeTimestamps: null,
     concurrentMode: null,
+    recordingPanel: null,
+    recordBtn: null,
+    stopBtn: null,
+    recordingStatus: null,
+    recordingTimer: null,
 };
 
 // Initialize
@@ -61,6 +74,11 @@ function initializeElements() {
     elements.languageSelect = document.getElementById('languageSelect');
     elements.includeTimestamps = document.getElementById('includeTimestamps');
     elements.concurrentMode = document.getElementById('concurrentMode');
+    elements.recordingPanel = document.getElementById('recordingPanel');
+    elements.recordBtn = document.getElementById('recordBtn');
+    elements.stopBtn = document.getElementById('stopBtn');
+    elements.recordingStatus = document.getElementById('recordingStatus');
+    elements.recordingTimer = document.getElementById('recordingTimer');
     
     // Log missing elements for debugging
     const requiredElements = ['dropzone', 'fileInput', 'selectFilesBtn', 'queueContainer', 'queueList', 'resultsContainer', 'settingsToggle', 'settingsContent'];
@@ -110,6 +128,14 @@ function setupEventListeners() {
     }
     if (elements.includeTimestamps) {
         elements.includeTimestamps.addEventListener('change', saveSettings);
+    }
+
+    // Recording controls
+    if (elements.recordBtn) {
+        elements.recordBtn.addEventListener('click', startRecording);
+    }
+    if (elements.stopBtn) {
+        elements.stopBtn.addEventListener('click', stopRecording);
     }
 }
 
@@ -1200,6 +1226,133 @@ function showNotification(message) {
     setTimeout(() => {
         notification.remove();
     }, 3000);
+}
+
+/**
+ * Recording Functions
+ */
+
+async function startRecording() {
+    try {
+        // Request microphone access
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+            } 
+        });
+
+        state.recording.stream = stream;
+        state.recording.isRecording = true;
+        state.recording.audioChunks = [];
+        state.recording.startTime = Date.now();
+
+        // Determine best MIME type (prefer webm, fallback to default)
+        let mimeType = 'audio/webm;codecs=opus';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = 'audio/webm';
+        }
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = ''; // Use browser default
+        }
+
+        const mediaRecorder = new MediaRecorder(stream, {
+            mimeType: mimeType,
+        });
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                state.recording.audioChunks.push(event.data);
+            }
+        };
+
+        mediaRecorder.onstop = async () => {
+            // Create audio blob
+            const audioBlob = new Blob(state.recording.audioChunks, { 
+                type: mimeType || 'audio/webm' 
+            });
+
+            // Create File object from blob
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const fileName = `recording-${timestamp}.webm`;
+            const audioFile = new File([audioBlob], fileName, { 
+                type: audioBlob.type,
+                lastModified: Date.now(),
+            });
+
+            // Stop all tracks
+            state.recording.stream.getTracks().forEach(track => track.stop());
+
+            // Reset recording state
+            state.recording.isRecording = false;
+            state.recording.mediaRecorder = null;
+            state.recording.stream = null;
+            state.recording.audioChunks = [];
+            if (state.recording.timerInterval) {
+                clearInterval(state.recording.timerInterval);
+                state.recording.timerInterval = null;
+            }
+
+            // Update UI
+            updateRecordingUI(false);
+
+            // Add to file queue
+            addFiles([audioFile]);
+            showNotification('Recording saved! Added to queue.');
+        };
+
+        state.recording.mediaRecorder = mediaRecorder;
+        mediaRecorder.start(1000); // Collect data every second
+
+        // Start timer
+        updateRecordingUI(true);
+        startRecordingTimer();
+
+        showNotification('Recording started!');
+    } catch (error) {
+        console.error('[startRecording] Error:', error);
+        showError('Failed to start recording: ' + (error.message || 'Microphone access denied'));
+        state.recording.isRecording = false;
+        updateRecordingUI(false);
+    }
+}
+
+function stopRecording() {
+    if (state.recording.mediaRecorder && state.recording.isRecording) {
+        state.recording.mediaRecorder.stop();
+        showNotification('Stopping recording...');
+    }
+}
+
+function startRecordingTimer() {
+    if (state.recording.timerInterval) {
+        clearInterval(state.recording.timerInterval);
+    }
+
+    state.recording.timerInterval = setInterval(() => {
+        if (state.recording.isRecording && state.recording.startTime && elements.recordingTimer) {
+            const elapsed = Math.floor((Date.now() - state.recording.startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            elements.recordingTimer.textContent = `${minutes}:${seconds}`;
+        }
+    }, 100);
+}
+
+function updateRecordingUI(isRecording) {
+    if (!elements.recordBtn || !elements.recordingStatus) return;
+
+    if (isRecording) {
+        elements.recordBtn.style.display = 'none';
+        elements.recordingStatus.style.display = 'flex';
+    } else {
+        elements.recordBtn.style.display = 'flex';
+        elements.recordingStatus.style.display = 'none';
+        if (elements.recordingTimer) {
+            elements.recordingTimer.textContent = '00:00';
+        }
+    }
 }
 
 // Settings persistence

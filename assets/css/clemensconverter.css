@@ -68,6 +68,141 @@ body {
     gap: 30px;
 }
 
+/* Recording Panel */
+.recording-panel {
+    background: rgba(15, 35, 74, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(29, 161, 242, 0.2);
+}
+
+.recording-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.recording-title {
+    font-size: 1.3rem;
+    color: #ffffff;
+    margin: 0;
+}
+
+.recording-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+}
+
+.btn-record {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border: none;
+    border-radius: 12px;
+    color: #ffffff;
+    padding: 20px 40px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 200px;
+    justify-content: center;
+}
+
+.btn-record:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+}
+
+.btn-record:active {
+    transform: translateY(0);
+}
+
+.record-icon {
+    font-size: 1.5rem;
+}
+
+.recording-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+}
+
+.recording-indicator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 24px;
+    background: rgba(239, 68, 68, 0.2);
+    border-radius: 8px;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.recording-dot {
+    width: 12px;
+    height: 12px;
+    background: #ef4444;
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+    }
+}
+
+.recording-timer {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #ffffff;
+    font-family: 'Courier New', monospace;
+    min-width: 60px;
+    text-align: center;
+}
+
+.btn-stop {
+    background: rgba(239, 68, 68, 0.2);
+    border: 2px solid #ef4444;
+    border-radius: 8px;
+    color: #ffffff;
+    padding: 12px 30px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 150px;
+}
+
+.btn-stop:hover {
+    background: rgba(239, 68, 68, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.btn-stop:active {
+    transform: translateY(0);
+}
+
+.recording-hint {
+    color: #a0aec0;
+    font-size: 0.9rem;
+    text-align: center;
+    margin-top: 5px;
+}
+
 /* Settings Panel */
 .settings-panel {
     background: rgba(15, 35, 74, 0.3);

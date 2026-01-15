@@ -64,10 +64,33 @@
                 </div>
             </div>
 
+            <!-- Recording Panel -->
+            <div class="recording-panel" id="recordingPanel">
+                <div class="recording-content">
+                    <h3 class="recording-title">Record Audio</h3>
+                    <div class="recording-controls">
+                        <button class="btn-record" id="recordBtn">
+                            <span class="record-icon">🎤</span>
+                            <span class="record-text">Start Recording</span>
+                        </button>
+                        <div class="recording-status" id="recordingStatus" style="display: none;">
+                            <div class="recording-indicator">
+                                <span class="recording-dot"></span>
+                                <span class="recording-timer" id="recordingTimer">00:00</span>
+                            </div>
+                            <button class="btn-stop" id="stopBtn">Stop & Save</button>
+                        </div>
+                    </div>
+                    <div class="recording-hint">
+                        Click to start recording. Your browser will ask for microphone permission.
+                    </div>
+                </div>
+            </div>
+
             <!-- Dropzone -->
             <div class="dropzone" id="dropzone">
                 <div class="dropzone-content">
-                    <div class="dropzone-icon">🎤</div>
+                    <div class="dropzone-icon">📁</div>
                     <div class="dropzone-text">
                         <strong>Drop MP3 files here</strong>
                         <span>or</span>
@@ -78,7 +101,7 @@
                         <small style="color: #a0aec0;">Note: Files over 5MB may require R2 storage setup for reliable uploads.</small>
                     </div>
                 </div>
-                <input type="file" id="fileInput" multiple accept="audio/mpeg,audio/mp3" style="display: none;">
+                <input type="file" id="fileInput" multiple accept="audio/mpeg,audio/mp3,audio/webm,audio/ogg,audio/wav" style="display: none;">
             </div>
 
             <!-- File Queue -->
