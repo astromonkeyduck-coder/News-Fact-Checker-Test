@@ -228,14 +228,31 @@ async function segmentAudio(inputPath, chunksDir, chunkDuration = 600) {
     path.join(chunksDir, 'chunk%03d.mp3'),
   ]);
 
-  // List chunk files
+  // List chunk files and validate they exist
   const files = await fsPromises.readdir(chunksDir);
   const chunkFiles = files
     .filter(f => f.startsWith('chunk') && f.endsWith('.mp3'))
     .sort()
     .map(f => path.join(chunksDir, f));
 
-  console.log(`[process-job] ✅ Created ${chunkFiles.length} chunks`);
+  // Validate all chunks exist and have content (especially important for first chunk)
+  for (let i = 0; i < chunkFiles.length; i++) {
+    const chunkFile = chunkFiles[i];
+    try {
+      const chunkStats = await fsPromises.stat(chunkFile);
+      if (chunkStats.size === 0) {
+        throw new Error(`Chunk ${i + 1} (${path.basename(chunkFile)}) is empty (0 bytes)`);
+      }
+      if (chunkStats.size < 1000) {
+        console.warn(`[process-job] ⚠️ Chunk ${i + 1} is very small (${chunkStats.size} bytes)`);
+      }
+      console.log(`[process-job] Chunk ${i + 1}: ${path.basename(chunkFile)} (${(chunkStats.size / 1024 / 1024).toFixed(2)} MB)`);
+    } catch (statError) {
+      throw new Error(`Chunk ${i + 1} validation failed: ${statError.message}`);
+    }
+  }
+
+  console.log(`[process-job] ✅ Created ${chunkFiles.length} chunks (all validated)`);
   return chunkFiles;
 }
 
