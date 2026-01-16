@@ -827,7 +827,11 @@ function pollJobStatus(jobId, fileId) {
             
             // Update status message
             if (jobStatus.status === 'transcribing' && jobStatus.chunksTotal) {
-                fileData.statusMessage = `Transcribing chunk ${jobStatus.chunksDone || 0} / ${jobStatus.chunksTotal}`;
+                // Show current chunk being processed (chunksDone is 0-indexed, so +1 for display)
+                const currentChunk = jobStatus.chunksDone < jobStatus.chunksTotal 
+                    ? jobStatus.chunksDone + 1 
+                    : jobStatus.chunksTotal;
+                fileData.statusMessage = `Transcribing chunk ${currentChunk} / ${jobStatus.chunksTotal}`;
             } else if (jobStatus.status === 'processing') {
                 fileData.statusMessage = 'Processing...';
             } else if (jobStatus.status === 'finalizing') {
@@ -835,6 +839,29 @@ function pollJobStatus(jobId, fileId) {
             } else if (jobStatus.status === 'done' || jobStatus.status === 'error') {
                 // Clear status message when job completes
                 fileData.statusMessage = null;
+            }
+            
+            // Check if job appears stuck (transcribing but hasn't updated in a while)
+            if (jobStatus.status === 'transcribing' && jobStatus.chunksTotal && jobStatus.chunksDone < jobStatus.chunksTotal) {
+                const lastUpdate = new Date(jobStatus.updated_at || jobStatus.updatedAt || Date.now());
+                const minutesSinceUpdate = (Date.now() - lastUpdate.getTime()) / 1000 / 60;
+                
+                // If stuck for more than 5 minutes, try to trigger it again
+                if (minutesSinceUpdate > 5) {
+                    console.warn(`[pollJobStatus] Job ${jobId} appears stuck (${minutesSinceUpdate.toFixed(1)} min since update). Attempting to trigger...`);
+                    try {
+                        await fetch(`${CONFIG.apiBase}/trigger-job`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                ...getAuthHeaders(),
+                            },
+                            body: JSON.stringify({ jobId }),
+                        });
+                    } catch (triggerError) {
+                        console.error(`[pollJobStatus] Failed to trigger stuck job:`, triggerError);
+                    }
+                }
             }
 
             if (jobStatus.errorMessage) {

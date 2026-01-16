@@ -147,7 +147,26 @@ exports.handler = async (event, context) => {
       };
     }
 
-    if (job.status !== 'queued') {
+    // Allow triggering queued jobs OR stuck transcribing jobs
+    if (job.status === 'queued') {
+      // Normal case - trigger queued job
+    } else if (job.status === 'transcribing' && job.chunks_done < job.chunks_total) {
+      // Job is stuck in transcribing - allow retrigger
+      const updatedAt = new Date(job.updated_at);
+      const minutesSinceUpdate = (Date.now() - updatedAt.getTime()) / 1000 / 60;
+      if (minutesSinceUpdate > 5) {
+        console.log(`[trigger-job] Allowing retrigger of stuck job ${jobId} (${minutesSinceUpdate.toFixed(1)} min since update)`);
+      } else {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: `Job is actively processing (updated ${minutesSinceUpdate.toFixed(1)} min ago). Wait longer before retriggering.`,
+            currentStatus: job.status,
+          }),
+        };
+      }
+    } else if (job.status !== 'queued') {
       return {
         statusCode: 400,
         headers,

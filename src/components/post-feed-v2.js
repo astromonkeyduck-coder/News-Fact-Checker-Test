@@ -42,6 +42,33 @@ function getIconHTML(iconName, className = 'w-5 h-5') {
 const CACHE_KEY = 'noteworthy-posts-cache-v2';
 const CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
 
+const EARTHQUAKE_CARD_MIN_MAGNITUDE = 5.0;
+const EXCLUDED_ALERT_KEYWORDS = ['volcano', 'volcanic', 'embassy'];
+
+function isLowMagnitudeEarthquake(post) {
+  if (!post) return false;
+  const category = (post.category || '').toLowerCase();
+  const eventType = (post.event_type || post.eventType || '').toLowerCase();
+  const source = (post.source || '').toLowerCase();
+  const isEarthquake = category === 'earthquake' || eventType === 'earthquake' || source === 'usgs';
+  if (!isEarthquake) return false;
+  const magnitudeRaw = post.magnitude ?? post.mag ?? post.magnitude_value ?? post.magnitudeValue;
+  const magnitude = typeof magnitudeRaw === 'string' ? parseFloat(magnitudeRaw) : Number(magnitudeRaw);
+  if (!Number.isFinite(magnitude)) return false;
+  return magnitude < EARTHQUAKE_CARD_MIN_MAGNITUDE;
+}
+
+function isExcludedAlert(post) {
+  if (!post) return false;
+  const category = (post.category || '').toLowerCase();
+  const eventType = (post.event_type || post.eventType || '').toLowerCase();
+  const source = (post.source || '').toLowerCase();
+  const tags = Array.isArray(post.tags) ? post.tags.join(' ').toLowerCase() : '';
+  const text = (post.text || post.title || post.story || '').toLowerCase();
+  const combined = `${category} ${eventType} ${source} ${tags} ${text}`;
+  return EXCLUDED_ALERT_KEYWORDS.some(keyword => combined.includes(keyword));
+}
+
 let isLoading = false;
 let currentSort = localStorage.getItem('feed-sort') || 'recent';
 let currentSearch = localStorage.getItem('feed-search') || '';
@@ -2473,7 +2500,10 @@ async function renderPostFeedV2(
         const { data, timestamp } = JSON.parse(cached);
         // Use cached data even if slightly stale (up to 24 hours) for instant display
         if (Date.now() - timestamp < 86400000) {
-          currentPosts = data.map(mapRawPostToPost);
+          const filteredData = data.filter(
+            post => !isLowMagnitudeEarthquake(post) && !isExcludedAlert(post)
+          );
+          currentPosts = filteredData.map(mapRawPostToPost);
           await renderFeed();
           // If cache is older than 5 minutes, refresh in background
           if (Date.now() - timestamp > 300000) {
@@ -2517,12 +2547,15 @@ async function renderPostFeedV2(
       throw new Error('Invalid response format: expected array');
     }
     
-    currentPosts = rawPosts.map(mapRawPostToPost);
+    const filteredPosts = rawPosts.filter(
+      post => !isLowMagnitudeEarthquake(post) && !isExcludedAlert(post)
+    );
+    currentPosts = filteredPosts.map(mapRawPostToPost);
     console.log('[PostFeed v2] Mapped to', currentPosts.length, 'posts');
     
     // Cache
     localStorage.setItem(CACHE_KEY, JSON.stringify({
-      data: rawPosts,
+      data: filteredPosts,
       timestamp: Date.now(),
     }));
     

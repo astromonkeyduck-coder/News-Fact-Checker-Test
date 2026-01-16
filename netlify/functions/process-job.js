@@ -414,6 +414,8 @@ function mergeTranscripts(chunkResults, chunkDuration, includeTimestamps) {
  */
 async function processJob(jobId) {
   const tmpDir = path.join(os.tmpdir(), `clemens-job-${jobId}`);
+  const startTime = Date.now();
+  const MAX_EXECUTION_TIME = 14 * 60 * 1000; // 14 minutes (leave 1 min buffer)
   
   try {
     // Load job from Supabase
@@ -434,9 +436,24 @@ async function processJob(jobId) {
       console.log(`[process-job] Job ${jobId} already ${job.status}, skipping`);
       return;
     }
+    
+    // Check if job is stuck (transcribing but hasn't updated in a while)
+    // If chunks_done > 0 but not equal to chunks_total, and it's been more than 5 minutes, resume
+    if (job.status === 'transcribing' && job.chunks_total && job.chunks_done < job.chunks_total) {
+      const updatedAt = new Date(job.updated_at);
+      const minutesSinceUpdate = (Date.now() - updatedAt.getTime()) / 1000 / 60;
+      if (minutesSinceUpdate > 5) {
+        console.log(`[process-job] ⚠️ Job ${jobId} appears stuck (${minutesSinceUpdate.toFixed(1)} min since last update). Resuming from chunk ${job.chunks_done + 1}/${job.chunks_total}`);
+        // Continue processing from where it left off
+      }
+    }
 
-    // Update status to processing (only if it's queued)
+    // Update status to processing (only if it's queued or stuck in transcribing)
     if (job.status === 'queued') {
+      await updateJobProgress(jobId, { status: 'processing' });
+    } else if (job.status === 'transcribing' && job.chunks_done < job.chunks_total) {
+      // Job is stuck in transcribing - resume it
+      console.log(`[process-job] Resuming stuck job ${jobId} from chunk ${job.chunks_done + 1}/${job.chunks_total}`);
       await updateJobProgress(jobId, { status: 'processing' });
     } else if (job.status !== 'processing' && job.status !== 'transcribing' && job.status !== 'finalizing') {
       // If status is unexpected, log warning but continue
@@ -479,11 +496,38 @@ async function processJob(jobId) {
     // Step 4: Transcribe each chunk
     console.log(`[process-job] Transcribing ${chunksTotal} chunks...`);
     const chunkResults = [];
+    const startTime = Date.now();
+    const MAX_EXECUTION_TIME = 14 * 60 * 1000; // 14 minutes (leave 1 min buffer)
     
-    for (let i = 0; i < chunkFiles.length; i++) {
+    // Check if we're resuming from a previous attempt
+    let startChunkIndex = 0;
+    if (job.chunks_done && job.chunks_done > 0 && job.chunks_done < chunksTotal) {
+      startChunkIndex = job.chunks_done; // Resume from next chunk
+      console.log(`[process-job] 🔄 Resuming from chunk ${startChunkIndex + 1}/${chunksTotal}`);
+    }
+    
+    for (let i = startChunkIndex; i < chunkFiles.length; i++) {
+      // Check execution time to prevent timeout
+      const elapsed = Date.now() - startTime;
+      if (elapsed > MAX_EXECUTION_TIME) {
+        console.warn(`[process-job] ⚠️ Approaching timeout (${(elapsed / 1000 / 60).toFixed(1)} min elapsed). Saving progress and stopping.`);
+        await updateJobProgress(jobId, {
+          status: 'transcribing',
+          chunks_done: i,
+          progress: Math.round((i / chunksTotal) * 100),
+        });
+        throw new Error(`Function timeout approaching. Processed ${i}/${chunksTotal} chunks. Job can be resumed.`);
+      }
+      
       const chunkPath = chunkFiles[i];
       const chunkIndex = i + 1;
       console.log(`[process-job] 📝 Transcribing chunk ${chunkIndex}/${chunksTotal}: ${chunkPath}`);
+      
+      // Update status before starting transcription (helps with stuck job detection)
+      await updateJobProgress(jobId, {
+        status: 'transcribing',
+        chunks_done: i, // Current chunk being processed (0-indexed)
+      });
       
       // Validate chunk file before transcription
       try {
@@ -517,7 +561,7 @@ async function processJob(jobId) {
         chunkResults.push(transcription);
         console.log(`[process-job] ✅ Chunk ${chunkIndex}/${chunksTotal} completed`);
         
-        // Update progress
+        // Update progress immediately after each chunk
         const chunksDone = chunkIndex;
         const progress = Math.round((chunksDone / chunksTotal) * 100);
         await updateJobProgress(jobId, {
@@ -551,8 +595,13 @@ async function processJob(jobId) {
           }
         }
         
-        // Update job with error but continue to next chunk (or fail fast - your choice)
-        // For now, we'll fail the whole job if any chunk fails
+        // Update job with error status
+        await updateJobProgress(jobId, {
+          status: 'error',
+          error_message: `Chunk ${chunkIndex} transcription failed: ${error.message}`,
+        });
+        
+        // Fail the whole job if any chunk fails
         throw new Error(`Chunk ${chunkIndex} transcription failed: ${error.message}`);
       }
     }

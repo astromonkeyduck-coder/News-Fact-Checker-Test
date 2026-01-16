@@ -287,6 +287,25 @@ body.situation-monitor-page main {
   background: rgba(3, 8, 18, 0.95); /* Darker base for operational feel */
 }
 
+/* OSINT Scanline Effect - Page Wrapper */
+.sitmon-page-wrapper::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(34, 211, 238, 0.02) 2px,
+    rgba(34, 211, 238, 0.02) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* Page Header */
 /* OSINT Header - Compact, Operational */
 .sitmon-page-header {
@@ -609,6 +628,26 @@ body.situation-monitor-page main {
   gap: 8px 12px; /* Tight vertical, moderate horizontal */
   margin-bottom: 12px;
   align-items: start;
+  position: relative;
+}
+
+/* OSINT Scanline Effect - OSINT Grid */
+.sitmon-osint-grid::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(34, 211, 238, 0.015) 3px,
+    rgba(34, 211, 238, 0.015) 6px
+  );
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* Intel Wall Layout - Map as Tactical Node (not hero) */
@@ -694,6 +733,27 @@ body.situation-monitor-page main {
   overflow-x: hidden;
   /* Ensure HUD stays within map container bounds */
   max-width: calc(100% - 32px); /* Account for padding */
+  position: relative;
+}
+
+/* OSINT Scanline Effect - HUD Panels */
+.sitmon-hud::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(34, 211, 238, 0.025) 2px,
+    rgba(34, 211, 238, 0.025) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 6px;
 }
 
 .sitmon-hud-left {
@@ -733,6 +793,27 @@ body.situation-monitor-page main {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.3), transparent);
   pointer-events: none;
+  z-index: 1;
+}
+
+/* OSINT Scanline Effect - HUD Cards */
+.sitmon-hud-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(34, 211, 238, 0.02) 2px,
+    rgba(34, 211, 238, 0.02) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 6px;
 }
 
 .sitmon-hud-card:hover {
@@ -1066,6 +1147,25 @@ body.situation-monitor-page main {
   color: rgba(255, 255, 255, 0.6);
 }
 
+/* OSINT Scanline Effect - Status Strip */
+.sitmon-osint-status-strip::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 1px,
+    rgba(34, 211, 238, 0.03) 1px,
+    rgba(34, 211, 238, 0.03) 2px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
 .sitmon-status-item {
   display: flex;
   align-items: center;
@@ -1206,6 +1306,26 @@ body.situation-monitor-page main {
     linear-gradient(rgba(34, 211, 238, 0.01) 1px, transparent 1px),
     linear-gradient(90deg, rgba(34, 211, 238, 0.01) 1px, transparent 1px);
   background-size: 20px 20px;
+}
+
+/* OSINT Scanline Effect - Panel Cards */
+.sitmon-panel-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(34, 211, 238, 0.02) 2px,
+    rgba(34, 211, 238, 0.02) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 6px; /* Match card border-radius */
 }
 
 /* Enhanced hover effect for panels */
@@ -3033,6 +3153,25 @@ body.situation-monitor-page ol,
   backdrop-filter: blur(8px);
   scrollbar-width: thin;
   scrollbar-color: rgba(34, 211, 238, 0.3) rgba(5, 12, 28, 0.5);
+}
+
+/* OSINT Scanline Effect - Ticker */
+.sitmon-osint-ticker::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(34, 211, 238, 0.03) 2px,
+    rgba(34, 211, 238, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
 }
 
 .sitmon-osint-ticker::-webkit-scrollbar {

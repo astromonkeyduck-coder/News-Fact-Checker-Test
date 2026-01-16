@@ -18,6 +18,33 @@ const ENHANCED_CACHE_KEY = 'noteworthy-posts-cache-enhanced';
 const ENHANCED_CACHE_EXPIRY = 2 * 60 * 1000; // 2 minutes
 const ENHANCED_CACHE_VERSION = '2'; // Increment this to invalidate all caches
 
+const EARTHQUAKE_CARD_MIN_MAGNITUDE = 5.0;
+const EXCLUDED_ALERT_KEYWORDS = ['volcano', 'volcanic', 'embassy'];
+
+function isLowMagnitudeEarthquake(post) {
+  if (!post) return false;
+  const category = (post.category || '').toLowerCase();
+  const eventType = (post.event_type || post.eventType || '').toLowerCase();
+  const source = (post.source || '').toLowerCase();
+  const isEarthquake = category === 'earthquake' || eventType === 'earthquake' || source === 'usgs';
+  if (!isEarthquake) return false;
+  const magnitudeRaw = post.magnitude ?? post.mag ?? post.magnitude_value ?? post.magnitudeValue;
+  const magnitude = typeof magnitudeRaw === 'string' ? parseFloat(magnitudeRaw) : Number(magnitudeRaw);
+  if (!Number.isFinite(magnitude)) return false;
+  return magnitude < EARTHQUAKE_CARD_MIN_MAGNITUDE;
+}
+
+function isExcludedAlert(post) {
+  if (!post) return false;
+  const category = (post.category || '').toLowerCase();
+  const eventType = (post.event_type || post.eventType || '').toLowerCase();
+  const source = (post.source || '').toLowerCase();
+  const tags = Array.isArray(post.tags) ? post.tags.join(' ').toLowerCase() : '';
+  const text = (post.text || post.title || post.story || '').toLowerCase();
+  const combined = `${category} ${eventType} ${source} ${tags} ${text}`;
+  return EXCLUDED_ALERT_KEYWORDS.some(keyword => combined.includes(keyword));
+}
+
 let enhancedIsLoading = false;
 let enhancedCurrentSort = localStorage.getItem('feed-sort') || 'recent';
 let enhancedCurrentSearch = localStorage.getItem('feed-search') || '';
@@ -1053,7 +1080,9 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
         const isNotExpired = Date.now() - timestamp < 300000; // 5 minutes
         // Use cache if version matches and less than 5 minutes old
         if (posts && posts.length > 0 && isVersionValid && isNotExpired) {
-          enhancedCurrentPosts = posts;
+          enhancedCurrentPosts = posts.filter(
+            post => !isLowMagnitudeEarthquake(post) && !isExcludedAlert(post)
+          );
           // Render first 5 posts instantly from cache
           renderEnhancedFeed();
           setupInfiniteScroll();
@@ -1124,7 +1153,9 @@ async function loadEnhancedPosts(endpoint = '/.netlify/functions/posts-read', li
     
     // Handle both array response and object with posts property
     const posts = Array.isArray(data) ? data : (data.posts || data.data || []);
-    enhancedCurrentPosts = posts || [];
+    enhancedCurrentPosts = (posts || []).filter(
+      post => !isLowMagnitudeEarthquake(post) && !isExcludedAlert(post)
+    );
     
     console.log('[Enhanced Feed] Loaded', enhancedCurrentPosts.length, 'posts');
     

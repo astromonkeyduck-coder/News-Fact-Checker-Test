@@ -178,9 +178,9 @@ export class SituationMonitorShell {
                     <span class="sitmon-stat-label">High</span>
                     <span class="sitmon-stat-value sitmon-stat-high" id="sitmon-stat-high">0</span>
                   </div>
-                </div>
-              </div>
-              
+            </div>
+          </div>
+
               <div class="sitmon-hud-card">
                 <div class="sitmon-hud-header">
                   <h3 class="sitmon-hud-title">FILTERS</h3>
@@ -291,7 +291,7 @@ export class SituationMonitorShell {
             </div>
           </div>
         </div>
-        
+
         <!-- Secondary Panels Grid (Below) - 12-Column OSINT Layout -->
         <div class="sitmon-secondary-grid" style="display: grid !important; visibility: visible !important; opacity: 1 !important;">
           <div class="sitmon-panel-card" id="sitmon-panel-news">
@@ -529,7 +529,7 @@ export class SituationMonitorShell {
     let retries = 0;
     const maxRetries = 10;
     while ((typeof window.d3 === 'undefined' || typeof window.topojson === 'undefined') && retries < maxRetries) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, 200));
       retries++;
       if (retries < maxRetries) {
         console.log(`[SituationMonitorShell] Waiting for D3/TopoJSON... (attempt ${retries}/${maxRetries})`);
@@ -563,7 +563,7 @@ export class SituationMonitorShell {
       `;
       return;
     }
-    
+
     // TopoJSON is optional - map will use fallback if not available
     if (typeof window.topojson === 'undefined') {
       console.warn('[SituationMonitorShell] TopoJSON not available, map will use fallback rendering');
@@ -642,40 +642,40 @@ export class SituationMonitorShell {
     if (missingBodies.length > 0) {
       console.warn('[SituationMonitorShell] Some panel body elements are missing (may be expected in new layout):', missingBodies);
     }
-    
+
     // Only initialize panels that have their containers available
 
     // Data panels - only initialize if containers exist
     if (availablePanels.news) {
-      this.panels.news = new NewsPanel('sitmon-panel-news-body');
+    this.panels.news = new NewsPanel('sitmon-panel-news-body');
     }
     if (availablePanels.markets) {
-      this.panels.markets = new MarketsPanel('sitmon-panel-markets-body');
+    this.panels.markets = new MarketsPanel('sitmon-panel-markets-body');
     }
     if (availablePanels.earthquakes) {
-      this.panels.earthquakes = new EarthquakePanel('sitmon-panel-earthquakes-body');
+    this.panels.earthquakes = new EarthquakePanel('sitmon-panel-earthquakes-body');
     }
     if (availablePanels.weather) {
-      this.panels.weather = new WeatherAlertsPanel('sitmon-panel-weather-body');
+    this.panels.weather = new WeatherAlertsPanel('sitmon-panel-weather-body');
     }
 
     // Analysis panels - only initialize if containers exist
     if (availablePanels.intel) {
-      this.panels.intel = new IntelFeedPanel('sitmon-panel-intel-body');
+    this.panels.intel = new IntelFeedPanel('sitmon-panel-intel-body');
     }
     if (availablePanels.correlation) {
-      this.panels.correlation = new CorrelationPanel('sitmon-panel-correlation-body');
+    this.panels.correlation = new CorrelationPanel('sitmon-panel-correlation-body');
     }
     if (availablePanels.narrative) {
-      this.panels.narrative = new NarrativePanel('sitmon-panel-narrative-body');
+    this.panels.narrative = new NarrativePanel('sitmon-panel-narrative-body');
     }
     if (availablePanels.monitors) {
-      this.panels.monitors = new MonitorsPanel('sitmon-panel-monitors-body', this.mapView);
+    this.panels.monitors = new MonitorsPanel('sitmon-panel-monitors-body', this.mapView);
     }
     
     // RSS Intelligence panel
     if (availablePanels.rss) {
-      this.panels.rss = new RSSIntelligencePanel('sitmon-panel-rss-body');
+    this.panels.rss = new RSSIntelligencePanel('sitmon-panel-rss-body');
     }
 
     // CRITICAL: Initialize all panels (none call init() in constructor anymore)
