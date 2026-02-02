@@ -2824,6 +2824,10 @@
             .last-update {
                 display: none !important;
             }
+            
+            .maintenance-notice-floating {
+                display: none !important;
+            }
 
             .auth-btn {
                 padding: 5px 8px !important;
@@ -3558,14 +3562,39 @@
         }
         
         .last-update {
+            display: none; /* Hidden - moved to floating notice */
+        }
+        
+        /* Floating Maintenance Notice - Top Right Below Header */
+        .maintenance-notice-floating {
+            position: fixed;
+            top: 75px;
+            right: 20px;
+            z-index: 999;
             font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(255, 255, 255, 0.85);
             font-weight: 500;
             white-space: nowrap;
-            padding: 4px 12px;
-            border-radius: 4px;
-            background: rgba(74, 158, 255, 0.1);
-            border: 1px solid rgba(74, 158, 255, 0.2);
+            padding: 8px 14px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(255, 87, 34, 0.15) 100%);
+            border: 1px solid rgba(255, 152, 0, 0.3);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            animation: maintenancePulse 3s ease-in-out infinite;
+        }
+        
+        .maintenance-notice-floating svg {
+            color: #ff9800;
+            flex-shrink: 0;
+        }
+        
+        @keyframes maintenancePulse {
+            0%, 100% { opacity: 0.9; }
+            50% { opacity: 1; }
         }
         
         .auth-btn {
@@ -14169,7 +14198,6 @@
             </div>
             
             <div class="header-right">
-                <div class="last-update" title="Scheduled Maintenance: February 8, 2026">Scheduled Maintenance: February 8, 2026</div>
                 <button class="auth-btn signin-btn" id="signinBtn" aria-label="Sign In">Sign In</button>
                 <button class="auth-btn signup-btn" id="signupBtn" aria-label="Sign Up">Sign Up</button>
                 <a href="contact.html" class="feedback-btn" aria-label="Send Feedback" title="Send Feedback">
@@ -14195,6 +14223,12 @@
             </button>
         </div>
     </header>
+
+    <!-- Scheduled Maintenance Notice - Top Right Below Header (Desktop Only) -->
+    <div class="maintenance-notice-floating" title="Scheduled Maintenance: February 8, 2026">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Scheduled Maintenance: February 8, 2026
+    </div>
 
     <!-- X/Twitter Banner - Mobile Only -->
     <a href="https://x.com/NotewsOrg" target="_blank" rel="noopener noreferrer" class="x-banner-mobile" aria-label="Follow us on X">
