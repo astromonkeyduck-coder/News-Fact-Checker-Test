@@ -17,6 +17,12 @@
 # Netlify automatically serves 404.html for 404 errors
 # Make sure 404.html is in the root directory (publish directory)
 
+# Favicon redirect (browsers request /favicon.ico by default)
+[[redirects]]
+  from = "/favicon.ico"
+  to = "/IMG_5794.PNG"
+  status = 200
+
 # KONSCIOUS page redirects (case-insensitive)
 [[redirects]]
   from = "/Koncious"

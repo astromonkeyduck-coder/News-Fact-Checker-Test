@@ -1719,14 +1719,14 @@
                 post.lat = post.assets.lat;
                 post.lon = post.assets.lon;
             }
-            const magnitude = post.assets?.magnitude || post.magnitude;
+            const earthquakeMagnitude = post.assets?.magnitude || post.magnitude;
             
             console.log('[ArticleLoader] Earthquake check:', {
                 isEarthquake,
                 hasCoordinates,
                 lat: post.lat,
                 lon: post.lon,
-                magnitude,
+                magnitude: earthquakeMagnitude,
                 event_type: post.event_type,
                 category: post.category,
                 hasAssets: !!post.assets,
@@ -1742,14 +1742,14 @@
                 console.log('[ArticleLoader] Adding earthquake enhancements...', {
                     isEarthquake,
                     hasCoordinates,
-                    magnitude,
+                    magnitude: earthquakeMagnitude,
                     lat: post.lat,
                     lon: post.lon,
                     source: post.source,
                     category: post.category,
                     hasAssets: !!post.assets
                 });
-                const enhancementsHTML = await generateEarthquakeEnhancements(post, magnitude);
+                const enhancementsHTML = await generateEarthquakeEnhancements(post, earthquakeMagnitude);
                 bodyHTML += enhancementsHTML;
                 console.log('[ArticleLoader] Enhancements HTML length:', enhancementsHTML.length);
             } else {
@@ -1780,14 +1780,14 @@
             if (isEarthquake && hasCoordinates) {
                 // Use setTimeout to ensure DOM is fully updated
                 setTimeout(() => {
-                    initializeEarthquakeMap(post.lat, post.lon, magnitude, post.location_display || post.location);
+                    initializeEarthquakeMap(post.lat, post.lon, earthquakeMagnitude, post.location_display || post.location);
                     const depth = post.assets?.depth || post.depth;
-                    initialize3DVisualization(post.lat, post.lon, magnitude, depth, post.location_display || post.location);
+                    initialize3DVisualization(post.lat, post.lon, earthquakeMagnitude, depth, post.location_display || post.location);
                     
                     // Try to load animation if available (for magnitude 3.0+)
                     const eventId = post.assets?.event_id || post.event_id || post.id;
-                    if (eventId && magnitude >= 3.0) {
-                        loadEarthquakeAnimation(eventId, magnitude);
+                    if (eventId && earthquakeMagnitude >= 3.0) {
+                        loadEarthquakeAnimation(eventId, earthquakeMagnitude);
                     }
                 }, 100);
             }
