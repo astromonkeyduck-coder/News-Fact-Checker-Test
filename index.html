@@ -4826,6 +4826,14 @@
                 overflow-x: hidden;
             }
             
+            /* Ensure feed cards take full width on mobile */
+            .feed-post-card {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+                display: block !important;
+            }
+            
             * {
                 max-width: 100%;
                 box-sizing: border-box;
@@ -7634,10 +7642,13 @@
         }
         
         /* Card styling within grid */
-        .breaking-news-grid .article-card {
+        .breaking-news-grid .article-card,
+        .breaking-news-grid .feed-post-card,
+        .articles-track .feed-post-card {
             width: 100%;
             max-width: 100%;
             min-width: 0;
+            display: block;
         }
         
         /* Legacy support - keep articles-track for existing code */
@@ -7712,12 +7723,14 @@
                 grid-template-columns: 1fr;
                 gap: 1rem;
             }
-            }
             
-            .articles-track .article-card {
-            width: 100%;
-            max-width: 100%;
-            min-width: 0;
+            .articles-track .article-card,
+            .articles-track .feed-post-card {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+                display: block !important;
+            }
         }
         
         /* Enhanced mobile formatting - now handled by grid */
@@ -17542,7 +17555,7 @@
     <script src="/src/components/post-feed-v2.js?v=1.0" defer></script>
     
     <!-- Enhanced Posts Feed - Premium features -->
-    <script src="/src/components/post-feed-enhanced.js?v=1.4.1738463400" defer></script>
+    <script src="/src/components/post-feed-enhanced.js?v=1.5.1738464000" defer></script>
     
     <!-- Global Coverage Globe -->
     <script src="/src/components/CiaMissionGlobe-cdn.js" defer></script>
