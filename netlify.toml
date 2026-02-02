@@ -17,6 +17,37 @@
 # Netlify automatically serves 404.html for 404 errors
 # Make sure 404.html is in the root directory (publish directory)
 
+# KONSCIOUS page redirects (case-insensitive)
+[[redirects]]
+  from = "/Koncious"
+  to = "/KONSCIOUS/"
+  status = 301
+
+[[redirects]]
+  from = "/Koncious/*"
+  to = "/KONSCIOUS/:splat"
+  status = 301
+
+[[redirects]]
+  from = "/koncious"
+  to = "/KONSCIOUS/"
+  status = 301
+
+[[redirects]]
+  from = "/koncious/*"
+  to = "/KONSCIOUS/:splat"
+  status = 301
+
+[[redirects]]
+  from = "/konscious"
+  to = "/KONSCIOUS/"
+  status = 301
+
+[[redirects]]
+  from = "/konscious/*"
+  to = "/KONSCIOUS/:splat"
+  status = 301
+
 [[redirects]]
   from = "/api/noteworthy"
   to = "/.netlify/functions/noteworthy-chat"

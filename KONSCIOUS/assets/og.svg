@@ -1,0 +1,15 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F6F1EA" />
+      <stop offset="100%" stop-color="#EFE4DA" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" rx="48" fill="url(#bg)" />
+  <rect x="80" y="80" width="1040" height="470" rx="32" fill="#FFFFFF" opacity="0.9" />
+  <text x="140" y="300" font-family="Iowan Old Style, Times New Roman, serif" font-size="72" fill="#1F1A14">Konscious</text>
+  <text x="140" y="360" font-family="Helvetica, Arial, sans-serif" font-size="28" fill="#6B5D52">
+    my exploration of the mind, meaning, creativity, philosophy, and everything in between.
+  </text>
+  <text x="140" y="420" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#A06548">Writing by Konscious</text>
+</svg>
